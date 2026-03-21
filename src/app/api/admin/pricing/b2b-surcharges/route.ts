@@ -82,7 +82,7 @@ export async function PUT(req: NextRequest) {
       .upsert({ key: "b2b_weight_surcharges", value: JSON.stringify(weightObj), description: "B2B delivery weight surcharges" }, { onConflict: "key" });
   }
 
-  logAudit({ userId: user?.id, userEmail: user?.email, userRole: role, action: "edit_b2b_surcharges", resourceType: "pricing", details: {} });
+  await logAudit({ userId: user?.id, userEmail: user?.email, userRole: role, action: "edit_b2b_surcharges", resourceType: "pricing", details: {} });
 
   return NextResponse.json({ ok: true });
 }

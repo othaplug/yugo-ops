@@ -192,7 +192,7 @@ export async function GET(req: NextRequest) {
         truckName: null,
         status: m.status || "scheduled",
         calendarStatus: (m.status || "scheduled") as CalendarStatus,
-        color: eventGroupId ? "#7C3AED" : JOB_COLORS.move,
+        color: eventGroupId ? JOB_COLORS.project : JOB_COLORS.move,
         href: getMoveDetailPath(m),
         clientName: m.client_name || null,
         fromAddress: m.from_address || null,
@@ -237,6 +237,8 @@ export async function GET(req: NextRequest) {
             deliveryDurationByType.get(delType) ??
             deliveryDurationByType.get("standard") ??
             1.5;
+      const delCat = `${d.category || ""} ${d.delivery_type || ""}`.toLowerCase();
+      const deliveryFill = delCat.includes("b2b") ? "#FB7185" : JOB_COLORS.delivery;
       events.push({
         id: d.id,
         type: "delivery",
@@ -253,7 +255,7 @@ export async function GET(req: NextRequest) {
         truckName: null,
         status: d.status || "pending",
         calendarStatus: (d.status || "scheduled") as CalendarStatus,
-        color: JOB_COLORS.delivery,
+        color: deliveryFill,
         href: getDeliveryDetailPath(d),
         clientName: d.client_name || d.customer_name || null,
         fromAddress: d.pickup_address || null,

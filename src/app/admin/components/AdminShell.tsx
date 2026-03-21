@@ -82,7 +82,6 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       { href: "/admin/tips", label: "Tips", Icon: Icons.creditCard, minRole: "admin" },
       { href: "/admin/claims", label: "Claims", Icon: Icons.shield, minRole: "admin" },
       { href: "/admin/finance/profitability", label: "Profitability", Icon: Icons.trendingUp, minRole: "owner" },
-      { href: "/admin/finance/forecast", label: "Forecast", Icon: Icons.forecast, minRole: "owner" },
     ],
   },
   {

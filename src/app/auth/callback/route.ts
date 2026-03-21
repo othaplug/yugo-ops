@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const { data } = await supabase.auth.exchangeCodeForSession(code);
 
     if (data?.user) {
-      logAudit({
+      await logAudit({
         userId: data.user.id,
         userEmail: data.user.email,
         action: "login",

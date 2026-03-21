@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { CaretLeft, CaretRight, Calendar, Clock } from "@phosphor-icons/react";
 import type { CalendarEvent, ViewMode, YearHeatData } from "@/lib/calendar/types";
 import { formatTime12, timeToMinutes, minutesToTime, STATUS_DOT_COLORS, JOB_COLORS } from "@/lib/calendar/types";
+import { CALENDAR_PILL_TEXT } from "@/lib/calendar/calendar-job-styles";
 import PartnerDeliveriesTab from "./PartnerDeliveriesTab";
 
 const DELIVERY_STATUS_LABELS: Record<string, string> = {
@@ -431,7 +432,12 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                     type="button"
                     onClick={() => switchToDay(dk)}
                     className="w-full text-left px-1.5 py-0.5 rounded text-[9px] font-medium truncate transition-colors hover:opacity-80"
-                    style={{ backgroundColor: (e.color || "#7C3AED") + "22", color: e.color || "#7C3AED", borderLeft: `2px solid ${e.color || "#7C3AED"}` }}
+                    style={{
+                      backgroundColor: e.color || JOB_COLORS.project,
+                      color: CALENDAR_PILL_TEXT,
+                      borderLeft: "3px solid rgba(15,23,42,0.28)",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+                    }}
                   >
                     {e.name}: {e.description}
                   </button>
@@ -578,7 +584,11 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                   <div
                     key={e.id}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold"
-                    style={{ backgroundColor: (e.color || "#7C3AED") + "18", color: e.color || "#7C3AED", borderLeft: `3px solid ${e.color || "#7C3AED"}` }}
+                    style={{
+                      backgroundColor: e.color || JOB_COLORS.project,
+                      color: CALENDAR_PILL_TEXT,
+                      borderLeft: "3px solid rgba(15,23,42,0.28)",
+                    }}
                   >
                     {e.name}: {e.description}
                   </div>
@@ -740,7 +750,17 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                     <div key={h} className="absolute w-full border-t border-[#F0EDE8] dark:border-[var(--brd)]/15" style={{ top: (h - START_HOUR) * HOUR_HEIGHT }} />
                   ))}
                   {dayProjects.slice(0, 2).map((e, idx) => (
-                    <div key={e.id} className="absolute left-0.5 right-0.5 rounded text-[7px] font-semibold truncate px-1 flex items-center" style={{ top: 2 + idx * 18, height: 16, backgroundColor: (e.color || "#7C3AED") + "30", color: e.color || "#7C3AED", borderLeft: `2px solid ${e.color || "#7C3AED"}` }}>
+                    <div
+                      key={e.id}
+                      className="absolute left-0.5 right-0.5 rounded-md text-[7px] font-semibold truncate px-1 flex items-center shadow-sm"
+                      style={{
+                        top: 2 + idx * 18,
+                        height: 16,
+                        backgroundColor: e.color || JOB_COLORS.project,
+                        color: CALENDAR_PILL_TEXT,
+                        borderLeft: "2px solid rgba(15,23,42,0.28)",
+                      }}
+                    >
                       {e.name}
                     </div>
                   ))}

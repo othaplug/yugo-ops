@@ -48,7 +48,7 @@ const STATUS_OPTIONS = [
 function statusBadge(status: string): string {
   switch (status) {
     case "submitted": return "bg-[var(--gold)]/15 text-[var(--gold)]";
-    case "under_review": return "bg-[#3B82F6]/15 text-[#3B82F6]";
+    case "under_review": return "bg-[#3B82F6]/15 text-blue-700 dark:text-sky-300 ring-1 ring-inset ring-[#3B82F6]/25";
     case "approved": return "bg-[var(--grn)]/15 text-[var(--grn)]";
     case "partially_approved": return "bg-amber-500/15 text-amber-500";
     case "denied": return "bg-[var(--red)]/15 text-[var(--red)]";
@@ -222,6 +222,12 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
         exportFilename="yugo-claims"
         columnToggle
         selectable
+        mobileCardLayout={{
+          primaryColumnId: "client",
+          subtitleColumnId: "claim_number",
+          amountColumnId: "claimed",
+          metaColumnIds: ["date", "status", "items", "approved", "crew"],
+        }}
         onRowClick={(c) => router.push(`/admin/claims/${c.id}`)}
         emptyMessage={claims.length === 0 ? "No claims yet" : "No claims match your filters"}
       />

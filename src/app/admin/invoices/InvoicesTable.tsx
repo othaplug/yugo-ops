@@ -96,9 +96,11 @@ export default function InvoicesTable({
         const amt = Number(r.amount);
         return (
           <>
-            <span className="font-bold">{formatCurrency(r.amount)}</span>
+            <span className="font-bold text-[#1A1A1A] dark:text-[#F4F1E8]">{formatCurrency(r.amount)}</span>
             {amt > 0 && (
-              <span className="text-[8px] text-[var(--tx3)] ml-1">+{formatCurrency(calcHST(amt))} HST</span>
+              <span className="text-[9px] text-[#5C5449] dark:text-[#C9C4B8] ml-1 block sm:inline">
+                +{formatCurrency(calcHST(amt))} HST
+              </span>
             )}
           </>
         );
@@ -154,6 +156,12 @@ export default function InvoicesTable({
       columnToggle
       selectable
       bulkActions={bulkActions}
+      mobileCardLayout={{
+        primaryColumnId: "client_name",
+        subtitleColumnId: "invoice_number",
+        amountColumnId: "amount",
+        metaColumnIds: ["status", "due_date", "square"],
+      }}
       onRowClick={onRowClick}
       {...(sortCol != null && sortDir != null && onSortChange
         ? { sortCol, sortDir, onSortChange }

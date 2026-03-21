@@ -41,25 +41,27 @@ interface AuditEntry {
 }
 
 /**
- * Fire-and-forget audit log entry. Never blocks or throws.
+ * Persist an audit row. Awaits the insert so serverless handlers finish before the response
+ * (fire-and-forget was dropping most writes). Never throws to callers.
  */
-export function logAudit(entry: AuditEntry): void {
+export async function logAudit(entry: AuditEntry): Promise<void> {
   try {
     const sb = createAdminClient();
-    sb.from("audit_log")
-      .insert({
-        user_id: entry.userId ?? null,
-        user_email: entry.userEmail ?? null,
-        user_role: entry.userRole ?? null,
-        action: entry.action,
-        resource_type: entry.resourceType,
-        resource_id: entry.resourceId ?? null,
-        details: entry.details ?? null,
-        ip_address: entry.ipAddress ?? null,
-      })
-      .then(() => {});
-  } catch {
-    // Audit failures must never break application flow
+    const { error } = await sb.from("audit_log").insert({
+      user_id: entry.userId ?? null,
+      user_email: entry.userEmail ?? null,
+      user_role: entry.userRole ?? null,
+      action: entry.action,
+      resource_type: entry.resourceType,
+      resource_id: entry.resourceId ?? null,
+      details: entry.details ?? null,
+      ip_address: entry.ipAddress ?? null,
+    });
+    if (error) {
+      console.error("[audit] insert failed:", error.message, error.code);
+    }
+  } catch (e) {
+    console.error("[audit] insert exception:", e);
   }
 }
 

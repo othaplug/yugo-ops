@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { CalendarEvent } from "@/lib/calendar/types";
-import { formatTime12, timeToMinutes, minutesToTime, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { formatTime12, timeToMinutes, minutesToTime } from "@/lib/calendar/types";
+import {
+  CALENDAR_PILL_TEXT,
+  CALENDAR_PILL_TEXT_MUTED,
+  jobPillCompactStyle,
+  jobPillSurfaceStyle,
+  pillStatusDotColor,
+} from "@/lib/calendar/calendar-job-styles";
 const HOUR_HEIGHT = 48;
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 20;
@@ -280,12 +287,8 @@ export default function DayView({
                       key={ev.id}
                       type="button"
                       onClick={() => onEventClick(ev)}
-                      className="w-full text-left rounded px-1.5 py-0.5 text-[9px] font-bold truncate"
-                      style={{
-                        backgroundColor: `${ev.color}25`,
-                        color: ev.color,
-                        borderLeft: `3px solid ${ev.color}`,
-                      }}
+                      className="w-full text-left rounded-md px-1.5 py-1 text-[9px] font-bold truncate shadow-sm hover:brightness-[1.02]"
+                      style={jobPillCompactStyle(ev)}
                     >
                       {ev.name}
                     </button>
@@ -373,7 +376,8 @@ export default function DayView({
                   {colEvents.map((ev) => {
                     const top = getTopOffset(ev.start);
                     const height = getHeight(ev.start, ev.end, ev.durationHours);
-                    const dotColor = STATUS_DOT_COLORS[ev.calendarStatus] || STATUS_DOT_COLORS.scheduled;
+                    const dotColor = pillStatusDotColor(ev.calendarStatus);
+                    const cancelled = ev.calendarStatus === "cancelled";
                     const isComplete = ev.calendarStatus === "completed";
                     const isProgress = ev.calendarStatus === "in_progress";
                     const canDrag =
@@ -397,7 +401,7 @@ export default function DayView({
                             isDragging: false,
                           };
                         }}
-                        className={`absolute left-1 right-1 rounded-md overflow-hidden text-left transition-opacity ${
+                        className={`absolute left-1 right-1 rounded-lg overflow-hidden text-left transition-opacity shadow-sm ${
                           canDrag ? "cursor-grab" : "cursor-pointer"
                         } ${isComplete ? "opacity-50" : ""} ${
                           isBeingDragged ? "opacity-30 pointer-events-none" : ""
@@ -405,32 +409,43 @@ export default function DayView({
                         style={{
                           top,
                           height: Math.max(height, 30),
-                          borderLeft: `4px solid ${ev.color}`,
-                          background: `linear-gradient(135deg, ${ev.color}25, ${ev.color}10)`,
+                          ...jobPillSurfaceStyle(ev),
                           zIndex: isBeingDragged ? 0 : 1,
                         }}
                       >
                         <div className="p-1.5 h-full flex flex-col pointer-events-none">
                           <div className="flex items-center gap-1 mb-0.5">
                             <span
-                              className={`w-2 h-2 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`}
-                              style={{ backgroundColor: dotColor }}
+                              className={`w-2 h-2 rounded-full shrink-0 ring-1 ring-black/10 ${isProgress ? "animate-pulse" : ""}`}
+                              style={{ backgroundColor: cancelled ? "rgba(248,250,252,0.85)" : dotColor }}
                             />
-                            <span className="text-[11px] font-bold text-[var(--tx)] truncate">
+                            <span
+                              className="text-[11px] font-bold truncate"
+                              style={{ color: cancelled ? "inherit" : CALENDAR_PILL_TEXT }}
+                            >
                               {ev.name}
                             </span>
                           </div>
-                          <div className="flex items-center text-[9px] text-[var(--tx3)] truncate">
+                          <div
+                            className="flex items-center text-[9px] truncate"
+                            style={{ color: cancelled ? "rgba(248,250,252,0.88)" : CALENDAR_PILL_TEXT_MUTED }}
+                          >
                             <span className="truncate">{ev.description}</span>
                           </div>
                           {height > 60 && ev.truckName && (
-                            <div className="text-[8px] text-[var(--tx3)]/60 mt-0.5 truncate">
+                            <div
+                              className="text-[8px] mt-0.5 truncate"
+                              style={{ color: cancelled ? "rgba(248,250,252,0.7)" : CALENDAR_PILL_TEXT_MUTED }}
+                            >
                               {ev.truckName}
                               {ev.crewName ? ` · ${ev.crewName}` : ""}
                             </div>
                           )}
                           {height > 80 && ev.start && ev.end && (
-                            <div className="text-[8px] text-[var(--tx3)]/50 mt-auto">
+                            <div
+                              className="text-[8px] mt-auto opacity-90"
+                              style={{ color: cancelled ? "rgba(248,250,252,0.75)" : CALENDAR_PILL_TEXT_MUTED }}
+                            >
                               {formatTime12(ev.start)} – {formatTime12(ev.end)}
                             </div>
                           )}

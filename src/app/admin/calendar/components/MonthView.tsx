@@ -30,9 +30,12 @@ export default function MonthView({ year, month, todayKey, eventsByDate, onEvent
 
   return (
     <div className="px-3 sm:px-4 pb-3">
-      <div className="grid grid-cols-7 gap-px bg-[var(--brd)]/40 overflow-hidden rounded-lg">
+      <div className="grid grid-cols-7 gap-px bg-[var(--brd)]/35 dark:bg-zinc-600/40 overflow-hidden rounded-xl">
         {DAY_NAMES.map((d) => (
-          <div key={d} className="bg-[var(--bg)] py-1.5 text-center text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">
+          <div
+            key={d}
+            className="bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-[0.14em] uppercase text-[#64748B] dark:text-[#94A3B8]"
+          >
             {d}
           </div>
         ))}
@@ -48,9 +51,9 @@ export default function MonthView({ year, month, todayKey, eventsByDate, onEvent
             <div
               key={dk}
               onClick={() => hasEvents ? onDateClick(dk) : onNewClick(dk)}
-              className={`min-h-[72px] p-1 transition-all cursor-pointer ${
+              className={`min-h-[84px] p-1.5 transition-all cursor-pointer ${
                 isToday
-                  ? "bg-[var(--gold)]/[0.07] border border-[var(--gold)]/30"
+                  ? "bg-blue-500/[0.08] dark:bg-blue-500/10 border border-blue-500/25"
                   : "bg-[var(--bg)] hover:bg-[var(--card)]"
               }`}
             >
@@ -63,8 +66,8 @@ export default function MonthView({ year, month, todayKey, eventsByDate, onEvent
                   <span
                     className={`inline-flex items-center justify-center text-[11px] font-bold transition-colors ${
                       isToday
-                        ? "w-6 h-6 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                        : "text-[var(--tx2)] hover:text-[var(--gold)]"
+                        ? "w-7 h-7 rounded-full bg-blue-600 text-white shadow-md"
+                        : "text-[var(--tx2)] hover:text-blue-500 dark:hover:text-blue-400"
                     }`}
                   >
                     {day}
@@ -74,7 +77,7 @@ export default function MonthView({ year, month, todayKey, eventsByDate, onEvent
                   <span className="text-[7px] text-[var(--tx3)]/40 font-medium">{dayEvents.length}</span>
                 )}
               </div>
-              <div className="space-y-px" onClick={(e) => e.stopPropagation()}>
+              <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
                 {dayEvents.slice(0, MAX_VISIBLE).map((ev) => (
                   <JobCard key={ev.id} event={ev} compact onClick={onEventClick} />
                 ))}

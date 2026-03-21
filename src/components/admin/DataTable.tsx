@@ -49,6 +49,14 @@ export interface BulkAction {
   onClick: (selectedKeys: string[]) => void | Promise<void>;
 }
 
+/** North Star mobile list: bold primary, muted subtitle, strong amount, chips below. */
+export interface MobileCardLayoutConfig {
+  primaryColumnId: string;
+  subtitleColumnId?: string;
+  amountColumnId?: string;
+  metaColumnIds?: string[];
+}
+
 interface DataTableProps<T> {
   data: T[];
   columns: ColumnDef<T>[];
@@ -72,7 +80,11 @@ interface DataTableProps<T> {
   striped?: boolean;
   tableId?: string;
   selectable?: boolean;
+  /** When true (default), row selection & bulk actions are desktop/tablet only — mobile stays tap-to-open. */
+  selectableDesktopOnly?: boolean;
   bulkActions?: BulkAction[];
+  /** Optional mobile card column arrangement (client-first, amount right, actions never wrap into meta). */
+  mobileCardLayout?: MobileCardLayoutConfig;
   /** Controlled sort — when provided, overrides internal sort state */
   sortCol?: string | null;
   sortDir?: "asc" | "desc";
@@ -223,7 +235,9 @@ export default function DataTable<T>({
   striped = true,
   tableId = "default",
   selectable = false,
+  selectableDesktopOnly = true,
   bulkActions = [],
+  mobileCardLayout,
   sortCol: sortColProp,
   sortDir: sortDirProp,
   onSortChange,
@@ -335,6 +349,41 @@ export default function DataTable<T>({
     const extra = columns.filter((c) => !c.alwaysHidden && !colOrder.includes(c.id) && !hiddenCols.has(c.id));
     return [...ordered, ...extra];
   }, [columns, hiddenCols, colOrder]);
+
+  const mobileCols = useMemo(() => {
+    const actionCol = visibleCols.find((c) => c.id === "actions");
+    const dataCols = visibleCols.filter((c) => c.id !== "actions");
+    if (mobileCardLayout) {
+      const primary =
+        dataCols.find((c) => c.id === mobileCardLayout.primaryColumnId) ?? dataCols[0];
+      const subtitle = mobileCardLayout.subtitleColumnId
+        ? dataCols.find((c) => c.id === mobileCardLayout.subtitleColumnId)
+        : undefined;
+      const amount = mobileCardLayout.amountColumnId
+        ? dataCols.find((c) => c.id === mobileCardLayout.amountColumnId)
+        : undefined;
+      const used = new Set(
+        [primary?.id, subtitle?.id, amount?.id].filter(Boolean) as string[],
+      );
+      let meta: ColumnDef<T>[];
+      if (mobileCardLayout.metaColumnIds?.length) {
+        meta = mobileCardLayout.metaColumnIds
+          .map((id) => dataCols.find((c) => c.id === id))
+          .filter((c): c is ColumnDef<T> => !!c);
+      } else {
+        meta = dataCols.filter((c) => !used.has(c.id));
+      }
+      return { actionCol, mode: "layout" as const, primary, subtitle, amount, meta };
+    }
+    return {
+      actionCol,
+      mode: "legacy" as const,
+      primary: dataCols[0],
+      statusCol: dataCols[1],
+      valueCol: dataCols[2],
+      meta: dataCols.slice(3, 7),
+    };
+  }, [visibleCols, mobileCardLayout]);
 
   /* ── Column resize ── */
   const colIds = useMemo(() => visibleCols.map((c) => c.id), [visibleCols]);
@@ -615,21 +664,33 @@ export default function DataTable<T>({
   return (
     <div className="space-y-0">
       {/* ── Toolbar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
-        {/* Search */}
-        {searchable && (
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/50 focus:border-[var(--brd)] outline-none transition-colors"
-            />
-          </div>
-        )}
-        <div className="hidden md:flex items-center gap-1.5 ml-auto">
+      <div className="flex flex-col gap-2 mb-4">
+        <div className="flex items-center gap-2 w-full min-w-0">
+          {/* Search — full width on mobile (no dead space on the right) */}
+          {searchable && (
+            <div className="relative flex-1 min-w-0 md:max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#5C5449] dark:text-[#9CA3AF]" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="w-full pl-9 pr-3 py-2.5 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[13px] text-[var(--tx)] placeholder:text-[#5C5449]/60 dark:placeholder:text-[#9CA3AF]/70 focus:border-[var(--gold)]/40 outline-none transition-colors"
+              />
+            </div>
+          )}
+          {exportable && (
+            <button
+              type="button"
+              onClick={handleExport}
+              title="Export CSV"
+              className="md:hidden inline-flex items-center justify-center shrink-0 w-11 h-11 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[#1A1A1A] dark:text-[#F4F1E8] active:scale-[0.98] touch-manipulation"
+            >
+              <Download className="w-5 h-5" weight="regular" />
+            </button>
+          )}
+        </div>
+        <div className="hidden md:flex w-full flex-wrap items-center justify-end gap-1.5">
           {/* Export */}
           {exportable && (
             <button
@@ -712,20 +773,26 @@ export default function DataTable<T>({
         </div>
       </div>
 
-      {/* ── Bulk action bar ── */}
+      {/* ── Bulk action bar (desktop/tablet only when selectableDesktopOnly) ── */}
       {selectable && selectedKeys.size > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2.5 mb-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/20">
-          <span className="text-[11px] font-semibold text-[var(--gold)]">{selectedKeys.size} selected</span>
-          <div className="flex items-center gap-1.5 ml-auto">
+        <div
+          className={`${
+            selectableDesktopOnly ? "hidden md:flex" : "flex"
+          } flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3 mb-3 rounded-2xl bg-[#FAF7F2] dark:bg-[#2A2520] border border-[#B8962E]/35 shadow-sm`}
+        >
+          <span className="text-[12px] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8] shrink-0">
+            {selectedKeys.size} selected
+          </span>
+          <div className="flex flex-wrap items-stretch sm:items-center gap-2 sm:gap-2.5 sm:ml-auto w-full sm:w-auto">
             {effectiveBulkActions.map((action) => (
               <button
                 key={action.label}
                 type="button"
                 onClick={() => action.onClick([...selectedKeys])}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-colors ${
+                className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 rounded-full text-[12px] font-semibold transition-colors touch-manipulation ${
                   action.variant === "danger"
-                    ? "bg-[var(--red)]/10 text-[var(--red)] hover:bg-[var(--red)]/20 border border-[var(--red)]/20"
-                    : "bg-[var(--card)] text-[var(--tx2)] hover:text-[var(--tx)] border border-[var(--brd)]"
+                    ? "bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 border border-[var(--red)]/25"
+                    : "bg-white dark:bg-[#3D3833] text-[#1A1A1A] dark:text-[#F4F1E8] border border-[var(--brd)] dark:border-[#F5F3EF]/12 hover:border-[var(--gold)]/50"
                 }`}
               >
                 {action.icon}
@@ -735,7 +802,7 @@ export default function DataTable<T>({
             <button
               type="button"
               onClick={() => setSelectedKeys(new Set())}
-              className="text-[10px] text-[var(--tx3)] hover:text-[var(--tx)] px-2 py-1.5 transition-colors"
+              className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-full text-[12px] font-medium text-[#5C5449] dark:text-[#C9C4B8] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
             >
               Clear
             </button>
@@ -763,7 +830,9 @@ export default function DataTable<T>({
           <thead className={stickyHeader ? "sticky top-0 z-10 bg-[var(--bg)] shadow-[0_1px_0_0_var(--brd)]" : ""}>
             <tr className="border-b border-[var(--brd)]/50">
               {selectable && (
-                <th className="w-10 px-3 py-2.5">
+                <th
+                  className={`w-10 px-3 py-2.5 ${selectableDesktopOnly ? "hidden md:table-cell" : ""}`}
+                >
                   <input
                     type="checkbox"
                     checked={allPageSelected}
@@ -847,7 +916,9 @@ export default function DataTable<T>({
               paged.map((row) => (
                 <tr key={getKey(row)} className="border-b border-[var(--brd)]/20">
                   {selectable && (
-                    <td className="w-10 px-3 py-3">
+                    <td
+                      className={`w-10 px-3 py-3 ${selectableDesktopOnly ? "hidden md:table-cell" : ""}`}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedKeys.has(getKey(row))}
@@ -872,7 +943,9 @@ export default function DataTable<T>({
                   } ${selectable && selectedKeys.has(rowKey) ? "bg-[var(--gold)]/[0.04]" : ""} ${rowClassName ? rowClassName(row) : ""}`}
                 >
                   {selectable && (
-                    <td className="w-10 px-3 py-3">
+                    <td
+                      className={`w-10 px-3 py-3 ${selectableDesktopOnly ? "hidden md:table-cell" : ""}`}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedKeys.has(rowKey)}
@@ -912,66 +985,144 @@ export default function DataTable<T>({
       <div className="md:hidden">
         {paged.length === 0 ? (
           <div className="py-14 px-6 text-center">
-            <p className="text-[14px] font-semibold text-[var(--tx3)]">{emptyMessage}</p>
-            {emptySubtext && <p className="text-[12px] text-[var(--tx3)]/60 mt-1">{emptySubtext}</p>}
+            <p className="text-[14px] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8]">{emptyMessage}</p>
+            {emptySubtext && (
+              <p className="text-[12px] text-[#5C5449] dark:text-[#C9C4B8] mt-1">{emptySubtext}</p>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-[var(--brd)]/30">
             {paged.map((row) => {
               const rowKey = getKey(row);
-              const primaryCol   = visibleCols[0];
-              const statusCol    = visibleCols[1];
-              const valueCol     = visibleCols[2];
-              const metaCols     = visibleCols.slice(3, 7);
-              return (
+              const showCheckbox = selectable && !selectableDesktopOnly;
+
+              const renderCell = (col: ColumnDef<T> | undefined) => {
+                if (!col) return null;
+                return col.render ? (
+                  col.render(row)
+                ) : (
+                  <span className="capitalize">{String(col.accessor(row) ?? "—")}</span>
+                );
+              };
+
+              const rowShell = (inner: ReactNode) => (
                 <div
                   key={rowKey}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={`flex items-center gap-3 px-4 py-3.5 touch-card-press ${
+                  className={`flex items-start gap-2.5 px-3 sm:px-4 py-4 touch-card-press ${
                     onRowClick ? "cursor-pointer active:bg-[var(--gdim)]" : ""
                   } ${rowClassName ? rowClassName(row) : ""} ${
-                    selectable && selectedKeys.has(rowKey) ? "bg-[var(--gold)]/[0.04]" : ""
+                    showCheckbox && selectedKeys.has(rowKey) ? "bg-[var(--gold)]/[0.04]" : ""
                   }`}
                 >
-                  {selectable && (
+                  {showCheckbox && (
                     <input
                       type="checkbox"
                       checked={selectedKeys.has(rowKey)}
                       onChange={() => toggleRow(rowKey)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 rounded border-[var(--brd)] accent-[var(--gold)] cursor-pointer shrink-0"
+                      className="w-4 h-4 mt-1 rounded border-[var(--brd)] accent-[var(--gold)] cursor-pointer shrink-0"
                     />
                   )}
+                  {inner}
+                </div>
+              );
+
+              if (mobileCols.mode === "layout") {
+                const { primary, subtitle, amount, meta, actionCol } = mobileCols;
+                return rowShell(
+                  <>
+                    <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                          {primary && (
+                            <div className="text-[15px] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8] leading-snug">
+                              {renderCell(primary)}
+                            </div>
+                          )}
+                          {subtitle && (
+                            <div className="text-[12px] text-[#5C5449] dark:text-[#C9C4B8] mt-0.5 [&_a]:underline-offset-2">
+                              {renderCell(subtitle)}
+                            </div>
+                          )}
+                        </div>
+                        {amount && (
+                          <div className="shrink-0 text-right min-w-0 max-w-[48%] pl-1 [&_span]:tabular-nums">
+                            {renderCell(amount)}
+                          </div>
+                        )}
+                      </div>
+                      {meta.length > 0 && (
+                        <div className="flex flex-wrap gap-x-2.5 gap-y-1.5 items-center">
+                          {meta.map((col) => {
+                            const val = col.accessor(row);
+                            if (val === null || val === undefined || val === "") return null;
+                            return (
+                              <span
+                                key={col.id}
+                                className="text-[11px] text-[#5C5449] dark:text-[#C9C4B8] leading-snug"
+                              >
+                                {renderCell(col)}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <div className="shrink-0 flex items-start gap-2 pt-0.5">
+                      {actionCol?.render ? (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex justify-end min-w-0"
+                        >
+                          {actionCol.render(row)}
+                        </div>
+                      ) : null}
+                      {onRowClick && (
+                        <ChevronRight
+                          className="w-5 h-5 text-[#5C5449] dark:text-[#9CA3AF] shrink-0 mt-0.5"
+                          aria-hidden
+                        />
+                      )}
+                    </div>
+                  </>,
+                );
+              }
+
+              const { primary: primaryCol, statusCol, valueCol, meta: metaCols, actionCol: legacyAction } =
+                mobileCols;
+              return rowShell(
+                <>
                   <div className="flex-1 min-w-0">
-                    {/* Primary identifier */}
-                    <div className="text-[14px] font-semibold text-[var(--tx)] truncate leading-snug">
+                    <div className="text-[15px] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8] leading-snug">
                       {primaryCol?.render
                         ? primaryCol.render(row)
                         : <span>{String(primaryCol?.accessor(row) ?? "—")}</span>}
                     </div>
-                    {/* Status + value row */}
                     {(statusCol || valueCol) && (
                       <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-1">
                         {statusCol && (
-                          <div className="text-[12px] text-[var(--tx2)] leading-none">
+                          <div className="text-[12px] text-[#5C5449] dark:text-[#C9C4B8] leading-snug">
                             {statusCol.render ? statusCol.render(row) : String(statusCol.accessor(row) ?? "")}
                           </div>
                         )}
                         {valueCol && (
-                          <div className="text-[12px] text-[var(--tx3)] leading-none">
+                          <div className="text-[12px] text-[#5C5449] dark:text-[#C9C4B8] leading-snug">
                             {valueCol.render ? valueCol.render(row) : String(valueCol.accessor(row) ?? "")}
                           </div>
                         )}
                       </div>
                     )}
-                    {/* Meta chips */}
                     {metaCols.length > 0 && (
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
                         {metaCols.map((col) => {
                           const val = col.accessor(row);
                           if (val === null || val === undefined || val === "") return null;
                           return (
-                            <span key={col.id} className="text-[11px] text-[var(--tx3)]/70 leading-none">
+                            <span
+                              key={col.id}
+                              className="text-[11px] text-[#5C5449] dark:text-[#C9C4B8] leading-snug"
+                            >
                               {col.render ? col.render(row) : String(val)}
                             </span>
                           );
@@ -979,10 +1130,23 @@ export default function DataTable<T>({
                       </div>
                     )}
                   </div>
-                  {onRowClick && (
-                    <ChevronRight className="w-4 h-4 text-[var(--tx3)]/30 shrink-0" aria-hidden />
-                  )}
-                </div>
+                  <div className="shrink-0 flex items-start gap-2 pt-0.5">
+                    {legacyAction?.render ? (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex justify-end min-w-0 max-w-[120px]"
+                      >
+                        {legacyAction.render(row)}
+                      </div>
+                    ) : null}
+                    {onRowClick && (
+                      <ChevronRight
+                        className="w-5 h-5 text-[#5C5449] dark:text-[#9CA3AF] shrink-0 mt-0.5"
+                        aria-hidden
+                      />
+                    )}
+                  </div>
+                </>,
               );
             })}
           </div>
@@ -992,7 +1156,7 @@ export default function DataTable<T>({
       {/* ── Pagination ── */}
       {pagination && sorted.length > 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t border-[var(--brd)]/20 mt-1">
-          <div className="text-[10px] text-[var(--tx3)]">
+          <div className="text-[10px] text-[#5C5449] dark:text-[#C9C4B8]">
             Showing {(safePage - 1) * perPage + 1}–{Math.min(safePage * perPage, sorted.length)} of{" "}
             {sorted.length}{search.trim() && data.length !== sorted.length ? ` (filtered from ${data.length})` : ""}
           </div>

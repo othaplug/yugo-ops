@@ -44,7 +44,7 @@ const STATUS_OPTIONS = [
 function statusBadge(status: string): string {
   switch (status) {
     case "sent": return "bg-[var(--gold)]/15 text-[var(--gold)]";
-    case "viewed": return "bg-[#3B82F6]/15 text-[#3B82F6]";
+    case "viewed": return "bg-[#3B82F6]/15 text-blue-700 dark:text-sky-300 ring-1 ring-inset ring-[#3B82F6]/25";
     case "accepted": return "bg-[var(--grn)]/15 text-[var(--grn)]";
     case "expired": case "declined": return "bg-[var(--red)]/15 text-[var(--red)]";
     default: return "bg-[var(--brd)] text-[var(--tx3)]";
@@ -215,31 +215,31 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
               onClick={(e) => e.stopPropagation()}
             >
               {confirmId === q.id ? (
-                <>
+                <div className="flex flex-col items-end gap-1.5 max-w-[7.5rem]">
                   <button
                     type="button"
                     onClick={() => handleDelete(q.id)}
                     disabled={deleting === q.id}
-                    className="px-2 py-1 rounded text-[9px] font-bold bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 transition-colors disabled:opacity-50"
+                    className="w-full min-h-[36px] px-3 rounded-full text-[10px] font-bold bg-[var(--red)]/15 text-[var(--red)] border border-[var(--red)]/25 hover:bg-[var(--red)]/25 transition-colors disabled:opacity-50"
                   >
                     {deleting === q.id ? "…" : "Delete"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmId(null)}
-                    className="px-2 py-1 rounded text-[9px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+                    className="w-full min-h-[32px] px-2 rounded-full text-[10px] font-medium text-[#5C5449] dark:text-[#C9C4B8] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                   >
                     Cancel
                   </button>
-                </>
+                </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => setConfirmId(q.id)}
                   title="Delete draft"
-                  className="p-1.5 rounded-lg text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--red)]/10 transition-colors"
+                  className="inline-flex items-center justify-center min-h-[40px] min-w-[40px] rounded-full text-[#5C5449] dark:text-[#C9C4B8] hover:text-[var(--red)] hover:bg-[var(--red)]/10 transition-colors border border-transparent hover:border-[var(--red)]/20"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-[18px] h-[18px]" />
                 </button>
               )}
             </div>
@@ -303,6 +303,12 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
           exportFilename="yugo-quotes"
           columnToggle
           selectable
+          mobileCardLayout={{
+            primaryColumnId: "client",
+            subtitleColumnId: "quote_id",
+            amountColumnId: "amount",
+            metaColumnIds: ["service", "status", "sent_created"],
+          }}
           onRowClick={(q) => router.push(`/admin/quotes/${q.quote_id || q.id}`)}
           emptyMessage="No quotes yet"
         />

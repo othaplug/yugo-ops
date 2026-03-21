@@ -1,7 +1,14 @@
 "use client";
 
 import type { CalendarEvent } from "@/lib/calendar/types";
-import { formatTime12, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { formatTime12 } from "@/lib/calendar/types";
+import {
+  CALENDAR_PILL_TEXT,
+  CALENDAR_PILL_TEXT_MUTED,
+  jobPillCompactStyle,
+  jobPillSurfaceStyle,
+  pillStatusDotColor,
+} from "@/lib/calendar/calendar-job-styles";
 import { toTitleCase } from "@/lib/format-text";
 
 interface Props {
@@ -12,7 +19,7 @@ interface Props {
 }
 
 export default function JobCard({ event, compact, onClick, onDragStart }: Props) {
-  const dotColor = STATUS_DOT_COLORS[event.calendarStatus] || STATUS_DOT_COLORS.scheduled;
+  const dotColor = pillStatusDotColor(event.calendarStatus);
   const isCompleted = event.calendarStatus === "completed";
   const isCancelled = event.calendarStatus === "cancelled";
   const isInProgress = event.calendarStatus === "in_progress";
@@ -23,6 +30,9 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
       : formatTime12(event.start)
     : null;
 
+  const compactStyle = jobPillCompactStyle(event);
+  const surfaceStyle = jobPillSurfaceStyle(event);
+
   if (compact) {
     return (
       <button
@@ -30,17 +40,27 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
         onClick={() => onClick?.(event)}
         draggable={!!onDragStart}
         onDragStart={() => onDragStart?.(event)}
-        className={`w-full text-left flex items-center gap-1 px-1 py-[2px] rounded-[3px] text-[10px] truncate transition-all cursor-pointer hover:brightness-125 ${
-          isCompleted ? "opacity-50" : ""
-        } ${isCancelled ? "line-through opacity-40" : ""}`}
-        style={{ borderLeft: `3px solid ${event.color}`, background: `${event.color}22` }}
+        className={`w-full text-left flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] truncate transition-all cursor-pointer hover:brightness-[1.02] active:scale-[0.99] shadow-sm ${
+          isCompleted ? "opacity-80" : ""
+        } ${isCancelled ? "line-through" : ""}`}
+        style={compactStyle}
       >
         <span
-          className={`w-1.5 h-1.5 rounded-full shrink-0 ${isInProgress ? "animate-pulse" : ""}`}
-          style={{ backgroundColor: dotColor }}
+          className={`w-1.5 h-1.5 rounded-full shrink-0 ring-1 ring-black/10 ${isInProgress ? "animate-pulse" : ""}`}
+          style={{ backgroundColor: isCancelled ? "rgba(248,250,252,0.8)" : dotColor }}
         />
-        <span className="truncate font-semibold text-[var(--tx)]">
-          {timeStr && <span className="text-[var(--tx3)] mr-1 font-medium">{timeStr}</span>}
+        <span
+          className="truncate font-semibold"
+          style={{ color: isCancelled ? "inherit" : CALENDAR_PILL_TEXT }}
+        >
+          {timeStr && (
+            <span
+              className="mr-1 font-medium"
+              style={{ color: isCancelled ? "rgba(248,250,252,0.75)" : CALENDAR_PILL_TEXT_MUTED }}
+            >
+              {timeStr}
+            </span>
+          )}
           {event.name}
         </span>
       </button>
@@ -53,45 +73,52 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
       onClick={() => onClick?.(event)}
       draggable={!!onDragStart}
       onDragStart={() => onDragStart?.(event)}
-      className={`w-full text-left p-2 rounded-lg transition-all cursor-pointer hover:brightness-110 ${
-        isCompleted ? "opacity-50" : ""
-      } ${isCancelled ? "opacity-40" : ""}`}
-      style={{ borderLeft: `4px solid ${event.color}`, background: `${event.color}20` }}
+      className={`w-full text-left p-2.5 rounded-lg transition-all cursor-pointer hover:brightness-[1.02] active:scale-[0.99] shadow-sm ${
+        isCompleted ? "opacity-75" : ""
+      } ${isCancelled ? "opacity-90" : ""}`}
+      style={surfaceStyle}
     >
-      <div className="flex items-center gap-1.5 mb-0.5">
+      <div className="flex items-center gap-1.5 mb-1">
         <span
-          className={`w-2 h-2 rounded-full shrink-0 ${isInProgress ? "animate-pulse" : ""}`}
-          style={{ backgroundColor: dotColor }}
+          className={`w-2 h-2 rounded-full shrink-0 ring-1 ring-black/10 ${isInProgress ? "animate-pulse" : ""}`}
+          style={{ backgroundColor: isCancelled ? "rgba(248,250,252,0.85)" : dotColor }}
         />
         {timeStr && (
-          <span className="text-[10px] text-[var(--tx3)] font-medium">{timeStr}</span>
+          <span
+            className="text-[10px] font-semibold"
+            style={{ color: isCancelled ? "rgba(248,250,252,0.85)" : CALENDAR_PILL_TEXT_MUTED }}
+          >
+            {timeStr}
+          </span>
         )}
-        <span className="text-[8px] text-[var(--tx3)]/50">·</span>
-        <span className={`text-[12px] font-bold text-[var(--tx)] truncate ${isCancelled ? "line-through" : ""}`}>
+        <span className="text-[8px] opacity-50" style={{ color: isCancelled ? "inherit" : CALENDAR_PILL_TEXT }}>
+          ·
+        </span>
+        <span
+          className={`text-[12px] font-bold truncate flex-1 min-w-0 ${isCancelled ? "line-through" : ""}`}
+          style={{ color: isCancelled ? "inherit" : CALENDAR_PILL_TEXT }}
+        >
           {event.name}
         </span>
         {event.isRecurring && (
-          <span className="ml-auto shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#0D948820", color: "#0D9488" }}>
+          <span className="ml-auto shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-black/15 text-slate-900">
             RECURRING
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1 text-[10px] text-[var(--tx3)]">
+      <div
+        className="flex items-center gap-1 text-[10px] truncate"
+        style={{ color: isCancelled ? "rgba(248,250,252,0.8)" : CALENDAR_PILL_TEXT_MUTED }}
+      >
         <span className="truncate">{toTitleCase(event.description)}</span>
         {event.eventPhase && (
-          <span
-            className="shrink-0 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full ml-1"
-            style={{
-              background: event.eventPhase === "delivery" ? "#7C3AED22" : event.eventPhase === "return" ? "#059669" + "22" : "#F59E0B22",
-              color: event.eventPhase === "delivery" ? "#7C3AED" : event.eventPhase === "return" ? "#059669" : "#F59E0B",
-            }}
-          >
+          <span className="shrink-0 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-black/15 text-slate-900">
             {event.eventPhase === "delivery" ? "Deliver" : event.eventPhase === "return" ? "Return" : event.eventPhase}
           </span>
         )}
         {event.crewName && (
           <>
-            <span>·</span>
+            <span style={{ color: isCancelled ? "inherit" : CALENDAR_PILL_TEXT }}>·</span>
             <span className="truncate">{event.crewName}</span>
           </>
         )}

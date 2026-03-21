@@ -176,9 +176,15 @@ const ACTION_BADGE: Record<string, string> = {
 
 const ACTION_OPTIONS = [
   "login",
+  "config_change",
   "edit_pricing",
+  "edit_specialty_pricing",
+  "edit_b2b_surcharges",
   "send_quote",
+  "quote_status_change",
   "access_denied",
+  "edit_move",
+  "move_status_change",
   "create_move",
   "update_move",
   "create_quote",
@@ -197,20 +203,30 @@ function formatAuditTime(iso: string): string {
 function AuditLogSection() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [filters, setFilters] = useState({ action: "", search: "" });
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setFetchError(null);
     const params = new URLSearchParams();
     if (filters.action) params.set("action", filters.action);
     if (filters.search.trim()) params.set("search", filters.search.trim());
     fetch(`/api/admin/audit-log?${params}`)
-      .then((r) => r.json())
-      .then((d) => {
+      .then(async (r) => {
+        const d = await r.json();
+        if (!r.ok) {
+          setFetchError(typeof d.error === "string" ? d.error : "Failed to load audit log");
+          setLogs([]);
+          return;
+        }
         setLogs(Array.isArray(d.logs) ? d.logs : []);
       })
-      .catch(() => setLogs([]))
+      .catch(() => {
+        setFetchError("Network error");
+        setLogs([]);
+      })
       .finally(() => setLoading(false));
   }, [filters.action, filters.search]);
 
@@ -254,8 +270,17 @@ function AuditLogSection() {
       <div className="py-4">
         {loading ? (
           <div className="py-8 text-center text-[12px] text-[var(--tx3)]">Loading audit log…</div>
+        ) : fetchError ? (
+          <div className="py-8 text-center text-[12px] text-[var(--red)]">{fetchError}</div>
         ) : filtered.length === 0 ? (
-          <div className="py-8 text-center text-[12px] text-[var(--tx3)]">No entries found</div>
+          <div className="py-8 text-center space-y-2">
+            <p className="text-[12px] text-[var(--tx3)]">No entries found</p>
+            <p className="text-[11px] text-[var(--tx3)]/70 max-w-md mx-auto">
+              New rows are recorded when you sign in or perform actions (quotes, pricing, moves). If this stays empty, confirm the{" "}
+              <code className="text-[10px] bg-[var(--bg)] px-1 rounded">audit_log</code> table exists in Supabase and{" "}
+              <code className="text-[10px] bg-[var(--bg)] px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> is set on the server.
+            </p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -268,7 +293,8 @@ function AuditLogSection() {
               </thead>
               <tbody>
                 {filtered.map((log) => {
-                  const roleCls = ROLE_BADGE[log.role] || "bg-[var(--brd)] text-[var(--tx3)]";
+                  const roleKey = (log.user_role ?? log.role ?? "") as string;
+                  const roleCls = ROLE_BADGE[roleKey] || "bg-[var(--brd)] text-[var(--tx3)]";
                   const actionCls = ACTION_BADGE[log.action] || "bg-[var(--brd)] text-[var(--tx3)]";
                   const isExpanded = expandedRow === log.id;
                   const hasDetails = log.details && Object.keys(log.details).length > 0;
@@ -277,7 +303,7 @@ function AuditLogSection() {
                       <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 whitespace-nowrap">{formatAuditTime(log.created_at)}</td>
                       <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 max-w-[140px] truncate" title={log.user_email}>{log.user_email}</td>
                       <td className="py-2.5 pr-4">
-                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${roleCls}`}>{log.role}</span>
+                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${roleCls}`}>{roleKey || "—"}</span>
                       </td>
                       <td className="py-2.5 pr-4">
                         <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${actionCls}`}>{log.action}</span>

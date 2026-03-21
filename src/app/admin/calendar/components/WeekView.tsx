@@ -2,7 +2,14 @@
 
 import { useMemo } from "react";
 import type { CalendarEvent } from "@/lib/calendar/types";
-import { formatTime12, timeToMinutes, STATUS_DOT_COLORS } from "@/lib/calendar/types";
+import { formatTime12, timeToMinutes } from "@/lib/calendar/types";
+import {
+  CALENDAR_PILL_TEXT,
+  CALENDAR_PILL_TEXT_MUTED,
+  jobPillCompactStyle,
+  jobPillSurfaceStyle,
+  pillStatusDotColor,
+} from "@/lib/calendar/calendar-job-styles";
 const HOUR_HEIGHT = 32;
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 20;
@@ -89,18 +96,22 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                 type="button"
                 onClick={() => onDayClick(key)}
                 className={`flex-1 min-w-[44px] py-2 text-center border-l border-[var(--brd)] hover:bg-[var(--bg)]/50 transition-colors ${
-                  isToday ? "bg-[var(--gold)]/5" : ""
+                  isToday ? "bg-blue-500/[0.06]" : ""
                 }`}
               >
-                <div className={`text-[9px] font-bold tracking-wider uppercase mb-0.5 ${isToday ? "text-[var(--gold)]" : "text-[var(--tx3)]/50"}`}>
+                <div
+                  className={`text-[9px] font-bold tracking-wider uppercase mb-0.5 ${
+                    isToday ? "text-blue-500 dark:text-blue-400" : "text-[var(--tx3)]/50"
+                  }`}
+                >
                   {DAY_NAMES[i]}
                 </div>
                 <div className="flex items-center justify-center">
                   <span
                     className={`w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-semibold transition-colors ${
                       isToday
-                        ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                        : "text-[var(--tx2)] hover:text-[var(--gold)]"
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "text-[var(--tx2)] hover:text-blue-500 dark:hover:text-blue-400"
                     }`}
                   >
                     {date.getDate()}
@@ -129,12 +140,8 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                       key={ev.id}
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                      className="w-full text-left rounded px-1 py-0.5 text-[8px] font-bold truncate"
-                      style={{
-                        backgroundColor: `${ev.color}28`,
-                        color: ev.color,
-                        borderLeft: `2px solid ${ev.color}`,
-                      }}
+                      className="w-full text-left rounded-md px-1.5 py-1 text-[8px] font-bold truncate shadow-sm hover:brightness-[1.02]"
+                      style={jobPillCompactStyle(ev)}
                     >
                       {ev.name}
                     </button>
@@ -169,7 +176,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
               return (
                 <div
                   key={key}
-                  className={`flex-1 min-w-[44px] relative border-l border-[var(--brd)] ${isToday ? "bg-[var(--gold)]/3" : ""}`}
+                  className={`flex-1 min-w-[44px] relative border-l border-[var(--brd)] ${isToday ? "bg-blue-500/[0.04]" : ""}`}
                   onClick={() => onDayClick(key)}
                 >
                   {HOURS.map((h) => (
@@ -179,27 +186,38 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                   {dayEvents.map((ev) => {
                     const top = getTopOffset(ev.start);
                     const height = getHeight(ev.start, ev.end, ev.durationHours);
-                    const dotColor = STATUS_DOT_COLORS[ev.calendarStatus] || STATUS_DOT_COLORS.scheduled;
+                    const dotColor = pillStatusDotColor(ev.calendarStatus);
+                    const cancelled = ev.calendarStatus === "cancelled";
 
                     return (
                       <button
                         key={ev.id}
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                        className="absolute left-0.5 right-0.5 rounded overflow-hidden text-left hover:brightness-110 cursor-pointer transition-all"
+                        className="absolute left-0.5 right-0.5 rounded-md overflow-hidden text-left hover:brightness-[1.02] cursor-pointer transition-all shadow-sm"
                         style={{
                           top,
                           height: Math.max(height, 20),
-                          borderLeft: `3px solid ${ev.color}`,
-                          background: `${ev.color}25`,
+                          ...jobPillSurfaceStyle(ev),
                         }}
                       >
-                        <div className="p-0.5 flex items-center gap-0.5">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ev.calendarStatus === "in_progress" ? "animate-pulse" : ""}`} style={{ backgroundColor: dotColor }} />
-                          <span className="text-[8px] font-bold text-[var(--tx)] truncate">{ev.name}</span>
+                        <div className="p-1 flex items-center gap-0.5">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ring-1 ring-black/10 ${ev.calendarStatus === "in_progress" ? "animate-pulse" : ""}`}
+                            style={{ backgroundColor: cancelled ? "rgba(248,250,252,0.85)" : dotColor }}
+                          />
+                          <span
+                            className="text-[8px] font-bold truncate"
+                            style={{ color: cancelled ? "inherit" : CALENDAR_PILL_TEXT }}
+                          >
+                            {ev.name}
+                          </span>
                         </div>
                         {height > 25 && (
-                          <div className="flex items-center text-[7px] text-[var(--tx3)] truncate px-0.5">
+                          <div
+                            className="flex items-center text-[7px] truncate px-1 pb-0.5"
+                            style={{ color: cancelled ? "rgba(248,250,252,0.85)" : CALENDAR_PILL_TEXT_MUTED }}
+                          >
                             <span className="truncate">{ev.description}</span>
                           </div>
                         )}

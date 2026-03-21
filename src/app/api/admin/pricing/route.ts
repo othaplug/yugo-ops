@@ -73,7 +73,7 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    logAudit({
+    await logAudit({
       userId: user?.id,
       userEmail: user?.email,
       userRole: role,

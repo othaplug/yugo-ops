@@ -426,18 +426,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    try {
-      logAudit({
-        userId: user?.id,
-        userEmail: user?.email,
-        action: "edit_move",
-        resourceType: "move",
-        resourceId: moveId,
-        details: { action: "create", move_code: move.move_code },
-      });
-    } catch (auditErr) {
-      console.error("Create move audit log failed:", auditErr);
-    }
+    await logAudit({
+      userId: user?.id,
+      userEmail: user?.email,
+      action: "edit_move",
+      resourceType: "move",
+      resourceId: moveId,
+      details: { action: "create", move_code: move.move_code },
+    });
 
     return NextResponse.json({
       ok: true,

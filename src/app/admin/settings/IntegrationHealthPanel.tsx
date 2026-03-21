@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import GlobalModal from "@/components/ui/Modal";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 
@@ -199,12 +200,9 @@ export default function IntegrationHealthPanel({
 
   return (
     <div className="space-y-5">
-      {setup && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="integration-setup-title">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl max-w-md w-full p-5 shadow-xl">
-            <h3 id="integration-setup-title" className="font-heading text-[16px] font-bold text-[var(--tx)] mb-2">
-              {setup.title}
-            </h3>
+      <GlobalModal open={!!setup} onClose={() => setSetupKey(null)} title={setup?.title ?? ""} maxWidth="md">
+        {setup && (
+          <>
             <ul className="text-[12px] text-[var(--tx2)] space-y-2 list-disc pl-4 mb-4">
               {setup.bullets.map((b, i) => (
                 <li key={i}>{b}</li>
@@ -220,9 +218,9 @@ export default function IntegrationHealthPanel({
             >
               Done
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </GlobalModal>
 
       {/* Summary bar */}
       <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">

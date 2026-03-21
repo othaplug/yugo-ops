@@ -6,17 +6,18 @@ export type BlockType = JobType | "maintenance" | "training" | "break" | "blocke
 
 export type CalendarStatus = "scheduled" | "in_progress" | "completed" | "cancelled" | "rescheduled";
 
+/** Saturated fills for calendar pills — pair with dark text (`#0f172a`) for legibility (Google Calendar–style). */
 export const JOB_COLORS = {
-  move: "#C9A962",
-  delivery: "#4A9E6B",
-  project_phase: "#9B5DE5",
-  project: "#7C3AED",
-  blocked: "#6B7280",
-  maintenance: "#6B7280",
-  training: "#64748B",
-  break: "#64748B",
-  time_off: "#78716C",
-  recurring: "#0D9488",
+  move: "#FBBF24",
+  delivery: "#38BDF8",
+  project_phase: "#C084FC",
+  project: "#A78BFA",
+  blocked: "#94A3B8",
+  maintenance: "#FB923C",
+  training: "#F87171",
+  break: "#94A3B8",
+  time_off: "#A8A29E",
+  recurring: "#34D399",
 } as const;
 
 export const STATUS_DOT_COLORS: Record<string, string> = {

@@ -383,6 +383,12 @@ export default function AllDeliveriesView({
           exportable
           columnToggle
           selectable
+          mobileCardLayout={{
+            primaryColumnId: "partner",
+            subtitleColumnId: "delivery_id",
+            amountColumnId: "price",
+            metaColumnIds: ["date", "category", "status"],
+          }}
           onRowClick={(d) => router.push(getDeliveryDetailPath(d))}
           emptyMessage={statusFilter ? `No deliveries with status "${statusFilter}"` : "No deliveries found"}
         />

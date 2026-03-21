@@ -67,7 +67,7 @@ export async function PATCH(req: NextRequest) {
 
   invalidateConfigCache();
 
-  logAudit({
+  await logAudit({
     userId: user?.id,
     userEmail: user?.email,
     action: "config_change",

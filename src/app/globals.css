@@ -238,9 +238,11 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 .tab-content {
   animation: 240ms var(--ease-out-expo) both tab-fade-in;
 }
+/* `to` must use transform: none — identity translate() still creates a containing block and
+   breaks position:fixed modals rendered inside .tab-content (e.g. admin <main>). */
 @keyframes tab-fade-in {
   from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Horizontal slide variant (for left/right tab switching) */
@@ -249,7 +251,7 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 }
 @keyframes tab-slide-in {
   from { opacity: 0; transform: translateX(10px); }
-  to   { opacity: 1; transform: translateX(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -268,7 +270,7 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 }
 @keyframes enter-up-anim {
   from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Staggered list items — use style="--i:0" through --i:N */

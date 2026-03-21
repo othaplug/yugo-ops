@@ -326,7 +326,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    logAudit({
+    await logAudit({
       userId: user?.id,
       userEmail: user?.email,
       action: "send_quote",

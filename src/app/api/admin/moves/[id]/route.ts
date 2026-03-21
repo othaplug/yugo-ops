@@ -17,8 +17,8 @@ export async function PATCH(
     const action = body.action as string;
     const markedBy = body.marked_by as string;
 
-    const auditAfter = (details?: Record<string, unknown>) =>
-      logAudit({
+    const auditAfter = async (details?: Record<string, unknown>) => {
+      await logAudit({
         userId: authUser?.id,
         userEmail: authUser?.email,
         action: "move_status_change",
@@ -26,6 +26,7 @@ export async function PATCH(
         resourceId: id,
         details: { action, ...details },
       });
+    };
 
     if (action === "mark_paid") {
       if (!markedBy?.trim()) {
@@ -58,7 +59,7 @@ export async function PATCH(
         icon: "dollar",
       });
 
-      auditAfter({ status: "paid", markedBy: markedBy.trim() });
+      await auditAfter({ status: "paid", markedBy: markedBy.trim() });
       return NextResponse.json(move);
     }
 
@@ -92,7 +93,7 @@ export async function PATCH(
         icon: "dollar",
       });
 
-      auditAfter({ status: "paid", method: "etransfer" });
+      await auditAfter({ status: "paid", method: "etransfer" });
       return NextResponse.json(move);
     }
 

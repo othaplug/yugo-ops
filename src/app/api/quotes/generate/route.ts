@@ -2787,13 +2787,13 @@ export async function POST(req: NextRequest) {
     tiers: valTiers ?? [],
   };
 
-  logAudit({
+  await logAudit({
     userId: authUser?.id,
     userEmail: authUser?.email,
-    action: "send_quote",
+    action: "quote_status_change",
     resourceType: "quote",
     resourceId: response.quote_id as string | undefined,
-    details: { service_type: input.service_type, preview: isPreview },
+    details: { service_type: input.service_type, preview: isPreview, source: "generate" },
   });
 
   return NextResponse.json(response);
