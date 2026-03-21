@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useContext } from "react";
+import { InternalConfigKeyHint } from "@/components/admin/InternalConfigKeyHint";
 import { useToast } from "../components/Toast";
 import {
   CaretDown,
@@ -16,6 +17,15 @@ import {
 
 /* ────────── helpers ────────── */
 type Row = Record<string, unknown>;
+
+const PricingAdminContext = React.createContext<{ isSuperAdmin: boolean }>({ isSuperAdmin: false });
+
+function usePricingAdmin() {
+  return useContext(PricingAdminContext);
+}
+
+const MSG_CONFIG_MISSING =
+  "This setting isn’t configured yet. Contact an administrator.";
 
 function currency(n: number | string) {
   const v = Number(n);
@@ -300,6 +310,7 @@ function BaseRatesSection() {
 
 /* ────────── S1.5: LABOUR & ESTATE PRICING ────────── */
 function LabourPricingSection() {
+  const { isSuperAdmin } = usePricingAdmin();
   const { rows, loading, save, undo, updateRow } = useSection("config");
   if (loading) return <Skeleton />;
   const getVal = (key: string) => rows.find((r) => r.key === key);
@@ -319,7 +330,10 @@ function LabourPricingSection() {
           <EditCell value={rate} onChange={(v) => updateRow(String(labourRow.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-[var(--gold)]" />
         </div>
       ) : (
-        <p className="text-[11px] text-[var(--tx3)]">Run migrations to add labour_rate_per_mover_hour to platform_config.</p>
+        <div>
+          <p className="text-[11px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+          <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="labour_rate_per_mover_hour" />
+        </div>
       )}
 
       <p className="text-[11px] text-[var(--tx3)] mt-4">
@@ -331,7 +345,10 @@ function LabourPricingSection() {
           <EditCell value={estateSuppliesBase} onChange={(v) => updateRow(String(estateSuppliesRow.id), "value", v)} type="number" className="w-24 text-[14px] font-bold text-[var(--gold)]" />
         </div>
       ) : (
-        <p className="text-[11px] text-[var(--tx3)]">Run migrations to add estate_supplies_allowance to platform_config.</p>
+        <div>
+          <p className="text-[11px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+          <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="estate_supplies_allowance" />
+        </div>
       )}
 
       <SaveBar onSave={() => save()} onUndo={undo} />
@@ -2112,6 +2129,7 @@ function TierFeaturesSection() {
 
 /* ────────── SUPPLIES & CRATING ────────── */
 function SuppliesAndCratingSection() {
+  const { isSuperAdmin } = usePricingAdmin();
   const { rows, loading, save, undo, updateRow } = useSection("config");
   if (loading) return <Skeleton />;
 
@@ -2177,7 +2195,12 @@ function SuppliesAndCratingSection() {
             ))}
           </tbody>
         </table>
-        {!suppliesRow && <p className="text-[10px] text-[var(--tx3)] mt-2">Run migrations to add estate_supplies_by_size to platform_config.</p>}
+        {!suppliesRow && (
+          <div className="mt-2">
+            <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+            <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="estate_supplies_by_size" />
+          </div>
+        )}
       </div>
 
       {/* Crating Rates */}
@@ -2209,7 +2232,12 @@ function SuppliesAndCratingSection() {
             ))}
           </tbody>
         </table>
-        {!cratingRow && <p className="text-[10px] text-[var(--tx3)] mt-2">Run migrations to add crating_prices to platform_config.</p>}
+        {!cratingRow && (
+          <div className="mt-2">
+            <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+            <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="crating_prices" />
+          </div>
+        )}
       </div>
 
       <SaveBar onSave={() => save()} onUndo={undo} />
@@ -2219,6 +2247,7 @@ function SuppliesAndCratingSection() {
 
 /* ────────── INVENTORY MODIFIER FLOOR/CAP (Section 1 + 10) ────────── */
 function InventoryModifierSection() {
+  const { isSuperAdmin } = usePricingAdmin();
   const { rows, loading, save, undo, updateRow } = useSection("config");
   if (loading) return <Skeleton />;
 
@@ -2242,7 +2271,10 @@ function InventoryModifierSection() {
             <p className="text-[9px] text-[var(--tx3)]">e.g. 0.65 → 35% max discount</p>
           </div>
         ) : (
-          <p className="text-[11px] text-[var(--tx3)] col-span-2">Run migration to add <code>inventory_modifier_floor</code> to platform_config.</p>
+          <div className="col-span-2">
+            <p className="text-[11px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+            <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="inventory_modifier_floor" />
+          </div>
         )}
         {capRow ? (
           <div className="space-y-1">
@@ -2250,7 +2282,12 @@ function InventoryModifierSection() {
             <EditCell value={cap} onChange={(v) => updateRow(String(capRow.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-amber-600" />
             <p className="text-[9px] text-[var(--tx3)]">e.g. 1.50 → 50% max premium</p>
           </div>
-        ) : null}
+        ) : (
+          <div className="space-y-1">
+            <p className="text-[11px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+            <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="inventory_modifier_cap" />
+          </div>
+        )}
       </div>
 
       {/* Live preview */}
@@ -2269,6 +2306,7 @@ function InventoryModifierSection() {
 
 /* ────────── DISTANCE INTELLIGENCE + DEADHEAD (Section 4 + 10) ────────── */
 function DistanceDeadheadSection() {
+  const { isSuperAdmin } = usePricingAdmin();
   const { rows, loading, save, undo, updateRow } = useSection("config");
   if (loading) return <Skeleton />;
 
@@ -2316,7 +2354,11 @@ function DistanceDeadheadSection() {
                     {row ? (
                       <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="w-16" />
                     ) : (
-                      <span className="text-[var(--tx3)]">{fallback} (not in config)</span>
+                      <div>
+                        <span>{fallback}</span>
+                        <span className="text-[10px] text-[var(--tx3)] ml-1">(default)</span>
+                        <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey={key} />
+                      </div>
                     )}
                   </td>
                   <td className={`py-1.5 text-[9px] font-medium ${val < 1 ? "text-emerald-600" : val > 1 ? "text-amber-600" : "text-[var(--tx3)]"}`}>
@@ -2328,7 +2370,13 @@ function DistanceDeadheadSection() {
           </tbody>
         </table>
         {!modifiers.some(({ key }) => getRow(key)) && (
-          <p className="text-[11px] text-[var(--tx3)] mt-2">Run migration to add distance modifier keys to platform_config.</p>
+          <div className="mt-2">
+            <p className="text-[11px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+            <InternalConfigKeyHint
+              isSuperAdmin={isSuperAdmin}
+              configKey="dist_mod_ultra_short, dist_mod_short, …"
+            />
+          </div>
         )}
       </div>
 
@@ -2344,7 +2392,11 @@ function DistanceDeadheadSection() {
             {deadheadFreeKmRow ? (
               <EditCell value={deadheadFreeKm} onChange={(v) => updateRow(String(deadheadFreeKmRow.id), "value", v)} type="number" className="w-16" />
             ) : (
-              <span className="text-[10px] text-[var(--tx3)]">15 (not in config)</span>
+              <div>
+                <span className="text-[10px] text-[var(--tx)]">15</span>
+                <span className="text-[10px] text-[var(--tx3)] ml-1">(default)</span>
+                <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="deadhead_free_km" />
+              </div>
             )}
             <p className="text-[9px] text-[var(--tx3)]">No charge within this radius</p>
           </div>
@@ -2353,7 +2405,11 @@ function DistanceDeadheadSection() {
             {deadheadPerKmRow ? (
               <EditCell value={deadheadPerKm} onChange={(v) => updateRow(String(deadheadPerKmRow.id), "value", v)} type="number" className="w-16" />
             ) : (
-              <span className="text-[10px] text-[var(--tx3)]">2.50 (not in config)</span>
+              <div>
+                <span className="text-[10px] text-[var(--tx)]">2.50</span>
+                <span className="text-[10px] text-[var(--tx3)] ml-1">(default)</span>
+                <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="deadhead_per_km" />
+              </div>
             )}
             <p className="text-[9px] text-[var(--tx3)]">Charged per km beyond free zone</p>
           </div>
@@ -2385,6 +2441,7 @@ function DistanceDeadheadSection() {
 
 /* ────────── WHITE GLOVE (platform_config) ────────── */
 function WhiteGlovePricingSection() {
+  const { isSuperAdmin } = usePricingAdmin();
   const { rows, loading, save, undo, updateRow } = useSection("config");
   if (loading) return <Skeleton />;
 
@@ -2410,9 +2467,10 @@ function WhiteGlovePricingSection() {
               {row ? (
                 <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[15px] font-bold text-[var(--gold)]" />
               ) : (
-                <p className="text-[10px] text-[var(--tx3)]">
-                  Add <code className="text-[9px]">{key}</code> via migration.
-                </p>
+                <div>
+                  <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+                  <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey={key} />
+                </div>
               )}
             </div>
           );
@@ -2425,6 +2483,7 @@ function WhiteGlovePricingSection() {
 
 /* ────────── B2B ONE-OFF BASE (platform_config) ────────── */
 function B2BOneOffPricingSection() {
+  const { isSuperAdmin } = usePricingAdmin();
   const { rows, loading, save, undo, updateRow } = useSection("config");
   if (loading) return <Skeleton />;
   const row = rows.find((r) => r.key === "b2b_oneoff_base");
@@ -2437,7 +2496,7 @@ function B2BOneOffPricingSection() {
       </p>
       {row ? (
         <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-4 max-w-xs">
-          <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">b2b_oneoff_base ($)</div>
+          <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Base fee ($)</div>
           <EditCell
             value={Number(row.value ?? 350)}
             onChange={(v) => updateRow(String(row.id), "value", v)}
@@ -2446,7 +2505,10 @@ function B2BOneOffPricingSection() {
           />
         </div>
       ) : (
-        <p className="text-[11px] text-[var(--tx3)]">Add <code>b2b_oneoff_base</code> to platform_config (migration <code>20260320000000_b2b_oneoff_deliveries</code>).</p>
+        <div>
+          <p className="text-[11px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+          <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="b2b_oneoff_base" />
+        </div>
       )}
       <SaveBar onSave={() => save()} onUndo={undo} />
     </div>
@@ -2455,6 +2517,7 @@ function B2BOneOffPricingSection() {
 
 /* ────────── EVENT PRICING (platform_config) ────────── */
 function EventPricingSection() {
+  const { isSuperAdmin } = usePricingAdmin();
   const { rows, loading, save, undo, updateRow } = useSection("config");
   if (loading) return <Skeleton />;
 
@@ -2502,7 +2565,6 @@ function EventPricingSection() {
               return (
                 <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
                   <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
-                  <div className="text-[9px] text-[var(--tx3)] mb-2 font-mono">{key}</div>
                   {row ? (
                     <EditCell
                       value={val}
@@ -2511,7 +2573,10 @@ function EventPricingSection() {
                       className="text-[14px] font-bold text-[var(--gold)]"
                     />
                   ) : (
-                    <p className="text-[10px] text-[var(--tx3)]">Missing in platform_config — run migrations.</p>
+                    <div>
+                      <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+                      <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey={key} />
+                    </div>
                   )}
                 </div>
               );
@@ -2526,6 +2591,7 @@ function EventPricingSection() {
 
 /* ────────── SPECIALTY PROJECT & EQUIPMENT (JSON + scalars) ────────── */
 function SpecialtyPricingSection() {
+  const { isSuperAdmin } = usePricingAdmin();
   const configSection = useSection("config");
   const [baseRows, setBaseRows] = useState<{ key: string; label: string; basePrice: number }[]>([]);
   const [equipRows, setEquipRows] = useState<{ key: string; label: string; surcharge: number }[]>([]);
@@ -2605,7 +2671,6 @@ function SpecialtyPricingSection() {
           return (
             <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
               <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
-              <div className="text-[9px] text-[var(--tx3)] mb-2 font-mono">{key}</div>
               {row ? (
                 <EditCell
                   value={val}
@@ -2614,7 +2679,10 @@ function SpecialtyPricingSection() {
                   className="text-[14px] font-bold text-[var(--gold)]"
                 />
               ) : (
-                <p className="text-[10px] text-[var(--tx3)]">Run migration for {key}</p>
+                <div>
+                  <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+                  <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey={key} />
+                </div>
               )}
             </div>
           );
@@ -2652,7 +2720,6 @@ function SpecialtyPricingSection() {
                     <tr key={r.key}>
                       <td className={td}>
                         <span className="text-[12px] text-[var(--tx)]">{r.label}</span>
-                        <div className="text-[9px] font-mono text-[var(--tx3)]">{r.key}</div>
                       </td>
                       <td className={td}>
                         <EditCell
@@ -2684,7 +2751,6 @@ function SpecialtyPricingSection() {
                     <tr key={r.key}>
                       <td className={td}>
                         <span className="text-[12px] text-[var(--tx)]">{r.label}</span>
-                        <div className="text-[9px] font-mono text-[var(--tx3)]">{r.key}</div>
                       </td>
                       <td className={td}>
                         <EditCell
@@ -2717,6 +2783,7 @@ function SpecialtyPricingSection() {
 
 /* ────────── LABOUR-ONLY (platform_config) ────────── */
 function LabourOnlyPricingSection() {
+  const { isSuperAdmin } = usePricingAdmin();
   const { rows, loading, save, undo, updateRow } = useSection("config");
   if (loading) return <Skeleton />;
 
@@ -2751,9 +2818,10 @@ function LabourOnlyPricingSection() {
               {row ? (
                 <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[15px] font-bold text-[var(--gold)]" />
               ) : (
-                <p className="text-[10px] text-[var(--tx3)]">
-                  Add <code className="text-[9px]">{key}</code> to platform_config.
-                </p>
+                <div>
+                  <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+                  <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey={key} />
+                </div>
               )}
             </div>
           );
@@ -2767,8 +2835,9 @@ function LabourOnlyPricingSection() {
 /* ════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════ */
-export default function PricingControlPanel() {
+export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   return (
+    <PricingAdminContext.Provider value={{ isSuperAdmin }}>
     <div className="space-y-2.5">
       <AnalyticsDashboard />
 
@@ -2860,6 +2929,7 @@ export default function PricingControlPanel() {
         <SuppliesAndCratingSection />
       </Accordion>
     </div>
+    </PricingAdminContext.Provider>
   );
 }
 

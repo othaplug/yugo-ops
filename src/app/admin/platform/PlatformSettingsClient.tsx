@@ -1216,7 +1216,11 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       </div>
 
       {/* Pricing Control Panel */}
-      {activeTab === "pricing" && <div key="pricing" className="tab-content"><PricingControlPanel /></div>}
+      {activeTab === "pricing" && (
+        <div key="pricing" className="tab-content">
+          <PricingControlPanel isSuperAdmin={isSuperAdmin} />
+        </div>
+      )}
       {activeTab === "rate-templates" && <div key="rate-templates" className="tab-content"><RateTemplatesPanel /></div>}
 
       {/* Teams tab — reorganized: Staff Roster first, Teams second, Portal Access third */}

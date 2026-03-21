@@ -1,0 +1,10 @@
+---
+description: Do not show platform_config keys, DB column names, or migration IDs in admin/client/partner UI except to super admins in error/debug copy.
+alwaysApply: false
+---
+
+# Internal keys — super-admin only on errors
+
+- Never render raw `platform_config` keys (e.g. `distance_base_km`), table column names, or migration filenames in labels, subtitles, or success states for **client**, **partner**, **crew**, **admin**, or **owner** UIs by default.
+- **Super admins** (`isSuperAdmin` from `isSuperAdminEmail`) may see a technical key **only** when the UI is in a missing-config / error path — use `InternalConfigKeyHint` from `@/components/admin/InternalConfigKeyHint`.
+- Prefer human labels and generic messages: “This setting isn’t configured yet. Contact an administrator.”
