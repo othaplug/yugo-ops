@@ -10,7 +10,27 @@ export function getSlackBotChannelConfig(): { token: string; channel: string } |
   return { token, channel };
 }
 
-type SlackOk<T> = { ok: boolean; error?: string } & T;
+type SlackOk<T> = { ok: boolean; error?: string; needed?: string } & T;
+
+/** Human-readable Slack Web API errors (esp. missing_scope). */
+export function formatSlackApiError(data: { ok?: boolean; error?: string; needed?: string }): string {
+  const code = data.error || "unknown_error";
+  if (code === "missing_scope") {
+    const hint = data.needed ? ` Slack reports needing: ${data.needed}.` : "";
+    return (
+      `Missing OAuth scope(s).${hint} Slack app → OAuth & Permissions → Scopes → Bot Token Scopes: add ` +
+      `channels:history, channels:read, chat:write, users:read. If the channel is private, also add groups:history and groups:read. ` +
+      `Save, then reinstall the app to your workspace and update SLACK_BOT_TOKEN with the new Bot User OAuth Token.`
+    );
+  }
+  if (code === "not_allowed_token_type") {
+    return "Wrong token type — use the Bot User OAuth Token (xoxb-…), not a user or legacy token.";
+  }
+  if (code === "channel_not_found") {
+    return "Channel not found or the bot isn’t a member. Invite the bot (/invite @YourApp) and verify SLACK_ADMIN_CHANNEL / SLACK_CHANNEL_ID.";
+  }
+  return code;
+}
 
 async function slackApi<T>(method: string, token: string, body: Record<string, unknown>): Promise<SlackOk<T>> {
   const res = await fetch(`https://slack.com/api/${method}`, {
@@ -45,7 +65,7 @@ export async function slackConversationsHistory(
     inclusive: true,
   });
   if (!data.ok) {
-    return { messages: [], error: data.error || "Slack API error" };
+    return { messages: [], error: formatSlackApiError(data) };
   }
   const messages = [...(data.messages ?? [])].sort(
     (a, b) => parseFloat(a.ts || "0") - parseFloat(b.ts || "0")
@@ -59,7 +79,7 @@ export async function slackChatPostMessage(token: string, channel: string, text:
     text,
     mrkdwn: true,
   });
-  return { ok: !!data.ok, error: data.error };
+  return { ok: !!data.ok, error: data.ok ? undefined : formatSlackApiError(data) };
 }
 
 export async function slackUsersInfo(token: string, user: string): Promise<{ name: string } | null> {

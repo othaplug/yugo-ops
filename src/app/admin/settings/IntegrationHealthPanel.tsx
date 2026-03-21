@@ -76,7 +76,7 @@ const SETUP_GUIDE: Record<string, { title: string; bullets: string[] }> = {
     bullets: [
       "Optional: SLACK_WEBHOOK_URL from Slack → Incoming Webhooks (used for Test Connection).",
       "Admin → Messages + track alerts: SLACK_BOT_TOKEN and SLACK_ADMIN_CHANNEL or SLACK_CHANNEL_ID (channel ID). Invite the bot to that channel.",
-      "Live updates on Messages: set SLACK_SIGNING_SECRET, then Event Subscriptions → Request URL: https://YOUR_DOMAIN/api/slack/events — subscribe to message.channels (and message.groups if private). Bot scopes: chat:write, channels:history, channels:read, users:read.",
+      "Live updates: SLACK_SIGNING_SECRET + Event Subscriptions URL …/api/slack/events, subscribe to message.channels (and message.groups if private). Bot scopes: channels:history, channels:read, chat:write, users:read; private channel also groups:history + groups:read. Reinstall app after scope changes and refresh SLACK_BOT_TOKEN.",
     ],
   },
 };
