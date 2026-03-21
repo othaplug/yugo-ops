@@ -434,8 +434,8 @@ function BusinessInfoSection() {
             Company Details
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {inp("company_name", "Company Name", "HELLOYUGO+")}
-            {inp("company_legal_name", "Legal Name", "HELLOYUGO INC")}
+            {inp("company_name", "Company Name", "HelloYugo+")}
+            {inp("company_legal_name", "Legal Name", "HelloYugo Inc.")}
             {inp("company_address", "Address", "50 Carroll St, Toronto, ON")}
             {inp("company_hst_number", "HST / Tax Number", "123456789RT0001")}
             {inp("company_website", "Website", "https://helloyugo.com", "url")}
@@ -586,6 +586,7 @@ function FeatureTogglesSection() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<Record<string, string>>({});
+  const savedToastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/business-config")
@@ -605,8 +606,20 @@ function FeatureTogglesSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [key]: next ? "true" : "false" }),
       });
-      if (!res.ok) { toast("Failed to save", "x"); setConfig((prev) => ({ ...prev, [key]: current ? "true" : "false" })); return; }
-    } catch { setConfig((prev) => ({ ...prev, [key]: current ? "true" : "false" })); toast("Failed to save", "x"); }
+      if (!res.ok) {
+        toast("Failed to save", "x");
+        setConfig((prev) => ({ ...prev, [key]: current ? "true" : "false" }));
+        return;
+      }
+      if (savedToastRef.current) clearTimeout(savedToastRef.current);
+      savedToastRef.current = setTimeout(() => {
+        toast("Feature setting saved", "check");
+        savedToastRef.current = null;
+      }, 350);
+    } catch {
+      setConfig((prev) => ({ ...prev, [key]: current ? "true" : "false" }));
+      toast("Failed to save", "x");
+    }
   };
 
   const [embedCopied, setEmbedCopied] = useState(false);
@@ -625,7 +638,7 @@ function FeatureTogglesSection() {
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
   const widgetEnabled = config["instant_quote_widget"] === "true";
 
-  const embedCode = `<!-- YUGO+ Instant Quote Widget -->
+  const embedCode = `<!-- Yugo+ Instant Quote Widget -->
 <div id="yugo-quote-widget"></div>
 <script>
 (function() {
@@ -636,36 +649,36 @@ function FeatureTogglesSection() {
   d.getElementById('yugo-quote-widget').appendChild(s);
 })();
 </script>
-<!-- End YUGO+ Widget -->`;
+<!-- End Yugo+ Widget -->`;
 
-  const iframeCode = `<!-- YUGO+ Instant Quote (iframe) -->
+  const iframeCode = `<!-- Yugo+ Instant Quote (iframe) -->
 <iframe
   src="${appUrl}/widget/quote"
   width="100%"
   height="720"
   frameborder="0"
   style="border:none;border-radius:12px;"
-  title="Get a Quote - YUGO+"
+  title="Get a Quote - Yugo+"
 ></iframe>`;
 
   const copyEmbed = (code: string) => {
     navigator.clipboard.writeText(code).then(() => {
       setEmbedCopied(true);
-      toast("Copied to clipboard", "✓");
+      toast("Copied to clipboard", "check");
       setTimeout(() => setEmbedCopied(false), 2000);
     });
   };
 
   return (
-    <section className="pt-6 border-t border-[var(--brd)]/30">
-      <div className="mb-4">
+    <section className="pt-5 border-t border-[var(--brd)]/30">
+      <div className="mb-3">
         <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
           <Icon name="toggleRight" className="w-[14px] h-[14px]" /> Feature Toggles
         </h2>
-        <p className="text-[11px] text-[var(--tx3)] mt-1">Enable or disable platform features</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-0.5">Enable or disable platform features</p>
       </div>
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
-      <div className="px-5 py-5 space-y-0">
+      <div className="px-4 py-4 space-y-0">
         {features.map((f) => {
           const isOn = config[f.key] === "true";
           return (
@@ -717,10 +730,10 @@ function FeatureTogglesSection() {
                     </pre>
                   </div>
 
-                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
-                    <div className="text-[10px] font-semibold text-amber-400 mb-0.5">Note</div>
+                  <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2.5">
+                    <div className="text-[10px] font-semibold text-[var(--tx2)] mb-0.5">Tip</div>
                     <div className="text-[10px] text-[var(--tx3)] leading-relaxed">
-                      The widget page at <span className="font-mono text-[var(--tx2)]">/widget/quote</span> needs to be built for this to work. The embed codes above will render a YUGO+-branded quote calculator that submits directly to your quoting system.
+                      The widget loads <span className="font-mono text-[var(--tx2)]">/widget/quote</span> on this app. Use the same site origin in <span className="font-mono">data-origin</span> as your public marketing domain if they differ.
                     </div>
                   </div>
                 </div>
@@ -846,11 +859,11 @@ function EmailTemplatesSection() {
         <div className="p-5 space-y-4">
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject</label>
-            <div className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)]">{previewTpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "YUGO", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )}</div>
+            <div className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)]">{previewTpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "Yugo", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )}</div>
           </div>
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body Preview</label>
-            <div className="px-4 py-3 bg-[var(--card)] rounded-lg text-[13px] text-[var(--tx)]" dangerouslySetInnerHTML={{ __html: previewTpl.body_html.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "YUGO", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )} } />
+            <div className="px-4 py-3 bg-[var(--card)] rounded-lg text-[13px] text-[var(--tx)]" dangerouslySetInnerHTML={{ __html: previewTpl.body_html.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "Yugo", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )} } />
           </div>
           <button type="button" onClick={() => setPreviewSlug(null)} className="w-full px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Close</button>
         </div>
@@ -1749,16 +1762,16 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
 
       {/* App toggles - Notifications, Auto-Invoice, etc */}
       {activeTab === "app" && (
-      <div id="app" className="space-y-0 scroll-mt-4">
+      <div id="app" className="space-y-5 scroll-mt-4">
       <section className="pt-0 first:pt-0">
-        <div className="mb-4">
+        <div className="mb-3">
           <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
             <Icon name="settings" className="w-[14px] h-[14px]" /> App
           </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-1">Platform-wide settings</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Platform-wide settings</p>
         </div>
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
-        <div className="px-5 py-5 space-y-4">
+        <div className="px-4 py-4 space-y-3">
           {[
             { label: "Crew GPS Tracking", desc: "Enable real-time crew location tracking", state: crewTracking, set: setCrewTracking },
             { label: "Partner Portal Access", desc: "Allow partners to view their deliveries", state: partnerPortal, set: setPartnerPortal },

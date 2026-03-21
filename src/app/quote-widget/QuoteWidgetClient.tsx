@@ -1147,8 +1147,8 @@ export default function QuoteWidgetClient() {
                 )}
                 <div className="mt-6 rounded-xl p-4 border" style={{ backgroundColor: `${FOREST}04`, borderColor: `${FOREST}08` }}>
                   <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}65` }}>
-                    A YUGO+ move coordinator will review your details and send a detailed, guaranteed quote.
-                    No surprises — that&rsquo;s the YUGO+ promise.
+                    A Yugo+ move coordinator will review your details and send a detailed, guaranteed quote.
+                    No surprises — that&rsquo;s the Yugo+ promise.
                   </p>
                 </div>
               </div>

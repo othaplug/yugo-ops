@@ -170,7 +170,7 @@ export default function BalancePaymentClient({
       <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="font-hero text-[28px] font-bold tracking-wider text-[#C9A962]">YUGO+</div>
+            <div className="font-hero text-[28px] font-bold tracking-wider text-[#C9A962]">Yugo+</div>
           </div>
           <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-8 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#2D9F5A]/20 flex items-center justify-center">
@@ -205,7 +205,7 @@ export default function BalancePaymentClient({
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="font-hero text-[28px] font-bold tracking-wider text-[#C9A962]">YUGO+</div>
+          <div className="font-hero text-[28px] font-bold tracking-wider text-[#C9A962]">Yugo+</div>
           <div className="text-[11px] text-[#666] mt-1 uppercase tracking-widest">Balance Payment</div>
         </div>
 

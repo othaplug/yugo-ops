@@ -18,6 +18,67 @@ interface IntegrationConfig {
 
 const CATEGORY_ORDER = ["Payments", "Communications", "Mapping", "CRM", "Accounting", "Automation"];
 
+/** How each integration is wired — set these in your deployment environment (e.g. Vercel → Environment Variables). */
+const SETUP_GUIDE: Record<string, { title: string; bullets: string[] }> = {
+  square: {
+    title: "Square",
+    bullets: [
+      "Set SQUARE_ACCESS_TOKEN (and optionally SQUARE_ENVIRONMENT: sandbox | production).",
+      "Create API credentials in Square Developer Dashboard → Applications.",
+      "After saving env vars, redeploy so the server picks them up.",
+    ],
+  },
+  resend: {
+    title: "Resend",
+    bullets: [
+      "Set RESEND_API_KEY in your deployment environment.",
+      "Verify your sending domain in the Resend dashboard.",
+    ],
+  },
+  openphone: {
+    title: "OpenPhone",
+    bullets: [
+      "Set OPENPHONE_API_KEY and OPENPHONE_PHONE_NUMBER_ID.",
+      "Used for SMS quotes, dispatch, and notification SMS when enabled.",
+    ],
+  },
+  mapbox: {
+    title: "Mapbox",
+    bullets: [
+      "Set MAPBOX_TOKEN or NEXT_PUBLIC_MAPBOX_TOKEN (public token is fine for geocoding + maps).",
+      "Create a token at mapbox.com → Account → Access tokens.",
+    ],
+  },
+  hubspot: {
+    title: "HubSpot",
+    bullets: [
+      "Set HUBSPOT_ACCESS_TOKEN (private app token with CRM scope).",
+      "Create under HubSpot → Settings → Integrations → Private Apps.",
+    ],
+  },
+  quickbooks: {
+    title: "QuickBooks",
+    bullets: [
+      "Set QUICKBOOKS_CLIENT_ID and QUICKBOOKS_CLIENT_SECRET.",
+      "Complete Intuit OAuth in a future release; credentials must be present for accounting sync.",
+    ],
+  },
+  zapier: {
+    title: "Zapier",
+    bullets: [
+      "Set ZAPIER_WEBHOOK_SECRET if you validate incoming Zapier hooks.",
+      "Build Zaps that POST to your app’s webhooks (configure URLs in Automation).",
+    ],
+  },
+  slack: {
+    title: "Slack",
+    bullets: [
+      "Set SLACK_WEBHOOK_URL from Slack → Incoming Webhooks.",
+      "Test Connection sends a short test message to the channel.",
+    ],
+  },
+};
+
 export default function IntegrationHealthPanel({
   integrations,
 }: {
@@ -25,22 +86,38 @@ export default function IntegrationHealthPanel({
 }) {
   const { toast } = useToast();
   const [testing, setTesting] = useState<string | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; ms?: number }>>({});
+  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; ms?: number; message?: string }>>({});
+  const [setupKey, setSetupKey] = useState<string | null>(null);
 
   const handleTest = async (key: string) => {
     setTesting(key);
-    const start = Date.now();
     try {
-      await new Promise((r) => setTimeout(r, 800 + Math.random() * 600));
-      const ms = Date.now() - start;
-      setTestResults((prev) => ({ ...prev, [key]: { ok: true, ms } }));
-      toast(`${key} connected (${ms}ms)`, "check");
+      const res = await fetch("/api/admin/integrations/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ key }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        message?: string;
+        ms?: number;
+      };
+      const ok = !!data.ok;
+      const ms = typeof data.ms === "number" ? data.ms : undefined;
+      const message = typeof data.message === "string" ? data.message : ok ? "OK" : "Failed";
+      setTestResults((prev) => ({ ...prev, [key]: { ok, ms, message } }));
+      toast(ok ? `${key}: ${message}${ms != null ? ` (${ms}ms)` : ""}` : `${key}: ${message}`, ok ? "check" : "x");
     } catch {
-      setTestResults((prev) => ({ ...prev, [key]: { ok: false } }));
-      toast(`${key} connection failed`, "x");
+      setTestResults((prev) => ({ ...prev, [key]: { ok: false, message: "Request failed" } }));
+      toast("Connection test failed", "x");
     } finally {
       setTesting(null);
     }
+  };
+
+  const openSetup = (key: string) => {
+    setSetupKey(key);
   };
 
   // Group by category
@@ -51,6 +128,8 @@ export default function IntegrationHealthPanel({
     grouped[cat].push(item);
   }
   const categories = CATEGORY_ORDER.filter((c) => grouped[c]);
+
+  const setup = setupKey ? SETUP_GUIDE[setupKey] : null;
 
   const IntegrationCard = ({ item }: { item: IntegrationConfig }) => {
     const result = testResults[item.key];
@@ -79,16 +158,16 @@ export default function IntegrationHealthPanel({
               {item.connected ? "Connected" : "Not connected"}
             </div>
             {result && (
-              <div className={`text-[9px] font-mono ${result.ok ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
-                {result.ok ? `OK (${result.ms}ms)` : "Failed"}
+              <div className={`text-[9px] font-mono max-w-[140px] text-right ${result.ok ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
+                {result.ok ? `OK${result.ms != null ? ` (${result.ms}ms)` : ""}` : result.message || "Failed"}
               </div>
             )}
           </div>
         </div>
-        <div className="px-4 py-2.5 border-t border-[var(--brd)] bg-[var(--bg)] flex items-center gap-2">
+        <div className="px-4 py-2.5 border-t border-[var(--brd)] bg-[var(--bg)] flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => toast("Configure coming soon", "settings")}
+            onClick={() => openSetup(item.key)}
             className="px-3 py-1.5 text-[10px] font-semibold rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
           >
             Configure
@@ -105,7 +184,7 @@ export default function IntegrationHealthPanel({
           ) : (
             <button
               type="button"
-              onClick={() => toast("Connect coming soon", "plug")}
+              onClick={() => openSetup(item.key)}
               className="px-3 py-1.5 text-[10px] font-semibold rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
             >
               Connect
@@ -119,7 +198,32 @@ export default function IntegrationHealthPanel({
   const connectedCount = integrations.filter((i) => i.connected).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {setup && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="integration-setup-title">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl max-w-md w-full p-5 shadow-xl">
+            <h3 id="integration-setup-title" className="font-heading text-[16px] font-bold text-[var(--tx)] mb-2">
+              {setup.title}
+            </h3>
+            <ul className="text-[12px] text-[var(--tx2)] space-y-2 list-disc pl-4 mb-4">
+              {setup.bullets.map((b, i) => (
+                <li key={i}>{b}</li>
+              ))}
+            </ul>
+            <p className="text-[11px] text-[var(--tx3)] mb-4">
+              Add variables in your hosting provider (e.g. Vercel → Project → Settings → Environment Variables), then redeploy.
+            </p>
+            <button
+              type="button"
+              onClick={() => setSetupKey(null)}
+              className="w-full px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Summary bar */}
       <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
         <div className="flex-1">

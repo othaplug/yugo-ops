@@ -13,7 +13,7 @@ export default function NotifyClient({ delivery }: { delivery: any }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: "client@example.com", // In production, pull from organizations table
-          subject: `Yugo Delivery Update: ${delivery.delivery_number}`,
+          subject: `YUGO Delivery Update: ${delivery.delivery_number}`,
           html: `<p>Your delivery ${delivery.delivery_number} is now <b>${delivery.status}</b>.</p><p>Delivery to: ${delivery.delivery_address}</p>`,
         }),
       });

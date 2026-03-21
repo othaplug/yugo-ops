@@ -312,7 +312,7 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
     ` : ""}
 
     <p style="font-size:11px;color:#666;text-align:center">
-      Thank you for choosing YUGO+. We can&apos;t wait to move you again!
+      Thank you for choosing Yugo+. We can&apos;t wait to move you again!
     </p>
   `);
 }
@@ -493,7 +493,7 @@ export function referralOfferEmail(d: ReferralOfferData): string {
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Exclusive Offer</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Give $50, Get $50</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Hi${firstName(d.clientName) ? ` ${firstName(d.clientName)}` : ""}, thanks for moving with YUGO+! As a thank you, here&apos;s an exclusive offer: refer a friend and you both get $50 off.
+      Hi${firstName(d.clientName) ? ` ${firstName(d.clientName)}` : ""}, thanks for moving with Yugo+! As a thank you, here&apos;s an exclusive offer: refer a friend and you both get $50 off.
     </p>
 
     <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:24px;text-align:center;margin-bottom:20px">
@@ -504,7 +504,7 @@ export function referralOfferEmail(d: ReferralOfferData): string {
     <div style="font-size:13px;color:#B8B5B0;line-height:1.8;margin-bottom:24px">
       <div><strong style="color:#E8E5E0">How it works:</strong></div>
       <div>1. Share your unique link with a friend</div>
-      <div>2. They book a residential move with YUGO+</div>
+      <div>2. They book a residential move with Yugo+</div>
       <div>3. You both get $50 off &mdash; applied automatically</div>
     </div>
 

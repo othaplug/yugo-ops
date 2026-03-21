@@ -34,7 +34,7 @@ function adminFooterHtml(): string {
   </div>`;
 }
 
-/** Full document wrapper for admin notifications: light bg, YUGO+ header, white card. */
+/** Full document wrapper for admin notifications: light bg, Yugo+ header, white card. */
 export function adminNotificationLayout(innerHtml: string, title?: string): string {
   const heading = title
     ? `<h1 style="font-size:18px;font-weight:700;color:${TEXT};margin:0 0 16px;">${escapeHtml(title)}</h1>`
@@ -45,7 +45,7 @@ export function adminNotificationLayout(innerHtml: string, title?: string): stri
 <body style="margin:0;padding:0;background:${PAGE_BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
   <div style="text-align:center;margin-bottom:28px;">
-    <span style="font-size:20px;font-weight:700;color:${WINE};letter-spacing:1px;">YUGO+</span>
+    <span style="font-size:20px;font-weight:700;color:${WINE};letter-spacing:1px;">Yugo+</span>
   </div>
   <div style="background:${CARD_BG};border-radius:16px;padding:28px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid ${BORDER};">
     ${heading}

@@ -868,7 +868,7 @@ export default function TrackMoveClient({
                         className="rounded-2xl overflow-hidden shrink-0 w-[310px] max-w-[88vw] snap-start flex flex-col relative"
                         style={{ background: theme.bg, minHeight: "140px" }}
                       >
-                        {/* Top-right: YUGO+ Exclusive badge (Wine Rack style) */}
+                        {/* Top-right: Yugo+ Exclusive badge (Wine Rack style) */}
                         <div className="absolute top-0 right-0 bg-white rounded-bl-xl px-2.5 py-1 flex items-center gap-1.5">
                           <YugoLogo size={10} variant="black" onLightBackground hidePlus />
                           <span className="text-[9px] font-bold text-black">Exclusive</span>
@@ -1008,7 +1008,7 @@ export default function TrackMoveClient({
                       Share with a friend
                     </button>
                     <a
-                      href={`sms:?body=${encodeURIComponent(`Moving soon? Use my Yugo referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
+                      href={`sms:?body=${encodeURIComponent(`Moving soon? Use my YUGO referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
                       className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
                       style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
                     >
@@ -1517,7 +1517,7 @@ export default function TrackMoveClient({
                             className="rounded-2xl overflow-hidden shrink-0 w-[310px] max-w-[88vw] snap-start flex flex-col relative"
                             style={{ background: theme.bg, minHeight: "140px" }}
                           >
-                            {/* Top-right: YUGO+ Exclusive badge (Wine Rack style) */}
+                            {/* Top-right: Yugo+ Exclusive badge (Wine Rack style) */}
                             <div className="absolute top-0 right-0 bg-white rounded-bl-xl px-2.5 py-1 flex items-center gap-1.5">
                               <YugoLogo size={10} variant="black" onLightBackground hidePlus />
                               <span className="text-[9px] font-bold text-black">Exclusive</span>
@@ -1669,7 +1669,7 @@ export default function TrackMoveClient({
                           Share with a friend
                         </button>
                         <a
-                          href={`sms:?body=${encodeURIComponent(`Moving soon? Use my Yugo referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
+                          href={`sms:?body=${encodeURIComponent(`Moving soon? Use my YUGO referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
                           className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
                           style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
                         >

@@ -219,7 +219,7 @@ function generateContractPdf(
     },
     {
       title: "5. Liability & Insurance",
-      body: "Standard coverage at $0.60/lb per article. Enhanced full-value protection available as add-on. YUGO carries $2M commercial liability insurance.",
+      body: "Standard coverage at $0.60/lb per article. Enhanced full-value protection available as add-on. Yugo carries $2M commercial liability insurance.",
     },
     {
       title: "6. Scope Changes",

@@ -69,7 +69,7 @@ function confirmationEmailHtml(data: {
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL_BG};font-family:'DM Sans',sans-serif;">
   <tr>
     <td align="center" style="padding:32px 24px 24px;">
-      <img src="${logoUrl}" alt="YUGO" width="140" height="38" style="display:block;border:0;max-width:140px;height:auto;" />
+      <img src="${logoUrl}" alt="Yugo" width="140" height="38" style="display:block;border:0;max-width:140px;height:auto;" />
     </td>
   </tr>
   <tr>
@@ -79,7 +79,7 @@ function confirmationEmailHtml(data: {
           <td style="font-size:24px;font-weight:700;color:${EMAIL_TX};padding-bottom:8px;">Thanks, ${data.name}</td>
         </tr>
         <tr>
-          <td style="font-size:14px;color:${EMAIL_TX2};line-height:1.5;padding-bottom:24px;">Your YUGO+ quote is being prepared. We&apos;ll send your exact guaranteed price within 2 hours.</td>
+          <td style="font-size:14px;color:${EMAIL_TX2};line-height:1.5;padding-bottom:24px;">Your Yugo+ quote is being prepared. We&apos;ll send your exact guaranteed price within 2 hours.</td>
         </tr>
         <tr>
           <td style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:24px;">
@@ -92,7 +92,7 @@ function confirmationEmailHtml(data: {
           </td>
         </tr>
         <tr>
-          <td style="font-size:13px;color:${EMAIL_TX2};line-height:1.5;">A YUGO+ coordinator will review your details and send a detailed, guaranteed quote shortly. No surprises &mdash; that&apos;s the YUGO+ promise.</td>
+          <td style="font-size:13px;color:${EMAIL_TX2};line-height:1.5;">A Yugo+ coordinator will review your details and send a detailed, guaranteed quote shortly. No surprises &mdash; that&apos;s the Yugo+ promise.</td>
         </tr>
       </table>
     </td>
@@ -101,7 +101,7 @@ function confirmationEmailHtml(data: {
     <td align="center" style="padding:16px 24px 32px;font-size:10px;color:#666;border-top:1px solid ${EMAIL_BRD};">
       <a href="${learnMoreUrl}" style="color:${EMAIL_WINE};text-decoration:none;">Learn more</a>
       <span style="color:${EMAIL_BRD};margin:0 8px;">&middot;</span>
-      Powered by YUGO+
+      Powered by Yugo+
     </td>
   </tr>
 </table>`;

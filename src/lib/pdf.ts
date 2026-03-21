@@ -800,7 +800,7 @@ export function generatePoDPDF(data: PoDPDFData) {
   doc.setFontSize(28);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...dark);
-  doc.text("YUGO", 20, 26);
+  doc.text("Yugo", 20, 26);
   doc.setFontSize(10);
   doc.setTextColor(...gray);
   doc.text("Proof of Delivery", 20, 33);
@@ -940,7 +940,7 @@ export function generatePoDPDF(data: PoDPDFData) {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...gray);
   doc.text("This is an official Proof of Delivery document. Retain for your records.", 20, 278);
-  doc.text(`Generated ${new Date().toLocaleString("en-US")} • YUGO • withyugo.com`, 20, 283);
+  doc.text(`Generated ${new Date().toLocaleString("en-US")} • Yugo • withyugo.com`, 20, 283);
 
   doc.setFillColor(...gold);
   doc.rect(0, 294, 210, 3, "F");
@@ -1032,7 +1032,7 @@ export function generateEODReportPDF(reports: EODReportForPDF[]) {
 
   doc.setFontSize(8);
   doc.setTextColor(...gray);
-  doc.text("YUGO+ EOD • opsplus.co", 20, 285);
+  doc.text("Yugo+ EOD • opsplus.co", 20, 285);
 
   return doc;
 }

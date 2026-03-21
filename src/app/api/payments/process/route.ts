@@ -124,7 +124,7 @@ export async function POST(req: Request) {
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
         customerId: squareCustomerId,
         referenceId: quoteId,
-        note: `Yugo deposit ${quoteId}`,
+        note: `YUGO deposit ${quoteId}`,
         idempotencyKey: `pay-${quoteId}-${Date.now()}`,
         locationId,
       });

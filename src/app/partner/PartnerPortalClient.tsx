@@ -338,7 +338,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#C9A962]/10 border border-[#C9A962]/20 flex items-center justify-center">
                     <span className="text-[30px]" role="img" aria-label="wave">&#128075;</span>
                   </div>
-                  <h2 className="font-hero text-[36px] font-semibold text-[var(--tx)] mb-2">Welcome to YUGO+, {contactName}!</h2>
+                  <h2 className="font-hero text-[36px] font-semibold text-[var(--tx)] mb-2">Welcome to Yugo+, {contactName}!</h2>
                   <p className="text-[14px] text-[var(--tx3)] leading-relaxed max-w-[380px] mx-auto">
                     Your dedicated partner portal is ready. Let&apos;s take a quick tour of what you can do here.
                   </p>

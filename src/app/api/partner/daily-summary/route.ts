@@ -155,7 +155,7 @@ export async function POST() {
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td>
-              <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px;">YUGO<span style="color:#C9A962;">+</span></span>
+              <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px;">Yugo<span style="color:#C9A962;">+</span></span>
             </td>
             <td align="right">
               <span style="font-size:11px;color:#666;letter-spacing:0.06em;text-transform:uppercase;">Daily Summary</span>
@@ -250,7 +250,7 @@ export async function POST() {
       <!-- Footer -->
       <tr><td style="padding-top:32px;padding-bottom:16px;text-align:center;">
         <p style="margin:0;font-size:11px;color:#444;">You're receiving this because daily summaries are enabled in your portal settings.</p>
-        <p style="margin:4px 0 0;font-size:11px;color:#333;">YUGO+ · <a href="https://partner.helloyugo.com/partner" style="color:#555;text-decoration:none;">Manage preferences</a></p>
+        <p style="margin:4px 0 0;font-size:11px;color:#333;">Yugo+ · <a href="https://partner.helloyugo.com/partner" style="color:#555;text-decoration:none;">Manage preferences</a></p>
       </td></tr>
 
     </table>

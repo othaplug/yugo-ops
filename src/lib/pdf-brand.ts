@@ -52,7 +52,7 @@ export function drawYugoLogo(
 }
 
 /**
- * Draw premium Yugo header: optional logo, then wine "YUGO", gold italic "The Art of Moving", gold divider.
+ * Draw premium Yugo header: optional logo, then wine "Yugo", gold italic "The Art of Moving", gold divider.
  * If logoBase64 is provided, logo is drawn at top-left and text is right of it; otherwise text is centered.
  * Returns the y position after the header.
  */
@@ -88,7 +88,7 @@ export function drawYugoHeader(
   doc.setFont(FONT_HERO, "bold");
   doc.setFontSize(24);
   doc.setTextColor(...WINE);
-  doc.text("YUGO", centerX, yStart + (logoBase64 ? 10 : 0), { align: "center" });
+  doc.text("Yugo", centerX, yStart + (logoBase64 ? 10 : 0), { align: "center" });
 
   doc.setFont(FONT_HERO, "italic");
   doc.setFontSize(9);

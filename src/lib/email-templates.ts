@@ -11,7 +11,7 @@ const EMAIL_TX = "#FFFFFF";
 const EMAIL_TX2 = "#B0ADA8";
 const EMAIL_TX3 = "#666";
 
-/** Official YUGO logo URL for emails (gold version on dark background). */
+/** Official Yugo logo URL for emails (gold version on dark background). */
 export function getEmailLogoUrl(): string {
   const base = getEmailBaseUrl();
   return `${base}/images/yugo-logo-gold.png`;
@@ -25,7 +25,7 @@ function emailLogoRow(): string {
   return `
     <tr>
       <td align="center" style="padding:32px 24px 0;">
-        <img src="${logoUrl}" alt="YUGO" width="100" height="27" style="display:block;border:0;max-width:100px;height:auto;margin:0 auto;" />
+        <img src="${logoUrl}" alt="Yugo" width="100" height="27" style="display:block;border:0;max-width:100px;height:auto;margin:0 auto;" />
       </td>
     </tr>
     <tr>
@@ -161,7 +161,7 @@ function emailLogo() {
   const logoUrl = getEmailLogoUrl();
   return `
     <div style="text-align:center;margin-bottom:28px">
-      <img src="${logoUrl}" alt="YUGO" width="120" height="32" style="display:inline-block;max-width:120px;height:auto;border:0" />
+      <img src="${logoUrl}" alt="Yugo" width="120" height="32" style="display:inline-block;max-width:120px;height:auto;border:0" />
     </div>
   `;
 }
@@ -496,8 +496,8 @@ export function inviteUserEmail(params: {
   const { name, email, roleLabel, tempPassword, loginUrl } = params;
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">You&apos;re Invited</div>
-    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to YUGO+${name ? `, ${name}` : ""}</div>
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to join YUGO+ as a <strong style="color:${EMAIL_GOLD}">${roleLabel}</strong>. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
+    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to Yugo+${name ? `, ${name}` : ""}</div>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to join Yugo+ as a <strong style="color:${EMAIL_GOLD}">${roleLabel}</strong>. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
       <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
@@ -517,9 +517,9 @@ export function inviteUserEmailText(params: { name: string; email: string; roleL
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
   return `You're Invited
 
-Welcome to YUGO+${name ? `, ${name}` : ""}
+Welcome to Yugo+${name ? `, ${name}` : ""}
 
-You've been invited to join YUGO+ as a ${roleLabel}. Your account has been created. Sign in with the temporary password below and you'll be prompted to set a new password.
+You've been invited to join Yugo+ as a ${roleLabel}. Your account has been created. Sign in with the temporary password below and you'll be prompted to set a new password.
 
 Your credentials:
 Email: ${email}
@@ -529,7 +529,7 @@ Log in: ${loginUrl}
 
 For security, you'll be asked to create a new password when you first sign in. If you didn't expect this invitation, you can safely ignore this email.
 
-Powered by YUGO+ | Learn more: ${baseUrl}/about`;
+Powered by Yugo+ | Learn more: ${baseUrl}/about`;
 }
 
 export function invitePartnerEmail(params: {
@@ -543,8 +543,8 @@ export function invitePartnerEmail(params: {
   const { contactName, companyName, email, typeLabel, tempPassword, loginUrl } = params;
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">You&apos;re Invited as a Partner</div>
-    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to YUGO+${contactName ? `, ${contactName}` : ""}</div>
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;"><strong style="color:${EMAIL_GOLD}">${companyName}</strong> has been invited as a <strong style="color:${EMAIL_GOLD}">${typeLabel}</strong> partner on YUGO+. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
+    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to Yugo+${contactName ? `, ${contactName}` : ""}</div>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;"><strong style="color:${EMAIL_GOLD}">${companyName}</strong> has been invited as a <strong style="color:${EMAIL_GOLD}">${typeLabel}</strong> partner on Yugo+. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
       <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
@@ -564,9 +564,9 @@ export function invitePartnerEmailText(params: { contactName: string; companyNam
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
   return `You're Invited as a Partner
 
-Welcome to YUGO+${contactName ? `, ${contactName}` : ""}
+Welcome to Yugo+${contactName ? `, ${contactName}` : ""}
 
-${companyName} has been invited as a ${typeLabel} partner on YUGO+. Your account has been created. Sign in with the temporary password below and you'll be prompted to set a new password.
+${companyName} has been invited as a ${typeLabel} partner on Yugo+. Your account has been created. Sign in with the temporary password below and you'll be prompted to set a new password.
 
 Your credentials:
 Email: ${email}
@@ -576,16 +576,16 @@ Log in: ${loginUrl}
 
 For security, you'll be asked to create a new password when you first sign in. If you didn't expect this invitation, you can safely ignore this email.
 
-Powered by YUGO+ | Learn more: ${baseUrl}/about`;
+Powered by Yugo+ | Learn more: ${baseUrl}/about`;
 }
 
-/** Email when an existing YUGO user is added to a partner (no new account, no temp password). */
+/** Email when an existing Yugo user is added to a partner (no new account, no temp password). */
 export function addedToPartnerEmail(params: { contactName: string; companyName: string; loginUrl: string }) {
   const { companyName, loginUrl } = params;
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Portal access added</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">You&apos;ve been added to ${companyName}</div>
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your account now has access to <strong style="color:${EMAIL_GOLD}">${companyName}</strong> on the YUGO+ Partner Portal. Log in with your existing password to view deliveries and manage requests.</p>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your account now has access to <strong style="color:${EMAIL_GOLD}">${companyName}</strong> on the Yugo+ Partner Portal. Log in with your existing password to view deliveries and manage requests.</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
       <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Log in to Partner Portal</a>
     </td></tr></table>
@@ -597,7 +597,7 @@ export function addedToPartnerEmailText(params: { contactName: string; companyNa
   const { companyName, loginUrl } = params;
   return `Portal access added
 
-You've been added to ${companyName} on the YUGO+ Partner Portal. Log in with your existing password to view deliveries and manage requests.
+You've been added to ${companyName} on the Yugo+ Partner Portal. Log in with your existing password to view deliveries and manage requests.
 
 Log in: ${loginUrl}`;
 }
@@ -612,7 +612,7 @@ export function partnerPasswordResetEmail(params: {
   const { contactName, companyName, email, tempPassword, loginUrl } = params;
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Password Reset</div>
-    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">New password for your YUGO+ partner account</div>
+    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">New password for your Yugo+ partner account</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">A new temporary password has been set for your <strong style="color:${EMAIL_GOLD}">${companyName}</strong> partner portal access${contactName ? ` (${contactName})` : ""}. Sign in with the credentials below and you&apos;ll be prompted to set a new password.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
@@ -631,7 +631,7 @@ export function partnerPasswordResetEmail(params: {
 export function partnerPasswordResetEmailText(params: { contactName: string; companyName: string; email: string; tempPassword: string; loginUrl: string }) {
   const { contactName, companyName, email, tempPassword, loginUrl } = params;
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
-  return `Password Reset – YUGO+ Partner Portal
+  return `Password Reset – Yugo+ Partner Portal
 
 A new temporary password has been set for your ${companyName} partner portal access. Sign in with the credentials below and you'll be prompted to set a new password.
 
@@ -643,7 +643,7 @@ Log in: ${loginUrl}
 
 For security, we recommend changing this password after you sign in. If you didn't request this, contact your admin.
 
-Powered by YUGO+ | Learn more: ${baseUrl}/about`;
+Powered by Yugo+ | Learn more: ${baseUrl}/about`;
 }
 
 function darkEmailWrapper(html: string) {
@@ -662,7 +662,7 @@ export function welcomeEmail(client: { name: string; email: string; portalUrl: s
   const displayName = client.name || "Partner";
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Partner Portal Access</div>
-    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to YUGO+${displayName !== "Partner" ? `, ${displayName}` : ""}</div>
+    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to Yugo+${displayName !== "Partner" ? `, ${displayName}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;">Your partner portal is ready. Sign in anytime to:</p>
     <ul style="font-size:14px;color:${EMAIL_TX2};line-height:1.7;margin:0 0 24px;padding-left:20px;">
       <li>Track deliveries and see real-time status</li>
@@ -693,7 +693,7 @@ export function referralReceivedEmail(params: { agentName: string; clientName: s
         </div>
       </div>
     </div>
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 24px;">Thank you for continuing to trust YUGO+ with your clients. We take every referral seriously and will keep you updated.</p>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 24px;">Thank you for continuing to trust Yugo+ with your clients. We take every referral seriously and will keep you updated.</p>
   `;
   return emailLayout(inner);
 }
@@ -704,7 +704,7 @@ export function crewPortalInviteEmail(params: { name: string; email: string; log
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Crew Portal Access</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to the Crew Portal${name ? `, ${name}` : ""}</div>
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to log in to the YUGO+ Crew Portal to start jobs, update status, and share your location with dispatch.</p>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to log in to the Yugo+ Crew Portal to start jobs, update status, and share your location with dispatch.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
       <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your login</div>
@@ -726,7 +726,7 @@ export function crewPortalInviteEmailText(params: { name: string; email: string;
 
 Welcome to the Crew Portal${name ? `, ${name}` : ""}
 
-You've been invited to log in to the YUGO+ Crew Portal to start jobs, update status, and share your location with dispatch.
+You've been invited to log in to the Yugo+ Crew Portal to start jobs, update status, and share your location with dispatch.
 
 Your login:
 Phone: ${phoneDisplay}
@@ -736,7 +736,7 @@ Log in: ${loginUrl}
 
 Sessions expire after one shift (12h). Keep your PIN secure. If you didn't expect this invite, you can safely ignore this email.
 
-Powered by YUGO+`;
+Powered by Yugo+`;
 }
 
 export function bookingConfirmationEmail(params: {
@@ -1149,7 +1149,7 @@ export function internalBookingAlertEmail(params: {
 
 export function verificationCodeEmail(params: { code: string; purpose: "email_change" | "2fa" }) {
   const { code, purpose } = params;
-  const title = purpose === "email_change" ? "Verify your email change" : "Your YUGO+ login code";
+  const title = purpose === "email_change" ? "Verify your email change" : "Your Yugo+ login code";
   const desc = purpose === "email_change"
     ? "You requested to change your email address. Enter this code to confirm:"
     : "Use this code to complete your sign-in. It expires in 15 minutes.";

@@ -43,7 +43,7 @@ export default function PartnerLoginPage() {
 
   return (
     <LoginForm
-      title={isWelcome ? "Welcome to YUGO+" : "Partner portal"}
+      title={isWelcome ? "Welcome to Yugo+" : "Partner portal"}
       subtitle={isWelcome ? "Use the credentials from your invite email to sign in" : "Sign in to your partner dashboard"}
       redirectTo="/partner"
       isWelcome={isWelcome}

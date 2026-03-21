@@ -109,7 +109,7 @@ export default function AdminLoginPage() {
             <>
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 22, fontWeight: 600, color: "#E8E5E0", marginBottom: 4, fontFamily: "'Instrument Sans', 'DM Sans', sans-serif" }}>
-                  {isFirstTime ? "Welcome to YUGO" : "Welcome back"}
+                  {isFirstTime ? "Welcome to Yugo" : "Welcome back"}
                 </div>
                 <div style={{ fontSize: 13, color: "#4A4A4E" }}>
                   {isFirstTime ? "Sign in with your credentials" : "Sign in to your operations dashboard"}

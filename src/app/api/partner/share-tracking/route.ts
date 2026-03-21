@@ -48,13 +48,13 @@ export async function POST(req: NextRequest) {
         html: `
           <div style="font-family:'DM Sans',sans-serif;max-width:560px;margin:0 auto;padding:32px;border-radius:14px;background:#FAFAFA">
             <div style="text-align:center;margin-bottom:24px">
-              <span style="font-family:'Instrument Serif',serif;font-size:18px;letter-spacing:2px;color:#1A1A1A">YUGO+</span>
+              <span style="font-family:'Instrument Serif',serif;font-size:18px;letter-spacing:2px;color:#1A1A1A">Yugo+</span>
             </div>
             <h1 style="font-size:20px;font-weight:700;color:#1A1A1A;margin:0 0 12px">Your delivery is on its way</h1>
             <p style="font-size:14px;color:#666;margin:0 0 8px">${delivery.customer_name || "Customer"} ${delivery.delivery_address || ""}</p>
             <p style="font-size:14px;color:#666;margin:0 0 24px">Track your delivery in real-time using the link below.</p>
             <a href="${trackUrl}" style="display:inline-block;padding:12px 28px;background:#C9A962;color:#fff;font-weight:700;text-decoration:none;border-radius:8px;font-size:14px">Track Delivery</a>
-            <p style="font-size:12px;color:#aaa;margin-top:24px">Delivery ${delivery.delivery_number} Powered by YUGO+</p>
+            <p style="font-size:12px;color:#aaa;margin-top:24px">Delivery ${delivery.delivery_number} Powered by Yugo+</p>
           </div>
         `,
         headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },

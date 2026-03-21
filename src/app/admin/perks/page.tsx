@@ -671,7 +671,7 @@ export default function PerksPage() {
                           className="rounded-2xl overflow-hidden shrink-0 w-[310px] snap-start flex flex-col relative"
                           style={{ background: theme.bg, minHeight: "140px" }}
                         >
-                          {/* Top-right: YUGO+ Exclusive badge (Wine Rack style) */}
+                          {/* Top-right: Yugo+ Exclusive badge (Wine Rack style) */}
                           <div className="absolute top-0 right-0 bg-white rounded-bl-xl px-2.5 py-1 flex items-center gap-1.5">
                             <YugoLogo size={10} variant="black" onLightBackground hidePlus />
                             <span className="text-[9px] font-bold text-black">Exclusive</span>

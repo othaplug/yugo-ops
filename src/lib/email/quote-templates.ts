@@ -100,7 +100,7 @@ function quoteEmailLayout(innerHtml: string): string {
         <!-- Header -->
         <tr>
           <td class="eq-hdr" align="center" style="padding:36px 36px 0;background-color:${BG};">
-            <img src="${logoUrl}" alt="YUGO+" width="90" height="25" style="display:block;max-width:90px;height:auto;border:0;margin:0 auto;" />
+            <img src="${logoUrl}" alt="Yugo+" width="90" height="25" style="display:block;max-width:90px;height:auto;border:0;margin:0 auto;" />
             <div style="width:40px;height:1px;background-color:${GOLD};margin:18px auto 0;line-height:0;font-size:0;">&nbsp;</div>
           </td>
         </tr>
@@ -113,7 +113,7 @@ function quoteEmailLayout(innerHtml: string): string {
         <!-- Footer -->
         <tr>
           <td class="eq-ftr" align="center" style="padding:24px 36px 28px;background-color:${BG};border-top:1px solid ${CARD_BORDER};">
-            <img src="${logoUrl}" alt="YUGO+" width="70" height="19" style="display:block;max-width:70px;height:auto;border:0;margin:0 auto 8px;" />
+            <img src="${logoUrl}" alt="Yugo+" width="70" height="19" style="display:block;max-width:70px;height:auto;border:0;margin:0 auto 8px;" />
             <div style="font-size:9px;color:${TX3};letter-spacing:2px;text-transform:uppercase;">The Art of Moving</div>
           </td>
         </tr>
@@ -525,7 +525,7 @@ function officeTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Relocation Proposal")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Thank you for considering YUGO+ for your office relocation. We have prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.")}
+    ${bodyText("Thank you for considering Yugo+ for your office relocation. We have prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     ${price ? priceCard("Project Estimate", price, "+ HST &middot; Flat-rate guarantee") : ""}

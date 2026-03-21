@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Icon } from "@/components/AppIcons";
+import { useToast } from "../components/Toast";
 
 interface NotifEvent {
   id: string;
@@ -39,10 +40,20 @@ const CHANNEL_ICON_NAMES: Record<string, string> = {
 };
 
 export default function NotificationToggles() {
+  const { toast } = useToast();
   const [events, setEvents] = useState<NotifEvent[]>([]);
   const [prefs, setPrefs] = useState<Record<string, NotifPref>>({});
   const [loading, setLoading] = useState(true);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleSavedToast = useCallback(() => {
+    if (savedToastTimerRef.current) clearTimeout(savedToastTimerRef.current);
+    savedToastTimerRef.current = setTimeout(() => {
+      toast("Notification preferences saved", "check");
+      savedToastTimerRef.current = null;
+    }, 500);
+  }, [toast]);
 
   useEffect(() => {
     fetch("/api/admin/notifications")
@@ -96,11 +107,21 @@ export default function NotificationToggles() {
     }
     setPrefs(updated);
 
-    fetch("/api/admin/notifications/preferences", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channel, enabled: newVal }),
-    }).catch(() => {});
+    try {
+      const res = await fetch("/api/admin/notifications/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channel, enabled: newVal }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast(typeof data.error === "string" ? data.error : "Failed to update all rows", "x");
+        return;
+      }
+      toast(`All ${channel} notifications ${newVal ? "enabled" : "disabled"}`, "check");
+    } catch {
+      toast("Failed to save master toggle", "x");
+    }
   };
 
   const masterState = (channel: "email" | "sms" | "push"): boolean => {

@@ -103,7 +103,7 @@ interface InventoryItem {
 }
 
 const HANDLER_BADGE: Record<string, { bg: string; text: string; label: string }> = {
-  yugo: { bg: "bg-[var(--gold)]/15", text: "text-[var(--gold)]", label: "YUGO" },
+  yugo: { bg: "bg-[var(--gold)]/15", text: "text-[var(--gold)]", label: "Yugo" },
   vendor_direct: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", label: "VENDOR" },
   other_carrier: { bg: "bg-[var(--tx3)]/10", text: "text-[var(--tx3)]", label: "CARRIER" },
 };
@@ -1790,7 +1790,7 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[12px] font-semibold text-[var(--tx)]">{item.item_name}</span>
             {(item.quantity || 1) > 1 && <span className="text-[10px] text-[var(--tx3)]">×{item.quantity}</span>}
-            {isYugo && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)]">YUGO</span>}
+            {isYugo && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)]">Yugo</span>}
             {isCarrier && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400">CARRIER</span>}
             {isVendorDirect && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400">VENDOR SHIP</span>}
           </div>
