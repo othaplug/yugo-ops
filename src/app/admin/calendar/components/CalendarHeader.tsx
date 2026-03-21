@@ -22,7 +22,7 @@ export default function CalendarHeader({
   filters, onFiltersChange, crews,
 }: Props) {
   return (
-    <div className="px-3 sm:px-5 pt-2 pb-2 space-y-1.5 border-b border-[var(--brd)]/50">
+    <div className="px-3 sm:px-5 pt-4 pb-3 space-y-2 border-b border-[var(--brd)]/50">
       {/* Single row: title · nav · spacer · filters · view toggle · CTA */}
       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
         {/* Title */}

@@ -676,6 +676,9 @@ export default function QuotePageClient({
     [quote.factors_applied],
   );
 
+  /** Truck surcharge is included in the total; never show as a priced line to clients. */
+  const truckBreakdownClientNote = useMemo(() => null as string | null, []);
+
   const b2bInvoiceBooking = useMemo(() => {
     const st = quote.service_type;
     if (st !== "b2b_oneoff" && st !== "b2b_delivery") return false;
@@ -868,6 +871,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              truckPricingNote={truckBreakdownClientNote}
             />
           </section>
         ) : quote.service_type === "long_distance" ? (
@@ -879,6 +883,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              truckPricingNote={truckBreakdownClientNote}
             />
             <LongDistanceLayout quote={quote} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
@@ -891,6 +896,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              truckPricingNote={truckBreakdownClientNote}
             />
             <OfficeLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
@@ -903,6 +909,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              truckPricingNote={truckBreakdownClientNote}
             />
             <SingleItemLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
@@ -915,6 +922,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              truckPricingNote={truckBreakdownClientNote}
             />
             <WhiteGloveLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
@@ -927,6 +935,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              truckPricingNote={truckBreakdownClientNote}
             />
             <SpecialtyLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
@@ -939,6 +948,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              truckPricingNote={truckBreakdownClientNote}
             />
             <B2BOneOffLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
@@ -956,6 +966,7 @@ export default function QuotePageClient({
               showEventSetupFeature={
                 Number((quote.factors_applied as Record<string, unknown> | null)?.setup_fee) > 0
               }
+              truckPricingNote={truckBreakdownClientNote}
             />
             <EventLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
@@ -968,6 +979,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              truckPricingNote={truckBreakdownClientNote}
             />
             <LabourOnlyLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
@@ -980,6 +992,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              truckPricingNote={truckBreakdownClientNote}
             />
             <FallbackPrice
               price={quote.custom_price}
@@ -1419,6 +1432,8 @@ const InclusionsShowcase = React.forwardRef<
     variant?: "residential" | "event";
     eventFeatures?: TierFeature[] | null;
     showEventSetupFeature?: boolean;
+    /** e.g. Truck: 20ft (+$150) from factors_applied */
+    truckPricingNote?: string | null;
   }
 >(function InclusionsShowcase(
   {
@@ -1430,6 +1445,7 @@ const InclusionsShowcase = React.forwardRef<
     variant = "residential",
     eventFeatures = null,
     showEventSetupFeature = false,
+    truckPricingNote = null,
   },
   ref,
 ) {
@@ -1488,6 +1504,15 @@ const InclusionsShowcase = React.forwardRef<
       </div>
 
       <div className="w-10 h-px mx-auto mb-8" style={{ backgroundColor: GOLD }} />
+
+      {truckPricingNote ? (
+        <p
+          className="text-center text-[11px] font-semibold max-w-lg mx-auto mb-6 px-2"
+          style={{ color: `${FOREST}88` }}
+        >
+          {truckPricingNote}
+        </p>
+      ) : null}
 
       <div className="grid md:grid-cols-2 gap-x-5 gap-y-4 max-w-4xl mx-auto">
         {visibleItems.map((item, i) => (
@@ -1824,11 +1849,10 @@ function ConfirmDetailsSection({
     ? (TRUCK_LUXURY[quote.truck_primary] ?? quote.truck_primary)
     : "Moving truck";
   const faConfirm = quote.factors_applied as Record<string, unknown> | null;
-  const truckPricingLine =
-    typeof faConfirm?.truck_breakdown_line === "string" && faConfirm.truck_breakdown_line.trim().length > 0
-      ? faConfirm.truck_breakdown_line.trim()
-      : null;
+  const truckPricingLine: string | null = null;
   const balanceDue = grandTotal - deposit;
+  const fromAbbr = abbreviateAddressRegions(quote.from_address || "");
+  const toAbbr = abbreviateAddressRegions(quote.to_address || "");
 
   return (
     <div className="mb-6">
@@ -1850,8 +1874,8 @@ function ConfirmDetailsSection({
                 <> · <strong>Arrival/start:</strong> {quote.preferred_time}</>
               )}
             </p>
-            <p><strong>From:</strong> {quote.from_address}</p>
-            <p><strong>To:</strong> {quote.to_address}</p>
+            <p><strong>From:</strong> {fromAbbr}</p>
+            <p><strong>To:</strong> {toAbbr}</p>
           </div>
           <InventoryCollapsible quote={quote} selectedTier={selectedTier} />
         </div>
@@ -2028,6 +2052,9 @@ function ValuationProtectionCard({
   const dispUpgrade = upgradeTarget ? (VALUATION_DISPLAY[upgradeTarget] ?? null) : null;
 
   const hasRatePerPound = tierData.rate_per_pound != null;
+  const releasedRatePerLb = 0.6;
+  const displayRatePerPound =
+    activeTierSlug === "released" ? releasedRatePerLb : (tierData.rate_per_pound ?? 0);
 
   return (
     <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
@@ -2065,7 +2092,7 @@ function ValuationProtectionCard({
               <>
                 <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
                   <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Coverage Rate</div>
-                  <div className="text-[15px] font-bold" style={{ color: FOREST }}>{fmtPrice(tierData.rate_per_pound ?? 0)}<span className="text-[11px] font-semibold" style={{ color: `${FOREST}50` }}>/lb</span></div>
+                  <div className="text-[15px] font-bold" style={{ color: FOREST }}>{fmtPrice(displayRatePerPound)}<span className="text-[11px] font-semibold" style={{ color: `${FOREST}50` }}>/lb</span></div>
                 </div>
                 {tierData.deductible === 0 && (
                   <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${GOLD}06` }}>

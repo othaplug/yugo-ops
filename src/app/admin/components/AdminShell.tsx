@@ -60,10 +60,10 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
   {
     label: "B2B Partners",
     items: [
-      { href: "/admin/partners", label: "All Partners", Icon: Icons.users, minRole: "coordinator" },
+      { href: "/admin/partners", label: "All Partners", Icon: Icons.handshake, minRole: "coordinator" },
       { href: "/admin/partners/health", label: "Partner Health", Icon: Icons.barChart, minRole: "coordinator" },
       { href: "/admin/partners/realtors", label: "Realtors & referrals", Icon: Icons.handshake, minRole: "coordinator" },
-      { href: "/admin/deliveries", label: "Jobs", Icon: Icons.package, minRole: "coordinator" },
+      { href: "/admin/deliveries", label: "Jobs", Icon: Icons.briefcase, minRole: "coordinator" },
     ],
   },
   {
@@ -71,7 +71,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     items: [
       { href: "/admin/quotes", label: "Quotes", Icon: Icons.quoteClipboard, badgeKey: "quotes", minRole: "sales" },
       { href: "/admin/widget-leads", label: "Widget Leads", Icon: Icons.zap, minRole: "sales" },
-      { href: "/admin/moves", label: "All Moves", Icon: Icons.truck },
+      { href: "/admin/moves", label: "All Moves", Icon: Icons.path },
     ],
   },
   {

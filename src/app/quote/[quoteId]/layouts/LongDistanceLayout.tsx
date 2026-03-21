@@ -30,11 +30,8 @@ interface Props {
 export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Props) {
   const factors = quote.factors_applied as Record<string, unknown> | null;
   const includes = (factors?.includes as string[] | undefined) ?? DEFAULT_INCLUDES;
-  const ldTruckSur = typeof factors?.truck_surcharge === "number" && factors.truck_surcharge > 0 ? factors.truck_surcharge : 0;
-  const ldTruckLine =
-    typeof factors?.truck_breakdown_line === "string" && factors.truck_breakdown_line.trim().length > 0
-      ? factors.truck_breakdown_line.trim()
-      : null;
+  const ldTruckSur = 0;
+  const ldTruckLine: string | null = null;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
   const deposit = calculateDeposit("long_distance", price);

@@ -269,6 +269,7 @@ export async function GET(req: NextRequest) {
     for (const p of phases || []) {
       const dk = toDateKey(p.scheduled_date as string | Date | null);
       if (!dk) continue;
+      if (crewFilter) continue;
       if (typeFilter && typeFilter !== "project_phase") continue;
 
       const projRaw = p.projects as unknown;
@@ -304,6 +305,7 @@ export async function GET(req: NextRequest) {
 
     // Projects as date-range events (start_date → target_end_date)
     for (const proj of projects || []) {
+      if (crewFilter) continue;
       if (typeFilter && typeFilter !== "project_phase" && typeFilter !== "project") continue;
       const pStart = toDateKey(proj.start_date as string | Date | null);
       if (!pStart) continue;

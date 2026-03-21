@@ -2451,6 +2451,10 @@ export default function PricingControlPanel() {
         <TierFeaturesSection />
       </Accordion>
 
+      <Accordion title="Labour-only storage" subtitle="Weekly rate used when storage between visits is selected on labour-only quotes">
+        <LabourOnlyStorageSection />
+      </Accordion>
+
       <Accordion title="B2B Surcharges" subtitle="Access and weight surcharges for per-delivery B2B bookings. Day rates do not apply these.">
         <B2BSurchargesSection />
       </Accordion>
@@ -2458,6 +2462,49 @@ export default function PricingControlPanel() {
       <Accordion title="Supplies & Crating" subtitle="Estate packing supplies allowance by move size + custom crating rates per piece">
         <SuppliesAndCratingSection />
       </Accordion>
+    </div>
+  );
+}
+
+/* ────────── LABOUR-ONLY STORAGE (platform_config) ────────── */
+function LabourOnlyStorageSection() {
+  const configSection = useSection("config");
+  if (configSection.loading) return <Skeleton />;
+  const row = configSection.rows.find((r: Row & { key?: string }) => r.key === "storage_weekly_rate");
+  if (!row) {
+    return (
+      <p className="text-[11px] text-[var(--tx3)] py-3">
+        Add <code className="text-[10px]">storage_weekly_rate</code> to platform_config (migration{" "}
+        <code className="text-[10px]">20250321120000_multi_service_quote_fixes</code>) to edit here.
+      </p>
+    );
+  }
+  return (
+    <div className="pt-4 space-y-3 max-w-md">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Quoted storage between visits = this rate × estimated weeks (coordinator can adjust).
+      </p>
+      <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-4">
+        <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">storage_weekly_rate ($/week)</div>
+        <EditCell
+          value={String(row.value ?? "75")}
+          onChange={(v) => configSection.updateRow(String(row.id), "value", v)}
+          type="number"
+          className="text-[16px] font-bold text-[var(--gold)]"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => configSection.save()}
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+        >
+          Save
+        </button>
+        <button type="button" onClick={() => configSection.undo()} className="px-3 py-2 rounded-lg text-[11px] text-[var(--tx3)]">
+          Undo
+        </button>
+      </div>
     </div>
   );
 }

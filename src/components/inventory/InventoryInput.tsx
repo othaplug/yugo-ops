@@ -4,6 +4,13 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from "react"
 import { MagnifyingGlass as Search, Plus, Minus, CaretDown as ChevronDown, Note as StickyNote } from "@phosphor-icons/react";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
 import { validateInventoryQuantity } from "@/lib/inventory-quantity-validation";
+import {
+  fuzzyFilterItemWeights,
+  matchPastedLineToItem,
+  nameImpliesFragile,
+  parseQuantityFromLine,
+  type MatchConfidence,
+} from "@/lib/inventory-search";
 
 const fieldInput =
   "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
@@ -17,6 +24,8 @@ export interface InventoryItemEntry {
   weightNote?: string;      // free-text note, e.g. "400 lbs, baby grand"
   room?: string;
   isCustom?: boolean;
+  /** Coordinator / auto: high-care handling */
+  fragile?: boolean;
 }
 
 export interface ItemWeightRow {
@@ -147,6 +156,17 @@ export default function InventoryInput({
   const [customBoxInput, setCustomBoxInput] = useState("");
   const [showCustomBox, setShowCustomBox] = useState(false);
   const [quantityOverriddenKeys, setQuantityOverriddenKeys] = useState<Set<string>>(new Set());
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  type PasteRow = {
+    id: string;
+    raw: string;
+    parsedName: string;
+    qty: number;
+    match: ItemWeightRow | null;
+    confidence: MatchConfidence;
+  };
+  const [pasteRows, setPasteRows] = useState<PasteRow[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
   const weightSelectRef = useRef<HTMLSelectElement>(null);
 
@@ -172,15 +192,10 @@ export default function InventoryInput({
 
   const filteredSearch = useMemo(() => {
     if (!search || search.length < 1) return sortedItems;
-    const q = search.toLowerCase();
-    return itemWeights.filter(
-      (w) =>
-        w.active !== false &&
-        (w.item_name.toLowerCase().includes(q) ||
-          w.slug.includes(q) ||
-          (w.category || "").toLowerCase().includes(q) ||
-          (w.room || "").toLowerCase().includes(q))
-    );
+    const { name: qName } = parseQuantityFromLine(search);
+    const q = (qName.trim() || search).trim();
+    if (!q) return sortedItems;
+    return fuzzyFilterItemWeights(q, itemWeights.filter((w) => w.active !== false)).slice(0, 80);
   }, [search, itemWeights, sortedItems]);
 
   useEffect(() => {
@@ -206,19 +221,21 @@ export default function InventoryInput({
   }, [editingWeightKey]);
 
   const addItem = useCallback(
-    (w: ItemWeightRow) => {
+    (w: ItemWeightRow, qty = 1) => {
+      const fragile = nameImpliesFragile(w.item_name);
       const entry: InventoryItemEntry = {
         slug: w.slug,
         name: w.item_name,
-        quantity: 1,
+        quantity: qty,
         weight_score: Number(w.weight_score),
         room: w.room || "other",
+        fragile,
       };
       const existing = value.find((i) => i.slug === w.slug);
       if (existing) {
         onChange(
           value.map((i) =>
-            i.slug === w.slug ? { ...i, quantity: i.quantity + 1 } : i
+            i.slug === w.slug ? { ...i, quantity: i.quantity + qty, fragile: i.fragile || fragile } : i
           )
         );
       } else {
@@ -239,6 +256,7 @@ export default function InventoryInput({
       weight_score: customWeight,
       isCustom: true,
       room: "other",
+      fragile: nameImpliesFragile(name),
     };
     const key = itemKey(entry);
     const existing = value.find((i) => itemKey(i) === key);
@@ -422,7 +440,10 @@ export default function InventoryInput({
               <button
                 key={w.slug}
                 type="button"
-                onClick={() => addItem(w)}
+                onClick={() => {
+                  const { qty } = parseQuantityFromLine(search);
+                  addItem(w, Math.max(1, qty));
+                }}
                 className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)]/50 last:border-0 flex items-center justify-between"
               >
                 <span>{w.item_name}</span>
@@ -442,6 +463,114 @@ export default function InventoryInput({
           </div>
         )}
       </div>
+
+      {!addOnlyMode && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setPasteOpen((o) => !o)}
+            className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+          >
+            {pasteOpen ? "Hide paste inventory" : "Paste inventory list"}
+          </button>
+          {pasteOpen && (
+            <div className="rounded-lg border border-[var(--brd)] p-3 space-y-2 bg-[var(--card)]">
+              <p className="text-[9px] text-[var(--tx3)] leading-snug">
+                Paste one item per line. Quantities: &quot;4 dining chairs&quot; or &quot;sofa x2&quot;.
+              </p>
+              <textarea
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                rows={6}
+                placeholder={"dining table x1\n4 dining chairs\nqueen bed with headboard"}
+                className={`${fieldInput} resize-y min-h-[100px]`}
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const lines = pasteText.split(/\n/).map((l) => l.trim()).filter(Boolean);
+                    const rows: PasteRow[] = lines.map((raw, i) => {
+                      const { name, qty } = parseQuantityFromLine(raw);
+                      const { item, confidence } = matchPastedLineToItem(name, itemWeights);
+                      return { id: `p${i}`, raw, parsedName: name, qty, match: item, confidence };
+                    });
+                    setPasteRows(rows);
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                >
+                  Parse &amp; map items
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPasteText("");
+                    setPasteRows([]);
+                  }}
+                  className="text-[10px] text-[var(--tx3)] hover:text-[var(--tx)]"
+                >
+                  Clear
+                </button>
+              </div>
+              {pasteRows.length > 0 && (
+                <div className="space-y-1 max-h-52 overflow-y-auto border border-[var(--brd)]/50 rounded-md p-2">
+                  {pasteRows.map((row) => (
+                    <div
+                      key={row.id}
+                      className="text-[10px] flex flex-wrap gap-x-2 gap-y-0.5 items-baseline border-b border-[var(--brd)]/30 last:border-0 py-1.5"
+                    >
+                      <span className="text-[var(--tx2)] shrink-0">{row.raw}</span>
+                      <span className="text-[var(--tx3)]">→</span>
+                      {row.match ? (
+                        <span className="text-[var(--tx)] font-medium">{row.match.item_name}</span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400">No match — add manually from search</span>
+                      )}
+                      <span className="text-[var(--tx3)] ml-auto">×{row.qty}</span>
+                      <span className="text-[var(--tx3)] capitalize">({row.confidence})</span>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = [...value];
+                      for (const row of pasteRows) {
+                        if (!row.match) continue;
+                        const fragile = nameImpliesFragile(row.match.item_name);
+                        const existing = next.find((i) => i.slug === row.match!.slug);
+                        if (existing) {
+                          const idx = next.indexOf(existing);
+                          next[idx] = {
+                            ...existing,
+                            quantity: existing.quantity + row.qty,
+                            fragile: existing.fragile || fragile,
+                          };
+                        } else {
+                          next.push({
+                            slug: row.match.slug,
+                            name: row.match.item_name,
+                            quantity: row.qty,
+                            weight_score: Number(row.match.weight_score),
+                            room: row.match.room || "other",
+                            fragile,
+                          });
+                        }
+                      }
+                      onChange(next);
+                      setPasteOpen(false);
+                      setPasteText("");
+                      setPasteRows([]);
+                    }}
+                    className="mt-2 w-full py-2 rounded-lg text-[10px] font-bold bg-[var(--gold)]/90 text-[var(--btn-text-on-accent)]"
+                  >
+                    Add matched items to inventory
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Custom item input + Box count */}
       <div className="border-t border-[var(--brd)]/30 pt-3 space-y-2">
@@ -560,6 +689,9 @@ export default function InventoryInput({
                     {item.name}
                     {item.isCustom && (
                       <span className="text-[var(--tx3)] ml-1 text-[9px]">(custom)</span>
+                    )}
+                    {item.fragile && (
+                      <span className="text-amber-600 dark:text-amber-400 ml-1 text-[9px] font-semibold">· Fragile</span>
                     )}
                   </span>
 

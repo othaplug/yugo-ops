@@ -25,13 +25,37 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
   const payInvoice = f?.b2b_payment_method === "invoice";
   const retailer = typeof f?.b2b_retailer_source === "string" ? f.b2b_retailer_source.trim() : "";
   const weightSurcharge = typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0 ? f.weight_surcharge : 0;
-  const truckBreakdown =
-    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
-      ? f.truck_breakdown_line.trim()
-      : null;
+  const truckBreakdown: string | null = null;
 
   return (
     <section className="mb-10 space-y-6">
+      {payInvoice ? (
+        <div
+          className="rounded-2xl border-2 border-dashed p-5 space-y-3"
+          style={{ borderColor: `${FOREST}35`, backgroundColor: `${FOREST}06` }}
+        >
+          <p className="text-[10px] font-bold tracking-[0.14em] uppercase" style={{ color: `${FOREST}70` }}>
+            Pro forma invoice
+          </p>
+          <div className="flex justify-between text-[13px] font-semibold" style={{ color: FOREST }}>
+            <span>Delivery service</span>
+            <span>{fmtPrice(price)}</span>
+          </div>
+          <div className="flex justify-between text-[12px]" style={{ color: `${FOREST}75` }}>
+            <span>HST (13%)</span>
+            <span>{fmtPrice(tax)}</span>
+          </div>
+          <div className="flex justify-between pt-2 border-t text-[15px] font-bold" style={{ borderColor: `${FOREST}20`, color: WINE }}>
+            <span>Total due</span>
+            <span>{fmtPrice(price + tax)}</span>
+          </div>
+          <p className="text-[11px] leading-snug pt-1" style={{ color: `${FOREST}72` }}>
+            <strong>Terms:</strong> Net 30 — payment due within 30 days of invoice date. No card payment on this quote.
+            Our team will follow up with a formal invoice and scheduling details after you confirm.
+          </p>
+        </div>
+      ) : null}
+
       {/* Item & Route */}
       <div>
         <div className="flex items-start gap-4 mb-4">

@@ -40,6 +40,10 @@ interface QuoteInput {
   has_conference_room?: boolean;
   has_reception_area?: boolean;
   timing_preference?: string;
+  /** Office hourly pricing: crew headcount for labour display (optional). */
+  office_crew_size?: number;
+  /** Billable hours for office move (default 5). */
+  office_estimated_hours?: number;
   // Single item / White glove
   item_description?: string;
   item_category?: string;
@@ -197,22 +201,25 @@ function parseJsonConfig<T>(config: Map<string, string>, key: string, fallback: 
   }
 }
 
-type TruckKey = "sprinter" | "16ft" | "20ft" | "26ft" | "none";
+type TruckKey = "sprinter" | "16ft" | "20ft" | "24ft" | "26ft" | "none";
 
 function normalizeTruckType(raw: string | undefined | null): TruckKey {
   const k = (raw || "sprinter").toLowerCase().replace(/\s+/g, "");
   if (k === "none" || k === "notruck" || k === "no_truck") return "none";
-  if (k === "sprinter" || k === "16ft" || k === "20ft" || k === "26ft") return k;
+  if (k === "sprinter" || k === "16ft" || k === "20ft" || k === "24ft" || k === "26ft") return k;
   if (k.includes("16")) return "16ft";
+  if (k.includes("24")) return "24ft";
   if (k.includes("20")) return "20ft";
   if (k.includes("26")) return "26ft";
   return "sprinter";
 }
 
+/** Align with inventory-labour truck tiers so surcharge matches crew estimate. */
 function recommendedTruckFromInventoryScore(score: number): TruckKey {
   if (score <= 15) return "sprinter";
-  if (score <= 30) return "16ft";
-  if (score <= 60) return "20ft";
+  if (score <= 25) return "16ft";
+  if (score <= 50) return "20ft";
+  if (score <= 75) return "24ft";
   return "26ft";
 }
 
@@ -222,6 +229,7 @@ function truckSurchargeAmount(config: Map<string, string>, truck: TruckKey): num
     sprinter: 0,
     "16ft": 75,
     "20ft": 150,
+    "24ft": 200,
     "26ft": 250,
   });
   return m[truck] ?? 0;
@@ -233,6 +241,7 @@ function truckBreakdownLabel(truck: TruckKey, surcharge: number): string {
     sprinter: "Sprinter",
     "16ft": "16ft",
     "20ft": "20ft",
+    "24ft": "24ft",
     "26ft": "26ft",
     none: "No truck",
   };
@@ -1073,9 +1082,21 @@ async function calcResidential(
   const addonForSig = addonResult.total - (addonResult.byTierExclusion.get("signature") ?? (addonResult.byTierExclusion.get("premier") ?? 0));
   const addonForEst = addonResult.total - (addonResult.byTierExclusion.get("estate") ?? 0);
 
-  const curPrice = curBase + addonForCur;
-  const sigPrice = sigBase + addonForSig;
-  const estPrice = estBase + addonForEst;
+  let curPrice = curBase + addonForCur;
+  let sigPrice = sigBase + addonForSig;
+  let estPrice = estBase + addonForEst;
+  if (sigPrice < curPrice) sigPrice = curPrice;
+  if (estPrice < sigPrice) estPrice = sigPrice;
+
+  // Tier spread caps: avoid flat multipliers inflating Signature/Estate on small moves
+  const minCuratedToSig = cfgNum(config, "min_curated_signature_gap", 350);
+  const minSigToEstate = cfgNum(config, "min_signature_estate_gap", 800);
+  const maxCuratedToSig = cfgNum(config, "max_curated_signature_gap", 1200);
+  const maxSigToEstate = cfgNum(config, "max_signature_estate_gap", 3000);
+  const sigGap = Math.min(Math.max(sigPrice - curPrice, minCuratedToSig), maxCuratedToSig);
+  sigPrice = curPrice + sigGap;
+  const estGap = Math.min(Math.max(estPrice - sigPrice, minSigToEstate), maxSigToEstate);
+  estPrice = sigPrice + estGap;
 
   const curTax = Math.round(curPrice * taxRate);
   const sigTax = Math.round(sigPrice * taxRate);
@@ -1172,51 +1193,52 @@ async function calcOffice(
   input: QuoteInput,
   config: Map<string, string>,
   distInfo: { distance_km: number; drive_time_min: number } | null,
-  neighbourhood: { tier: string | null; multiplier: number },
+  _neighbourhood: { tier: string | null; multiplier: number },
   dateMult: { multiplier: number },
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
 ) {
+  const crewRate = cfgNum(config, "office_crew_hourly_rate", 150);
+  const crew = Math.max(1, input.office_crew_size ?? 2);
+  const hours = input.office_estimated_hours ?? 5;
+  const baseLabour = crewRate * hours;
+
+  const distKm = distInfo?.distance_km ?? 0;
+  const distMod = getDistanceModifier(config, distKm);
+
+  const [fromAccess, toAccess] = await Promise.all([
+    getAccessSurcharge(sb, input.from_access),
+    getAccessSurcharge(sb, input.to_access),
+  ]);
+  const accessTotal = fromAccess + toAccess;
+
+  const plcOffice = parkingLongCarryLineTotal(config, input, "both");
+  const truckOffice = normalizeTruckType(input.truck_type ?? "16ft");
+  const truckSur = truckSurchargeAmount(config, truckOffice);
+
+  const subtotal = Math.round(baseLabour * distMod * dateMult.multiplier)
+    + accessTotal
+    + plcOffice.from_parking_fee
+    + plcOffice.to_parking_fee
+    + plcOffice.from_long_carry_fee
+    + plcOffice.to_long_carry_fee
+    + truckSur;
+
   const { data: rates } = await sb.from("office_rates").select("parameter, value");
   const r = new Map<string, number>();
   for (const row of rates ?? []) r.set(row.parameter, row.value);
-
-  const sqftRate = r.get("rate_per_sqft") ?? 3.5;
-  const wsRate = r.get("rate_per_workstation") ?? 75;
   const itSurcharge = r.get("it_equipment_surcharge") ?? 200;
   const confRoom = r.get("conference_room") ?? 150;
   const reception = r.get("reception_area") ?? 100;
-  const eveningPct = r.get("evening_night_premium") ?? 15;
-  const minOffice = r.get("minimum_job_amount") ?? 1500;
+  const minOffice = r.get("minimum_job_amount") ?? 400;
 
-  let base =
-    (input.square_footage ?? 0) * sqftRate +
-    (input.workstation_count ?? 0) * wsRate;
-
-  if (input.has_it_equipment) base += itSurcharge;
-  if (input.has_conference_room) base += confRoom;
-  if (input.has_reception_area) base += reception;
-
-  const distBaseKm = cfgNum(config, "distance_base_km", 30);
-  const distRateKm = cfgNum(config, "distance_rate_per_km", 4.5);
-  const distKm = distInfo?.distance_km ?? 0;
-  const distanceSurcharge = distKm > distBaseKm ? Math.round((distKm - distBaseKm) * distRateKm) : 0;
-  base += distanceSurcharge;
-
-  const timing = (input.timing_preference ?? "").toLowerCase();
-  if (timing.includes("evening") || timing.includes("night")) {
-    base = Math.round(base * (1 + eveningPct / 100));
-  }
-
-  base = Math.round(base * dateMult.multiplier);
-  base = Math.round(base * neighbourhood.multiplier);
+  let price = subtotal;
+  if (input.has_it_equipment) price += itSurcharge;
+  if (input.has_conference_room) price += confRoom;
+  if (input.has_reception_area) price += reception;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
-  let price = roundTo(base, rounding);
+  price = roundTo(price, rounding);
   if (price < minOffice) price = minOffice;
-
-  const plcOffice = parkingLongCarryLineTotal(config, input, "both");
-  const truckOffice = normalizeTruckType(input.truck_type ?? "20ft");
-  price += plcOffice.total + truckSurchargeAmount(config, truckOffice);
 
   price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
@@ -1239,14 +1261,22 @@ async function calcOffice(
   return {
     custom_price: { price, deposit, tax, total: price + tax, includes } as TierResult,
     factors: {
-      base_rate: base,
-      distance_surcharge: distanceSurcharge,
+      office_base_labour: baseLabour,
+      office_hours: hours,
+      office_crew_size: crew,
+      office_crew_hourly_rate: crewRate,
+      distance_km: distKm,
+      distance_modifier: distMod,
       date_multiplier: dateMult.multiplier,
-      neighbourhood_multiplier: neighbourhood.multiplier,
-      neighbourhood_tier: neighbourhood.tier,
+      access_surcharge: accessTotal,
       parking_long_carry_total: plcOffice.total,
       truck_recommended: truckOffice,
-      truck_surcharge: truckSurchargeAmount(config, truckOffice),
+      truck_surcharge: truckSur,
+      it_equipment_surcharge: input.has_it_equipment ? itSurcharge : 0,
+      conference_room_surcharge: input.has_conference_room ? confRoom : 0,
+      reception_surcharge: input.has_reception_area ? reception : 0,
+      square_footage: input.square_footage ?? null,
+      workstation_count: input.workstation_count ?? null,
     },
   };
 }
@@ -1333,15 +1363,10 @@ async function calcSingleItem(
   distInfo: { distance_km: number; drive_time_min: number } | null,
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
 ) {
-  const { data: rate } = await sb
-    .from("single_item_rates")
-    .select("base_price_min, base_price_max")
-    .eq("item_category", input.item_category ?? "standard_furniture")
-    .single();
-
-  const min = rate?.base_price_min ?? 199;
-  const max = rate?.base_price_max ?? 349;
-  let price = Math.round((min + max) / 2);
+  const baseFee = cfgNum(config, "single_item_base_fee", 255);
+  const perItemFee = cfgNum(config, "single_item_additional_fee", 50);
+  const distKm = distInfo?.distance_km ?? 0;
+  const distanceModifier = getDistanceModifier(config, distKm);
 
   const weightMapSi = {
     ...B2B_WEIGHT_SURCHARGES_FALLBACK,
@@ -1349,25 +1374,27 @@ async function calcSingleItem(
   };
   const wCat = singleItemWeightCategory(input.item_weight_class);
   const weightSurchargeSi = weightMapSi[wCat] ?? weightMapSi.standard ?? 0;
-  price += weightSurchargeSi;
 
-  const assemblyDis = cfgNum(config, "assembly_disassembly", 75);
-  const assemblyAs = cfgNum(config, "assembly_assembly", 80);
-  const assemblyBoth = cfgNum(config, "assembly_both", 140);
+  const [fromAccessSi, toAccessSi] = await Promise.all([
+    getAccessSurcharge(sb, input.from_access),
+    getAccessSurcharge(sb, input.to_access),
+  ]);
+  const accessTotal = fromAccessSi + toAccessSi;
+
+  const asmRaw = (input.assembly_needed ?? "none").toLowerCase().trim();
+  const assemblySurcharge =
+    asmRaw.includes("both") ? 75 : asmRaw !== "none" && asmRaw.length > 0 ? 50 : 0;
+
+  const additionalItems = Math.max(0, (input.number_of_items ?? 1) - 1);
+  const bundleCore = baseFee + additionalItems * perItemFee;
+  let price =
+    Math.round(bundleCore * distanceModifier)
+    + weightSurchargeSi
+    + accessTotal
+    + assemblySurcharge;
+
   const stairPerFlight = cfgNum(config, "stair_carry_per_flight", 50);
-
-  const asm = (input.assembly_needed ?? "").toLowerCase();
-  if (asm.includes("both") || asm === "Both") price += assemblyBoth;
-  else if (asm.includes("disassembly") || asm.includes("dis")) price += assemblyDis;
-  else if (asm.includes("assembly")) price += assemblyAs;
-
   if (input.stair_carry) price += stairPerFlight * (input.stair_flights ?? 1);
-
-  const siDistBase = cfgNum(config, "single_item_distance_base", 15);
-  const siDistRate = cfgNum(config, "single_item_distance_rate", 2);
-  const distKm = distInfo?.distance_km ?? 0;
-  const distanceSurcharge = distKm > siDistBase ? Math.round((distKm - siDistBase) * siDistRate) : 0;
-  price += distanceSurcharge;
 
   const plcSi = parkingLongCarryLineTotal(config, input, "both");
   const truckSi = normalizeTruckType(input.truck_type ?? "20ft");
@@ -1397,15 +1424,19 @@ async function calcSingleItem(
       includes: singleItemIncludes,
     } as TierResult,
     factors: {
-      base_rate: Math.round((min + max) / 2),
-      distance_surcharge: distanceSurcharge,
+      single_item_base_fee: baseFee,
+      single_item_additional_fee: perItemFee,
+      single_item_bundle_core: bundleCore,
+      distance_modifier: distanceModifier,
+      distance_km: distKm,
       item_description: input.item_description || null,
       item_category: input.item_category || null,
       weight_class: input.item_weight_class || null,
       weight_category_pricing: wCat,
       weight_surcharge: weightSurchargeSi,
+      access_surcharge: accessTotal,
       single_item_special_handling: input.single_item_special_handling?.trim() || null,
-      assembly_surcharge: asm ? (asm.includes("both") || asm === "Both" ? assemblyBoth : asm.includes("disassembly") || asm.includes("dis") ? assemblyDis : assemblyAs) : null,
+      assembly_surcharge: assemblySurcharge,
       parking_long_carry_total: plcSi.total,
       truck_recommended: truckSi,
       truck_surcharge: truckSurchargeAmount(config, truckSi),
@@ -1422,21 +1453,32 @@ async function calcWhiteGlove(
   input: QuoteInput,
   config: Map<string, string>,
   distInfo: { distance_km: number; drive_time_min: number } | null,
+  neighbourhood: { tier: string | null; multiplier: number },
+  dateMult: { multiplier: number },
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
+  invResult: { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number },
+  labour: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null,
+  deadheadInfo: { distance_km: number; drive_time_min: number } | null,
+  returnInfo: { distance_km: number; drive_time_min: number } | null,
 ) {
-  const siResult = await calcSingleItem(sb, { ...input, assembly_needed: undefined }, config, distInfo, {
-    total: 0,
-    breakdown: [],
-    byTierExclusion: new Map(),
-  });
-
-  let price = Math.round(siResult.custom_price.price * 1.5);
-
+  const res = await calcResidential(
+    sb,
+    input,
+    config,
+    distInfo,
+    neighbourhood,
+    dateMult,
+    addonResult,
+    invResult,
+    labour,
+    deadheadInfo,
+    returnInfo,
+  );
+  const t = res.tiers.curated;
+  let price = t.price;
   if ((input.declared_value ?? 0) > 5000) price += 50;
-
   if (price < 250) price = 250;
 
-  price += addonResult.total;
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
   const deposit = await calculateDeposit(sb, "white_glove", price);
@@ -1461,12 +1503,14 @@ async function calcWhiteGlove(
       includes: whiteGloveIncludes,
     } as TierResult,
     factors: {
-      ...siResult.factors,
-      base_rate: siResult.custom_price.price,
-      white_glove_premium: 1.5,
-      distance_surcharge: siResult.factors.distance_surcharge,
-      enhanced_insurance: (input.declared_value ?? 0) > 5000 ? 50 : 0,
+      ...res.factors,
+      white_glove_pricing: "curated_residential_base",
+      white_glove_declared_value_premium: (input.declared_value ?? 0) > 5000 ? 50 : 0,
     },
+    cratingTotal: res.cratingTotal,
+    estateSuppliesAllowance: res.estateSuppliesAllowance,
+    minCrew: res.minCrew,
+    estHours: res.estHours,
   };
 }
 
@@ -1568,7 +1612,7 @@ async function calcSpecialty(
   ];
   if (input.specialty_access_difficulty === "requires_rigging_or_crane") {
     specialtyIncludes.push(
-      "Note: Crane/rigging typically adds $1,500–3,000 — your coordinator will confirm exact cost.",
+      "Crane/rigging adds $1,500–3,000. Coordinator will confirm exact cost.",
     );
   }
 
@@ -2246,20 +2290,24 @@ export async function POST(req: NextRequest) {
   }
 
   // Section 5: Batch all Mapbox distance calls (job route + deadhead + return trip)
-  const isResidential = input.service_type === "local_move" || input.service_type === "long_distance";
+  const isLocalMove = input.service_type === "local_move";
+  const isLongDistance = input.service_type === "long_distance";
+  /** Inventory scoring: local residential + white glove only (not long_distance). */
+  const useInventoryScoring = isLocalMove || input.service_type === "white_glove";
+  const needsDeadheadReturn = isLocalMove;
   const [distInfo, neighbourhood, dateMult, deadheadInfo, returnInfo] = await Promise.all([
     getDistance(input.from_address, input.to_address),
     getNeighbourhood(sb, input.from_address),
     getDateMultiplier(sb, input.move_date),
     // Section 4D: Yugo base → pickup (deadhead)
-    isResidential ? getDistance(YUGO_BASE_ADDRESS, input.from_address) : Promise.resolve(null),
+    needsDeadheadReturn ? getDistance(YUGO_BASE_ADDRESS, input.from_address) : Promise.resolve(null),
     // Section 4E: drop-off → Yugo base (return trip)
-    isResidential ? getDistance(input.to_address, YUGO_BASE_ADDRESS) : Promise.resolve(null),
+    needsDeadheadReturn ? getDistance(input.to_address, YUGO_BASE_ADDRESS) : Promise.resolve(null),
   ]);
 
   // Pre-compute a rough base for percent-type add-ons (use base_rate as proxy)
   let roughBase = 1000;
-  if (isResidential) {
+  if (isLocalMove || isLongDistance || input.service_type === "white_glove") {
     const { data: br } = await sb
       .from("base_rates")
       .select("base_price")
@@ -2274,8 +2322,8 @@ export async function POST(req: NextRequest) {
   const invModFloor = cfgNum(config, "inventory_modifier_floor", 0.65);
   const invModCap   = cfgNum(config, "inventory_modifier_cap",   1.50);
 
-  // Inventory volume modifier (residential / long distance only)
-  const invResult = isResidential
+  // Inventory volume modifier (local_move + white_glove only)
+  const invResult = useInventoryScoring
     ? await calcInventoryModifier(sb, input.move_size ?? "2br", input.inventory_items ?? [], input.client_box_count, invModFloor, invModCap)
     : { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
 
@@ -2331,7 +2379,7 @@ export async function POST(req: NextRequest) {
         whiteGloveHoursMultiplier: input.service_type === "white_glove",
       },
     );
-  } else if (isResidential) {
+  } else if (isLocalMove || input.service_type === "white_glove") {
     const { data: br } = await sb
       .from("base_rates")
       .select("min_crew, estimated_hours")
@@ -2409,9 +2457,25 @@ export async function POST(req: NextRequest) {
       break;
     }
     case "white_glove": {
-      const res = await calcWhiteGlove(sb, input, config, distInfo, addonResult);
+      const res = await calcWhiteGlove(
+        sb,
+        input,
+        config,
+        distInfo,
+        neighbourhood,
+        dateMult,
+        addonResult,
+        invResult,
+        labour,
+        deadheadInfo,
+        returnInfo,
+      );
       custom_price = res.custom_price;
       factors = res.factors;
+      residentialCratingTotal = res.cratingTotal;
+      estateSuppliesAllowance = res.estateSuppliesAllowance;
+      displayCrew = labour ? labour.crewSize : res.minCrew;
+      displayHours = labour ? labour.estimatedHours : res.estHours;
       break;
     }
     case "specialty": {
@@ -2462,8 +2526,8 @@ export async function POST(req: NextRequest) {
     factors = { ...factors, truck_breakdown_line: truckBreakdownLabel(tk, factors.truck_surcharge) };
   }
 
-  // For non-residential services, apply crating cost to custom_price
-  if (custom_price && globalCratingTotal > 0) {
+  // For non-residential services, apply crating cost to custom_price (white_glove uses residential calc — crating already in tier)
+  if (custom_price && globalCratingTotal > 0 && svcType !== "white_glove") {
     const taxR = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
     const newPrice = custom_price.price + globalCratingTotal;
     const newTax = Math.round(newPrice * taxR);
@@ -2508,6 +2572,12 @@ export async function POST(req: NextRequest) {
   const fallbackTruckLine = labourTruckKey && TRUCK_DISPLAY[labourTruckKey]
     ? TRUCK_DISPLAY[labourTruckKey]
     : labour?.truckSize ?? "Dedicated moving truck";
+
+  /** Local moves: priced truck (inventory-based) should match quote.truck_primary when coordinator did not override. */
+  const residentialPricedTruck =
+    svcType === "local_move" && typeof factors.truck_recommended === "string"
+      ? (factors.truck_recommended as string)
+      : null;
 
   if (truckResult.primary && tiers) {
     const truckLine = truckResult.isMultiVehicle && truckResult.secondary
@@ -2667,7 +2737,10 @@ export async function POST(req: NextRequest) {
       est_crew_size: displayCrew ?? labour?.crewSize ?? null,
       est_hours: displayHours ?? labour?.estimatedHours ?? null,
       est_truck_size: labour?.truckSize ?? null,
-      truck_primary: truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
+      truck_primary:
+        svcType === "local_move" && residentialPricedTruck && residentialPricedTruck !== "none"
+          ? residentialPricedTruck
+          : truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
       truck_secondary: truckResult.secondary?.vehicle_type ?? null,
       recommended_tier: input.recommended_tier || "signature",
       crating_pieces: input.crating_pieces ?? [],

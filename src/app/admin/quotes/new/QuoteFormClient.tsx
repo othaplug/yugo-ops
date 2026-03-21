@@ -8,6 +8,7 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { toTitleCase } from "@/lib/format-text";
+import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { CaretDown as ChevronDown, Check, PaperPlaneTilt as Send, Eye, CircleNotch as Loader2, CaretRight as ChevronRight, SidebarSimple as PanelRightOpen, Users, Clock, Truck, Plus, Trash as Trash2, Warning } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
@@ -159,9 +160,9 @@ const EVENT_TRUCK_OPTIONS = [
 ] as const;
 
 const EVENT_LEG_RETURN_RATE_OPTIONS = [
-  { value: "auto", label: "Auto (65% road · 85% on-site)" },
+  { value: "auto", label: "Auto (65% different addresses · 85% same venue)" },
   { value: "65", label: "65% (standard delivery–return)" },
-  { value: "85", label: "85% (on-site style)" },
+  { value: "85", label: "85% (on-site event)" },
   { value: "100", label: "100% (same effort both days)" },
   { value: "custom", label: "Custom %" },
 ] as const;
@@ -462,7 +463,7 @@ export default function QuoteFormClient({
   const [toLongCarry, setToLongCarry] = useState(false);
   const [moveDate, setMoveDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
-  const [arrivalWindow, setArrivalWindow] = useState("morning");
+  const [arrivalWindow, setArrivalWindow] = useState(() => TIME_WINDOW_OPTIONS[1] ?? TIME_WINDOW_OPTIONS[0] ?? "");
   const [moveSize, setMoveSize] = useState("2br");
   const [clientBoxCount, setClientBoxCount] = useState("");
 
@@ -478,6 +479,8 @@ export default function QuoteFormClient({
   const [hasConf, setHasConf] = useState(false);
   const [hasReception, setHasReception] = useState(false);
   const [timingPref, setTimingPref] = useState("");
+  const [officeCrewSize, setOfficeCrewSize] = useState(2);
+  const [officeEstHours, setOfficeEstHours] = useState(5);
 
   // Single item fields
   const [itemDescription, setItemDescription] = useState("");
@@ -791,6 +794,69 @@ export default function QuoteFormClient({
     if (serviceType !== "event") setEventMulti(false);
   }, [serviceType]);
 
+  const prevServiceTypeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevServiceTypeRef.current === null) {
+      prevServiceTypeRef.current = serviceType;
+      return;
+    }
+    if (prevServiceTypeRef.current === serviceType) return;
+    prevServiceTypeRef.current = serviceType;
+
+    setQuoteResult(null);
+    setQuoteId(null);
+    setSendSuccess(false);
+    setGenerating(false);
+    setInventoryItems([]);
+    setClientBoxCount("");
+    setSpecialtyItems([]);
+    setEventItems([]);
+    setB2bItems([]);
+    setSqft("");
+    setWsCount("");
+    setHasIt(false);
+    setHasConf(false);
+    setHasReception(false);
+    setTimingPref("");
+    setOfficeCrewSize(2);
+    setOfficeEstHours(5);
+    setItemDescription("");
+    setItemCategory("standard_furniture");
+    setItemWeight("");
+    setAssembly("None");
+    setStairCarry(false);
+    setStairFlights(1);
+    setNumItems(1);
+    setSingleItemSpecialHandling("");
+    setDeclaredValue("");
+    setSpecialtyType("");
+    setSpecialtyItemDescription("");
+    setSpecialtyDimL("");
+    setSpecialtyDimW("");
+    setSpecialtyDimH("");
+    setSpecialtyWeightClass("");
+    setSpecialtyRequirements([]);
+    setSpecialtyNotes("");
+    setSpecialtyBuildingReqs([]);
+    setSpecialtyAccessDifficulty("");
+    setEventName("");
+    setVenueAddress("");
+    setEventReturnDate("");
+    setEventSetupRequired(false);
+    setB2bBusinessName("");
+    setB2bNewItemName("");
+    setB2bNewItemQty(1);
+    setB2bWeightCategory("standard");
+    setCratingRequired(false);
+    setCratingItems([]);
+    setReferralCode("");
+    setReferralId(null);
+    setReferralStatus("idle");
+    setReferralMsg("");
+    setReferralDiscount(0);
+    setArrivalWindow(TIME_WINDOW_OPTIONS[1] ?? TIME_WINDOW_OPTIONS[0] ?? "");
+  }, [serviceType]);
+
   useEffect(() => {
     if (serviceType !== "specialty") {
       setSpecialtyRouteKm(null);
@@ -1007,6 +1073,8 @@ export default function QuoteFormClient({
       base.has_conference_room = hasConf;
       base.has_reception_area = hasReception;
       base.timing_preference = timingPref || undefined;
+      base.office_crew_size = officeCrewSize || undefined;
+      base.office_estimated_hours = officeEstHours || undefined;
       if (inventoryItems.length > 0) {
         base.inventory_items = inventoryItems.map((i) => ({
           slug: i.slug,
@@ -1033,6 +1101,15 @@ export default function QuoteFormClient({
       base.declared_value = Number(declaredValue) || undefined;
       base.stair_carry = stairCarry;
       base.stair_flights = stairFlights;
+      if (inventoryItems.length > 0) {
+        base.inventory_items = inventoryItems.map((i) => ({
+          slug: i.slug,
+          name: i.name,
+          quantity: i.quantity,
+          weight_score: i.weight_score,
+        }));
+      }
+      base.client_box_count = Number(clientBoxCount) || undefined;
     }
     if (serviceType === "specialty") {
       base.project_type = specialtyType || "other";
@@ -1576,10 +1653,9 @@ export default function QuoteFormClient({
                   {serviceType !== "labour_only" && (
                   <Field label="Arrival Window">
                     <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={fieldInput}>
-                      <option value="morning">Morning (7 AM – 12 PM)</option>
-                      <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
-                      <option value="full_day">Full Day (7 AM – 5 PM)</option>
-                      <option value="evening">Evening (5 PM – 9 PM)</option>
+                      {TIME_WINDOW_OPTIONS.map((label) => (
+                        <option key={label} value={label}>{label}</option>
+                      ))}
                     </select>
                   </Field>
                   )}
@@ -1788,7 +1864,7 @@ export default function QuoteFormClient({
               )}
 
               {/* ── 5c. Inventory (Residential / Long distance / Office) ── */}
-              {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && itemWeights.length > 0 && (
+              {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move" || serviceType === "white_glove") && itemWeights.length > 0 && (
                 <>
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
                 <InventoryInput
@@ -1812,6 +1888,29 @@ export default function QuoteFormClient({
               {serviceType === "office_move" && (
                 <div className="space-y-2">
                   <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office Details</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Field label="Billable hours (crew block)">
+                      <input
+                        type="number"
+                        min={1}
+                        max={24}
+                        value={officeEstHours}
+                        onChange={(e) => setOfficeEstHours(Number(e.target.value) || 5)}
+                        className={`${fieldInput} min-w-0`}
+                      />
+                      <p className="text-[9px] text-[var(--tx3)] mt-0.5">Hourly rate × hours (default 5). Distance &amp; surcharges added separately.</p>
+                    </Field>
+                    <Field label="Crew size (reference)">
+                      <input
+                        type="number"
+                        min={1}
+                        max={12}
+                        value={officeCrewSize}
+                        onChange={(e) => setOfficeCrewSize(Number(e.target.value) || 2)}
+                        className={`${fieldInput} min-w-0`}
+                      />
+                    </Field>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Field label="Square Footage">
                       <input type="number" min={0} value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="2500" className={`${fieldInput} min-w-0`} />
@@ -1851,8 +1950,21 @@ export default function QuoteFormClient({
 
               {/* ── Single item fields ── */}
               {serviceType === "single_item" && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</h3>
+                  <div className="rounded-xl border-2 border-[var(--gold)]/40 bg-[var(--gold)]/8 px-3 py-3 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">Special handling instructions</p>
+                    <p className="text-[9px] text-[var(--tx3)] leading-snug">
+                      Shown on the client quote and to crew — fragile areas, disassembly, narrow access, orientation, etc.
+                    </p>
+                    <textarea
+                      value={singleItemSpecialHandling}
+                      onChange={(e) => setSingleItemSpecialHandling(e.target.value)}
+                      rows={4}
+                      placeholder="e.g. Glass top — keep upright; marble base; 32&quot; door clearance; do not lay flat…"
+                      className={`${fieldInput} resize-y min-h-[88px]`}
+                    />
+                  </div>
                   <Field label="Item description *">
                     <input
                       value={itemDescription}
@@ -1891,15 +2003,6 @@ export default function QuoteFormClient({
                       )}
                     </div>
                   </div>
-                  <Field label="Special handling instructions">
-                    <textarea
-                      value={singleItemSpecialHandling}
-                      onChange={(e) => setSingleItemSpecialHandling(e.target.value)}
-                      rows={3}
-                      placeholder="Fragile glass top, use extra padding; do not lay flat; narrow staircase…"
-                      className={`${fieldInput} resize-none border-2 border-[var(--gold)]/25`}
-                    />
-                  </Field>
                 </div>
               )}
 
@@ -2011,7 +2114,7 @@ export default function QuoteFormClient({
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Building requirements</label>
+                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Building Requirements</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {SPECIALTY_BUILDING_REQUIREMENTS.map((req) => (
                         <label key={req.value} className="flex items-center gap-2 cursor-pointer">
@@ -2044,7 +2147,7 @@ export default function QuoteFormClient({
                     </select>
                     {specialtyAccessDifficulty === "requires_rigging_or_crane" ? (
                       <p className="text-[10px] text-amber-700 mt-1.5">
-                        Crane/rigging typically adds $1,500–3,000. Coordinator will confirm exact cost.
+                        Crane/rigging adds $1,500–3,000. Coordinator will confirm exact cost.
                       </p>
                     ) : null}
                   </Field>
@@ -2138,6 +2241,11 @@ export default function QuoteFormClient({
                         <p className="text-[9px] text-[var(--tx3)] mt-1">Select 20ft+ for large events with significant inventory.</p>
                       </Field>
                     )}
+                    {!eventMulti && eventSameLocationSingle ? (
+                      <p className="text-[10px] text-[var(--tx2)] rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]">
+                        Truck: <strong className="text-[var(--tx)]">No truck</strong> — on-site event (no road transit for this program).
+                      </p>
+                    ) : null}
                     <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
                       <input
                         type="checkbox"
@@ -2227,9 +2335,9 @@ export default function QuoteFormClient({
                           </Field>
                           <Field label="Delivery Time">
                             <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={fieldInput}>
-                              <option value="morning">Morning (7 AM – 12 PM)</option>
-                              <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
-                              <option value="evening">Evening (5 PM – 9 PM)</option>
+                              {TIME_WINDOW_OPTIONS.map((label) => (
+                                <option key={label} value={label}>{label}</option>
+                              ))}
                             </select>
                           </Field>
                         </div>
@@ -3463,9 +3571,13 @@ type AdminEventLegFactor = {
   return_date?: string;
   delivery_charge?: number;
   return_charge?: number;
+  return_discount?: number;
   event_crew?: number;
   event_hours?: number;
+  return_hours?: number;
   same_day?: boolean;
+  is_on_site?: boolean;
+  event_type_label?: string;
 };
 
 function fmtShortEventAdmin(d: string | null | undefined): string {
@@ -3556,6 +3668,9 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
               <p className="text-[9px] text-[var(--tx3)]/70">
                 Deliver {fmtShortEventAdmin(leg.delivery_date)} → Return {fmtShortEventAdmin(leg.return_date)}
                 {leg.same_day ? " (same day)" : ""}
+                {leg.is_on_site ? (
+                  <span className="ml-1 font-semibold text-[var(--tx)]">· On-site Event</span>
+                ) : null}
               </p>
               <div className="flex justify-between gap-2">
                 <span className="text-[var(--tx3)]">
@@ -3573,7 +3688,11 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
               <div className="flex justify-between gap-2">
                 <span className="text-[var(--tx3)]">
                   Return ({fmtShortEventAdmin(leg.return_date)})
-                  {returnDiscount !== undefined ? (
+                  {leg.return_discount !== undefined ? (
+                    <span className="ml-1 text-[var(--tx3)]/70">
+                      {Math.round(leg.return_discount * 100)}% of leg delivery
+                    </span>
+                  ) : returnDiscount !== undefined ? (
                     <span className="ml-1 text-[var(--tx3)]/70">
                       {Math.round(returnDiscount * 100)}% of leg delivery
                     </span>
@@ -3670,6 +3789,12 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
             <span className="font-medium text-[var(--tx)]">{fmtPrice(weightSurcharge)}</span>
           </div>
         )}
+        {typeof factors.truck_breakdown_line === "string" && factors.truck_breakdown_line.trim().length > 0 ? (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">Vehicle</span>
+            <span className="font-medium text-[var(--tx)]">{factors.truck_breakdown_line.trim()}</span>
+          </div>
+        ) : null}
         {distKm !== undefined && distKm > 0 && (
           <div className="text-[var(--tx3)]">{distKm.toFixed(1)} km</div>
         )}
@@ -3696,6 +3821,9 @@ function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; fact
   const visit1Price = factors.visit1_price as number | undefined;
   const visit2Price = factors.visit2_price as number | undefined;
   const visit2Date = factors.visit2_date as string | undefined;
+  const labourStorageFee = (factors.labour_storage_fee as number | undefined) ?? 0;
+  const storageWeeks = typeof factors.labour_storage_weeks === "number" ? factors.labour_storage_weeks : null;
+  const storageWeeklyRate = typeof factors.storage_weekly_rate === "number" ? factors.storage_weekly_rate : null;
 
   return (
     <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
@@ -3720,6 +3848,17 @@ function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; fact
           <div className="flex justify-between">
             <span className="text-[var(--tx3)]">Access surcharge</span>
             <span className="font-medium text-[var(--tx)]">{fmtPrice(accessSurcharge)}</span>
+          </div>
+        )}
+        {labourStorageFee > 0 && (
+          <div className="flex justify-between">
+            <span className="text-[var(--tx3)]">
+              Storage
+              {storageWeeks != null && storageWeeklyRate != null
+                ? ` (${storageWeeks} wk × ${fmtPrice(storageWeeklyRate)}/wk)`
+                : null}
+            </span>
+            <span className="font-medium text-[var(--tx)]">{fmtPrice(labourStorageFee)}</span>
           </div>
         )}
         {visits >= 2 && visit2Price !== undefined && (
@@ -3823,6 +3962,11 @@ function PriceBreakdownResidential({
   const invScore      = typeof factors.inventory_score === "number" ? factors.inventory_score : null;
   const invBenchmark  = typeof factors.inventory_benchmark === "number" ? factors.inventory_benchmark : null;
   const cratingTotal  = typeof factors.crating_total === "number" ? factors.crating_total : 0;
+  const parkingLc     = typeof factors.parking_long_carry_total === "number" ? factors.parking_long_carry_total : 0;
+  const truckLine     =
+    typeof factors.truck_breakdown_line === "string" && factors.truck_breakdown_line.trim().length > 0
+      ? factors.truck_breakdown_line.trim()
+      : null;
 
   // Inventory label
   let invLabel = "standard";
@@ -3910,6 +4054,19 @@ function PriceBreakdownResidential({
         {specialtySurch > 0 && (
           <Row label="Specialty surcharge" value={<span className="font-semibold text-amber-600">+{fmtPrice(specialtySurch)}</span>} />
         )}
+        <Row
+          label="Parking & long carry"
+          value={
+            parkingLc > 0 ? (
+              <span className="font-semibold text-amber-600">+{fmtPrice(parkingLc)}</span>
+            ) : (
+              <span className="text-[var(--tx3)]">$0</span>
+            )
+          }
+        />
+        {truckLine ? (
+          <Row label="Vehicle surcharge" value={<span className="font-semibold text-[var(--tx)]">{truckLine}</span>} />
+        ) : null}
         <Row
           label="Labour delta"
           value={labourDelta != null && labourDelta > 0

@@ -1,29 +1,57 @@
 /**
  * SidebarIcons — Phosphor-backed icon components for the admin sidebar.
- * Uses the global PhosphorProvider duotone weight.
+ * Icons use weight from PhosphorProvider (regular).
  */
 import React from "react";
 import {
-  Target, Truck, SquaresFour, UserCheck, Tag, ChartLineUp, ClipboardText,
-  Calendar, MapPin, Armchair, Palette, Buildings, Image, Handshake, FileText,
-  CurrencyDollar, Users, ChatText, ChartBar, Lock,
-  CreditCard, TrendUp, Shield, Lightning, Gear, Gift, House,
+  Target,
+  Path,
+  Broadcast,
+  UserCheck,
+  Tag,
+  ChartLineUp,
+  ClipboardText,
+  CalendarBlank,
+  MapPin,
+  Armchair,
+  Palette,
+  Buildings,
+  Image,
+  Handshake,
+  FileText,
+  CurrencyDollar,
+  Users,
+  ChatText,
+  ChartBar,
+  Lock,
+  Truck,
+  Briefcase,
+  CreditCard,
+  TrendUp,
+  Shield,
+  Lightning,
+  Gear,
+  Gift,
+  House,
 } from "@phosphor-icons/react";
 
 const SIZE = 16;
 
-const ic = (Comp: React.ComponentType<{ size?: number; className?: string }>) =>
-  () => <Comp size={SIZE} className="shrink-0" />;
+const ic = (Comp: React.ComponentType<{ size?: number; className?: string; weight?: "regular" | "bold" | "fill" | "duotone" | "thin" | "light" }>) =>
+  () => <Comp size={SIZE} weight="regular" className="shrink-0" />;
 
 export const Icons = {
   target:         ic(Target),
-  package:        ic(Truck),
-  dispatch:       ic(SquaresFour),
+  /** All Moves — route / journey */
+  path:           ic(Path),
+  /** Jobs (deliveries list) */
+  briefcase:      ic(Briefcase),
+  dispatch:       ic(Broadcast),
   userCheck:      ic(UserCheck),
   tag:            ic(Tag),
   forecast:       ic(ChartLineUp),
   projects:       ic(ClipboardText),
-  calendar:       ic(Calendar),
+  calendar:       ic(CalendarBlank),
   mapPin:         ic(MapPin),
   sofa:           ic(Armchair),
   palette:        ic(Palette),
@@ -39,7 +67,7 @@ export const Icons = {
   barChart:       ic(ChartBar),
   lock:           ic(Lock),
   truck:          ic(Truck),
-  quoteClipboard: ic(ClipboardText),
+  quoteClipboard: ic(FileText),
   creditCard:     ic(CreditCard),
   trendingUp:     ic(TrendUp),
   shield:         ic(Shield),

@@ -30,10 +30,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
       ? f.single_item_special_handling.trim()
       : null;
   const weightSurcharge = typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0 ? f.weight_surcharge : 0;
-  const truckBreakdown =
-    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
-      ? f.truck_breakdown_line.trim()
-      : null;
+  const truckBreakdown: string | null = null;
   const includes = (f?.includes as string[] | undefined) ?? [
     "Professional handling & transport",
     "Protective blanket wrapping",

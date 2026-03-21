@@ -23,13 +23,13 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
       { name: "All Partners", href: "/admin/partners", Icon: Icons.users },
       { name: "Partner Health", href: "/admin/partners/health", Icon: Icons.barChart },
       { name: "Realtors & referrals", href: "/admin/partners/realtors", Icon: Icons.handshake },
-      { name: "Jobs", href: "/admin/deliveries", Icon: Icons.package },
+      { name: "Jobs", href: "/admin/deliveries", Icon: Icons.briefcase },
     ],
   },
   {
     group: "Moves",
     items: [
-      { name: "All Moves", href: "/admin/moves", Icon: Icons.truck },
+      { name: "All Moves", href: "/admin/moves", Icon: Icons.path },
       { name: "Quotes", href: "/admin/quotes", Icon: Icons.quoteClipboard },
       { name: "Widget Leads", href: "/admin/widget-leads", Icon: Icons.zap },
     ],

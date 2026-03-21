@@ -20,6 +20,15 @@ interface Partner {
   created_at: string;
 }
 
+interface RealtorRow {
+  id: string;
+  agent_name: string;
+  email: string | null;
+  brokerage: string | null;
+  referral_count: number;
+  created_at: string;
+}
+
 const TYPE_LABELS: Record<string, string> = {
   // Legacy types
   retail: "Retail",
@@ -159,8 +168,45 @@ const columns: ColumnDef<Partner>[] = [
   },
 ];
 
+const realtorColumns: ColumnDef<RealtorRow>[] = [
+  {
+    id: "agent",
+    label: "Agent",
+    accessor: (r) => r.agent_name,
+    render: (r) => (
+      <div className="min-w-0">
+        <div className="text-[13px] font-bold text-[var(--tx)]">{r.agent_name}</div>
+        {r.brokerage ? <div className="text-[11px] text-[var(--tx3)] mt-0.5">{r.brokerage}</div> : null}
+      </div>
+    ),
+  },
+  {
+    id: "email",
+    label: "Email",
+    accessor: (r) => r.email || "",
+    render: (r) => <span className="text-[12px] text-[var(--tx2)]">{r.email || "—"}</span>,
+  },
+  {
+    id: "referrals",
+    label: "Referrals",
+    accessor: (r) => String(r.referral_count),
+    render: (r) => <span className="text-[12px] font-semibold text-[var(--tx)]">{r.referral_count}</span>,
+  },
+  {
+    id: "joined",
+    label: "Added",
+    accessor: (r) => r.created_at,
+    render: (r) => (
+      <span className="text-[11px] text-[var(--tx3)]">
+        {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+      </span>
+    ),
+  },
+];
+
 export default function AllPartnersClient() {
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [realtors, setRealtors] = useState<RealtorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
@@ -181,17 +227,27 @@ export default function AllPartnersClient() {
     (async () => {
       setFetchError(null);
       try {
-        const res = await fetch("/api/admin/partners/list");
-        const json = await res.json();
-        if (!res.ok) {
-          setFetchError(json?.error || res.statusText || "Failed to load partners");
+        const [pRes, rRes] = await Promise.all([
+          fetch("/api/admin/partners/list"),
+          fetch("/api/admin/realtors-list"),
+        ]);
+        const pJson = await pRes.json();
+        const rJson = await rRes.json();
+        if (!pRes.ok) {
+          setFetchError(pJson?.error || pRes.statusText || "Failed to load partners");
           setPartners([]);
-          return;
+        } else {
+          setPartners(Array.isArray(pJson.partners) ? pJson.partners : []);
         }
-        setPartners(Array.isArray(json.partners) ? json.partners : []);
+        if (rRes.ok && Array.isArray(rJson.realtors)) {
+          setRealtors(rJson.realtors);
+        } else {
+          setRealtors([]);
+        }
       } catch (e) {
         setFetchError(e instanceof Error ? e.message : "Failed to load partners");
         setPartners([]);
+        setRealtors([]);
       } finally {
         setLoading(false);
       }
@@ -208,12 +264,16 @@ export default function AllPartnersClient() {
     const counts: Record<string, number> = { all: partners.length };
     for (const key of TYPE_TAB_KEYS) {
       if (key !== "all") {
-        const types = TAB_TYPE_MAP[key];
-        counts[key] = types ? partners.filter((p) => types.includes(p.type)).length : 0;
+        if (key === "realtor") {
+          counts[key] = realtors.length;
+        } else {
+          const types = TAB_TYPE_MAP[key];
+          counts[key] = types ? partners.filter((p) => types.includes(p.type)).length : 0;
+        }
       }
     }
     return counts;
-  }, [partners]);
+  }, [partners, realtors]);
 
   const typeTabs = useMemo(() => {
     const allTab = { key: "all", label: "All Partners" };
@@ -314,17 +374,31 @@ export default function AllPartnersClient() {
         ))}
       </div>
 
-      <DataTable
-        data={filtered}
-        columns={columns}
-        keyField="id"
-        searchPlaceholder="Search by company, contact, email..."
-        exportFilename="partners"
-        tableId="all-partners-v2"
-        onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
-        emptyMessage="No partners found"
-        emptySubtext={activeTab !== "all" ? `No ${getTypeLabel(activeTab)} partners yet` : undefined}
-      />
+      {activeTab === "realtor" ? (
+        <DataTable
+          data={realtors}
+          columns={realtorColumns}
+          keyField="id"
+          searchPlaceholder="Search agents, brokerages, email…"
+          exportFilename="realtors"
+          tableId="all-partners-realtors"
+          onRowClick={() => router.push("/admin/partners/realtors")}
+          emptyMessage="No realtors in the database yet"
+          emptySubtext="Add agents under Partners → Realtors & referrals."
+        />
+      ) : (
+        <DataTable
+          data={filtered}
+          columns={columns}
+          keyField="id"
+          searchPlaceholder="Search by company, contact, email..."
+          exportFilename="partners"
+          tableId="all-partners-v2"
+          onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
+          emptyMessage="No partners found"
+          emptySubtext={activeTab !== "all" ? `No ${getTypeLabel(activeTab)} partners yet` : undefined}
+        />
+      )}
 
       <InvitePartnerModal
         open={inviteOpen}

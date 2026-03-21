@@ -93,12 +93,6 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
     });
   }
 
-  const truckSurchargeAmt = typeof f?.truck_surcharge === "number" && f.truck_surcharge > 0 ? f.truck_surcharge : 0;
-  const truckBd =
-    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
-      ? f.truck_breakdown_line.trim()
-      : "Truck sizing";
-
   const breakdown = ([
     f?.base_estimate && { label: "Base Estimate", amount: f.base_estimate as number },
     f?.timeline_surcharge && { label: "Timeline Factor", amount: f.timeline_surcharge as number },
@@ -112,7 +106,10 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
     },
     f?.equipment_surcharge && { label: "Special Equipment", amount: f.equipment_surcharge as number },
     f?.distance_surcharge && { label: "Distance", amount: f.distance_surcharge as number },
-    truckSurchargeAmt > 0 && { label: truckBd, amount: truckSurchargeAmt },
+    f?.parking_long_carry_total && (f.parking_long_carry_total as number) > 0 && {
+      label: "Parking / long carry",
+      amount: f.parking_long_carry_total as number,
+    },
   ] as (false | null | undefined | { label: string; amount: number })[]).filter(
     (x): x is { label: string; amount: number } => !!x,
   );
@@ -199,7 +196,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           ) : null}
           {accessKey === "requires_rigging_or_crane" ? (
             <p className="text-[10px] mt-2 leading-snug rounded-lg px-3 py-2" style={{ backgroundColor: "#FFF8E7", color: "#7A5C12" }}>
-              Crane or rigging typically adds $1,500–3,000. Your coordinator will confirm the exact cost before move day.
+              Crane/rigging adds $1,500–3,000. Coordinator will confirm exact cost.
             </p>
           ) : null}
         </div>

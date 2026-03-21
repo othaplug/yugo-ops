@@ -56,10 +56,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
   const deposit = calculateDeposit("white_glove", price);
   const declaredValue = f?.declared_value as number | undefined;
   const weightSurcharge = typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0 ? f.weight_surcharge : 0;
-  const truckBreakdown =
-    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
-      ? f.truck_breakdown_line.trim()
-      : null;
+  const truckBreakdown: string | null = null;
 
   return (
     <section className="mb-10 space-y-8">
