@@ -191,6 +191,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         label: "Amount",
         accessor: (q) => quoteAmount(q),
         align: "right",
+        minWidth: "92px",
         render: (q) => (
           <span className="block text-right font-bold text-[var(--gold)] font-heading">
             {quoteAmount(q)}

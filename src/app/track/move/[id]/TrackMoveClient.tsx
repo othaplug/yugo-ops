@@ -39,6 +39,7 @@ import {
   Plus,
   X,
   Lock,
+  Copy,
 } from "@phosphor-icons/react";
 
 function formatPerkOffer(offerType: string, discountValue: number | null): string {
@@ -539,9 +540,9 @@ export default function TrackMoveClient({
             )}
           </div>
         )}
-        {/* Header */}
+        {/* Header — safe-area top so logo isn’t clipped under notch / status bar */}
         <header className="sticky top-0 z-50 border-b backdrop-blur-md" style={{ backgroundColor: `${WINE}F5`, borderColor: `${WINE}80` }}>
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
             <div className="flex items-center gap-2">
               <YugoLogo size={20} variant="gold" />
             </div>
@@ -913,11 +914,12 @@ export default function TrackMoveClient({
                             ) : perk.redemption_code ? (
                               <button
                                 type="button"
+                                aria-label="Copy perk code"
                                 onClick={() => navigator.clipboard.writeText(perk.redemption_code!).catch(() => {})}
-                                className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+                                className="ml-auto shrink-0 w-9 h-9 inline-flex items-center justify-center bg-white rounded-full border border-white/30 hover:opacity-90 transition-opacity"
                                 style={{ color: theme.stamp }}
                               >
-                                Copy code
+                                <Copy size={16} weight="regular" className="text-current" aria-hidden />
                               </button>
                             ) : null}
                           </div>
@@ -975,16 +977,17 @@ export default function TrackMoveClient({
                     </span>
                     <button
                       type="button"
+                      aria-label={referralCopied ? "Copied" : "Copy referral code"}
                       onClick={() => {
                         navigator.clipboard.writeText(referral.referral_code).then(() => {
                           setReferralCopied(true);
                           setTimeout(() => setReferralCopied(false), 2000);
                         });
                       }}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[10px] font-semibold transition-all active:scale-95"
+                      className="shrink-0 w-10 h-10 inline-flex items-center justify-center rounded-xl transition-all active:scale-95"
                       style={{ backgroundColor: referralCopied ? `${FOREST}30` : FOREST, color: "#FAF7F2" }}
                     >
-                      {referralCopied ? "Copied!" : "Copy"}
+                      {referralCopied ? <Check size={18} weight="bold" aria-hidden /> : <Copy size={18} weight="regular" aria-hidden />}
                     </button>
                   </div>
                   <p className="text-[10px] opacity-60 mb-3" style={{ color: FOREST }}>
@@ -1562,11 +1565,12 @@ export default function TrackMoveClient({
                                 ) : perk.redemption_code ? (
                                   <button
                                     type="button"
+                                    aria-label="Copy perk code"
                                     onClick={() => navigator.clipboard.writeText(perk.redemption_code!).catch(() => {})}
-                                    className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+                                    className="ml-auto shrink-0 w-9 h-9 inline-flex items-center justify-center bg-white rounded-full border border-white/30 hover:opacity-90 transition-opacity"
                                     style={{ color: theme.stamp }}
                                   >
-                                    Copy code
+                                    <Copy size={16} weight="regular" className="text-current" aria-hidden />
                                   </button>
                                 ) : null}
                               </div>
@@ -1628,19 +1632,20 @@ export default function TrackMoveClient({
                         </span>
                         <button
                           type="button"
+                          aria-label={referralCopied ? "Copied" : "Copy referral code"}
                           onClick={() => {
                             navigator.clipboard.writeText(referral.referral_code).then(() => {
                               setReferralCopied(true);
                               setTimeout(() => setReferralCopied(false), 2000);
                             });
                           }}
-                          className="shrink-0 rounded-lg px-3 py-1.5 text-[10px] font-semibold transition-all active:scale-95"
+                          className="shrink-0 w-10 h-10 inline-flex items-center justify-center rounded-xl transition-all active:scale-95"
                           style={{
                             backgroundColor: referralCopied ? `${FOREST}30` : FOREST,
                             color: "#FAF7F2",
                           }}
                         >
-                          {referralCopied ? "Copied!" : "Copy"}
+                          {referralCopied ? <Check size={18} weight="bold" aria-hidden /> : <Copy size={18} weight="regular" aria-hidden />}
                         </button>
                       </div>
                       <p className="text-[10px] opacity-60 mb-3" style={{ color: FOREST }}>

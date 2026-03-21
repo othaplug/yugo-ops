@@ -46,6 +46,8 @@ function isPublic(pathname: string): boolean {
   if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/api/widget/")) return true;
   if (pathname.startsWith("/api/webhooks/")) return true;
+  /** Slack Events API (url_verification + event_callback) — no session cookies */
+  if (pathname.startsWith("/api/slack/")) return true;
   if (pathname.startsWith("/api/claims/")) return true;
   if (pathname.startsWith("/api/review/")) return true;
   if (pathname.startsWith("/_next/")) return true;

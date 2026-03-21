@@ -3,23 +3,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { getMoveCode, formatJobId } from "@/lib/move-code";
 import { sendPushToUser } from "@/lib/web-push";
+import { getSlackBotChannelConfig, slackChatPostMessage } from "@/lib/slack-bot";
 
-async function sendToSlack(moveId: string, clientName: string, message: string, moveCode: string) {
-  const token = process.env.SLACK_BOT_TOKEN;
-  const channel = process.env.SLACK_ADMIN_CHANNEL || process.env.SLACK_CHANNEL_ID;
-  if (!token || !channel) return;
+async function sendToSlack(clientName: string, message: string, moveCode: string) {
+  const cfg = getSlackBotChannelConfig();
+  if (!cfg) return;
 
   const text = `*Client message* (${moveCode})\n_${clientName || "Client"}_: ${message}`;
 
   try {
-    await fetch("https://slack.com/api/chat.postMessage", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ channel, text }),
-    });
+    await slackChatPostMessage(cfg.token, cfg.channel, text);
   } catch {
     // Slack optional
   }
@@ -76,7 +69,7 @@ export async function POST(
     const jobIdDisplay = formatJobId(moveCode, "move");
     const clientName = move.client_name || "Client";
 
-    await sendToSlack(moveId, clientName, message, jobIdDisplay);
+    await sendToSlack(clientName, message, jobIdDisplay);
 
     // Insert into messages table so it appears in admin Messages page thread
     await admin.from("messages").insert({

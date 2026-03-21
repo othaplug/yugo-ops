@@ -377,11 +377,15 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                 className="grid transition-[grid-template-rows] duration-200 ease-out"
                 style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
               >
-                <div className="overflow-hidden">
-                  <table className="w-full text-left border-collapse table-fixed">
+                <div className="overflow-x-auto max-w-full min-w-0 -mx-1 px-1">
+                  <table className="w-full min-w-0 max-w-full text-left border-collapse table-fixed">
+                    <colgroup>
+                      <col className="min-w-0" />
+                      <col className="w-14 shrink-0" />
+                    </colgroup>
                     <thead>
                       <tr style={{ backgroundColor: "#F5F5F3" }}>
-                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] w-auto">Item</th>
+                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] min-w-0">Item</th>
                         <th className="text-[9px] font-bold uppercase tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
                       </tr>
                     </thead>
@@ -398,7 +402,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAF8")}
                               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                             >
-                              <td className="px-4 py-3 text-[12.5px] font-medium text-[#2A2A2A] align-middle">{capitalize(r.label)}</td>
+                              <td className="px-4 py-3 text-[12.5px] font-medium text-[#2A2A2A] align-middle min-w-0 break-words">{capitalize(r.label)}</td>
                               <td className="px-4 py-3 align-middle w-14">
                                 <span className="flex items-center justify-end">
                                   <span className="text-[12.5px] font-semibold tabular-nums text-[#555]">{qty}</span>

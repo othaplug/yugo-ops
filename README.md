@@ -17,7 +17,7 @@ Copy `.env.example` to `.env.local` and configure. **Required for production:**
 | `CREW_SESSION_SECRET` | Min 32 chars for crew PIN hashing and JWT |
 | **`CRON_SECRET`** | **Required for cron routes.** Set in Vercel (and any external cron). All cron endpoints require `Authorization: Bearer <CRON_SECRET>`. Without it, quote follow-ups, pre-move emails, balance reminders, and post-move reviews return 401. |
 
-**Optional:** `RESEND_API_KEY`, `SQUARE_*`, `TWILIO_*`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` (or `MAPBOX_ACCESS_TOKEN` for server-side: maps, address autocomplete, distance/directions), `SQUARE_LOCATION_ID`, `SLACK_BOT_TOKEN`, VAPID keys for web push.
+**Optional:** `RESEND_API_KEY`, `SQUARE_*`, `TWILIO_*`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` (or `MAPBOX_ACCESS_TOKEN` for server-side: maps, address autocomplete, distance/directions), `SQUARE_LOCATION_ID`, `SLACK_BOT_TOKEN` with `SLACK_ADMIN_CHANNEL` or `SLACK_CHANNEL_ID` (single channel for **Admin → Messages** and client track alerts), `SLACK_SIGNING_SECRET` + Event Subscriptions URL `https://YOUR_APP/api/slack/events` for **live** Slack messages (see Slack app → Event Subscriptions → `message.channels`), `SLACK_WEBHOOK_URL` (incoming webhook for integration tests), VAPID keys for web push.
 
 ### Cron jobs (critical for email lifecycle)
 

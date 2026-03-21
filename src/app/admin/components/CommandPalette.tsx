@@ -47,6 +47,7 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
     group: "CRM",
     items: [
       { name: "Contacts", href: "/admin/clients", Icon: Icons.userCheck },
+      { name: "Messages (Slack)", href: "/admin/messages", Icon: Icons.messageSquare },
       { name: "Change Requests", href: "/admin/change-requests", Icon: Icons.clipboardList },
       { name: "Perks & Referrals", href: "/admin/perks", Icon: Icons.gift },
     ],

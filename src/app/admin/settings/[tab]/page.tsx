@@ -177,7 +177,7 @@ export default async function SettingsTabPage({
       { key: "quickbooks", label: "QuickBooks", desc: "Sync invoices and payments with your accounting software", icon: "creditCard" as const, connected: !!process.env.QUICKBOOKS_CLIENT_ID, category: "Accounting" },
       // Automation
       { key: "zapier", label: "Zapier", desc: "Automate workflows — connect Yugo to 6,000+ apps", icon: "plug" as const, connected: !!process.env.ZAPIER_WEBHOOK_SECRET, category: "Automation" },
-      { key: "slack", label: "Slack", desc: "Push move updates, crew alerts & booking notifications to Slack", icon: "messageSquare" as const, connected: !!process.env.SLACK_WEBHOOK_URL, category: "Automation" },
+      { key: "slack", label: "Slack", desc: "Team channel in Admin → Messages; webhooks for test pings", icon: "messageSquare" as const, connected: !!(process.env.SLACK_WEBHOOK_URL || process.env.SLACK_BOT_TOKEN), category: "Automation" },
     ];
 
     return (

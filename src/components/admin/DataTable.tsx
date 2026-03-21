@@ -662,7 +662,7 @@ export default function DataTable<T>({
 
   /* ════════════ Render ════════════ */
   return (
-    <div className="space-y-0">
+    <div className="space-y-0 w-full min-w-0 max-w-full">
       {/* ── Toolbar ── */}
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex items-center gap-2 w-full min-w-0">
@@ -811,7 +811,9 @@ export default function DataTable<T>({
       )}
 
       {/* ── Table header (desktop only) ── */}
-      <div className={`hidden md:block overflow-x-auto ${stickyHeader ? "max-h-[calc(100vh-240px)] overflow-y-auto" : ""}`}>
+      <div
+        className={`hidden md:block w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pr-1 ${stickyHeader ? "max-h-[calc(100vh-240px)] overflow-y-auto" : ""}`}
+      >
         <table
           className={`border-collapse w-full min-w-[600px] text-[12px] ${striped ? "dt-striped" : ""}`}
           style={{ tableLayout: "fixed" }}
@@ -958,7 +960,7 @@ export default function DataTable<T>({
                   {visibleCols.map((col) => (
                     <td
                       key={col.id}
-                      className={`dt-td overflow-hidden text-ellipsis whitespace-nowrap ${
+                      className={`dt-td min-w-0 overflow-hidden text-ellipsis whitespace-nowrap ${
                         col.align === "right"
                           ? "text-right"
                           : col.align === "center"
