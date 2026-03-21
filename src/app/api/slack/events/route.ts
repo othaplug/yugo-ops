@@ -63,18 +63,37 @@ export async function POST(req: NextRequest) {
   }
 
   // Lazy-load DB + Slack API helpers so cold starts for URL verification stay small (<3s for Slack).
-  const [{ createAdminClient }, { getSlackBotChannelConfig, slackUsersInfo }] = await Promise.all([
-    import("@/lib/supabase/admin"),
-    import("@/lib/slack-bot"),
-  ]);
+  const [
+    { createAdminClient },
+    {
+      formatSlackMessageTextForDisplay,
+      getSlackBotChannelConfig,
+      resolveSlackUserDisplayNames,
+      slackBotsInfo,
+      slackUserIdsFromSlackText,
+    },
+  ] = await Promise.all([import("@/lib/supabase/admin"), import("@/lib/slack-bot")]);
 
-  async function resolveAuthor(token: string, ev: SlackMessageEvent): Promise<{ author: string; isBot: boolean }> {
-    if (ev.bot_id || ev.subtype === "bot_message") {
-      return { author: ev.username || "Bot", isBot: true };
+  async function resolveSlackMessageAuthor(
+    token: string,
+    ev: SlackMessageEvent,
+    nameByUserId: Map<string, string>
+  ): Promise<{ author: string; isBot: boolean }> {
+    const isBot = !!(ev.bot_id || ev.subtype === "bot_message");
+    if (isBot) {
+      if (ev.username?.trim()) return { author: ev.username.trim(), isBot: true };
+      if (ev.user) {
+        const n = nameByUserId.get(ev.user.toUpperCase());
+        if (n) return { author: n, isBot: true };
+      }
+      if (ev.bot_id) {
+        const info = await slackBotsInfo(token, ev.bot_id);
+        return { author: info?.name ?? "Bot", isBot: true };
+      }
+      return { author: "Bot", isBot: true };
     }
     if (ev.user) {
-      const info = await slackUsersInfo(token, ev.user);
-      return { author: info?.name ?? ev.user, isBot: false };
+      return { author: nameByUserId.get(ev.user.toUpperCase()) ?? ev.user, isBot: false };
     }
     return { author: "Slack", isBot: false };
   }
@@ -99,19 +118,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const text = (ev.text || "").trim();
-  if (!text) {
+  const textRaw = (ev.text || "").trim();
+  if (!textRaw) {
     return NextResponse.json({ ok: true });
   }
 
-  const { author, isBot } = await resolveAuthor(cfg.token, ev);
+  const userIds = new Set<string>();
+  if (ev.user) userIds.add(ev.user.trim().toUpperCase());
+  slackUserIdsFromSlackText(textRaw).forEach((id) => userIds.add(id));
+  const nameByUserId = await resolveSlackUserDisplayNames(cfg.token, [...userIds]);
+  const { author, isBot } = await resolveSlackMessageAuthor(cfg.token, ev, nameByUserId);
+  const body = formatSlackMessageTextForDisplay(textRaw, nameByUserId);
 
   const admin = createAdminClient();
   const { error } = await admin.from("slack_message_events").insert({
     channel_id: ev.channel,
     ts: ev.ts,
     author,
-    body: text,
+    body,
     is_bot: isBot,
   });
 

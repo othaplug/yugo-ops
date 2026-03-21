@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaff } from "@/lib/api-auth";
 import {
+  escapeSlackMrkdwnSegment,
+  formatSlackMessageTextForDisplay,
   getSlackBotChannelConfig,
+  resolveSlackBotDisplayNames,
+  resolveSlackUserDisplayNames,
   slackChatPostMessage,
   slackConversationsHistory,
   slackConversationsInfo,
-  slackUsersInfo,
+  slackUserIdsFromSlackText,
 } from "@/lib/slack-bot";
-
-/** Resolve Slack mention tokens <@U123> for display */
-function applySlackMentionNames(text: string, nameByUserId: Map<string, string>): string {
-  return text.replace(/<@([A-Z0-9]+)>/g, (_, id: string) => `@${nameByUserId.get(id) || id}`);
-}
 
 export async function GET() {
   const { error: authErr } = await requireStaff();
@@ -38,22 +37,34 @@ export async function GET() {
     );
   }
 
-  const userIds = [...new Set(messages.map((m) => m.user).filter(Boolean))] as string[];
-  const nameByUserId = new Map<string, string>();
-  await Promise.all(
-    userIds.map(async (uid) => {
-      const info = await slackUsersInfo(token, uid);
-      if (info) nameByUserId.set(uid, info.name);
-    })
-  );
+  const userIdSet = new Set<string>();
+  for (const m of messages) {
+    if (m.user) userIdSet.add(m.user.trim().toUpperCase());
+    slackUserIdsFromSlackText(m.text || "").forEach((id) => userIdSet.add(id));
+  }
+  const nameByUserId = await resolveSlackUserDisplayNames(token, [...userIdSet]);
+
+  const botIdsForNames = [
+    ...new Set(
+      messages.filter((m) => m.bot_id && !m.user && !m.username).map((m) => m.bot_id as string)
+    ),
+  ];
+  const botNameById = await resolveSlackBotDisplayNames(token, botIdsForNames);
 
   const items = messages.map((m) => {
     const raw = m.text || "";
-    const displayText = applySlackMentionNames(raw, nameByUserId);
+    let displayText = formatSlackMessageTextForDisplay(raw, nameByUserId);
+    if (!displayText.trim() && m.subtype === "channel_join" && m.user) {
+      const who = nameByUserId.get(m.user.toUpperCase()) || m.user;
+      displayText = `${who} joined the channel`;
+    } else if (!displayText.trim() && m.subtype === "channel_leave" && m.user) {
+      const who = nameByUserId.get(m.user.toUpperCase()) || m.user;
+      displayText = `${who} left the channel`;
+    }
     let author = "Slack";
-    if (m.user) author = nameByUserId.get(m.user) || m.user;
+    if (m.user) author = nameByUserId.get(m.user.toUpperCase()) || m.user;
     else if (m.username) author = m.username;
-    else if (m.bot_id) author = "Bot";
+    else if (m.bot_id) author = botNameById.get(m.bot_id) || "Bot";
     return {
       ts: m.ts || "",
       author,
@@ -96,7 +107,7 @@ export async function POST(req: NextRequest) {
     user.email?.split("@")[0] ||
     "Staff";
 
-  const payload = `*${sender}* (Yugo)\n${text}`;
+  const payload = `*${escapeSlackMrkdwnSegment(sender)}* (Yugo)\n${text}`;
   const result = await slackChatPostMessage(cfg.token, cfg.channel, payload);
 
   if (!result.ok) {

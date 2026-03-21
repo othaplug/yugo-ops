@@ -140,7 +140,8 @@ export default function MessagesPageClient() {
             <li>
               Create a Slack app, install it to your workspace, and add bot scopes such as{" "}
               <code className="text-[11px]">chat:write</code>, <code className="text-[11px]">channels:history</code>,{" "}
-              <code className="text-[11px]">channels:read</code>, and <code className="text-[11px]">users:read</code>.
+              <code className="text-[11px]">channels:read</code>, <code className="text-[11px]">users:read</code>, and{" "}
+              <code className="text-[11px]">bots:read</code> (for bot display names).
             </li>
             <li>
               Set <code className="text-[11px]">SLACK_BOT_TOKEN</code> (Bot User OAuth token) and{" "}
@@ -194,7 +195,9 @@ export default function MessagesPageClient() {
                   )}
                   <span className="text-[10px] text-[var(--tx3)] tabular-nums">{formatSlackTs(m.ts)}</span>
                 </div>
-                <pre className="mt-1.5 whitespace-pre-wrap font-sans text-[var(--tx2)] text-[12px]">{m.text}</pre>
+                <div className="mt-1.5 whitespace-pre-wrap font-sans text-[var(--tx2)] text-[12px] leading-relaxed break-words">
+                  {m.text}
+                </div>
               </div>
             ))
           )}
