@@ -46,7 +46,6 @@ function formatLastActive(iso: string): string {
   return d.toLocaleDateString();
 }
 
-
 function ReadinessChecklistSection() {
   const { toast } = useToast();
   const [items, setItems] = useState<{ label: string }[]>([]);
@@ -71,11 +70,12 @@ function ReadinessChecklistSection() {
       const res = await fetch("/api/admin/platform-settings/readiness", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ items }),
       });
-      const data = await res.json();
+      const data = (await res.json().catch(() => ({}))) as { items?: { label: string }[]; error?: string };
       if (!res.ok) {
-        toast(data.error || "Failed to save", "x");
+        toast(typeof data.error === "string" ? data.error : "Failed to save", "x");
         return;
       }
       setItems(data.items || items);
@@ -385,9 +385,14 @@ function BusinessInfoSection() {
       const res = await fetch("/api/admin/business-config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(payload),
       });
-      if (!res.ok) { toast("Failed to save", "x"); return; }
+      const errBody = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(typeof (errBody as { error?: string }).error === "string" ? (errBody as { error: string }).error : "Failed to save", "x");
+        return;
+      }
       toast("Business info saved", "check");
     } catch { toast("Failed to save", "x"); }
     finally { setSaving(false); }
@@ -508,6 +513,7 @@ function QuotingDefaultsSection() {
       const res = await fetch("/api/admin/business-config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           quote_expiry_days: config.quote_expiry_days,
           default_deposit_pct: config.default_deposit_pct,
@@ -517,7 +523,11 @@ function QuotingDefaultsSection() {
           followup_max_attempts: config.followup_max_attempts,
         }),
       });
-      if (!res.ok) { toast("Failed to save", "x"); return; }
+      const errBody = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(typeof (errBody as { error?: string }).error === "string" ? (errBody as { error: string }).error : "Failed to save", "x");
+        return;
+      }
       toast("Quoting defaults saved", "check");
     } catch { toast("Failed to save", "x"); }
     finally { setSaving(false); }
@@ -1054,16 +1064,23 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       const res = await fetch("/api/admin/platform-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(next),
       });
-      const data = await res.json();
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        crewTracking?: boolean;
+        partnerPortal?: boolean;
+        autoInvoicing?: boolean;
+      };
       if (!res.ok) {
-        toast(data.error || "Failed to save", "x");
+        toast(typeof data.error === "string" ? data.error : "Failed to save", "x");
         return false;
       }
       setCrewTracking(data.crewTracking ?? next.crewTracking);
       setPartnerPortal(data.partnerPortal ?? next.partnerPortal);
       setAutoInvoicing(data.autoInvoicing ?? next.autoInvoicing);
+      toast("App settings saved", "check");
       return true;
     } catch {
       toast("Failed to save settings", "x");
@@ -1079,13 +1096,20 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       const res = await fetch("/api/admin/business-config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           auto_review_requests: next.autoReviewRequests ? "true" : "false",
           google_review_url: next.googleReviewUrl || "",
         }),
       });
+      const errBody = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast("Failed to save review settings", "x");
+        toast(
+          typeof (errBody as { error?: string }).error === "string"
+            ? (errBody as { error: string }).error
+            : "Failed to save review settings",
+          "x",
+        );
         return false;
       }
       setAutoReviewRequests(next.autoReviewRequests);

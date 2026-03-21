@@ -40,30 +40,46 @@ const TIER_BADGE: Record<string, string> = {
 };
 
 /* ────────── API helpers ────────── */
+async function parseJsonOrEmpty(res: Response): Promise<{ error?: string } & Record<string, unknown>> {
+  try {
+    return (await res.json()) as { error?: string } & Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
 async function fetchSection(section: string): Promise<Row[]> {
-  const res = await fetch(`/api/admin/pricing?section=${section}`);
-  if (!res.ok) throw new Error("Failed to fetch");
-  const { data } = await res.json();
-  return data || [];
+  const res = await fetch(`/api/admin/pricing?section=${encodeURIComponent(section)}`, {
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+  const json = await parseJsonOrEmpty(res);
+  if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Failed to load pricing");
+  return (json.data as Row[]) || [];
 }
 
 async function saveRows(section: string, rows: Row[]) {
   const res = await fetch("/api/admin/pricing", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
     body: JSON.stringify({ section, rows }),
   });
-  if (!res.ok) throw new Error("Failed to save");
+  const json = await parseJsonOrEmpty(res);
+  if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Failed to save");
 }
 
 async function addRow(section: string, row: Row): Promise<Row> {
   const res = await fetch("/api/admin/pricing", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
     body: JSON.stringify({ section, row }),
   });
-  if (!res.ok) throw new Error("Failed to add");
-  const { data } = await res.json();
+  const json = await parseJsonOrEmpty(res);
+  if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Failed to add");
+  const data = json.data as Row | undefined;
+  if (!data) throw new Error("Failed to add");
   return data;
 }
 
@@ -71,9 +87,11 @@ async function deleteRow(section: string, id: string) {
   const res = await fetch("/api/admin/pricing", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
     body: JSON.stringify({ section, id }),
   });
-  if (!res.ok) throw new Error("Failed to delete");
+  const json = await parseJsonOrEmpty(res);
+  if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Failed to delete");
 }
 
 /* ────────── Editable Cell ────────── */
@@ -168,9 +186,12 @@ function Accordion({ title, subtitle, children, defaultOpen = false }: {
 }
 
 /* ────────── Section hook ────────── */
+type SaveOpts = { silent?: boolean };
+
 function useSection(section: string) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [prev, setPrev] = useState<Row[]>([]);
   const { toast } = useToast();
 
@@ -180,19 +201,27 @@ function useSection(section: string) {
       const data = await fetchSection(section);
       setRows(data);
       setPrev(data);
-    } catch { toast("Failed to load " + section, "x"); }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to load " + section, "x");
+    }
     setLoading(false);
   }, [section, toast]);
 
   useEffect(() => { load(); }, [load]);
 
-  const save = async (updated?: Row[]) => {
+  const save = async (updated?: Row[], opts?: SaveOpts) => {
     const toSave = updated || rows;
+    setSaving(true);
     try {
       await saveRows(section, toSave);
       setPrev(toSave);
-      toast("Saved", "check");
-    } catch { toast("Failed to save", "x"); }
+      if (!opts?.silent) toast("Saved", "check");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to save", "x");
+      throw e;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const undo = () => { setRows(prev); };
@@ -203,7 +232,10 @@ function useSection(section: string) {
       setRows((r) => [...r, created]);
       toast("Added", "check");
       return created;
-    } catch { toast("Failed to add", "x"); return null; }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to add", "x");
+      return null;
+    }
   };
 
   const remove = async (id: string) => {
@@ -211,14 +243,16 @@ function useSection(section: string) {
       await deleteRow(section, id);
       setRows((r) => r.filter((row) => row.id !== id));
       toast("Removed", "check");
-    } catch { toast("Failed to delete", "x"); }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to delete", "x");
+    }
   };
 
   const updateRow = (id: string, field: string, value: string | number | boolean) => {
     setRows((r) => r.map((row) => row.id === id ? { ...row, [field]: value } : row));
   };
 
-  return { rows, loading, setRows, save, undo, add, remove, updateRow, reload: load };
+  return { rows, loading, saving, setRows, save, undo, add, remove, updateRow, reload: load };
 }
 
 /* ────────── Table wrapper ────────── */
@@ -226,11 +260,40 @@ const tbl = "w-full text-[12px]";
 const th = "text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2";
 const td = "py-1.5 px-2 border-t border-[var(--brd)]/50";
 
-function SaveBar({ onSave, onUndo }: { onSave: () => void; onUndo: () => void }) {
+function SaveBar({
+  onSave,
+  onUndo,
+  saving = false,
+}: {
+  onSave: () => void | Promise<void>;
+  onUndo: () => void;
+  saving?: boolean;
+}) {
+  const runSave = async () => {
+    try {
+      await Promise.resolve(onSave());
+    } catch {
+      /* errors are toasted inside useSection / handlers */
+    }
+  };
   return (
     <div className="flex items-center gap-2 pt-3">
-      <button type="button" onClick={onSave} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">Save</button>
-      <button type="button" onClick={onUndo} className="px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:bg-[var(--bg)] transition-colors">Undo</button>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={() => void runSave()}
+        className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-60 disabled:cursor-wait"
+      >
+        {saving ? "Saving…" : "Save"}
+      </button>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={onUndo}
+        className="px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:bg-[var(--bg)] transition-colors disabled:opacity-40"
+      >
+        Undo
+      </button>
     </div>
   );
 }
@@ -272,7 +335,7 @@ function AnalyticsDashboard() {
 
 /* ────────── S1: BASE RATES ────────── */
 function BaseRatesSection() {
-  const { rows, loading, save, undo, add, remove, updateRow } = useSection("base-rates");
+  const { rows, loading, save, undo, add, remove, updateRow, saving } = useSection("base-rates");
   const LABELS: Record<string, string> = { studio: "Studio", "1br": "1 Bedroom", "2br": "2 Bedroom", "3br": "3 Bedroom", "4br": "4 Bedroom", "5br_plus": "5+ Bedroom", partial: "Partial Move" };
   const [adding, setAdding] = useState(false);
   const [newSize, setNewSize] = useState("");
@@ -303,7 +366,7 @@ function BaseRatesSection() {
       ) : (
         <button type="button" onClick={() => setAdding(true)} className="mt-3 text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Move Size</button>
       )}
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -311,7 +374,7 @@ function BaseRatesSection() {
 /* ────────── S1.5: LABOUR & ESTATE PRICING ────────── */
 function LabourPricingSection() {
   const { isSuperAdmin } = usePricingAdmin();
-  const { rows, loading, save, undo, updateRow } = useSection("config");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
   if (loading) return <Skeleton />;
   const getVal = (key: string) => rows.find((r) => r.key === key);
   const labourRow = getVal("labour_rate_per_mover_hour");
@@ -351,14 +414,14 @@ function LabourPricingSection() {
         </div>
       )}
 
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
 
 /* ────────── S2: TIER MULTIPLIERS ────────── */
 function TierMultipliersSection() {
-  const { rows, loading, save, undo, updateRow } = useSection("config");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
   if (loading) return <Skeleton />;
 
   const getVal = (key: string) => rows.find((r) => r.key === key);
@@ -431,14 +494,14 @@ function TierMultipliersSection() {
           );
         })}
       </div>
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
 
 /* ────────── S3: NEIGHBOURHOODS ────────── */
 function NeighbourhoodsSection() {
-  const { rows, loading, save, undo, add, remove, updateRow } = useSection("neighbourhoods");
+  const { rows, loading, save, undo, add, remove, updateRow, saving } = useSection("neighbourhoods");
   const [search, setSearch] = useState("");
   const [filterTier, setFilterTier] = useState("");
   const [adding, setAdding] = useState(false);
@@ -494,14 +557,14 @@ function NeighbourhoodsSection() {
       ) : (
         <button type="button" onClick={() => setAdding(true)} className="text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Neighbourhood</button>
       )}
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
 
 /* ────────── S4: ACCESS SURCHARGES ────────── */
 function AccessScoresSection() {
-  const { rows, loading, save, undo, add, remove, updateRow } = useSection("access-scores");
+  const { rows, loading, save, undo, add, remove, updateRow, saving } = useSection("access-scores");
   const [adding, setAdding] = useState(false);
   const [newType, setNewType] = useState("");
 
@@ -530,14 +593,14 @@ function AccessScoresSection() {
       ) : (
         <button type="button" onClick={() => setAdding(true)} className="mt-3 text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Access Type</button>
       )}
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
 
 /* ────────── S5: DATE FACTORS ────────── */
 function DateFactorsSection() {
-  const { rows, loading, save, undo, updateRow } = useSection("date-factors");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("date-factors");
   if (loading) return <Skeleton />;
 
   const byType = (type: string) => rows.filter((r) => r.factor_type === type);
@@ -573,14 +636,14 @@ function DateFactorsSection() {
       <div className="border-t border-[var(--brd)]/30 pt-5">{renderGroup("Seasonal", "season")}</div>
       <div className="border-t border-[var(--brd)]/30 pt-5">{renderGroup("Special Conditions", "month_period")}</div>
       <div className="border-t border-[var(--brd)]/30 pt-5">{renderGroup("Urgency", "urgency")}</div>
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
 
 /* ────────── S6: SPECIALTY SURCHARGES ────────── */
 function SpecialtySurchargesSection() {
-  const { rows, loading, save, undo, add, remove, updateRow } = useSection("surcharges");
+  const { rows, loading, save, undo, add, remove, updateRow, saving } = useSection("surcharges");
   const [adding, setAdding] = useState(false);
   const [newType, setNewType] = useState("");
 
@@ -619,14 +682,14 @@ function SpecialtySurchargesSection() {
       ) : (
         <button type="button" onClick={() => setAdding(true)} className="mt-3 text-[11px] font-semibold text-[var(--gold)] hover:underline">+ Add Item Type</button>
       )}
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
 
 /* ────────── S7: SINGLE ITEM RATES ────────── */
 function SingleItemSection() {
-  const { rows, loading, save, undo, add, remove, updateRow } = useSection("single-item");
+  const { rows, loading, save, undo, add, remove, updateRow, saving } = useSection("single-item");
   const configSection = useSection("config");
   const [adding, setAdding] = useState(false);
   const [newCat, setNewCat] = useState("");
@@ -682,9 +745,30 @@ function SingleItemSection() {
         })}
       </div>
       <div className="flex gap-2 pt-2">
-        <button type="button" onClick={() => save()} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">Save Rates</button>
-        <button type="button" onClick={() => configSection.save()} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]">Save Config</button>
-        <button type="button" onClick={() => { undo(); configSection.undo(); }} className="px-3 py-2 rounded-lg text-[11px] text-[var(--tx3)]">Undo</button>
+        <button
+          type="button"
+          disabled={saving || configSection.saving}
+          onClick={() => void save()}
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-60 disabled:cursor-wait"
+        >
+          {saving ? "Saving…" : "Save Rates"}
+        </button>
+        <button
+          type="button"
+          disabled={saving || configSection.saving}
+          onClick={() => void configSection.save()}
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-60 disabled:cursor-wait"
+        >
+          {configSection.saving ? "Saving…" : "Save Config"}
+        </button>
+        <button
+          type="button"
+          disabled={saving || configSection.saving}
+          onClick={() => { undo(); configSection.undo(); }}
+          className="px-3 py-2 rounded-lg text-[11px] text-[var(--tx3)] disabled:opacity-40"
+        >
+          Undo
+        </button>
       </div>
     </div>
   );
@@ -702,7 +786,7 @@ const DEPOSIT_TIER_KEYS = [
 ] as const;
 
 function DepositRulesSection() {
-  const { rows, loading, save, undo, updateRow } = useSection("deposit-rules");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("deposit-rules");
   const configSection = useSection("config");
   const getCell = (service: string, bracket: string) => rows.find((r) => r.service_type === service && r.amount_bracket === bracket);
   const getConfig = (key: string) => configSection.rows.find((r: Row & { key?: string }) => r.key === key);
@@ -788,6 +872,7 @@ function DepositRulesSection() {
         </table>
       </div>
       <SaveBar
+        saving={saving || configSection.saving}
         onSave={async () => {
           await save();
           await configSection.save();
@@ -803,7 +888,7 @@ function DepositRulesSection() {
 
 /* ────────── S9: OFFICE RATES ────────── */
 function OfficeRatesSection() {
-  const { rows, loading, save, undo, updateRow } = useSection("office-rates");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("office-rates");
   if (loading) return <Skeleton />;
 
   return (
@@ -820,7 +905,7 @@ function OfficeRatesSection() {
           ))}
         </tbody>
       </table>
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -876,34 +961,44 @@ type Addon = Row & {
 function useAddons() {
   const [rows, setRows] = useState<Addon[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [prev, setPrev] = useState<Addon[]>([]);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/pricing/addons");
-      if (!res.ok) throw new Error();
-      const { data } = await res.json();
-      setRows(data || []);
-      setPrev(data || []);
-    } catch { toast("Failed to load add-ons", "x"); }
+      const res = await fetch("/api/admin/pricing/addons", { credentials: "same-origin", cache: "no-store" });
+      const json = await parseJsonOrEmpty(res);
+      if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Failed to load");
+      setRows((json.data as Addon[]) || []);
+      setPrev((json.data as Addon[]) || []);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to load add-ons", "x");
+    }
     setLoading(false);
   }, [toast]);
 
   useEffect(() => { load(); }, [load]);
 
   const save = async () => {
+    setSaving(true);
     try {
       const res = await fetch("/api/admin/pricing/addons", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ rows }),
       });
-      if (!res.ok) throw new Error();
+      const json = await parseJsonOrEmpty(res);
+      if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Failed to save");
       setPrev(rows);
       toast("Add-ons saved", "check");
-    } catch { toast("Failed to save", "x"); }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to save", "x");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const undo = () => setRows(prev);
@@ -951,7 +1046,7 @@ function useAddons() {
     });
   };
 
-  return { rows, loading, save, undo, addAddon, softDelete, updateAddon, moveRow };
+  return { rows, loading, saving, save, undo, addAddon, softDelete, updateAddon, moveRow };
 }
 
 function TierEditor({ tiers, onChange }: { tiers: { label: string; price: number }[] | null; onChange: (t: { label: string; price: number }[]) => void }) {
@@ -1034,7 +1129,7 @@ function ExcludedTiersSelect({ selected, onChange }: { selected: string[] | null
 }
 
 function AddOnsSection() {
-  const { rows, loading, save, undo, addAddon, softDelete, updateAddon, moveRow } = useAddons();
+  const { rows, loading, saving, save, undo, addAddon, softDelete, updateAddon, moveRow } = useAddons();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [expandedTiers, setExpandedTiers] = useState<Set<string>>(new Set());
@@ -1216,7 +1311,7 @@ function AddOnsSection() {
         </table>
       </div>
 
-      <SaveBar onSave={save} onUndo={undo} />
+      <SaveBar onSave={() => void save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -1308,7 +1403,7 @@ function InventoryVolumeSection() {
                 </tbody>
               </table>
             </div>
-            <SaveBar onSave={() => bm.save()} onUndo={bm.undo} />
+            <SaveBar onSave={() => void bm.save()} onUndo={bm.undo} saving={bm.saving} />
           </>
         )}
       </div>
@@ -1409,7 +1504,7 @@ function InventoryVolumeSection() {
               </table>
             </div>
             <div className="text-[9px] text-[var(--tx3)] mt-1">{filteredItems.length} items shown</div>
-            <SaveBar onSave={() => iw.save()} onUndo={iw.undo} />
+            <SaveBar onSave={() => void iw.save()} onUndo={iw.undo} saving={iw.saving} />
           </>
         )}
       </div>
@@ -1691,7 +1786,7 @@ function FleetVehiclesSection() {
                 </tbody>
               </table>
             </div>
-            <SaveBar onSave={() => fleet.save()} onUndo={fleet.undo} />
+            <SaveBar onSave={() => void fleet.save()} onUndo={fleet.undo} saving={fleet.saving} />
           </>
         )}
       </div>
@@ -1732,7 +1827,7 @@ function FleetVehiclesSection() {
                 </tbody>
               </table>
             </div>
-            <SaveBar onSave={() => rules.save()} onUndo={rules.undo} />
+            <SaveBar onSave={() => void rules.save()} onUndo={rules.undo} saving={rules.saving} />
           </>
         )}
       </div>
@@ -1842,7 +1937,7 @@ const TIER_COLOR: Record<string, string> = {
 };
 
 function TierFeaturesSection() {
-  const { rows, loading, save, undo, add, remove, updateRow, reload } = useSection("tier-features");
+  const { rows, loading, save, undo, add, remove, updateRow, reload, saving } = useSection("tier-features");
   const [activeSvc, setActiveSvc] = useState("local_move");
   const [newFeature, setNewFeature] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
@@ -1868,18 +1963,10 @@ function TierFeaturesSection() {
   const saveIconMap = useCallback(async (map: Record<string, string>) => {
     const value = JSON.stringify(map);
     if (iconMapRowId) {
-      await fetch("/api/admin/pricing", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "config", rows: [{ id: iconMapRowId, key: "tier_feature_icons", value }] }),
-      });
+      await saveRows("config", [{ id: iconMapRowId, key: "tier_feature_icons", value }]);
     } else {
-      const res = await fetch("/api/admin/pricing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section: "config", row: { key: "tier_feature_icons", value } }),
-      }).then((r) => r.json());
-      if (res.data?.id) setIconMapRowId(String(res.data.id));
+      const created = await addRow("config", { key: "tier_feature_icons", value });
+      if (created?.id) setIconMapRowId(String(created.id));
     }
   }, [iconMapRowId]);
 
@@ -1943,10 +2030,20 @@ function TierFeaturesSection() {
   };
 
   const handleSave = async () => {
-    await save();
-    await saveIconMap(iconMap);
+    try {
+      await save(undefined, { silent: true });
+    } catch {
+      return;
+    }
+    try {
+      await saveIconMap(iconMap);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to save icon settings", "x");
+      return;
+    }
     setDirty(false);
     await reload();
+    toast("Saved", "check");
   };
 
   const handleDelete = async (id: string) => {
@@ -2122,7 +2219,7 @@ function TierFeaturesSection() {
         </p>
       )}
 
-      {dirty && <SaveBar onSave={handleSave} onUndo={() => { undo(); setDirty(false); }} />}
+      {dirty && <SaveBar onSave={handleSave} onUndo={() => { undo(); setDirty(false); }} saving={saving} />}
     </div>
   );
 }
@@ -2130,7 +2227,7 @@ function TierFeaturesSection() {
 /* ────────── SUPPLIES & CRATING ────────── */
 function SuppliesAndCratingSection() {
   const { isSuperAdmin } = usePricingAdmin();
-  const { rows, loading, save, undo, updateRow } = useSection("config");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
   if (loading) return <Skeleton />;
 
   const getVal = (key: string) => rows.find((r) => r.key === key);
@@ -2240,7 +2337,7 @@ function SuppliesAndCratingSection() {
         )}
       </div>
 
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -2248,7 +2345,7 @@ function SuppliesAndCratingSection() {
 /* ────────── INVENTORY MODIFIER FLOOR/CAP (Section 1 + 10) ────────── */
 function InventoryModifierSection() {
   const { isSuperAdmin } = usePricingAdmin();
-  const { rows, loading, save, undo, updateRow } = useSection("config");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
   if (loading) return <Skeleton />;
 
   const getVal = (key: string) => rows.find((r) => r.key === key);
@@ -2299,7 +2396,7 @@ function InventoryModifierSection() {
         </div>
       )}
 
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -2307,7 +2404,7 @@ function InventoryModifierSection() {
 /* ────────── DISTANCE INTELLIGENCE + DEADHEAD (Section 4 + 10) ────────── */
 function DistanceDeadheadSection() {
   const { isSuperAdmin } = usePricingAdmin();
-  const { rows, loading, save, undo, updateRow } = useSection("config");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
   if (loading) return <Skeleton />;
 
   const getNum = (key: string, fallback: number) => Number(rows.find((r) => r.key === key)?.value ?? fallback);
@@ -2434,7 +2531,7 @@ function DistanceDeadheadSection() {
         </div>
       </div>
 
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -2442,7 +2539,7 @@ function DistanceDeadheadSection() {
 /* ────────── WHITE GLOVE (platform_config) ────────── */
 function WhiteGlovePricingSection() {
   const { isSuperAdmin } = usePricingAdmin();
-  const { rows, loading, save, undo, updateRow } = useSection("config");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
   if (loading) return <Skeleton />;
 
   const fields = [
@@ -2476,7 +2573,7 @@ function WhiteGlovePricingSection() {
           );
         })}
       </div>
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -2484,7 +2581,7 @@ function WhiteGlovePricingSection() {
 /* ────────── B2B ONE-OFF BASE (platform_config) ────────── */
 function B2BOneOffPricingSection() {
   const { isSuperAdmin } = usePricingAdmin();
-  const { rows, loading, save, undo, updateRow } = useSection("config");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
   if (loading) return <Skeleton />;
   const row = rows.find((r) => r.key === "b2b_oneoff_base");
 
@@ -2510,7 +2607,7 @@ function B2BOneOffPricingSection() {
           <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="b2b_oneoff_base" />
         </div>
       )}
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -2518,7 +2615,7 @@ function B2BOneOffPricingSection() {
 /* ────────── EVENT PRICING (platform_config) ────────── */
 function EventPricingSection() {
   const { isSuperAdmin } = usePricingAdmin();
-  const { rows, loading, save, undo, updateRow } = useSection("config");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
   if (loading) return <Skeleton />;
 
   const groups: { title: string; keys: { key: string; label: string }[] }[] = [
@@ -2584,7 +2681,7 @@ function EventPricingSection() {
           </div>
         </div>
       ))}
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -2601,7 +2698,7 @@ function SpecialtyPricingSection() {
 
   const loadJson = useCallback(() => {
     setLoadingJson(true);
-    fetch("/api/admin/pricing/specialty-project-bases")
+    fetch("/api/admin/pricing/specialty-project-bases", { credentials: "same-origin", cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         if (d.baseRows) setBaseRows(d.baseRows);
@@ -2621,13 +2718,15 @@ function SpecialtyPricingSection() {
       const res = await fetch("/api/admin/pricing/specialty-project-bases", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ baseRows, equipRows }),
       });
-      if (!res.ok) throw new Error("Failed");
+      const json = await parseJsonOrEmpty(res);
+      if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Failed to save specialty tables");
       toast("Specialty tables saved", "check");
       loadJson();
-    } catch {
-      toast("Failed to save specialty tables", "x");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to save specialty tables", "x");
     } finally {
       setSavingJson(false);
     }
@@ -2691,12 +2790,18 @@ function SpecialtyPricingSection() {
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => configSection.save()}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+          disabled={configSection.saving || savingJson}
+          onClick={() => void configSection.save()}
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60 disabled:cursor-wait"
         >
-          Save scalars
+          {configSection.saving ? "Saving…" : "Save scalars"}
         </button>
-        <button type="button" onClick={() => configSection.undo()} className="px-3 py-2 rounded-lg text-[11px] text-[var(--tx3)]">
+        <button
+          type="button"
+          disabled={configSection.saving || savingJson}
+          onClick={() => configSection.undo()}
+          className="px-3 py-2 rounded-lg text-[11px] text-[var(--tx3)] disabled:opacity-40"
+        >
           Undo
         </button>
       </div>
@@ -2769,9 +2874,9 @@ function SpecialtyPricingSection() {
 
           <button
             type="button"
-            onClick={saveJson}
-            disabled={savingJson}
-            className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+            onClick={() => void saveJson()}
+            disabled={savingJson || configSection.saving}
+            className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 disabled:cursor-wait"
           >
             {savingJson ? "Saving…" : "Save specialty tables"}
           </button>
@@ -2784,7 +2889,7 @@ function SpecialtyPricingSection() {
 /* ────────── LABOUR-ONLY (platform_config) ────────── */
 function LabourOnlyPricingSection() {
   const { isSuperAdmin } = usePricingAdmin();
-  const { rows, loading, save, undo, updateRow } = useSection("config");
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
   if (loading) return <Skeleton />;
 
   const fields = [
@@ -2827,7 +2932,7 @@ function LabourOnlyPricingSection() {
           );
         })}
       </div>
-      <SaveBar onSave={() => save()} onUndo={undo} />
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
     </div>
   );
 }
@@ -2958,12 +3063,14 @@ function B2BSurchargesSection() {
       const res = await fetch("/api/admin/pricing/b2b-surcharges", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ access, weight }),
       });
-      if (!res.ok) throw new Error("Failed to save");
+      const json = await parseJsonOrEmpty(res);
+      if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Failed to save");
       toast("B2B surcharges saved", "check");
-    } catch {
-      toast("Failed to save", "x");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to save", "x");
     } finally {
       setSaving(false);
     }

@@ -63,7 +63,13 @@ export async function PUT(req: NextRequest) {
     for (const row of rows) {
       if (row.id) {
         const { id, ...rest } = row;
-        await supabase.from(table).update(rest).eq("id", id);
+        const { error } = await supabase.from(table).update(rest).eq("id", id);
+        if (error) {
+          return NextResponse.json(
+            { error: error.message || "Update failed", detail: String(id) },
+            { status: 500 },
+          );
+        }
       }
     }
 

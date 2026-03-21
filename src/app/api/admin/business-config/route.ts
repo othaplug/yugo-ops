@@ -57,9 +57,12 @@ export async function PATCH(req: NextRequest) {
   );
 
   for (const [key, value] of updates) {
-    await sb
+    const { error } = await sb
       .from("platform_config")
       .upsert({ key, value: String(value) }, { onConflict: "key" });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   }
 
   invalidateConfigCache();

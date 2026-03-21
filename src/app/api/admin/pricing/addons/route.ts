@@ -34,7 +34,10 @@ export async function PUT(req: NextRequest) {
       if (row.id) {
         const { id, created_at: _ca, ...rest } = row;
         rest.updated_at = new Date().toISOString();
-        await supabase.from("addons").update(rest).eq("id", id);
+        const { error } = await supabase.from("addons").update(rest).eq("id", id);
+        if (error) {
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
       }
     }
     return NextResponse.json({ ok: true });
@@ -70,7 +73,11 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
     const supabase = createAdminClient();
-    await supabase.from("addons").update({ active: false, updated_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase
+      .from("addons")
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 500 });

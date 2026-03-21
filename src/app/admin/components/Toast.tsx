@@ -22,7 +22,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setMessage(msg);
     setIconKey(ic);
     setVisible(true);
-    setTimeout(() => setVisible(false), 2500);
+    setTimeout(() => setVisible(false), 3800);
   }, []);
 
   return (
