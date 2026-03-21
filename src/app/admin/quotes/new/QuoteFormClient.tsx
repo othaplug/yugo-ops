@@ -3468,12 +3468,43 @@ export default function QuoteFormClient({
 
 // ─── Sub-Components ─────────────────────────────
 
+/** Cream / dark-brown (#2A2520) price cards: `--tx*` follows app theme and can stay dark when system `dark:` paints the card. */
+const PRICE_CARD = {
+  muted: "text-[#5C5449] dark:text-[#C9C4B8]",
+  body: "text-[#1A1A1A] dark:text-[#F4F1E8]",
+  list: "text-[#3D3A36] dark:text-[#DED9D0]",
+  border: "border-[var(--brd)]/50 dark:border-[#F5F3EF]/12",
+  borderTop: "border-t border-[var(--brd)]/50 dark:border-[#F5F3EF]/12",
+  legPanel: "rounded-lg border border-[var(--brd)]/60 dark:border-[#F5F3EF]/10 bg-[var(--bg)]/40 dark:bg-black/25",
+} as const;
+
 function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<string, TierResult>; recommendedTier?: string }) {
   const tierOrder = ["curated", "signature", "estate"] as const;
-  const tierColors: Record<string, { bg: string; border: string; accent: string }> = {
-    curated: { bg: "bg-[var(--bg)]", border: "border-[var(--brd)]", accent: "text-[var(--tx)]" },
-    signature: { bg: "bg-[#FAF7F2] dark:bg-[#2A2520]", border: "border-2 border-[#B8962E]/40 border-l-4 border-l-[var(--gold)]", accent: "text-[#B8962E]" },
-    estate: { bg: "bg-[#1a1a2e] dark:bg-[#1a1a2e]", border: "border-[#C9A84C]/60", accent: "text-[#C9A84C]" },
+  const tierColors: Record<string, { bg: string; border: string; accent: string; muted: string; body: string; list: string }> = {
+    curated: {
+      bg: "bg-[var(--bg)]",
+      border: "border-[var(--brd)]",
+      accent: "text-[var(--tx)]",
+      muted: "text-[var(--tx3)]",
+      body: "text-[var(--tx)]",
+      list: "text-[var(--tx2)]",
+    },
+    signature: {
+      bg: "bg-[#FAF7F2] dark:bg-[#2A2520]",
+      border: "border-2 border-[#B8962E]/40 border-l-4 border-l-[var(--gold)]",
+      accent: "text-[#B8962E]",
+      muted: PRICE_CARD.muted,
+      body: PRICE_CARD.body,
+      list: PRICE_CARD.list,
+    },
+    estate: {
+      bg: "bg-[#1a1a2e] dark:bg-[#1a1a2e]",
+      border: "border-[#C9A84C]/60",
+      accent: "text-[#C9A84C]",
+      muted: "text-[#B8B3A8]",
+      body: "text-[#F4F1E8]",
+      list: "text-[#D4CFC4]",
+    },
   };
   const tierLabels: Record<string, string> = { curated: "Curated", signature: "Signature", estate: "Estate" };
 
@@ -3497,23 +3528,25 @@ function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<
               </div>
               <span className={`text-3xl font-black tabular-nums ${c.accent}`}>{fmtPrice(t.price)}</span>
             </div>
-            <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+            <div className={`flex items-center justify-between text-[11px] ${c.muted}`}>
               <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
-              <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+              <span className={`font-bold ${c.body}`}>Total: {fmtPrice(t.total)}</span>
             </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-[var(--tx3)]">Deposit to book</span>
+            <div className={`flex items-center justify-between text-[11px] ${c.muted}`}>
+              <span>Deposit to book</span>
               <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
             </div>
             {t.includes.length > 0 && (
               <details className="group">
-                <summary className="text-[9px] font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+                <summary
+                  className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${c.muted}`}
+                >
                   <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
                   What&apos;s included ▾
                 </summary>
                 <ul className="mt-1.5 space-y-0.5 pl-5">
                   {t.includes.map((inc, i) => (
-                    <li key={i} className="text-[10px] text-[var(--tx2)] flex items-start gap-1.5">
+                    <li key={i} className={`text-[10px] flex items-start gap-1.5 ${c.list}`}>
                       <Check className="w-3 h-3 text-[var(--grn)] shrink-0 mt-0.5" />
                       {inc}
                     </li>
@@ -3535,23 +3568,25 @@ function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: str
         <span className="text-[13px] font-bold text-[#B8962E] capitalize">{label}</span>
         <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
       </div>
-      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+      <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
         <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
-        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+        <span className={`font-bold ${PRICE_CARD.body}`}>Total: {fmtPrice(t.total)}</span>
       </div>
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[var(--tx3)]">Deposit to book</span>
+      <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
+        <span>Deposit to book</span>
         <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
       </div>
       {t.includes.length > 0 && (
         <details className="group">
-          <summary className="text-[9px] font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+          <summary
+            className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${PRICE_CARD.muted}`}
+          >
             <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
             What&apos;s included ▾
           </summary>
           <ul className="mt-1.5 space-y-0.5 pl-5">
             {t.includes.map((inc, i) => (
-              <li key={i} className="text-[10px] text-[var(--tx2)] flex items-start gap-1.5">
+              <li key={i} className={`text-[10px] flex items-start gap-1.5 ${PRICE_CARD.list}`}>
                 <Check className="w-3 h-3 text-[var(--grn)] shrink-0 mt-0.5" />
                 {inc}
               </li>
@@ -3604,16 +3639,16 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
 
   const totalsFooter = (
     <>
-      <div className="pt-1.5 border-t border-[var(--brd)]/50 flex justify-between font-semibold">
-        <span className="text-[var(--tx3)]">Subtotal</span>
-        <span className="text-[var(--tx)]">{fmtPrice(t.price)}</span>
+      <div className={`pt-1.5 flex justify-between font-semibold ${PRICE_CARD.borderTop}`}>
+        <span className={PRICE_CARD.muted}>Subtotal</span>
+        <span className={PRICE_CARD.body}>{fmtPrice(t.price)}</span>
       </div>
-      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+      <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
         <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
-        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+        <span className={`font-bold ${PRICE_CARD.body}`}>Total: {fmtPrice(t.total)}</span>
       </div>
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[var(--tx3)]">Deposit (25% pre-tax)</span>
+      <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
+        <span>Deposit (25% pre-tax)</span>
         <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
       </div>
     </>
@@ -3622,13 +3657,15 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
   const includesBlock =
     t.includes.length > 0 ? (
       <details className="group pt-1">
-        <summary className="text-[9px] font-bold uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+        <summary
+          className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${PRICE_CARD.muted}`}
+        >
           <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
           What&apos;s included ▾
         </summary>
         <ul className="mt-1.5 space-y-0.5 pl-5">
           {t.includes.map((inc, i) => (
-            <li key={i} className="text-[10px] text-[var(--tx2)] flex items-start gap-1.5">
+            <li key={i} className={`text-[10px] flex items-start gap-1.5 ${PRICE_CARD.list}`}>
               <Check className="w-3 h-3 text-[var(--grn)] shrink-0 mt-0.5" />
               {inc}
             </li>
@@ -3643,7 +3680,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
         <div className="flex items-center justify-between gap-2">
           <div>
             <span className="text-[13px] font-bold text-[#B8962E]">Event quote</span>
-            <p className="text-[9px] text-[var(--tx3)] mt-0.5 font-medium uppercase tracking-wide">
+            <p className={`text-[9px] mt-0.5 font-medium uppercase tracking-wide ${PRICE_CARD.muted}`}>
               Multi-event bundle — {eventLegs.length} round trip{eventLegs.length === 1 ? "" : "s"}
             </p>
           </div>
@@ -3653,52 +3690,47 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
         </div>
         <div className="space-y-3 text-[11px]">
           {eventLegs.map((leg, idx) => (
-            <div
-              key={idx}
-              className="rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/40 p-3 space-y-2"
-            >
+            <div key={idx} className={`p-3 space-y-2 ${PRICE_CARD.legPanel}`}>
               <p className="text-[9px] font-bold tracking-wider uppercase text-[#B8962E]">
                 {leg.label?.trim() || `Event ${idx + 1}`}
               </p>
               {(leg.from_address || leg.to_address) && (
-                <p className="text-[9px] text-[var(--tx3)]/85 leading-snug">
+                <p className={`text-[9px] leading-snug opacity-90 ${PRICE_CARD.muted}`}>
                   {leg.from_address || "Origin"} → {leg.to_address || "Venue"}
                 </p>
               )}
-              <p className="text-[9px] text-[var(--tx3)]/70">
+              <p className={`text-[9px] opacity-80 ${PRICE_CARD.muted}`}>
                 Deliver {fmtShortEventAdmin(leg.delivery_date)} → Return {fmtShortEventAdmin(leg.return_date)}
                 {leg.same_day ? " (same day)" : ""}
                 {leg.is_on_site ? (
-                  <span className="ml-1 font-semibold text-[var(--tx)]">· On-site Event</span>
+                  <span className={`ml-1 font-semibold ${PRICE_CARD.body}`}>· On-site Event</span>
                 ) : null}
               </p>
               <div className="flex justify-between gap-2">
-                <span className="text-[var(--tx3)]">
+                <span className={PRICE_CARD.muted}>
                   Delivery ({fmtShortEventAdmin(leg.delivery_date)})
                   {leg.event_crew && leg.event_hours ? (
-                    <span className="ml-1 text-[var(--tx3)]/70">
-                      {leg.event_crew} movers, {leg.event_hours}hr
-                    </span>
+                    <span className="ml-1 opacity-75">{leg.event_crew} movers, {leg.event_hours}hr</span>
                   ) : null}
                 </span>
-                <span className="font-medium text-[var(--tx)] tabular-nums shrink-0">
+                <span className={`font-medium tabular-nums shrink-0 ${PRICE_CARD.body}`}>
                   {fmtPrice(leg.delivery_charge ?? 0)}
                 </span>
               </div>
               <div className="flex justify-between gap-2">
-                <span className="text-[var(--tx3)]">
+                <span className={PRICE_CARD.muted}>
                   Return ({fmtShortEventAdmin(leg.return_date)})
                   {leg.return_discount !== undefined ? (
-                    <span className="ml-1 text-[var(--tx3)]/70">
+                    <span className="ml-1 opacity-75">
                       {Math.round(leg.return_discount * 100)}% of leg delivery
                     </span>
                   ) : returnDiscount !== undefined ? (
-                    <span className="ml-1 text-[var(--tx3)]/70">
+                    <span className="ml-1 opacity-75">
                       {Math.round(returnDiscount * 100)}% of leg delivery
                     </span>
                   ) : null}
                 </span>
-                <span className="font-medium text-[var(--tx)] tabular-nums shrink-0">
+                <span className={`font-medium tabular-nums shrink-0 ${PRICE_CARD.body}`}>
                   {fmtPrice(leg.return_charge ?? 0)}
                 </span>
               </div>
@@ -3706,8 +3738,8 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
           ))}
           {(setupFee ?? 0) > 0 && (
             <div className="flex justify-between">
-              <span className="text-[var(--tx3)]">Setup service (program)</span>
-              <span className="font-medium text-[var(--tx)]">{fmtPrice(setupFee!)}</span>
+              <span className={PRICE_CARD.muted}>Setup service (program)</span>
+              <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(setupFee!)}</span>
             </div>
           )}
         </div>
@@ -3727,26 +3759,30 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
       <div className="space-y-1.5 text-[11px]">
         {deliveryCharge !== undefined && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">
+            <span className={PRICE_CARD.muted}>
               Delivery ({deliveryDate ?? "TBD"})
-              {eventCrew && eventHours ? <span className="ml-1 text-[var(--tx3)]/70">{eventCrew} movers, {eventHours}hr</span> : null}
+              {eventCrew && eventHours ? (
+                <span className="ml-1 opacity-75">{eventCrew} movers, {eventHours}hr</span>
+              ) : null}
             </span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(deliveryCharge)}</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(deliveryCharge)}</span>
           </div>
         )}
         {(setupFee ?? 0) > 0 && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">Setup service</span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(setupFee!)}</span>
+            <span className={PRICE_CARD.muted}>Setup service</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(setupFee!)}</span>
           </div>
         )}
         {returnCharge !== undefined && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">
+            <span className={PRICE_CARD.muted}>
               Return ({returnDate ?? "TBD"})
-              {returnDiscount !== undefined ? <span className="ml-1 text-[var(--tx3)]/70">{Math.round(returnDiscount * 100)}% of delivery</span> : null}
+              {returnDiscount !== undefined ? (
+                <span className="ml-1 opacity-75">{Math.round(returnDiscount * 100)}% of delivery</span>
+              ) : null}
             </span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(returnCharge)}</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(returnCharge)}</span>
           </div>
         )}
       </div>
@@ -3773,38 +3809,40 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
       <div className="space-y-1.5 text-[11px]">
         {baseFee !== undefined && distMod !== undefined && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">Base ${baseFee} × {distMod.toFixed(2)} (distance)</span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(Math.round(baseFee * distMod))}</span>
+            <span className={PRICE_CARD.muted}>
+              Base ${baseFee} × {distMod.toFixed(2)} (distance)
+            </span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(Math.round(baseFee * distMod))}</span>
           </div>
         )}
         {accessSurcharge > 0 && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">Access surcharge</span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(accessSurcharge)}</span>
+            <span className={PRICE_CARD.muted}>Access surcharge</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(accessSurcharge)}</span>
           </div>
         )}
         {weightSurcharge > 0 && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">Weight ({weightCategory ?? "—"})</span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(weightSurcharge)}</span>
+            <span className={PRICE_CARD.muted}>Weight ({weightCategory ?? "—"})</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(weightSurcharge)}</span>
           </div>
         )}
         {typeof factors.truck_breakdown_line === "string" && factors.truck_breakdown_line.trim().length > 0 ? (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">Vehicle</span>
-            <span className="font-medium text-[var(--tx)]">{factors.truck_breakdown_line.trim()}</span>
+            <span className={PRICE_CARD.muted}>Vehicle</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{factors.truck_breakdown_line.trim()}</span>
           </div>
         ) : null}
         {distKm !== undefined && distKm > 0 && (
-          <div className="text-[var(--tx3)]">{distKm.toFixed(1)} km</div>
+          <div className={PRICE_CARD.muted}>{distKm.toFixed(1)} km</div>
         )}
       </div>
-      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+      <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
         <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
-        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+        <span className={`font-bold ${PRICE_CARD.body}`}>Total: {fmtPrice(t.total)}</span>
       </div>
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[var(--tx3)]">Deposit to book</span>
+      <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
+        <span>Deposit to book</span>
         <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
       </div>
     </div>
@@ -3834,52 +3872,54 @@ function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; fact
       <div className="space-y-1.5 text-[11px]">
         {crewSize && hours && labourRate && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">{crewSize} movers × {hours}hr × ${labourRate}/hr</span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(crewSize * hours * labourRate)}</span>
+            <span className={PRICE_CARD.muted}>
+              {crewSize} movers × {hours}hr × ${labourRate}/hr
+            </span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(crewSize * hours * labourRate)}</span>
           </div>
         )}
         {truckFee > 0 && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">Truck</span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(truckFee)}</span>
+            <span className={PRICE_CARD.muted}>Truck</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(truckFee)}</span>
           </div>
         )}
         {accessSurcharge > 0 && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">Access surcharge</span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(accessSurcharge)}</span>
+            <span className={PRICE_CARD.muted}>Access surcharge</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(accessSurcharge)}</span>
           </div>
         )}
         {labourStorageFee > 0 && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">
+            <span className={PRICE_CARD.muted}>
               Storage
               {storageWeeks != null && storageWeeklyRate != null
                 ? ` (${storageWeeks} wk × ${fmtPrice(storageWeeklyRate)}/wk)`
                 : null}
             </span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(labourStorageFee)}</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(labourStorageFee)}</span>
           </div>
         )}
         {visits >= 2 && visit2Price !== undefined && (
           <div className="flex justify-between">
-            <span className="text-[var(--tx3)]">Visit 2 ({visit2Date ?? "TBD"}) — return discount</span>
-            <span className="font-medium text-[var(--tx)]">{fmtPrice(visit2Price)}</span>
+            <span className={PRICE_CARD.muted}>Visit 2 ({visit2Date ?? "TBD"}) — return discount</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(visit2Price)}</span>
           </div>
         )}
         {visits >= 2 && visit1Price !== undefined && (
-          <div className="pt-1 border-t border-[var(--brd)]/50 flex justify-between font-semibold">
-            <span className="text-[var(--tx3)]">Subtotal</span>
-            <span className="text-[var(--tx)]">{fmtPrice(t.price)}</span>
+          <div className={`pt-1 flex justify-between font-semibold ${PRICE_CARD.borderTop}`}>
+            <span className={PRICE_CARD.muted}>Subtotal</span>
+            <span className={PRICE_CARD.body}>{fmtPrice(t.price)}</span>
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between text-[11px] text-[var(--tx3)]">
+      <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
         <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
-        <span className="font-bold text-[var(--tx)]">Total: {fmtPrice(t.total)}</span>
+        <span className={`font-bold ${PRICE_CARD.body}`}>Total: {fmtPrice(t.total)}</span>
       </div>
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[var(--tx3)]">Deposit to book</span>
+      <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
+        <span>Deposit to book</span>
         <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
       </div>
     </div>
