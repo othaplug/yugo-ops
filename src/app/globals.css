@@ -433,12 +433,6 @@ button:focus-visible,
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--brd);
-  outline-offset: 2px;
-}
 
 /* Date/time picker - dark spinner styling (selected: light on dark gray rounded bg, unselected: dim gray) */
 input[type="date"],
@@ -739,10 +733,7 @@ input[type="time"] {
 /* Light mode: improved contrast & legibility */
 [data-theme="light"] a:focus-visible,
 [data-theme="light"] button:focus-visible,
-[data-theme="light"] [role="button"]:focus-visible,
-[data-theme="light"] input:focus-visible,
-[data-theme="light"] select:focus-visible,
-[data-theme="light"] textarea:focus-visible {
+[data-theme="light"] [role="button"]:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
@@ -1221,9 +1212,12 @@ div.mapboxgl-ctrl-attrib {
 
 /* ═══════════════════════════════════════════════════════
    GLOBAL FOCUS VISIBLE RING (CONSISTENCY)
+   Native input/textarea/select get a border + outline from separate rules
+   (was double “gold frame”). Use a ring for links/buttons/custom controls;
+   form fields use border + outline:none only (see below).
    ═══════════════════════════════════════════════════════ */
 *:focus { outline: none; }
-*:focus-visible {
+*:focus-visible:not(input):not(textarea):not(select) {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
   border-radius: 4px;
@@ -1231,6 +1225,28 @@ div.mapboxgl-ctrl-attrib {
 /* Tighter radius for inline elements */
 a:focus-visible,
 button:focus-visible { border-radius: 6px; }
+
+/* Checkboxes, radios, sliders, file & color pickers, input buttons — use the ring (not a field border) */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible,
+input[type="range"]:focus-visible,
+input[type="file"]:focus-visible,
+input[type="color"]:focus-visible,
+input[type="button"]:focus-visible,
+input[type="submit"]:focus-visible,
+input[type="reset"]:focus-visible,
+input[type="image"]:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Text fields, number, textarea, select: no second outline (components already show border/focus) */
+input:focus-visible:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]),
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
 
 /* ═══════════════════════════════════════════════════════
    TYPOGRAPHY SCALE — SEMANTIC UTILITY CLASSES
