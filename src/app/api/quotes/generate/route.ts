@@ -5,6 +5,10 @@ import { logAudit } from "@/lib/audit";
 import { validateInventoryQuantities } from "@/lib/inventory-quantity-validation";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
 import { getDrivingDistance } from "@/lib/mapbox/driving-distance";
+import {
+  SPECIALTY_EQUIPMENT_DEFAULTS,
+  SPECIALTY_PROJECT_BASE_DEFAULTS,
+} from "@/lib/pricing/specialty-project-defaults";
 
 // ═══════════════════════════════════════════════
 // Types
@@ -1476,8 +1480,11 @@ async function calcWhiteGlove(
   );
   const t = res.tiers.curated;
   let price = t.price;
-  if ((input.declared_value ?? 0) > 5000) price += 50;
-  if (price < 250) price = 250;
+  const wgDvThreshold = cfgNum(config, "white_glove_declared_value_threshold", 5000);
+  const wgDvPremium = cfgNum(config, "white_glove_declared_value_premium", 50);
+  if ((input.declared_value ?? 0) > wgDvThreshold) price += wgDvPremium;
+  const wgMin = cfgNum(config, "white_glove_minimum_price", 250);
+  if (price < wgMin) price = wgMin;
 
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
@@ -1505,7 +1512,8 @@ async function calcWhiteGlove(
     factors: {
       ...res.factors,
       white_glove_pricing: "curated_residential_base",
-      white_glove_declared_value_premium: (input.declared_value ?? 0) > 5000 ? 50 : 0,
+      white_glove_declared_value_premium:
+        (input.declared_value ?? 0) > wgDvThreshold ? wgDvPremium : 0,
     },
     cratingTotal: res.cratingTotal,
     estateSuppliesAllowance: res.estateSuppliesAllowance,
@@ -1518,40 +1526,6 @@ async function calcWhiteGlove(
 // SPECIALTY — project-type-based
 // ═══════════════════════════════════════════════
 
-const SPECIALTY_BASE: Record<string, number> = {
-  // New specialty type keys (from redesigned form)
-  piano_upright:   600,
-  piano_grand:     1400,
-  art_sculpture:   900,
-  antiques_estate: 1750,
-  safe_vault:      800,
-  pool_table:      1050,
-  hot_tub:         1400,
-  wine_collection: 950,
-  aquarium:        1000,
-  trade_show:      1250,
-  medical_lab:     1550,
-  other:           500,
-  // Legacy keys (backward compat)
-  art_installation: 800,
-  "Art installation": 800,
-  "Trade show": 1200,
-  estate_cleanout: 600,
-  "Estate cleanout": 600,
-  staging: 500,
-  "Home staging": 500,
-  wine_transport: 400,
-  "Wine transport": 400,
-  medical_equip: 800,
-  "Medical equipment": 800,
-  piano_move: 600,
-  "Piano move": 600,
-  event_setup: 600,
-  "Event setup/teardown": 600,
-  custom: 500,
-  Custom: 500,
-};
-
 async function calcSpecialty(
   sb: SupabaseAdmin,
   input: QuoteInput,
@@ -1559,7 +1533,12 @@ async function calcSpecialty(
   distInfo: { distance_km: number; drive_time_min: number } | null,
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
 ) {
-  const projectBase = SPECIALTY_BASE[input.project_type ?? "custom"] ?? 500;
+  const baseMap = {
+    ...SPECIALTY_PROJECT_BASE_DEFAULTS,
+    ...parseJsonConfig<Record<string, number>>(config, "specialty_project_base_prices", {}),
+  };
+  const pt = input.project_type ?? "custom";
+  const projectBase = baseMap[pt] ?? baseMap.custom ?? 500;
   const hours = input.timeline_hours ?? 4;
   let price = Math.round(projectBase * (hours / 4));
 
@@ -1570,20 +1549,16 @@ async function calcSpecialty(
   const distanceSurcharge = distKm > distBaseKm ? Math.round((distKm - distBaseKm) * distRateKm) : 0;
   price += distanceSurcharge;
 
+  const cratingPerPiece = cfgNum(config, "specialty_crating_per_piece", 300);
   if (input.custom_crating_pieces && input.custom_crating_pieces > 0) {
-    price += 300 * input.custom_crating_pieces;
+    price += cratingPerPiece * input.custom_crating_pieces;
   }
-  if (input.climate_control) price += 150;
+  const climateSur = cfgNum(config, "specialty_climate_surcharge", 150);
+  if (input.climate_control) price += climateSur;
 
   const equipSurcharges: Record<string, number> = {
-    crane_rigging: 750,
-    "A-frame cart": 40,
-    "Crating kit": 80,
-    "Climate truck": 150,
-    "Air-ride suspension": 120,
-    "Lift gate": 100,
-    Crane: 500,
-    Custom: 200,
+    ...SPECIALTY_EQUIPMENT_DEFAULTS,
+    ...parseJsonConfig<Record<string, number>>(config, "specialty_equipment_surcharges", {}),
   };
   for (const eq of input.special_equipment ?? []) {
     price += equipSurcharges[eq] ?? 100;
@@ -1593,7 +1568,8 @@ async function calcSpecialty(
   const truckSp = normalizeTruckType(input.truck_type ?? "20ft");
   price += plcSp.total + truckSurchargeAmount(config, truckSp);
 
-  if (price < 500) price = 500;
+  const spMin = cfgNum(config, "specialty_minimum_price", 500);
+  if (price < spMin) price = spMin;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   price = roundTo(price, rounding);
@@ -1628,8 +1604,8 @@ async function calcSpecialty(
       project_base: projectBase,
       timeline_hours: hours,
       distance_surcharge: distanceSurcharge,
-      crating_surcharge: (input.custom_crating_pieces ?? 0) * 300,
-      climate_surcharge: input.climate_control ? 150 : 0,
+      crating_surcharge: (input.custom_crating_pieces ?? 0) * cratingPerPiece,
+      climate_surcharge: input.climate_control ? climateSur : 0,
       parking_long_carry_total: plcSp.total,
       truck_recommended: truckSp,
       truck_surcharge: truckSurchargeAmount(config, truckSp),

@@ -2383,6 +2383,387 @@ function DistanceDeadheadSection() {
   );
 }
 
+/* ────────── WHITE GLOVE (platform_config) ────────── */
+function WhiteGlovePricingSection() {
+  const { rows, loading, save, undo, updateRow } = useSection("config");
+  if (loading) return <Skeleton />;
+
+  const fields = [
+    { key: "white_glove_declared_value_threshold", label: "Declared value threshold ($)", hint: "Above this, the premium below is added to the Curated-tier price." },
+    { key: "white_glove_declared_value_premium", label: "Declared value premium ($)", hint: "Flat add-on when declared value exceeds the threshold." },
+    { key: "white_glove_minimum_price", label: "Minimum subtotal ($)", hint: "Floor before tax; uses same residential base + tier multipliers as local moves." },
+  ];
+
+  return (
+    <div className="pt-4 space-y-4">
+      <p className="text-[11px] text-[var(--tx3)]">
+        White glove quotes use the residential algorithm (base rate × neighbourhood × tier × inventory). These knobs only adjust the premium and floor.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {fields.map(({ key, label, hint }) => {
+          const row = rows.find((r) => r.key === key);
+          const val = Number(row?.value ?? (key.includes("threshold") ? 5000 : key.includes("premium") ? 50 : 250));
+          return (
+            <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
+              {row ? (
+                <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[15px] font-bold text-[var(--gold)]" />
+              ) : (
+                <p className="text-[10px] text-[var(--tx3)]">
+                  Add <code className="text-[9px]">{key}</code> via migration.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <SaveBar onSave={() => save()} onUndo={undo} />
+    </div>
+  );
+}
+
+/* ────────── B2B ONE-OFF BASE (platform_config) ────────── */
+function B2BOneOffPricingSection() {
+  const { rows, loading, save, undo, updateRow } = useSection("config");
+  if (loading) return <Skeleton />;
+  const row = rows.find((r) => r.key === "b2b_oneoff_base");
+
+  return (
+    <div className="pt-4 space-y-4">
+      <p className="text-[11px] text-[var(--tx3)]">
+        B2B one-off quotes multiply this base by the distance band modifier (see <b className="text-[var(--tx)]">Distance Intelligence</b>), then add access and weight surcharges (
+        <b className="text-[var(--tx)]">B2B Surcharges</b>), parking, long carry, and truck size.
+      </p>
+      {row ? (
+        <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-4 max-w-xs">
+          <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">b2b_oneoff_base ($)</div>
+          <EditCell
+            value={Number(row.value ?? 350)}
+            onChange={(v) => updateRow(String(row.id), "value", v)}
+            type="number"
+            className="text-[16px] font-bold text-[var(--gold)]"
+          />
+        </div>
+      ) : (
+        <p className="text-[11px] text-[var(--tx3)]">Add <code>b2b_oneoff_base</code> to platform_config (migration <code>20260320000000_b2b_oneoff_deliveries</code>).</p>
+      )}
+      <SaveBar onSave={() => save()} onUndo={undo} />
+    </div>
+  );
+}
+
+/* ────────── EVENT PRICING (platform_config) ────────── */
+function EventPricingSection() {
+  const { rows, loading, save, undo, updateRow } = useSection("config");
+  if (loading) return <Skeleton />;
+
+  const groups: { title: string; keys: { key: string; label: string }[] }[] = [
+    {
+      title: "Crew hourly & minimums",
+      keys: [
+        { key: "event_base_hourly_rate", label: "Base hourly rate ($/crew-hr)" },
+        { key: "event_luxury_hourly_rate", label: "Luxury hourly rate ($/crew-hr)" },
+        { key: "event_min_hours_standard", label: "Min billable hours (standard)" },
+        { key: "event_min_hours_luxury", label: "Min billable hours (luxury)" },
+      ],
+    },
+    {
+      title: "Setup fees (when setup is selected)",
+      keys: [
+        { key: "event_setup_fee_1hr", label: "1 hr setup ($)" },
+        { key: "event_setup_fee_2hr", label: "2 hr setup ($)" },
+        { key: "event_setup_fee_3hr", label: "3 hr setup ($)" },
+        { key: "event_setup_fee_halfday", label: "Half-day setup ($)" },
+        { key: "event_setup_fee_fullday", label: "Full-day setup ($)" },
+      ],
+    },
+    {
+      title: "Return leg & deposit",
+      keys: [
+        { key: "event_return_discount", label: "Return leg as fraction of delivery (0–1)" },
+        { key: "event_min_deposit", label: "Minimum deposit ($)" },
+      ],
+    },
+  ];
+
+  return (
+    <div className="pt-4 space-y-6">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Event quotes combine delivery + return legs (with return discount), optional paid setup, truck/parking/long-carry (shared with other services where noted), and add-ons.
+      </p>
+      {groups.map((g) => (
+        <div key={g.title}>
+          <h4 className="text-[11px] font-bold text-[var(--tx)] mb-3">{g.title}</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {g.keys.map(({ key, label }) => {
+              const row = rows.find((r) => r.key === key);
+              const val = Number(row?.value ?? 0);
+              return (
+                <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+                  <div className="text-[9px] text-[var(--tx3)] mb-2 font-mono">{key}</div>
+                  {row ? (
+                    <EditCell
+                      value={val}
+                      onChange={(v) => updateRow(String(row.id), "value", v)}
+                      type="number"
+                      className="text-[14px] font-bold text-[var(--gold)]"
+                    />
+                  ) : (
+                    <p className="text-[10px] text-[var(--tx3)]">Missing in platform_config — run migrations.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <SaveBar onSave={() => save()} onUndo={undo} />
+    </div>
+  );
+}
+
+/* ────────── SPECIALTY PROJECT & EQUIPMENT (JSON + scalars) ────────── */
+function SpecialtyPricingSection() {
+  const configSection = useSection("config");
+  const [baseRows, setBaseRows] = useState<{ key: string; label: string; basePrice: number }[]>([]);
+  const [equipRows, setEquipRows] = useState<{ key: string; label: string; surcharge: number }[]>([]);
+  const [loadingJson, setLoadingJson] = useState(true);
+  const [savingJson, setSavingJson] = useState(false);
+  const { toast } = useToast();
+
+  const loadJson = useCallback(() => {
+    setLoadingJson(true);
+    fetch("/api/admin/pricing/specialty-project-bases")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.baseRows) setBaseRows(d.baseRows);
+        if (d.equipRows) setEquipRows(d.equipRows);
+      })
+      .catch(() => toast("Failed to load specialty pricing", "x"))
+      .finally(() => setLoadingJson(false));
+  }, [toast]);
+
+  useEffect(() => {
+    loadJson();
+  }, [loadJson]);
+
+  const saveJson = async () => {
+    setSavingJson(true);
+    try {
+      const res = await fetch("/api/admin/pricing/specialty-project-bases", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ baseRows, equipRows }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast("Specialty tables saved", "check");
+      loadJson();
+    } catch {
+      toast("Failed to save specialty tables", "x");
+    } finally {
+      setSavingJson(false);
+    }
+  };
+
+  const updateBase = (key: string, basePrice: number) => {
+    setBaseRows((prev) => prev.map((r) => (r.key === key ? { ...r, basePrice } : r)));
+  };
+  const updateEquip = (key: string, surcharge: number) => {
+    setEquipRows((prev) => prev.map((r) => (r.key === key ? { ...r, surcharge } : r)));
+  };
+
+  const scalarKeys = [
+    { key: "specialty_crating_per_piece", label: "Crating per piece ($)" },
+    { key: "specialty_climate_surcharge", label: "Climate control surcharge ($)" },
+    { key: "specialty_minimum_price", label: "Minimum subtotal ($)" },
+    { key: "distance_base_km", label: "Free km before distance add-on" },
+    { key: "distance_rate_per_km", label: "$ per km beyond free km" },
+  ];
+
+  const scalarFallbacks: Record<string, number> = {
+    specialty_crating_per_piece: 300,
+    specialty_climate_surcharge: 150,
+    specialty_minimum_price: 500,
+    distance_base_km: 30,
+    distance_rate_per_km: 4.5,
+  };
+
+  if (configSection.loading) return <Skeleton />;
+
+  return (
+    <div className="pt-4 space-y-6">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Project-type bases scale with timeline hours. Equipment surcharges add per selected item. Values here merge with built-in defaults when a key is omitted from JSON.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {scalarKeys.map(({ key, label }) => {
+          const row = configSection.rows.find((r) => r.key === key);
+          const val = Number(row?.value ?? scalarFallbacks[key] ?? 0);
+          return (
+            <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <div className="text-[9px] text-[var(--tx3)] mb-2 font-mono">{key}</div>
+              {row ? (
+                <EditCell
+                  value={val}
+                  onChange={(v) => configSection.updateRow(String(row.id), "value", v)}
+                  type="number"
+                  className="text-[14px] font-bold text-[var(--gold)]"
+                />
+              ) : (
+                <p className="text-[10px] text-[var(--tx3)]">Run migration for {key}</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => configSection.save()}
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+        >
+          Save scalars
+        </button>
+        <button type="button" onClick={() => configSection.undo()} className="px-3 py-2 rounded-lg text-[11px] text-[var(--tx3)]">
+          Undo
+        </button>
+      </div>
+
+      {loadingJson ? (
+        <Skeleton />
+      ) : (
+        <>
+          <div>
+            <h4 className="text-[11px] font-bold text-[var(--tx)] mb-2">Project-type base prices</h4>
+            <div className="overflow-x-auto max-h-[320px] overflow-y-auto rounded-lg border border-[var(--brd)]">
+              <table className={tbl}>
+                <thead>
+                  <tr>
+                    <th className={th}>Project</th>
+                    <th className={th}>Base ($)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {baseRows.map((r) => (
+                    <tr key={r.key}>
+                      <td className={td}>
+                        <span className="text-[12px] text-[var(--tx)]">{r.label}</span>
+                        <div className="text-[9px] font-mono text-[var(--tx3)]">{r.key}</div>
+                      </td>
+                      <td className={td}>
+                        <EditCell
+                          type="number"
+                          value={r.basePrice}
+                          onChange={(v) => updateBase(r.key, parseFloat(v) || 0)}
+                          className="font-semibold text-[var(--gold)]"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-[11px] font-bold text-[var(--tx)] mb-2">Equipment surcharges</h4>
+            <div className="overflow-x-auto max-h-[240px] overflow-y-auto rounded-lg border border-[var(--brd)]">
+              <table className={tbl}>
+                <thead>
+                  <tr>
+                    <th className={th}>Equipment</th>
+                    <th className={th}>Surcharge ($)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {equipRows.map((r) => (
+                    <tr key={r.key}>
+                      <td className={td}>
+                        <span className="text-[12px] text-[var(--tx)]">{r.label}</span>
+                        <div className="text-[9px] font-mono text-[var(--tx3)]">{r.key}</div>
+                      </td>
+                      <td className={td}>
+                        <EditCell
+                          type="number"
+                          value={r.surcharge}
+                          onChange={(v) => updateEquip(r.key, parseFloat(v) || 0)}
+                          className="font-semibold text-[var(--gold)]"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={saveJson}
+            disabled={savingJson}
+            className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+          >
+            {savingJson ? "Saving…" : "Save specialty tables"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ────────── LABOUR-ONLY (platform_config) ────────── */
+function LabourOnlyPricingSection() {
+  const { rows, loading, save, undo, updateRow } = useSection("config");
+  if (loading) return <Skeleton />;
+
+  const fields = [
+    { key: "labour_only_rate", label: "Rate per mover-hour ($)", hint: "Crew × hours × this rate (per mover)." },
+    { key: "labour_only_truck_fee", label: "Truck fee when required ($)", hint: "Added when customer selects truck on site." },
+    { key: "labour_only_visit2_discount", label: "Visit 2 discount (0–1)", hint: "Second visit labour subtotal multiplier before truck/access." },
+    { key: "storage_weekly_rate", label: "Storage between visits ($/week)", hint: "Used when storage between labour visits is selected." },
+  ];
+
+  return (
+    <div className="pt-4 space-y-4">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Labour-only quotes bill crew time at one or two visits, optional truck, access, parking/long carry, and optional short-term storage.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {fields.map(({ key, label, hint }) => {
+          const row = rows.find((r) => r.key === key);
+          const fallback =
+            key === "labour_only_rate"
+              ? 85
+              : key === "labour_only_truck_fee"
+                ? 150
+                : key === "labour_only_visit2_discount"
+                  ? 0.85
+                  : 75;
+          const val = Number(row?.value ?? fallback);
+          return (
+            <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
+              {row ? (
+                <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[15px] font-bold text-[var(--gold)]" />
+              ) : (
+                <p className="text-[10px] text-[var(--tx3)]">
+                  Add <code className="text-[9px]">{key}</code> to platform_config.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <SaveBar onSave={() => save()} onUndo={undo} />
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════ */
@@ -2423,6 +2804,22 @@ export default function PricingControlPanel() {
         <SingleItemSection />
       </Accordion>
 
+      <Accordion title="White Glove" subtitle="Declared value premium and floor (uses residential base × tiers)">
+        <WhiteGlovePricingSection />
+      </Accordion>
+
+      <Accordion title="Specialty" subtitle="Project bases, equipment surcharges, crating & climate — used by specialty quotes">
+        <SpecialtyPricingSection />
+      </Accordion>
+
+      <Accordion title="Event" subtitle="Hourly rates, setup fees, return discount, minimum deposit">
+        <EventPricingSection />
+      </Accordion>
+
+      <Accordion title="B2B One-Off" subtitle="Base fee × distance band; pair with B2B surcharges + distance modifiers">
+        <B2BOneOffPricingSection />
+      </Accordion>
+
       <Accordion title="Deposit Rules" subtitle="Residential = tier-based (Curated/Signature/Estate). Other types = matrix below">
         <DepositRulesSection />
       </Accordion>
@@ -2451,8 +2848,8 @@ export default function PricingControlPanel() {
         <TierFeaturesSection />
       </Accordion>
 
-      <Accordion title="Labour-only storage" subtitle="Weekly rate used when storage between visits is selected on labour-only quotes">
-        <LabourOnlyStorageSection />
+      <Accordion title="Labour-only" subtitle="Per mover-hour, truck, second-visit discount, storage between visits">
+        <LabourOnlyPricingSection />
       </Accordion>
 
       <Accordion title="B2B Surcharges" subtitle="Access and weight surcharges for per-delivery B2B bookings. Day rates do not apply these.">
@@ -2462,49 +2859,6 @@ export default function PricingControlPanel() {
       <Accordion title="Supplies & Crating" subtitle="Estate packing supplies allowance by move size + custom crating rates per piece">
         <SuppliesAndCratingSection />
       </Accordion>
-    </div>
-  );
-}
-
-/* ────────── LABOUR-ONLY STORAGE (platform_config) ────────── */
-function LabourOnlyStorageSection() {
-  const configSection = useSection("config");
-  if (configSection.loading) return <Skeleton />;
-  const row = configSection.rows.find((r: Row & { key?: string }) => r.key === "storage_weekly_rate");
-  if (!row) {
-    return (
-      <p className="text-[11px] text-[var(--tx3)] py-3">
-        Add <code className="text-[10px]">storage_weekly_rate</code> to platform_config (migration{" "}
-        <code className="text-[10px]">20250321120000_multi_service_quote_fixes</code>) to edit here.
-      </p>
-    );
-  }
-  return (
-    <div className="pt-4 space-y-3 max-w-md">
-      <p className="text-[11px] text-[var(--tx3)]">
-        Quoted storage between visits = this rate × estimated weeks (coordinator can adjust).
-      </p>
-      <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-4">
-        <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">storage_weekly_rate ($/week)</div>
-        <EditCell
-          value={String(row.value ?? "75")}
-          onChange={(v) => configSection.updateRow(String(row.id), "value", v)}
-          type="number"
-          className="text-[16px] font-bold text-[var(--gold)]"
-        />
-      </div>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => configSection.save()}
-          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
-        >
-          Save
-        </button>
-        <button type="button" onClick={() => configSection.undo()} className="px-3 py-2 rounded-lg text-[11px] text-[var(--tx3)]">
-          Undo
-        </button>
-      </div>
     </div>
   );
 }

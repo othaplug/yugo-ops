@@ -7,6 +7,7 @@ type AuditAction =
   | "view_quote"
   | "edit_move"
   | "edit_pricing"
+  | "edit_specialty_pricing"
   | "edit_b2b_surcharges"
   | "send_quote"
   | "export_data"
