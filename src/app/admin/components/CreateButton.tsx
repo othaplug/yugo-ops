@@ -5,14 +5,15 @@ import { Plus } from "@phosphor-icons/react";
 
 const PlusIcon = () => <Plus size={16} weight="regular" className="text-current" aria-hidden />;
 
-/** Shared premium 3D round styling for gold create buttons (used by CreateButton and dropdown triggers) */
+/** Shared gold FAB: soft outer lift + single top inset highlight (no dark bottom inset — avoids crescent artifacts on circles). */
 export const createButtonBaseClass =
   "inline-flex items-center justify-center w-10 h-10 rounded-full text-[var(--btn-text-on-accent)] transition-all duration-300 ease-[var(--ease-out-expo)] " +
   "bg-gradient-to-b from-[#E8D98A] via-[#C9A962] to-[#9A7B38] " +
-  "shadow-[0_4px_12px_rgba(0,0,0,0.35),0_2px_4px_rgba(201,169,98,0.3),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-2px_6px_rgba(0,0,0,0.25)] " +
-  "hover:shadow-[0_6px_20px_rgba(0,0,0,0.4),0_4px_8px_rgba(201,169,98,0.35),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-2px_6px_rgba(0,0,0,0.2)] " +
-  "hover:scale-[1.03] active:scale-[0.97] active:shadow-[0_2px_6px_rgba(0,0,0,0.4),inset_0_2px_4px_rgba(0,0,0,0.2)] " +
-  "border border-[#E8D98A]/40";
+  "shadow-[0_2px_8px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.28)] " +
+  "hover:shadow-[0_4px_14px_rgba(201,169,98,0.35),0_2px_4px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.32)] " +
+  "hover:scale-[1.03] active:scale-[0.97] " +
+  "active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.18),inset_0_-1px_0_rgba(255,255,255,0.08)] " +
+  "ring-1 ring-black/[0.06]";
 
 interface CreateButtonProps {
   href?: string;
