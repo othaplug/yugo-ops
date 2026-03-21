@@ -30,7 +30,7 @@ import {
   Gift,
   House as Home,
   MapPin,
-  CurrencyDollar as DollarSign,
+  Money as DollarSign,
   TShirt as Shirt,
   ClipboardText as ClipboardCheck,
   Package,

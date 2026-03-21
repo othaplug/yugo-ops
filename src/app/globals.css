@@ -311,9 +311,9 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   transition: transform var(--transition-normal) var(--ease-out-expo), box-shadow var(--transition-normal) var(--ease-smooth), border-color var(--transition-fast) var(--ease-smooth);
 }
 .embossed-hover:hover {
-  transform: translateY(-3px) scale(1.018);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(201, 169, 98, 0.35);
-  border-color: rgba(201, 169, 98, 0.35) !important;
+  transform: translateY(-2px) scale(1.012);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(201, 169, 98, 0.2);
+  border-color: rgba(201, 169, 98, 0.28) !important;
 }
 
 /* Sidebar nav item - lifted on hover */
@@ -321,12 +321,13 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   transition: transform 0.2s var(--ease-out-expo), box-shadow 0.2s var(--ease-smooth), background-color 0.15s var(--ease-smooth), color 0.15s var(--ease-smooth), border-color 0.15s var(--ease-smooth);
 }
 .sidebar-nav-lift:hover {
-  transform: translateX(4px);
-  background-color: rgba(201, 169, 98, 0.12) !important;
+  transform: translateX(3px);
+  background-color: rgba(201, 169, 98, 0.1) !important;
   color: var(--gold) !important;
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    inset 0 0 0 1px rgba(201, 169, 98, 0.18);
+    0 1px 4px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 0 1px rgba(201, 169, 98, 0.1);
 }
 .sidebar-nav-lift:hover .sidebar-icon {
   color: var(--gold) !important;
@@ -857,12 +858,12 @@ input[type="time"] {
 .btn-p {
   background: linear-gradient(135deg, #A68B3C 0%, #8B7332 100%);
   color: #FFFFFF;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.22);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.15) inset,
-    0 -1px 0 rgba(0,0,0,0.25) inset,
-    0 2px 8px rgba(140,110,47,0.3),
-    0 1px 3px rgba(0,0,0,0.15);
+    0 1px 0 rgba(255,255,255,0.08) inset,
+    0 -1px 0 rgba(0,0,0,0.12) inset,
+    0 1px 5px rgba(140,110,47,0.18),
+    0 1px 2px rgba(0,0,0,0.08);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -871,16 +872,16 @@ input[type="time"] {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 55%);
   pointer-events: none;
 }
 .btn-p:hover {
   background: linear-gradient(135deg, #B8962E 0%, #A68B3C 100%);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.2) inset,
-    0 -1px 0 rgba(0,0,0,0.25) inset,
-    0 4px 16px rgba(140,110,47,0.4),
-    0 2px 6px rgba(0,0,0,0.2);
+    0 1px 0 rgba(255,255,255,0.1) inset,
+    0 -1px 0 rgba(0,0,0,0.14) inset,
+    0 3px 10px rgba(140,110,47,0.22),
+    0 1px 3px rgba(0,0,0,0.1);
   transform: translateY(-1px);
 }
 
@@ -890,8 +891,8 @@ input[type="time"] {
   color: var(--tx);
   border: 1px solid rgba(255,255,255,0.12);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.08) inset,
-    0 2px 8px rgba(0,0,0,0.12);
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 1px 4px rgba(0,0,0,0.08);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -900,16 +901,16 @@ input[type="time"] {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 50%);
   pointer-events: none;
 }
 .btn-s:hover {
   background: rgba(201,169,98,0.12);
-  border-color: rgba(201,169,98,0.4);
+  border-color: rgba(201,169,98,0.35);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.12) inset,
-    0 4px 12px rgba(0,0,0,0.15),
-    0 0 0 1px rgba(201,169,98,0.2);
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 2px 8px rgba(0,0,0,0.1),
+    0 0 0 1px rgba(201,169,98,0.12);
   transform: translateY(-1px);
 }
 
@@ -917,22 +918,22 @@ input[type="time"] {
   background: rgba(255,255,255,0.7);
   color: var(--tx);
   border: 1px solid rgba(0,0,0,0.1);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 2px 6px rgba(0,0,0,0.07);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 1px 3px rgba(0,0,0,0.06);
 }
 [data-theme="light"] .btn-s:hover {
   background: rgba(201,169,98,0.15);
   border-color: rgba(166,133,62,0.45);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 2px 8px rgba(0,0,0,0.07);
 }
 [data-theme="light"] .btn-p {
   background: linear-gradient(135deg, #8C6E2F 0%, #7A5E25 100%);
   color: #FFFFFF;
   text-shadow: 0 1px 2px rgba(0,0,0,0.2);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.2) inset,
-    0 -1px 0 rgba(0,0,0,0.15) inset,
-    0 2px 8px rgba(120,90,30,0.3),
-    0 1px 3px rgba(0,0,0,0.1);
+    0 1px 0 rgba(255,255,255,0.1) inset,
+    0 -1px 0 rgba(0,0,0,0.1) inset,
+    0 1px 5px rgba(120,90,30,0.2),
+    0 1px 2px rgba(0,0,0,0.07);
 }
 
 /* Premium sidebar scrollbar - seamless, refined */
@@ -1486,10 +1487,10 @@ select:focus-visible {
 }
 .hover-lift:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 [data-theme="light"] .hover-lift:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 /* ── Success flash ── */

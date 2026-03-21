@@ -1846,7 +1846,7 @@ const ICON_OPTIONS = [
   { name: "Home", label: "Home / Room" },
   { name: "Wrench", label: "Wrench / Tools" },
   { name: "MapPin", label: "Map Pin / GPS" },
-  { name: "DollarSign", label: "Dollar Sign" },
+  { name: "DollarSign", label: "Money / price" },
   { name: "Star", label: "Star / Premium" },
   { name: "Phone", label: "Phone / Coordinator" },
   { name: "Gift", label: "Gift / Perks" },

@@ -319,9 +319,9 @@ export default function AllPartnersClient() {
             onClick={() => setInviteOpen(true)}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-[var(--btn-text-on-accent)] transition-all active:scale-95
               bg-[var(--gold)]
-              shadow-[0_1px_0_0_rgba(0,0,0,0.35),0_4px_12px_rgba(201,169,98,0.45),inset_0_1px_0_rgba(255,255,255,0.22)]
-              hover:shadow-[0_1px_0_0_rgba(0,0,0,0.35),0_6px_18px_rgba(201,169,98,0.55),inset_0_1px_0_rgba(255,255,255,0.22)]
-              hover:brightness-110"
+              shadow-[0_1px_0_rgba(0,0,0,0.1),0_2px_8px_rgba(201,169,98,0.22),inset_0_1px_0_rgba(255,255,255,0.12)]
+              hover:shadow-[0_1px_0_rgba(0,0,0,0.12),0_3px_12px_rgba(201,169,98,0.28),inset_0_1px_0_rgba(255,255,255,0.14)]
+              hover:brightness-105"
           >
             <span className="text-[16px] leading-none font-black">+</span>
             <span className="hidden sm:inline">Add Partner</span>

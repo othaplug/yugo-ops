@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Lock, Check, Warning, ShareNetwork, Calendar, ChartBar,
   Bell, FileText, DownloadSimple, Plus, NavigationArrow, UserCircle,
-  ListBullets, X, CurrencyDollar, ClipboardText, MapPin, ArrowsClockwise,
+  ListBullets, X, Money, ClipboardText, MapPin, ArrowsClockwise,
 } from "@phosphor-icons/react";
 import { getPartnerFeatures, getPartnerGreeting } from "@/lib/partner-type";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -1114,7 +1114,7 @@ function PartnerNotifIcon({ name }: { name: string }) {
   const map: Record<string, React.ReactNode> = {
     check:         <Check size={14} weight="regular" />,
     x:             <X size={14} weight="regular" />,
-    dollar:        <CurrencyDollar size={14} weight="regular" />,
+    dollar:        <Money size={14} weight="regular" />,
     clipboard:     <ClipboardText size={14} weight="regular" />,
     calendar:      <Calendar size={14} weight="regular" />,
     alertTriangle: <Warning size={14} weight="regular" />,

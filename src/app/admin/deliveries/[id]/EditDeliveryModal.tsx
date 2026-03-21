@@ -10,7 +10,7 @@ import { usePhoneInput } from "@/hooks/usePhoneInput";
 import ModalOverlay from "../../components/ModalOverlay";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import {
-  MapPin, Calendar, Users, CurrencyDollar as DollarSign, ListBullets as LayoutList,
+  MapPin, Calendar, Users, Money as DollarSign, ListBullets as LayoutList,
   FileText, Clock, Shield, Buildings as Building,
 } from "@phosphor-icons/react";
 

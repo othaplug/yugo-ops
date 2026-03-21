@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   PaperPlaneTilt as Send, MapPin, Truck, Clock, Stack as Layers, Users, FileText,
-  CurrencyDollar as DollarSign, Warning as AlertTriangle, PencilSimple as Pencil, Trash as Trash2, CaretDown as ChevronDown, Phone,
+  Money as DollarSign, Warning as AlertTriangle, PencilSimple as Pencil, Trash as Trash2, CaretDown as ChevronDown, Phone,
   Envelope as Mail, Shield, ArrowSquareOut as ExternalLink, Hash, Folder, ArrowRight, Check,
 } from "@phosphor-icons/react";
 import BackButton from "../../components/BackButton";

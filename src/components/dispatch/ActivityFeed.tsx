@@ -7,7 +7,7 @@ import {
   Truck,
   ClipboardText,
   ChatText as MessageSquare,
-  CurrencyDollar as DollarSign,
+  Money as DollarSign,
   Star,
   Warning as AlertTriangle,
   CheckCircle as CheckCircle2,

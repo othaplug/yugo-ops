@@ -566,12 +566,12 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                       onClick={() => setQuickActionsOpen((v) => !v)}
                       aria-label="Quick create"
                       aria-expanded={quickActionsOpen}
-                      className={`-mt-5 w-[52px] h-[52px] rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all touch-manipulation ${
+                      className={`-mt-5 w-[52px] h-[52px] rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all touch-manipulation ${
                         quickActionsOpen
                           ? "bg-[var(--gold2)] rotate-45"
                           : "bg-[var(--gold)]"
                       }`}
-                      style={{ boxShadow: "0 4px 18px rgba(201,169,98,0.45)" }}
+                      style={{ boxShadow: "0 2px 10px rgba(201,169,98,0.22), 0 1px 2px rgba(0,0,0,0.06)" }}
                     >
                       <Plus size={22} weight="regular" color="#fff" aria-hidden />
                     </button>

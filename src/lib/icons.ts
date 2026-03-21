@@ -6,7 +6,7 @@
  */
 import {
   Truck, Users, Shield, ShieldCheck, Package, House, Wrench, MapPin,
-  CurrencyDollar, Star, Phone, Gift, ClipboardText, TShirt, Trash,
+  Money, Star, Phone, Gift, ClipboardText, TShirt, Trash,
   Cube, Eye, Calendar, CalendarX, CaretRight, CaretLeft, CaretDown, CaretUp,
   Bell, Gear, MagnifyingGlass, Plus, X, Check, CheckCircle, Warning,
   WarningCircle, Info, ArrowRight, ArrowLeft, ArrowUpRight, ArrowsDownUp,
@@ -91,7 +91,7 @@ export const ICON_MAP: Record<string, Icon> = {
   Home: House,
   Wrench,
   MapPin,
-  DollarSign: CurrencyDollar,
+  DollarSign: Money,
   Star,
   Phone,
   Gift,
@@ -187,7 +187,7 @@ export function getIcon(lucideName: string): Icon {
 // Named re-exports so consumers can import directly from this file
 export {
   Truck, Users, Shield, ShieldCheck, Package, House, Wrench, MapPin,
-  CurrencyDollar, Star, Phone, Gift, ClipboardText, TShirt, Trash,
+  Money, Star, Phone, Gift, ClipboardText, TShirt, Trash,
   Cube, Eye, Calendar, CalendarX, CaretRight, CaretLeft, CaretDown, CaretUp,
   Bell, Gear, MagnifyingGlass, Plus, X, Check, CheckCircle, Warning,
   WarningCircle, Info, ArrowRight, ArrowLeft, ArrowUpRight, ArrowsDownUp,

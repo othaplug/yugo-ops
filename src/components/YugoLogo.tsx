@@ -44,39 +44,20 @@ function PlusMark({ size, color }: { size: number; color: string }) {
   );
 }
 
-/** YUGO+ logo — uses gold image on dark, gold text on light (most reliable) */
+/** YUGO+ logo — always uses the gold image asset regardless of light/dark theme. */
 export default function YugoLogo({
   size = 18,
   className = "",
   variant = "auto",
   useImage = true,
-  onLightBackground = false,
+  onLightBackground: _onLightBackground = false,
   hidePlus = false,
 }: YugoLogoProps) {
-  const themeContext = useContext(ThemeContext);
-  const theme = themeContext?.theme ?? "dark";
+  useContext(ThemeContext); // kept for potential future theme-aware overrides
 
-  const isLight = theme === "light" || onLightBackground;
-
-  if (isLight && variant === "auto") {
-    return (
-      <span
-        className={`font-hero font-bold select-none leading-none ${className}`}
-        style={{
-          fontSize: size,
-          letterSpacing: size >= 18 ? 4 : 3,
-          color: "#B8962E",
-          display: "inline-flex",
-          alignItems: "baseline",
-        }}
-      >
-        YUGO{!hidePlus && <PlusMark size={size} color="#B8962E" />}
-      </span>
-    );
-  }
-
+  // Always use the gold image so the real logo asset appears in both light and dark admin.
   const resolvedVariant: Exclude<LogoVariant, "auto"> =
-    variant === "auto" ? (isLight ? "black" : "gold") : variant;
+    variant === "auto" ? "gold" : variant;
 
   const src = LOGO_SRC[resolvedVariant];
 
