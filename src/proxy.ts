@@ -84,20 +84,31 @@ export async function proxy(request: NextRequest) {
     }
   );
 
+  function isRefreshTokenError(err: unknown): boolean {
+    if (!err || typeof err !== "object") return false;
+    const msg = String((err as { message?: string }).message ?? "");
+    return /refresh\s*token/i.test(msg);
+  }
+
+  function staleTokenRedirect(): NextResponse {
+    if (pathname.startsWith("/partner")) {
+      return NextResponse.redirect(new URL("/partner/login", request.url));
+    }
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   let user: { id: string } | null = null;
   try {
     const result = await supabase.auth.getUser();
+    if (result.error && isRefreshTokenError(result.error)) {
+      await supabase.auth.signOut();
+      return staleTokenRedirect();
+    }
     user = result.data?.user ?? null;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (/refresh\s*token|AuthApiError/i.test(msg)) {
+    if (isRefreshTokenError(err)) {
       await supabase.auth.signOut();
-      if (pathname.startsWith("/admin")) {
-        return NextResponse.redirect(new URL("/login", request.url));
-      }
-      if (pathname.startsWith("/partner")) {
-        return NextResponse.redirect(new URL("/partner/login", request.url));
-      }
+      return staleTokenRedirect();
     }
     throw err;
   }

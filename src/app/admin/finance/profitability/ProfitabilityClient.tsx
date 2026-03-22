@@ -550,6 +550,7 @@ export default function ProfitabilityClient() {
   const [visibleCount, setVisibleCount] = useState(20);
   const [tableTab, setTableTab] = useState<"all" | "moves" | "deliveries">("all");
   const [breakdownTab, setBreakdownTab] = useState<"moves" | "deliveries">("moves");
+  const [marginFilter, setMarginFilter] = useState<"" | "green" | "yellow" | "red">("");
 
   // Optimistic local update when a cost cell is saved
   const handleCostSaved = useCallback((rowId: string, field: CostField, newValue: number) => {
@@ -707,13 +708,16 @@ export default function ProfitabilityClient() {
       const q = search.toLowerCase();
       r = r.filter((row) => (row.client ?? "").toLowerCase().includes(q) || (row.move_code ?? "").toLowerCase().includes(q));
     }
+    if (marginFilter === "green")  r = r.filter((row) => row.grossMargin >= 35);
+    if (marginFilter === "yellow") r = r.filter((row) => row.grossMargin >= 25 && row.grossMargin < 35);
+    if (marginFilter === "red")    r = r.filter((row) => row.grossMargin < 25);
     return [...r].sort((a, b) => {
       const av = (a as unknown as Record<string, unknown>)[sortKey];
       const bv = (b as unknown as Record<string, unknown>)[sortKey];
       if (typeof av === "number" && typeof bv === "number") return sortAsc ? av - bv : bv - av;
       return sortAsc ? String(av ?? "").localeCompare(String(bv ?? "")) : String(bv ?? "").localeCompare(String(av ?? ""));
     });
-  }, [tableSource, search, sortKey, sortAsc]);
+  }, [tableSource, search, sortKey, sortAsc, marginFilter]);
 
   /* ─── CSV ─── */
   const exportCSV = () => {
@@ -811,11 +815,15 @@ export default function ProfitabilityClient() {
 
           {/* ─── Margin Health Flags ─── */}
           {marginFlagBreakdown.total > 0 && (
-            <div className="flex items-center gap-8 border-t border-[var(--brd)]/30 pt-4">
+            <div className="flex items-center justify-center gap-8 border-t border-[var(--brd)]/30 pt-4">
               {/* Green */}
-              <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setMarginFilter((f) => f === "green" ? "" : "green")}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all duration-150 ${marginFilter === "green" ? "bg-emerald-400/10 ring-1 ring-emerald-400/30" : "hover:bg-[var(--bg2)]"}`}
+              >
                 <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-                <div>
+                <div className="text-left">
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-[18px] font-bold font-heading text-[var(--tx)] leading-none">{marginFlagBreakdown.green.length}</span>
                     <span className="text-[9px] font-bold tracking-wider uppercase text-emerald-400/80">
@@ -824,14 +832,18 @@ export default function ProfitabilityClient() {
                   </div>
                   <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">Green · ≥35%</div>
                 </div>
-              </div>
+              </button>
 
               <div className="w-px h-7 bg-[var(--brd)]" />
 
               {/* Yellow */}
-              <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setMarginFilter((f) => f === "yellow" ? "" : "yellow")}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all duration-150 ${marginFilter === "yellow" ? "bg-[var(--gold)]/10 ring-1 ring-[var(--gold)]/30" : "hover:bg-[var(--bg2)]"}`}
+              >
                 <span className="w-2 h-2 rounded-full bg-[var(--gold)] shrink-0" />
-                <div>
+                <div className="text-left">
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-[18px] font-bold font-heading text-[var(--tx)] leading-none">{marginFlagBreakdown.yellow.length}</span>
                     <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)]/80">
@@ -840,14 +852,18 @@ export default function ProfitabilityClient() {
                   </div>
                   <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">Yellow · 25–34%</div>
                 </div>
-              </div>
+              </button>
 
               <div className="w-px h-7 bg-[var(--brd)]" />
 
               {/* Red */}
-              <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setMarginFilter((f) => f === "red" ? "" : "red")}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all duration-150 ${marginFilter === "red" ? "bg-red-400/10 ring-1 ring-red-400/30" : "hover:bg-[var(--bg2)]"}`}
+              >
                 <span className={`w-2 h-2 rounded-full shrink-0 ${marginFlagBreakdown.red.length > 0 ? "bg-red-400" : "bg-[var(--tx3)]/30"}`} />
-                <div>
+                <div className="text-left">
                   <div className="flex items-baseline gap-1.5">
                     <span className={`text-[18px] font-bold font-heading leading-none ${marginFlagBreakdown.red.length > 0 ? "text-red-400" : "text-[var(--tx3)]"}`}>
                       {marginFlagBreakdown.red.length}
@@ -860,7 +876,7 @@ export default function ProfitabilityClient() {
                   </div>
                   <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">Red · &lt;25%</div>
                 </div>
-              </div>
+              </button>
             </div>
           )}
 
