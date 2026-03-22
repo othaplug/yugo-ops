@@ -12,6 +12,7 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
     group: "Operations",
     items: [
       { name: "Command Center", href: "/admin", Icon: Icons.home },
+      { name: "Activity", href: "/admin/activity", Icon: Icons.activity },
       { name: "Dispatch", href: "/admin/dispatch", Icon: Icons.dispatch },
       { name: "Calendar", href: "/admin/calendar", Icon: Icons.calendar },
       { name: "Live Tracking", href: "/admin/crew", Icon: Icons.mapPin },

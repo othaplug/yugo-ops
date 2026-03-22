@@ -30,6 +30,7 @@ const TYPE_COLORS: Record<string, string> = {
 /** Sidebar nav items + settings for command-centre search */
 const NAV_SEARCH_ITEMS: { name: string; href: string; keywords: string[] }[] = [
   { name: "Command Center", href: "/admin", keywords: ["dashboard", "home", "command", "centre", "center"] },
+  { name: "Activity", href: "/admin/activity", keywords: ["activity", "feed", "status", "events", "log"] },
   { name: "Jobs", href: "/admin/deliveries", keywords: ["projects", "deliveries", "jobs", "b2b", "all"] },
   { name: "Reports", href: "/admin/reports", keywords: ["reports", "analytics"] },
   { name: "Calendar", href: "/admin/calendar", keywords: ["calendar", "schedule"] },

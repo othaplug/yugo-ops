@@ -53,11 +53,11 @@
   --text-tertiary: var(--tx3);
   --text-accent: var(--gold);
 
-  /* ── Typography scale ── */
-  --text-xs: 10px;      /* caption, badge labels, timestamps */
-  --text-sm: 11px;      /* secondary labels, metadata */
-  --text-base: 13px;    /* body, table cells, list items */
-  --text-md: 14px;      /* body-lg, sub-headings */
+  /* ── Typography scale (+1px body / subhead vs prior baseline) ── */
+  --text-xs: 11px;      /* caption, badge labels, timestamps */
+  --text-sm: 12px;      /* secondary labels, metadata */
+  --text-base: 14px;    /* body, table cells, list items */
+  --text-md: 15px;      /* body-lg, sub-headings */
   --text-lg: 16px;      /* heading-sm */
   --text-xl: 18px;      /* heading */
   --text-2xl: 22px;     /* metric values */
@@ -131,7 +131,7 @@ html {
 
 body {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
   background: var(--bg);
   color: var(--tx);
@@ -141,6 +141,29 @@ body {
   min-height: 100dvh;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Admin: “View all” / secondary nav links (dashboard widgets, notifications drawer) */
+.admin-view-all-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-decoration: none;
+  line-height: 1.2;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  font-family: var(--font-body);
+}
+.admin-view-all-link:hover {
+  text-decoration: underline;
+  color: var(--gold2);
 }
 
 /* Smooth transitions for interactive elements - app-wide */

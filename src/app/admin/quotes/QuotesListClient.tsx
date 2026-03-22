@@ -328,8 +328,12 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         >
           {followupLoading ? "Loading preview…" : "Send due follow-ups"}
         </button>
-        <p className="text-[10px] leading-snug text-[var(--tx3)] px-0.5">
-          Runs the same rules as the scheduled job (stages 1–3). Opens a list of quote IDs before sending.
+        <p className="text-[11px] leading-snug text-[var(--tx3)] px-0.5 font-medium">
+          <strong className="text-[var(--tx2)] font-semibold">Automated:</strong> Vercel runs this job daily at{" "}
+          <span className="whitespace-nowrap">4:00 PM UTC</span> when{" "}
+          <span className="whitespace-nowrap">Auto follow-up emails</span> is enabled in{" "}
+          <span className="whitespace-nowrap">Platform → Business</span>. Manual send uses the same rules (stages 1–3) and
+          shows quote IDs first.
         </p>
       </div>
 

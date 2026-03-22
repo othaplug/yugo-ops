@@ -81,6 +81,11 @@ const FEATURE_DEFAULTS: Record<string, string> = {
   sms_enabled: "true",
   sms_followup_enabled: "true",
   sms_premove_enabled: "true",
+  /* Client inventory change requests (quote / pre-move) — UI uses these when built */
+  change_request_enabled: "true",
+  change_request_per_score_rate: "35",
+  change_request_min_hours_before_move: "48",
+  change_request_max_items_per_request: "10",
 };
 
 /**

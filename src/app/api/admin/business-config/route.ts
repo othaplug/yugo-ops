@@ -19,6 +19,9 @@ const BUSINESS_KEYS = [
   // Quoting
   "quote_expiry_days", "default_deposit_pct", "minimum_deposit", "quote_id_prefix",
   "auto_followup_enabled", "followup_max_attempts",
+  // Client inventory change requests (pre-move add/remove items)
+  "change_request_enabled", "change_request_per_score_rate",
+  "change_request_min_hours_before_move", "change_request_max_items_per_request",
   // Feature toggles
   "tipping_enabled", "quote_engagement_tracking", "instant_quote_widget", "valuation_upgrades", "sms_eta_enabled",
   "quote_sms_enabled",

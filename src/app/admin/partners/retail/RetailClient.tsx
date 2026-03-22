@@ -185,8 +185,8 @@ export default function RetailClient({
             </div>
             {filteredDeliveries.length > 25 && (
               <div className="px-4 py-3 border-t border-[var(--brd)] text-center">
-                <Link href="/admin/deliveries" className="text-[12px] font-semibold text-[var(--gold)] hover:underline">
-                  View all {filteredDeliveries.length} deliveries →
+                <Link href="/admin/deliveries" className="admin-view-all-link justify-center">
+                  View all {filteredDeliveries.length} deliveries
                 </Link>
               </div>
             )}

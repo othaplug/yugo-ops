@@ -416,7 +416,7 @@ export default function AdminPageClient({
                     <button
                       type="button"
                       onClick={() => setShowAllTasks((v) => !v)}
-                      className="w-full py-2.5 text-center text-[10px] font-semibold text-[var(--gold)] hover:bg-[var(--gold)]/[0.05] transition-colors"
+                      className="admin-view-all-link w-full justify-center py-3 hover:bg-[var(--gold)]/[0.05] rounded-none"
                     >
                       {showAllTasks ? "Show less" : `View all ${actionTasks.length} tasks`}
                     </button>

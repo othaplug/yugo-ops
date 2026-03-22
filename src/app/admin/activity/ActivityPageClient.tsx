@@ -1,0 +1,114 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import BackButton from "../components/BackButton";
+import {
+  type ActivityEventRow,
+  formatActivityTime,
+  getActivityHref,
+  formatActivityDescription,
+} from "../components/activity-feed-shared";
+
+export default function ActivityPageClient({ initialEvents }: { initialEvents: ActivityEventRow[] }) {
+  const [events, setEvents] = useState<ActivityEventRow[]>(initialEvents);
+  const seenIds = useRef(new Set(initialEvents.map((e) => e.id)));
+  const supabase = createClient();
+
+  const mergeEvents = useCallback((incoming: ActivityEventRow[]) => {
+    setEvents((prev) => {
+      const merged = [...prev];
+      let changed = false;
+      for (const e of incoming) {
+        if (!seenIds.current.has(e.id)) {
+          seenIds.current.add(e.id);
+          merged.unshift(e);
+          changed = true;
+        }
+      }
+      if (!changed) return prev;
+      merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return merged.slice(0, 500);
+    });
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("activity-full-page")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "status_events" },
+        (payload) => {
+          const row = payload.new as ActivityEventRow;
+          if (row?.id) mergeEvents([row]);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, mergeEvents]);
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const { data } = await supabase
+          .from("status_events")
+          .select("id, entity_type, entity_id, event_type, description, icon, created_at")
+          .order("created_at", { ascending: false })
+          .limit(80);
+        if (data?.length) mergeEvents(data);
+      } catch {
+        /* silent */
+      }
+    };
+
+    const id = setInterval(poll, 15_000);
+    return () => clearInterval(id);
+  }, [supabase, mergeEvents]);
+
+  const visible = events.filter((a, i) => i === 0 || events[i - 1].description !== a.description);
+
+  return (
+    <div className="max-w-[720px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
+      <div className="flex items-center gap-3 mb-6">
+        <BackButton href="/admin" />
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="font-heading text-[22px] sm:text-[26px] font-bold text-[var(--tx)] tracking-tight truncate">Activity</h1>
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-60" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
+          </span>
+        </div>
+      </div>
+      <p className="text-[var(--text-md)] text-[var(--tx3)] mb-4 leading-snug font-medium">
+        Live stream of status updates logged across moves, deliveries, invoices, and notifications. New events appear automatically.
+      </p>
+
+      {visible.length > 0 ? (
+        <div className="rounded-xl border border-[var(--brd)]/80 bg-[var(--card)]/40 overflow-hidden">
+          <div className="max-h-[min(70vh,560px)] overflow-y-auto overscroll-contain divide-y divide-[var(--brd)]/25">
+            {visible.map((e, idx) => (
+              <Link
+                key={`${e.id}-${idx}`}
+                href={getActivityHref(e)}
+                className="group flex items-start gap-3 py-3.5 px-4 hover:bg-[var(--gold)]/[0.04] transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] leading-snug font-semibold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">
+                    {formatActivityDescription(e.description || e.event_type)}
+                  </div>
+                  <div className="text-[11px] text-[var(--tx3)] mt-1 font-medium">{formatActivityTime(e.created_at)}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="text-[var(--text-base)] text-[var(--tx3)] py-8 text-center font-medium">No activity yet</p>
+      )}
+    </div>
+  );
+}

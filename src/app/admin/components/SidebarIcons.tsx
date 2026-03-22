@@ -32,6 +32,7 @@ import {
   Gear,
   Gift,
   House,
+  Pulse,
 } from "@phosphor-icons/react";
 
 const SIZE = 16;
@@ -73,4 +74,6 @@ export const Icons = {
   settings:       ic(Gear),
   gift:           ic(Gift),
   home:           ic(House),
+  /** Live activity / status stream */
+  activity:       ic(Pulse),
 };

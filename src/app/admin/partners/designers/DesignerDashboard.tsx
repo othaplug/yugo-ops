@@ -142,7 +142,9 @@ export default function DesignerDashboard({
           <div>
             <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4 flex items-center justify-between">
               <span>Projects</span>
-              <Link href="/admin/deliveries?view=projects" className="text-[11px] font-semibold text-[var(--gold)] hover:underline">View all projects →</Link>
+              <Link href="/admin/deliveries?view=projects" className="admin-view-all-link">
+                View all projects
+              </Link>
             </div>
             <div className="divide-y divide-[var(--brd)]/30">
               {allProjects.length === 0 ? (

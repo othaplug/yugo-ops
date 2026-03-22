@@ -51,6 +51,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "Dashboard",
     items: [
       { href: "/admin", label: "Command Center", Icon: Icons.home, minRole: "coordinator" },
+      { href: "/admin/activity", label: "Activity", Icon: Icons.activity, minRole: "coordinator" },
       { href: "/admin/dispatch", label: "Dispatch", Icon: Icons.dispatch, minRole: "dispatcher" },
       { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar, minRole: "sales" },
       { href: "/admin/crew", label: "Live Tracking", Icon: Icons.mapPin },

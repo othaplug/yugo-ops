@@ -140,7 +140,7 @@ export default function NotificationDropdown() {
                 setOpen(false);
                 router.push("/admin/notifications");
               }}
-              className="text-[11px] font-semibold text-[var(--gold)] hover:underline"
+              className="admin-view-all-link w-full justify-center py-1"
             >
               View all notifications
             </button>
