@@ -306,19 +306,30 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
 
   return (
     <div className="max-w-[1000px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      <div className="flex items-center justify-between gap-3 mb-6">
-        <div>
+      {/*
+        Stack on small screens: admin main uses overflow-x-hidden on mobile, so a single
+        justify-between row can clip the action buttons off the right edge.
+      */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 min-w-0">
+        <div className="min-w-0">
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
           <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Quotes</h1>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:shrink-0 min-w-0">
           <button
             type="button"
             onClick={openDueFollowupsModal}
             disabled={followupLoading}
-            className="min-h-[40px] px-3 sm:px-4 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wide border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)] disabled:opacity-50 transition-colors"
+            className="min-h-[40px] px-3 sm:px-4 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wide border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)] disabled:opacity-50 transition-colors max-w-full"
           >
-            {followupLoading ? "Loading…" : "Send Due Follow-Ups"}
+            {followupLoading ? (
+              "Loading…"
+            ) : (
+              <>
+                <span className="sm:hidden">Due follow-ups</span>
+                <span className="hidden sm:inline">Send Due Follow-Ups</span>
+              </>
+            )}
           </button>
           <CreateButton href="/admin/quotes/new" title="New Quote" />
         </div>
