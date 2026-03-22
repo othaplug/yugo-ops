@@ -8,6 +8,7 @@ import { toTitleCase } from "@/lib/format-text";
 import { Plus, Trash as Trash2 } from "@phosphor-icons/react";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import CreateButton from "../components/CreateButton";
+import { useToast } from "../components/Toast";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 
@@ -103,7 +104,12 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
   const [filter, setFilter] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [followupModalOpen, setFollowupModalOpen] = useState(false);
+  const [followupPreview, setFollowupPreview] = useState<{ quote_id: string; stage: 1 | 2 | 3 }[]>([]);
+  const [followupLoading, setFollowupLoading] = useState(false);
+  const [followupSending, setFollowupSending] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
   const filtered = useMemo(
     () => (filter ? quotes.filter((q) => q.status === filter) : quotes),
@@ -127,6 +133,48 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
       setConfirmId(null);
     }
   }, [router]);
+
+  const openDueFollowupsModal = useCallback(async () => {
+    setFollowupLoading(true);
+    try {
+      const res = await fetch("/api/admin/quotes/due-followups-preview", { credentials: "same-origin" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(typeof data.error === "string" ? data.error : "Could not load preview", "x");
+        return;
+      }
+      setFollowupPreview(Array.isArray(data.items) ? data.items : []);
+      setFollowupModalOpen(true);
+    } catch {
+      toast("Could not load preview", "x");
+    } finally {
+      setFollowupLoading(false);
+    }
+  }, [toast]);
+
+  const confirmSendDueFollowups = useCallback(async () => {
+    setFollowupSending(true);
+    try {
+      const res = await fetch("/api/admin/quotes/send-due-followups", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(typeof data.error === "string" ? data.error : "Send failed", "x");
+        return;
+      }
+      const n = typeof data.emailsSent === "number" ? data.emailsSent : 0;
+      toast(`${n} follow-up emails sent.`, "check");
+      setFollowupModalOpen(false);
+      setFollowupPreview([]);
+      router.refresh();
+    } catch {
+      toast("Send failed", "x");
+    } finally {
+      setFollowupSending(false);
+    }
+  }, [router, toast]);
 
   const columns: ColumnDef<Quote>[] = useMemo(
     () => [
@@ -263,8 +311,71 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
           <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Quotes</h1>
         </div>
-        <CreateButton href="/admin/quotes/new" title="New Quote" />
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={openDueFollowupsModal}
+            disabled={followupLoading}
+            className="min-h-[40px] px-3 sm:px-4 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wide border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)] disabled:opacity-50 transition-colors"
+          >
+            {followupLoading ? "Loading…" : "Send Due Follow-Ups"}
+          </button>
+          <CreateButton href="/admin/quotes/new" title="New Quote" />
+        </div>
       </div>
+
+      {followupModalOpen && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="due-followups-title"
+        >
+          <div className="w-full max-w-md max-h-[min(80vh,520px)] rounded-xl border border-[var(--brd)] bg-[var(--card)] shadow-xl flex flex-col">
+            <div className="p-4 border-b border-[var(--brd)]/60">
+              <h2 id="due-followups-title" className="text-[14px] font-bold text-[var(--tx)]">
+                Send follow-ups to {followupPreview.length} quote{followupPreview.length === 1 ? "" : "s"}?
+              </h2>
+              <p className="text-[11px] text-[var(--tx3)] mt-1">
+                Same rules as the scheduled cron (stages 1–3). SMS sends after a successful email when SMS is enabled.
+              </p>
+            </div>
+            <div className="p-3 overflow-y-auto flex-1 min-h-0">
+              {followupPreview.length === 0 ? (
+                <p className="text-[12px] text-[var(--tx3)]">No quotes are due for a follow-up right now.</p>
+              ) : (
+                <ul className="text-[12px] space-y-1.5 font-mono text-[var(--tx2)]">
+                  {followupPreview.map((row) => (
+                    <li key={`${row.quote_id}-${row.stage}`}>
+                      {row.quote_id} — Stage {row.stage}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="p-4 border-t border-[var(--brd)]/60 flex justify-end gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setFollowupModalOpen(false);
+                  setFollowupPreview([]);
+                }}
+                className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={followupSending || followupPreview.length === 0}
+                onClick={confirmSendDueFollowups}
+                className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+              >
+                {followupSending ? "Sending…" : "Send"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
         <KpiCard label="Total" value={String(quotes.length)} sub={`${sentCount} sent · ${viewedCount} viewed`} />

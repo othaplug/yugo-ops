@@ -88,8 +88,7 @@ export async function sendQuoteFollowupSms(params: {
   eventName?: string | null;
 }): Promise<{ ok: boolean; skipped?: string }> {
   const smsEnabled = (await getConfig("sms_enabled", "true")).toLowerCase() === "true";
-  const followupEnabled = (await getConfig("sms_followup_enabled", "true")).toLowerCase() === "true";
-  if (!smsEnabled || !followupEnabled) return { ok: true, skipped: "sms_disabled" };
+  if (!smsEnabled) return { ok: true, skipped: "sms_disabled" };
 
   if (!params.phone?.trim() || !process.env.OPENPHONE_API_KEY || !process.env.OPENPHONE_PHONE_NUMBER_ID) {
     return { ok: true, skipped: "no_openphone_or_phone" };
