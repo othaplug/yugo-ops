@@ -44,7 +44,7 @@ const EMAIL_FOOTER_HIGHLIGHT_BG = "rgba(201,169,98,0.2)";
 
 /** Client contact email and phone for footer (no app URLs — mailto/tel only). */
 function getContactEmail(): string {
-  return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) || "hello@helloyugo.com";
+  return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) || "notifications@opsplus.co";
 }
 function getContactPhone(): string {
   return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) || "(647) 370-4525";

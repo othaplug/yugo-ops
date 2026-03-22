@@ -32,10 +32,16 @@ async function getEngagementSummary(
   supabase: ReturnType<typeof createAdminClient>,
   quoteUuid: string,
 ): Promise<EngagementSummary> {
-  const { data: events } = await supabase
-    .from("quote_engagement")
-    .select("event_type, event_data, session_duration_seconds")
-    .eq("quote_id", quoteUuid);
+  let events: any[] | null = null;
+  try {
+    const result = await supabase
+      .from("quote_engagement")
+      .select("event_type, event_data, session_duration_seconds")
+      .eq("quote_id", quoteUuid);
+    events = result.data;
+  } catch {
+    events = null;
+  }
 
   const summary: EngagementSummary = {
     tierClicked: null,
@@ -334,7 +340,6 @@ export async function GET(req: NextRequest) {
           .from("quotes")
           .update({
             followup_2_sent: now.toISOString(),
-            engagement_summary: eng,
           })
           .eq("quote_id", q.quote_id)
           .is("followup_2_sent", null)
@@ -426,7 +431,6 @@ export async function GET(req: NextRequest) {
           .from("quotes")
           .update({
             followup_3_sent: now.toISOString(),
-            engagement_summary: eng,
           })
           .eq("quote_id", q.quote_id)
           .is("followup_3_sent", null)

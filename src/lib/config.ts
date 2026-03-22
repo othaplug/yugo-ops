@@ -68,7 +68,7 @@ export async function getCompanyPhone(): Promise<string> {
 export async function getCompanyEmail(): Promise<string> {
   return getConfig(
     "company_email",
-    process.env.NEXT_PUBLIC_YUGO_EMAIL || "hello@helloyugo.com",
+    process.env.NEXT_PUBLIC_YUGO_EMAIL || "notifications@opsplus.co",
   );
 }
 
