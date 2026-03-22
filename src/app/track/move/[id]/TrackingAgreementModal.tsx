@@ -35,7 +35,7 @@ export default function TrackingAgreementModal() {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[99990]"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex min-h-0 items-center justify-center p-4 sm:p-5 z-[99990]"
     >
       <div
         className="rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[480px] shadow-2xl overflow-hidden"

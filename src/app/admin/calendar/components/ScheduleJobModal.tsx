@@ -124,8 +124,8 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
   const crewName = crews.find((c) => c.id === crewId)?.name || "team";
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[480px] overflow-y-auto border border-[var(--brd)] animate-slide-up sm:animate-none" style={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/60 backdrop-blur-sm modal-overlay" onClick={onClose}>
+      <div className="bg-[var(--card)] rounded-2xl shadow-2xl w-full sm:max-w-[480px] overflow-y-auto border border-[var(--brd)] modal-card" style={{ maxHeight: "min(90dvh, 90vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[20px] font-bold text-[var(--tx)]">Schedule Job</h2>
           <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--tx3)] hover:bg-[var(--bg)] hover:text-[var(--tx)] transition-colors" aria-label="Close">

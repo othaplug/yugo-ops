@@ -303,7 +303,7 @@ export default function TrackTipClient({
           onError={() => setError("Failed to load payment SDK. Please refresh.")}
         />
         <div
-          className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-md"
+          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/50 backdrop-blur-md"
           onClick={(e) => e.target === e.currentTarget && onClose?.()}
         >
           <div

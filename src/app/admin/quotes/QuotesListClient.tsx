@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
@@ -176,6 +177,15 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
     }
   }, [router, toast]);
 
+  useEffect(() => {
+    if (!followupModalOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [followupModalOpen]);
+
   const columns: ColumnDef<Quote>[] = useMemo(
     () => [
       {
@@ -336,58 +346,70 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         </p>
       </div>
 
-      {followupModalOpen && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="due-followups-title"
-        >
-          <div className="w-full max-w-md max-h-[min(80vh,520px)] rounded-xl border border-[var(--brd)] bg-[var(--card)] shadow-xl flex flex-col">
-            <div className="p-4 border-b border-[var(--brd)]/60">
-              <h2 id="due-followups-title" className="text-[var(--text-base)] font-bold text-[var(--tx)]">
-                Send follow-ups to {followupPreview.length} quote{followupPreview.length === 1 ? "" : "s"}?
-              </h2>
-              <p className="text-[11px] text-[var(--tx3)] mt-1">
-                Same rules as the scheduled cron (stages 1–3). SMS sends after a successful email when SMS is enabled.
-              </p>
+      {followupModalOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            data-modal-root
+            className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="due-followups-title"
+          >
+            <div
+              className="fixed inset-0 z-0 bg-black/55 backdrop-blur-sm modal-overlay"
+              aria-hidden
+              onClick={() => {
+                setFollowupModalOpen(false);
+                setFollowupPreview([]);
+              }}
+            />
+            <div className="relative z-10 w-full max-w-md max-h-[min(90dvh,560px)] flex flex-col rounded-2xl border border-[var(--brd)] bg-[var(--card)] shadow-2xl overflow-hidden modal-card">
+              <div className="p-4 border-b border-[var(--brd)]/60 shrink-0">
+                <h2 id="due-followups-title" className="text-[var(--text-base)] font-bold text-[var(--tx)]">
+                  Send follow-ups to {followupPreview.length} quote{followupPreview.length === 1 ? "" : "s"}?
+                </h2>
+                <p className="text-[11px] text-[var(--tx3)] mt-1">
+                  Same rules as the scheduled cron (stages 1–3). SMS sends after a successful email when SMS is enabled.
+                </p>
+              </div>
+              <div className="p-3 overflow-y-auto flex-1 min-h-0">
+                {followupPreview.length === 0 ? (
+                  <p className="text-[12px] text-[var(--tx3)]">No quotes are due for a follow-up right now.</p>
+                ) : (
+                  <ul className="text-[12px] space-y-1.5 font-mono text-[var(--tx2)]">
+                    {followupPreview.map((row) => (
+                      <li key={`${row.quote_id}-${row.stage}`}>
+                        {row.quote_id} — Stage {row.stage}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="p-4 border-t border-[var(--brd)]/60 flex justify-end gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFollowupModalOpen(false);
+                    setFollowupPreview([]);
+                  }}
+                  className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={followupSending || followupPreview.length === 0}
+                  onClick={confirmSendDueFollowups}
+                  className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                >
+                  {followupSending ? "Sending…" : "Send"}
+                </button>
+              </div>
             </div>
-            <div className="p-3 overflow-y-auto flex-1 min-h-0">
-              {followupPreview.length === 0 ? (
-                <p className="text-[12px] text-[var(--tx3)]">No quotes are due for a follow-up right now.</p>
-              ) : (
-                <ul className="text-[12px] space-y-1.5 font-mono text-[var(--tx2)]">
-                  {followupPreview.map((row) => (
-                    <li key={`${row.quote_id}-${row.stage}`}>
-                      {row.quote_id} — Stage {row.stage}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="p-4 border-t border-[var(--brd)]/60 flex justify-end gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setFollowupModalOpen(false);
-                  setFollowupPreview([]);
-                }}
-                className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={followupSending || followupPreview.length === 0}
-                onClick={confirmSendDueFollowups}
-                className="px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
-              >
-                {followupSending ? "Sending…" : "Send"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
         <KpiCard label="Total" value={String(quotes.length)} sub={`${sentCount} sent · ${viewedCount} viewed`} />

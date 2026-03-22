@@ -188,7 +188,7 @@ export default function TruckAssignments() {
       </div>
 
       {addModalOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4" aria-modal="true">
+        <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5" aria-modal="true">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setAddModalOpen(false)} aria-hidden="true" />
           <div
             className="relative bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-xl w-full sm:max-w-md p-5 shadow-2xl animate-slide-up sm:animate-none"

@@ -300,7 +300,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   const fmtCurrency = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
+    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5 modal-overlay" onClick={onClose}>
       <div
         className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[640px] overflow-y-auto mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card animate-slide-up sm:animate-none"
         style={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}

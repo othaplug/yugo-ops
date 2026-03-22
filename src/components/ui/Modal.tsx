@@ -46,7 +46,8 @@ export default function GlobalModal({
 
   const modal = (
     <div
-      className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center sm:p-4"
+      data-modal-root
+      className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
@@ -57,12 +58,10 @@ export default function GlobalModal({
         onClick={onClose}
         aria-hidden="true"
       />
-      {/* Content panel:
-          - Mobile: slides up from bottom, full width, rounded top corners, respects safe area
-          - Desktop: centered card with max-width */}
+      {/* Content: viewport-centered on all breakpoints (avoids bottom-sheet clipping when ancestor has transform) */}
       <div
-        className={`relative z-10 w-full ${maxW} flex flex-col bg-[var(--card)] border border-[var(--brd)] sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden modal-card pointer-events-auto animate-slide-up sm:animate-none`}
-        style={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        className={`relative z-10 w-full ${maxW} flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-2xl overflow-hidden modal-card pointer-events-auto`}
+        style={{ maxHeight: "min(90dvh, 90vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {!noHeader && (

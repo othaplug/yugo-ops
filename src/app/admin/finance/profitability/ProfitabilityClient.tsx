@@ -811,50 +811,54 @@ export default function ProfitabilityClient() {
 
           {/* ─── Margin Health Flags ─── */}
           {marginFlagBreakdown.total > 0 && (
-            <div className="grid grid-cols-3 gap-3 border-t border-[var(--brd)]/30 pt-4">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/8 border border-emerald-500/20">
-                <span className="text-[20px] leading-none">🟢</span>
+            <div className="flex items-center gap-8 border-t border-[var(--brd)]/30 pt-4">
+              {/* Green */}
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
                 <div>
-                  <div className="text-[15px] font-bold text-emerald-400">{marginFlagBreakdown.green.length}</div>
-                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
-                    Green Jobs
-                    {marginFlagBreakdown.total > 0 && (
-                      <span className="ml-1 text-emerald-400/70">
-                        ({Math.round((marginFlagBreakdown.green.length / marginFlagBreakdown.total) * 100)}%)
-                      </span>
-                    )}
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[18px] font-bold font-heading text-[var(--tx)] leading-none">{marginFlagBreakdown.green.length}</span>
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-emerald-400/80">
+                      {Math.round((marginFlagBreakdown.green.length / marginFlagBreakdown.total) * 100)}%
+                    </span>
                   </div>
-                  <div className="text-[9px] text-[var(--tx3)] mt-0.5">≥35% margin</div>
+                  <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">Green · ≥35%</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--gold)]/8 border border-[var(--gold)]/20">
-                <span className="text-[20px] leading-none">🟡</span>
+
+              <div className="w-px h-7 bg-[var(--brd)]" />
+
+              {/* Yellow */}
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--gold)] shrink-0" />
                 <div>
-                  <div className="text-[15px] font-bold text-[var(--gold)]">{marginFlagBreakdown.yellow.length}</div>
-                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
-                    Yellow Jobs
-                    {marginFlagBreakdown.total > 0 && (
-                      <span className="ml-1 text-[var(--gold)]/70">
-                        ({Math.round((marginFlagBreakdown.yellow.length / marginFlagBreakdown.total) * 100)}%)
-                      </span>
-                    )}
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[18px] font-bold font-heading text-[var(--tx)] leading-none">{marginFlagBreakdown.yellow.length}</span>
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)]/80">
+                      {Math.round((marginFlagBreakdown.yellow.length / marginFlagBreakdown.total) * 100)}%
+                    </span>
                   </div>
-                  <div className="text-[9px] text-[var(--tx3)] mt-0.5">25–34% margin</div>
+                  <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">Yellow · 25–34%</div>
                 </div>
               </div>
-              <div className={`flex items-center gap-3 p-3 rounded-xl border ${marginFlagBreakdown.red.length > 0 ? "bg-red-500/8 border-red-500/20" : "bg-[var(--bg2)] border-[var(--brd)]"}`}>
-                <span className="text-[20px] leading-none">🔴</span>
+
+              <div className="w-px h-7 bg-[var(--brd)]" />
+
+              {/* Red */}
+              <div className="flex items-center gap-2.5">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${marginFlagBreakdown.red.length > 0 ? "bg-red-400" : "bg-[var(--tx3)]/30"}`} />
                 <div>
-                  <div className={`text-[15px] font-bold ${marginFlagBreakdown.red.length > 0 ? "text-red-400" : "text-[var(--tx3)]"}`}>{marginFlagBreakdown.red.length}</div>
-                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
-                    Red Jobs
-                    {marginFlagBreakdown.total > 0 && marginFlagBreakdown.red.length > 0 && (
-                      <span className="ml-1 text-red-400/70">
-                        ({Math.round((marginFlagBreakdown.red.length / marginFlagBreakdown.total) * 100)}%)
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={`text-[18px] font-bold font-heading leading-none ${marginFlagBreakdown.red.length > 0 ? "text-red-400" : "text-[var(--tx3)]"}`}>
+                      {marginFlagBreakdown.red.length}
+                    </span>
+                    {marginFlagBreakdown.red.length > 0 && (
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-red-400/80">
+                        {Math.round((marginFlagBreakdown.red.length / marginFlagBreakdown.total) * 100)}%
                       </span>
                     )}
                   </div>
-                  <div className="text-[9px] text-[var(--tx3)] mt-0.5">&lt;25% margin</div>
+                  <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">Red · &lt;25%</div>
                 </div>
               </div>
             </div>

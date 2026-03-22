@@ -2072,7 +2072,7 @@ export default function TrackMoveClient({
       {paymentModalOpen && (
         <>
           <Script src={squareScriptUrl} strategy="afterInteractive" onLoad={() => setSqSdkReady(true)} onError={() => setSqError("Payment script failed to load.")} />
-          <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center">
+          <div className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setPaymentModalOpen(false)} />
             <div className="relative w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden overflow-y-auto" style={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
               <div className="p-5">

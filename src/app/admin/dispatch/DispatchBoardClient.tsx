@@ -464,7 +464,7 @@ export default function DispatchBoardClient({ today }: Props) {
       {/* Contact bottom sheet */}
       {contactJob && (
         <div
-          className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-5"
           onClick={() => setContactJob(null)}
         >
           <div
@@ -552,7 +552,7 @@ export default function DispatchBoardClient({ today }: Props) {
       {/* Reassign bottom sheet */}
       {reassignJob && (
         <div
-          className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-5"
           onClick={() => setReassignJob(null)}
         >
           <div

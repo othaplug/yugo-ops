@@ -203,12 +203,12 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
   animation: 300ms var(--ease-out-expo) both vt-page-in;
 }
 @keyframes vt-page-out {
-  from { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 1; transform: none; }
   to   { opacity: 0; transform: translateY(-5px) scale(0.995); }
 }
 @keyframes vt-page-in {
   from { opacity: 0; transform: translateY(10px) scale(0.995); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
@@ -218,6 +218,13 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 /* ═══════════════════════════════════════════════════════
    MODAL / DIALOG / SHEET TRANSITIONS
    ═══════════════════════════════════════════════════════ */
+/*
+ * Full-screen overlays must use position:fixed relative to the viewport. Any ancestor with a
+ * non-none transform (including identity translateY(0) from finished animations) creates a new
+ * containing block — the dialog appears offset or off-screen. Fix: end entrance keyframes with
+ * transform: none (see .tab-content, .animate-fade-up), and render critical dialogs via
+ * createPortal(..., document.body) with data-modal-root + z-index: var(--z-modal).
+ */
 
 /* Dark backdrop fade */
 .modal-overlay {
@@ -234,7 +241,7 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 }
 @keyframes modal-card-in {
   from { opacity: 0; transform: translateY(18px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Bottom sheet (mobile) */
@@ -243,7 +250,7 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 }
 @keyframes sheet-in {
   from { transform: translateY(100%); opacity: 0.6; }
-  to   { transform: translateY(0);    opacity: 1; }
+  to   { transform: none; opacity: 1; }
 }
 
 /* Side drawer (right-to-left slide) */
@@ -252,7 +259,7 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 }
 @keyframes drawer-in {
   from { transform: translateX(100%); opacity: 0.7; }
-  to   { transform: translateX(0);    opacity: 1; }
+  to   { transform: none; opacity: 1; }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -495,7 +502,8 @@ input[type="time"] {
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px) scale(0.997); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
+  /* `transform: none` — identity translate/scale still creates a containing block for position:fixed */
+  to   { opacity: 1; transform: none; }
 }
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -503,7 +511,7 @@ input[type="time"] {
 }
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(-6px); }
-  to   { opacity: 1; transform: translateX(0); }
+  to   { opacity: 1; transform: none; }
 }
 @keyframes progressFill {
   from { opacity: 0.9; }
@@ -603,14 +611,14 @@ input[type="time"] {
 /* Slide-up animation for bottom sheets */
 @keyframes slideUp {
   from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  to   { transform: none; opacity: 1; }
 }
 .animate-slide-up {
   animation: slideUp 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 @keyframes cmdPaletteIn {
   from { opacity: 0; transform: translateY(-10px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Mobile touch helpers */
@@ -1154,7 +1162,7 @@ div.mapboxgl-ctrl-attrib {
 
 @keyframes slide-in-right {
   from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  to { transform: none; }
 }
 .animate-slide-in-right {
   animation: slide-in-right 0.25s ease-out;

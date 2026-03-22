@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
-import { getMoveCode, formatJobId } from "@/lib/move-code";
+import { getMoveCode, formatJobId, getMoveDetailPath } from "@/lib/move-code";
 import { sendPushToUser } from "@/lib/web-push";
 import { getSlackBotChannelConfig, slackChatPostMessage } from "@/lib/slack-bot";
 
@@ -22,7 +22,8 @@ async function sendToSlack(clientName: string, message: string, moveCode: string
 async function notifyStaffClientMessage(
   moveCode: string,
   clientName: string,
-  message: string
+  message: string,
+  moveDetailPath: string
 ) {
   const admin = createAdminClient();
   const { data: platformUsers } = await admin
@@ -33,7 +34,7 @@ async function notifyStaffClientMessage(
   const title = `Client message (${moveCode})`;
   const body = `${clientName || "Client"}: ${message.slice(0, 80)}${message.length > 80 ? "…" : ""}`;
   const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
-  const url = baseUrl ? `${baseUrl}/admin/messages` : "/admin/messages";
+  const url = baseUrl ? `${baseUrl}${moveDetailPath}` : moveDetailPath;
   await Promise.allSettled(
     userIds.map((userId) => sendPushToUser(userId, { title, body, url }))
   );
@@ -71,7 +72,7 @@ export async function POST(
 
     await sendToSlack(clientName, message, jobIdDisplay);
 
-    // Insert into messages table so it appears in admin Messages page thread
+    // Insert into messages table (shown on move detail Client Messages)
     await admin.from("messages").insert({
       thread_id: moveId,
       sender_name: clientName,
@@ -94,7 +95,8 @@ export async function POST(
     }
 
     // Push to admin, manager, dispatcher (and superadmin if in platform_users)
-    notifyStaffClientMessage(jobIdDisplay, clientName, message).catch(() => {});
+    const adminMovePath = getMoveDetailPath({ move_code: move.move_code, id: moveId });
+    notifyStaffClientMessage(jobIdDisplay, clientName, message, adminMovePath).catch(() => {});
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

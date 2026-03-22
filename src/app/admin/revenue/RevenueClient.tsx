@@ -698,7 +698,7 @@ export default function RevenueClient({
 
       {/* ── Modal: Invoices by Type ────────────────────────────────────────── */}
       {selectedType != null && (
-        <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4" aria-modal="true">
+        <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4" aria-modal="true">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setSelectedType(null)}

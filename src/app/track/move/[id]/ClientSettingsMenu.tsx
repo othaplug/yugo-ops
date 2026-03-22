@@ -283,7 +283,7 @@ export default function ClientSettingsMenu({
       {/* ── Claim Submission Modal ── */}
       {claimOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[99990]"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex min-h-0 items-center justify-center p-4 sm:p-5 z-[99990]"
           onClick={(e) => { if (e.target === e.currentTarget) { setClaimOpen(false); resetClaimForm(); } }}
         >
           <div
@@ -493,7 +493,7 @@ export default function ClientSettingsMenu({
       {/* ── Claim Status Modal ── */}
       {claimStatusOpen && existingClaim && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-[99990]"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex min-h-0 items-center justify-center p-4 sm:p-5 z-[99990]"
           onClick={(e) => { if (e.target === e.currentTarget) setClaimStatusOpen(false); }}
         >
           <div

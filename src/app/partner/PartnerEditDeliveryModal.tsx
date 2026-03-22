@@ -101,7 +101,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
   const locked = ["delivered", "completed", "cancelled"].includes((d.status || "").toLowerCase());
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
+    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5 modal-overlay" onClick={onClose}>
       <div
         className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[540px] overflow-y-auto mx-0 sm:mx-4 sheet-card sm:modal-card"
         style={{ maxHeight: "min(90dvh, 90vh)" }}

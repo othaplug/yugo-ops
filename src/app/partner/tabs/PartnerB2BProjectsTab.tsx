@@ -630,7 +630,7 @@ export default function PartnerB2BProjectsTab({
   // ── Modals ────────────────────────────────────────────────────────────────
 
   const NewProjectModal = showNewProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowNewProject(false)}>
+    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5" onClick={() => setShowNewProject(false)}>
       <div
         className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
@@ -696,7 +696,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const EditProjectModal = showEditProject && selectedProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowEditProject(false)}>
+    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5" onClick={() => setShowEditProject(false)}>
       <div
         className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
@@ -767,7 +767,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const AddItemModal = showAddItem && selectedProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={() => { setShowAddItem(false); resetAddItem(); }}>
+    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5" onClick={() => { setShowAddItem(false); resetAddItem(); }}>
       <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] flex items-center justify-between px-5 py-4 shrink-0 z-10">
           <h3 className="font-hero text-[20px] sm:text-[22px] font-bold text-[#1A1A1A]">Add Item</h3>
@@ -954,7 +954,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const StatusUpdateModal = statusItem && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={() => setStatusItem(null)}>
+    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5" onClick={() => setStatusItem(null)}>
       <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E4DF] shrink-0">
           <div>

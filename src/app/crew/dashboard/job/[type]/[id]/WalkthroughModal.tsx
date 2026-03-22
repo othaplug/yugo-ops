@@ -313,7 +313,7 @@ export default function WalkthroughModal({
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-[99995] animate-fade-in">
+    <div className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99995] animate-fade-in p-4 sm:p-5">
       <div
         className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[520px] shadow-2xl flex flex-col"
         style={{ maxHeight: "min(92dvh, 92vh)" }}

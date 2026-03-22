@@ -885,7 +885,7 @@ export default function CrewJobPage({
 
       {/* Photo verification modal — shown after walkthrough */}
       {pickupModalOpen && job && (
-        <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-[99990] animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99990] animate-fade-in p-4 sm:p-5">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] overflow-y-auto shadow-2xl" style={{ maxHeight: "min(90dvh, 90vh)" }}>
             <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 z-10">
               <h3 className="font-hero text-[26px] font-bold text-[var(--tx)]">

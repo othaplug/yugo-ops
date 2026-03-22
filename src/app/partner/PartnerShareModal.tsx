@@ -62,7 +62,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
   };
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 modal-overlay" onClick={onClose}>
+    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5 modal-overlay" onClick={onClose}>
       <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[420px] modal-card animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">

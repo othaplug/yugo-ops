@@ -125,7 +125,7 @@ function ScheduleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[520px] shadow-2xl border border-[var(--brd)] max-h-[92dvh] flex flex-col overflow-hidden animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
           <h2 className="text-[15px] font-bold font-hero text-[var(--tx)]">{isEdit ? "Edit Schedule" : "Create Recurring Schedule"}</h2>

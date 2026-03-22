@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback, type ReactElement } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Icons } from "./SidebarIcons";
@@ -48,7 +49,6 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
     group: "CRM",
     items: [
       { name: "Contacts", href: "/admin/clients", Icon: Icons.userCheck },
-      { name: "Messages (Slack)", href: "/admin/messages", Icon: Icons.messageSquare },
       { name: "Change Requests", href: "/admin/change-requests", Icon: Icons.clipboardList },
       { name: "Perks & Referrals", href: "/admin/perks", Icon: Icons.gift },
     ],
@@ -94,6 +94,15 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
       const t = setTimeout(() => inputRef.current?.focus(), 60);
       return () => clearTimeout(t);
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open]);
 
   const search = useCallback(async (q: string) => {
@@ -179,19 +188,20 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
 
   const navigate = (href: string) => { router.push(href); onClose(); };
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-start justify-center pt-[13vh] px-4"
+      data-modal-root
+      className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
       onClick={onClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-[4px]" />
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-[4px] modal-overlay" />
 
       {/* Panel */}
       <div
-        className="relative w-full max-w-[560px] bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-[560px] max-h-[min(85dvh,720px)] bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: "cmdPaletteIn 0.16s cubic-bezier(0.34,1.4,0.64,1) both" }}
       >
@@ -302,6 +312,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
           </span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

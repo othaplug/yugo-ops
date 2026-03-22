@@ -118,7 +118,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
   const inputClass = selectClass;
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/60 backdrop-blur-sm">
       <div className="relative w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl border border-[var(--brd)] bg-[var(--card)] shadow-2xl animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <button
           onClick={onClose}
