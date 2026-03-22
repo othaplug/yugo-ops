@@ -21,23 +21,6 @@ function walk(dir, acc = []) {
   return acc;
 }
 
-function firstMatch(files, regex) {
-  const seen = new Map();
-  for (const file of files) {
-    const text = fs.readFileSync(file, "utf8");
-    const lines = text.split("\n");
-    lines.forEach((line, i) => {
-      let m;
-      const r = new RegExp(regex.source, regex.flags);
-      while ((m = r.exec(line)) !== null) {
-        const key = m[1] ?? m[0];
-        if (!seen.has(key)) seen.set(key, { file: path.relative(process.cwd(), file), line: i + 1, snippet: line.trim().slice(0, 140) });
-      }
-    });
-  }
-  return seen;
-}
-
 const files = walk(ROOT);
 
 const pxExamples = new Map();

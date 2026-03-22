@@ -9,9 +9,11 @@ export interface GlobalModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg";
-  /** Optional: render without header (for custom layouts) */
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl";
+  /** Render without header (for custom layouts) */
   noHeader?: boolean;
+  /** Remove the default p-5 / overflow-y-auto wrapper so children manage their own layout */
+  noPadding?: boolean;
 }
 
 export default function GlobalModal({
@@ -21,6 +23,7 @@ export default function GlobalModal({
   children,
   maxWidth = "md",
   noHeader = false,
+  noPadding = false,
 }: GlobalModalProps) {
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
@@ -42,7 +45,12 @@ export default function GlobalModal({
 
   if (!open || typeof document === "undefined") return null;
 
-  const maxW = maxWidth === "sm" ? "sm:max-w-sm" : maxWidth === "lg" ? "sm:max-w-lg" : "sm:max-w-md";
+  const maxW =
+    maxWidth === "sm" ? "sm:max-w-sm" :
+    maxWidth === "lg" ? "sm:max-w-lg" :
+    maxWidth === "xl" ? "sm:max-w-xl" :
+    maxWidth === "2xl" ? "sm:max-w-2xl" :
+    "sm:max-w-md";
 
   const modal = (
     <div
@@ -78,7 +86,11 @@ export default function GlobalModal({
             </button>
           </div>
         )}
-        <div className="overflow-y-auto flex-1 min-h-0 p-5">{children}</div>
+        {noPadding ? (
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">{children}</div>
+        ) : (
+          <div className="overflow-y-auto flex-1 min-h-0 p-5">{children}</div>
+        )}
       </div>
     </div>
   );

@@ -70,11 +70,11 @@ const PAYMENT_TERMS_OPTIONS = [
 ];
 
 const STEPS = [
-  { id: 1, label: "Business" },
-  { id: 2, label: "Services" },
-  { id: 3, label: "Billing" },
-  { id: 4, label: "Portal" },
-  { id: 5, label: "Activate" },
+  { id: 1, label: "Business", description: "Company profile & contact info" },
+  { id: 2, label: "Services", description: "Delivery types & preferences" },
+  { id: 3, label: "Billing", description: "Rate card & payment terms" },
+  { id: 4, label: "Portal", description: "Partner portal access" },
+  { id: 5, label: "Review", description: "Confirm & activate" },
 ];
 
 interface RateTemplate {
@@ -158,8 +158,8 @@ interface PartnerOnboardingWizardProps {
 }
 
 const inputCls =
-  "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none";
-const labelCls = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
+  "w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--brd)]/70 rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)]/60 focus:ring-2 focus:ring-[var(--gold)]/10 outline-none transition-all duration-150";
+const labelCls = "block text-[11px] font-semibold tracking-widest uppercase text-[var(--tx3)] mb-2";
 
 export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboardingWizardProps) {
   const { toast } = useToast();
@@ -280,18 +280,20 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
 
   const activeSegments = PARTNER_SEGMENT_GROUPS.filter((s) => s.profile === state.profile);
 
+  const currentStep = STEPS.find((s) => s.id === step)!;
+
   if (success) {
     return (
-      <ModalOverlay open={open} onClose={handleClose} title="Partner Onboarded">
-        <div className="p-8 flex flex-col items-center justify-center text-center">
-          <div className="w-14 h-14 rounded-full bg-[rgba(45,159,90,0.15)] border border-[var(--grn)] flex items-center justify-center mb-4">
-            <Icon name="check" className="w-7 h-7 text-[var(--grn)]" />
+      <ModalOverlay open={open} onClose={handleClose} title="Partner Onboarded" maxWidth="2xl" noPadding>
+        <div className="py-16 px-8 flex flex-col items-center justify-center text-center">
+          <div className="w-20 h-20 rounded-full bg-[var(--grn)]/10 border border-[var(--grn)]/30 flex items-center justify-center mb-6">
+            <Icon name="check" className="w-9 h-9 text-[var(--grn)]" />
           </div>
-          <h3 className="font-heading text-[18px] font-bold text-[var(--tx)] mb-1">Partner created</h3>
-          <p className="text-[12px] text-[var(--tx3)]">
+          <h3 className="font-heading text-[22px] font-bold text-[var(--tx)] mb-2">Partner onboarded</h3>
+          <p className="text-[var(--text-base)] text-[var(--tx3)] max-w-xs leading-relaxed">
             {state.createPortalLogin
-              ? "An invitation email has been sent with portal login credentials."
-              : "Partner saved as draft. Portal access can be added later."}
+              ? "An invitation email has been sent with their portal login credentials."
+              : "Partner saved as draft. Portal access can be added at any time."}
           </p>
         </div>
       </ModalOverlay>
@@ -299,41 +301,75 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
   }
 
   return (
-    <ModalOverlay open={open} onClose={handleClose} title="Onboard Partner" maxWidth="md">
-      <div className="flex flex-col max-h-[85vh]">
-        {/* Step indicator */}
-        <div className="px-5 pt-4 pb-3 border-b border-[var(--brd)] flex items-center gap-1">
-          {STEPS.map((s, i) => (
-            <div key={s.id} className="flex items-center gap-1 flex-1">
-              <button
-                type="button"
-                onClick={() => step > s.id && setStep(s.id)}
-                className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold transition-all shrink-0 ${
-                  step === s.id
-                    ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                    : step > s.id
-                    ? "bg-[var(--grn)]/20 text-[var(--grn)] cursor-pointer"
-                    : "bg-[var(--brd)] text-[var(--tx3)]"
-                }`}
-              >
-                {step > s.id ? <Icon name="check" className="w-3 h-3" /> : s.id}
-              </button>
-              <span
-                className={`text-[10px] font-semibold hidden sm:block ${
-                  step === s.id ? "text-[var(--tx)]" : "text-[var(--tx3)]"
-                }`}
-              >
-                {s.label}
-              </span>
-              {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-px mx-1 ${step > s.id ? "bg-[var(--grn)]/30" : "bg-[var(--brd)]"}`} />
-              )}
+    <ModalOverlay open={open} onClose={handleClose} title="" maxWidth="2xl" noHeader noPadding>
+      <div className="flex flex-col flex-1 min-h-0">
+
+        {/* Header */}
+        <div className="px-7 pt-7 pb-6 border-b border-[var(--brd)]/60 shrink-0">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--gold)] mb-1.5">
+                Partner Onboarding
+              </p>
+              <h2 className="font-heading text-[22px] font-bold text-[var(--tx)] leading-tight">
+                {currentStep.label}
+              </h2>
+              <p className="text-[13px] text-[var(--tx3)] mt-1">{currentStep.description}</p>
             </div>
-          ))}
+            <button
+              onClick={handleClose}
+              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[var(--bg)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors shrink-0 ml-4"
+              aria-label="Close"
+            >
+              <Icon name="x" className="w-4.5 h-4.5" />
+            </button>
+          </div>
+
+          {/* Step progress */}
+          <div className="flex items-center gap-0">
+            {STEPS.map((s, i) => (
+              <div key={s.id} className="flex items-center flex-1">
+                <button
+                  type="button"
+                  onClick={() => step > s.id && setStep(s.id)}
+                  className="flex flex-col items-center gap-1.5 group shrink-0"
+                  style={{ cursor: step > s.id ? "pointer" : "default" }}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-200 ${
+                      step === s.id
+                        ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm shadow-[var(--gold)]/30 scale-110"
+                        : step > s.id
+                        ? "bg-[var(--grn)]/15 text-[var(--grn)] border border-[var(--grn)]/30"
+                        : "bg-[var(--brd)]/60 text-[var(--tx3)] border border-[var(--brd)]"
+                    }`}
+                  >
+                    {step > s.id ? <Icon name="check" className="w-3.5 h-3.5" /> : s.id}
+                  </div>
+                  <span
+                    className={`text-[10px] font-semibold tracking-wide hidden sm:block transition-colors duration-150 ${
+                      step === s.id ? "text-[var(--tx)]" : "text-[var(--tx3)]"
+                    }`}
+                  >
+                    {s.label}
+                  </span>
+                </button>
+                {i < STEPS.length - 1 && (
+                  <div className="flex-1 mx-2 mb-4">
+                    <div
+                      className={`h-px transition-all duration-500 ${
+                        step > s.id ? "bg-[var(--grn)]/40" : "bg-[var(--brd)]/50"
+                      }`}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Step content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-7 py-6 min-h-0">
           {step === 1 && (
             <Step1BusinessDetails
               state={state}
@@ -368,13 +404,13 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
           )}
         </div>
 
-        {/* Footer buttons */}
-        <div className="px-5 py-4 border-t border-[var(--brd)] flex gap-2">
+        {/* Footer */}
+        <div className="px-7 py-5 border-t border-[var(--brd)]/60 flex items-center gap-3 shrink-0">
           {step > 1 ? (
             <button
               type="button"
               onClick={() => setStep((s) => s - 1)}
-              className="px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+              className="px-5 py-3 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]/50 hover:bg-[var(--gold)]/5 transition-all duration-150"
             >
               Back
             </button>
@@ -382,7 +418,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all"
+              className="px-5 py-3 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--brd)]/80 transition-all duration-150"
             >
               Cancel
             </button>
@@ -390,22 +426,26 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
 
           <div className="flex-1" />
 
+          <span className="text-[11px] text-[var(--tx3)] hidden sm:block">
+            Step {step} of {STEPS.length}
+          </span>
+
           {step < 5 ? (
             <button
               type="button"
               onClick={() => setStep((s) => s + 1)}
               disabled={!canAdvance()}
-              className="px-5 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-40"
+              className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all duration-150 disabled:opacity-35 shadow-sm shadow-[var(--gold)]/20"
             >
               Continue
             </button>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex gap-2.5">
               <button
                 type="button"
                 onClick={() => { setState((s) => ({ ...s, activationMode: "draft" })); setTimeout(handleSubmit, 0); }}
                 disabled={loading}
-                className="px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] transition-all disabled:opacity-50"
+                className="px-5 py-3 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]/50 transition-all duration-150 disabled:opacity-50"
               >
                 Save as Draft
               </button>
@@ -413,7 +453,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
                 type="button"
                 onClick={() => { setState((s) => ({ ...s, activationMode: "activate" })); setTimeout(handleSubmit, 0); }}
                 disabled={loading}
-                className="px-5 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+                className="px-6 py-3 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all duration-150 disabled:opacity-50 shadow-sm shadow-[var(--gold)]/20"
               >
                 {loading ? "Activating…" : "Activate Partner"}
               </button>
@@ -438,14 +478,20 @@ function Step1BusinessDetails({
   phoneInput: ReturnType<typeof usePhoneInput>;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Profile type */}
       <div>
-        <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
-          Partner Profile
-        </p>
-        <div className="flex gap-4 mb-1">
+        <p className={labelCls}>Partner Type</p>
+        <div className="grid grid-cols-2 gap-3">
           {PARTNER_SEGMENT_GROUPS.map((seg) => (
-            <label key={seg.profile} className="flex items-center gap-2 cursor-pointer">
+            <label
+              key={seg.profile}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border cursor-pointer transition-all duration-150 ${
+                state.profile === seg.profile
+                  ? "border-[var(--gold)]/60 bg-[var(--gold)]/5"
+                  : "border-[var(--brd)]/70 hover:border-[var(--brd)]"
+              }`}
+            >
               <input
                 type="radio"
                 name="profile"
@@ -456,13 +502,13 @@ function Step1BusinessDetails({
                 }}
                 className="accent-[var(--gold)]"
               />
-              <span className="text-[13px] text-[var(--tx)]">{seg.label}</span>
+              <span className="text-[var(--text-base)] font-medium text-[var(--tx)]">{seg.label}</span>
             </label>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <label className={labelCls}>Vertical *</label>
           <select
@@ -595,12 +641,12 @@ function Step1BusinessDetails({
         )}
 
         <div className="col-span-2">
-          <label className={labelCls}>HubSpot Deal ID (optional)</label>
+          <label className={labelCls}>HubSpot Deal ID <span className="normal-case font-normal tracking-normal text-[var(--tx3)]">— optional</span></label>
           <input
             type="text"
             value={state.hubspotDealId}
             onChange={(e) => update("hubspotDealId", e.target.value)}
-            placeholder="HubSpot deal ID to link and mark as Won"
+            placeholder="Link deal and mark as Won on activation"
             className={inputCls}
           />
         </div>
@@ -620,25 +666,32 @@ function Step2ServicePreferences({
   toggleDeliveryType: (id: string) => void;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
         <label className={labelCls}>Delivery Types Needed</label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2.5">
           {DELIVERY_TYPE_OPTIONS.map((opt) => (
-            <label key={opt.id} className="flex items-start gap-2 cursor-pointer group">
+            <label
+              key={opt.id}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all duration-150 ${
+                state.deliveryTypes.includes(opt.id)
+                  ? "border-[var(--gold)]/50 bg-[var(--gold)]/5 text-[var(--tx)]"
+                  : "border-[var(--brd)]/70 text-[var(--tx2)] hover:border-[var(--brd)]"
+              }`}
+            >
               <input
                 type="checkbox"
                 checked={state.deliveryTypes.includes(opt.id)}
                 onChange={() => toggleDeliveryType(opt.id)}
-                className="mt-0.5 accent-[var(--gold)]"
+                className="accent-[var(--gold)] shrink-0"
               />
-              <span className="text-[12px] text-[var(--tx)]">{opt.label}</span>
+              <span className="text-[13px] font-medium">{opt.label}</span>
             </label>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Typical Delivery Frequency</label>
           <select
@@ -683,7 +736,7 @@ function Step2ServicePreferences({
             value={state.specialRequirements}
             onChange={(e) => update("specialRequirements", e.target.value)}
             placeholder="e.g. all deliveries require 2-person carry, white glove"
-            rows={2}
+            rows={3}
             className={`${inputCls} resize-none`}
           />
         </div>
@@ -691,9 +744,9 @@ function Step2ServicePreferences({
 
       <div>
         <label className={labelCls}>Pickup Location(s)</label>
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {state.pickupLocations.map((loc, i) => (
-            <div key={i} className="flex gap-2">
+            <div key={i} className="flex gap-2.5">
               <input
                 type="text"
                 value={loc}
@@ -709,7 +762,7 @@ function Step2ServicePreferences({
                 <button
                   type="button"
                   onClick={() => update("pickupLocations", state.pickupLocations.filter((_, j) => j !== i))}
-                  className="p-2 rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:text-red-500 hover:border-red-500 transition-all"
+                  className="px-3 rounded-xl border border-[var(--brd)] text-[var(--tx3)] hover:text-red-400 hover:border-red-400/50 transition-all"
                 >
                   <Icon name="x" className="w-3.5 h-3.5" />
                 </button>
@@ -719,7 +772,7 @@ function Step2ServicePreferences({
           <button
             type="button"
             onClick={() => update("pickupLocations", [...state.pickupLocations, ""])}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--gold)] hover:opacity-70 transition-opacity"
+            className="flex items-center gap-2 text-[12px] font-semibold text-[var(--gold)] hover:opacity-70 transition-opacity mt-1"
           >
             <Icon name="plus" className="w-3.5 h-3.5" />
             Add another location
@@ -744,7 +797,7 @@ function Step3RateCardBilling({
   const effectiveSlug = state.templateSlug || autoSlug;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
         <label className={labelCls}>Rate Card Template</label>
         <select
@@ -760,13 +813,13 @@ function Step3RateCardBilling({
           ))}
         </select>
         {effectiveSlug && (
-          <p className="text-[10px] text-[var(--tx3)] mt-1">
-            Rate template: <span className="font-semibold">{effectiveSlug}</span>
+          <p className="text-[11px] text-[var(--tx3)] mt-1.5">
+            Template applied: <span className="font-semibold text-[var(--tx2)]">{effectiveSlug}</span>
           </p>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Billing Method</label>
           <select
@@ -803,11 +856,18 @@ function Step3RateCardBilling({
           />
         </div>
 
-        <div className="flex flex-col justify-center">
+        <div>
           <label className={labelCls}>Insurance Certificate Required</label>
-          <div className="flex gap-3">
+          <div className="flex gap-3 mt-1">
             {(["yes", "no"] as const).map((v) => (
-              <label key={v} className="flex items-center gap-1.5 cursor-pointer">
+              <label
+                key={v}
+                className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border cursor-pointer flex-1 transition-all duration-150 ${
+                  state.insuranceCertRequired === (v === "yes")
+                    ? "border-[var(--gold)]/50 bg-[var(--gold)]/5"
+                    : "border-[var(--brd)]/70 hover:border-[var(--brd)]"
+                }`}
+              >
                 <input
                   type="radio"
                   name="insuranceCert"
@@ -815,7 +875,7 @@ function Step3RateCardBilling({
                   onChange={() => update("insuranceCertRequired", v === "yes")}
                   className="accent-[var(--gold)]"
                 />
-                <span className="text-[13px] text-[var(--tx)] capitalize">{v}</span>
+                <span className="text-[13px] font-medium text-[var(--tx)] capitalize">{v}</span>
               </label>
             ))}
           </div>
@@ -836,12 +896,19 @@ function Step4PortalAccess({
   handleGeneratePassword: () => void;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
         <label className={labelCls}>Create Portal Login for Primary Contact?</label>
-        <div className="flex gap-4">
+        <div className="grid grid-cols-2 gap-3 mt-1">
           {(["yes", "no"] as const).map((v) => (
-            <label key={v} className="flex items-center gap-2 cursor-pointer">
+            <label
+              key={v}
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border cursor-pointer transition-all duration-150 ${
+                state.createPortalLogin === (v === "yes")
+                  ? "border-[var(--gold)]/60 bg-[var(--gold)]/5"
+                  : "border-[var(--brd)]/70 hover:border-[var(--brd)]"
+              }`}
+            >
               <input
                 type="radio"
                 name="createPortal"
@@ -849,7 +916,12 @@ function Step4PortalAccess({
                 onChange={() => update("createPortalLogin", v === "yes")}
                 className="accent-[var(--gold)]"
               />
-              <span className="text-[13px] text-[var(--tx)] capitalize">{v}</span>
+              <div>
+                <p className="text-[var(--text-base)] font-medium text-[var(--tx)] capitalize">{v}</p>
+                <p className="text-[11px] text-[var(--tx3)]">
+                  {v === "yes" ? "Send invitation email" : "Add access later"}
+                </p>
+              </div>
             </label>
           ))}
         </div>
@@ -863,13 +935,13 @@ function Step4PortalAccess({
               type="email"
               value={state.email}
               readOnly
-              className={`${inputCls} opacity-60`}
+              className={`${inputCls} opacity-50 cursor-not-allowed`}
             />
           </div>
 
           <div>
             <label className={labelCls}>Temporary Password *</label>
-            <div className="flex gap-2">
+            <div className="flex gap-2.5">
               <div className="relative flex-1">
                 <input
                   type={state.showPassword ? "text" : "password"}
@@ -877,12 +949,12 @@ function Step4PortalAccess({
                   onChange={(e) => update("password", e.target.value)}
                   placeholder="Min 8 characters"
                   minLength={8}
-                  className={`${inputCls} pr-10`}
+                  className={`${inputCls} pr-11`}
                 />
                 <button
                   type="button"
                   onClick={() => update("showPassword", !state.showPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded text-[var(--tx3)] hover:text-[var(--tx)]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
                 >
                   <Icon name={state.showPassword ? "eyeOff" : "eye"} className="w-4 h-4" />
                 </button>
@@ -890,32 +962,38 @@ function Step4PortalAccess({
               <button
                 type="button"
                 onClick={handleGeneratePassword}
-                className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all shrink-0"
+                className="px-4 py-3 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/50 hover:text-[var(--gold)] transition-all shrink-0"
               >
                 Generate
               </button>
             </div>
-            <p className="text-[10px] text-[var(--tx3)] mt-1">
-              Partner will be prompted to change password on first login
+            <p className="text-[11px] text-[var(--tx3)] mt-1.5">
+              Partner will be prompted to change their password on first login.
             </p>
           </div>
         </>
       )}
 
       {state.phone && (
-        <div className="pt-2 border-t border-[var(--brd)]">
+        <div className="pt-4 border-t border-[var(--brd)]/60">
           <label className={labelCls}>Send Setup Link via SMS?</label>
-          <p className="text-[11px] text-[var(--tx3)] mb-2">
-            Send the portal access link to {state.phone} so they can log in on a tablet or phone.
+          <p className="text-[12px] text-[var(--tx3)] mb-3">
+            Send the portal access link to {state.phone} so they can log in immediately on any device.
           </p>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border cursor-pointer transition-all duration-150 ${
+              state.sendSetupSms
+                ? "border-[var(--gold)]/50 bg-[var(--gold)]/5"
+                : "border-[var(--brd)]/70 hover:border-[var(--brd)]"
+            }`}
+          >
             <input
               type="checkbox"
               checked={state.sendSetupSms}
               onChange={(e) => update("sendSetupSms", e.target.checked)}
               className="accent-[var(--gold)]"
             />
-            <span className="text-[13px] text-[var(--tx)]">Send setup link via SMS after activation</span>
+            <span className="text-[13px] font-medium text-[var(--tx)]">Send setup link via SMS after activation</span>
           </label>
         </div>
       )}
@@ -942,9 +1020,20 @@ const DELIVERY_LABELS: Record<string, string> = Object.fromEntries(
 function SummaryRow({ label, value }: { label: string; value: string | undefined }) {
   if (!value) return null;
   return (
-    <div className="flex items-start justify-between gap-4 py-1.5 border-b border-[var(--brd)]/40">
-      <span className="text-[11px] text-[var(--tx3)] shrink-0">{label}</span>
-      <span className="text-[12px] text-[var(--tx)] text-right">{value}</span>
+    <div className="flex items-start justify-between gap-6 py-2.5 border-b border-[var(--brd)]/30 last:border-0">
+      <span className="text-[12px] text-[var(--tx3)] shrink-0 w-36">{label}</span>
+      <span className="text-[13px] text-[var(--tx)] text-right leading-relaxed">{value}</span>
+    </div>
+  );
+}
+
+function SummarySection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-[var(--brd)]/60 overflow-hidden">
+      <div className="px-5 py-3 border-b border-[var(--brd)]/40 bg-[var(--bg)]/40">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)]">{title}</p>
+      </div>
+      <div className="px-5 py-1">{children}</div>
     </div>
   );
 }
@@ -952,8 +1041,7 @@ function SummaryRow({ label, value }: { label: string; value: string | undefined
 function Step5Summary({ state }: { state: WizardState }) {
   return (
     <div className="space-y-4">
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-0.5">
-        <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Business</p>
+      <SummarySection title="Business">
         <SummaryRow label="Name" value={state.name} />
         <SummaryRow label="Legal Name" value={state.legalName} />
         <SummaryRow label="Contact" value={`${state.contactName}${state.contactTitle ? ` — ${state.contactTitle}` : ""}`} />
@@ -963,10 +1051,9 @@ function Step5Summary({ state }: { state: WizardState }) {
         <SummaryRow label="How Found" value={HOW_FOUND_OPTIONS.find((o) => o.value === state.howFound)?.label} />
         <SummaryRow label="Referral Source" value={state.referralSource} />
         <SummaryRow label="HubSpot Deal ID" value={state.hubspotDealId} />
-      </div>
+      </SummarySection>
 
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-0.5">
-        <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Services</p>
+      <SummarySection title="Services">
         <SummaryRow
           label="Delivery Types"
           value={state.deliveryTypes.map((t) => DELIVERY_LABELS[t] || t).join(", ") || undefined}
@@ -975,26 +1062,24 @@ function Step5Summary({ state }: { state: WizardState }) {
         <SummaryRow label="Typical Items" value={state.typicalItems} />
         <SummaryRow label="Special Requirements" value={state.specialRequirements} />
         <SummaryRow label="Pickup Locations" value={state.pickupLocations.filter(Boolean).join(", ") || undefined} />
-      </div>
+      </SummarySection>
 
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-0.5">
-        <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Billing</p>
+      <SummarySection title="Billing">
         <SummaryRow label="Billing Method" value={BILLING_LABELS[state.billingMethod]} />
         <SummaryRow label="Payment Terms" value={TERMS_LABELS[state.paymentTerms]} />
         <SummaryRow label="Tax ID" value={state.taxId} />
         <SummaryRow label="Insurance Cert" value={state.insuranceCertRequired ? "Required" : undefined} />
-      </div>
+      </SummarySection>
 
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-0.5">
-        <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Portal Access</p>
+      <SummarySection title="Portal Access">
         <SummaryRow label="Portal Login" value={state.createPortalLogin ? "Yes — invitation will be sent" : "No"} />
         {state.sendSetupSms && <SummaryRow label="Setup SMS" value={`Will be sent to ${state.phone}`} />}
-      </div>
+      </SummarySection>
 
-      <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
-        <p className="text-[11px] text-amber-200 font-medium">
-          Review the details above. Use the buttons below to save as draft or activate the partner.
-          If activated with portal login, an invitation email will be sent immediately.
+      <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-amber-500/8 border border-amber-500/15">
+        <Icon name="alertTriangle" className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+        <p className="text-[12px] text-amber-200/80 leading-relaxed">
+          Review everything above. If portal login is enabled, an invitation email will be sent immediately upon activation.
         </p>
       </div>
     </div>

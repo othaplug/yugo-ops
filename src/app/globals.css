@@ -3,10 +3,12 @@
 :root {
   /* ── Motion ── */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-fast: 0.15s;
-  --transition-normal: 0.25s;
-  --transition-slow: 0.35s;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-fast: 0.14s;
+  --transition-normal: 0.22s;
+  --transition-slow: 0.36s;
 
   /* ── Base palette ── */
   --bg: #0F0F0F;
@@ -167,8 +169,13 @@ body {
 }
 
 /* Smooth transitions for interactive elements - app-wide */
-a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-1"]) {
-  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+a, button, [role="button"] {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, text-decoration-color;
+  transition-duration: var(--transition-fast);
+  transition-timing-function: var(--ease-smooth);
+}
+input, select, textarea {
+  transition-property: border-color, box-shadow, background-color;
   transition-duration: var(--transition-fast);
   transition-timing-function: var(--ease-smooth);
 }
@@ -197,18 +204,18 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
    PAGE VIEW TRANSITIONS (Next.js 16 native API)
    ═══════════════════════════════════════════════════════ */
 ::view-transition-old(root) {
-  animation: 200ms var(--ease-smooth) both vt-page-out;
+  animation: 180ms var(--ease-smooth) both vt-page-out;
 }
 ::view-transition-new(root) {
-  animation: 300ms var(--ease-out-expo) both vt-page-in;
+  animation: 340ms var(--ease-out-expo) both vt-page-in;
 }
 @keyframes vt-page-out {
-  from { opacity: 1; transform: none; }
-  to   { opacity: 0; transform: translateY(-5px) scale(0.995); }
+  from { opacity: 1; filter: blur(0px); transform: none; }
+  to   { opacity: 0; filter: blur(2px); transform: translateY(-4px) scale(0.997); }
 }
 @keyframes vt-page-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.995); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; filter: blur(3px); transform: translateY(12px) scale(0.995); }
+  to   { opacity: 1; filter: blur(0px); transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
@@ -228,7 +235,7 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 
 /* Dark backdrop fade */
 .modal-overlay {
-  animation: 220ms var(--ease-smooth) both modal-overlay-in;
+  animation: 200ms var(--ease-smooth) both modal-overlay-in;
 }
 @keyframes modal-overlay-in {
   from { opacity: 0; }
@@ -237,28 +244,28 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 
 /* Centre-screen card (desktop modals) */
 .modal-card {
-  animation: 300ms var(--ease-out-expo) both modal-card-in;
+  animation: 320ms var(--ease-out-expo) both modal-card-in;
 }
 @keyframes modal-card-in {
-  from { opacity: 0; transform: translateY(18px) scale(0.96); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; transform: translateY(20px) scale(0.95); filter: blur(4px); }
+  to   { opacity: 1; transform: none; filter: blur(0px); }
 }
 
 /* Bottom sheet (mobile) */
 .sheet-card {
-  animation: 340ms var(--ease-out-expo) both sheet-in;
+  animation: 360ms var(--ease-out-expo) both sheet-in;
 }
 @keyframes sheet-in {
-  from { transform: translateY(100%); opacity: 0.6; }
+  from { transform: translateY(100%); opacity: 0.5; }
   to   { transform: none; opacity: 1; }
 }
 
 /* Side drawer (right-to-left slide) */
 .drawer-card {
-  animation: 320ms var(--ease-out-expo) both drawer-in;
+  animation: 340ms var(--ease-out-expo) both drawer-in;
 }
 @keyframes drawer-in {
-  from { transform: translateX(100%); opacity: 0.7; }
+  from { transform: translateX(100%); opacity: 0.6; }
   to   { transform: none; opacity: 1; }
 }
 
@@ -266,21 +273,21 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
    TAB / PANEL CONTENT TRANSITIONS
    ═══════════════════════════════════════════════════════ */
 .tab-content {
-  animation: 240ms var(--ease-out-expo) both tab-fade-in;
+  animation: 280ms var(--ease-out-expo) both tab-fade-in;
 }
 /* `to` must use transform: none — identity translate() still creates a containing block and
    breaks position:fixed modals rendered inside .tab-content (e.g. admin <main>). */
 @keyframes tab-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
 }
 
 /* Horizontal slide variant (for left/right tab switching) */
 .tab-content-slide {
-  animation: 240ms var(--ease-out-expo) both tab-slide-in;
+  animation: 280ms var(--ease-out-expo) both tab-slide-in;
 }
 @keyframes tab-slide-in {
-  from { opacity: 0; transform: translateX(10px); }
+  from { opacity: 0; transform: translateX(12px); }
   to   { opacity: 1; transform: none; }
 }
 
@@ -288,7 +295,7 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
    GENERIC UTILITY ENTRY ANIMATIONS
    ═══════════════════════════════════════════════════════ */
 .enter-fade {
-  animation: 260ms var(--ease-out-expo) both enter-fade-anim;
+  animation: 280ms var(--ease-out-expo) both enter-fade-anim;
 }
 @keyframes enter-fade-anim {
   from { opacity: 0; }
@@ -296,16 +303,16 @@ a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-
 }
 
 .enter-up {
-  animation: 300ms var(--ease-out-expo) both enter-up-anim;
+  animation: 360ms var(--ease-out-expo) both enter-up-anim;
 }
 @keyframes enter-up-anim {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: none; }
 }
 
 /* Staggered list items — use style="--i:0" through --i:N */
 .stagger-item {
-  animation: 280ms var(--ease-out-expo) calc(var(--i, 0) * 40ms) both enter-up-anim;
+  animation: 320ms var(--ease-out-expo) calc(var(--i, 0) * 45ms) both enter-up-anim;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -501,7 +508,7 @@ input[type="time"] {
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px) scale(0.997); }
+  from { opacity: 0; transform: translateY(16px) scale(0.996); }
   /* `transform: none` — identity translate/scale still creates a containing block for position:fixed */
   to   { opacity: 1; transform: none; }
 }
@@ -510,7 +517,7 @@ input[type="time"] {
   to   { opacity: 1; }
 }
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-6px); }
+  from { opacity: 0; transform: translateX(-8px); }
   to   { opacity: 1; transform: none; }
 }
 @keyframes progressFill {
@@ -528,13 +535,13 @@ input[type="time"] {
   animation: progressShimmer 3s ease-in-out infinite;
 }
 .animate-fade-up {
-  animation: fadeUp 0.32s var(--ease-out-expo) both;
+  animation: fadeUp 0.42s var(--ease-out-expo) both;
 }
 .animate-fade-in {
-  animation: fadeIn 0.26s var(--ease-out-expo) both;
+  animation: fadeIn 0.30s var(--ease-out-expo) both;
 }
 .animate-slide-in {
-  animation: slideIn 0.22s var(--ease-out-expo) both;
+  animation: slideIn 0.26s var(--ease-out-expo) both;
 }
 
 /* Timeline animations - subtle */
@@ -610,15 +617,15 @@ input[type="time"] {
 
 /* Slide-up animation for bottom sheets */
 @keyframes slideUp {
-  from { transform: translateY(100%); opacity: 0; }
+  from { transform: translateY(60%); opacity: 0; }
   to   { transform: none; opacity: 1; }
 }
 .animate-slide-up {
-  animation: slideUp 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation: slideUp 0.36s var(--ease-out-expo) both;
 }
 @keyframes cmdPaletteIn {
-  from { opacity: 0; transform: translateY(-10px) scale(0.97); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; transform: translateY(-12px) scale(0.96); filter: blur(4px); }
+  to   { opacity: 1; transform: none; filter: blur(0px); }
 }
 
 /* Mobile touch helpers */

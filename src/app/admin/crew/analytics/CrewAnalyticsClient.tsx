@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { CalendarBlank, CaretLeft, CaretRight, Check } from "@phosphor-icons/react";
+import { CalendarBlank, CaretLeft, CaretRight, Check, FileText, ArrowRight } from "@phosphor-icons/react";
 
 const LineChart = dynamic(() => import("recharts").then((m) => m.LineChart), { ssr: false });
 const BarChart = dynamic(() => import("recharts").then((m) => m.BarChart), { ssr: false });
@@ -281,9 +281,13 @@ export default function CrewAnalyticsClient({
         </div>
         <Link
           href="/admin/reports"
-          className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors mt-1"
+          className="group inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-[var(--brd)]/60 bg-[var(--card)]/60 hover:border-[var(--gold)]/40 hover:bg-[var(--gold)]/5 transition-all duration-200 mt-0.5"
         >
-          End of Day Reports
+          <FileText size={13} weight="duotone" className="text-[var(--gold)] shrink-0" aria-hidden />
+          <span className="text-[11px] font-semibold text-[var(--tx2)] group-hover:text-[var(--gold)] transition-colors whitespace-nowrap">
+            EOD Reports
+          </span>
+          <ArrowRight size={11} weight="bold" className="text-[var(--tx3)] group-hover:text-[var(--gold)] group-hover:translate-x-0.5 transition-all duration-200 shrink-0" aria-hidden />
         </Link>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mt-2 mb-5 font-medium">

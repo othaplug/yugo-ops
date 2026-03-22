@@ -12,15 +12,15 @@ node scripts/typography-audit.mjs
 
 | Token | Size | Intended use (comment in CSS) |
 |-------|------|------------------------------|
-| `--text-xs` | 11px | caption, badge labels, timestamps |
+| `--text-xs` | 11px | micro: timestamps, dense badges (not primary reading) |
 | `--text-sm` | 12px | secondary labels, metadata |
-| `--text-base` | 14px | body, table cells, list items |
-| `--text-md` | 15px | body-lg, sub-headings |
-| `--text-lg` | 16px | heading-sm |
-| `--text-xl` | 18px | heading |
-| `--text-2xl` | 22px | metric values |
-| `--text-3xl` | 28px | page titles |
-| `--text-hero` | 36px | hero headings |
+| `--text-base` | 16px | body, primary list/table text |
+| `--text-md` | 18px | emphasized body, intros |
+| `--text-lg` | 20px | card / section titles (heading-sm) |
+| `--text-xl` | 22px | section headings |
+| `--text-2xl` | 26px | metrics, large stats |
+| `--text-3xl` | 32px | page titles |
+| `--text-hero` | 40px | hero / marketing headlines |
 
 **Base document:** `body` uses `font-size: 16px` in `globals.css` (components override with classes).
 
@@ -45,7 +45,7 @@ These map to the tokens above; grep shows **little or no** `.tsx` usage yet — 
 
 | Token | File:line | Snippet |
 |-------|-----------|---------|
-| `text-base` | `src/app/admin/activity/ActivityPageClient.tsx:110` | `<p className="text-[var(--text-base)] text-[var(--tx3)] py-8 text-center font-medium">No activity yet</p>` |
+| `text-base` | `src/app/admin/AdminPageClient.tsx:474` | `<div className="text-[var(--text-base)] font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors">` |
 | `text-md` | `src/app/admin/activity/ActivityPageClient.tsx:86` | `<p className="text-[var(--text-md)] text-[var(--tx3)] mb-4 leading-snug font-medium">` |
 
 ## 4. Tailwind scale (`text-xs` … `text-4xl`) — first occurrence in TSX
@@ -57,7 +57,7 @@ These map to the tokens above; grep shows **little or no** `.tsx` usage yet — 
 | `text-lg` | 1.125rem (18px) | `src/app/admin/clients/[id]/InvoiceDetailModal.tsx:36` |
 | `text-xl` | 1.25rem (20px) | `src/app/admin/change-requests/ChangeRequestsClient.tsx:246` |
 | `text-2xl` | 1.5rem (24px) | `src/app/admin/finance/forecast/ForecastClient.tsx:498` |
-| `text-3xl` | 1.875rem (30px) | `src/app/admin/quotes/new/QuoteFormClient.tsx:3529` |
+| `text-3xl` | 1.875rem (30px) | `src/app/admin/quotes/new/QuoteFormClient.tsx:3626` |
 | `text-4xl` | 2.25rem (36px) | `src/app/admin/not-found.tsx:5` |
 
 _Not used in TSX:_ `text-xs`, `text-5xl`, `text-6xl`, `text-7xl`, `text-8xl`, `text-9xl`
@@ -74,32 +74,31 @@ _Not used in TSX:_ `text-xs`, `text-5xl`, `text-6xl`, `text-7xl`, `text-8xl`, `t
 | 11px | `text-[11px]` | `src/app/admin/AdminPageClient.tsx:357` |
 | 12px | `text-[12px]` | `src/app/admin/AdminPageClient.tsx:273` |
 | 13px | `text-[13px]` | `src/app/admin/AdminPageClient.tsx:299` |
-| 14px | `text-[14px]` | `src/app/admin/AdminPageClient.tsx:474` |
 | 15px | `text-[15px]` | `src/app/admin/calendar/components/CalendarHeader.tsx:29` |
 | 16px | `text-[16px]` | `src/app/admin/claims/[id]/ClaimDetailClient.tsx:280` |
 | 17px | `sm:text-[17px]` | `src/app/admin/calendar/components/CalendarHeader.tsx:29` |
 | 18px | `text-[18px]` | `src/app/admin/AdminPageClient.tsx:639` |
 | 19px | `md:text-[19px]` | `src/app/admin/moves/[id]/MoveDetailClient.tsx:294` |
-| 20px | `text-[20px]` | `src/app/admin/calendar/components/ScheduleJobModal.tsx:130` |
+| 20px | `text-[20px]` | `src/app/admin/claims/new/NewClaimClient.tsx:375` |
 | 22px | `text-[22px]` | `src/app/admin/activity/ActivityPageClient.tsx:79` |
 | 24px | `text-[24px]` | `src/app/admin/AdminPageClient.tsx:549` |
 | 26px | `text-[26px]` | `src/app/admin/AdminPageClient.tsx:270` |
 | 28px | `text-[28px]` | `src/app/admin/clients/[id]/revenue/page.tsx:55` |
 | 30px | `text-[30px]` | `src/app/crew/dashboard/page.tsx:156` |
 | 32px | `sm:text-[32px]` | `src/app/admin/AdminPageClient.tsx:270` |
-| 34px | `md:text-[34px]` | `src/app/track/move/[id]/TrackMoveClient.tsx:687` |
+| 34px | `md:text-[34px]` | `src/app/track/move/[id]/TrackMoveClient.tsx:748` |
 | 36px | `text-[36px]` | `src/app/partner/PartnerPortalClient.tsx:341` |
 | 38px | `text-[38px]` | `src/app/quote-widget/QuoteWidgetClient.tsx:1039` |
 | 40px | `text-[40px]` | `src/app/quote/[quoteId]/layouts/LongDistanceLayout.tsx:148` |
 | 42px | `md:text-[42px]` | `src/app/quote/[quoteId]/layouts/B2BOneOffLayout.tsx:154` |
 | 44px | `text-[44px]` | `src/app/partner/PartnerPortalClient.tsx:976` |
 | 48px | `md:text-[48px]` | `src/app/quote/[quoteId]/layouts/LongDistanceLayout.tsx:148` |
-| 56px | `text-[56px]` | `src/app/track/move/[id]/TrackMoveClient.tsx:739` |
-| 64px | `sm:text-[64px]` | `src/app/track/move/[id]/TrackMoveClient.tsx:739` |
+| 56px | `text-[56px]` | `src/app/track/move/[id]/TrackMoveClient.tsx:800` |
+| 64px | `sm:text-[64px]` | `src/app/track/move/[id]/TrackMoveClient.tsx:800` |
 
 ## 6. Other notable fixed sizes in `globals.css`
 
-Legacy / component classes: `.mc-l` (11px), `.mc-v` (22px), `.dc-t` (13px), `.bdg` (11px), `.admin-view-all-link` (12px), mapbox/popup rules, etc. See repo-wide search for `font-size:`.
+Legacy / component classes: `.mc-l` (11px), `.mc-v` (`var(--text-2xl)`), `.dc-t` (`var(--text-base)`), `.bdg` (11px), `.admin-view-all-link` (12px), `.btn` (0.875rem), mapbox/popup rules, etc. See repo-wide search for `font-size:`.
 
 ## 7. One-line examples (tokens and semantic classes)
 
@@ -109,15 +108,15 @@ Use **either** arbitrary sizes like `text-[var(--text-base)]` / `text-[var(--tex
 |-------|------|-------------------------|-------------------------|
 | `--text-xs` | 11px | `className="text-[var(--text-xs)] text-[var(--tx3)]"` | `className="ty-caption"` |
 | `--text-sm` | 12px | `className="text-[var(--text-sm)]"` | `className="ty-label"` |
-| `--text-base` | 14px | `className="text-[var(--text-base)] text-[var(--tx)]"` | `className="ty-body"` |
-| `--text-md` | 15px | `className="text-[var(--text-md)] text-[var(--tx3)]"` | `className="ty-body-lg"` |
-| `--text-lg` | 16px | `className="text-[var(--text-lg)] font-heading font-bold"` | `className="ty-heading-sm"` |
-| `--text-xl` | 18px | `className="text-[var(--text-xl)] font-heading font-bold"` | `className="ty-heading"` |
-| `--text-2xl` | 22px | `className="text-[var(--text-2xl)] font-heading font-bold"` | `className="ty-metric"` |
-| `--text-3xl` | 28px | `className="text-[var(--text-3xl)] font-heading font-bold"` | `className="ty-page-title"` |
-| `--text-hero` | 36px | `className="text-[var(--text-hero)] font-hero"` | _(no `.ty-*` — use token or custom)_ |
+| `--text-base` | 16px | `className="text-[var(--text-base)] text-[var(--tx)]"` | `className="ty-body"` |
+| `--text-md` | 18px | `className="text-[var(--text-md)] text-[var(--tx3)]"` | `className="ty-body-lg"` |
+| `--text-lg` | 20px | `className="text-[var(--text-lg)] font-heading font-bold"` | `className="ty-heading-sm"` |
+| `--text-xl` | 22px | `className="text-[var(--text-xl)] font-heading font-bold"` | `className="ty-heading"` |
+| `--text-2xl` | 26px | `className="text-[var(--text-2xl)] font-heading font-bold"` | `className="ty-metric"` |
+| `--text-3xl` | 32px | `className="text-[var(--text-3xl)] font-heading font-bold"` | `className="ty-page-title"` |
+| `--text-hero` | 40px | `className="text-[var(--text-hero)] font-hero"` | _(no `.ty-*` — use token or custom)_ |
 
 Tailwind’s `text-sm` / `text-base` / … use **rem** sizes that differ from these tokens; first TSX hits are listed in §4.
 
 ---
-_Total unique `text-[Npx]` sizes in TS/TSX: **30**._
+_Total unique `text-[Npx]` sizes in TS/TSX: **29**._

@@ -364,7 +364,7 @@ export default function WalkthroughModal({
               <div className="flex flex-col gap-2 pt-2">
                 <button
                   onClick={() => setStep("checklist")}
-                  className="w-full py-3.5 rounded-2xl font-bold text-[14px] text-white"
+                  className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white"
                   style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                 >
                   Start Inventory Check
@@ -720,7 +720,7 @@ export default function WalkthroughModal({
                     <span>HST (13%)</span>
                     <span>{hst >= 0 ? "+" : ""}{hst >= 0 ? `$${hst.toFixed(2)}` : `-$${Math.abs(hst).toFixed(2)}`}</span>
                   </div>
-                  <div className="flex items-center justify-between text-[14px] font-bold border-t border-[var(--brd)] pt-1.5 mt-1.5">
+                  <div className="flex items-center justify-between text-[var(--text-base)] font-bold border-t border-[var(--brd)] pt-1.5 mt-1.5">
                     <span className="text-[var(--tx)]">Net change</span>
                     <span className={total >= 0 ? "text-[var(--tx)]" : "text-[#22C55E]"}>
                       {total >= 0 ? `+$${total.toFixed(2)}` : `-$${Math.abs(total).toFixed(2)}`}
@@ -753,7 +753,7 @@ export default function WalkthroughModal({
             <>
               <button
                 onClick={() => onSkip(skipReason)}
-                className="w-full py-3.5 rounded-2xl font-bold text-[14px] text-white"
+                className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 Skip Walkthrough
@@ -771,7 +771,7 @@ export default function WalkthroughModal({
             <>
               <button
                 onClick={() => setStep("extras")}
-                className="w-full py-3.5 rounded-2xl font-bold text-[14px] text-white flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 Continue <CaretRight size={14} />
@@ -786,7 +786,7 @@ export default function WalkthroughModal({
             <>
               <button
                 onClick={() => setStep("summary")}
-                className="w-full py-3.5 rounded-2xl font-bold text-[14px] text-white flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 Review Summary <CaretRight size={14} />
@@ -807,7 +807,7 @@ export default function WalkthroughModal({
                   <button
                     onClick={submitChangeRequest}
                     disabled={submitting}
-                    className="w-full py-3.5 rounded-2xl font-bold text-[14px] text-white disabled:opacity-60 flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white disabled:opacity-60 flex items-center justify-center gap-2"
                     style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                   >
                     {submitting ? <><CircleNotch size={14} className="animate-spin" /> Submitting…</> : "Submit Change Request"}
@@ -823,7 +823,7 @@ export default function WalkthroughModal({
               ) : (
                 <button
                   onClick={submitNoChanges}
-                  className="w-full py-3.5 rounded-2xl font-bold text-[14px] text-white"
+                  className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white"
                   style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                 >
                   No Changes — Inventory Matches

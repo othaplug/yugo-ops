@@ -403,11 +403,12 @@ export default function DataTable<T>({
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      if (!dragging.current) return;
-      const delta = e.clientX - dragging.current.startX;
+      const drag = dragging.current;
+      if (!drag) return;
+      const delta = e.clientX - drag.startX;
       setColWidths((prev) => {
         const next = [...prev];
-        next[dragging.current!.col] = Math.max(40, dragging.current!.startW + delta);
+        next[drag.col] = Math.max(40, drag.startW + delta);
         return next;
       });
     };

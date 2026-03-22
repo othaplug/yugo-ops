@@ -189,29 +189,35 @@ export default function DispatchBoardClient({ today }: Props) {
   // Skeleton loading
   if (loading && !data) {
     return (
-      <div className="animate-fade-up px-4 sm:px-5 md:px-6 lg:px-8 py-5 md:py-7 max-w-[1800px] mx-auto w-full">
-        <div className="pb-6 border-b border-[var(--brd)]/80 mb-8 space-y-5">
-          <div className="flex items-center gap-3">
-            <div className="space-y-1.5">
-              <div className="h-2 w-16 rounded bg-[var(--gdim)] animate-pulse" />
-              <div className="h-6 w-24 rounded bg-[var(--gdim)] animate-pulse" />
+      <div className="animate-fade-up px-5 sm:px-6 md:px-8 lg:px-10 py-6 md:py-8 max-w-[1800px] mx-auto w-full">
+        <div className="mb-9 space-y-6">
+          <div className="flex items-end gap-5">
+            <div className="space-y-2">
+              <div className="h-2 w-14 rounded bg-[var(--gdim)] animate-pulse" />
+              <div className="h-7 w-28 rounded-lg bg-[var(--gdim)] animate-pulse" />
+            </div>
+            <div className="flex gap-1.5 mb-0.5">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-7 w-16 rounded-lg bg-[var(--gdim)] animate-pulse" />
+              ))}
             </div>
           </div>
-          <div className="flex gap-3 overflow-hidden">
+          <div className="flex gap-2.5 overflow-hidden">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-[68px] w-[88px] shrink-0 rounded-xl bg-[var(--gdim)] animate-pulse" />
+              <div key={i} className="h-[76px] w-[96px] shrink-0 rounded-2xl bg-[var(--gdim)] animate-pulse" />
             ))}
           </div>
+          <div className="h-px bg-[var(--brd)]/30" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,45%)_1fr] gap-8 lg:gap-10">
           <div className="space-y-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 rounded-lg bg-[var(--gdim)]/80 animate-pulse" />
+              <div key={i} className="h-28 rounded-xl bg-[var(--gdim)]/80 animate-pulse" />
             ))}
           </div>
           <div className="space-y-3 pl-0 lg:pl-2 lg:border-l lg:border-[var(--brd)]/20">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-12 rounded-md bg-[var(--gdim)]/70 animate-pulse" />
+              <div key={i} className="h-12 rounded-lg bg-[var(--gdim)]/70 animate-pulse" />
             ))}
           </div>
         </div>
@@ -254,40 +260,41 @@ export default function DispatchBoardClient({ today }: Props) {
   ];
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-3.5rem-56px)] md:min-h-[calc(100dvh-3.5rem)] h-auto md:h-[calc(100dvh-3.5rem)] animate-fade-up px-4 sm:px-5 md:px-6 lg:px-8 py-5 md:py-7 max-w-[1800px] mx-auto w-full">
-      {/* Header */}
-      <div className="pb-6 border-b border-[var(--brd)]/80 mb-8 space-y-5">
-        {/* Row 1: Title + date nav + actions */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+    <div className="flex flex-col min-h-[calc(100dvh-3.5rem-56px)] md:min-h-[calc(100dvh-3.5rem)] h-auto md:h-[calc(100dvh-3.5rem)] animate-fade-up px-5 sm:px-6 md:px-8 lg:px-10 py-6 md:py-8 max-w-[1800px] mx-auto w-full">
+
+      {/* ── Header ── */}
+      <div className="mb-9 space-y-6">
+
+        {/* Row 1: Identity + Actions */}
+        <div className="flex items-start justify-between gap-4">
+
+          {/* Left: Title block */}
+          <div className="flex items-end gap-5 min-w-0">
             <div>
-              <p className="text-[8px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 leading-none mb-0.5">Operations</p>
-              <h1 className="font-heading text-[22px] font-bold text-[var(--tx)] leading-none">Dispatch</h1>
+              <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 leading-none mb-1.5">Operations</p>
+              <h1 className="font-heading text-[26px] font-bold text-[var(--tx)] leading-none tracking-tight">Dispatch</h1>
             </div>
 
-            {/* Date nav */}
-            <div className="flex items-center gap-1">
+            {/* Date navigator — visually detached from title */}
+            <div className="flex items-center gap-1.5 mb-0.5">
               <button
                 type="button"
                 onClick={() => setDate(prevDate)}
-                className="p-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/60 hover:text-[var(--gold)] transition-all touch-manipulation"
                 aria-label="Previous day"
               >
-                <ChevronLeft weight="regular" className="w-3.5 h-3.5" />
+                <ChevronLeft weight="bold" className="w-3 h-3" />
               </button>
 
-              {/* Date display / picker */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => dateInputRef.current?.showPicker?.()}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation text-[11px] font-semibold whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/60 hover:text-[var(--gold)] transition-all touch-manipulation text-[11px] font-semibold whitespace-nowrap"
                 >
-                  <CalendarDays weight="regular" className="w-3.5 h-3.5 shrink-0" />
+                  <CalendarDays weight="regular" className="w-3.5 h-3.5 shrink-0 opacity-70" />
                   <span className="hidden sm:inline">{shortDate}</span>
-                  <span className="sm:hidden">
-                    {displayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </span>
+                  <span className="sm:hidden">{displayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                 </button>
                 <input
                   ref={dateInputRef}
@@ -302,27 +309,29 @@ export default function DispatchBoardClient({ today }: Props) {
               <button
                 type="button"
                 onClick={() => setDate(today)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors touch-manipulation ${
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all touch-manipulation ${
                   isToday
-                    ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                    : "border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
+                    ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm shadow-[var(--gold)]/20"
+                    : "border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/60 hover:text-[var(--gold)]"
                 }`}
               >
                 Today
               </button>
+
               <button
                 type="button"
                 onClick={() => setDate(nextDate)}
-                className="p-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors touch-manipulation"
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/60 hover:text-[var(--gold)] transition-all touch-manipulation"
                 aria-label="Next day"
               >
-                <ChevronRight weight="regular" className="w-3.5 h-3.5" />
+                <ChevronRight weight="bold" className="w-3 h-3" />
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <label className="hidden sm:flex items-center gap-1.5 text-[10px] text-[var(--tx3)]">
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            <label className="hidden md:flex items-center gap-1.5 text-[10px] font-medium text-[var(--tx3)] cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={autoRefresh}
@@ -331,19 +340,27 @@ export default function DispatchBoardClient({ today }: Props) {
               />
               Auto-refresh
             </label>
+
+            <div className="hidden md:block w-px h-4 bg-[var(--brd)]" />
+
             <button
               onClick={() => load()}
               disabled={loading}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:text-[var(--gold)] hover:border-[var(--gold)]/50 transition-all touch-manipulation text-[11px] font-semibold ${loading ? "opacity-60" : ""}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)]/50 transition-all touch-manipulation text-[11px] font-semibold ${loading ? "opacity-50" : ""}`}
               aria-label="Refresh"
             >
               <RefreshCw weight="regular" className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
-              {lastFetch > 0 && <span className="hidden sm:inline text-[9px] text-[var(--tx3)] font-normal">{formatLastUpdated(Date.now() - lastFetch)}</span>}
+              {lastFetch > 0 && (
+                <span className="hidden sm:inline text-[9px] text-[var(--tx3)]/60 font-normal tabular-nums">
+                  {formatLastUpdated(Date.now() - lastFetch)}
+                </span>
+              )}
             </button>
+
             <Link
               href="/admin/crew"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:bg-[var(--gold2)] transition-all touch-manipulation"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:bg-[var(--gold2)] transition-all touch-manipulation shadow-sm shadow-[var(--gold)]/20"
             >
               <Crosshair size={13} weight="regular" className="text-current shrink-0" aria-hidden />
               Live Map
@@ -351,44 +368,52 @@ export default function DispatchBoardClient({ today }: Props) {
           </div>
         </div>
 
-        {/* Row 2: KPI stat filter cards */}
+        {/* Row 2: KPI stat cards — spacious, tappable */}
         {data?.stats && (
-          <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-0.5 px-0.5">
+          <div className="flex items-stretch gap-2.5 overflow-x-auto scrollbar-hide pb-0.5">
             {statCards.map((stat) =>
               stat.key !== null ? (
                 <button
                   key={stat.key}
                   type="button"
                   onClick={() => setFilterStatus(filterStatus === stat.key ? "all" : stat.key!)}
-                  className={`shrink-0 px-3 py-2.5 rounded-xl border text-left transition-all touch-manipulation min-w-[84px] ${
+                  className={`group relative shrink-0 px-4 py-3.5 rounded-2xl border text-left transition-all duration-200 touch-manipulation min-w-[96px] overflow-hidden ${
                     filterStatus === stat.key
-                      ? "border-[var(--gold)] bg-[var(--gold)] shadow-sm shadow-[var(--gold)]/15"
-                      : "border-[var(--brd)]/45 bg-transparent hover:border-[var(--gold)]/45 hover:bg-[var(--card)]/30"
+                      ? "border-[var(--gold)]/70 bg-[var(--gold)]/10 shadow-sm shadow-[var(--gold)]/10"
+                      : "border-[var(--brd)]/50 bg-[var(--card)]/30 hover:border-[var(--gold)]/30 hover:bg-[var(--card)]/60"
                   }`}
                 >
+                  {/* Active indicator bar */}
+                  <div
+                    className={`absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl transition-all duration-200 ${
+                      filterStatus === stat.key ? "opacity-100" : "opacity-0"
+                    }`}
+                    style={{ background: "var(--gold)" }}
+                  />
                   <p
-                    className={`text-[8px] font-bold tracking-[0.12em] uppercase mb-1 whitespace-nowrap leading-none ${
-                      filterStatus === stat.key
-                        ? "text-[var(--btn-text-on-accent)]/70"
-                        : "text-[var(--tx3)]/60"
+                    className={`text-[9px] font-bold tracking-[0.14em] uppercase mb-2 whitespace-nowrap leading-none transition-colors ${
+                      filterStatus === stat.key ? "text-[var(--gold)]" : "text-[var(--tx3)]/60"
                     }`}
                   >
                     {stat.label}
                   </p>
                   <p
-                    className={`text-[20px] font-bold font-heading leading-none ${
-                      filterStatus === stat.key ? "text-[var(--btn-text-on-accent)]" : stat.color
+                    className={`text-[22px] font-bold font-heading leading-none tabular-nums transition-colors ${
+                      filterStatus === stat.key ? "text-[var(--gold)]" : stat.color
                     }`}
                   >
                     {stat.value}
                   </p>
                 </button>
               ) : (
-                <div key="assigned-stat" className="shrink-0 px-3 py-2.5 rounded-xl border border-[var(--brd)]/45 bg-transparent min-w-[84px]">
-                  <p className="text-[8px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 mb-1 whitespace-nowrap leading-none">
+                <div
+                  key="assigned-stat"
+                  className="shrink-0 px-4 py-3.5 rounded-2xl border border-[var(--brd)]/50 bg-[var(--card)]/20 min-w-[96px]"
+                >
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-2 whitespace-nowrap leading-none">
                     {stat.label}
                   </p>
-                  <p className={`text-[20px] font-bold font-heading leading-none ${stat.color}`}>
+                  <p className={`text-[22px] font-bold font-heading leading-none tabular-nums ${stat.color}`}>
                     {stat.value}
                   </p>
                 </div>
@@ -396,11 +421,14 @@ export default function DispatchBoardClient({ today }: Props) {
             )}
           </div>
         )}
+
+        {/* Hairline separator */}
+        <div className="h-px bg-gradient-to-r from-[var(--brd)]/60 via-[var(--brd)]/30 to-transparent" />
       </div>
 
       {/* Alerts */}
       {data?.alerts && data.alerts.length > 0 && (
-        <div className="mb-8 lg:mb-10">
+        <div className="mb-7">
           <AlertBar alerts={data.alerts} />
         </div>
       )}
@@ -408,10 +436,10 @@ export default function DispatchBoardClient({ today }: Props) {
       {/* 2-column layout: Schedule + Activity Feed */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(320px,44%)_1fr] gap-8 lg:gap-10 xl:gap-12">
         {/* Left: Schedule */}
-        <div className="flex flex-col min-h-[320px] lg:min-h-0 overflow-hidden bg-transparent border-0 shadow-none ring-0 pt-0">
-          <div className="flex items-start justify-between mb-4 sm:mb-5 shrink-0 gap-2">
+        <div className="flex flex-col min-h-[320px] lg:min-h-0 overflow-hidden">
+          <div className="flex items-start justify-between mb-5 shrink-0 gap-2">
             <div>
-              <h2 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+              <h2 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/70">
                 {scheduleTitle}
               </h2>
               {filterStatus !== "all" && (
@@ -424,7 +452,7 @@ export default function DispatchBoardClient({ today }: Props) {
                 </button>
               )}
             </div>
-            <span className="text-[10px] text-[var(--tx3)] tabular-nums shrink-0 mt-0.5">
+            <span className="text-[10px] text-[var(--tx3)]/60 tabular-nums shrink-0 mt-0.5">
               {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -437,9 +465,9 @@ export default function DispatchBoardClient({ today }: Props) {
         </div>
 
         {/* Right: Activity Feed */}
-        <div className="flex flex-col min-h-[260px] lg:min-h-0 overflow-hidden bg-transparent border-0 border-t border-[var(--brd)]/25 lg:border-t-0 lg:border-l lg:border-[var(--brd)]/20 shadow-none ring-0 pt-8 lg:pt-0 lg:pl-8 xl:pl-10">
-          <div className="flex items-center justify-between mb-4 sm:mb-5 shrink-0">
-            <h2 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+        <div className="flex flex-col min-h-[260px] lg:min-h-0 overflow-hidden border-t border-[var(--brd)]/20 lg:border-t-0 lg:border-l lg:border-[var(--brd)]/15 pt-8 lg:pt-0 lg:pl-8 xl:pl-10">
+          <div className="flex items-center justify-between mb-5 shrink-0">
+            <h2 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/70">
               Activity Feed
             </h2>
             {unseenEventIds.size > 0 && (

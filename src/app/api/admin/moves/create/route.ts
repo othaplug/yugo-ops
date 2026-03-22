@@ -10,6 +10,7 @@ import { getDistance } from "@/lib/maps/distance";
 
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
+import { calcEstimatedCost, calcEstimatedMarginPct, getMarginFlag } from "@/lib/pricing/engine";
 
 /** DB `service_type` CHECK — align with `move_type` from Create Move. */
 const MOVE_TYPE_TO_SERVICE_TYPE: Record<string, string> = {
@@ -211,6 +212,46 @@ export async function POST(req: NextRequest) {
     const serviceType =
       MOVE_TYPE_TO_SERVICE_TYPE[moveType] ?? "local_move";
 
+    // Compute estimated margin at creation time
+    let estMarginPercent: number | null = null;
+    let estCostTotal: number | null = null;
+    if (estimate > 0) {
+      try {
+        const { data: cfgRows } = await db.from("platform_config").select("key, value");
+        const cfg: Record<string, string> = {};
+        for (const r of cfgRows ?? []) cfg[r.key] = r.value;
+
+        let labourHours: number | null = body.est_hours ? Number(body.est_hours) : null;
+        let labourCrew: number | null = body.est_crew_size ? Number(body.est_crew_size) : null;
+
+        if (typeof body.inventory_score === "number" && body.inventory_score > 0) {
+          const labour = estimateLabourFromScore(
+            body.inventory_score as number,
+            0,
+            (body.from_access as string) || undefined,
+            (body.to_access as string) || undefined,
+            (body.move_size as string) || undefined,
+          );
+          labourHours = labour.estimatedHours;
+          labourCrew = labour.crewSize;
+        }
+
+        const cost = calcEstimatedCost(
+          {
+            actualEstimatedHours: labourHours ?? 4,
+            crew: labourCrew ?? 2,
+            recommendedTruck: (truckPrimary || "sprinter").toLowerCase().replace(/[^a-z0-9]/g, ""),
+            distanceKm: distanceKm ?? 20,
+            tier: (body.tier_selected as string) || "curated",
+            moveSize: moveSize || "2br",
+          },
+          cfg,
+        );
+        estMarginPercent = calcEstimatedMarginPct(estimate, cost);
+        estCostTotal = cost.total;
+      } catch { /* non-blocking, move still creates without margin */ }
+    }
+
     const setupReqRaw = body.setup_required;
     const setupRequired =
       setupReqRaw === true ||
@@ -281,6 +322,9 @@ export async function POST(req: NextRequest) {
               };
             })()
           : {}),
+        est_margin_percent: estMarginPercent,
+        est_cost_total: estCostTotal,
+        margin_flag: estMarginPercent != null ? getMarginFlag(estMarginPercent) : null,
         updated_at: new Date().toISOString(),
       })
       .select("id, move_code")

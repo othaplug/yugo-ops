@@ -219,7 +219,7 @@ export default function RealtorsTable({
         {/* Header */}
         <div className="px-5 py-4 border-b border-[var(--brd)] flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h3 className="font-heading text-[14px] font-bold text-[var(--tx)]">Referral Pipeline</h3>
+            <h3 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)]">Referral Pipeline</h3>
             <span className="text-[10px] font-semibold text-[var(--tx3)] bg-[var(--brd)] px-2 py-0.5 rounded-full">
               {all.length} {all.length === 1 ? "entry" : "entries"}
             </span>
