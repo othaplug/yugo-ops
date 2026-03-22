@@ -307,32 +307,30 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
   return (
     <div className="max-w-[1000px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
       {/*
-        Stack on small screens: admin main uses overflow-x-hidden on mobile, so a single
-        justify-between row can clip the action buttons off the right edge.
+        Follow-up action is on its own full-width row: admin <main> uses overflow-x-hidden on
+        mobile, which can clip a trailing pill in a justify-between header. A block-level control
+        below the title cannot be pushed past the viewport edge.
       */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 min-w-0">
-        <div className="min-w-0">
-          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
-          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Quotes</h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:shrink-0 min-w-0">
-          <button
-            type="button"
-            onClick={openDueFollowupsModal}
-            disabled={followupLoading}
-            className="min-h-[40px] px-3 sm:px-4 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wide border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/50 hover:text-[var(--tx)] disabled:opacity-50 transition-colors max-w-full"
-          >
-            {followupLoading ? (
-              "Loading…"
-            ) : (
-              <>
-                <span className="sm:hidden">Due follow-ups</span>
-                <span className="hidden sm:inline">Send Due Follow-Ups</span>
-              </>
-            )}
-          </button>
+      <div className="mb-6 space-y-3 min-w-0">
+        <div className="flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
+            <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Quotes</h1>
+          </div>
           <CreateButton href="/admin/quotes/new" title="New Quote" />
         </div>
+        <button
+          type="button"
+          onClick={openDueFollowupsModal}
+          disabled={followupLoading}
+          aria-busy={followupLoading}
+          className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 border-[var(--gold)]/45 bg-[var(--gold)]/[0.08] px-4 text-[11px] font-bold uppercase tracking-wide text-[var(--tx)] shadow-sm hover:bg-[var(--gold)]/15 hover:border-[var(--gold)]/70 disabled:opacity-50 transition-colors"
+        >
+          {followupLoading ? "Loading preview…" : "Send due follow-ups"}
+        </button>
+        <p className="text-[10px] leading-snug text-[var(--tx3)] px-0.5">
+          Runs the same rules as the scheduled job (stages 1–3). Opens a list of quote IDs before sending.
+        </p>
       </div>
 
       {followupModalOpen && (
