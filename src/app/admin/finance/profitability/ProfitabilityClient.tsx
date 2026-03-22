@@ -656,6 +656,14 @@ export default function ProfitabilityClient() {
   const moveTypeBreakdown     = useMemo(() => makeBreakdown(moveRows),     [moveRows]);
   const deliveryTypeBreakdown = useMemo(() => makeBreakdown(deliveryRows), [deliveryRows]);
 
+  // Margin flag breakdown using fixed 35%/25% thresholds (v2 pricing engine)
+  const marginFlagBreakdown = useMemo(() => {
+    const green  = rows.filter((r) => r.grossMargin >= 35);
+    const yellow = rows.filter((r) => r.grossMargin >= 25 && r.grossMargin < 35);
+    const red    = rows.filter((r) => r.grossMargin < 25);
+    return { green, yellow, red, total: rows.length };
+  }, [rows]);
+
   const neighbourhoodBreakdown = useMemo(() => {
     const m: Record<string, { count: number; totalRev: number; totalGP: number }> = {};
     for (const r of rows) {
@@ -800,6 +808,57 @@ export default function ProfitabilityClient() {
               bgClass={summary?.lowMarginCount ? "bg-red-500/10 border-red-500/20" : "bg-emerald-500/10 border-emerald-500/20"}
               icon={summary?.lowMarginCount ? <AlertTriangle className="w-4 h-4" /> : null} />
           </div>
+
+          {/* ─── Margin Health Flags ─── */}
+          {marginFlagBreakdown.total > 0 && (
+            <div className="grid grid-cols-3 gap-3 border-t border-[var(--brd)]/30 pt-4">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/8 border border-emerald-500/20">
+                <span className="text-[20px] leading-none">🟢</span>
+                <div>
+                  <div className="text-[15px] font-bold text-emerald-400">{marginFlagBreakdown.green.length}</div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                    Green Jobs
+                    {marginFlagBreakdown.total > 0 && (
+                      <span className="ml-1 text-emerald-400/70">
+                        ({Math.round((marginFlagBreakdown.green.length / marginFlagBreakdown.total) * 100)}%)
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[9px] text-[var(--tx3)] mt-0.5">≥35% margin</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--gold)]/8 border border-[var(--gold)]/20">
+                <span className="text-[20px] leading-none">🟡</span>
+                <div>
+                  <div className="text-[15px] font-bold text-[var(--gold)]">{marginFlagBreakdown.yellow.length}</div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                    Yellow Jobs
+                    {marginFlagBreakdown.total > 0 && (
+                      <span className="ml-1 text-[var(--gold)]/70">
+                        ({Math.round((marginFlagBreakdown.yellow.length / marginFlagBreakdown.total) * 100)}%)
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[9px] text-[var(--tx3)] mt-0.5">25–34% margin</div>
+                </div>
+              </div>
+              <div className={`flex items-center gap-3 p-3 rounded-xl border ${marginFlagBreakdown.red.length > 0 ? "bg-red-500/8 border-red-500/20" : "bg-[var(--bg2)] border-[var(--brd)]"}`}>
+                <span className="text-[20px] leading-none">🔴</span>
+                <div>
+                  <div className={`text-[15px] font-bold ${marginFlagBreakdown.red.length > 0 ? "text-red-400" : "text-[var(--tx3)]"}`}>{marginFlagBreakdown.red.length}</div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+                    Red Jobs
+                    {marginFlagBreakdown.total > 0 && marginFlagBreakdown.red.length > 0 && (
+                      <span className="ml-1 text-red-400/70">
+                        ({Math.round((marginFlagBreakdown.red.length / marginFlagBreakdown.total) * 100)}%)
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[9px] text-[var(--tx3)] mt-0.5">&lt;25% margin</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {(summary?.moveCount ?? 0) === 0 && (
             <p className="text-[12px] text-[var(--tx3)] border-t border-[var(--brd)]/30 pt-4">

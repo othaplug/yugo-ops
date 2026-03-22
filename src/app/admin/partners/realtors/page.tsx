@@ -6,7 +6,6 @@ import { formatCurrency } from "@/lib/format-currency";
 export const metadata = { title: "Realtors & referrals" };
 
 import RealtorsTable from "./RealtorsTable";
-import RealtorsMetrics from "./RealtorsMetrics";
 
 export default async function RealtorsPage() {
   const db = createAdminClient();
@@ -31,43 +30,15 @@ export default async function RealtorsPage() {
 
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
   const referralsThisMonth = all.filter((r) => {
     const d = r.created_at ? new Date(r.created_at) : null;
     return d && d >= thisMonthStart && d <= now;
   }).length;
-  const referralsLastMonth = all.filter((r) => {
-    const d = r.created_at ? new Date(r.created_at) : null;
-    return d && d >= lastMonthStart && d <= lastMonthEnd;
-  }).length;
 
   const bookedThisMonth = all.filter((r) => {
     const d = r.created_at ? new Date(r.created_at) : null;
     return d && (r.status === "booked" || r.status === "completed") && d >= thisMonthStart && d <= now;
-  }).length;
-  const bookedLastMonth = all.filter((r) => {
-    const d = r.created_at ? new Date(r.created_at) : null;
-    return d && (r.status === "booked" || r.status === "completed") && d >= lastMonthStart && d <= lastMonthEnd;
-  }).length;
-
-  const commissionThisMonth = all
-    .filter((r) => {
-      const d = r.created_at ? new Date(r.created_at) : null;
-      return d && d >= thisMonthStart && d <= now;
-    })
-    .reduce((s, r) => s + Number(r.commission || 0), 0);
-  const commissionLastMonth = all
-    .filter((r) => {
-      const d = r.created_at ? new Date(r.created_at) : null;
-      return d && d >= lastMonthStart && d <= lastMonthEnd;
-    })
-    .reduce((s, r) => s + Number(r.commission || 0), 0);
-
-  const realtorsPrev = realtors.filter((r) => {
-    const d = r.created_at ? new Date(r.created_at) : null;
-    return d && d < thisMonthStart;
   }).length;
 
   return (
@@ -91,19 +62,6 @@ export default async function RealtorsPage() {
         <KpiCard label="Realtors" value={String(realtors.length)} sub="partner agents" />
       </div>
 
-      <RealtorsMetrics
-        referralsCount={all.length}
-        booked={booked}
-        totalCommission={totalCommission}
-        realtorsCount={realtors.length}
-        referralsThisMonth={referralsThisMonth}
-        referralsPrev={referralsLastMonth}
-        bookedThisMonth={bookedThisMonth}
-        bookedPrev={bookedLastMonth}
-        commissionThisMonth={commissionThisMonth}
-        commissionPrev={commissionLastMonth}
-        realtorsPrev={realtorsPrev}
-      />
       <RealtorsTable
         referrals={all}
         clientNameToId={clientNameToId}

@@ -132,6 +132,7 @@ export default function TrackMoveClient({
   inventoryChangePerScoreRate = 35,
   inventoryChangeMaxItems = 10,
   latestInventoryAdjustmentPayment = null,
+  crewChangeRequest = null,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
@@ -158,6 +159,20 @@ export default function TrackMoveClient({
     additional_deposit_required: number;
     reviewed_at?: string | null;
   } | null;
+  crewChangeRequest?: {
+    id: string;
+    status: string;
+    submitted_at: string;
+    auto_calculated_delta: number;
+    items_added: unknown[];
+    items_removed: unknown[];
+    items_matched: number;
+    items_missing: number;
+    items_extra: number;
+    original_subtotal: number;
+    new_subtotal: number;
+    client_response: string | null;
+  } | null;
 }) {
   const router = useRouter();
   const params = useParams();
@@ -172,6 +187,11 @@ export default function TrackMoveClient({
   const [changeSubmitting, setChangeSubmitting] = useState(false);
   const [changeSubmitted, setChangeSubmitted] = useState(false);
   const [inventoryChangeModalOpen, setInventoryChangeModalOpen] = useState(false);
+
+  // Crew change request state (move-day walkthrough)
+  const [crewCrApprovalState, setCrewCrApprovalState] = useState<"idle" | "approving" | "approved" | "declined" | "approved_pending_payment">("idle");
+  const [crewCrError, setCrewCrError] = useState<string | null>(null);
+
   const { toast } = useToast();
   const [liveStage, setLiveStage] = useState<string | null>(move.stage || null);
   const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
@@ -631,6 +651,47 @@ export default function TrackMoveClient({
             Your move status was recently updated.
           </div>
         )}
+
+        {/* ── Move-Day Crew Change Request Banner ── */}
+        {crewChangeRequest && crewCrApprovalState === "idle" && (
+          <CrewChangeRequestBanner
+            request={crewChangeRequest}
+            moveId={move.id}
+            token={token}
+            hasCardOnFile={!!move.square_card_id}
+            onApproved={(state) => {
+              setCrewCrApprovalState(state);
+              router.refresh();
+            }}
+            onDeclined={() => {
+              setCrewCrApprovalState("declined");
+              router.refresh();
+            }}
+            error={crewCrError}
+            onError={setCrewCrError}
+          />
+        )}
+        {crewCrApprovalState === "approved" && (
+          <div className="mb-5 rounded-2xl border border-[#22C55E]/30 bg-[#22C55E]/6 px-4 py-3 flex items-start gap-2.5">
+            <Check size={16} weight="bold" className="shrink-0 mt-0.5 text-[#22C55E]" />
+            <div>
+              <p className="text-[12px] font-semibold" style={{ color: "#22C55E" }}>Approved — payment processed</p>
+              <p className="text-[11px] opacity-70 mt-0.5" style={{ color: FOREST }}>Your crew has been notified to load the extra items.</p>
+            </div>
+          </div>
+        )}
+        {crewCrApprovalState === "approved_pending_payment" && (
+          <div className="mb-5 rounded-2xl border border-amber-400/30 bg-amber-400/6 px-4 py-3">
+            <p className="text-[12px] font-semibold text-amber-600">Approved — pending payment</p>
+            <p className="text-[11px] text-amber-700/70 mt-0.5">Send e-transfer to <strong>pay@helloyugo.com</strong> or contact your coordinator to add a card.</p>
+          </div>
+        )}
+        {crewCrApprovalState === "declined" && (
+          <div className="mb-5 rounded-2xl border border-[var(--brd)]/40 bg-[var(--bg)]/60 px-4 py-3">
+            <p className="text-[12px] font-medium" style={{ color: FOREST, opacity: 0.6 }}>Extra items declined — your crew will proceed with the original list only.</p>
+          </div>
+        )}
+
         {/* Client header */}
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="min-w-0">
@@ -2082,6 +2143,172 @@ export default function TrackMoveClient({
           </div>
         </>
       )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// CrewChangeRequestBanner — shown when crew submits a walkthrough
+// change request during move-day pickup.
+// ─────────────────────────────────────────────────────────────
+
+type CrewChangeRequestItem = {
+  item_name?: string;
+  quantity?: number;
+  surcharge?: number;
+  credit?: number;
+};
+
+function CrewChangeRequestBanner({
+  request,
+  moveId,
+  token,
+  hasCardOnFile,
+  onApproved,
+  onDeclined,
+  error,
+  onError,
+}: {
+  request: {
+    id: string;
+    auto_calculated_delta: number;
+    items_added: unknown[];
+    items_removed: unknown[];
+  };
+  moveId: string;
+  token: string;
+  hasCardOnFile: boolean;
+  onApproved: (state: "approved" | "approved_pending_payment") => void;
+  onDeclined: () => void;
+  error: string | null;
+  onError: (e: string | null) => void;
+}) {
+  const [approving, setApproving] = useState(false);
+  const [declining, setDeclining] = useState(false);
+
+  const delta = Number(request.auto_calculated_delta) || 0;
+  const hst = Math.round(delta * 0.13 * 100) / 100;
+  const total = Math.round((delta + hst) * 100) / 100;
+
+  const added = (request.items_added as CrewChangeRequestItem[]).filter((i) => i && i.item_name);
+  const removed = (request.items_removed as CrewChangeRequestItem[]).filter((i) => i && (i as { item_name?: string }).item_name);
+
+  const handleApprove = async () => {
+    setApproving(true);
+    onError(null);
+    try {
+      const res = await fetch(
+        `/api/track/moves/${moveId}/crew-change-request/${request.id}/approve?token=${encodeURIComponent(token)}`,
+        { method: "POST", headers: { "Content-Type": "application/json" } },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to approve");
+      onApproved(data.state === "approved_pending_payment" ? "approved_pending_payment" : "approved");
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "Failed to process approval");
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    setDeclining(true);
+    onError(null);
+    try {
+      const res = await fetch(
+        `/api/track/moves/${moveId}/crew-change-request/${request.id}/decline?token=${encodeURIComponent(token)}`,
+        { method: "POST", headers: { "Content-Type": "application/json" } },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to decline");
+      onDeclined();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "Failed to decline");
+    } finally {
+      setDeclining(false);
+    }
+  };
+
+  return (
+    <div className="mb-5 rounded-2xl border border-amber-400/30 bg-amber-400/6 overflow-hidden">
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-start gap-2.5 mb-3">
+          <span className="text-amber-500 text-[18px] shrink-0">⚠</span>
+          <div>
+            <p className="text-[13px] font-bold text-amber-800">Inventory Update</p>
+            <p className="text-[11px] text-amber-700/70 mt-0.5">Your crew found differences during the walkthrough.</p>
+          </div>
+        </div>
+
+        {added.length > 0 && (
+          <div className="mb-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/60 mb-1.5">Items not on quote</p>
+            <div className="space-y-1">
+              {added.map((item, i) => (
+                <div key={i} className="flex items-center justify-between text-[12px]">
+                  <span className="text-amber-800">{item.item_name}{(item.quantity ?? 1) > 1 ? ` ×${item.quantity}` : ""}</span>
+                  <span className="font-semibold text-amber-700">+${item.surcharge ?? 0}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {removed.length > 0 && (
+          <div className="mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/60 mb-1.5">Items not found (credit)</p>
+            <div className="space-y-1">
+              {removed.map((item, i) => (
+                <div key={i} className="flex items-center justify-between text-[12px]">
+                  <span className="text-amber-800">{(item as { item_name?: string }).item_name}{((item as { quantity?: number }).quantity ?? 1) > 1 ? ` ×${(item as { quantity?: number }).quantity}` : ""}</span>
+                  <span className="font-semibold text-green-600">-${Math.abs(item.credit ?? 0)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="border-t border-amber-400/20 pt-2 mt-1 space-y-1">
+          <div className="flex items-center justify-between text-[11px] text-amber-700/70">
+            <span>Subtotal change</span>
+            <span>{delta >= 0 ? "+" : ""}${delta}</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-amber-700/70">
+            <span>HST (13%)</span>
+            <span>{hst >= 0 ? "+" : "-"}${Math.abs(hst).toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between text-[13px] font-bold text-amber-800">
+            <span>Additional charge</span>
+            <span>{total >= 0 ? `$${total.toFixed(2)}` : `-$${Math.abs(total).toFixed(2)}`}</span>
+          </div>
+        </div>
+
+        {error && (
+          <p className="mt-2 text-[11px] text-red-500">{error}</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 border-t border-amber-400/20">
+        <button
+          onClick={handleApprove}
+          disabled={approving || declining}
+          className="py-3 text-[12px] font-bold text-white disabled:opacity-50 transition-all active:scale-[0.98]"
+          style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+        >
+          {approving
+            ? "Processing…"
+            : hasCardOnFile
+              ? `Approve & Pay $${total.toFixed(2)}`
+              : "Approve"}
+        </button>
+        <button
+          onClick={handleDecline}
+          disabled={approving || declining}
+          className="py-3 text-[12px] font-medium text-amber-700 hover:bg-amber-400/10 disabled:opacity-50 transition-colors"
+        >
+          {declining ? "…" : "Decline Extras"}
+        </button>
       </div>
     </div>
   );

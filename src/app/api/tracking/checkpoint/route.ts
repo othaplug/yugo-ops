@@ -144,6 +144,40 @@ export async function POST(req: NextRequest) {
       createClientReferralIfNeeded(admin, session.job_id).catch((e) => console.error("[referral] create failed:", e));
       const { generateMovePDFs } = await import("@/lib/documents/generateMovePDFs");
       generateMovePDFs(session.job_id).catch((e) => console.error("[generateMovePDFs] failed:", e));
+
+      // Calculate actual margin and persist (non-blocking)
+      ;(async () => {
+        try {
+          const { calcActualMargin } = await import("@/lib/pricing/engine");
+          const { data: moveForMargin } = await admin
+            .from("moves")
+            .select("actual_hours, est_hours, actual_crew_count, crew_count, truck_primary, distance_km, tier_selected, move_size, estimate")
+            .eq("id", session.job_id)
+            .single();
+          if (moveForMargin) {
+            const { data: cfgRows } = await admin.from("platform_config").select("key, value");
+            const cfg: Record<string, string> = {};
+            for (const r of cfgRows ?? []) cfg[r.key] = r.value;
+            const marginResult = calcActualMargin(
+              {
+                actualHours: actualHours,
+                estimatedHours: moveForMargin.est_hours ?? null,
+                actualCrew: moveForMargin.actual_crew_count ?? null,
+                crewSize: moveForMargin.crew_count ?? null,
+                truckType: moveForMargin.truck_primary ?? null,
+                distanceKm: moveForMargin.distance_km ?? null,
+                tier: moveForMargin.tier_selected ?? null,
+                moveSize: moveForMargin.move_size ?? null,
+                totalPrice: moveForMargin.estimate ?? null,
+              },
+              cfg,
+            );
+            await admin.from("moves").update(marginResult).eq("id", session.job_id);
+          }
+        } catch (e) {
+          console.error("[checkpoint] margin calculation failed:", e);
+        }
+      })();
     }
     // Send completed SMS to client/customer
     const origin = process.env.NEXT_PUBLIC_APP_URL || "https://app.withyugo.com";

@@ -33,6 +33,9 @@ interface Move {
   tier_selected?: string;
   crew_id?: string;
   created_at?: string;
+  margin_percent?: number | null;
+  margin_flag?: string | null;
+  est_margin_percent?: number | null;
 }
 
 interface Quote {
@@ -71,6 +74,13 @@ const STATUS_FILTERS = [
   { value: "completed", label: "Completed" },
   { value: "quoted", label: "Quoted" },
   { value: "cancelled", label: "Cancelled" },
+];
+
+const MARGIN_FILTERS = [
+  { value: "", label: "All Margins" },
+  { value: "red", label: "🔴 Red (<25%)" },
+  { value: "yellow", label: "🟡 Yellow (25–34%)" },
+  { value: "green", label: "🟢 Green (≥35%)" },
 ];
 
 function normalizeType(move: Move): string {
@@ -302,6 +312,50 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       align: "right",
       exportAccessor: (m) => m.estimate ?? 0,
     },
+    {
+      id: "margin",
+      label: "Margin",
+      accessor: (m) => {
+        const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
+        return isCompleted ? (m.margin_percent ?? null) : (m.est_margin_percent ?? null);
+      },
+      render: (m) => {
+        const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
+        const isQuote = ["quoted", "quote"].includes((m.status || "").toLowerCase());
+        if (isQuote) return <span className="block text-right text-[11px] text-[var(--tx3)]">—</span>;
+
+        const pct = isCompleted ? m.margin_percent : m.est_margin_percent;
+        if (pct == null) return <span className="block text-right text-[11px] text-[var(--tx3)]">—</span>;
+
+        const flag = m.margin_flag || (pct >= 35 ? "green" : pct >= 25 ? "yellow" : "red");
+        const dotColor = flag === "green"
+          ? "bg-emerald-400"
+          : flag === "yellow"
+            ? "bg-[var(--gold)]"
+            : "bg-red-400";
+        const textColor = flag === "green"
+          ? "text-emerald-400"
+          : flag === "yellow"
+            ? "text-[var(--gold)]"
+            : "text-red-400";
+
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            {!isCompleted && (
+              <span className="text-[8px] text-[var(--tx3)] font-medium">est.</span>
+            )}
+            <span className={`text-[11px] font-bold tabular-nums ${textColor}`}>{pct}%</span>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+          </div>
+        );
+      },
+      align: "right",
+      defaultHidden: false,
+      exportAccessor: (m) => {
+        const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
+        return isCompleted ? (m.margin_percent ?? "") : (m.est_margin_percent ?? "");
+      },
+    },
   ];
 }
 
@@ -322,6 +376,7 @@ export default function AllMovesClient({
 
   const activeType = searchParams.get("type") || "";
   const activeStatus = searchParams.get("status") || "";
+  const activeMargin = searchParams.get("margin") || "";
 
   const setFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -357,7 +412,7 @@ export default function AllMovesClient({
     return counts;
   }, [afterTypeFilter]);
 
-  const filtered = useMemo(
+  const afterStatusFilter = useMemo(
     () =>
       activeStatus
         ? afterTypeFilter.filter(
@@ -366,6 +421,17 @@ export default function AllMovesClient({
         : afterTypeFilter,
     [afterTypeFilter, activeStatus],
   );
+
+  const filtered = useMemo(() => {
+    if (!activeMargin) return afterStatusFilter;
+    return afterStatusFilter.filter((m) => {
+      const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
+      const pct = isCompleted ? m.margin_percent : m.est_margin_percent;
+      if (pct == null) return false;
+      const flag = m.margin_flag || (pct >= 35 ? "green" : pct >= 25 ? "yellow" : "red");
+      return flag === activeMargin;
+    });
+  }, [afterStatusFilter, activeMargin]);
 
   // Stats — react to active type filter
   const statsSource = afterTypeFilter;
@@ -463,7 +529,7 @@ export default function AllMovesClient({
         </div>
 
         {/* Status filter pills — horizontal scroll on mobile */}
-        <div className="flex gap-1.5 mb-0 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+        <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {STATUS_FILTERS.map((f) => {
             const isActive = activeStatus === f.value;
             const count = f.value ? statusCounts[f.value] || 0 : afterTypeFilter.length;
@@ -482,6 +548,27 @@ export default function AllMovesClient({
                 {f.value && count > 0 && (
                   <span className="text-[var(--tx3)]/50 tabular-nums">{count}</span>
                 )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Margin filter pills */}
+        <div className="flex gap-1.5 mb-0 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+          {MARGIN_FILTERS.map((f) => {
+            const isActive = activeMargin === f.value;
+            return (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => setFilter("margin", f.value)}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-medium border transition-all duration-150 touch-manipulation ${
+                  isActive
+                    ? "border-[var(--tx3)]/60 bg-[var(--bg2)] text-[var(--tx)] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
+                    : "border-transparent text-[var(--tx3)] hover:border-[var(--brd)] hover:bg-[var(--bg2)] hover:text-[var(--tx2)]"
+                }`}
+              >
+                {f.label}
               </button>
             );
           })}

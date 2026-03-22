@@ -1222,7 +1222,34 @@ export default function MoveDetailClient({
       {/* Distance & Logistics */}
       <DistanceLogistics fromAddress={move.from_address} toAddress={move.to_address || move.delivery_address} />
 
-      {/* Pending client inventory change (add/remove items) */}
+      {/* Walkthrough status (move-day crew walkthrough) */}
+      {(move.walkthrough_completed || move.walkthrough_skipped) && (
+        <div className="rounded-xl border border-[var(--brd)]/50 bg-[var(--bg)]/60 px-4 py-3 flex items-start gap-3">
+          <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${move.walkthrough_skipped ? "bg-amber-400" : "bg-[#22C55E]"}`} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-bold text-[var(--tx)] uppercase tracking-wider">
+              Inventory Walkthrough {move.walkthrough_skipped ? "Skipped" : "Completed"}
+            </p>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+              {move.walkthrough_completed_at && (
+                <span className="text-[10px] text-[var(--tx3)]">
+                  {new Date(move.walkthrough_completed_at).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                </span>
+              )}
+              {move.walkthrough_crew_member && (
+                <span className="text-[10px] text-[var(--tx3)]">by crew</span>
+              )}
+              {move.walkthrough_skipped && move.walkthrough_skip_reason && (
+                <span className="text-[10px] text-amber-500">
+                  Reason: {move.walkthrough_skip_reason.replace(/_/g, " ")}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending inventory change (client or crew submitted) */}
       {pendingInventoryChange &&
         ["pending", "admin_reviewing", "client_confirming"].includes(pendingInventoryChange.status) && (
           <InventoryChangeRequestPanel request={pendingInventoryChange} />

@@ -59,7 +59,7 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
       ? db
           .from("inventory_change_requests")
           .select(
-            "id, status, submitted_at, items_added, items_removed, auto_calculated_delta, admin_adjusted_delta, truck_assessment, admin_notes, decline_reason",
+            "id, status, submitted_at, items_added, items_removed, auto_calculated_delta, admin_adjusted_delta, truck_assessment, admin_notes, decline_reason, source",
           )
           .eq("id", move.pending_inventory_change_request_id)
           .maybeSingle()

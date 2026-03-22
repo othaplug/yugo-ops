@@ -41,7 +41,7 @@ These map to the tokens above; grep shows **little or no** `.tsx` usage yet — 
 | `.ty-metric` | `--text-2xl` | dashboard numbers |
 | `.ty-page-title` | `--text-3xl` | page titles |
 
-## 3. `text-[var(--text-*)]` in TSX (token-based)
+## 3. CSS variable text sizing in TSX (e.g. `text-[var(--text-base)]`)
 
 | Token | File:line | Snippet |
 |-------|-----------|---------|
@@ -103,7 +103,7 @@ Legacy / component classes: `.mc-l` (11px), `.mc-v` (22px), `.dc-t` (13px), `.bd
 
 ## 7. One-line examples (tokens and semantic classes)
 
-Use **either** `text-[var(--text-*)]` (matches `ActivityPageClient`) **or** `.ty-*` (bundles size + weight + color in `globals.css`).
+Use **either** arbitrary sizes like `text-[var(--text-base)]` / `text-[var(--text-md)]` (see `ActivityPageClient`) **or** semantic `.ty-caption`, `.ty-body`, etc. (bundles size + weight + color in `globals.css`).
 
 | Token | Size | Arbitrary value example | Semantic class example |
 |-------|------|-------------------------|-------------------------|

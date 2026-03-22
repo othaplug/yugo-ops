@@ -103,13 +103,14 @@ export default async function TrackMovePage({
     "change_request_min_hours_before_move",
     "change_request_max_items_per_request",
   ]);
-  const [{ data: itemWeights }, { data: pendingIcRows }, { data: latestInvAdj }] = await Promise.all([
+  const [{ data: itemWeights }, { data: pendingIcRows }, { data: latestInvAdj }, { data: crewPendingRows }] = await Promise.all([
     supabase.from("item_weights").select("slug, item_name, weight_score, active").eq("active", true).limit(2000),
     supabase
       .from("inventory_change_requests")
-      .select("id, status, submitted_at")
+      .select("id, status, submitted_at, source")
       .eq("move_id", move.id)
       .in("status", ["pending", "admin_reviewing", "client_confirming"])
+      .eq("source", "client")
       .order("submitted_at", { ascending: false })
       .limit(1),
     supabase
@@ -121,24 +122,37 @@ export default async function TrackMovePage({
       .order("reviewed_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Crew-submitted pending change requests (move-day walkthrough)
+    supabase
+      .from("inventory_change_requests")
+      .select("id, status, submitted_at, source, auto_calculated_delta, items_added, items_removed, items_matched, items_missing, items_extra, original_subtotal, new_subtotal, client_response")
+      .eq("move_id", move.id)
+      .eq("source", "crew")
+      .in("status", ["pending", "admin_reviewing"])
+      .is("client_response", null)
+      .order("submitted_at", { ascending: false })
+      .limit(1),
   ]);
 
   const pendingInventoryCr = pendingIcRows?.[0] ?? null;
+  const crewChangeRequest = crewPendingRows?.[0] ?? null;
+
   const st = String(move.status || "").toLowerCase();
-  const minH = Math.max(1, parseInt(icCfg.change_request_min_hours_before_move, 10) || 48);
+  // minH=0 means no time restriction (migration sets this to 0)
+  const minH = parseInt(icCfg.change_request_min_hours_before_move, 10);
   const moveDate = move.scheduled_date ? parseDateOnly(move.scheduled_date) ?? new Date(move.scheduled_date) : null;
-  const hoursOk = moveDate ? moveDate.getTime() - Date.now() >= minH * 3600_000 : false;
+  // When minH <= 0, no time restriction applies
+  const hoursOk = minH <= 0 || (moveDate ? moveDate.getTime() - Date.now() >= minH * 3600_000 : false);
   const statusOk = ["confirmed", "scheduled", "paid"].includes(st);
   const notTerminal = !["in_progress", "completed", "delivered", "cancelled"].includes(st);
   const invChangeEnabled = icCfg.change_request_enabled === "true";
   const noPending = !pendingInventoryCr && !move.pending_inventory_change_request_id;
   const inventoryChangeEligible =
-    invChangeEnabled && statusOk && notTerminal && !!moveDate && hoursOk && noPending;
+    invChangeEnabled && statusOk && notTerminal && noPending && hoursOk;
   let inventoryChangeReason = "";
   if (!invChangeEnabled) inventoryChangeReason = "Inventory change requests are turned off.";
   else if (!statusOk || !notTerminal) inventoryChangeReason = "Not available for this move status.";
-  else if (!moveDate) inventoryChangeReason = "Add a move date first (contact your coordinator).";
-  else if (!hoursOk) inventoryChangeReason = `Changes must be at least ${minH} hours before move day.`;
+  else if (!hoursOk) inventoryChangeReason = `Changes must be submitted before move day.`;
   else if (!noPending) inventoryChangeReason = "You already have a pending inventory change request.";
 
   return (
@@ -164,6 +178,20 @@ export default async function TrackMovePage({
       inventoryChangePerScoreRate={parseFloat(icCfg.change_request_per_score_rate) || 35}
       inventoryChangeMaxItems={Math.max(1, parseInt(icCfg.change_request_max_items_per_request, 10) || 10)}
       latestInventoryAdjustmentPayment={latestInvAdj ?? null}
+      crewChangeRequest={crewChangeRequest as {
+        id: string;
+        status: string;
+        submitted_at: string;
+        auto_calculated_delta: number;
+        items_added: unknown[];
+        items_removed: unknown[];
+        items_matched: number;
+        items_missing: number;
+        items_extra: number;
+        original_subtotal: number;
+        new_subtotal: number;
+        client_response: string | null;
+      } | null}
     />
   );
 }

@@ -8,6 +8,7 @@ import { formatJobId } from "@/lib/move-code";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
+import { calcActualMargin } from "@/lib/pricing/engine";
 
 /**
  * When admin marks a move as completed in the UI, this endpoint sends the
@@ -28,7 +29,7 @@ export async function POST(
 
   const { data: move, error } = await admin
     .from("moves")
-    .select("id, move_code, client_email, client_name, from_address, to_address, status, completed_at")
+    .select("id, move_code, client_email, client_name, from_address, to_address, status, completed_at, actual_hours, est_hours, actual_crew_count, crew_count, truck_primary, distance_km, tier_selected, move_size, estimate")
     .eq("id", moveId)
     .single();
 
@@ -80,6 +81,32 @@ export async function POST(
   generateMovePDFs(moveId).catch((e) =>
     console.error("[notify-complete] generateMovePDFs failed:", e)
   );
+
+  // 5. Calculate actual margin and persist to moves table
+  try {
+    const { data: configRows } = await admin.from("platform_config").select("key, value");
+    const config: Record<string, string> = {};
+    for (const r of configRows ?? []) config[r.key] = r.value;
+
+    const marginResult = calcActualMargin(
+      {
+        actualHours: move.actual_hours ?? null,
+        estimatedHours: move.est_hours ?? null,
+        actualCrew: move.actual_crew_count ?? null,
+        crewSize: move.crew_count ?? null,
+        truckType: move.truck_primary ?? null,
+        distanceKm: move.distance_km ?? null,
+        tier: move.tier_selected ?? null,
+        moveSize: move.move_size ?? null,
+        totalPrice: move.estimate ?? null,
+      },
+      config,
+    );
+
+    await admin.from("moves").update(marginResult).eq("id", moveId);
+  } catch (e) {
+    console.error("[notify-complete] margin calculation failed:", e);
+  }
 
   return NextResponse.json({
     ok: true,

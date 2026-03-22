@@ -89,6 +89,13 @@ interface QuoteResult {
     tiers: unknown[];
   };
   inventory_warnings?: string[];
+  margin_warning?: {
+    level: string;
+    message: string;
+    estimated_margin: number;
+    target_margin: number;
+    signature_margin: number | null;
+  } | null;
 }
 
 interface ItemWeight {
@@ -3443,6 +3450,96 @@ export default function QuoteFormClient({
                 })}
               </div>
             )}
+
+            {/* ── Margin estimate — ADMIN ONLY, never shown to clients ── */}
+            {quoteResult?.factors &&
+              (userRole === "owner" || userRole === "admin") &&
+              typeof (quoteResult.factors as Record<string, unknown>).estimated_margin_curated === "number" && (
+              <div className="bg-[var(--bg2)] border border-[var(--brd)] rounded-xl p-4 space-y-3 text-[11px]">
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Margin Estimate</h4>
+                  <span className="text-[8px] font-bold uppercase tracking-wide bg-[var(--tx3)]/20 text-[var(--tx3)] px-1.5 py-0.5 rounded">Admin Only</span>
+                </div>
+                {(() => {
+                  const f = quoteResult.factors as Record<string, unknown>;
+                  const cost = (f.estimated_cost as { labour?: number; truck?: number; fuel?: number; supplies?: number; total?: number } | undefined);
+                  const tiers = quoteResult.tiers as Record<string, { price: number }> | undefined;
+                  const curPrice = tiers?.curated?.price ?? tiers?.essentials?.price ?? 0;
+                  const sigPrice = tiers?.signature?.price ?? tiers?.premier?.price ?? 0;
+                  const estPrice = tiers?.estate?.price ?? 0;
+                  const estTotalCost = cost?.total ?? 0;
+                  const margins = [
+                    { label: "Curated", price: curPrice, margin: typeof f.estimated_margin_curated === "number" ? f.estimated_margin_curated : 0 },
+                    { label: "Signature", price: sigPrice, margin: typeof f.estimated_margin_signature === "number" ? f.estimated_margin_signature : 0 },
+                    { label: "Estate", price: estPrice, margin: typeof f.estimated_margin_estate === "number" ? f.estimated_margin_estate : 0 },
+                  ].filter((t) => t.price > 0);
+
+                  function marginFlag(m: number) {
+                    if (m < 25) return { emoji: "🔴", cls: "text-red-400" };
+                    if (m < 35) return { emoji: "🟡", cls: "text-[var(--gold)]" };
+                    return { emoji: "🟢", cls: "text-emerald-400" };
+                  }
+
+                  return (
+                    <>
+                      {margins.map(({ label, price, margin }) => {
+                        const flag = marginFlag(margin);
+                        const profit = price - estTotalCost;
+                        return (
+                          <div key={label} className="flex items-start justify-between gap-2 py-1.5 border-b border-[var(--brd)]/40 last:border-0">
+                            <div>
+                              <span className="text-[var(--tx2)] font-medium">{label}</span>
+                              <span className="text-[var(--tx3)] ml-1.5">{fmtPrice(price)}</span>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className={`font-bold tabular-nums ${flag.cls}`}>{margin}% {flag.emoji}</span>
+                              <p className="text-[9px] text-[var(--tx3)]">profit {fmtPrice(profit)}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {cost && (
+                        <div className="pt-1 text-[10px] text-[var(--tx3)] space-y-0.5">
+                          <div className="flex justify-between">
+                            <span>Est. cost</span>
+                            <span className="tabular-nums text-[var(--tx2)]">{fmtPrice(estTotalCost)}</span>
+                          </div>
+                          <div className="flex justify-between text-[9px]">
+                            <span>Labour {fmtPrice(cost.labour ?? 0)} · Truck {fmtPrice(cost.truck ?? 0)} · Fuel {fmtPrice(cost.fuel ?? 0)}{(cost.supplies ?? 0) > 0 ? ` · Supplies ${fmtPrice(cost.supplies ?? 0)}` : ""}</span>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* ── Margin warning (admin only) ── */}
+            {quoteResult?.margin_warning && (userRole === "owner" || userRole === "admin") && (() => {
+              const mw = quoteResult.margin_warning as { level: string; message: string; estimated_margin: number; target_margin: number; signature_margin: number | null };
+              const isCritical = mw.level === "critical";
+              return (
+                <div className={`rounded-xl border px-4 py-3.5 ${isCritical ? "border-red-400/40 bg-red-400/6" : "border-amber-400/40 bg-amber-400/6"}`}>
+                  <div className="flex items-start gap-2.5">
+                    <span className={`text-[16px] shrink-0 ${isCritical ? "text-red-400" : "text-amber-500"}`}>⚠</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[11px] font-bold uppercase tracking-wider ${isCritical ? "text-red-400" : "text-amber-600"}`}>
+                        Margin {isCritical ? "Alert" : "Warning"}
+                      </p>
+                      <p className={`text-[11px] mt-1 ${isCritical ? "text-red-400/80" : "text-amber-700/80"}`}>
+                        Curated margin: <strong>{mw.estimated_margin}%</strong> (target: {mw.target_margin}%)
+                      </p>
+                      {mw.signature_margin !== null && (
+                        <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+                          Signature margin: <strong className="text-emerald-500">{mw.signature_margin}%</strong> ✅ — Consider recommending Signature for this move.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ── Live inventory score (before generate) ── */}
             {!quoteResult && inventoryItems.length > 0 && (serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && (

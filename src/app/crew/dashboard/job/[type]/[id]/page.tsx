@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useCallback, useRef } from "react";
-import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check } from "@phosphor-icons/react";
+import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check, Clipboard } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatTime, formatDate } from "@/lib/client-timezone";
@@ -18,6 +18,7 @@ import StageProgressBar from "@/components/StageProgressBar";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
 import DayRateStopFlow from "./DayRateStopFlow";
+import WalkthroughModal from "./WalkthroughModal";
 
 const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 
@@ -127,6 +128,20 @@ export default function CrewJobPage({
   const [pickupPhotosCount, setPickupPhotosCount] = useState(0);
   const [pickupVerificationDone, setPickupVerificationDone] = useState(false);
 
+  // Inventory walkthrough
+  const [walkthroughModalOpen, setWalkthroughModalOpen] = useState(false);
+  const [walkthroughDone, setWalkthroughDone] = useState(false);
+  const [walkthroughSkipped, setWalkthroughSkipped] = useState(false);
+  const [walkthroughResult, setWalkthroughResult] = useState<{
+    itemsMatched: number;
+    itemsMissing: number;
+    itemsExtra: number;
+    netDelta: number;
+    changeRequestId: string | null;
+    noChanges: boolean;
+  } | null>(null);
+  const [changeRequestSubmitted, setChangeRequestSubmitted] = useState(false);
+
   const statusFlow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
   const currentStatus = session?.status || "not_started";
   const nextStatus = getNextStatus(currentStatus, jobType);
@@ -179,13 +194,14 @@ export default function CrewJobPage({
   useEffect(() => {
     if (
       currentStatus === "arrived_at_pickup" &&
-      !pickupVerificationDone &&
+      !walkthroughDone &&
+      !walkthroughSkipped &&
       !loading &&
       session?.isActive
     ) {
-      setPickupModalOpen(true);
+      setWalkthroughModalOpen(true);
     }
-  }, [currentStatus, pickupVerificationDone, loading, session?.isActive]);
+  }, [currentStatus, walkthroughDone, walkthroughSkipped, loading, session?.isActive]);
 
   useEffect(() => {
     if (!session?.startedAt || !session?.isActive) {
@@ -257,8 +273,9 @@ export default function CrewJobPage({
         setGpsStatus("off");
       }
       if (status === "arrived_at_pickup") {
-        setPickupModalOpen(true);
-        setPickupVerificationDone(false);
+        setWalkthroughModalOpen(true);
+        setWalkthroughDone(false);
+        setWalkthroughSkipped(false);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
@@ -392,9 +409,10 @@ export default function CrewJobPage({
 
   const jobCompleted = ["completed", "delivered", "done"].includes((job.status || "").toLowerCase());
   const showStartButton = !session && !jobCompleted;
-  const atArrivedRequiringPhotos = ["arrived_at_pickup", "arrived_at_destination", "arrived"].includes(currentStatus);
+  const atArrivedRequiringPhotos = ["arrived_at_destination", "arrived"].includes(currentStatus);
   const blockedByPhotos = atArrivedRequiringPhotos && !canAdvanceFromArrived;
-  const blockedByPickupVerification = currentStatus === "arrived_at_pickup" && !pickupVerificationDone;
+  // Walkthrough must be done (or skipped) before loading can start
+  const blockedByWalkthrough = currentStatus === "arrived_at_pickup" && !walkthroughDone && !walkthroughSkipped;
   const showAdvanceButton = session?.isActive && nextStatus && !showStartButton;
 
   const itemsLabel = itemsTotal > 0 ? `Items (${itemsVerified}/${itemsTotal})` : `Items (${totalItems})`;
@@ -530,8 +548,49 @@ export default function CrewJobPage({
             />
           </div>
 
+          {/* Walkthrough gate — shown when at pickup and walkthrough not done */}
+          {currentStatus === "arrived_at_pickup" && blockedByWalkthrough && (
+            <div className="rounded-2xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-4 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center shrink-0">
+                  <Clipboard size={16} color="var(--gold)" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-bold text-[var(--tx)]">Inventory Walkthrough Required</p>
+                  <p className="text-[11px] text-[var(--tx3)]">Complete before loading starts</p>
+                </div>
+              </div>
+              <p className="text-[12px] text-[var(--tx2)] leading-relaxed">
+                Walk through with the client and verify the inventory matches the quote.
+                Flag missing items and add any extras.
+              </p>
+              <button
+                onClick={() => setWalkthroughModalOpen(true)}
+                className="w-full py-3 rounded-xl font-bold text-[13px] text-white"
+                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+              >
+                Start Inventory Check
+              </button>
+            </div>
+          )}
+
+          {/* Change request submitted banner */}
+          {changeRequestSubmitted && walkthroughResult && !walkthroughResult.noChanges && (
+            <div className="rounded-2xl border border-[#22C55E]/25 bg-[#22C55E]/5 px-4 py-3 flex items-start gap-2.5">
+              <CheckCircle size={16} color="#22C55E" className="shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[12px] font-bold text-[#22C55E]">Change request submitted</p>
+                <p className="text-[11px] text-[#22C55E]/70 mt-0.5">
+                  {walkthroughResult.itemsExtra > 0 && `${walkthroughResult.itemsExtra} extra item${walkthroughResult.itemsExtra !== 1 ? "s" : ""}. `}
+                  {walkthroughResult.itemsMissing > 0 && `${walkthroughResult.itemsMissing} missing. `}
+                  Net {walkthroughResult.netDelta >= 0 ? "+" : ""}${walkthroughResult.netDelta}. Client notified.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Advance status / Client Sign-Off button */}
-          {showAdvanceButton && !blockedByPhotos && !blockedByPickupVerification && (
+          {showAdvanceButton && !blockedByPhotos && !blockedByWalkthrough && (
             nextStatus === "completed" ? (
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
@@ -553,9 +612,9 @@ export default function CrewJobPage({
               </button>
             )
           )}
-          {showAdvanceButton && (blockedByPhotos || blockedByPickupVerification) && (
+          {showAdvanceButton && blockedByPhotos && (
             <p className="text-center text-[11px] text-[var(--tx3)] py-2">
-              {blockedByPickupVerification ? "Complete pickup verification above" : "Take photos in the Photos tab to advance"}
+              Take photos in the Photos tab to advance
             </p>
           )}
 
@@ -793,64 +852,65 @@ export default function CrewJobPage({
         </div>
       )}
 
-      {/* Pickup Verification Modal */}
+      {/* Inventory Walkthrough Modal */}
+      {walkthroughModalOpen && job && jobType === "move" && (
+        <WalkthroughModal
+          jobId={id}
+          inventory={job.inventory || []}
+          onComplete={(result) => {
+            setWalkthroughDone(true);
+            setWalkthroughModalOpen(false);
+            setWalkthroughResult(result);
+            if (!result.noChanges && result.changeRequestId) {
+              setChangeRequestSubmitted(true);
+            }
+            // Open photo verification after walkthrough
+            setPickupModalOpen(true);
+          }}
+          onSkip={(reason) => {
+            setWalkthroughSkipped(true);
+            setWalkthroughModalOpen(false);
+            // Save skip reason to server
+            fetch(`/api/crew/walkthrough/${id}/skip`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ skip_reason: reason }),
+            }).catch(() => {});
+            // Open photo verification
+            setPickupModalOpen(true);
+          }}
+          onClose={() => setWalkthroughModalOpen(false)}
+        />
+      )}
+
+      {/* Photo verification modal — shown after walkthrough */}
       {pickupModalOpen && job && (
         <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-[99990] animate-fade-in">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] overflow-y-auto shadow-2xl" style={{ maxHeight: "min(90dvh, 90vh)" }}>
             <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 z-10">
               <h3 className="font-hero text-[26px] font-bold text-[var(--tx)]">
-                Pickup Verification
+                Document Condition
               </h3>
               <p className="text-[12px] text-[var(--tx3)] mt-1">
-                Verify all items with the client and take photos before loading.
+                Take photos of items and rooms before loading begins.
               </p>
             </div>
 
             <div className="px-5 py-4 space-y-5">
-              <div>
-                <h4 className="font-hero text-[11px] font-bold uppercase tracking-[1.5px] text-[var(--gold)] mb-3">
-                  Step 1 — Verify Inventory
-                </h4>
-                <JobInventory
+              {session && (
+                <JobPhotos
                   jobId={id}
                   jobType={jobType}
-                  moveType={job.moveType}
-                  inventory={job.inventory || []}
-                  extraItems={job.extraItems || []}
+                  sessionId={session.id}
                   currentStatus={currentStatus}
-                  onRefresh={fetchJob}
-                  onCountChange={(v, t) => {
-                    setItemsVerified(v);
-                    setItemsTotal(t);
-                  }}
+                  onPhotoCountChange={(count) => setPickupPhotosCount(count)}
+                  onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
                 />
-              </div>
-
-              <div>
-                <h4 className="font-hero text-[11px] font-bold uppercase tracking-[1.5px] text-[var(--gold)] mb-3">
-                  Step 2 — Document Condition
-                </h4>
-                <p className="text-[12px] text-[var(--tx3)] mb-3">
-                  Take photos of items and rooms before loading begins.
-                </p>
-                {session && (
-                  <JobPhotos
-                    jobId={id}
-                    jobType={jobType}
-                    sessionId={session.id}
-                    currentStatus={currentStatus}
-                    onPhotoCountChange={(count) => setPickupPhotosCount(count)}
-                    onCanAdvanceFromArrivedChange={setCanAdvanceFromArrived}
-                  />
-                )}
-              </div>
+              )}
             </div>
 
             <div className="sticky bottom-0 bg-[var(--card)] border-t border-[var(--brd)] px-5 py-4 space-y-2">
               <div className="flex items-center justify-between text-[12px] text-[var(--tx3)] mb-1">
-                <span>
-                  Items: {itemsVerified}/{itemsTotal > 0 ? itemsTotal : totalItems} verified
-                </span>
                 <span>{pickupPhotosCount} photo{pickupPhotosCount !== 1 ? "s" : ""} taken</span>
               </div>
               <button
@@ -858,17 +918,14 @@ export default function CrewJobPage({
                   setPickupVerificationDone(true);
                   setPickupModalOpen(false);
                 }}
-                disabled={pickupPhotosCount < 1 && (itemsTotal > 0 || totalItems > 0)}
+                disabled={pickupPhotosCount < 1 && totalItems > 0}
                 className="w-full py-4 rounded-2xl font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
-                {pickupPhotosCount < 1 && (itemsTotal > 0 || totalItems > 0)
+                {pickupPhotosCount < 1 && totalItems > 0
                   ? "Take at least 1 photo to continue"
-                  : "Complete Verification"}
+                  : "Complete — Start Loading"}
               </button>
-              {(itemsTotal === 0 && totalItems === 0) && (
-                <p className="text-[11px] text-[var(--tx3)] text-center">No items to verify — take a photo of the space or complete to continue.</p>
-              )}
               <button
                 type="button"
                 onClick={() => setPickupModalOpen(false)}

@@ -9,7 +9,6 @@ import {
   SPECIALTY_EQUIPMENT_DEFAULTS,
   SPECIALTY_PROJECT_BASE_DEFAULTS,
 } from "@/lib/pricing/specialty-project-defaults";
-
 // ═══════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════
@@ -997,26 +996,59 @@ async function calcResidential(
 
   const specialtySurcharge = await getSpecialtySurcharge(sb, input.specialty_items ?? []);
 
-  // ── Section 4A-B: New multiplicative formula ──────────────────────────────
-  // subtotal = baseRate × invModifier × distModifier × dateFactor × neighbourhoodMult
-  // Access and specialty added FLAT after (not scaled by tier multiplier)
-  let subtotal = baseRate;
-  subtotal = Math.round(subtotal * invResult.modifier);
-  subtotal = Math.round(subtotal * distanceModifier);
-  subtotal = Math.round(subtotal * dateMult.multiplier);
-  subtotal = Math.round(subtotal * neighbourhood.multiplier);
+  // ── PRICING ENGINE v2 ──────────────────────────────────────────────────────
+  // Step 2: COST STACK — operational drivers only (inventory × distance)
+  const costStack = invResult.modifier * distanceModifier;
+  let operationalPrice = Math.round(baseRate * costStack);
+
+  // Step 3: FIXED SURCHARGES — additive, not multiplicative
   const plc = parkingLongCarryLineTotal(config, input, "both");
   const recTruck = input.truck_type
     ? normalizeTruckType(input.truck_type)
     : recommendedTruckFromInventoryScore(invResult.inventoryScore);
   const truckSur = truckSurchargeAmount(config, recTruck);
-  // Add flat surcharges AFTER multiplicative chain
-  subtotal += accessSurcharge + specialtySurcharge + plc.total + truckSur;
 
-  // ── Labour delta (Section 3): extra man-hours above baseline, floored at 0 ─
-  const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
+  const deadheadFreeKm = cfgNum(config, "deadhead_free_zone_km", cfgNum(config, "deadhead_free_km", 15));
+  const deadheadPerKm  = cfgNum(config, "deadhead_rate_per_km", cfgNum(config, "deadhead_per_km", 3.0));
+  const deadheadKm     = deadheadInfo?.distance_km ?? 0;
+  const deadheadSurcharge = deadheadKm > deadheadFreeKm
+    ? Math.round((deadheadKm - deadheadFreeKm) * deadheadPerKm)
+    : 0;
+
+  const mobilizationFee = (() => {
+    const d = deadheadKm;
+    if (d > 50) return cfgNum(config, "mobilization_50plus", 100);
+    if (d > 35) return cfgNum(config, "mobilization_35_50", 75);
+    if (d > 25) return cfgNum(config, "mobilization_25_35", 50);
+    return 0;
+  })();
+
+  const surchargesTotal = accessSurcharge + specialtySurcharge + plc.total + truckSur + deadheadSurcharge + mobilizationFee;
+  operationalPrice += surchargesTotal;
+
+  // Step 4: MARKET STACK — price perception drivers, capped to prevent excessive compounding
+  const marketStackRaw = dateMult.multiplier * neighbourhood.multiplier;
+  const marketStackCap = cfgNum(config, "market_stack_cap", 1.38);
+  const marketStack = Math.min(marketStackRaw, marketStackCap);
+  const marketStackCapped = marketStackRaw > marketStackCap;
+  const marketAdjustedPrice = Math.round(operationalPrice * marketStack);
+
+  // Keep a "subtotal" alias for the coordinator breakdown view (price before labour)
+  const subtotal = marketAdjustedPrice;
+
+  // ── Tiered labour delta (v2): extra hours above baseline, per-tier rates ─
+  const labourRates = {
+    curated:   cfgNum(config, "labour_rate_curated",   cfgNum(config, "labour_rate_per_mover_hour", 55)),
+    signature: cfgNum(config, "labour_rate_signature", cfgNum(config, "labour_rate_per_mover_hour", 65)),
+    estate:    cfgNum(config, "labour_rate_estate",    cfgNum(config, "labour_rate_per_mover_hour", 75)),
+  };
+  // Legacy single rate for breakdown display
+  const labourRate = labourRates.curated;
+
   let labourDelta = 0;
+  const tieredLabourDelta = { curated: 0, signature: 0, estate: 0 };
   let benchmark: { baseline_crew: number; baseline_hours: number } | null = null;
+
   if (labour && labour.crewSize > 0 && labour.estimatedHours > 0) {
     const { data: bm } = await sb
       .from("volume_benchmarks")
@@ -1026,19 +1058,28 @@ async function calcResidential(
     if (bm && typeof bm.baseline_crew === "number" && typeof bm.baseline_hours === "number") {
       benchmark = { baseline_crew: bm.baseline_crew, baseline_hours: bm.baseline_hours };
       const baselineManHours = bm.baseline_crew * bm.baseline_hours;
-      const actualManHours = labour.crewSize * labour.estimatedHours;
-      // Section 3: floor at 0 — light moves get cheaper price through inventory modifier, not negative labour delta
-      labourDelta = Math.max(0, Math.round((actualManHours - baselineManHours) * labourRate));
+
+      // Min hours floor: ensures estimate never underestimates operational reality
+      const minHoursFloors = parseJsonConfig<Record<string, number>>(
+        config,
+        "minimum_hours_by_size",
+        { studio: 2, "1br": 3, "2br": 4, "3br": 5.5, "4br": 7, "5br_plus": 8.5, partial: 2 },
+      );
+      const minHoursFloor = minHoursFloors[input.move_size ?? "2br"] ?? 3;
+      // White glove adds +1 minimum hour
+      const effectiveMinHours = input.service_type === "white_glove" ? minHoursFloor + 1 : minHoursFloor;
+      const effectiveHours = Math.max(labour.estimatedHours, effectiveMinHours);
+      const actualManHours = labour.crewSize * effectiveHours;
+      const extraManHours = Math.max(0, actualManHours - baselineManHours);
+
+      tieredLabourDelta.curated   = Math.round(extraManHours * labourRates.curated);
+      tieredLabourDelta.signature = Math.round(extraManHours * labourRates.signature);
+      tieredLabourDelta.estate    = Math.round(extraManHours * labourRates.estate);
+
+      // Legacy single delta (curated rate) for backward-compatible breakdown display
+      labourDelta = tieredLabourDelta.curated;
     }
   }
-
-  // ── Section 4D: Deadhead surcharge (flat addition, not tier-multiplied) ────
-  const deadheadFreeKm = cfgNum(config, "deadhead_free_km", 15);
-  const deadheadPerKm  = cfgNum(config, "deadhead_per_km",  2.50);
-  const deadheadKm     = deadheadInfo?.distance_km ?? 0;
-  const deadheadSurcharge = deadheadKm > deadheadFreeKm
-    ? Math.round((deadheadKm - deadheadFreeKm) * deadheadPerKm)
-    : 0;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const minJob = cfgNum(config, "minimum_job_amount", 549);
@@ -1050,10 +1091,11 @@ async function calcResidential(
   const estateMult = cfgNum(config, "tier_estate_multiplier", 3.15);
   const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
 
-  // Tier base = round(subtotal × multiplier) + labourDelta + deadheadSurcharge (both flat, not tier-scaled)
-  let curBase = roundTo(subtotal * curatedMult, rounding) + labourDelta + deadheadSurcharge;
-  let sigBase = roundTo(subtotal * signatureMult, rounding) + labourDelta + deadheadSurcharge;
-  let estBase = roundTo(subtotal * estateMult, rounding) + labourDelta + deadheadSurcharge;
+  // Step 5: TIER MULTIPLIERS applied to market-adjusted price
+  // Step 6: TIERED LABOUR DELTA added after (so premium tiers pay more for overages)
+  let curBase = roundTo(subtotal * curatedMult, rounding) + tieredLabourDelta.curated;
+  let sigBase = roundTo(subtotal * signatureMult, rounding) + tieredLabourDelta.signature;
+  let estBase = roundTo(subtotal * estateMult, rounding) + tieredLabourDelta.estate;
 
   // Estate-only: packing supplies allowance — lookup by move size from config JSON.
   const suppliesBySize = parseJsonConfig<Record<string, number>>(config, "estate_supplies_by_size", {});
@@ -1143,6 +1185,37 @@ async function calcResidential(
     } as TierResult,
   };
 
+  // Estimated cost and margin (for admin preview, stored on move creation)
+  const actualEstHours = labour
+    ? Math.max(
+        labour.estimatedHours,
+        (() => {
+          const minHoursFloors = parseJsonConfig<Record<string, number>>(
+            config,
+            "minimum_hours_by_size",
+            { studio: 2, "1br": 3, "2br": 4, "3br": 5.5, "4br": 7, "5br_plus": 8.5, partial: 2 },
+          );
+          const floor = minHoursFloors[input.move_size ?? "2br"] ?? 3;
+          return input.service_type === "white_glove" ? floor + 1 : floor;
+        })(),
+      )
+    : (estHours ?? 4);
+  const costPerMoverHour = cfgNum(config, "cost_per_mover_hour", 33);
+  const truckCostMap = parseJsonConfig<Record<string, number>>(
+    config,
+    "truck_costs_per_job",
+    { sprinter: 90, "16ft": 115, "20ft": 150, "24ft": 175, "26ft": 200 },
+  );
+  const fuelCostPerKm = cfgNum(config, "fuel_cost_per_km", 0.45);
+  const estLabourCost = Math.round(actualEstHours * (labour?.crewSize ?? minCrew) * costPerMoverHour);
+  const estTruckCost  = truckCostMap[recTruck] ?? 115;
+  const estFuelCost   = Math.round(distKm * 2 * fuelCostPerKm);
+  const estSuppliesCost = estateSuppliesAllowance; // non-zero only for estate
+  const estTotalCost  = estLabourCost + estTruckCost + estFuelCost + estSuppliesCost;
+  const estMarginPct  = curPrice > 0 ? Math.round(((curPrice - estTotalCost) / curPrice) * 100) : 0;
+  const estSigMarginPct  = sigPrice > 0 ? Math.round(((sigPrice - estTotalCost) / sigPrice) * 100) : 0;
+  const estEstMarginPct  = estPrice > 0 ? Math.round(((estPrice - estTotalCost) / estPrice) * 100) : 0;
+
   return {
     tiers,
     minCrew,
@@ -1151,6 +1224,14 @@ async function calcResidential(
       base_rate: baseRate,
       inventory_modifier: invResult.modifier,
       distance_modifier: distanceModifier,
+      // v2: cost stack and market stack separated
+      cost_stack: costStack,
+      market_stack: marketStack,
+      market_stack_raw: marketStackRaw,
+      market_stack_capped: marketStackCapped,
+      operational_price: operationalPrice - surchargesTotal,
+      surcharges_total: surchargesTotal,
+      market_adjusted_price: marketAdjustedPrice,
       date_multiplier: dateMult.multiplier,
       neighbourhood_multiplier: neighbourhood.multiplier,
       neighbourhood_tier: neighbourhood.tier,
@@ -1158,8 +1239,12 @@ async function calcResidential(
       specialty_surcharge: specialtySurcharge,
       labour_delta: labourDelta,
       labour_component: labourDelta,
+      labour_delta_curated: tieredLabourDelta.curated,
+      labour_delta_signature: tieredLabourDelta.signature,
+      labour_delta_estate: tieredLabourDelta.estate,
       deadhead_surcharge: deadheadSurcharge,
       deadhead_km: deadheadKm,
+      mobilization_fee: mobilizationFee,
       return_km: returnInfo?.distance_km ?? 0,
       inventory_score: invResult.inventoryScore,
       inventory_benchmark: invResult.benchmarkScore,
@@ -1170,18 +1255,32 @@ async function calcResidential(
       labour_baseline_hours: benchmark?.baseline_hours ?? null,
       labour_rate: labourRate,
       labour_rate_per_mover_hour: labourRate,
+      labour_rate_curated: labourRates.curated,
+      labour_rate_signature: labourRates.signature,
+      labour_rate_estate: labourRates.estate,
       labour_extra_man_hours:
         labour && benchmark
           ? Math.max(0, labour.crewSize * labour.estimatedHours - benchmark.baseline_crew * benchmark.baseline_hours)
           : null,
       inventory_max_modifier: (invResult as { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number }).maxModifier ?? null,
-      subtotal_before_labour: subtotal - accessSurcharge - specialtySurcharge - plc.total - truckSur,
+      subtotal_before_labour: marketAdjustedPrice,
       parking_long_carry_total: plc.total,
       truck_recommended: recTruck,
       truck_surcharge: truckSur,
       packing_supplies_included: estateSuppliesAllowance,
       crating_total: cratingTotal,
       crating_pieces_count: input.crating_pieces?.length ?? 0,
+      // Estimated cost / margin (admin only — not shown to clients)
+      estimated_cost: {
+        labour: estLabourCost,
+        truck: estTruckCost,
+        fuel: estFuelCost,
+        supplies: estSuppliesCost,
+        total: estTotalCost,
+      },
+      estimated_margin_curated:   estMarginPct,
+      estimated_margin_signature: estSigMarginPct,
+      estimated_margin_estate:    estEstMarginPct,
     },
     cratingTotal,
     estateSuppliesAllowance,
@@ -2786,6 +2885,35 @@ export async function POST(req: NextRequest) {
     upgrades: valuationUpgrades,
     tiers: valTiers ?? [],
   };
+
+  // Margin warning — admin-only, shown on quote preview
+  if (factors && typeof factors === "object") {
+    const f = factors as Record<string, unknown>;
+    const estMarginCurated = typeof f.estimated_margin_curated === "number" ? f.estimated_margin_curated : null;
+    const estMarginSig = typeof f.estimated_margin_signature === "number" ? f.estimated_margin_signature : null;
+    if (estMarginCurated !== null) {
+      const warnThreshold = typeof config.get === "function"
+        ? Number(config.get("margin_warning_threshold") ?? "35") || 35
+        : 35;
+      const critThreshold = typeof config.get === "function"
+        ? Number(config.get("margin_critical_threshold") ?? "25") || 25
+        : 25;
+      const targetMargin = typeof config.get === "function"
+        ? Number(config.get("margin_target_curated") ?? "40") || 40
+        : 40;
+      if (estMarginCurated < warnThreshold) {
+        response.margin_warning = {
+          level: estMarginCurated < critThreshold ? "critical" : "warning",
+          message: estMarginCurated < critThreshold
+            ? `Estimated margin ${estMarginCurated}% is critically low (threshold: ${critThreshold}%). Review pricing or recommend Signature.`
+            : `Estimated margin ${estMarginCurated}% is below target ${targetMargin}%. Consider adjusting.`,
+          estimated_margin: estMarginCurated,
+          target_margin: targetMargin,
+          signature_margin: estMarginSig,
+        };
+      }
+    }
+  }
 
   await logAudit({
     userId: authUser?.id,

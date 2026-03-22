@@ -2938,6 +2938,111 @@ function LabourOnlyPricingSection() {
 }
 
 /* ════════════════════════════════════════
+   ENGINE CONFIG v2
+   ════════════════════════════════════════ */
+function EngineConfigSection() {
+  const { isSuperAdmin } = usePricingAdmin();
+  const [rows, setRows] = useState<Row[]>([]);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchSection("config").then(setRows).catch(() => {});
+  }, []);
+
+  const updateRow = (id: string, key: string, value: string) => {
+    setRows((prev) => prev.map((r) => r.id === id ? { ...r, [key]: value } : r));
+  };
+
+  const undo = () => {
+    fetchSection("config").then(setRows).catch(() => {});
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await saveRows("config", rows);
+      toast("Engine config saved", "success");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Save failed", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const FIELDS: { key: string; label: string; hint: string; type?: "number" | "json" }[] = [
+    // Market stack
+    { key: "market_stack_cap", label: "Market Stack Cap", hint: "Maximum combined neighbourhood × day × season multiplier (default 1.38). Prevents excessive compounding." },
+    // Labour rates per tier
+    { key: "labour_rate_curated", label: "Labour Rate — Curated ($/mover-hr)", hint: "Hourly rate applied to extra mover-hours above baseline for Curated tier." },
+    { key: "labour_rate_signature", label: "Labour Rate — Signature ($/mover-hr)", hint: "Higher rate for Signature tier overages — premium clients pay more for extra time." },
+    { key: "labour_rate_estate", label: "Labour Rate — Estate ($/mover-hr)", hint: "Highest rate for Estate tier overages." },
+    // Deadhead
+    { key: "deadhead_rate_per_km", label: "Deadhead Rate ($/km)", hint: "Cost per km beyond the free zone. Crew travel from 507 King St E." },
+    { key: "deadhead_free_zone_km", label: "Deadhead Free Zone (km)", hint: "Jobs within this radius from HQ have no deadhead charge (default 15 km)." },
+    // Mobilization
+    { key: "mobilization_25_35", label: "Mobilization Fee — 25–35 km ($)", hint: "Flat fee for jobs 25–35 km from HQ." },
+    { key: "mobilization_35_50", label: "Mobilization Fee — 35–50 km ($)", hint: "Flat fee for jobs 35–50 km from HQ." },
+    { key: "mobilization_50plus", label: "Mobilization Fee — 50+ km ($)", hint: "Flat fee for jobs beyond 50 km from HQ." },
+    // Cost tracking
+    { key: "cost_per_mover_hour", label: "Cost Per Mover-Hour ($)", hint: "Internal labour cost per mover per hour (for margin calculations, not pricing)." },
+    { key: "fuel_cost_per_km", label: "Fuel Cost Per km ($)", hint: "Round-trip fuel cost per km (default $0.45). Used for margin estimates." },
+    // Minimum hours
+    { key: "minimum_hours_by_size", label: "Minimum Billable Hours (JSON by size)", hint: '{"studio":2,"1br":3,"2br":4,"3br":5.5,"4br":7,"5br_plus":8.5,"partial":2}', type: "json" },
+    // Truck costs (for margin)
+    { key: "truck_costs_per_job", label: "Truck Cost Per Job (JSON)", hint: '{"sprinter":90,"16ft":115,"20ft":150,"24ft":175,"26ft":200}', type: "json" },
+    // Change request rates
+    { key: "change_request_rate_curated", label: "Change Request Rate — Curated ($/hr)", hint: "Hourly rate for post-booking change requests on Curated moves." },
+    { key: "change_request_rate_signature", label: "Change Request Rate — Signature ($/hr)", hint: "Hourly rate for change requests on Signature moves." },
+    { key: "change_request_rate_estate", label: "Change Request Rate — Estate ($/hr)", hint: "Hourly rate for change requests on Estate moves." },
+    // Margin targets (soft targets — warnings only, never override pricing)
+    { key: "margin_target_curated", label: "Margin Target — Curated (%)", hint: "Soft target margin % for Curated moves. Warnings shown when below threshold. Never inflates prices automatically." },
+    { key: "margin_target_signature", label: "Margin Target — Signature (%)", hint: "Soft target margin % for Signature moves." },
+    { key: "margin_target_estate", label: "Margin Target — Estate (%)", hint: "Soft target margin % for Estate moves." },
+    { key: "margin_warning_threshold", label: "Margin Warning Threshold (%)", hint: "Show a warning when estimated margin falls below this %. Default 35." },
+    { key: "margin_critical_threshold", label: "Margin Critical Threshold (%)", hint: "Show a critical alert when estimated margin falls below this %. Default 25." },
+  ];
+
+  return (
+    <div className="pt-4 space-y-4">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Controls the Pricing Engine v2 algorithm: market stack cap, tiered labour rates, deadhead/mobilization thresholds, and internal cost model for margin calculations.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {FIELDS.map(({ key, label, hint, type }) => {
+          const row = rows.find((r) => r.key === key);
+          const val = String(row?.value ?? "");
+          return (
+            <div key={key} className={`rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3 ${type === "json" ? "md:col-span-2" : ""}`}>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
+              {row ? (
+                type === "json" ? (
+                  <textarea
+                    rows={2}
+                    value={val}
+                    onChange={(e) => updateRow(String(row.id), "value", e.target.value)}
+                    className="w-full bg-[var(--bg2)] border border-[var(--brd)] rounded px-2 py-1.5 text-[11px] font-mono text-[var(--tx)] outline-none focus:border-[var(--gold)] resize-none"
+                  />
+                ) : (
+                  <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[15px] font-bold text-[var(--gold)]" />
+                )
+              ) : (
+                <div>
+                  <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+                  <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey={key} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════ */
 export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
@@ -3032,6 +3137,10 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
 
       <Accordion title="Supplies & Crating" subtitle="Estate packing supplies allowance by move size + custom crating rates per piece">
         <SuppliesAndCratingSection />
+      </Accordion>
+
+      <Accordion title="Engine Configuration (v2)" subtitle="Market stack cap, tiered labour rates, deadhead, mobilization, cost tracking, minimum hours">
+        <EngineConfigSection />
       </Accordion>
     </div>
     </PricingAdminContext.Provider>
