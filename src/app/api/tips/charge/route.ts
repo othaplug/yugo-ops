@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       customerId: move.square_customer_id || undefined,
       referenceId: `TIP-${resolvedMoveId}`,
       note: `Tip for crew Move ${move.move_code || resolvedMoveId}`,
-      idempotencyKey: `tip-${resolvedMoveId}-${Date.now()}`,
+      idempotencyKey: `tip-${resolvedMoveId.replace(/-/g, "").slice(0, 24)}${Date.now().toString(36)}`,
       locationId,
     });
 

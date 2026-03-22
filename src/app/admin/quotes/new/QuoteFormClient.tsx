@@ -3567,12 +3567,12 @@ export default function QuoteFormClient({
 
 /** Cream / dark-brown (#2A2520) price cards: `--tx*` follows app theme and can stay dark when system `dark:` paints the card. */
 const PRICE_CARD = {
-  muted: "text-[#5C5449] dark:text-[#C9C4B8]",
-  body: "text-[#1A1A1A] dark:text-[#F4F1E8]",
-  list: "text-[#3D3A36] dark:text-[#DED9D0]",
-  border: "border-[var(--brd)]/50 dark:border-[#F5F3EF]/12",
-  borderTop: "border-t border-[var(--brd)]/50 dark:border-[#F5F3EF]/12",
-  legPanel: "rounded-lg border border-[var(--brd)]/60 dark:border-[#F5F3EF]/10 bg-[var(--bg)]/40 dark:bg-black/25",
+  muted: "text-[var(--tx3)]",
+  body: "text-[var(--tx)]",
+  list: "text-[var(--tx2)]",
+  border: "border-[var(--brd)]/50",
+  borderTop: "border-t border-[var(--brd)]/50",
+  legPanel: "rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/40",
 } as const;
 
 function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<string, TierResult>; recommendedTier?: string }) {

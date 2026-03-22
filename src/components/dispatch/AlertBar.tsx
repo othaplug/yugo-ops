@@ -14,41 +14,20 @@ export interface DispatchAlert {
 
 const TYPE_CONFIG: Record<
   DispatchAlert["type"],
-  { bg: string; border: string; iconColor: string; Icon: React.ElementType }
+  { dot: string; iconColor: string; Icon: React.ElementType }
 > = {
-  unassigned: {
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/30",
-    iconColor: "text-amber-500",
-    Icon: AlertTriangle,
-  },
-  gps_offline: {
-    bg: "bg-red-500/10",
-    border: "border-red-500/30",
-    iconColor: "text-red-500",
-    Icon: WifiOff,
-  },
-  overdue: {
-    bg: "bg-red-500/10",
-    border: "border-red-500/30",
-    iconColor: "text-red-500",
-    Icon: Clock,
-  },
-  problem: {
-    bg: "bg-orange-500/10",
-    border: "border-orange-500/30",
-    iconColor: "text-orange-500",
-    Icon: AlertTriangle,
-  },
+  unassigned: { dot: "bg-amber-500", iconColor: "text-amber-500", Icon: AlertTriangle },
+  gps_offline: { dot: "bg-red-500",  iconColor: "text-red-400",   Icon: WifiOff },
+  overdue:     { dot: "bg-red-500",  iconColor: "text-red-400",   Icon: Clock },
+  problem:     { dot: "bg-orange-500", iconColor: "text-orange-400", Icon: AlertTriangle },
 };
 
 interface AlertBarProps {
   alerts: DispatchAlert[];
 }
 
-/** Merge multiple GPS-offline rows into one banner to reduce vertical noise. */
 function consolidateDispatchAlerts(alerts: DispatchAlert[]): DispatchAlert[] {
-  const gps = alerts.filter((a) => a.type === "gps_offline");
+  const gps  = alerts.filter((a) => a.type === "gps_offline");
   const rest = alerts.filter((a) => a.type !== "gps_offline");
   if (gps.length <= 1) return alerts;
 
@@ -56,57 +35,58 @@ function consolidateDispatchAlerts(alerts: DispatchAlert[]): DispatchAlert[] {
     const m = g.message.match(/^(.+?)\s+GPS offline/i);
     return m ? m[1].trim() : g.message;
   });
-  const href = gps.find((g) => g.href)?.href ?? "/admin/crew";
+
+  const MAX_NAMES = 2;
+  const label =
+    names.length > MAX_NAMES
+      ? `${names.slice(0, MAX_NAMES).join(", ")} +${names.length - MAX_NAMES}`
+      : names.join(", ");
+
   const combined: DispatchAlert = {
     id: "gps-offline-group",
     type: "gps_offline",
-    message: `Stale GPS (10+ min): ${names.join(", ")}`,
+    message: `GPS stale · ${label}`,
     action: "Check",
-    href,
+    href: gps.find((g) => g.href)?.href ?? "/admin/crew",
   };
   return [...rest, combined];
 }
 
 export default function AlertBar({ alerts }: AlertBarProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-
   const visible = consolidateDispatchAlerts(alerts).filter((a) => !dismissed.has(a.id));
   if (visible.length === 0) return null;
 
-  const dismiss = (id: string) =>
-    setDismissed((prev) => new Set([...prev, id]));
-
   return (
-    <div className="space-y-3">
+    <div className="flex flex-wrap gap-2">
       {visible.map((a) => {
         const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.problem;
         const { Icon } = cfg;
         return (
           <div
             key={a.id}
-            className={`flex items-start gap-3 px-3.5 py-2.5 sm:px-4 sm:py-3 ${cfg.bg} border ${cfg.border} rounded-lg`}
+            className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-full border border-white/[0.06] bg-white/[0.04] backdrop-blur-sm"
           >
-            <Icon className={`w-4 h-4 shrink-0 mt-0.5 ${cfg.iconColor}`} />
-            <div className="flex-1 min-w-0 text-[12px] text-[var(--tx2)]">
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+            <Icon className={`w-3.5 h-3.5 shrink-0 ${cfg.iconColor}`} />
+            <span className="text-[11px] text-[var(--tx2)] whitespace-nowrap">
               {a.message}
-              {a.href ? (
-                <Link
-                  href={a.href}
-                  className="ml-2 font-semibold text-[var(--gold)] hover:underline whitespace-nowrap"
-                >
-                  {a.action} →
-                </Link>
-              ) : (
-                <span className="ml-2 font-semibold text-[var(--tx3)]">{a.action}</span>
-              )}
-            </div>
+            </span>
+            {a.href && (
+              <Link
+                href={a.href}
+                className="text-[11px] font-semibold text-[var(--gold)] hover:opacity-80 transition-opacity whitespace-nowrap"
+              >
+                {a.action} →
+              </Link>
+            )}
             <button
               type="button"
-              onClick={() => dismiss(a.id)}
-              className={`shrink-0 p-1 rounded-lg ${cfg.iconColor} hover:bg-black/10 transition-colors touch-manipulation`}
+              onClick={() => setDismissed((p) => new Set([...p, a.id]))}
+              className="w-5 h-5 flex items-center justify-center rounded-full text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-white/10 transition-all shrink-0"
               aria-label="Dismiss"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3 h-3" />
             </button>
           </div>
         );

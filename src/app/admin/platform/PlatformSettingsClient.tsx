@@ -1310,17 +1310,17 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
 
   return (
     <div className="space-y-6">
-      {/* Tabbed navigation - clickable breadcrumb-style links */}
-      <div className="flex flex-wrap items-center gap-x-1 gap-y-2 border-b border-[var(--brd)] pb-3">
+      {/* Tabbed navigation */}
+      <div className="flex flex-wrap items-end gap-x-0 border-b border-[var(--brd)]">
         {visibleTabs.map((t) => (
           <Link
             key={t.id}
             id={`tab-${t.id}`}
             href={`/admin/platform?tab=${t.id}`}
-            className={`sidebar-nav-lift text-[12px] font-semibold px-3 py-1.5 rounded-lg ${
+            className={`relative text-[12px] font-semibold px-4 pb-2.5 pt-1 transition-colors ${
               activeTab === t.id
-                ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                : "text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                ? "text-[var(--gold)] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[var(--gold)] after:rounded-t-full"
+                : "text-[var(--tx3)] hover:text-[var(--tx1)]"
             }`}
           >
             {t.label}

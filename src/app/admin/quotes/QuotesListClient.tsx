@@ -286,7 +286,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
                   <button
                     type="button"
                     onClick={() => setConfirmId(null)}
-                    className="w-full min-h-[32px] px-2 rounded-full text-[10px] font-medium text-[#5C5449] dark:text-[#C9C4B8] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                    className="w-full min-h-[32px] px-2 rounded-full text-[10px] font-medium text-[var(--tx3)] hover:bg-[var(--brd)]/30 transition-colors"
                   >
                     Cancel
                   </button>
@@ -296,7 +296,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
                   type="button"
                   onClick={() => setConfirmId(q.id)}
                   title="Delete draft"
-                  className="inline-flex items-center justify-center min-h-[40px] min-w-[40px] rounded-full text-[#5C5449] dark:text-[#C9C4B8] hover:text-[var(--red)] hover:bg-[var(--red)]/10 transition-colors border border-transparent hover:border-[var(--red)]/20"
+                  className="inline-flex items-center justify-center min-h-[40px] min-w-[40px] rounded-full text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--red)]/10 transition-colors border border-transparent hover:border-[var(--red)]/20"
                 >
                   <Trash2 className="w-[18px] h-[18px]" />
                 </button>

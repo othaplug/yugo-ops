@@ -717,7 +717,8 @@ export default function PerksPage() {
                 </div>
               ) : (
                 <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-                  <table className="w-full text-[12px]">
+                  <div className="overflow-x-auto">
+                  <table className="w-full text-[12px] min-w-[700px]">
                     <thead>
                       <tr className="border-b border-[var(--brd)] bg-[var(--bg)]/50">
                         <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Partner</th>
@@ -780,6 +781,7 @@ export default function PerksPage() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -803,7 +805,8 @@ export default function PerksPage() {
                 <div className="text-center py-12 text-[var(--tx3)] text-[13px]">No referrals yet. They generate automatically when moves complete.</div>
               ) : (
                 <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-                  <table className="w-full text-[12px]">
+                  <div className="overflow-x-auto">
+                  <table className="w-full text-[12px] min-w-[640px]">
                     <thead>
                       <tr className="border-b border-[var(--brd)] bg-[var(--bg)]/50">
                         <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Code</th>
@@ -873,6 +876,7 @@ export default function PerksPage() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -888,7 +892,8 @@ export default function PerksPage() {
                 <div className="text-center py-12 text-[var(--tx3)] text-[13px]">No VIP clients yet. They are auto-flagged when they meet the criteria after a completed move.</div>
               ) : (
                 <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-                  <table className="w-full text-[12px]">
+                  <div className="overflow-x-auto">
+                  <table className="w-full text-[12px] min-w-[400px]">
                     <thead>
                       <tr className="border-b border-[var(--brd)] bg-[var(--bg)]/50">
                         <th className="px-4 py-3 text-left font-semibold text-[var(--tx3)]">Client</th>
@@ -911,6 +916,7 @@ export default function PerksPage() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>

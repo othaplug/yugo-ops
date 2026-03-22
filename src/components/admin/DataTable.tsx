@@ -670,13 +670,13 @@ export default function DataTable<T>({
           {/* Search — full width on mobile (no dead space on the right) */}
           {searchable && (
             <div className="relative flex-1 min-w-0 md:max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#5C5449] dark:text-[#9CA3AF]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full pl-9 pr-3 py-2.5 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[13px] text-[var(--tx)] placeholder:text-[#5C5449]/60 dark:placeholder:text-[#9CA3AF]/70 focus:border-[var(--gold)]/40 outline-none transition-colors"
+                className="w-full pl-9 pr-3 py-2.5 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)]/40 outline-none transition-colors"
               />
             </div>
           )}
@@ -685,7 +685,7 @@ export default function DataTable<T>({
               type="button"
               onClick={handleExport}
               title="Export CSV"
-              className="md:hidden inline-flex items-center justify-center shrink-0 w-11 h-11 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[#1A1A1A] dark:text-[#F4F1E8] active:scale-[0.98] touch-manipulation"
+              className="md:hidden inline-flex items-center justify-center shrink-0 w-11 h-11 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[var(--tx)] active:scale-[0.98] touch-manipulation"
             >
               <Download className="w-5 h-5" weight="regular" />
             </button>
@@ -779,9 +779,9 @@ export default function DataTable<T>({
         <div
           className={`${
             selectableDesktopOnly ? "hidden md:flex" : "flex"
-          } flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3 mb-3 rounded-2xl bg-[#FAF7F2] dark:bg-[#2A2520] border border-[#B8962E]/35 shadow-sm`}
+          } flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3 mb-3 rounded-2xl bg-[var(--gdim)] border border-[var(--gold)]/35 shadow-sm`}
         >
-          <span className="text-[12px] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8] shrink-0">
+          <span className="text-[12px] font-semibold text-[var(--tx)] shrink-0">
             {selectedKeys.size} selected
           </span>
           <div className="flex flex-wrap items-stretch sm:items-center gap-2 sm:gap-2.5 sm:ml-auto w-full sm:w-auto">
@@ -793,7 +793,7 @@ export default function DataTable<T>({
                 className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 rounded-full text-[12px] font-semibold transition-colors touch-manipulation ${
                   action.variant === "danger"
                     ? "bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 border border-[var(--red)]/25"
-                    : "bg-white dark:bg-[#3D3833] text-[#1A1A1A] dark:text-[#F4F1E8] border border-[var(--brd)] dark:border-[#F5F3EF]/12 hover:border-[var(--gold)]/50"
+                    : "bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)]/50"
                 }`}
               >
                 {action.icon}
@@ -803,7 +803,7 @@ export default function DataTable<T>({
             <button
               type="button"
               onClick={() => setSelectedKeys(new Set())}
-              className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-full text-[12px] font-medium text-[#5C5449] dark:text-[#C9C4B8] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-full text-[12px] font-medium text-[var(--tx2)] hover:bg-[var(--brd)]/30 transition-colors"
             >
               Clear
             </button>
@@ -988,9 +988,9 @@ export default function DataTable<T>({
       <div className="md:hidden">
         {paged.length === 0 ? (
           <div className="py-14 px-6 text-center">
-            <p className="text-[var(--text-base)] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8]">{emptyMessage}</p>
+            <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">{emptyMessage}</p>
             {emptySubtext && (
-              <p className="text-[12px] text-[#5C5449] dark:text-[#C9C4B8] mt-1">{emptySubtext}</p>
+              <p className="text-[12px] text-[var(--tx3)] mt-1">{emptySubtext}</p>
             )}
           </div>
         ) : (
@@ -1039,12 +1039,12 @@ export default function DataTable<T>({
                       <div className="flex justify-between items-start gap-3">
                         <div className="min-w-0 flex-1">
                           {primary && (
-                            <div className="text-[15px] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8] leading-snug">
+                            <div className="text-[15px] font-semibold text-[var(--tx)] leading-snug">
                               {renderCell(primary)}
                             </div>
                           )}
                           {subtitle && (
-                            <div className="text-[12px] text-[#5C5449] dark:text-[#C9C4B8] mt-0.5 [&_a]:underline-offset-2">
+                            <div className="text-[12px] text-[var(--tx2)] mt-0.5 [&_a]:underline-offset-2">
                               {renderCell(subtitle)}
                             </div>
                           )}
@@ -1063,7 +1063,7 @@ export default function DataTable<T>({
                             return (
                               <span
                                 key={col.id}
-                                className="text-[11px] text-[#5C5449] dark:text-[#C9C4B8] leading-snug"
+                                className="text-[11px] text-[var(--tx3)] leading-snug"
                               >
                                 {renderCell(col)}
                               </span>
@@ -1083,7 +1083,7 @@ export default function DataTable<T>({
                       ) : null}
                       {onRowClick && (
                         <ChevronRight
-                          className="w-5 h-5 text-[#5C5449] dark:text-[#9CA3AF] shrink-0 mt-0.5"
+                          className="w-5 h-5 text-[var(--tx3)] shrink-0 mt-0.5"
                           aria-hidden
                         />
                       )}
@@ -1097,7 +1097,7 @@ export default function DataTable<T>({
               return rowShell(
                 <>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[15px] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8] leading-snug">
+                    <div className="text-[15px] font-semibold text-[var(--tx)] leading-snug">
                       {primaryCol?.render
                         ? primaryCol.render(row)
                         : <span>{String(primaryCol?.accessor(row) ?? "—")}</span>}
@@ -1105,12 +1105,12 @@ export default function DataTable<T>({
                     {(statusCol || valueCol) && (
                       <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-1">
                         {statusCol && (
-                          <div className="text-[12px] text-[#5C5449] dark:text-[#C9C4B8] leading-snug">
+                          <div className="text-[12px] text-[var(--tx2)] leading-snug">
                             {statusCol.render ? statusCol.render(row) : String(statusCol.accessor(row) ?? "")}
                           </div>
                         )}
                         {valueCol && (
-                          <div className="text-[12px] text-[#5C5449] dark:text-[#C9C4B8] leading-snug">
+                          <div className="text-[12px] text-[var(--tx2)] leading-snug">
                             {valueCol.render ? valueCol.render(row) : String(valueCol.accessor(row) ?? "")}
                           </div>
                         )}
@@ -1124,7 +1124,7 @@ export default function DataTable<T>({
                           return (
                             <span
                               key={col.id}
-                              className="text-[11px] text-[#5C5449] dark:text-[#C9C4B8] leading-snug"
+                              className="text-[11px] text-[var(--tx3)] leading-snug"
                             >
                               {col.render ? col.render(row) : String(val)}
                             </span>
@@ -1144,7 +1144,7 @@ export default function DataTable<T>({
                     ) : null}
                     {onRowClick && (
                       <ChevronRight
-                        className="w-5 h-5 text-[#5C5449] dark:text-[#9CA3AF] shrink-0 mt-0.5"
+                        className="w-5 h-5 text-[var(--tx3)] shrink-0 mt-0.5"
                         aria-hidden
                       />
                     )}
@@ -1159,7 +1159,7 @@ export default function DataTable<T>({
       {/* ── Pagination ── */}
       {pagination && sorted.length > 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-3 border-t border-[var(--brd)]/20 mt-1">
-          <div className="text-[10px] text-[#5C5449] dark:text-[#C9C4B8]">
+          <div className="text-[10px] text-[var(--tx3)]">
             Showing {(safePage - 1) * perPage + 1}–{Math.min(safePage * perPage, sorted.length)} of{" "}
             {sorted.length}{search.trim() && data.length !== sorted.length ? ` (filtered from ${data.length})` : ""}
           </div>

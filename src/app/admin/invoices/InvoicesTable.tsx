@@ -96,9 +96,9 @@ export default function InvoicesTable({
         const amt = Number(r.amount);
         return (
           <>
-            <span className="font-bold text-[#1A1A1A] dark:text-[#F4F1E8]">{formatCurrency(r.amount)}</span>
+            <span className="font-bold text-[var(--tx)]">{formatCurrency(r.amount)}</span>
             {amt > 0 && (
-              <span className="text-[9px] text-[#5C5449] dark:text-[#C9C4B8] ml-1 block sm:inline">
+              <span className="text-[9px] text-[var(--tx3)] ml-1 block sm:inline">
                 +{formatCurrency(calcHST(amt))} HST
               </span>
             )}

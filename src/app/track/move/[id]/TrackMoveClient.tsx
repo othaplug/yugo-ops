@@ -283,7 +283,6 @@ export default function TrackMoveClient({
   })();
   const [tipState, setTipState] = useState<TipState>(initialTipState);
   const [confirmedTipAmount, setConfirmedTipAmount] = useState<number>(tipData?.amount ?? 0);
-  const [tipSectionCollapsed, setTipSectionCollapsed] = useState(true);
   const [tipSectionPercent, setTipSectionPercent] = useState<number>(10);
   const [tipSectionCustom, setTipSectionCustom] = useState("");
   const [tipSectionShowCustom, setTipSectionShowCustom] = useState(false);
@@ -1112,7 +1111,7 @@ export default function TrackMoveClient({
                         });
                       }}
                       className="shrink-0 w-10 h-10 inline-flex items-center justify-center rounded-xl transition-all active:scale-95"
-                      style={{ backgroundColor: referralCopied ? `${FOREST}30` : FOREST, color: "#FAF7F2" }}
+                      style={{ color: FOREST }}
                     >
                       {referralCopied ? <Check size={18} weight="bold" aria-hidden /> : <Copy size={18} weight="regular" aria-hidden />}
                     </button>
@@ -1217,156 +1216,155 @@ export default function TrackMoveClient({
               );
             })()}
 
-            {/* ── Collapsible Tip Section (after Need Yugo again; matches screenshot) ── */}
-            {tippingEnabled && (tipState === "first_visit" || tipState === "can_tip_later") && (
-              <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "#2A2A2A", backgroundColor: "#1A1A1A" }}>
-                <button
-                  type="button"
-                  onClick={() => setTipSectionCollapsed((c) => !c)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:opacity-90"
-                  style={{ color: "#fff" }}
-                >
-                  <span className="font-hero text-[18px] sm:text-[20px] font-semibold leading-tight">
-                    Your tip for your crew
-                  </span>
-                  <span className="shrink-0 text-[var(--text-base)] opacity-70" aria-hidden>
-                    {tipSectionCollapsed ? "▼" : "▲"}
-                  </span>
-                </button>
-                {!tipSectionCollapsed && (
-                  <div className="px-4 pb-4 pt-0 space-y-4" style={{ color: "#fff" }}>
-                    <p className="text-[12px] opacity-80">100% of tips go to your crew</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {([5, 10, 15] as const).map((pct) => {
-                        const amountFromPct = moveTotal > 0 ? Math.round((moveTotal * pct) / 100 * 100) / 100 : 0;
-                        const isSelected = !tipSectionShowCustom && tipSectionPercent === pct;
-                        return (
-                          <button
-                            key={pct}
-                            type="button"
-                            onClick={() => {
-                              setTipSectionPercent(pct);
-                              setTipSectionShowCustom(false);
-                              setTipSectionCustom("");
-                              setTipSectionError(null);
-                            }}
-                            className="rounded-xl border px-2 py-2.5 text-[var(--text-base)] font-medium transition-all shrink-0"
-                            style={{
-                              width: 60,
-                              borderColor: isSelected ? "#B8962E" : "#3A3A3A",
-                              backgroundColor: isSelected ? "rgba(184,150,46,0.15)" : "#2A2A2A",
-                              color: "#fff",
-                            }}
-                          >
-                            {formatCurrency(amountFromPct)}
-                          </button>
-                        );
-                      })}
+            {/* ── Tip Your Crew Card ── */}
+            {tippingEnabled && (tipState === "first_visit" || tipState === "can_tip_later") && (() => {
+              const tipAmounts = ([10, 20, 30] as const).map((pct) => ({
+                pct,
+                dollars: moveTotal > 0 ? Math.round((moveTotal * pct) / 100 * 100) / 100 : pct === 10 ? 5 : pct === 20 ? 10 : 20,
+              }));
+              const crewInitial = (crew?.name || "C").charAt(0).toUpperCase();
+              const submitTip = async () => {
+                const amount = tipSectionShowCustom
+                  ? parseFloat(tipSectionCustom) || 0
+                  : (tipAmounts.find((a) => a.pct === tipSectionPercent)?.dollars ?? 0);
+                if (amount < 5) { setTipSectionError("Minimum tip is $5.00"); return; }
+                setTipSectionError(null);
+                setTipSectionSubmitting(true);
+                try {
+                  const res = await fetch("/api/tips/charge", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ moveId: move.id, slug: urlSlug || undefined, amount, token }),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) { setTipSectionError((data as { error?: string }).error || "Could not process tip."); return; }
+                  setConfirmedTipAmount(amount);
+                  setTipState("tipped");
+                } catch { setTipSectionError("Something went wrong."); }
+                finally { setTipSectionSubmitting(false); }
+              };
+              return (
+                <div className="rounded-2xl border p-4" style={{ borderColor: "#2A2A2A", backgroundColor: "#1A1A1A" }}>
+                  {/* Header row */}
+                  <div className="flex items-start gap-3 mb-4">
+                    <div
+                      className="w-12 h-12 rounded-full shrink-0 flex items-center justify-center text-[18px] font-bold"
+                      style={{ backgroundColor: "#2A2A2A", color: "#B8962E" }}
+                    >
+                      {crewInitial}
                     </div>
-                    {!tipSectionShowCustom ? (
-                      <button
-                        type="button"
-                        onClick={() => setTipSectionShowCustom(true)}
-                        className="text-[12px] opacity-70 hover:opacity-100 transition-opacity"
-                        style={{ color: "#fff" }}
-                      >
-                        Add custom tip
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] opacity-60">$</span>
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          placeholder="0"
-                          value={tipSectionCustom}
-                          onChange={(e) => {
-                            setTipSectionCustom(e.target.value.replace(/[^0-9.]/g, ""));
-                            setTipSectionError(null);
-                          }}
-                          className="rounded-lg border px-2 py-1.5 w-20 bg-[#2A2A2A] border-[#3A3A3A] text-[13px] outline-none focus:border-[#B8962E]"
-                          style={{ color: "#fff" }}
-                        />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-[16px] leading-tight" style={{ color: "#fff" }}>
+                        Tip {crew?.name || "your crew"}?
                       </div>
-                    )}
-                    {tipSectionError && (
-                      <p className="text-[11px] text-red-400">{tipSectionError}</p>
-                    )}
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        disabled={tipSectionSubmitting || (() => {
-                          const amount = tipSectionShowCustom
-                            ? parseFloat(tipSectionCustom) || 0
-                            : moveTotal > 0 ? Math.round((moveTotal * tipSectionPercent) / 100 * 100) / 100 : 0;
-                          return amount < 5;
-                        })()}
-                        onClick={async () => {
-                          const amount = tipSectionShowCustom
-                            ? parseFloat(tipSectionCustom) || 0
-                            : Math.max(5, moveTotal > 0 ? Math.round((moveTotal * tipSectionPercent) / 100 * 100) / 100 : 0);
-                          if (amount < 5) {
-                            setTipSectionError("Minimum tip is $5.00");
-                            return;
-                          }
-                          setTipSectionError(null);
-                          setTipSectionSubmitting(true);
-                          try {
-                            const res = await fetch("/api/tips/charge", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                moveId: move.id,
-                                slug: urlSlug || undefined,
-                                amount,
-                                token,
-                              }),
-                            });
-                            const data = await res.json().catch(() => ({}));
-                            if (!res.ok) {
-                              setTipSectionError((data as { error?: string }).error || "Could not process tip.");
-                              return;
-                            }
-                            setConfirmedTipAmount(amount);
-                            setTipState("tipped");
-                            setTipSectionCollapsed(true);
-                          } catch {
-                            setTipSectionError("Something went wrong.");
-                          } finally {
-                            setTipSectionSubmitting(false);
-                          }
-                        }}
-                        className="rounded-lg py-2.5 px-4 text-[12px] font-semibold transition-opacity disabled:opacity-40"
-                        style={{ backgroundColor: "#B8962E", color: "#FAF7F2" }}
+                      <div
+                        className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                        style={{ backgroundColor: "#1A3A2A", color: "#4ADE80" }}
                       >
-                        {tipSectionSubmitting ? "Processing…" : "Done"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTipState("can_tip_later");
-                          setTipSectionCollapsed(true);
-                          fetch("/api/tips/decline", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              moveId: move.id,
-                              slug: urlSlug || undefined,
-                              token,
-                            }),
-                          }).catch(() => {});
-                        }}
-                        className="rounded-lg py-2.5 px-4 text-[12px] font-semibold opacity-80 hover:opacity-100 transition-opacity"
-                        style={{ color: "#fff" }}
-                      >
-                        Skip for now
-                      </button>
+                        <span>💸</span> Choose tip
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTipState("can_tip_later");
+                        fetch("/api/tips/decline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moveId: move.id, slug: urlSlug || undefined, token }) }).catch(() => {});
+                      }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[18px] opacity-50 hover:opacity-80 transition-opacity"
+                      style={{ backgroundColor: "#2A2A2A", color: "#fff" }}
+                      aria-label="Dismiss"
+                    >
+                      ···
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
+
+                  {/* Amount buttons — 4 equal squares */}
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    {tipAmounts.map(({ pct, dollars }) => {
+                      const isSelected = !tipSectionShowCustom && tipSectionPercent === pct;
+                      return (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => { setTipSectionPercent(pct); setTipSectionShowCustom(false); setTipSectionCustom(""); setTipSectionError(null); }}
+                          className="aspect-square rounded-xl flex items-center justify-center text-[15px] font-semibold transition-all"
+                          style={{
+                            backgroundColor: isSelected ? "#B8962E" : "#2A2A2A",
+                            color: isSelected ? "#0D0D0D" : "#fff",
+                          }}
+                        >
+                          {formatCurrency(dollars)}
+                        </button>
+                      );
+                    })}
+                    {/* Custom / pencil button */}
+                    <button
+                      type="button"
+                      onClick={() => { setTipSectionShowCustom(true); setTipSectionError(null); }}
+                      className="aspect-square rounded-xl flex items-center justify-center text-[20px] transition-all"
+                      style={{
+                        backgroundColor: tipSectionShowCustom ? "#B8962E" : "#2A2A2A",
+                        color: tipSectionShowCustom ? "#0D0D0D" : "#fff",
+                      }}
+                      aria-label="Custom amount"
+                    >
+                      ✏️
+                    </button>
+                  </div>
+
+                  {/* Custom input (shown when pencil selected) */}
+                  {tipSectionShowCustom && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-[13px] opacity-60" style={{ color: "#fff" }}>$</span>
+                      <input
+                        type="number"
+                        min={5}
+                        step={1}
+                        placeholder="Enter amount"
+                        value={tipSectionCustom}
+                        onChange={(e) => { setTipSectionCustom(e.target.value.replace(/[^0-9.]/g, "")); setTipSectionError(null); }}
+                        className="flex-1 rounded-xl border px-3 py-2 bg-[#2A2A2A] border-[#3A3A3A] text-[14px] outline-none focus:border-[#B8962E]"
+                        style={{ color: "#fff" }}
+                        autoFocus
+                      />
+                    </div>
+                  )}
+
+                  {tipSectionError && (
+                    <p className="text-[11px] text-red-400 mb-2">{tipSectionError}</p>
+                  )}
+
+                  {/* Footer text */}
+                  <p className="text-[11px] mb-3" style={{ color: "rgba(255,255,255,0.45)" }}>
+                    100% goes directly to your crew
+                  </p>
+
+                  {/* Action row */}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={tipSectionSubmitting}
+                      onClick={submitTip}
+                      className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold transition-opacity disabled:opacity-40"
+                      style={{ backgroundColor: "#B8962E", color: "#0D0D0D" }}
+                    >
+                      {tipSectionSubmitting ? "Processing…" : "Done"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTipState("can_tip_later");
+                        fetch("/api/tips/decline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moveId: move.id, slug: urlSlug || undefined, token }) }).catch(() => {});
+                      }}
+                      className="flex-1 py-2.5 rounded-xl text-[13px] font-medium transition-opacity hover:opacity-80"
+                      style={{ color: "rgba(255,255,255,0.6)", backgroundColor: "#2A2A2A" }}
+                    >
+                      Skip for now
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
           </div>
         )}
@@ -1888,10 +1886,7 @@ export default function TrackMoveClient({
                             });
                           }}
                           className="shrink-0 w-10 h-10 inline-flex items-center justify-center rounded-xl transition-all active:scale-95"
-                          style={{
-                            backgroundColor: referralCopied ? `${FOREST}30` : FOREST,
-                            color: "#FAF7F2",
-                          }}
+                          style={{ color: FOREST }}
                         >
                           {referralCopied ? <Check size={18} weight="bold" aria-hidden /> : <Copy size={18} weight="regular" aria-hidden />}
                         </button>
