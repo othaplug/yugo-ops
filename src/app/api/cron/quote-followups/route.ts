@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getFeatureConfig } from "@/lib/platform-settings";
-import { runQuoteFollowupCronJob } from "@/lib/quote-followups/cron-job";
+import { runQuoteFollowupCronJob } from "@/lib/quote-followups/engine";
 
 /**
  * Vercel Cron: runs daily at 11 AM EST (16:00 UTC).

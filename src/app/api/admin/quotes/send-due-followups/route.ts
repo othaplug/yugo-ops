@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireStaff } from "@/lib/api-auth";
-import { runQuoteFollowupCronJob } from "@/lib/quote-followups/cron-job";
+import { runQuoteFollowupCronJob } from "@/lib/quote-followups/engine";
 
 /**
  * POST — run the same follow-up + expired batch as cron (ignores auto_followup_enabled).

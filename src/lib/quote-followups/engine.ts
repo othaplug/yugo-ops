@@ -1,5 +1,5 @@
 /**
- * Shared quote follow-up batch (cron + manual admin). Same rules as legacy cron route.
+ * Quote follow-up engine: shared batch for Vercel cron and manual admin send.
  */
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, type TemplateName } from "@/lib/email/send";
@@ -40,11 +40,11 @@ async function getEngagementSummary(
     session_duration_seconds: number | null;
   }[] | null = null;
   try {
-    const result = await supabase
+    const { data, error } = await supabase
       .from("quote_engagement")
       .select("event_type, event_data, session_duration_seconds")
       .eq("quote_id", quoteInternalId);
-    events = result.data;
+    events = error ? null : data;
   } catch {
     events = null;
   }
