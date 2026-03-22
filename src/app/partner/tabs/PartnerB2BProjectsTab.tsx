@@ -646,18 +646,18 @@ export default function PartnerB2BProjectsTab({
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
             <input value={npName} onChange={(e) => setNpName(e.target.value)} placeholder="e.g. Wilson Residence"
-              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
           </div>
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Client Name</label>
             <input value={npClientName} onChange={(e) => setNpClientName(e.target.value)} placeholder="Sarah & James Wilson"
-              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
           <div className="relative">
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
             <input value={npAddress} onChange={(e) => { setNpAddress(e.target.value); fetchAddressSuggestions(e.target.value); }}
               placeholder="Start typing address…"
-              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             {addressSuggestions.length > 0 && (
               <div className="absolute top-full left-0 right-0 z-10 bg-white border border-[#E8E4DF] rounded-xl shadow-lg mt-1 overflow-hidden">
                 {addressSuggestions.map((s, i) => (
@@ -673,12 +673,12 @@ export default function PartnerB2BProjectsTab({
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Start Date</label>
               <input type="date" value={npStartDate} onChange={(e) => setNpStartDate(e.target.value)}
-                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Target End Date</label>
               <input type="date" value={npEndDate} onChange={(e) => setNpEndDate(e.target.value)}
-                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
           </div>
           <div className="flex gap-2 pt-2">
@@ -712,18 +712,18 @@ export default function PartnerB2BProjectsTab({
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
             <input value={epName} onChange={(e) => setEpName(e.target.value)} placeholder="e.g. Wilson Residence"
-              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
           </div>
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Client Name</label>
             <input value={epClientName} onChange={(e) => setEpClientName(e.target.value)} placeholder="Sarah & James Wilson"
-              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
           <div className="relative">
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
             <input value={epAddress} onChange={(e) => { setEpAddress(e.target.value); fetchAddressSuggestions(e.target.value); }}
               placeholder="Start typing address…"
-              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             {addressSuggestions.length > 0 && (
               <div className="absolute top-full left-0 right-0 z-10 bg-white border border-[#E8E4DF] rounded-xl shadow-lg mt-1 overflow-hidden">
                 {addressSuggestions.map((s, i) => (
@@ -738,18 +738,18 @@ export default function PartnerB2BProjectsTab({
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Description</label>
             <textarea value={epDescription} onChange={(e) => setEpDescription(e.target.value)} placeholder="Project description"
-              rows={2} className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors resize-none" />
+              rows={2} className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Start Date</label>
               <input type="date" value={epStartDate} onChange={(e) => setEpStartDate(e.target.value)}
-                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Target End Date</label>
               <input type="date" value={epEndDate} onChange={(e) => setEpEndDate(e.target.value)}
-                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
           </div>
           <div className="flex gap-2 pt-2">
@@ -792,10 +792,10 @@ export default function PartnerB2BProjectsTab({
                   <div className="grid grid-cols-[1fr_56px_44px] gap-2 items-end">
                     <input value={row.name} onChange={(e) => updateItemRow(idx, "name", e.target.value)}
                       placeholder="e.g. Cloud Sectional Sofa"
-                      className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+                      className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
                       autoFocus={idx === 0} />
                     <input type="number" min="1" value={row.qty} onChange={(e) => updateItemRow(idx, "qty", e.target.value)}
-                      className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+                      className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
                       aria-label="Quantity" />
                     <button type="button" onClick={() => removeItemRow(idx)} title="Remove item"
                       className={`p-2.5 rounded-lg border transition-colors ${aiItems.length > 1 ? "border-[#E8E4DF] text-[#666] hover:bg-red-50 hover:border-red-200 hover:text-red-500" : "border-transparent text-[#ccc] cursor-default"}`}
@@ -833,7 +833,7 @@ export default function PartnerB2BProjectsTab({
               </button>
             </div>
             <input value={aiVendorName} onChange={(e) => setAiVendorName(e.target.value)} placeholder="e.g. Poliform, RH, local vendor"
-              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
 
           {aiShowContact && (
@@ -873,12 +873,12 @@ export default function PartnerB2BProjectsTab({
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Order Number</label>
               <input value={aiOrderNum} onChange={(e) => setAiOrderNum(e.target.value)} placeholder="PF-4521"
-                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Room Destination</label>
               <select value={aiRoom} onChange={(e) => setAiRoom(e.target.value)}
-                className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
                 <option value="">Select room…</option>
                 {ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
@@ -889,7 +889,7 @@ export default function PartnerB2BProjectsTab({
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Delivery Method</label>
             <select value={aiDeliveryMethod} onChange={(e) => setAiDeliveryMethod(e.target.value)}
-              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
               {Object.entries(DELIVERY_METHOD_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
@@ -898,7 +898,7 @@ export default function PartnerB2BProjectsTab({
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Declared Value ($)</label>
             <input type="number" min="0" value={aiValue} onChange={(e) => setAiValue(e.target.value)} placeholder="8,200"
-              className="w-full text-[14px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
 
           {/* Special handling */}
@@ -1678,7 +1678,7 @@ export default function PartnerB2BProjectsTab({
       <>
         {NewProjectModal}
         <div className="text-center py-12">
-          <p className="text-[14px] text-[var(--tx3)]">No active projects</p>
+          <p className="text-[var(--text-base)] text-[var(--tx3)]">No active projects</p>
           <p className="text-[12px] text-[var(--tx3)]/60 mt-1">Create your first project to start coordinating multi-vendor deliveries</p>
           <button type="button" onClick={() => setShowNewProject(true)}
             className="mt-4 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
@@ -1700,7 +1700,7 @@ export default function PartnerB2BProjectsTab({
       )}
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[14px] font-bold font-hero text-[var(--tx)]">Projects ({projects.length})</h2>
+        <h2 className="text-[var(--text-base)] font-bold font-hero text-[var(--tx)]">Projects ({projects.length})</h2>
         <button type="button" onClick={() => setShowNewProject(true)}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
           <Plus className="w-[13px] h-[13px]" /> New Project

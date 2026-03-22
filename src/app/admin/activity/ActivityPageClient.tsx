@@ -88,14 +88,13 @@ export default function ActivityPageClient({ initialEvents }: { initialEvents: A
       </p>
 
       {visible.length > 0 ? (
-        <div className="rounded-xl border border-[var(--brd)]/80 bg-[var(--card)]/40 overflow-hidden">
-          <div className="max-h-[min(70vh,560px)] overflow-y-auto overscroll-contain divide-y divide-[var(--brd)]/25">
-            {visible.map((e, idx) => (
-              <Link
-                key={`${e.id}-${idx}`}
-                href={getActivityHref(e)}
-                className="group flex items-start gap-3 py-3.5 px-4 hover:bg-[var(--gold)]/[0.04] transition-colors"
-              >
+        <div className="max-h-[min(70vh,560px)] min-h-0 overflow-y-auto overscroll-contain divide-y divide-[var(--brd)]/15 bg-transparent border-0 shadow-none ring-0">
+          {visible.map((e, idx) => (
+            <Link
+              key={`${e.id}-${idx}`}
+              href={getActivityHref(e)}
+              className="group flex items-start gap-3 py-3.5 px-0"
+            >
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] leading-snug font-semibold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">
                     {formatActivityDescription(e.description || e.event_type)}
@@ -104,7 +103,6 @@ export default function ActivityPageClient({ initialEvents }: { initialEvents: A
                 </div>
               </Link>
             ))}
-          </div>
         </div>
       ) : (
         <p className="text-[var(--text-base)] text-[var(--tx3)] py-8 text-center font-medium">No activity yet</p>

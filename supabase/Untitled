@@ -1,0 +1,22 @@
+
+ochedagr8@OCHEs-MacBook-Pro yugo-ops % npm run build && git add -A && git commit -m “"update" && git push origin main
+
+
+> yugo-ops@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  ✓ viewTransition
+
+  Creating an optimized production build ...
+Found 1 warning while optimizing generated CSS:
+
+│   }
+│   .text-\[var\(--text-\*\)\] {
+│     color: var(--text-*);
+┆                       ^-- Unexpected token Delim('*')
+┆
+│   }
+│   .text-\[var\(--text-2xl\)\] {

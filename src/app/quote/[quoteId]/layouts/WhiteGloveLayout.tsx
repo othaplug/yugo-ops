@@ -70,7 +70,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
             <Diamond className="w-7 h-7" style={{ color: WINE }} />
           </div>
           <div className="flex-1">
-            <h3 className="text-[14px] font-semibold" style={{ color: FOREST }}>
+            <h3 className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
               {(f?.item_description as string) ?? "White Glove Item"}
             </h3>
             <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}60` }}>

@@ -216,7 +216,7 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
       <button
         onClick={handleSubmit}
         disabled={!rating || submitting}
-        className="w-full py-3 rounded-full font-semibold text-[14px] text-white disabled:opacity-40 transition-all hover:opacity-90"
+        className="w-full py-3 rounded-full font-semibold text-[var(--text-base)] text-white disabled:opacity-40 transition-all hover:opacity-90"
         style={{ backgroundColor: FOREST }}
       >
         {submitting ? "Submitting…" : "Submit feedback"}
@@ -582,7 +582,7 @@ export default function TrackDeliveryClient({
                 <User size={18} color={GOLD} aria-hidden />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[14px] font-semibold" style={{ color: FOREST }}>{crewName}</div>
+                <div className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>{crewName}</div>
                 <div className="text-[11px]" style={{ color: `${FOREST}70` }}>Your delivery crew</div>
               </div>
               <div className="flex items-center gap-2">
@@ -713,7 +713,7 @@ export default function TrackDeliveryClient({
                     )}
                   </div>
                   <div>
-                    <div className="text-[14px] font-semibold flex items-center gap-2" style={{ color: FOREST }}>
+                    <div className="text-[var(--text-base)] font-semibold flex items-center gap-2" style={{ color: FOREST }}>
                       Live Tracking
                       {crewHasStarted && (
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#22C55E]/12 text-[#22C55E]">

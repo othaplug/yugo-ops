@@ -61,7 +61,7 @@ export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
     <div className="space-y-6 py-5">
       {/* Period toggle */}
       <div className="flex items-center justify-between">
-        <h3 className="text-[14px] font-bold text-[var(--tx)]">{orgName} — Performance Analytics</h3>
+        <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">{orgName} — Performance Analytics</h3>
         <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--bg)]">
           {PERIOD_OPTIONS.map((opt) => (
             <button

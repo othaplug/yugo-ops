@@ -179,7 +179,7 @@ export default function ClaimSubmissionClient() {
           <Check weight="bold" size={32} color="#16a34a" aria-hidden />
         </div>
         <h2 className="text-[22px] font-bold text-[#1a1a1a] mb-2">Claim Submitted</h2>
-        <p className="text-[14px] text-[#555] leading-relaxed mb-4">
+        <p className="text-[var(--text-base)] text-[#555] leading-relaxed mb-4">
           Your claim <strong>{claimNumber}</strong> has been submitted. We&rsquo;ll review it within 3 business days and contact you with next steps.
         </p>
         <div className="rounded-xl p-4 inline-block" style={{ backgroundColor: "#FAF7F2" }}>
@@ -254,7 +254,7 @@ export default function ClaimSubmissionClient() {
           <button
             onClick={handleLookup}
             disabled={lookupLoading || !lookupValue.trim()}
-            className="w-full py-3 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-40"
+            className="w-full py-3 rounded-xl text-[var(--text-base)] font-bold text-white transition-all disabled:opacity-40"
             style={{ backgroundColor: "#722F37" }}
           >
             {lookupLoading ? "Looking up..." : "Find My Move"}
@@ -267,7 +267,7 @@ export default function ClaimSubmissionClient() {
         <div className="space-y-4">
           <div className="bg-white rounded-2xl shadow-sm p-5">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-[14px] font-bold text-[#1a1a1a]">Move: {moveInfo.move_code}</h3>
+              <h3 className="text-[var(--text-base)] font-bold text-[#1a1a1a]">Move: {moveInfo.move_code}</h3>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ backgroundColor: "#722F3715", color: "#722F37" }}>
                 {VALUATION_INFO[moveInfo.valuation_tier]?.label || moveInfo.valuation_tier}
               </span>
@@ -282,7 +282,7 @@ export default function ClaimSubmissionClient() {
             {items.map((item, idx) => (
               <div key={item.id} className="mb-6 pb-6 border-b border-[#f0ebe5] last:border-0 last:mb-0 last:pb-0">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-[14px] font-bold text-[#555]">Item {idx + 1}</h4>
+                  <h4 className="text-[var(--text-base)] font-bold text-[#555]">Item {idx + 1}</h4>
                   {items.length > 1 && (
                     <button onClick={() => removeItem(item.id)} className="text-[12px] text-red-500 font-medium hover:underline">
                       Remove
@@ -297,7 +297,7 @@ export default function ClaimSubmissionClient() {
                       value={item.name}
                       onChange={(e) => updateItem(item.id, "name", e.target.value)}
                       placeholder="e.g. Dining table"
-                      className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[14px] outline-none bg-white"
+                      className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[var(--text-base)] outline-none bg-white"
                       style={{ borderColor: "#e8e0d8" }}
                     />
                   </div>
@@ -308,7 +308,7 @@ export default function ClaimSubmissionClient() {
                       value={item.description}
                       onChange={(e) => updateItem(item.id, "description", e.target.value)}
                       placeholder="e.g. Solid oak, 6-seater"
-                      className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[14px] outline-none bg-white"
+                      className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[var(--text-base)] outline-none bg-white"
                       style={{ borderColor: "#e8e0d8" }}
                     />
                   </div>
@@ -319,7 +319,7 @@ export default function ClaimSubmissionClient() {
                       onChange={(e) => updateItem(item.id, "damage_description", e.target.value)}
                       placeholder="Describe the damage..."
                       rows={2}
-                      className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[14px] outline-none bg-white resize-none"
+                      className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[var(--text-base)] outline-none bg-white resize-none"
                       style={{ borderColor: "#e8e0d8" }}
                     />
                   </div>
@@ -331,7 +331,7 @@ export default function ClaimSubmissionClient() {
                         value={item.declared_value || ""}
                         onChange={(e) => updateItem(item.id, "declared_value", parseFloat(e.target.value) || 0)}
                         placeholder="2500"
-                        className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[14px] outline-none bg-white"
+                        className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[var(--text-base)] outline-none bg-white"
                         style={{ borderColor: "#e8e0d8" }}
                       />
                     </div>
@@ -342,7 +342,7 @@ export default function ClaimSubmissionClient() {
                         value={item.weight_lbs || ""}
                         onChange={(e) => updateItem(item.id, "weight_lbs", parseFloat(e.target.value) || 0)}
                         placeholder="80"
-                        className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[14px] outline-none bg-white"
+                        className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[var(--text-base)] outline-none bg-white"
                         style={{ borderColor: "#e8e0d8" }}
                       />
                     </div>
@@ -385,7 +385,7 @@ export default function ClaimSubmissionClient() {
           <div className="flex gap-3">
             <button
               onClick={() => setStep(0)}
-              className="px-6 py-3 rounded-xl text-[14px] font-semibold border-2"
+              className="px-6 py-3 rounded-xl text-[var(--text-base)] font-semibold border-2"
               style={{ borderColor: "#e8e0d8", color: "#555" }}
             >
               Back
@@ -393,7 +393,7 @@ export default function ClaimSubmissionClient() {
             <button
               onClick={() => setStep(2)}
               disabled={items.every((i) => !i.name.trim())}
-              className="flex-1 py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-40"
+              className="flex-1 py-3 rounded-xl text-[var(--text-base)] font-bold text-white disabled:opacity-40"
               style={{ backgroundColor: "#722F37" }}
             >
               Continue
@@ -413,7 +413,7 @@ export default function ClaimSubmissionClient() {
                 type="text"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[14px] outline-none bg-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[var(--text-base)] outline-none bg-white"
                 style={{ borderColor: "#e8e0d8" }}
               />
             </div>
@@ -423,7 +423,7 @@ export default function ClaimSubmissionClient() {
                 type="email"
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[14px] outline-none bg-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[var(--text-base)] outline-none bg-white"
                 style={{ borderColor: "#e8e0d8" }}
               />
             </div>
@@ -435,7 +435,7 @@ export default function ClaimSubmissionClient() {
                 value={clientPhone}
                 onChange={phoneInput.onChange}
                 placeholder={PHONE_PLACEHOLDER}
-                className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[14px] outline-none bg-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border-2 text-[var(--text-base)] outline-none bg-white"
                 style={{ borderColor: "#e8e0d8" }}
               />
             </div>
@@ -443,7 +443,7 @@ export default function ClaimSubmissionClient() {
           <div className="flex gap-3 mt-5">
             <button
               onClick={() => setStep(1)}
-              className="px-6 py-3 rounded-xl text-[14px] font-semibold border-2"
+              className="px-6 py-3 rounded-xl text-[var(--text-base)] font-semibold border-2"
               style={{ borderColor: "#e8e0d8", color: "#555" }}
             >
               Back
@@ -451,7 +451,7 @@ export default function ClaimSubmissionClient() {
             <button
               onClick={() => setStep(3)}
               disabled={!clientName.trim() || !clientEmail.trim()}
-              className="flex-1 py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-40"
+              className="flex-1 py-3 rounded-xl text-[var(--text-base)] font-bold text-white disabled:opacity-40"
               style={{ backgroundColor: "#722F37" }}
             >
               Review Claim
@@ -471,10 +471,10 @@ export default function ClaimSubmissionClient() {
               <p className="text-[13px] text-[#888]">Valuation: <strong>{VALUATION_INFO[moveInfo.valuation_tier]?.label || moveInfo.valuation_tier}</strong></p>
             </div>
 
-            <h3 className="text-[14px] font-bold text-[#555] mb-3">Items ({items.filter((i) => i.name.trim()).length})</h3>
+            <h3 className="text-[var(--text-base)] font-bold text-[#555] mb-3">Items ({items.filter((i) => i.name.trim()).length})</h3>
             {items.filter((i) => i.name.trim()).map((item, idx) => (
               <div key={item.id} className="rounded-xl p-4 mb-3 border" style={{ borderColor: "#e8e0d8" }}>
-                <p className="text-[14px] font-bold text-[#1a1a1a]">{idx + 1}. {item.name}</p>
+                <p className="text-[var(--text-base)] font-bold text-[#1a1a1a]">{idx + 1}. {item.name}</p>
                 {item.description && <p className="text-[13px] text-[#888]">{item.description}</p>}
                 <p className="text-[13px] text-[#555] mt-1">{item.damage_description}</p>
                 <div className="flex gap-4 mt-2 text-[12px] text-[#888]">
@@ -486,7 +486,7 @@ export default function ClaimSubmissionClient() {
             ))}
 
             <div className="rounded-xl p-4 mt-4" style={{ backgroundColor: "#722F3710" }}>
-              <p className="text-[14px] font-bold" style={{ color: "#722F37" }}>
+              <p className="text-[var(--text-base)] font-bold" style={{ color: "#722F37" }}>
                 Total Claimed: ${totalClaimed.toLocaleString()}
               </p>
             </div>
@@ -509,7 +509,7 @@ export default function ClaimSubmissionClient() {
           <div className="flex gap-3">
             <button
               onClick={() => setStep(2)}
-              className="px-6 py-3 rounded-xl text-[14px] font-semibold border-2"
+              className="px-6 py-3 rounded-xl text-[var(--text-base)] font-semibold border-2"
               style={{ borderColor: "#e8e0d8", color: "#555" }}
             >
               Back
@@ -517,7 +517,7 @@ export default function ClaimSubmissionClient() {
             <button
               onClick={handleSubmit}
               disabled={!confirmed || submitting}
-              className="flex-1 py-3 rounded-xl text-[14px] font-bold text-white disabled:opacity-40"
+              className="flex-1 py-3 rounded-xl text-[var(--text-base)] font-bold text-white disabled:opacity-40"
               style={{ backgroundColor: "#722F37" }}
             >
               {submitting ? "Submitting..." : "Submit Claim"}

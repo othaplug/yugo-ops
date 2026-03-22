@@ -609,7 +609,7 @@ export default function DeliveryDayForm({
                   </div>
                 ))}
                 <div className="border-t border-[var(--gold)]/20 pt-2 mt-1 flex justify-between">
-                  <span className="text-[14px] font-bold text-[var(--tx)]">Total</span>
+                  <span className="text-[var(--text-base)] font-bold text-[var(--tx)]">Total</span>
                   <span className="text-[18px] font-bold text-[var(--gold)]">{fmt(pricing.totalPrice)}</span>
                 </div>
                 {pricing.effectivePerStop != null && pricing.effectivePerStop > 0 && (
@@ -693,7 +693,7 @@ export default function DeliveryDayForm({
             <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gdim)] p-4 space-y-2">
               <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] dark:text-[var(--tx)]">Price Summary</h3>
               <div className="border-t border-[var(--gold)]/20 pt-2 flex justify-between">
-                <span className="text-[14px] font-bold text-[var(--tx)]">Total</span>
+                <span className="text-[var(--text-base)] font-bold text-[var(--tx)]">Total</span>
                 <span className="text-[18px] font-bold text-[var(--gold)]">{fmt(pricing.totalPrice)}</span>
               </div>
             </div>

@@ -843,7 +843,7 @@ export default function TrackMoveClient({
                       )}
                       <div className="flex items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: `${FOREST}12` }}>
                         <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60" style={{ color: FOREST }}>Total balance</span>
-                        <span className="text-[14px] font-bold" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
+                        <span className="text-[var(--text-base)] font-bold" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
                           {totalBalance > 0 ? formatCurrency(totalBalance) : "Paid"}
                         </span>
                       </div>
@@ -1038,7 +1038,7 @@ export default function TrackMoveClient({
                     className="flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 mb-3"
                     style={{ borderColor: `${GOLD}35`, backgroundColor: `${GOLD}08` }}
                   >
-                    <span className="font-mono text-[14px] font-bold tracking-widest" style={{ color: WINE }}>
+                    <span className="font-mono text-[var(--text-base)] font-bold tracking-widest" style={{ color: WINE }}>
                       {referral.referral_code}
                     </span>
                     <button
@@ -1168,7 +1168,7 @@ export default function TrackMoveClient({
                   <span className="font-hero text-[18px] sm:text-[20px] font-semibold leading-tight">
                     Your tip for your crew
                   </span>
-                  <span className="shrink-0 text-[14px] opacity-70" aria-hidden>
+                  <span className="shrink-0 text-[var(--text-base)] opacity-70" aria-hidden>
                     {tipSectionCollapsed ? "▼" : "▲"}
                   </span>
                 </button>
@@ -1189,7 +1189,7 @@ export default function TrackMoveClient({
                               setTipSectionCustom("");
                               setTipSectionError(null);
                             }}
-                            className="rounded-xl border px-2 py-2.5 text-[14px] font-medium transition-all shrink-0"
+                            className="rounded-xl border px-2 py-2.5 text-[var(--text-base)] font-medium transition-all shrink-0"
                             style={{
                               width: 60,
                               borderColor: isSelected ? "#B8962E" : "#3A3A3A",
@@ -1814,7 +1814,7 @@ export default function TrackMoveClient({
                         className="flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 mb-3"
                         style={{ borderColor: `${GOLD}35`, backgroundColor: `${GOLD}08` }}
                       >
-                        <span className="font-mono text-[14px] font-bold tracking-widest" style={{ color: WINE }}>
+                        <span className="font-mono text-[var(--text-base)] font-bold tracking-widest" style={{ color: WINE }}>
                           {referral.referral_code}
                         </span>
                         <button
@@ -2031,7 +2031,7 @@ export default function TrackMoveClient({
                     <span className="opacity-70">HST (13%)</span>
                     <span className="font-semibold">{formatCurrency(calcHST(totalBalance))}</span>
                   </div>
-                  <div className="border-t pt-2 mt-2 flex justify-between text-[14px] font-bold" style={{ borderColor: `${FOREST}15`, color: GOLD }}>
+                  <div className="border-t pt-2 mt-2 flex justify-between text-[var(--text-base)] font-bold" style={{ borderColor: `${FOREST}15`, color: GOLD }}>
                     <span>Total</span>
                     <span>{formatCurrency(totalBalance + calcHST(totalBalance))}</span>
                   </div>

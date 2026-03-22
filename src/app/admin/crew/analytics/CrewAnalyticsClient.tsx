@@ -463,7 +463,7 @@ export default function CrewAnalyticsClient({
                   {/* Info + progress bar */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[14px] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors truncate">
+                      <span className="text-[var(--text-base)] font-bold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors truncate">
                         {a.name}
                       </span>
                       {isTopPerformer && (

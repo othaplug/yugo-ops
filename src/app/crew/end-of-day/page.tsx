@@ -58,7 +58,7 @@ export default function CrewEndOfDayPage() {
       </div>
       {preview?.alreadySubmitted ? (
         <div className="mt-3 flex items-center gap-2 py-3 px-4 rounded-xl bg-[var(--grn)]/10 border border-[var(--grn)]/30">
-          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[var(--grn)] text-white text-[14px]">✓</span>
+          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[var(--grn)] text-white text-[var(--text-base)]">✓</span>
           <div>
             <p className="text-[13px] font-semibold text-[var(--grn)]">End of day submitted</p>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Need to add something? You can update your report below.</p>

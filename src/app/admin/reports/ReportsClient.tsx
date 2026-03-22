@@ -381,7 +381,7 @@ export default function ReportsClient({
 
       {filteredReports.length === 0 ? (
         <div className="border-t border-[var(--brd)]/30 pt-12 pb-12 text-center">
-          <p className="text-[14px] text-[var(--tx3)]">
+          <p className="text-[var(--text-base)] text-[var(--tx3)]">
             No end-of-day reports{from !== to ? ` for ${from} to ${to}` : ` for ${date}`}{filterJobType !== "all" || filterTeamId !== "all" ? " with current filters" : ""}.
           </p>
         </div>
@@ -500,7 +500,7 @@ export default function ReportsClient({
                   )}
                   <div>
                     <div className="font-heading font-semibold text-[var(--tx)] text-[17px]">{detailData.job?.displayId ?? "—"}</div>
-                    <div className="text-[14px] text-[var(--tx2)] mt-0.5 font-heading">{detailData.job?.clientName ?? "—"}</div>
+                    <div className="text-[var(--text-base)] text-[var(--tx2)] mt-0.5 font-heading">{detailData.job?.clientName ?? "—"}</div>
                     <p className="text-[11px] text-[var(--tx3)] mt-1">Crew: {detailData.job?.crewName || "—"}</p>
                     <p className="text-[11px] text-[var(--tx3)] mt-1">
                       {detailData.job?.scheduledDate ? new Date(detailData.job.scheduledDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "—"}

@@ -780,7 +780,7 @@ export default function QuotePageClient({
           <h1 className="font-hero text-[30px] md:text-[36px] text-white leading-snug mb-3">
             {hero.headline}
           </h1>
-          <p className="text-[14px] text-white/70 max-w-md mx-auto leading-relaxed">
+          <p className="text-[var(--text-base)] text-white/70 max-w-md mx-auto leading-relaxed">
             {hero.subtitle}
           </p>
 
@@ -1280,7 +1280,7 @@ export default function QuotePageClient({
                 style={{ backgroundColor: `${FOREST}06` }}
               >
                 <h2
-                  className="font-heading text-[14px] font-bold tracking-wider uppercase"
+                  className="font-heading text-[var(--text-base)] font-bold tracking-wider uppercase"
                   style={{ color: FOREST }}
                 >
                   {b2bInvoiceBooking ? "Invoice (Net 30)" : "Payment"}
@@ -1318,7 +1318,7 @@ export default function QuotePageClient({
                       type="button"
                       disabled={invoiceConfirmLoading || !signedName.trim() || !(contactEmail ?? "").trim()}
                       onClick={() => void handleB2bInvoiceConfirm()}
-                      className="w-full py-3.5 rounded-xl font-bold text-[14px] text-white transition-opacity disabled:opacity-50"
+                      className="w-full py-3.5 rounded-xl font-bold text-[var(--text-base)] text-white transition-opacity disabled:opacity-50"
                       style={{ backgroundColor: FOREST }}
                     >
                       {invoiceConfirmLoading ? "Confirming…" : "Confirm booking (invoice)"}
@@ -1365,7 +1365,7 @@ export default function QuotePageClient({
                 You&apos;re All Set!
               </h2>
               <p
-                className="text-[14px] max-w-sm mx-auto leading-relaxed"
+                className="text-[var(--text-base)] max-w-sm mx-auto leading-relaxed"
                 style={{ color: `${FOREST}80` }}
               >
                 {b2bInvoiceBooking ? (
@@ -2095,7 +2095,7 @@ function ValuationProtectionCard({
             <Shield className="w-[18px] h-[18px]" style={{ color: GOLD }} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[14px] font-semibold" style={{ color: FOREST }}>{dispActive.shortLabel}</div>
+            <div className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>{dispActive.shortLabel}</div>
             <div className="text-[11px]" style={{ color: `${FOREST}50` }}>
               {upgradeSelected ? "Upgraded" : "Included with your move"}
             </div>
@@ -2219,7 +2219,7 @@ function ValuationProtectionCard({
                 <div className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: GOLD }}>
                   {upgradeSelected ? "Upgrade Added" : "Upgrade Available"}
                 </div>
-                <div className="text-[14px] font-semibold mb-0.5" style={{ color: FOREST }}>
+                <div className="text-[var(--text-base)] font-semibold mb-0.5" style={{ color: FOREST }}>
                   {dispUpgrade.label}
                 </div>
                 <div className="text-[12px] mb-2" style={{ color: `${FOREST}60` }}>
@@ -2526,7 +2526,7 @@ function AddOnsSection({
                       <button
                         type="button"
                         onClick={() => updateQty(addon.id, (sel?.quantity ?? 1) - 1)}
-                        className="w-7 h-7 rounded-lg border text-[14px] font-bold flex items-center justify-center"
+                        className="w-7 h-7 rounded-lg border text-[var(--text-base)] font-bold flex items-center justify-center"
                         style={{ borderColor: "#D5D0C8", color: FOREST }}
                       >
                         &minus;
@@ -2540,7 +2540,7 @@ function AddOnsSection({
                       <button
                         type="button"
                         onClick={() => updateQty(addon.id, (sel?.quantity ?? 1) + 1)}
-                        className="w-7 h-7 rounded-lg border text-[14px] font-bold flex items-center justify-center"
+                        className="w-7 h-7 rounded-lg border text-[var(--text-base)] font-bold flex items-center justify-center"
                         style={{ borderColor: "#D5D0C8", color: FOREST }}
                       >
                         +

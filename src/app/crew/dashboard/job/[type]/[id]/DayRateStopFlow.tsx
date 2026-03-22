@@ -255,7 +255,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
 
       {completedCount === totalCount && totalCount > 0 && (
         <div className="rounded-2xl p-4 text-center border border-[#22C55E]/30" style={{ background: "rgba(34,197,94,0.06)" }}>
-          <p className="text-[#22C55E] font-bold text-[14px]">All {totalCount} stops completed!</p>
+          <p className="text-[#22C55E] font-bold text-[var(--text-base)]">All {totalCount} stops completed!</p>
           <p className="text-[11px] text-[var(--tx3)] mt-1">Day rate job is done. Great work!</p>
         </div>
       )}

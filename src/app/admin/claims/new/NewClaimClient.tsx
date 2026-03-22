@@ -162,7 +162,7 @@ export default function NewClaimClient({
 
       {/* Job selection */}
       <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-5 mb-4">
-        <h3 className="text-[14px] font-bold text-[var(--tx)] mb-3">Link to Job</h3>
+        <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)] mb-3">Link to Job</h3>
 
         <div className="flex gap-2 mb-3">
           <button
@@ -211,7 +211,7 @@ export default function NewClaimClient({
 
       {/* Client Info */}
       <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-5 mb-4">
-        <h3 className="text-[14px] font-bold text-[var(--tx)] mb-3">Client Details</h3>
+        <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)] mb-3">Client Details</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -278,7 +278,7 @@ export default function NewClaimClient({
       {/* Items */}
       <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-5 mb-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[14px] font-bold text-[var(--tx)]">Damaged Items</h3>
+          <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">Damaged Items</h3>
           <button
             type="button"
             onClick={() => setItems((prev) => [...prev, emptyItem()])}
@@ -385,7 +385,7 @@ export default function NewClaimClient({
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="w-full py-3 rounded-lg text-[14px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
+          className="w-full py-3 rounded-lg text-[var(--text-base)] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
         >
           {saving ? "Creating Claim..." : "Create Claim & Notify Client"}
         </button>

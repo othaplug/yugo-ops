@@ -566,7 +566,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
       <div className={draggingDelivery ? "select-none" : ""}>
         {dayDels.length === 0 && dayProjects.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-[14px] text-[#888] dark:text-[var(--tx3)] mb-4">No deliveries or projects scheduled</div>
+            <div className="text-[var(--text-base)] text-[#888] dark:text-[var(--tx3)] mb-4">No deliveries or projects scheduled</div>
             <button
               onClick={() => onSelectDate?.(selectedDate)}
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[12px] font-semibold text-white transition-colors hover:opacity-90"

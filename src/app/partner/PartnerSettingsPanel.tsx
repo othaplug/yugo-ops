@@ -329,7 +329,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <input
                   value={profile.contact_name}
                   onChange={(e) => setProfile((p) => ({ ...p, contact_name: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
                 />
               </div>
               <div>
@@ -338,7 +338,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   value={profile.email}
                   onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
                   type="email"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
                 />
               </div>
               <div>
@@ -347,13 +347,13 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   value={profile.phone}
                   onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
                   type="tel"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
                 />
               </div>
               <div className="pt-2">
                 <div className="rounded-xl bg-[var(--hover,#F5F3F0)] border border-[var(--brd,#E8E4DF)] px-4 py-3">
                   <div className="text-[10px] font-semibold text-[var(--tx3,#888)] uppercase tracking-wider mb-0.5">Organization</div>
-                  <div className="text-[14px] font-semibold text-[var(--tx,#1A1A1A)]">{orgName}</div>
+                  <div className="text-[var(--text-base)] font-semibold text-[var(--tx,#1A1A1A)]">{orgName}</div>
                   <div className="text-[12px] text-[var(--tx3,#888)]">
                     {VERTICAL_LABELS[orgType] || orgType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} · {userEmail}
                   </div>
@@ -446,7 +446,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <select
                   value={deliveryPrefs.default_time_slot}
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_time_slot: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
                 >
                   <option value="morning">Morning (8 AM – 12 PM)</option>
                   <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
@@ -492,7 +492,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                     value={deliveryPrefs.notification_message || ""}
                     onChange={(e) => setDeliveryPrefs((p) => ({ ...p, notification_message: e.target.value }))}
                     placeholder="Add a custom note to delivery notifications"
-                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#C9A962] focus:outline-none transition-colors"
                   />
                 </div>
               )}
@@ -503,7 +503,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_special_handling: e.target.value }))}
                   placeholder="e.g. White glove service, assemble furniture"
                   rows={3}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[14px] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#C9A962] focus:outline-none transition-colors resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#C9A962] focus:outline-none transition-colors resize-none"
                 />
               </div>
               <button

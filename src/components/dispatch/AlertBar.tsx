@@ -46,24 +46,45 @@ interface AlertBarProps {
   alerts: DispatchAlert[];
 }
 
+/** Merge multiple GPS-offline rows into one banner to reduce vertical noise. */
+function consolidateDispatchAlerts(alerts: DispatchAlert[]): DispatchAlert[] {
+  const gps = alerts.filter((a) => a.type === "gps_offline");
+  const rest = alerts.filter((a) => a.type !== "gps_offline");
+  if (gps.length <= 1) return alerts;
+
+  const names = gps.map((g) => {
+    const m = g.message.match(/^(.+?)\s+GPS offline/i);
+    return m ? m[1].trim() : g.message;
+  });
+  const href = gps.find((g) => g.href)?.href ?? "/admin/crew";
+  const combined: DispatchAlert = {
+    id: "gps-offline-group",
+    type: "gps_offline",
+    message: `Stale GPS (10+ min): ${names.join(", ")}`,
+    action: "Check",
+    href,
+  };
+  return [...rest, combined];
+}
+
 export default function AlertBar({ alerts }: AlertBarProps) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
-  const visible = alerts.filter((a) => !dismissed.has(a.id));
+  const visible = consolidateDispatchAlerts(alerts).filter((a) => !dismissed.has(a.id));
   if (visible.length === 0) return null;
 
   const dismiss = (id: string) =>
     setDismissed((prev) => new Set([...prev, id]));
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {visible.map((a) => {
         const cfg = TYPE_CONFIG[a.type] ?? TYPE_CONFIG.problem;
         const { Icon } = cfg;
         return (
           <div
             key={a.id}
-            className={`flex items-start gap-3 px-4 py-3 ${cfg.bg} border ${cfg.border} rounded-xl`}
+            className={`flex items-start gap-3 px-3.5 py-2.5 sm:px-4 sm:py-3 ${cfg.bg} border ${cfg.border} rounded-lg`}
           >
             <Icon className={`w-4 h-4 shrink-0 mt-0.5 ${cfg.iconColor}`} />
             <div className="flex-1 min-w-0 text-[12px] text-[var(--tx2)]">

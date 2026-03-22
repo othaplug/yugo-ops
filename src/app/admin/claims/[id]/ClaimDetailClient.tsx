@@ -237,7 +237,7 @@ export default function ClaimDetailClient({
         <div className="lg:col-span-2 space-y-6">
           {/* Claim Info */}
           <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-5">
-            <h3 className="text-[14px] font-bold text-[var(--tx)] mb-3">Claim Details</h3>
+            <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)] mb-3">Claim Details</h3>
             <div className="grid grid-cols-2 gap-4 text-[13px]">
               <div>
                 <p className="text-[var(--tx3)] mb-0.5">Client</p>
@@ -265,7 +265,7 @@ export default function ClaimDetailClient({
           {/* Crew */}
           {(crewName || claim.crew_team) && (
             <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-5">
-              <h3 className="text-[14px] font-bold text-[var(--tx)] mb-2">Crew</h3>
+              <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)] mb-2">Crew</h3>
               <p className="text-[13px] text-[var(--tx)]">{crewName || claim.crew_team}</p>
               {(crewMembers.length > 0 || claim.crew_members?.length > 0) && (
                 <p className="text-[12px] text-[var(--tx3)] mt-1">
@@ -288,7 +288,7 @@ export default function ClaimDetailClient({
                 <div key={idx} className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-5">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h4 className="text-[14px] font-bold text-[var(--tx)]">{idx + 1}. {item.name}</h4>
+                      <h4 className="text-[var(--text-base)] font-bold text-[var(--tx)]">{idx + 1}. {item.name}</h4>
                       {item.description && <p className="text-[13px] text-[var(--tx3)]">{item.description}</p>}
                     </div>
                     <span className="text-[13px] text-[var(--tx2)] font-medium">Est: {formatCurrency(item.declared_value)}</span>
@@ -430,7 +430,7 @@ export default function ClaimDetailClient({
           {/* Resolved summary */}
           {isResolved && (
             <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-5">
-              <h3 className="text-[14px] font-bold text-[var(--tx)] mb-3">Resolution</h3>
+              <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)] mb-3">Resolution</h3>
               <div className="grid grid-cols-2 gap-4 text-[13px]">
                 <div>
                   <p className="text-[var(--tx3)]">Status</p>
@@ -472,7 +472,7 @@ export default function ClaimDetailClient({
         {/* Right sidebar: Timeline */}
         <div className="space-y-6">
           <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-5">
-            <h3 className="text-[14px] font-bold text-[var(--tx)] mb-4">Timeline</h3>
+            <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)] mb-4">Timeline</h3>
             {timeline.length === 0 ? (
               <p className="text-[13px] text-[var(--tx3)]">No events yet</p>
             ) : (
@@ -500,7 +500,7 @@ export default function ClaimDetailClient({
           {/* Photos */}
           {photos.length > 0 && (
             <div className="bg-[var(--card)] rounded-xl border border-[var(--brd)] p-5">
-              <h3 className="text-[14px] font-bold text-[var(--tx)] mb-3">All Photos ({photos.length})</h3>
+              <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)] mb-3">All Photos ({photos.length})</h3>
               <div className="grid grid-cols-3 gap-2">
                 {photos.map((p) => (
                   <a key={p.id} href={p.photo_url} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-lg overflow-hidden bg-[var(--bg)]">

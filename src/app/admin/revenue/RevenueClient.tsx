@@ -590,7 +590,7 @@ export default function RevenueClient({
         {/* By Service Type */}
         <div>
           <div className="mb-5">
-            <h2 className="font-heading text-[14px] font-bold text-[var(--tx)]">By Service Type</h2>
+            <h2 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)]">By Service Type</h2>
             <p className="text-[10px] text-[var(--tx3)] mt-0.5">Invoice revenue by client category</p>
           </div>
           <div className="space-y-1 divide-y divide-[var(--brd)]">
@@ -642,7 +642,7 @@ export default function RevenueClient({
         <div>
           <div className="flex items-end justify-between mb-5">
             <div>
-              <h2 className="font-heading text-[14px] font-bold text-[var(--tx)]">Top Clients</h2>
+              <h2 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)]">Top Clients</h2>
               <p className="text-[10px] text-[var(--tx3)] mt-0.5">Ranked by lifetime revenue</p>
             </div>
             <Link

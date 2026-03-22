@@ -199,7 +199,7 @@ export default function PartnerBillingTab({
       {/* Empty state when no deliveries yet */}
       {hasNoDeliveries && (
         <div className="py-4 text-center">
-          <p className="text-[14px] font-semibold text-[var(--tx)]">No deliveries yet</p>
+          <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">No deliveries yet</p>
           <p className="text-[12px] text-[var(--tx3)] mt-1">
             Performance metrics and monthly data will appear here once you have completed jobs.
           </p>

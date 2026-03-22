@@ -350,7 +350,7 @@ export default function CrewJobPage({
     return (
       <PageContent>
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-          <p className="text-[14px] text-[var(--red)] mb-4">{error || "Job not found"}</p>
+          <p className="text-[var(--text-base)] text-[var(--red)] mb-4">{error || "Job not found"}</p>
           <Link
             href="/crew/dashboard"
             className="inline-flex items-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-medium text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
@@ -460,7 +460,7 @@ export default function CrewJobPage({
             </div>
             <div className="min-w-0">
               <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup</p>
-              <p className="text-[14px] text-[var(--tx)] leading-snug">{job.fromAddress}</p>
+              <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.fromAddress}</p>
               {job.fromAccess && (
                 <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
                   <Lock size={9} />
@@ -473,7 +473,7 @@ export default function CrewJobPage({
             <div className="mt-1 shrink-0 w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
             <div className="min-w-0">
               <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Drop-off</p>
-              <p className="text-[14px] text-[var(--tx)] leading-snug">{job.toAddress}</p>
+              <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.toAddress}</p>
               {job.toAccess && (
                 <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
                   <Lock size={9} />
@@ -700,7 +700,7 @@ export default function CrewJobPage({
             <div className="p-4">
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-2">Schedule</p>
               {job.scheduledDate && (
-                <p className="text-[14px] font-semibold text-[var(--tx)]">
+                <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">
                   {formatDate(job.scheduledDate + "T12:00:00", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
                 </p>
               )}

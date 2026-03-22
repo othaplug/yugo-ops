@@ -187,7 +187,7 @@ export default function NotificationToggles() {
                       <button
                         type="button"
                         onClick={() => toggleChannel(event.event_slug, "email")}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-[14px] transition-all ${
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-base)] transition-all ${
                           pref.email_enabled
                             ? "bg-[var(--gold)]/20 text-[var(--gold)]"
                             : "bg-[var(--bg)] text-[var(--tx3)] opacity-40 hover:opacity-70"
@@ -201,7 +201,7 @@ export default function NotificationToggles() {
                       <button
                         type="button"
                         onClick={() => toggleChannel(event.event_slug, "sms")}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-[14px] transition-all ${
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-base)] transition-all ${
                           pref.sms_enabled
                             ? "bg-[var(--gold)]/20 text-[var(--gold)]"
                             : "bg-[var(--bg)] text-[var(--tx3)] opacity-40 hover:opacity-70"
@@ -215,7 +215,7 @@ export default function NotificationToggles() {
                       <button
                         type="button"
                         onClick={() => toggleChannel(event.event_slug, "push")}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-[14px] transition-all ${
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-base)] transition-all ${
                           pref.push_enabled
                             ? "bg-[var(--gold)]/20 text-[var(--gold)]"
                             : "bg-[var(--bg)] text-[var(--tx3)] opacity-40 hover:opacity-70"

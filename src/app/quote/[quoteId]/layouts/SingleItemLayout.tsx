@@ -66,7 +66,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
                 </span>
               )}
             </div>
-            <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
+            <p className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
               {(f?.item_description as string) ?? "Single Item Delivery"}
             </p>
             {f?.assembly_surcharge != null && (

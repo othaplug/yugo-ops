@@ -268,7 +268,7 @@ export default function SquarePaymentForm({
         type="button"
         onClick={handlePay}
         disabled={disabled || !cardReady || processing}
-        className="w-full py-4 rounded-xl text-[14px] font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full py-4 rounded-xl text-[var(--text-base)] font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         style={{ backgroundColor: !disabled && cardReady ? WINE : `${WINE}60` }}
       >
         {processing ? (

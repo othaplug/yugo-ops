@@ -124,7 +124,7 @@ function AdminScheduleModal({
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
       <div className="bg-[var(--card)] rounded-2xl w-full max-w-[500px] shadow-2xl border border-[var(--brd)] flex flex-col max-h-[90vh]">
         <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
-          <h2 className="text-[14px] font-bold text-[var(--tx)]">{isEdit ? "Edit Schedule" : "New Recurring Schedule"}</h2>
+          <h2 className="text-[var(--text-base)] font-bold text-[var(--tx)]">{isEdit ? "Edit Schedule" : "New Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
             <X size={16} weight="regular" className="text-current" />
           </button>

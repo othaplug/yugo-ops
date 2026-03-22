@@ -97,7 +97,7 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
         )}
       </div>
       {visible.length > 0 ? (
-        <div className="max-h-[min(280px,38vh)] overflow-y-auto overscroll-contain rounded-lg border border-[var(--brd)]/40 divide-y divide-[var(--brd)]/20">
+        <div className="max-h-[min(280px,38vh)] min-h-0 overflow-y-auto overscroll-contain divide-y divide-[var(--brd)]/15 bg-transparent border-0 shadow-none ring-0">
           {visible.map((e, idx) => {
             const isUnread = unreadIds.has(e.id);
             return (
@@ -111,7 +111,7 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
                     return n;
                   })
                 }
-                className="group flex items-start gap-2.5 py-3 px-2 sm:px-2.5 hover:bg-[var(--card)]/30 transition-colors"
+                className="group flex items-start gap-2.5 py-3 px-0 sm:px-0"
               >
                 {isUnread && <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[var(--gold)] shrink-0" />}
                 <div className={`flex-1 min-w-0 ${isUnread ? "" : "pl-4"}`}>

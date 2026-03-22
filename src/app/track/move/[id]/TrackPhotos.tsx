@@ -95,7 +95,7 @@ export default function TrackPhotos({
   if (loading) {
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A] mb-4">Photos</h3>
+        <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A] mb-4">Photos</h3>
         <p className="text-[12px] text-[#666]">Loading...</p>
       </div>
     );
@@ -104,7 +104,7 @@ export default function TrackPhotos({
   return (
     <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between">
-        <h3 className="text-[14px] font-bold text-[#1A1A1A]">
+        <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A]">
           Photos{photos.length > 0 ? ` (${photos.length})` : ""}
         </h3>
         <div className="flex gap-2">

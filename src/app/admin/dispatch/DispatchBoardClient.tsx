@@ -189,29 +189,29 @@ export default function DispatchBoardClient({ today }: Props) {
   // Skeleton loading
   if (loading && !data) {
     return (
-      <div className="animate-fade-up px-4 sm:px-5 md:px-6 lg:px-8 py-4 md:py-5 max-w-[1800px] mx-auto w-full">
-        <div className="pb-4 border-b border-[var(--brd)] mb-4 space-y-4">
+      <div className="animate-fade-up px-4 sm:px-5 md:px-6 lg:px-8 py-5 md:py-7 max-w-[1800px] mx-auto w-full">
+        <div className="pb-6 border-b border-[var(--brd)]/80 mb-8 space-y-5">
           <div className="flex items-center gap-3">
             <div className="space-y-1.5">
               <div className="h-2 w-16 rounded bg-[var(--gdim)] animate-pulse" />
               <div className="h-6 w-24 rounded bg-[var(--gdim)] animate-pulse" />
             </div>
           </div>
-          <div className="flex gap-2 overflow-hidden">
+          <div className="flex gap-3 overflow-hidden">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-[72px] w-24 shrink-0 rounded-2xl bg-[var(--gdim)] animate-pulse" />
+              <div key={i} className="h-[68px] w-[88px] shrink-0 rounded-xl bg-[var(--gdim)] animate-pulse" />
             ))}
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,45%)_1fr] gap-5">
-          <div className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,45%)_1fr] gap-8 lg:gap-10">
+          <div className="space-y-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 rounded-xl bg-[var(--gdim)] animate-pulse" />
+              <div key={i} className="h-28 rounded-lg bg-[var(--gdim)]/80 animate-pulse" />
             ))}
           </div>
-          <div className="space-y-2.5">
+          <div className="space-y-3 pl-0 lg:pl-2 lg:border-l lg:border-[var(--brd)]/20">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-12 rounded-lg bg-[var(--gdim)] animate-pulse" />
+              <div key={i} className="h-12 rounded-md bg-[var(--gdim)]/70 animate-pulse" />
             ))}
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function DispatchBoardClient({ today }: Props) {
         <div className="w-12 h-12 rounded-full bg-[var(--red)]/10 flex items-center justify-center">
           <AlertTriangle className="w-6 h-6 text-[var(--red)]" />
         </div>
-        <p className="text-[var(--tx2)] text-[14px] font-medium text-center">{error}</p>
+        <p className="text-[var(--tx2)] text-[var(--text-base)] font-medium text-center">{error}</p>
         <button
           type="button"
           onClick={() => { setLoading(true); load(); }}
@@ -254,9 +254,9 @@ export default function DispatchBoardClient({ today }: Props) {
   ];
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-3.5rem-56px)] md:min-h-[calc(100dvh-3.5rem)] h-auto md:h-[calc(100dvh-3.5rem)] animate-fade-up px-4 sm:px-5 md:px-6 lg:px-8 py-4 md:py-5 max-w-[1800px] mx-auto w-full">
+    <div className="flex flex-col min-h-[calc(100dvh-3.5rem-56px)] md:min-h-[calc(100dvh-3.5rem)] h-auto md:h-[calc(100dvh-3.5rem)] animate-fade-up px-4 sm:px-5 md:px-6 lg:px-8 py-5 md:py-7 max-w-[1800px] mx-auto w-full">
       {/* Header */}
-      <div className="pb-4 border-b border-[var(--brd)] mb-4 space-y-3">
+      <div className="pb-6 border-b border-[var(--brd)]/80 mb-8 space-y-5">
         {/* Row 1: Title + date nav + actions */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
@@ -353,17 +353,17 @@ export default function DispatchBoardClient({ today }: Props) {
 
         {/* Row 2: KPI stat filter cards */}
         {data?.stats && (
-          <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide pb-0.5 -mx-0.5 px-0.5">
+          <div className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-0.5 px-0.5">
             {statCards.map((stat) =>
               stat.key !== null ? (
                 <button
                   key={stat.key}
                   type="button"
                   onClick={() => setFilterStatus(filterStatus === stat.key ? "all" : stat.key!)}
-                  className={`shrink-0 px-3.5 py-2.5 rounded-xl border text-left transition-all touch-manipulation min-w-[80px] ${
+                  className={`shrink-0 px-3 py-2.5 rounded-xl border text-left transition-all touch-manipulation min-w-[84px] ${
                     filterStatus === stat.key
-                      ? "border-[var(--gold)] bg-[var(--gold)] shadow-md shadow-[var(--gold)]/20"
-                      : "border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/60"
+                      ? "border-[var(--gold)] bg-[var(--gold)] shadow-sm shadow-[var(--gold)]/15"
+                      : "border-[var(--brd)]/45 bg-transparent hover:border-[var(--gold)]/45 hover:bg-[var(--card)]/30"
                   }`}
                 >
                   <p
@@ -384,7 +384,7 @@ export default function DispatchBoardClient({ today }: Props) {
                   </p>
                 </button>
               ) : (
-                <div key="assigned-stat" className="shrink-0 px-3.5 py-2.5 rounded-xl border border-[var(--brd)] bg-[var(--card)] min-w-[80px]">
+                <div key="assigned-stat" className="shrink-0 px-3 py-2.5 rounded-xl border border-[var(--brd)]/45 bg-transparent min-w-[84px]">
                   <p className="text-[8px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 mb-1 whitespace-nowrap leading-none">
                     {stat.label}
                   </p>
@@ -400,16 +400,16 @@ export default function DispatchBoardClient({ today }: Props) {
 
       {/* Alerts */}
       {data?.alerts && data.alerts.length > 0 && (
-        <div className="mb-4">
+        <div className="mb-8 lg:mb-10">
           <AlertBar alerts={data.alerts} />
         </div>
       )}
 
       {/* 2-column layout: Schedule + Activity Feed */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(320px,45%)_1fr] gap-5 md:gap-6">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(320px,44%)_1fr] gap-8 lg:gap-10 xl:gap-12">
         {/* Left: Schedule */}
-        <div className="flex flex-col min-h-[320px] lg:min-h-0 border border-[var(--brd)] rounded-xl bg-[var(--card)] p-5 overflow-hidden">
-          <div className="flex items-start justify-between mb-3 shrink-0 gap-2">
+        <div className="flex flex-col min-h-[320px] lg:min-h-0 overflow-hidden bg-transparent border-0 shadow-none ring-0 pt-0">
+          <div className="flex items-start justify-between mb-4 sm:mb-5 shrink-0 gap-2">
             <div>
               <h2 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">
                 {scheduleTitle}
@@ -437,8 +437,8 @@ export default function DispatchBoardClient({ today }: Props) {
         </div>
 
         {/* Right: Activity Feed */}
-        <div className="flex flex-col min-h-[240px] lg:min-h-0 border border-[var(--brd)] rounded-xl bg-[var(--card)] p-5 overflow-hidden">
-          <div className="flex items-center justify-between mb-3 shrink-0">
+        <div className="flex flex-col min-h-[260px] lg:min-h-0 overflow-hidden bg-transparent border-0 border-t border-[var(--brd)]/25 lg:border-t-0 lg:border-l lg:border-[var(--brd)]/20 shadow-none ring-0 pt-8 lg:pt-0 lg:pl-8 xl:pl-10">
+          <div className="flex items-center justify-between mb-4 sm:mb-5 shrink-0">
             <h2 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">
               Activity Feed
             </h2>

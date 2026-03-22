@@ -544,7 +544,7 @@ export default function AllMovesClient({
                   <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
                     {serviceTypeLabel(q.service_type)} · {relativeTime(q.sent_at || q.created_at)}
                   </div>
-                  <div className="mt-1.5 text-[14px] font-bold text-[var(--gold)] font-heading">
+                  <div className="mt-1.5 text-[var(--text-base)] font-bold text-[var(--gold)] font-heading">
                     {quoteAmount(q)}
                   </div>
                 </Link>

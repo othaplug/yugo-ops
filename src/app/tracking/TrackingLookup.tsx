@@ -78,7 +78,7 @@ export default function TrackingLookup() {
               onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(""); }}
               placeholder="e.g. MV1234 or DLV-4467"
               autoFocus
-              className="w-full px-5 py-3.5 pr-[90px] rounded-full text-[14px] font-semibold tracking-wide placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
+              className="w-full px-5 py-3.5 pr-[90px] rounded-full text-[var(--text-base)] font-semibold tracking-wide placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
               style={{
                 backgroundColor: "#fff",
                 border: `1.5px solid ${FOREST}18`,

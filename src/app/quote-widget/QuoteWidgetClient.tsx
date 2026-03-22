@@ -432,8 +432,8 @@ export default function QuoteWidgetClient() {
   /* ── Formatting ── */
   const fmtCurrency = (n: number) => `$${n.toLocaleString()}`;
 
-  const inputClass = "w-full px-4 py-3 rounded-xl border text-[14px] outline-none transition-all duration-200 bg-white placeholder:text-[#B5AFA5]";
-  const selectClass = "w-full px-4 py-3 rounded-xl border text-[14px] outline-none transition-all duration-200 bg-white appearance-none cursor-pointer";
+  const inputClass = "w-full px-4 py-3 rounded-xl border text-[var(--text-base)] outline-none transition-all duration-200 bg-white placeholder:text-[#B5AFA5]";
+  const selectClass = "w-full px-4 py-3 rounded-xl border text-[var(--text-base)] outline-none transition-all duration-200 bg-white appearance-none cursor-pointer";
   const labelClass = "block text-[10px] font-bold tracking-[0.14em] uppercase mb-1.5";
 
   return (
@@ -506,7 +506,7 @@ export default function QuoteWidgetClient() {
                         ) : (
                           <Buildings size={22} color={active ? GOLD : `${FOREST}40`} className="mb-2" />
                         )}
-                        <div className="text-[14px] font-semibold" style={{ color: active ? FOREST : `${FOREST}90` }}>{t.label}</div>
+                        <div className="text-[var(--text-base)] font-semibold" style={{ color: active ? FOREST : `${FOREST}90` }}>{t.label}</div>
                         <div className="text-[11px] mt-0.5" style={{ color: `${FOREST}50` }}>{t.desc}</div>
                       </button>
                     );
@@ -1126,7 +1126,7 @@ export default function QuoteWidgetClient() {
                   <Check size={30} color="#2E7D32" weight="bold" />
                 </div>
                 <h2 className="text-[24px] font-bold mb-2" style={{ color: FOREST }}>You&rsquo;re all set!</h2>
-                <p className="text-[14px] leading-relaxed mb-4" style={{ color: `${FOREST}80` }}>
+                <p className="text-[var(--text-base)] leading-relaxed mb-4" style={{ color: `${FOREST}80` }}>
                   We&rsquo;ll send your exact guaranteed price to <strong style={{ color: FOREST }}>{email}</strong> within 2 hours.
                 </p>
                 {leadNumber && (

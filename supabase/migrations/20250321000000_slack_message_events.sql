@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.slack_message_events (
 
 ALTER TABLE public.slack_message_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Authenticated users can read slack_message_events" ON public.slack_message_events;
 CREATE POLICY "Authenticated users can read slack_message_events"
   ON public.slack_message_events
   FOR SELECT

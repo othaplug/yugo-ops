@@ -239,7 +239,7 @@ export default function ContractSign({
             <Check className="w-5 h-5" style={{ color: FOREST }} />
           </div>
           <div>
-            <h2 className="font-heading text-[14px] font-bold" style={{ color: FOREST }}>
+            <h2 className="font-heading text-[var(--text-base)] font-bold" style={{ color: FOREST }}>
               Contract Signed
             </h2>
             <p className="text-[12px]" style={{ color: `${FOREST}70` }}>
@@ -278,7 +278,7 @@ export default function ContractSign({
           <FileText className="w-[18px] h-[18px]" style={{ color: FOREST }} />
           <div>
             <h2
-              className="font-heading text-[14px] font-bold tracking-wider uppercase"
+              className="font-heading text-[var(--text-base)] font-bold tracking-wider uppercase"
               style={{ color: FOREST }}
             >
               Service Agreement
@@ -409,7 +409,7 @@ export default function ContractSign({
                         <MapPin className="w-3 h-3" />
                         From
                       </span>
-                      <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
+                      <p className="text-[13px] md:text-[var(--text-base)] leading-snug font-semibold" style={{ color: FOREST }}>
                         {q.fromAddress}
                       </p>
                       {formatAccessForDisplay(q.fromAccess) && (
@@ -430,7 +430,7 @@ export default function ContractSign({
                         <MapPin className="w-3 h-3" />
                         To
                       </span>
-                      <p className="text-[13px] md:text-[14px] leading-snug font-semibold" style={{ color: FOREST }}>
+                      <p className="text-[13px] md:text-[var(--text-base)] leading-snug font-semibold" style={{ color: FOREST }}>
                         {q.toAddress}
                       </p>
                       {formatAccessForDisplay(q.toAccess) && (
@@ -835,7 +835,7 @@ export default function ContractSign({
             type="button"
             onClick={handleSign}
             disabled={!canSign}
-            className="w-full py-4 rounded-xl text-[14px] font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-4 rounded-xl text-[var(--text-base)] font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: canSign ? GOLD : `${GOLD}60` }}
           >
             {signing ? (

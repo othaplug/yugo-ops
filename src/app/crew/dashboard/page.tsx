@@ -98,7 +98,7 @@ export default function CrewDashboardPage() {
           <div className="w-12 h-12 rounded-2xl bg-[var(--red)]/10 flex items-center justify-center mb-4">
             <X size={20} color="var(--red)" />
           </div>
-          <p className="text-[14px] text-[var(--red)] mb-4">{error || "Unable to load"}</p>
+          <p className="text-[var(--text-base)] text-[var(--red)] mb-4">{error || "Unable to load"}</p>
           <Link href="/crew/login" className="text-[13px] text-[var(--gold)] hover:underline">
             Back to login
           </Link>
@@ -201,7 +201,7 @@ export default function CrewDashboardPage() {
               <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
                 <Calendar size={20} color="var(--gold)" />
               </div>
-              <p className="text-[14px] font-semibold text-[var(--tx)] mb-1">No jobs today</p>
+              <p className="text-[var(--text-base)] font-semibold text-[var(--tx)] mb-1">No jobs today</p>
               <p className="text-[12px] text-[var(--tx3)]">Enjoy your day off — check back tomorrow.</p>
             </div>
           ) : (
@@ -242,7 +242,7 @@ export default function CrewDashboardPage() {
                           )}
                         </span>
                         <div className="min-w-0">
-                          <span className="text-[14px] font-semibold text-[var(--tx)] truncate block leading-tight">
+                          <span className="text-[var(--text-base)] font-semibold text-[var(--tx)] truncate block leading-tight">
                             {job.clientName}
                           </span>
                           <span className="text-[10px] text-[var(--tx3)] font-mono">{job.jobId}</span>

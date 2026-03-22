@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
-import { Plus, Trash as Trash2 } from "@phosphor-icons/react";
+import { Plus, PaperPlaneTilt, Trash as Trash2 } from "@phosphor-icons/react";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import CreateButton from "../components/CreateButton";
 import { useToast } from "../components/Toast";
@@ -306,28 +306,27 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
 
   return (
     <div className="max-w-[1000px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      {/*
-        Follow-up action is on its own full-width row: admin <main> uses overflow-x-hidden on
-        mobile, which can clip a trailing pill in a justify-between header. A block-level control
-        below the title cannot be pushed past the viewport edge.
-      */}
       <div className="mb-6 space-y-3 min-w-0">
-        <div className="flex items-start justify-between gap-3 min-w-0">
-          <div className="min-w-0">
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
             <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Quotes</h1>
           </div>
-          <CreateButton href="/admin/quotes/new" title="New Quote" />
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <button
+              type="button"
+              onClick={openDueFollowupsModal}
+              disabled={followupLoading}
+              aria-busy={followupLoading}
+              title="Preview quotes due for follow-up and send the batch (same rules as cron)"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--gold)]/40 bg-[var(--gold)]/[0.07] px-2.5 py-1.5 text-[10px] font-semibold tracking-wide text-[var(--tx2)] shadow-sm hover:bg-[var(--gold)]/12 hover:border-[var(--gold)]/55 disabled:opacity-50 transition-colors"
+            >
+              <PaperPlaneTilt className="w-3.5 h-3.5 shrink-0 text-[var(--gold)]" aria-hidden />
+              <span className="whitespace-nowrap">{followupLoading ? "Loading…" : "Due follow-ups"}</span>
+            </button>
+            <CreateButton href="/admin/quotes/new" title="New Quote" />
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={openDueFollowupsModal}
-          disabled={followupLoading}
-          aria-busy={followupLoading}
-          className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border-2 border-[var(--gold)]/45 bg-[var(--gold)]/[0.08] px-4 text-[11px] font-bold uppercase tracking-wide text-[var(--tx)] shadow-sm hover:bg-[var(--gold)]/15 hover:border-[var(--gold)]/70 disabled:opacity-50 transition-colors"
-        >
-          {followupLoading ? "Loading preview…" : "Send due follow-ups"}
-        </button>
         <p className="text-[11px] leading-snug text-[var(--tx3)] px-0.5 font-medium">
           <strong className="text-[var(--tx2)] font-semibold">Automated:</strong> Vercel runs this job daily at{" "}
           <span className="whitespace-nowrap">4:00 PM UTC</span> when{" "}
@@ -346,7 +345,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         >
           <div className="w-full max-w-md max-h-[min(80vh,520px)] rounded-xl border border-[var(--brd)] bg-[var(--card)] shadow-xl flex flex-col">
             <div className="p-4 border-b border-[var(--brd)]/60">
-              <h2 id="due-followups-title" className="text-[14px] font-bold text-[var(--tx)]">
+              <h2 id="due-followups-title" className="text-[var(--text-base)] font-bold text-[var(--tx)]">
                 Send follow-ups to {followupPreview.length} quote{followupPreview.length === 1 ? "" : "s"}?
               </h2>
               <p className="text-[11px] text-[var(--tx3)] mt-1">

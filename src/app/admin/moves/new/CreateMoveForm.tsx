@@ -627,7 +627,7 @@ export default function CreateMoveForm({
                       setContactSearch("");
                       setShowContactDropdown(false);
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--tx3)] hover:text-[var(--tx)] text-[14px]"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--tx3)] hover:text-[var(--tx)] text-[var(--text-base)]"
                     aria-label="Clear selection"
                   >
                     ×

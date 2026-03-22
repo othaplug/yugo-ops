@@ -987,7 +987,7 @@ export default function DataTable<T>({
       <div className="md:hidden">
         {paged.length === 0 ? (
           <div className="py-14 px-6 text-center">
-            <p className="text-[14px] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8]">{emptyMessage}</p>
+            <p className="text-[var(--text-base)] font-semibold text-[#1A1A1A] dark:text-[#F4F1E8]">{emptyMessage}</p>
             {emptySubtext && (
               <p className="text-[12px] text-[#5C5449] dark:text-[#C9C4B8] mt-1">{emptySubtext}</p>
             )}

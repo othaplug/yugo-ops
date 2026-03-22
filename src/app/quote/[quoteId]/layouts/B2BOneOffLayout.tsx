@@ -66,7 +66,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             <Truck className="w-6 h-6" style={{ color: FOREST }} />
           </div>
           <div>
-            <p className="text-[14px] font-semibold" style={{ color: FOREST }}>
+            <p className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
               {(f?.item_description as string) ?? "Delivery Service"}
             </p>
             {f?.item_category ? (

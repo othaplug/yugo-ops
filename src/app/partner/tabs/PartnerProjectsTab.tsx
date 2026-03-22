@@ -64,7 +64,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
   if (projects.length === 0) {
     return (
       <div className="bg-white border border-[#E8E4DF] rounded-xl p-8 text-center">
-        <p className="text-[14px] text-[#888]">No active projects.</p>
+        <p className="text-[var(--text-base)] text-[#888]">No active projects.</p>
       </div>
     );
   }

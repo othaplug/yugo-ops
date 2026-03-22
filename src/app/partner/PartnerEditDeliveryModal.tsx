@@ -58,7 +58,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const fieldInput =
-    "w-full text-[14px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
+    "w-full text-[var(--text-base)] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,7 +122,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
             <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
               <Lock size={22} color="#888" />
             </div>
-            <p className="text-[14px] font-semibold text-[var(--tx)]">
+            <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">
               This delivery is {getDisplayLabel(d.status, "delivery")}
             </p>
             <p className="text-[12px] text-[var(--tx3)] mt-1">Completed or cancelled deliveries cannot be edited.</p>

@@ -197,7 +197,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                         {(leg.event_crew ?? 0) > 0 && `${leg.event_crew} movers`} {leg.event_hours ? `· ~${leg.event_hours}h` : ""}
                       </div>
                     </div>
-                    <span className="text-[14px] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
+                    <span className="text-[var(--text-base)] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
                       {fmtPrice(leg.delivery_charge ?? 0)}
                     </span>
                   </div>
@@ -209,7 +209,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                         <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>~{leg.return_hours}h estimated</div>
                       ) : null}
                     </div>
-                    <span className="text-[14px] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
+                    <span className="text-[var(--text-base)] font-bold tabular-nums shrink-0" style={{ color: FOREST }}>
                       {fmtPrice(leg.return_charge ?? 0)}
                     </span>
                   </div>

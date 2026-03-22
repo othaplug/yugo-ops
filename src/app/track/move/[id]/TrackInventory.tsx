@@ -283,7 +283,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[#E7E5E4]">
-          <h3 className="text-[14px] font-bold text-[#1A1A1A]">Inventory</h3>
+          <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A]">Inventory</h3>
         </div>
         <div className="px-5 py-10 text-center">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: `${GOLD}14` }}>
@@ -312,7 +312,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
       {/* Header */}
       <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-[14px] font-bold text-[#1A1A1A]">Inventory</h3>
+          <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A]">Inventory</h3>
           <p className="text-[11px] text-[#888] mt-0.5">
             {totalItemCount} {totalItemCount === 1 ? "item" : "items"} across {rooms.length} {rooms.length === 1 ? "room" : "rooms"}
           </p>

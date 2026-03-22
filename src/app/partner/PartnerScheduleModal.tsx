@@ -295,7 +295,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   };
 
   const fieldInput =
-    "w-full text-[14px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
+    "w-full text-[var(--text-base)] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
 
   const fmtCurrency = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
@@ -496,7 +496,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                           >
                             -
                           </button>
-                          <span className="w-6 text-center text-[14px] font-bold text-[var(--tx)]">{count}</span>
+                          <span className="w-6 text-center text-[var(--text-base)] font-bold text-[var(--tx)]">{count}</span>
                           <button
                             type="button"
                             onClick={() =>
@@ -805,7 +805,7 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
               <span className="font-semibold text-[var(--tx)]">{fmtCurrency(hst)}</span>
             </div>
             <div className="border-t border-[#C9A962]/20 pt-2 mt-1 flex justify-between">
-              <span className="text-[14px] font-bold text-[var(--tx)]">Total incl. HST</span>
+              <span className="text-[var(--text-base)] font-bold text-[var(--tx)]">Total incl. HST</span>
               <span className="text-[16px] font-bold text-[#C9A962]">{fmtCurrency(totalWithHst)}</span>
             </div>
             {pricing.effectivePerStop && bookingType === "day_rate" && (

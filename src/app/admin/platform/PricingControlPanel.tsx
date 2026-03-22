@@ -390,7 +390,7 @@ function LabourPricingSection() {
       {labourRow ? (
         <div className="flex items-center gap-3">
           <label className="text-[11px] font-semibold text-[var(--tx)]">Rate per extra mover-hour ($)</label>
-          <EditCell value={rate} onChange={(v) => updateRow(String(labourRow.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-[var(--gold)]" />
+          <EditCell value={rate} onChange={(v) => updateRow(String(labourRow.id), "value", v)} type="number" className="w-20 text-[var(--text-base)] font-bold text-[var(--gold)]" />
         </div>
       ) : (
         <div>
@@ -405,7 +405,7 @@ function LabourPricingSection() {
       {estateSuppliesRow ? (
         <div className="flex items-center gap-3">
           <label className="text-[11px] font-semibold text-[var(--tx)]">Estate supplies base ($)</label>
-          <EditCell value={estateSuppliesBase} onChange={(v) => updateRow(String(estateSuppliesRow.id), "value", v)} type="number" className="w-24 text-[14px] font-bold text-[var(--gold)]" />
+          <EditCell value={estateSuppliesBase} onChange={(v) => updateRow(String(estateSuppliesRow.id), "value", v)} type="number" className="w-24 text-[var(--text-base)] font-bold text-[var(--gold)]" />
         </div>
       ) : (
         <div>
@@ -489,7 +489,7 @@ function TierMultipliersSection() {
           return (
             <div key={c.key} className="bg-[var(--bg)] rounded-lg p-3">
               <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
-              <EditCell value={c.val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[14px] font-bold text-[var(--tx)]" />
+              <EditCell value={c.val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[var(--text-base)] font-bold text-[var(--tx)]" />
             </div>
           );
         })}
@@ -739,7 +739,7 @@ function SingleItemSection() {
           return (
             <div key={c.key} className="bg-[var(--bg)] rounded-lg p-3">
               <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
-              <EditCell value={row.value as string} onChange={(v) => configSection.updateRow(String(row.id), "value", v)} type="number" className="text-[14px] font-bold text-[var(--tx)]" />
+              <EditCell value={row.value as string} onChange={(v) => configSection.updateRow(String(row.id), "value", v)} type="number" className="text-[var(--text-base)] font-bold text-[var(--tx)]" />
             </div>
           );
         })}
@@ -2364,7 +2364,7 @@ function InventoryModifierSection() {
         {floorRow ? (
           <div className="space-y-1">
             <label className="text-[11px] font-semibold text-[var(--tx)]">Floor (minimum)</label>
-            <EditCell value={floor} onChange={(v) => updateRow(String(floorRow.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-[var(--grn)]" />
+            <EditCell value={floor} onChange={(v) => updateRow(String(floorRow.id), "value", v)} type="number" className="w-20 text-[var(--text-base)] font-bold text-[var(--grn)]" />
             <p className="text-[9px] text-[var(--tx3)]">e.g. 0.65 → 35% max discount</p>
           </div>
         ) : (
@@ -2376,7 +2376,7 @@ function InventoryModifierSection() {
         {capRow ? (
           <div className="space-y-1">
             <label className="text-[11px] font-semibold text-[var(--tx)]">Cap (maximum)</label>
-            <EditCell value={cap} onChange={(v) => updateRow(String(capRow.id), "value", v)} type="number" className="w-20 text-[14px] font-bold text-amber-600" />
+            <EditCell value={cap} onChange={(v) => updateRow(String(capRow.id), "value", v)} type="number" className="w-20 text-[var(--text-base)] font-bold text-amber-600" />
             <p className="text-[9px] text-[var(--tx3)]">e.g. 1.50 → 50% max premium</p>
           </div>
         ) : (
@@ -2667,7 +2667,7 @@ function EventPricingSection() {
                       value={val}
                       onChange={(v) => updateRow(String(row.id), "value", v)}
                       type="number"
-                      className="text-[14px] font-bold text-[var(--gold)]"
+                      className="text-[var(--text-base)] font-bold text-[var(--gold)]"
                     />
                   ) : (
                     <div>
@@ -2775,7 +2775,7 @@ function SpecialtyPricingSection() {
                   value={val}
                   onChange={(v) => configSection.updateRow(String(row.id), "value", v)}
                   type="number"
-                  className="text-[14px] font-bold text-[var(--gold)]"
+                  className="text-[var(--text-base)] font-bold text-[var(--gold)]"
                 />
               ) : (
                 <div>

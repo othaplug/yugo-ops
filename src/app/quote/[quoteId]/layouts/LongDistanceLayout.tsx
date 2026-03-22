@@ -204,7 +204,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
           {phases.map((phase, i) => (
             <div key={i} className="text-center relative">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2.5 text-[14px] font-bold text-white"
+                className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2.5 text-[var(--text-base)] font-bold text-white"
                 style={{ backgroundColor: i === 0 ? WINE : i === 3 ? FOREST : GOLD }}
               >
                 {i + 1}

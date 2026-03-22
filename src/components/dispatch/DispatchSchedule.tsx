@@ -81,7 +81,7 @@ export default function DispatchSchedule({
       <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-3 px-1 pr-2">
 
         {showEmpty && (
-          <div className="py-14 px-4 flex flex-col items-center gap-3 text-center">
+          <div className="py-16 sm:py-20 px-4 flex flex-col items-center gap-3 text-center">
             <div className="w-12 h-12 rounded-full bg-[var(--gdim)] flex items-center justify-center">
               <CalendarX className="w-6 h-6 text-[var(--tx3)]" />
             </div>
@@ -109,7 +109,7 @@ export default function DispatchSchedule({
             <button
               type="button"
               onClick={() => setCompletedOpen(!completedOpen)}
-              className="flex items-center justify-between w-full text-left py-2.5 px-3 rounded-xl hover:bg-[var(--bg)] transition-colors touch-manipulation group"
+              className="flex items-center justify-between w-full text-left py-2.5 px-3 rounded-xl hover:bg-[var(--brd)]/25 transition-colors touch-manipulation group"
             >
               <div className="flex items-center gap-2">
                 {completedOpen ? (

@@ -141,7 +141,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
           <div className="w-full h-full flex items-center justify-center text-[13px] text-[#888] dark:text-[var(--tx3)]">Loading map...</div>
         ) : !hasAny ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 text-[#D4D0CB] dark:text-[var(--tx3)]">
-            <p className="text-[14px] text-[#888] dark:text-[var(--tx3)]">No Confirmed Deliveries Scheduled For Today.</p>
+            <p className="text-[var(--text-base)] text-[#888] dark:text-[var(--tx3)]">No Confirmed Deliveries Scheduled For Today.</p>
             <p className="text-[12px] text-[#aaa] dark:text-[var(--tx3)]/80 mt-1">Confirmed Or Dispatched Deliveries Will Appear On The Map Here.</p>
           </div>
         ) : (
@@ -163,7 +163,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
             {/* Blur overlay when no crew has started — live signal off */}
             {!crewHasStarted && (
               <div className="absolute inset-0 bg-white/70 dark:bg-[var(--card)]/70 backdrop-blur-md flex flex-col items-center justify-center z-10" aria-hidden="true">
-                <span className="text-[14px] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">Live signal off</span>
+                <span className="text-[var(--text-base)] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">Live signal off</span>
                 <span className="text-[12px] text-[#666] dark:text-[var(--tx3)] mt-1">Map and tracking will appear when crew start their job</span>
               </div>
             )}
@@ -202,7 +202,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                     {slotLabel}
                   </span>
                   <div>
-                    <div className="text-[14px] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">
+                    <div className="text-[var(--text-base)] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">
                       {d.customer_name || d.delivery_number}
                     </div>
                     {crewHasStarted ? (

@@ -26,7 +26,7 @@ export default function Error({
         <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">
           Something went wrong
         </h1>
-        <p className="text-[14px] text-[var(--tx3)]">
+        <p className="text-[var(--text-base)] text-[var(--tx3)]">
           {error.message || "An unexpected error occurred."}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

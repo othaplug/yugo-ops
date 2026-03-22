@@ -116,7 +116,7 @@ export default function TruckAssignments() {
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="font-heading text-[14px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <h2 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)] flex items-center gap-2">
             <Icon name="calendar" className="w-[14px] h-[14px]" /> Truck Assignments
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">

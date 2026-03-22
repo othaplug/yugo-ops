@@ -296,7 +296,7 @@ export default function TrackLiveMap({
 
       {showPlaceholder && (
         <div className="rounded-xl border border-[#E7E5E4] bg-[#FAFAF8] p-5">
-          <p className="text-[14px] text-[#1A1A1A] mb-2">Your crew will appear here on move day.</p>
+          <p className="text-[var(--text-base)] text-[#1A1A1A] mb-2">Your crew will appear here on move day.</p>
           <p className="text-[13px] text-[#666] mb-4">Live tracking activates when your crew begins.</p>
           {scheduledStr && <p className="text-[12px] text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
           {move?.arrival_window && <p className="text-[12px] text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}

@@ -70,7 +70,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
   if (invoices.length === 0) {
     return (
       <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
-        <p className="text-[14px] font-semibold text-[#FFFFF0]">No invoices yet</p>
+        <p className="text-[var(--text-base)] font-semibold text-[#FFFFF0]">No invoices yet</p>
         <p className="text-[12px] text-[#888] mt-1">Invoices will appear here once they are generated.</p>
       </div>
     );

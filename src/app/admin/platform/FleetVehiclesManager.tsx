@@ -220,7 +220,7 @@ export default function FleetVehiclesManager() {
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
         <div>
-          <h3 className="font-heading text-[14px] font-bold text-[var(--tx)]">Fleet Vehicles</h3>
+          <h3 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)]">Fleet Vehicles</h3>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage trucks and vans. Vehicle data feeds into quote pricing and profitability tracking.</p>
         </div>
         <button

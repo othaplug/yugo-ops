@@ -376,7 +376,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
         </div>
       ) : schedules.length === 0 ? (
         <div className="text-center py-12 border border-dashed border-[var(--brd)] rounded-xl">
-          <h3 className="text-[14px] font-bold text-[var(--tx)] mb-1">No recurring schedules</h3>
+          <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)] mb-1">No recurring schedules</h3>
           <p className="text-[12px] text-[var(--tx3)] mb-4 max-w-[280px] mx-auto">Set up a recurring schedule and we'll auto-create draft deliveries before each run.</p>
           <button
             onClick={() => setCreateOpen(true)}
@@ -399,7 +399,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[14px] font-bold text-[var(--tx)] truncate">{s.schedule_name}</span>
+                    <span className="text-[var(--text-base)] font-bold text-[var(--tx)] truncate">{s.schedule_name}</span>
                     {s.is_paused && (
                       <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">PAUSED</span>
                     )}

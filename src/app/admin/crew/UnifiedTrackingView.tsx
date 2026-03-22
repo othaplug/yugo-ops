@@ -408,7 +408,7 @@ function CrewPopup({
             {(crew.name || "?").replace("Team ", "").slice(0, 2).toUpperCase()}
           </div>
           <div>
-            <h3 className="text-[14px] font-bold text-[var(--tx)]">{crew.name}</h3>
+            <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">{crew.name}</h3>
             <span className="text-[10px] text-[var(--tx3)]">{crew.members?.length || 0} members</span>
           </div>
         </div>
@@ -440,12 +440,12 @@ function CrewPopup({
       <div className="grid grid-cols-3 gap-2 mb-3 pt-3 mt-3 border-t border-[var(--brd)]/30">
         <div className="text-center">
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Speed</div>
-          <div className="text-[14px] font-bold text-[var(--tx)] mt-0.5">{speedKmh != null ? `${speedKmh}` : "—"}</div>
+          <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{speedKmh != null ? `${speedKmh}` : "—"}</div>
           <div className="text-[8px] text-[var(--tx3)]">km/h</div>
         </div>
         <div className="text-center">
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">ETA</div>
-          <div className="text-[14px] font-bold text-[var(--tx)] mt-0.5">{etaMin != null ? `${etaMin}` : "—"}</div>
+          <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{etaMin != null ? `${etaMin}` : "—"}</div>
           <div className="text-[8px] text-[var(--tx3)]">min</div>
         </div>
         <div className="text-center">

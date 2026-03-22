@@ -136,7 +136,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
             <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50 mb-1">
               Time
             </div>
-            <div className="text-[14px] font-semibold text-[var(--tx)]">{timeStr}</div>
+            <div className="text-[var(--text-base)] font-semibold text-[var(--tx)]">{timeStr}</div>
             {event.durationHours && (
               <div className="text-[11px] text-[var(--tx3)]">{event.durationHours} hours estimated</div>
             )}

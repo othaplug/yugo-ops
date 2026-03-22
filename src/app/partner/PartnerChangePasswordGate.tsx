@@ -93,7 +93,7 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
                     placeholder="Min 8 characters"
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--brd)] rounded-xl text-[14px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none pr-10"
+                    className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--brd)] rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none pr-10"
                   />
                   <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] p-1" tabIndex={-1}>
                     {showPw ? <Eye size={16} weight="regular" /> : <EyeSlash size={16} weight="regular" />}
@@ -108,13 +108,13 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="Re-enter password"
                   required
-                  className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--brd)] rounded-xl text-[14px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none"
+                  className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--brd)] rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none"
                 />
               </div>
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-3.5 rounded-xl text-[14px] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-all disabled:opacity-50"
+                className="w-full py-3.5 rounded-xl text-[var(--text-base)] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-all disabled:opacity-50"
               >
                 {saving ? "Updating..." : "Set new password"}
               </button>

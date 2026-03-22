@@ -53,16 +53,16 @@
   --text-tertiary: var(--tx3);
   --text-accent: var(--gold);
 
-  /* ── Typography scale (+1px body / subhead vs prior baseline) ── */
-  --text-xs: 11px;      /* caption, badge labels, timestamps */
-  --text-sm: 12px;      /* secondary labels, metadata */
-  --text-base: 14px;    /* body, table cells, list items */
-  --text-md: 15px;      /* body-lg, sub-headings */
-  --text-lg: 16px;      /* heading-sm */
-  --text-xl: 18px;      /* heading */
-  --text-2xl: 22px;     /* metric values */
-  --text-3xl: 28px;     /* page titles */
-  --text-hero: 36px;    /* hero headings */
+  /* ── Typography scale (16px body baseline; xs = micro non-critical only) ── */
+  --text-xs: 11px;      /* timestamps, dense badges — avoid for primary reading */
+  --text-sm: 12px;      /* secondary labels, metadata (minimum for important UI copy) */
+  --text-base: 16px;    /* body, paragraphs, primary list/table cell text */
+  --text-md: 18px;      /* emphasized body, intro blurbs */
+  --text-lg: 20px;      /* card / section titles (heading-sm) */
+  --text-xl: 22px;      /* section headings */
+  --text-2xl: 26px;     /* metrics, large stats */
+  --text-3xl: 32px;     /* page titles */
+  --text-hero: 40px;    /* hero / marketing headlines */
   --lh-tight: 1.25;
   --lh-snug: 1.375;
   --lh-normal: 1.5;
@@ -807,13 +807,13 @@ input[type="time"] {
 .mc.glass { background: rgba(30, 30, 30, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: rgba(255, 255, 255, 0.08); }
 [data-theme="light"] .mc.glass { background: rgba(255, 255, 255, 0.5); border-color: rgba(0, 0, 0, 0.06); }
 .mc-l { font-size: 11px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; color: var(--tx3); margin-bottom: 4px; }
-.mc-v { font-size: 22px; font-weight: 700; font-family: var(--font-heading); }
+.mc-v { font-size: var(--text-2xl); font-weight: 700; font-family: var(--font-heading); }
 .mc-c { display: block; font-size: 11px; margin-top: 2px; }
 .mc-c.up { color: var(--grn); }
 .mc-c.dn { color: var(--red); }
 
 .sh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.sh-t { font-size: 14px; font-weight: 700; font-family: var(--font-heading); }
+.sh-t { font-size: var(--text-base); font-weight: 700; font-family: var(--font-heading); }
 .sh-l { font-size: 12px; color: var(--gold); cursor: pointer; font-weight: 600; }
 .sh-l:hover { text-decoration: underline; }
 
@@ -830,7 +830,7 @@ input[type="time"] {
 [data-theme="light"] .dc:hover { border-color: var(--gold); background: rgba(201,169,98,0.1); }
 .dc-ic { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
 .dc-i { flex: 1; min-width: 0; }
-.dc-t { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dc-t { font-size: var(--text-base); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dc-s { font-size: 11px; color: var(--tx3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dc-tm { font-size: 12px; color: var(--tx3); flex-shrink: 0; text-align: right; }
 /* Allow card title/address to wrap on mobile instead of harsh truncation */
@@ -851,7 +851,7 @@ input[type="time"] {
 .act-item { display: flex; gap: 12px; align-items: flex-start; }
 .act-dot { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
 .act-body { flex: 1; min-width: 0; }
-.act-body .act-t { font-size: 13px; font-weight: 500; color: var(--tx); line-height: 1.4; }
+.act-body .act-t { font-size: var(--text-base); font-weight: 500; color: var(--tx); line-height: 1.4; }
 .act-body .act-tm { font-size: 11px; color: var(--tx3); margin-top: 3px; }
 
 /* Liquid Glass Button System */
@@ -862,7 +862,7 @@ input[type="time"] {
   gap: 6px;
   padding: 8px 18px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 0.875rem; /* 14px at 16px root — controls stay compact vs body */
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;

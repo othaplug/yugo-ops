@@ -95,7 +95,7 @@ export default function ActivityFeed({ events, unseenIds, onMarkSeen }: Activity
     <div ref={containerRef} className="flex flex-col h-full min-h-0 -mx-1">
       <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0.5 px-1 pr-2">
         {events.length === 0 ? (
-          <div className="py-12 flex flex-col items-center gap-3 text-center">
+          <div className="py-16 sm:py-20 flex flex-col items-center gap-3 text-center">
             <div className="w-10 h-10 rounded-full bg-[var(--gdim)] flex items-center justify-center">
               <Radio className="w-5 h-5 text-[var(--tx3)]" />
             </div>
@@ -114,7 +114,7 @@ export default function ActivityFeed({ events, unseenIds, onMarkSeen }: Activity
 
             const inner = (
               <div
-                className="flex items-start gap-2.5 py-2.5 px-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
+                className="flex items-start gap-2.5 py-2.5 px-2 rounded-lg hover:bg-[var(--brd)]/25 transition-colors"
                 style={
                   color
                     ? { borderLeft: `3px solid ${color}`, paddingLeft: "calc(0.5rem - 3px)" }

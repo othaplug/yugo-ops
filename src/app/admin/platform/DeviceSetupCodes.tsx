@@ -253,7 +253,7 @@ export default function DeviceSetupCodes() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--gdim)] border border-[rgba(201,169,98,0.25)] mb-4">
                 <Icon name="plug" className="w-6 h-6 text-[var(--gold)]" />
               </div>
-              <p className="text-[14px] font-medium text-[var(--tx)] mb-1">No setup codes yet</p>
+              <p className="text-[var(--text-base)] font-medium text-[var(--tx)] mb-1">No setup codes yet</p>
               <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[280px] mx-auto">
                 Create a code to register an iPad. Crew opens /crew/setup on the device and enters the code to link it to a truck and team.
               </p>
@@ -273,7 +273,7 @@ export default function DeviceSetupCodes() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <code className="text-[14px] font-bold text-[var(--gold)] tracking-wider">{c.code}</code>
+                      <code className="text-[var(--text-base)] font-bold text-[var(--gold)] tracking-wider">{c.code}</code>
                       <button
                         onClick={() => copyCode(c.code)}
                         className="text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
@@ -320,7 +320,7 @@ export default function DeviceSetupCodes() {
       {trucks.length > 0 && (
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="font-heading text-[14px] font-bold text-[var(--tx)] flex items-center gap-2 min-w-0">
+            <h2 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)] flex items-center gap-2 min-w-0">
               <Icon name="truck" className="w-[14px] h-[14px]" /> Fleet Trucks
             </h2>
             <button

@@ -2014,7 +2014,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--gdim)] border border-[rgba(201,169,98,0.25)] mb-4">
                 <Icon name="users" className="w-6 h-6 text-[var(--gold)]" />
               </div>
-              <p className="text-[14px] font-medium text-[var(--tx)] mb-1">No users yet</p>
+              <p className="text-[var(--text-base)] font-medium text-[var(--tx)] mb-1">No users yet</p>
               <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[260px] mx-auto">Invite team members to give them access to the platform. They&apos;ll receive an email to sign in and get started.</p>
               <button
                 onClick={() => setInviteUserOpen(true)}

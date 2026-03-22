@@ -2744,7 +2744,7 @@ export default function QuoteFormClient({
                             <option value="medium">Medium</option>
                             <option value="heavy">Heavy</option>
                           </select>
-                          <button type="button" onClick={() => setEventItems((prev) => prev.filter((_, i) => i !== idx))} className="text-[var(--tx3)] hover:text-red-400 text-[14px] shrink-0">×</button>
+                          <button type="button" onClick={() => setEventItems((prev) => prev.filter((_, i) => i !== idx))} className="text-[var(--tx3)] hover:text-red-400 text-[var(--text-base)] shrink-0">×</button>
                         </div>
                       ))}
                       <button
@@ -3118,7 +3118,7 @@ export default function QuoteFormClient({
                   </div>
                   <div className="pt-3 border-t border-[var(--brd)] flex items-center justify-between">
                     <span className="text-[11px] font-semibold text-[var(--tx)]">Add-ons total</span>
-                    <span className="text-[14px] font-bold text-[var(--gold)]">{fmtPrice(addonSubtotal)}</span>
+                    <span className="text-[var(--text-base)] font-bold text-[var(--gold)]">{fmtPrice(addonSubtotal)}</span>
                   </div>
                 </div>
               )}

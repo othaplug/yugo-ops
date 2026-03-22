@@ -6,7 +6,7 @@ export default function ReviewPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center bg-[#0F0F0F] px-4">
-          <p className="text-[14px] text-[#B8B5B0]">Loading…</p>
+          <p className="text-[var(--text-base)] text-[#B8B5B0]">Loading…</p>
         </div>
       }
     >

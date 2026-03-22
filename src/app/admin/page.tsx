@@ -112,17 +112,22 @@ export default async function AdminPage() {
     move_code?: string | null;
   };
 
-  const mapDelivery = (d: Record<string, unknown>): Job => ({
-    id: String(d.id),
-    type: "delivery",
-    name: String(d.customer_name || d.client_name || "Delivery"),
-    subtitle: d.from_address ? String(d.from_address) : String(d.category || "Delivery"),
-    time: String(d.time_slot || "TBD"),
-    status: String(d.status || "pending").toLowerCase(),
-    date: String(d.scheduled_date || ""),
-    tag: String(d.category || "Delivery"),
-    delivery_number: d.delivery_number ? String(d.delivery_number) : null,
-  });
+  const mapDelivery = (d: Record<string, unknown>): Job => {
+    const from = d.from_address ? String(d.from_address) : "";
+    const num = d.delivery_number ? String(d.delivery_number) : "";
+    const subtitle = from || num || "";
+    return {
+      id: String(d.id),
+      type: "delivery",
+      name: String(d.customer_name || d.client_name || "Delivery"),
+      subtitle,
+      time: String(d.time_slot || "TBD"),
+      status: String(d.status || "pending").toLowerCase(),
+      date: String(d.scheduled_date || ""),
+      tag: String(d.category || "Delivery"),
+      delivery_number: d.delivery_number ? String(d.delivery_number) : null,
+    };
+  };
 
   const mapMove = (m: Record<string, unknown>): Job => ({
     id: String(m.id),

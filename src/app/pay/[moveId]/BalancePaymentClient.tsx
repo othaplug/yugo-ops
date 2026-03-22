@@ -177,7 +177,7 @@ export default function BalancePaymentClient({
               <Check size={32} color="#2D9F5A" weight="bold" />
             </div>
             <h1 className="text-[22px] font-bold text-[#F5F5F3] mb-2">Payment Received</h1>
-            <p className="text-[14px] text-[#B8B5B0] leading-relaxed mb-4">
+            <p className="text-[var(--text-base)] text-[#B8B5B0] leading-relaxed mb-4">
               Your balance has been paid in full. A receipt has been sent to your email.
             </p>
             <div className="bg-[#0F0F0F] rounded-xl p-4 border border-[#2A2A2A]">
@@ -293,7 +293,7 @@ export default function BalancePaymentClient({
           type="button"
           onClick={handlePay}
           disabled={!cardReady || processing}
-          className="w-full py-4 rounded-xl text-[14px] font-bold tracking-wide text-[#0D0D0D] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-4 rounded-xl text-[var(--text-base)] font-bold tracking-wide text-[#0D0D0D] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ backgroundColor: cardReady && !processing ? "#C9A962" : "#C9A96260" }}
         >
           {processing ? (

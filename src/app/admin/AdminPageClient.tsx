@@ -428,12 +428,9 @@ export default function AdminPageClient({
 
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{scheduleLabel}</h2>
-            <Link
-              href="/admin/calendar"
-              className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline transition-colors"
-            >
+            <Link href="/admin/calendar" className="admin-view-all-link shrink-0 gap-1">
               Calendar
-              <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current" />
+              <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
             </Link>
           </div>
 
@@ -474,7 +471,7 @@ export default function AdminPageClient({
                           {job.tag}
                         </span>
                       </div>
-                      <div className="text-[14px] font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors">
+                      <div className="text-[var(--text-base)] font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors">
                         {job.name}
                       </div>
                       {job.subtitle && (
@@ -493,7 +490,7 @@ export default function AdminPageClient({
               <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-4">
                 <CalendarBlank size={18} className="text-[var(--gold)]" />
               </div>
-              <div className="text-[14px] font-semibold text-[var(--tx)] mb-1">No jobs scheduled</div>
+              <div className="text-[var(--text-base)] font-semibold text-[var(--tx)] mb-1">No jobs scheduled</div>
               <p className="text-[12px] text-[var(--tx3)] mb-4">Get started by creating a quote or checking the calendar.</p>
               <div className="flex items-center justify-center gap-2">
                 <Link href="/admin/quotes/new" className="inline-flex px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
@@ -511,7 +508,9 @@ export default function AdminPageClient({
             <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Coming up</h3>
-                <Link href="/admin/deliveries" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">All &rarr;</Link>
+                <Link href="/admin/deliveries" className="admin-view-all-link shrink-0">
+                  All
+                </Link>
               </div>
               <div className="divide-y divide-[var(--brd)]/30">
                 {upcomingJobs.slice(0, 5).map((job) => {
@@ -541,12 +540,9 @@ export default function AdminPageClient({
           <div className="pb-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Revenue</h2>
-              <Link
-                href="/admin/revenue"
-                className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline transition-colors"
-              >
+              <Link href="/admin/revenue" className="admin-view-all-link shrink-0 gap-1">
                 Details
-                <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current" />
+                <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
               </Link>
             </div>
             <div className="flex items-baseline gap-2 mb-1">
