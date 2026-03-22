@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import { useConfirm } from "@/hooks/useConfirm";
+import { getDisplayLabel } from "@/lib/displayLabels";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import {
@@ -1473,7 +1474,7 @@ export default function PartnerB2BProjectsTab({
               <div className="flex items-center gap-2 flex-wrap min-w-0">
                 <span className="text-[11px] font-semibold text-[var(--gold)]">{p.project_number}</span>
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${PROJECT_STATUS_COLORS[p.status] || ""}`}>
-                {PROJECT_STATUS_LABELS[p.status] || p.status}
+                {PROJECT_STATUS_LABELS[p.status] || getDisplayLabel(p.status)}
               </span>
               {readyItems > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-500">
@@ -1717,7 +1718,7 @@ export default function PartnerB2BProjectsTab({
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-[11px] font-semibold text-[var(--gold)]">{p.project_number}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${PROJECT_STATUS_COLORS[p.status] || ""}`}>
-                      {PROJECT_STATUS_LABELS[p.status] || p.status}
+                      {PROJECT_STATUS_LABELS[p.status] || getDisplayLabel(p.status)}
                     </span>
                     {p.itemsIssue > 0 && (
                       <span className="text-[9px] font-semibold text-red-500 flex items-center gap-0.5"><AlertTriangle size={9} />{p.itemsIssue} issue{p.itemsIssue > 1 ? "s" : ""}</span>

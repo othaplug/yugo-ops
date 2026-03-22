@@ -79,7 +79,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             ) : null}
             {retailer ? (
               <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
-                <span className="font-semibold" style={{ color: FOREST }}>Retailer / source:</span> {retailer}
+                <span className="font-semibold" style={{ color: FOREST }}>Retailer:</span> {retailer}
               </p>
             ) : null}
           </div>

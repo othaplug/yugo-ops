@@ -460,7 +460,7 @@ function BusinessInfoSection() {
             Company Details
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {inp("company_name", "Company Name", "HelloYugo+")}
+            {inp("company_name", "Company Name", "HelloYugo")}
             {inp("company_legal_name", "Legal Name", "HelloYugo Inc.")}
             {inp("company_address", "Address", "50 Carroll St, Toronto, ON")}
             {inp("company_hst_number", "HST / Tax Number", "123456789RT0001")}
@@ -547,6 +547,10 @@ function QuotingDefaultsSection() {
           quote_id_prefix: config.quote_id_prefix,
           auto_followup_enabled: config.auto_followup_enabled,
           followup_max_attempts: config.followup_max_attempts,
+          change_request_enabled: config.change_request_enabled,
+          change_request_per_score_rate: config.change_request_per_score_rate,
+          change_request_min_hours_before_move: config.change_request_min_hours_before_move,
+          change_request_max_items_per_request: config.change_request_max_items_per_request,
         }),
       });
       const errBody = await res.json().catch(() => ({}));
@@ -600,6 +604,52 @@ function QuotingDefaultsSection() {
             </label>
           </div>
         </div>
+
+        <div className="pt-4 border-t border-[var(--brd)]/40">
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Client inventory changes (pre-move)</div>
+          <p className="text-[11px] text-[var(--tx3)] mb-3">
+            Lets clients add/remove catalog items from the move tracking page before move day (with coordinator review).
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="flex items-center gap-2 text-[12px] text-[var(--tx)]">
+              <input
+                type="checkbox"
+                checked={config.change_request_enabled === "true"}
+                onChange={(e) => setConfig((p) => ({ ...p, change_request_enabled: e.target.checked ? "true" : "false" }))}
+                className="accent-[var(--gold)]"
+              />
+              Enable inventory change requests
+            </label>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">$ per weight-score unit</label>
+              <input
+                type="number"
+                value={config.change_request_per_score_rate || "35"}
+                onChange={(e) => setConfig((p) => ({ ...p, change_request_per_score_rate: e.target.value }))}
+                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Min hours before move</label>
+              <input
+                type="number"
+                value={config.change_request_min_hours_before_move || "48"}
+                onChange={(e) => setConfig((p) => ({ ...p, change_request_min_hours_before_move: e.target.value }))}
+                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Max lines per request</label>
+              <input
+                type="number"
+                value={config.change_request_max_items_per_request || "10"}
+                onChange={(e) => setConfig((p) => ({ ...p, change_request_max_items_per_request: e.target.value }))}
+                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
           {saving ? "Saving..." : "Save Quoting Defaults"}
         </button>

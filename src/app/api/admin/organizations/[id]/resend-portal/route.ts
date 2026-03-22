@@ -60,7 +60,7 @@ export async function POST(
     const { error: sendError } = await resend.emails.send({
       from: emailFrom,
       to: toEmail,
-      subject: `Welcome to Yugo+ ${org.name}`,
+      subject: `Welcome to Yugo — ${org.name}`,
       html,
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });

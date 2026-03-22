@@ -41,16 +41,53 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
 
   const isOffice = move.move_type === "office";
 
-  const [{ data: approvedChanges }, { data: approvedExtras }, { data: etaSmsLog }, { data: reviewRequest }, { data: itemWeights }] = await Promise.all([
+  const [
+    { data: approvedChanges },
+    { data: approvedExtras },
+    { data: etaSmsLog },
+    { data: reviewRequest },
+    { data: itemWeights },
+    { data: pendingInventoryChange },
+    { data: paymentLedger },
+  ] = await Promise.all([
     db.from("move_change_requests").select("fee_cents").eq("move_id", move.id).eq("status", "approved"),
     db.from("extra_items").select("fee_cents").eq("job_id", move.id).eq("job_type", "move").eq("status", "approved"),
     db.from("eta_sms_log").select("message_type, sent_at, eta_minutes, twilio_sid").eq("move_id", move.id).order("sent_at", { ascending: false }),
     db.from("review_requests").select("id, status, email_sent_at, reminder_sent_at, review_clicked, review_clicked_at, client_rating, client_feedback").eq("move_id", move.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     db.from("item_weights").select("slug, item_name, weight_score, category, room, is_common, display_order, active").eq("active", true).order("display_order"),
+    move.pending_inventory_change_request_id
+      ? db
+          .from("inventory_change_requests")
+          .select(
+            "id, status, submitted_at, items_added, items_removed, auto_calculated_delta, admin_adjusted_delta, truck_assessment, admin_notes, decline_reason",
+          )
+          .eq("id", move.pending_inventory_change_request_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    db
+      .from("move_payment_ledger")
+      .select(
+        "id, label, entry_type, pre_tax_amount, hst_amount, paid_at, settlement_method, square_payment_id, inventory_change_request_id",
+      )
+      .eq("move_id", move.id)
+      .order("paid_at", { ascending: true }),
   ]);
   const changeFeesCents = (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
   const extraFeesCents = (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
   const additionalFeesCents = changeFeesCents + extraFeesCents;
 
-  return <MoveDetailClient move={move} crews={crews ?? []} isOffice={isOffice} userRole={userRole} additionalFeesCents={additionalFeesCents} etaSmsLog={etaSmsLog ?? []} reviewRequest={reviewRequest ?? undefined} itemWeights={itemWeights ?? []} />;
+  return (
+    <MoveDetailClient
+      move={move}
+      crews={crews ?? []}
+      isOffice={isOffice}
+      userRole={userRole}
+      additionalFeesCents={additionalFeesCents}
+      etaSmsLog={etaSmsLog ?? []}
+      reviewRequest={reviewRequest ?? undefined}
+      itemWeights={itemWeights ?? []}
+      pendingInventoryChange={pendingInventoryChange ?? undefined}
+      paymentLedger={paymentLedger ?? []}
+    />
+  );
 }

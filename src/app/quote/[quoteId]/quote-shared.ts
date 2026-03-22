@@ -1,3 +1,5 @@
+import { SERVICE_TYPE_LABELS, TIER_LABELS } from "@/lib/displayLabels";
+
 export const TAX_RATE = 0.13;
 export const WINE = "#5C1A33";
 export const FOREST = "#2C3E2D";
@@ -130,7 +132,7 @@ export const TIER_META: Record<
   { label: string; tagline: string; badge?: string; footer?: string; accent: string; bg: string; border: string }
 > = {
   curated: {
-    label: "Curated",
+    label: TIER_LABELS.curated,
     tagline: "Precision and care for a seamless move.",
     accent: FOREST,
     bg: "#FFFFFF",
@@ -138,7 +140,7 @@ export const TIER_META: Record<
     footer: "Best for: straightforward moves with quality assurance.",
   },
   signature: {
-    label: "Signature",
+    label: TIER_LABELS.signature,
     tagline: "Every detail handled. Nothing left to chance.",
     badge: "RECOMMENDED",
     accent: GOLD,
@@ -147,7 +149,7 @@ export const TIER_META: Record<
     footer: "Best for: full-home moves where nothing gets overlooked.",
   },
   estate: {
-    label: "Estate",
+    label: TIER_LABELS.estate,
     tagline: "A private standard for those who expect more than a move.",
     accent: WINE,
     bg: "#FDF8FA",
@@ -166,18 +168,8 @@ export const MOVE_SIZE_LABELS: Record<string, string> = {
   partial: "Partial Move",
 };
 
-export const SERVICE_LABEL: Record<string, string> = {
-  local_move: "Local Move",
-  long_distance: "Long Distance Move",
-  office_move: "Office Relocation",
-  single_item: "Single Item Delivery",
-  white_glove: "White Glove Service",
-  specialty: "Specialty Service",
-  b2b_oneoff: "Commercial Delivery",
-  b2b_delivery: "Commercial Delivery",
-  event: "Event Logistics",
-  labour_only: "Labour Service",
-};
+/** @deprecated Prefer getDisplayLabel(_, "service_type") for new code */
+export const SERVICE_LABEL: Record<string, string> = SERVICE_TYPE_LABELS;
 
 export const HERO_CONFIG: Record<string, { headline: string; subtitle: string }> = {
   local_move: {

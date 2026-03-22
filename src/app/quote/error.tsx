@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { XCircle } from "@phosphor-icons/react";
+import { SafeText } from "@/components/SafeText";
 
 export default function QuoteError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { console.error("Quote error:", error); }, [error]);
@@ -13,7 +14,11 @@ export default function QuoteError({ error, reset }: { error: Error & { digest?:
           <XCircle size={24} color="#E53E3E" aria-hidden />
         </div>
         <h1 className="text-[18px] font-bold text-[#1A1714]">Something went wrong</h1>
-        <p className="text-[13px] text-[#888]">{error.message || "We couldn't load this quote. It may have expired or been removed."}</p>
+        <p className="text-[13px] text-[#888]">
+          <SafeText fallback="We couldn&apos;t load this quote. It may have expired or been removed.">
+            {error.message || "We couldn't load this quote. It may have expired or been removed."}
+          </SafeText>
+        </p>
         <button onClick={reset} className="px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[#C9A962] text-white">Try again</button>
       </div>
     </div>

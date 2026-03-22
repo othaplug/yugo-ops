@@ -10,12 +10,15 @@ interface BalancePaymentSectionProps {
 }
 
 function getBalanceStatus(move: any): { label: string; color: string } { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const balanceAmount = Number(move.balance_amount || 0);
+  if (balanceAmount > 0 && move.balance_paid_at) {
+    return { label: "Additional balance due", color: "text-[var(--gold)]" };
+  }
   if (move.balance_paid_at) {
     if (move.balance_method === "etransfer") return { label: "E-transfer received", color: "text-[var(--grn)]" };
     if (move.balance_method === "card") return { label: "Card charged", color: "text-[var(--grn)]" };
     return { label: "Paid", color: "text-[var(--grn)]" };
   }
-  const balanceAmount = Number(move.balance_amount || 0);
   if (balanceAmount <= 0) return { label: "No balance due", color: "text-[var(--tx3)]" };
 
   if (move.scheduled_date) {
@@ -104,7 +107,7 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
         )}
       </div>
 
-      {!isBalancePaid && balanceAmount > 0 && (
+      {balanceAmount > 0 && (
         <div className="mt-3 pt-3 border-t border-[var(--brd)]/50 flex flex-wrap items-center gap-2">
           <button
             type="button"

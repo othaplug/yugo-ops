@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         await resend.emails.send({
           from: emailFrom,
           to: emailToSend,
-          subject: "Referral received Yugo+",
+          subject: "Referral received Yugo",
           html,
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
         });

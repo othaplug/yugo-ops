@@ -1,6 +1,7 @@
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { TIER_LABELS as DISPLAY_TIER_LABELS, displayLabel } from "@/lib/displayLabels";
 
 /* ─── Brand tokens ─── */
 const BG = "#080808";
@@ -25,14 +26,7 @@ const ESTATE_ACCENT   = "#C9A84C";  /* estate gold                 */
 /* ─── Tier card primary text (warm cream — legible on all three dark bgs) ─── */
 const TIER_TX = "#F5EEE6";
 
-const TIER_LABELS: Record<string, string> = {
-  curated: "Curated",
-  signature: "Signature",
-  estate: "Estate",
-  // legacy keys for quotes created before the rename
-  essentials: "Curated",
-  premier: "Signature",
-};
+const EMAIL_TIER_LABELS: Record<string, string> = { ...DISPLAY_TIER_LABELS };
 
 const MOVE_SIZE_LABELS: Record<string, string> = {
   studio: "Studio",
@@ -46,7 +40,7 @@ const MOVE_SIZE_LABELS: Record<string, string> = {
 
 function formatMoveSize(raw: string | null | undefined): string {
   if (!raw) return "";
-  return MOVE_SIZE_LABELS[raw] ?? raw.toUpperCase();
+  return MOVE_SIZE_LABELS[raw] ?? displayLabel(raw);
 }
 
 /* ─── Shared layout wrapper ─── */
@@ -345,7 +339,7 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
     .filter((k) => tiers[k])
     .map((key) => {
       const t         = tiers[key];
-      const label     = TIER_LABELS[key] ?? t.label ?? key;
+      const label     = EMAIL_TIER_LABELS[key] ?? t.label ?? key;
       const accent    = tierAccents[key] ?? TX3;
       const isRec     = key === rec;
       const badgeText = badgeLabels[rec]?.[key] ?? "";
@@ -439,14 +433,37 @@ function bodyText(text: string): string {
   return `<p style="font-size:13px;color:${TX2};line-height:1.75;margin:0 0 28px;">${text}</p>`;
 }
 
-/** Single "Access" row when fromAccess and/or toAccess exist. */
-function accessRows(fromAccess: string | null | undefined, toAccess: string | null | undefined): [string, string][] {
-  const from = formatAccessForDisplay(fromAccess);
-  const to = formatAccessForDisplay(toAccess);
-  if (from && to) return [["Access", `Pickup: ${from}; Drop-off: ${to}`]];
-  if (from) return [["Access", from]];
-  if (to) return [["Access", to]];
-  return [];
+/**
+ * Address rows with access immediately after each stop. Falls back to a lone
+ * "Access" row when access exists but the corresponding address is missing.
+ */
+function addressRowsWithAccess(
+  fromLabel: string,
+  fromAddress: string | undefined,
+  fromAccess: string | null | undefined,
+  toLabel: string,
+  toAddress: string | undefined,
+  toAccess: string | null | undefined,
+): [string, string][] {
+  const rows: [string, string][] = [];
+  const fa = formatAccessForDisplay(fromAccess);
+  const ta = formatAccessForDisplay(toAccess);
+
+  if (fromAddress) {
+    rows.push([fromLabel, fromAddress]);
+    if (fa) rows.push(["Access", fa]);
+  } else if (fa) {
+    rows.push(["Access", fa]);
+  }
+
+  if (toAddress) {
+    rows.push([toLabel, toAddress]);
+    if (ta) rows.push(["Access", ta]);
+  } else if (ta) {
+    rows.push(["Access", ta]);
+  }
+
+  return rows;
 }
 
 /* ─── Templates ─── */
@@ -455,9 +472,7 @@ function accessRows(fromAccess: string | null | undefined, toAccess: string | nu
 function residentialTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
-  if (d.fromAddress) rows.push(["From", d.fromAddress]);
-  if (d.toAddress) rows.push(["To", d.toAddress]);
-  rows.push(...accessRows(d.fromAccess, d.toAccess));
+  rows.push(...addressRowsWithAccess("From", d.fromAddress, d.fromAccess, "To", d.toAddress, d.toAccess));
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.distance) rows.push(["Distance", d.distance]);
   if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
@@ -483,9 +498,7 @@ function residentialTemplate(d: QuoteTemplateData): string {
 /* Long Distance */
 function longDistanceTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
-  if (d.fromAddress) rows.push(["Origin", d.fromAddress]);
-  if (d.toAddress) rows.push(["Destination", d.toAddress]);
-  rows.push(...accessRows(d.fromAccess, d.toAccess));
+  rows.push(...addressRowsWithAccess("Origin", d.fromAddress, d.fromAccess, "Destination", d.toAddress, d.toAccess));
   if (d.distance) rows.push(["Distance", d.distance]);
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
@@ -515,9 +528,7 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
 function officeTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.companyName) rows.push(["Company", d.companyName]);
-  if (d.fromAddress) rows.push(["Current Office", d.fromAddress]);
-  if (d.toAddress) rows.push(["New Office", d.toAddress]);
-  rows.push(...accessRows(d.fromAccess, d.toAccess));
+  rows.push(...addressRowsWithAccess("Current Office", d.fromAddress, d.fromAccess, "New Office", d.toAddress, d.toAccess));
   rows.push(["Target Date", dateDisplay(d.moveDate)]);
 
   const price = d.customPrice;
@@ -525,7 +536,7 @@ function officeTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Relocation Proposal")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Thank you for considering Yugo+ for your office relocation. We have prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.")}
+    ${bodyText("Thank you for considering Yugo for your office relocation. We have prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     ${price ? priceCard("Project Estimate", price, "+ HST &middot; Flat-rate guarantee") : ""}
@@ -540,9 +551,7 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.itemDescription) rows.push(["Item", d.itemDescription]);
   if (d.itemCategory) rows.push(["Category", d.itemCategory]);
-  if (d.fromAddress) rows.push(["Pickup", d.fromAddress]);
-  if (d.toAddress) rows.push(["Delivery", d.toAddress]);
-  rows.push(...accessRows(d.fromAccess, d.toAccess));
+  rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
@@ -566,9 +575,7 @@ function singleItemTemplate(d: QuoteTemplateData): string {
 function whiteGloveTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.itemDescription) rows.push(["Item", d.itemDescription]);
-  if (d.fromAddress) rows.push(["Pickup", d.fromAddress]);
-  if (d.toAddress) rows.push(["Delivery", d.toAddress]);
-  rows.push(...accessRows(d.fromAccess, d.toAccess));
+  rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
@@ -592,9 +599,7 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
 function specialtyTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.projectType) rows.push(["Project Type", d.projectType]);
-  if (d.fromAddress) rows.push(["From", d.fromAddress]);
-  if (d.toAddress) rows.push(["To", d.toAddress]);
-  rows.push(...accessRows(d.fromAccess, d.toAccess));
+  rows.push(...addressRowsWithAccess("From", d.fromAddress, d.fromAccess, "To", d.toAddress, d.toAccess));
   rows.push(["Target Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
@@ -683,7 +688,11 @@ function eventTemplate(d: QuoteTemplateData): string {
 function labourOnlyTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.labourDescription) rows.push(["Work", d.labourDescription]);
-  if (d.fromAddress) rows.push(["Location", d.fromAddress]);
+  if (d.fromAddress) {
+    rows.push(["Location", d.fromAddress]);
+    const locAccess = formatAccessForDisplay(d.fromAccess);
+    if (locAccess) rows.push(["Access", locAccess]);
+  }
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.labourCrewSize != null && d.labourHours != null) {
     rows.push(["Crew", `${d.labourCrewSize} movers \u00d7 ${d.labourHours} hours`]);
@@ -722,9 +731,7 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.b2bBusinessName) rows.push(["Business", d.b2bBusinessName]);
   if (d.b2bItems) rows.push(["Items", d.b2bItems]);
-  if (d.fromAddress) rows.push(["Pickup", d.fromAddress]);
-  if (d.toAddress) rows.push(["Delivery", d.toAddress]);
-  rows.push(...accessRows(d.fromAccess, d.toAccess));
+  rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
   rows.push(["Date", dateDisplay(d.moveDate)]);
 
   const total = d.customPrice ?? 0;

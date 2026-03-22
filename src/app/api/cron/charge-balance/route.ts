@@ -5,6 +5,7 @@ import { sendEmail } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { getSquarePaymentConfig } from "@/lib/square-config";
+import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const HS_TASKS = `${HS_BASE}/tasks`;
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
     .from("moves")
     .select("*")
     .eq("scheduled_date", tomorrowStr)
-    .is("balance_paid_at", null)
+    .gt("balance_amount", 0)
     .not("square_card_id", "is", null)
     .not("deposit_paid_at", "is", null);
 
@@ -73,20 +74,17 @@ export async function GET(req: NextRequest) {
         throw new Error("Payment was not completed — no payment ID returned");
       }
 
-      const chargedAt = new Date().toISOString();
-      await supabase
-        .from("moves")
-        .update({
-          balance_paid_at: chargedAt,
-          balance_method: "card",
-          balance_auto_charged: true,
-          status: "paid",
-          payment_marked_paid: true,
-          payment_marked_paid_at: chargedAt,
-          payment_marked_paid_by: "auto-charge",
-          updated_at: chargedAt,
-        })
-        .eq("id", move.id);
+      const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
+      await finalizeBalancePaymentSettlement({
+        admin: supabase,
+        moveId: move.id,
+        balancePreTax: balanceAmount,
+        squarePaymentId: paymentId,
+        squareReceiptUrl: receiptUrl,
+        settlementMethod: "auto-charge",
+        paymentMarkedBy: "auto-charge",
+        updateMoveReceiptUrl: !!receiptUrl,
+      });
 
       await supabase.from("status_events").insert({
         entity_type: "move",

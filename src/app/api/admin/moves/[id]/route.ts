@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/api-auth";
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { logAudit } from "@/lib/audit";
+import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
 
 export async function PATCH(
   req: NextRequest,
@@ -65,25 +66,29 @@ export async function PATCH(
 
     if (action === "mark_etransfer_received") {
       const admin = createAdminClient();
-      const now = new Date().toISOString();
+      const { data: moveBefore, error: fetchE } = await admin.from("moves").select("*").eq("id", id).single();
+      if (fetchE || !moveBefore) return NextResponse.json({ error: "Move not found" }, { status: 404 });
+      const bal = Number(moveBefore.balance_amount || 0);
+      if (bal <= 0) {
+        return NextResponse.json({ error: "No balance due to mark as received" }, { status: 400 });
+      }
 
-      const { data: move, error: updateErr } = await admin
-        .from("moves")
-        .update({
-          balance_paid_at: now,
-          balance_method: "etransfer",
-          status: "paid",
-          payment_marked_paid: true,
-          payment_marked_paid_at: now,
-          payment_marked_paid_by: markedBy?.trim() || "admin",
-          updated_at: now,
-        })
-        .eq("id", id)
-        .select()
-        .single();
+      try {
+        await finalizeBalancePaymentSettlement({
+          admin,
+          moveId: id,
+          balancePreTax: bal,
+          squarePaymentId: null,
+          squareReceiptUrl: null,
+          settlementMethod: "etransfer",
+          paymentMarkedBy: markedBy?.trim() || "admin",
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to record payment";
+        return NextResponse.json({ error: msg }, { status: 500 });
+      }
 
-      if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
-      if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
+      const { data: move } = await admin.from("moves").select("*").eq("id", id).single();
 
       await admin.from("status_events").insert({
         entity_type: "move",
@@ -108,9 +113,6 @@ export async function PATCH(
 
       if (fetchErr || !move) {
         return NextResponse.json({ error: "Move not found" }, { status: 404 });
-      }
-      if (move.balance_paid_at) {
-        return NextResponse.json({ error: "Balance already paid" }, { status: 409 });
       }
       if (!move.square_card_id) {
         return NextResponse.json({ error: "No card on file for this move" }, { status: 400 });
@@ -145,32 +147,29 @@ export async function PATCH(
           return NextResponse.json({ error: "Payment was not completed" }, { status: 500 });
         }
 
-        const now = new Date().toISOString();
-        const { data: updated, error: updateErr } = await admin
-          .from("moves")
-          .update({
-            balance_paid_at: now,
-            balance_method: "card",
-            balance_auto_charged: false,
-            status: "paid",
-            payment_marked_paid: true,
-            payment_marked_paid_at: now,
-            payment_marked_paid_by: markedBy?.trim() || "admin",
-            updated_at: now,
-          })
-          .eq("id", id)
-          .select()
-          .single();
+        const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
 
-        if (updateErr) {
-          return NextResponse.json({ error: updateErr.message }, { status: 400 });
+        await finalizeBalancePaymentSettlement({
+          admin,
+          moveId: id,
+          balancePreTax: balanceAmount,
+          squarePaymentId: paymentId,
+          squareReceiptUrl: receiptUrl,
+          settlementMethod: "admin",
+          paymentMarkedBy: markedBy?.trim() || "admin",
+          updateMoveReceiptUrl: !!receiptUrl,
+        });
+
+        const { data: updated, error: reloadErr } = await admin.from("moves").select("*").eq("id", id).single();
+        if (reloadErr || !updated) {
+          return NextResponse.json({ error: reloadErr?.message || "Move not found" }, { status: 400 });
         }
 
         await admin.from("status_events").insert({
           entity_type: "move",
           entity_id: id,
           event_type: "payment_received",
-          description: `Card charged manually — ${(ccBalance).toFixed(2)} CAD by ${markedBy?.trim() || "admin"}`,
+          description: `Card charged manually — ${ccBalance.toFixed(2)} CAD by ${markedBy?.trim() || "admin"}`,
           icon: "dollar",
         });
 

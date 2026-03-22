@@ -17,8 +17,11 @@ import {
   LIVE_TRACKING_STAGES,
   getStatusLabel,
 } from "@/lib/move-status";
+import { getDisplayLabel } from "@/lib/displayLabels";
+import { SafeText } from "@/components/SafeText";
 import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
+import { CLIENT_ETRANSFER_EMAIL } from "@/lib/complete-balance-payment";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
@@ -26,6 +29,7 @@ import TipConfirmation from "@/components/tracking/TipConfirmation";
 import ExperienceRatingSection from "@/components/tracking/ExperienceRatingSection";
 import ClientSettingsMenu from "./ClientSettingsMenu";
 import TrackingAgreementModal from "./TrackingAgreementModal";
+import InventoryChangeRequestModal from "@/components/tracking/InventoryChangeRequestModal";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { WINE, FOREST, GOLD } from "@/lib/client-theme";
 import {
@@ -106,20 +110,6 @@ function getStatusIdx(status: string | null): number {
   return legacy[status] ?? 0;
 }
 
-/** Display label for tier (curated/signature/estate or legacy essentials/premier). */
-function tierDisplayLabel(tier: string | null | undefined): string | null {
-  if (!tier) return null;
-  const raw = tier.toLowerCase().trim().replace(/\s+/g, "_");
-  const map: Record<string, string> = {
-    curated: "Curated",
-    signature: "Signature",
-    estate: "Estate",
-    essentials: "Curated",
-    premier: "Signature",
-  };
-  return map[raw] ?? raw.charAt(0).toUpperCase() + raw.slice(1).replace(/_/g, " ");
-}
-
 export default function TrackMoveClient({
   move,
   crew,
@@ -134,6 +124,14 @@ export default function TrackMoveClient({
   showTipPrompt = false,
   tipData = null,
   crewSize = 2,
+  inventoryChangeFeatureOn = false,
+  inventoryChangeItemWeights = [],
+  inventoryChangeEligible = false,
+  inventoryChangeReason = "",
+  inventoryChangePending = null,
+  inventoryChangePerScoreRate = 35,
+  inventoryChangeMaxItems = 10,
+  latestInventoryAdjustmentPayment = null,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
@@ -148,6 +146,18 @@ export default function TrackMoveClient({
   showTipPrompt?: boolean;
   tipData?: { amount: number } | null;
   crewSize?: number;
+  inventoryChangeFeatureOn?: boolean;
+  inventoryChangeItemWeights?: { slug: string; item_name: string; weight_score: number; active?: boolean }[];
+  inventoryChangeEligible?: boolean;
+  inventoryChangeReason?: string;
+  inventoryChangePending?: { id: string; status: string; submitted_at: string } | null;
+  inventoryChangePerScoreRate?: number;
+  inventoryChangeMaxItems?: number;
+  latestInventoryAdjustmentPayment?: {
+    id: string;
+    additional_deposit_required: number;
+    reviewed_at?: string | null;
+  } | null;
 }) {
   const router = useRouter();
   const params = useParams();
@@ -161,6 +171,7 @@ export default function TrackMoveClient({
   const [changeUrgent, setChangeUrgent] = useState(false);
   const [changeSubmitting, setChangeSubmitting] = useState(false);
   const [changeSubmitted, setChangeSubmitted] = useState(false);
+  const [inventoryChangeModalOpen, setInventoryChangeModalOpen] = useState(false);
   const { toast } = useToast();
   const [liveStage, setLiveStage] = useState<string | null>(move.stage || null);
   const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
@@ -338,15 +349,24 @@ export default function TrackMoveClient({
   const scheduledDate = liveScheduledDate ? (parseDateOnly(liveScheduledDate) ?? new Date(liveScheduledDate)) : null;
   const arrivalWindow = liveArrivalWindow ?? move.arrival_window ?? null;
   const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000) : null;
-  const isPaid = move.status === "paid" || !!move.payment_marked_paid || !!move.balance_paid_at || paymentRecorded || showPaymentSuccess;
-  const baseBalance = isPaid ? 0 : Number(move.balance_amount || 0);
-  const feesDollars = isPaid ? 0 : (additionalFeesCents || 0) / 100;
+  const indicativeSettled =
+    move.status === "paid" || !!move.payment_marked_paid || !!move.balance_paid_at || paymentRecorded || showPaymentSuccess;
+  const baseBalance = Number(move.balance_amount || 0);
+  const feesDollars =
+    baseBalance > 0 ? 0 : indicativeSettled ? 0 : (additionalFeesCents || 0) / 100;
   const totalBalance = baseBalance + feesDollars;
+  const outstandingInventoryAdj =
+    !!latestInventoryAdjustmentPayment &&
+    baseBalance > 0 &&
+    Math.abs(Number(latestInventoryAdjustmentPayment.additional_deposit_required) - baseBalance) <= 0.05;
+  const hasCardOnFile = !!move.square_card_id;
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [sqSdkReady, setSqSdkReady] = useState(false);
   const [sqCardReady, setSqCardReady] = useState(false);
   const [sqProcessing, setSqProcessing] = useState(false);
   const [sqError, setSqError] = useState<string | null>(null);
+  const [chargingSavedCard, setChargingSavedCard] = useState(false);
+  const [balanceChargeError, setBalanceChargeError] = useState<string | null>(null);
   const sqCardRef = useRef<SquareCard | null>(null);
   const sqInitRef = useRef(false);
 
@@ -450,9 +470,39 @@ export default function TrackMoveClient({
       setPaymentRecorded(true);
       setPaymentModalOpen(false);
       toast("Payment successful!", "check");
+      router.refresh();
     } catch (e) {
       setSqError(e instanceof Error ? e.message : "An unexpected error occurred.");
+    } finally {
       setSqProcessing(false);
+    }
+  };
+
+  const handlePayWithSavedCard = async () => {
+    if (chargingSavedCard) return;
+    setChargingSavedCard(true);
+    setBalanceChargeError(null);
+    try {
+      const res = await fetch(
+        `/api/track/moves/${move.id}/pay-balance-card?token=${encodeURIComponent(token)}`,
+        { method: "POST" },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !(data as { success?: boolean }).success) {
+        setBalanceChargeError(
+          typeof (data as { error?: string }).error === "string"
+            ? (data as { error: string }).error
+            : "Payment failed. Please try again.",
+        );
+        return;
+      }
+      setPaymentRecorded(true);
+      toast("Payment successful!", "check");
+      router.refresh();
+    } catch (e) {
+      setBalanceChargeError(e instanceof Error ? e.message : "Payment failed.");
+    } finally {
+      setChargingSavedCard(false);
     }
   };
 
@@ -599,7 +649,13 @@ export default function TrackMoveClient({
                     ? "White Glove Service"
                     : isSpecialty
                       ? "Specialty Move"
-                      : tierDisplayLabel(move.tier_selected || move.tier || move.service_tier);
+                      : getDisplayLabel(
+                          (move.tier_selected || move.tier || move.service_tier || "")
+                            .toLowerCase()
+                            .trim()
+                            .replace(/\s+/g, "_"),
+                          "tier",
+                        ) || null;
                 return label ? (
                   <span
                     className="text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
@@ -770,7 +826,11 @@ export default function TrackMoveClient({
                       {isSingleItem && (move as { item_description?: string | null }).item_description && (
                         <div className="pb-3 border-b" style={{ borderColor: `${FOREST}12` }}>
                           <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-0.5" style={{ color: FOREST }}>Item</div>
-                          <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{(move as { item_description?: string | null }).item_description}</div>
+                          <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>
+                            <SafeText fallback="Item details are unavailable here. Check your confirmation email.">
+                              {(move as { item_description?: string | null }).item_description ?? ""}
+                            </SafeText>
+                          </div>
                         </div>
                       )}
                       {(serviceType === "white_glove" || serviceType === "specialty") && (
@@ -878,17 +938,23 @@ export default function TrackMoveClient({
                         <div className="flex-1 px-4 py-3.5 pt-8 flex flex-col justify-between min-w-0">
                           <div>
                             {perk.organizations?.name && (
-                              <div className="text-[9px] font-semibold text-white/60 mb-1">From {perk.organizations.name}</div>
+                              <div className="text-[9px] font-semibold text-white/60 mb-1">
+                                From <SafeText fallback="our partner">{perk.organizations.name}</SafeText>
+                              </div>
                             )}
-                            <div className="text-[13px] font-bold text-white leading-tight line-clamp-2">{perk.title}</div>
+                            <div className="text-[13px] font-bold text-white leading-tight line-clamp-2">
+                              <SafeText fallback="Partner offer">{perk.title}</SafeText>
+                            </div>
                             <div className="text-[10px] text-white/80 mt-1 leading-snug line-clamp-3">
-                              {perk.description || "Exclusive offer for Yugo movers. Terms apply."}
+                              <SafeText fallback="Exclusive offer for Yugo movers. Terms apply.">
+                                {perk.description ?? "Exclusive offer for Yugo movers. Terms apply."}
+                              </SafeText>
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                             {perk.redemption_code && (
                               <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
-                                Code: {perk.redemption_code}
+                                Code: <SafeText fallback="—">{perk.redemption_code}</SafeText>
                               </span>
                             )}
                             {perk.valid_until && (
@@ -1274,7 +1340,7 @@ export default function TrackMoveClient({
         {/* Tab content */}
         {activeTab === "dash" && !isCompleted && (
           <div>
-            {additionalFeesCents > 0 && !isPaid && (
+            {additionalFeesCents > 0 && !indicativeSettled && baseBalance <= 0 && (
               <div className="pb-4 text-[11px] opacity-70" style={{ color: FOREST }}>
                 Additional charges of {formatCurrency((additionalFeesCents || 0) / 100)} from approved changes.
               </div>
@@ -1422,27 +1488,73 @@ export default function TrackMoveClient({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-4 pt-1">
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: FOREST }}>Balance Due</div>
-                  <div className="font-hero text-[18px] font-bold mt-0.5" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
-                    {formatCurrency(totalBalance)}
+              <div className="flex flex-col gap-3 pt-1">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: FOREST }}>Balance Due</div>
+                    <div className="font-hero text-[18px] font-bold mt-0.5" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
+                      {formatCurrency(totalBalance)}
+                    </div>
+                    {totalBalance > 0 ? (
+                      <div className="text-[10px] opacity-50" style={{ color: FOREST }}>+{formatCurrency(calcHST(totalBalance))} HST</div>
+                    ) : (
+                      <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Fully paid — thank you!</div>
+                    )}
                   </div>
-                  {totalBalance > 0 ? (
-                    <div className="text-[10px] opacity-50" style={{ color: FOREST }}>+{formatCurrency(calcHST(totalBalance))} HST</div>
-                  ) : (
-                    <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Fully paid — thank you!</div>
-                  )}
                 </div>
-                {totalBalance > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setPaymentModalOpen(true)}
-                    className="rounded-full font-semibold text-[11px] py-2 px-5 transition-all hover:opacity-90 active:scale-95 shrink-0 tracking-wide shadow-sm"
-                    style={{ backgroundColor: GOLD, color: "#FAF7F2", boxShadow: `0 2px 12px ${GOLD}40` }}
+                {totalBalance > 0 && outstandingInventoryAdj && hasCardOnFile && (
+                  <p className="text-[11px] leading-relaxed opacity-85" style={{ color: FOREST }}>
+                    Inventory update approved. Additional charge: {formatCurrency(totalBalance)} + {formatCurrency(calcHST(totalBalance))} HST.
+                  </p>
+                )}
+                {totalBalance > 0 && outstandingInventoryAdj && !hasCardOnFile && (
+                  <p className="text-[11px] leading-relaxed opacity-85" style={{ color: FOREST }}>
+                    Additional charge: {formatCurrency(totalBalance)} + {formatCurrency(calcHST(totalBalance))} HST. Pay by e-transfer to{" "}
+                    <a href={`mailto:${CLIENT_ETRANSFER_EMAIL}`} className="font-semibold underline underline-offset-2" style={{ color: GOLD }}>
+                      {CLIENT_ETRANSFER_EMAIL}
+                    </a>{" "}
+                    or add a card below.
+                  </p>
+                )}
+                {balanceChargeError && (
+                  <div
+                    className="text-[11px] font-medium px-3 py-2 rounded-lg"
+                    style={{ backgroundColor: "rgba(209,67,67,0.08)", color: "#D14343", border: "1px solid rgba(209,67,67,0.2)" }}
                   >
-                    Pay Now
-                  </button>
+                    {balanceChargeError}
+                  </div>
+                )}
+                {totalBalance > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    {hasCardOnFile && (
+                      <button
+                        type="button"
+                        onClick={() => void handlePayWithSavedCard()}
+                        disabled={chargingSavedCard}
+                        className="rounded-full font-semibold text-[11px] py-2 px-5 transition-all hover:opacity-90 active:scale-95 shrink-0 tracking-wide shadow-sm disabled:opacity-50"
+                        style={{ backgroundColor: GOLD, color: "#FAF7F2", boxShadow: `0 2px 12px ${GOLD}40` }}
+                      >
+                        {chargingSavedCard ? "Processing…" : "Pay Now"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSqError(null);
+                        setPaymentModalOpen(true);
+                      }}
+                      className={`rounded-full font-semibold text-[11px] py-2 px-5 transition-all border ${
+                        hasCardOnFile ? "opacity-90 hover:opacity-100" : ""
+                      }`}
+                      style={
+                        hasCardOnFile
+                          ? { borderColor: `${FOREST}25`, color: FOREST, backgroundColor: "transparent" }
+                          : { backgroundColor: GOLD, color: "#FAF7F2", borderColor: "transparent", boxShadow: `0 2px 12px ${GOLD}40` }
+                      }
+                    >
+                      {hasCardOnFile ? "Use a different card" : "Add Card"}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -1488,7 +1600,74 @@ export default function TrackMoveClient({
             )}
 
             {!isCompleted && (
-              <div className="pt-5 mt-3">
+              <div className="pt-5 mt-3 space-y-3">
+                {inventoryChangeFeatureOn && inventoryChangeItemWeights.length > 0 && (
+                  <>
+                    {inventoryChangePending ? (
+                      <div
+                        className="rounded-xl border px-4 py-3"
+                        style={{ borderColor: `${GOLD}35`, backgroundColor: `${GOLD}08` }}
+                      >
+                        <div className="text-[11px] font-bold" style={{ color: WINE }}>
+                          Inventory change pending review
+                        </div>
+                        <p className="text-[10px] mt-1 opacity-70 leading-snug" style={{ color: FOREST }}>
+                          Your coordinator will confirm pricing and truck fit. You&apos;ll get an email when it&apos;s decided.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div
+                          className="rounded-xl border px-4 py-3"
+                          style={{
+                            borderColor: inventoryChangeEligible ? `${GOLD}30` : `${FOREST}12`,
+                            backgroundColor: inventoryChangeEligible ? `${GOLD}06` : `${FOREST}04`,
+                            opacity: inventoryChangeEligible ? 1 : 0.75,
+                          }}
+                        >
+                          <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: GOLD }}>
+                            Need to update your inventory?
+                          </div>
+                          <p className="text-[11px] leading-relaxed opacity-80 mb-3" style={{ color: FOREST }}>
+                            Add or remove items before your move. Changes are reviewed by your coordinator.
+                          </p>
+                          <button
+                            type="button"
+                            disabled={!inventoryChangeEligible}
+                            onClick={() => inventoryChangeEligible && setInventoryChangeModalOpen(true)}
+                            className="w-full sm:w-auto rounded-full font-semibold text-[11px] py-2.5 px-5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+                          >
+                            Request inventory change
+                          </button>
+                          {!inventoryChangeEligible && inventoryChangeReason && (
+                            <p className="text-[10px] mt-2 opacity-55 leading-snug" style={{ color: FOREST }}>
+                              {inventoryChangeReason}
+                            </p>
+                          )}
+                        </div>
+                        <InventoryChangeRequestModal
+                          open={inventoryChangeModalOpen}
+                          onClose={() => setInventoryChangeModalOpen(false)}
+                          moveId={move.id}
+                          token={token}
+                          itemWeights={inventoryChangeItemWeights}
+                          inventoryLines={(dashboardInventory?.items ?? []).map((i: { id: string; item_name?: string }) => ({
+                            id: i.id,
+                            item_name: i.item_name || "Item",
+                          }))}
+                          currentSubtotal={Number(move.amount) || 0}
+                          perScoreRate={inventoryChangePerScoreRate}
+                          maxLines={inventoryChangeMaxItems}
+                          onSubmitted={() => {
+                            toast("Change request sent. We'll email you when it's reviewed.", "check");
+                            router.refresh();
+                          }}
+                        />
+                      </>
+                    )}
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={() => setChangeModalOpen(true)}
@@ -1496,7 +1675,9 @@ export default function TrackMoveClient({
                   style={{ color: FOREST }}
                 >
                   <Plus size={10} weight="regular" className="text-current" />
-                  Request a Change
+                  {inventoryChangeFeatureOn && inventoryChangeItemWeights.length > 0
+                    ? "Other change request"
+                    : "Request a Change"}
                 </button>
               </div>
             )}
@@ -1529,17 +1710,23 @@ export default function TrackMoveClient({
                             <div className="flex-1 px-4 py-3.5 pt-8 flex flex-col justify-between min-w-0">
                               <div>
                                 {perk.organizations?.name && (
-                                  <div className="text-[9px] font-semibold text-white/60 mb-1">From {perk.organizations.name}</div>
+                                  <div className="text-[9px] font-semibold text-white/60 mb-1">
+                                    From <SafeText fallback="our partner">{perk.organizations.name}</SafeText>
+                                  </div>
                                 )}
-                                <div className="text-[13px] font-bold text-white leading-tight line-clamp-2">{perk.title}</div>
+                                <div className="text-[13px] font-bold text-white leading-tight line-clamp-2">
+                                  <SafeText fallback="Partner offer">{perk.title}</SafeText>
+                                </div>
                                 <div className="text-[10px] text-white/80 mt-1 leading-snug line-clamp-3">
-                                  {perk.description || "Exclusive offer for Yugo movers. Terms apply."}
+                                  <SafeText fallback="Exclusive offer for Yugo movers. Terms apply.">
+                                    {perk.description ?? "Exclusive offer for Yugo movers. Terms apply."}
+                                  </SafeText>
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                                 {perk.redemption_code && (
                                   <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
-                                    Code: {perk.redemption_code}
+                                    Code: <SafeText fallback="—">{perk.redemption_code}</SafeText>
                                   </span>
                                 )}
                                 {perk.valid_until && (
@@ -1865,7 +2052,7 @@ export default function TrackMoveClient({
 
                 {sqError && (
                   <div className="px-3 py-2 rounded-lg text-[11px] font-medium mb-3" style={{ backgroundColor: "rgba(209,67,67,0.08)", color: "#D14343", border: "1px solid rgba(209,67,67,0.2)" }}>
-                    {sqError}
+                    <SafeText fallback="Payment couldn&apos;t be processed. Please refresh and try again.">{sqError}</SafeText>
                   </div>
                 )}
 

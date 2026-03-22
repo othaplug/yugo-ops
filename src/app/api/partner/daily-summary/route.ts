@@ -250,7 +250,7 @@ export async function POST() {
       <!-- Footer -->
       <tr><td style="padding-top:32px;padding-bottom:16px;text-align:center;">
         <p style="margin:0;font-size:11px;color:#444;">You're receiving this because daily summaries are enabled in your portal settings.</p>
-        <p style="margin:4px 0 0;font-size:11px;color:#333;">Yugo+ · <a href="https://partner.helloyugo.com/partner" style="color:#555;text-decoration:none;">Manage preferences</a></p>
+        <p style="margin:4px 0 0;font-size:11px;color:#333;">Yugo · <a href="https://partner.helloyugo.com/partner" style="color:#555;text-decoration:none;">Manage preferences</a></p>
       </td></tr>
 
     </table>

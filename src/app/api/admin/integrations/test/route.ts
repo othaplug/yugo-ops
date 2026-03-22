@@ -102,7 +102,7 @@ async function runIntegrationCheck(key: string): Promise<{ ok: boolean; message:
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: "Yugo+ integration test — you can delete this message." }),
+        body: JSON.stringify({ text: "Yugo integration test — you can delete this message." }),
       });
       if (!res.ok) return { ok: false, message: `Slack webhook ${res.status}` };
       return { ok: true, message: "Test message sent to Slack" };

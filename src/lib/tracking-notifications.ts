@@ -23,7 +23,7 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: false,
-    clientMessage: "Your Yugo+ crew is en route to the pickup location they're on their way!",
+    clientMessage: "Your Yugo crew is en route to the pickup location they're on their way!",
   },
   arrived_at_pickup: {
     notifyClient: true,
@@ -59,7 +59,7 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your move is complete. Thank you for choosing Yugo+!",
+    clientMessage: "Your move is complete. Thank you for choosing Yugo!",
   },
   en_route: {
     notifyClient: true,
@@ -175,7 +175,7 @@ export async function notifyOnCheckpoint(
 
   const headline = getClientMessage(status, jobType, cfg.clientMessage) || cfg.clientMessage || "Status update";
   const body = status === "completed"
-    ? "Thank you for choosing Yugo+. We hope your move went smoothly."
+    ? "Thank you for choosing Yugo. We hope your move went smoothly."
     : "Your crew has updated the status of your job.";
   const html = statusUpdateEmailHtml({
     headline,

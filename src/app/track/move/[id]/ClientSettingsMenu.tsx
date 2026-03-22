@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { FOREST, GOLD, CREAM } from "@/lib/client-theme";
+import { SafeText } from "@/components/SafeText";
 import {
   GearSix,
   FileText,
@@ -449,7 +450,9 @@ export default function ClientSettingsMenu({
 
                 {/* Error */}
                 {claimError && (
-                  <p className="text-[11px] font-medium text-red-500">{claimError}</p>
+                  <p className="text-[11px] font-medium text-red-500">
+                    <SafeText fallback="Something went wrong. Please try again or email us.">{claimError}</SafeText>
+                  </p>
                 )}
 
                 {/* Actions */}

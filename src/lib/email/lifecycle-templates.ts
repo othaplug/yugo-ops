@@ -23,12 +23,15 @@ function dateDisplay(dateStr: string | null | undefined): string {
 }
 
 const GOLD_BTN = "#B8962E";
+/** Hero headlines in lifecycle / follow-up emails (matches quote brand typography). */
+const HERO_SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
+
 function ctaButton(url: string, label: string, sub?: string): string {
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0 ${sub ? "6px" : "16px"};">
       <tr>
-        <td align="center">
-          <a href="${url}" style="display:block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:uppercase;">
+        <td align="center" style="text-align:center;">
+          <a href="${url}" style="display:inline-block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:uppercase;">
             ${label}
           </a>
         </td>
@@ -312,7 +315,7 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
     ` : ""}
 
     <p style="font-size:11px;color:#666;text-align:center">
-      Thank you for choosing Yugo+. We can&apos;t wait to move you again!
+      Thank you for choosing Yugo. We can&apos;t wait to move you again!
     </p>
   `);
 }
@@ -493,7 +496,7 @@ export function referralOfferEmail(d: ReferralOfferData): string {
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Exclusive Offer</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Give $50, Get $50</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Hi${firstName(d.clientName) ? ` ${firstName(d.clientName)}` : ""}, thanks for moving with Yugo+! As a thank you, here&apos;s an exclusive offer: refer a friend and you both get $50 off.
+      Hi${firstName(d.clientName) ? ` ${firstName(d.clientName)}` : ""}, thanks for moving with Yugo! As a thank you, here&apos;s an exclusive offer: refer a friend and you both get $50 off.
     </p>
 
     <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:24px;text-align:center;margin-bottom:20px">
@@ -504,7 +507,7 @@ export function referralOfferEmail(d: ReferralOfferData): string {
     <div style="font-size:13px;color:#B8B5B0;line-height:1.8;margin-bottom:24px">
       <div><strong style="color:#E8E5E0">How it works:</strong></div>
       <div>1. Share your unique link with a friend</div>
-      <div>2. They book a residential move with Yugo+</div>
+      <div>2. They book a residential move with Yugo</div>
       <div>3. You both get $50 off &mdash; applied automatically</div>
     </div>
 
@@ -529,7 +532,7 @@ export interface QuoteFollowup1Data {
 export function quoteFollowup1Email(d: QuoteFollowup1Data): string {
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Quote Is Ready</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Just checking in${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <h1 style="font-family:${HERO_SERIF};font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Just checking in${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We sent your ${d.serviceLabel.toLowerCase()} quote yesterday but noticed you haven&apos;t had a chance to review it yet.
     </p>
@@ -568,25 +571,23 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
 
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Don&apos;t Miss Out</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your date is filling up${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <h1 style="font-family:${HERO_SERIF};font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your date is filling up${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We noticed you reviewed your ${d.serviceLabel.toLowerCase()} quote but haven&apos;t booked yet. We wanted to let you know that availability for <strong style="color:#E8E5E0">${moveDateStr}</strong> is limited.
     </p>
 
     ${urgencyLine ? `
-      <div style="background:rgba(212,138,41,0.1);border:1px solid rgba(212,138,41,0.25);border-radius:8px;padding:14px;margin-bottom:20px;text-align:center">
+      <div style="background:rgba(212,138,41,0.1);border:1px solid rgba(212,138,41,0.25);border-radius:0;padding:14px;margin-bottom:20px;text-align:center">
         <div style="font-size:13px;color:#D48A29;font-weight:600">${urgencyLine}</div>
       </div>
     ` : ""}
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">Why Book Now</div>
-      <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
-        <div>&#10003; Lock in your flat-rate price &mdash; no surprises</div>
-        <div>&#10003; Secure your preferred date before it&apos;s taken</div>
-        <div>&#10003; Deposit to reserve &mdash; balance due later</div>
-        <div>&#10003; Full refund if you cancel within the policy window</div>
-      </div>
+    <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">Why Book Now</div>
+    <div style="font-size:13px;color:#B8B5B0;line-height:1.8;margin-bottom:20px">
+      <div>&#10003; Lock in your flat-rate price &mdash; no surprises</div>
+      <div>&#10003; Secure your preferred date before it&apos;s taken</div>
+      <div>&#10003; Deposit to reserve &mdash; balance due later</div>
+      <div>&#10003; Full refund if you cancel within the policy window</div>
     </div>
 
     ${ctaButton(d.quoteUrl, "Secure Your Date")}
@@ -903,12 +904,12 @@ export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
 
   return emailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Final Reminder</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Last chance${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <h1 style="font-family:${HERO_SERIF};font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Last chance${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your ${d.serviceLabel.toLowerCase()} quote expires <strong style="color:#D14343">${expiryDate}</strong>. After that, we won&apos;t be able to guarantee the same pricing or availability.
     </p>
 
-    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.2);border-radius:10px;padding:20px;margin-bottom:20px;text-align:center">
+    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.2);border-radius:0;padding:20px;margin-bottom:20px;text-align:center">
       <div style="font-size:11px;color:#D14343;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Quote Expiring</div>
       <div style="font-size:14px;color:#B8B5B0">
         Your flat-rate pricing and date availability will no longer be held after expiry.

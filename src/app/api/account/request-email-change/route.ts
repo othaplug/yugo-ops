@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     await resend.emails.send({
       from: emailFrom,
       to: user.email,
-      subject: "Verify your email change Yugo+",
+      subject: "Verify your email change Yugo",
       html: verificationCodeEmail({ code, purpose: "email_change" }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });

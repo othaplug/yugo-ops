@@ -47,7 +47,7 @@ export async function getConfigs(
   return result;
 }
 
-const DEFAULT_COMPANY_DISPLAY = "HelloYugo+";
+const DEFAULT_COMPANY_DISPLAY = "HelloYugo";
 const DEFAULT_COMPANY_LEGAL = "HelloYugo Inc.";
 
 export async function getCompanyDisplayName(): Promise<string> {

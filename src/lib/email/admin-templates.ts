@@ -34,7 +34,7 @@ function adminFooterHtml(): string {
   </div>`;
 }
 
-/** Full document wrapper for admin notifications: light bg, Yugo+ header, white card. */
+/** Full document wrapper for admin notifications: light bg, Yugo+ wordmark header, white card. */
 export function adminNotificationLayout(innerHtml: string, title?: string): string {
   const heading = title
     ? `<h1 style="font-size:18px;font-weight:700;color:${TEXT};margin:0 0 16px;">${escapeHtml(title)}</h1>`

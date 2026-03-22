@@ -54,6 +54,7 @@ import {
   TIER_META,
   HERO_CONFIG,
   SERVICE_LABEL,
+  MOVE_SIZE_LABELS,
   fmtPrice,
   fmtDate,
   expiresLabel,
@@ -79,6 +80,8 @@ import B2BOneOffLayout from "./layouts/B2BOneOffLayout";
 import EventLayout from "./layouts/EventLayout";
 import LabourOnlyLayout from "./layouts/LabourOnlyLayout";
 import { abbreviateAddressRegions } from "@/lib/address-abbrev";
+import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
+import { SafeText } from "@/components/SafeText";
 
 /* ═══════════════════════════════════════════════════
    Main Client Component
@@ -365,8 +368,13 @@ export default function QuotePageClient({
 
   /* ── Package label (for contract) ── */
   const packageLabel = useMemo(() => {
-    if (isResidential && selectedTier) return TIER_META[selectedTier]?.label ?? selectedTier;
-    return SERVICE_LABEL[quote.service_type] ?? "Standard";
+    if (isResidential && selectedTier)
+      return TIER_META[selectedTier]?.label ?? getDisplayLabel(selectedTier, "tier");
+    return (
+      SERVICE_LABEL[quote.service_type] ??
+      getDisplayLabel(quote.service_type, "service_type") ??
+      "Standard"
+    );
   }, [isResidential, selectedTier, quote.service_type]);
 
   /* ── Applicable add-ons (exclude those included in tier; Estate includes packing supplies so hide packing materials kit) ── */
@@ -780,9 +788,13 @@ export default function QuotePageClient({
           <div className="mt-8 inline-flex items-center gap-4 px-6 py-3 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm">
             <div className="text-left">
               <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
-                Quote
+                Your quote
               </p>
-              <p className="text-[14px] font-mono font-bold text-white">{quote.quote_id}</p>
+              <p className="text-[13px] font-semibold text-white">
+                {SERVICE_LABEL[quote.service_type] ??
+                  getDisplayLabel(quote.service_type, "service_type") ??
+                  "Personalized estimate"}
+              </p>
             </div>
             <div className="w-px h-8 bg-white/20" />
             <div className="text-left">
@@ -1146,7 +1158,9 @@ export default function QuotePageClient({
                 </div>
                 {referralMsg && (
                   <p className={`mt-1.5 text-[11px] font-medium ${referralVerified ? "text-[#2D9F5A]" : "text-red-500"}`}>
-                    {referralMsg}
+                    <SafeText fallback="We couldn&apos;t process that code. Try again or contact us.">
+                      {referralMsg}
+                    </SafeText>
                   </p>
                 )}
               </div>
@@ -1295,7 +1309,9 @@ export default function QuotePageClient({
                     </div>
                     {invoiceConfirmError ? (
                       <p className="text-[12px] font-medium" style={{ color: WINE }}>
-                        {invoiceConfirmError}
+                        <SafeText fallback="We couldn&apos;t confirm your booking. Please try again or contact us.">
+                          {invoiceConfirmError}
+                        </SafeText>
                       </p>
                     ) : null}
                     <button
@@ -1681,18 +1697,24 @@ function WalkthroughDetails({ quote }: { quote: Quote }) {
         {quote.move_size && (
           <p className="text-[11px]" style={{ color: `${FOREST}70` }}>
             Move Size:{" "}
-            <span className="font-semibold capitalize">{quote.move_size.replace(/_/g, " ")}</span>
+            <span className="font-semibold">
+              {MOVE_SIZE_LABELS[quote.move_size] ?? getDisplayLabel(quote.move_size)}
+            </span>
           </p>
         )}
         {quote.walkthrough_special_items && (
           <p className="text-[11px]" style={{ color: `${FOREST}70` }}>
             Special Items Noted:{" "}
-            <span className="font-semibold">{quote.walkthrough_special_items}</span>
+            <span className="font-semibold">
+              <SafeText fallback="See your coordinator for details.">{quote.walkthrough_special_items}</SafeText>
+            </span>
           </p>
         )}
         {quote.walkthrough_notes && (
           <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
-            {quote.walkthrough_notes}
+            <SafeText fallback="Notes from your walkthrough are available from your coordinator.">
+              {quote.walkthrough_notes}
+            </SafeText>
           </p>
         )}
       </div>
@@ -1804,12 +1826,6 @@ function InventoryCollapsible({ quote, selectedTier }: { quote: Quote; selectedT
    Confirm Details Section (Step 4)
    ═══════════════════════════════════════════════════ */
 
-const CONFIRM_VALUATION_LABELS: Record<string, string> = {
-  released: "Released Value",
-  enhanced: "Enhanced Value",
-  full_replacement: "Full Replacement",
-};
-
 function ConfirmDetailsSection({
   quote,
   selectedTier,
@@ -1842,9 +1858,15 @@ function ConfirmDetailsSection({
   isProgressive: boolean;
   currentStep: number;
 }) {
+  const protectionKey = valuationUpgradeSelected
+    ? selectedTier === "curated"
+      ? "enhanced"
+      : selectedTier === "signature"
+        ? "full_replacement"
+        : includedValuation
+    : includedValuation;
   const protectionLabel =
-    CONFIRM_VALUATION_LABELS[valuationUpgradeSelected ? (selectedTier === "curated" ? "enhanced" : selectedTier === "signature" ? "full_replacement" : includedValuation) : includedValuation] ??
-    includedValuation;
+    VALUATION_TIER_LABELS[protectionKey] ?? getDisplayLabel(includedValuation, "valuation");
   const truckLine = quote.truck_primary
     ? (TRUCK_LUXURY[quote.truck_primary] ?? quote.truck_primary)
     : "Moving truck";

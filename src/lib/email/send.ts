@@ -46,7 +46,7 @@ import {
 
 import { getNotificationsFromEmail } from "@/lib/config";
 
-const DEFAULT_FROM = "Yugo+ <notifications@opsplus.co>";
+const DEFAULT_FROM = "Yugo <notifications@opsplus.co>";
 
 export type TemplateName =
   | "quote-residential"

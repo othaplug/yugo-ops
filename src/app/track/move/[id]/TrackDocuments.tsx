@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency } from "@/lib/format-currency";
+import { SafeText } from "@/components/SafeText";
 
 type DocItem = {
   id: string;
@@ -127,7 +128,9 @@ export default function TrackDocuments({
               className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#C9A962]/50 transition-colors"
             >
               <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-medium text-[#1A1A1A] truncate">{doc.title}</div>
+                <div className="text-[13px] font-medium text-[#1A1A1A] truncate">
+                  <SafeText fallback="Document">{doc.title}</SafeText>
+                </div>
                 <div className="text-[11px] text-[#666] flex items-center gap-2 mt-0.5">
                   {dateStr}
                   {doc.amount != null && ` • ${formatCurrency(doc.amount)}`}

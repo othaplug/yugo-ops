@@ -6,6 +6,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { rateLimit } from "@/lib/rate-limit";
 import { getSquarePaymentConfig } from "@/lib/square-config";
+import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
 
 /**
  * Process a voluntary balance payment from the client payment page.
@@ -36,10 +37,6 @@ export async function POST(req: Request) {
 
     if (fetchErr || !move) {
       return NextResponse.json({ error: "Move not found" }, { status: 404 });
-    }
-
-    if (move.balance_paid_at) {
-      return NextResponse.json({ error: "Balance already paid" }, { status: 409 });
     }
 
     const balanceAmount = Number(move.balance_amount || 0);
@@ -91,22 +88,18 @@ export async function POST(req: Request) {
 
     const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
 
-    const paidAt = new Date().toISOString();
-    await supabase
-      .from("moves")
-      .update({
-        balance_paid_at: paidAt,
-        balance_method: "card",
-        balance_auto_charged: false,
-        status: "paid",
-        payment_marked_paid: true,
-        payment_marked_paid_at: paidAt,
-        payment_marked_paid_by: "client",
-        square_receipt_url: receiptUrl,
-        updated_at: paidAt,
-      })
-      .eq("id", moveId);
+    await finalizeBalancePaymentSettlement({
+      admin: supabase,
+      moveId,
+      balancePreTax: balanceAmount,
+      squarePaymentId: paymentId,
+      squareReceiptUrl: receiptUrl,
+      settlementMethod: "client",
+      paymentMarkedBy: "client",
+      updateMoveReceiptUrl: true,
+    });
 
+    const paidAt = new Date().toISOString();
     await supabase.from("status_events").insert({
       entity_type: "move",
       entity_id: moveId,

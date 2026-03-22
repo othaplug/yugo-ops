@@ -2,7 +2,7 @@ import ClaimSubmissionClient from "./ClaimSubmissionClient";
 
 export const metadata = {
   title: "Submit a Claim",
-  description: "Report damaged items from your Yugo+ move.",
+  description: "Report damaged items from your Yugo move.",
 };
 
 export default function ClaimNewPage() {

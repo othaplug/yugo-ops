@@ -11,6 +11,7 @@ import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
 import MoveContactModal from "./MoveContactModal";
 import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import MoveInventorySection from "./MoveInventorySection";
+import InventoryChangeRequestPanel from "./InventoryChangeRequestPanel";
 import MoveFilesSection from "./MoveFilesSection";
 import MoveSignOffSection from "./MoveSignOffSection";
 import LiveTrackingMap from "../../deliveries/[id]/LiveTrackingMap";
@@ -51,6 +52,29 @@ interface MoveDetailClientProps {
   etaSmsLog?: EtaSmsLogEntry[];
   reviewRequest?: ReviewRequestEntry;
   itemWeights?: ItemWeightRow[];
+  pendingInventoryChange?: {
+    id: string;
+    status: string;
+    submitted_at: string;
+    items_added: unknown;
+    items_removed: unknown;
+    auto_calculated_delta: number;
+    admin_adjusted_delta: number | null;
+    truck_assessment: Record<string, unknown> | null;
+    admin_notes: string | null;
+    decline_reason: string | null;
+  };
+  paymentLedger?: {
+    id: string;
+    label: string;
+    entry_type: string;
+    pre_tax_amount: number;
+    hst_amount: number;
+    paid_at: string;
+    settlement_method: string;
+    square_payment_id: string | null;
+    inventory_change_request_id: string | null;
+  }[];
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
 
@@ -109,7 +133,18 @@ const VEHICLE_LABELS: Record<string, string> = {
 };
 const VEHICLE_OPTIONS = Object.entries(VEHICLE_LABELS);
 
-export default function MoveDetailClient({ move: initialMove, crews = [], isOffice, userRole = "viewer", additionalFeesCents = 0, etaSmsLog = [], reviewRequest, itemWeights = [] }: MoveDetailClientProps) {
+export default function MoveDetailClient({
+  move: initialMove,
+  crews = [],
+  isOffice,
+  userRole = "viewer",
+  additionalFeesCents = 0,
+  etaSmsLog = [],
+  reviewRequest,
+  itemWeights = [],
+  pendingInventoryChange,
+  paymentLedger = [],
+}: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
@@ -968,9 +1003,14 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {/* Financial Snapshot */}
       {(() => {
-        const fullyPaid = isPaid || isBalancePaid;
+        const fullyPaid = balanceDue <= 0.005 && (isPaid || isBalancePaid);
         const quoteTotal = estimate > 0 ? estimate : (depositPaid + balanceDue);
-        const collectedAmount = fullyPaid ? quoteTotal : depositPaid;
+        const collectedAmount =
+          move.total_paid != null && move.total_paid !== ""
+            ? Number(move.total_paid)
+            : fullyPaid
+              ? quoteTotal
+              : depositPaid;
         const progressPct = quoteTotal > 0 ? Math.min(100, Math.round((collectedAmount / quoteTotal) * 100)) : 0;
         const SERVICE_LABELS: Record<string, string> = {
           local_move: "Residential", long_distance: "Long Distance",
@@ -1048,6 +1088,39 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
                 </div>
               </div>
             </div>
+
+            {paymentLedger.length > 0 && (
+              <div className="px-5 py-3 border-t border-[var(--brd)]/40">
+                <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 mb-2">Payment transactions</div>
+                <ul className="space-y-2">
+                  {paymentLedger.map((row) => {
+                    const lineTotal = Number(row.pre_tax_amount) + Number(row.hst_amount);
+                    const paid = new Date(row.paid_at);
+                    return (
+                      <li key={row.id} className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] text-[var(--tx)]">
+                        <div>
+                          <span className="font-semibold">{row.label}</span>
+                          <span className="text-[var(--tx3)]/70 ml-1.5">
+                            · {paid.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                          {row.settlement_method === "etransfer" && (
+                            <span className="text-[9px] text-[var(--tx3)] ml-1">(e-transfer)</span>
+                          )}
+                        </div>
+                        <div className="font-medium tabular-nums">
+                          {formatCurrency(row.pre_tax_amount)} + {formatCurrency(row.hst_amount)} HST = {formatCurrency(lineTotal)}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {move.total_paid != null && move.total_paid !== "" && (
+                  <p className="text-[10px] text-[var(--tx3)]/80 mt-3 pt-2 border-t border-[var(--brd)]/30">
+                    Total recognized (after tax): <span className="font-semibold text-[var(--tx)]">{formatCurrency(move.total_paid)}</span>
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Action row — only when action is needed */}
             {!fullyPaid && (
@@ -1148,6 +1221,12 @@ export default function MoveDetailClient({ move: initialMove, crews = [], isOffi
 
       {/* Distance & Logistics */}
       <DistanceLogistics fromAddress={move.from_address} toAddress={move.to_address || move.delivery_address} />
+
+      {/* Pending client inventory change (add/remove items) */}
+      {pendingInventoryChange &&
+        ["pending", "admin_reviewing", "client_confirming"].includes(pendingInventoryChange.status) && (
+          <InventoryChangeRequestPanel request={pendingInventoryChange} />
+        )}
 
       {/* Inventory, Files & Media */}
       <MoveInventorySection moveId={move.id} moveStatus={move.status} userRole={userRole} itemWeights={itemWeights} moveType={move.move_type} />

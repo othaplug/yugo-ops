@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { MagnifyingGlass, DownloadSimple, ArrowSquareOut } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
-import { toTitleCase } from "@/lib/format-text";
+import { getDisplayLabel } from "@/lib/displayLabels";
 
 interface Invoice {
   id: string;
@@ -167,7 +167,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize ${badgeClass}`}>
-                        {toTitleCase(inv.status)}
+                        {getDisplayLabel(inv.status, "payment")}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right hidden sm:table-cell">

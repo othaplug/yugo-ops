@@ -79,7 +79,7 @@ function confirmationEmailHtml(data: {
           <td style="font-size:24px;font-weight:700;color:${EMAIL_TX};padding-bottom:8px;">Thanks, ${data.name}</td>
         </tr>
         <tr>
-          <td style="font-size:14px;color:${EMAIL_TX2};line-height:1.5;padding-bottom:24px;">Your Yugo+ quote is being prepared. We&apos;ll send your exact guaranteed price within 2 hours.</td>
+          <td style="font-size:14px;color:${EMAIL_TX2};line-height:1.5;padding-bottom:24px;">Your Yugo quote is being prepared. We&apos;ll send your exact guaranteed price within 2 hours.</td>
         </tr>
         <tr>
           <td style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:24px;">
@@ -92,7 +92,7 @@ function confirmationEmailHtml(data: {
           </td>
         </tr>
         <tr>
-          <td style="font-size:13px;color:${EMAIL_TX2};line-height:1.5;">A Yugo+ coordinator will review your details and send a detailed, guaranteed quote shortly. No surprises &mdash; that&apos;s the Yugo+ promise.</td>
+          <td style="font-size:13px;color:${EMAIL_TX2};line-height:1.5;">A Yugo coordinator will review your details and send a detailed, guaranteed quote shortly. No surprises &mdash; that&apos;s the Yugo promise.</td>
         </tr>
       </table>
     </td>
@@ -101,7 +101,7 @@ function confirmationEmailHtml(data: {
     <td align="center" style="padding:16px 24px 32px;font-size:10px;color:#666;border-top:1px solid ${EMAIL_BRD};">
       <a href="${learnMoreUrl}" style="color:${EMAIL_WINE};text-decoration:none;">Learn more</a>
       <span style="color:${EMAIL_BRD};margin:0 8px;">&middot;</span>
-      Powered by Yugo+
+      Powered by Yugo
     </td>
   </tr>
 </table>`;

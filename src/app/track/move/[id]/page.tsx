@@ -3,7 +3,8 @@ import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isMoveIdUuid } from "@/lib/move-code";
-import { isFeatureEnabled } from "@/lib/platform-settings";
+import { isFeatureEnabled, getFeatureConfig } from "@/lib/platform-settings";
+import { parseDateOnly } from "@/lib/date-format";
 import TrackMoveClient from "./TrackMoveClient";
 
 export const metadata: Metadata = {
@@ -96,6 +97,50 @@ export default async function TrackMovePage({
     : [];
   const crewSize = Math.max(2, crewMembersArr.length);
 
+  const icCfg = await getFeatureConfig([
+    "change_request_enabled",
+    "change_request_per_score_rate",
+    "change_request_min_hours_before_move",
+    "change_request_max_items_per_request",
+  ]);
+  const [{ data: itemWeights }, { data: pendingIcRows }, { data: latestInvAdj }] = await Promise.all([
+    supabase.from("item_weights").select("slug, item_name, weight_score, active").eq("active", true).limit(2000),
+    supabase
+      .from("inventory_change_requests")
+      .select("id, status, submitted_at")
+      .eq("move_id", move.id)
+      .in("status", ["pending", "admin_reviewing", "client_confirming"])
+      .order("submitted_at", { ascending: false })
+      .limit(1),
+    supabase
+      .from("inventory_change_requests")
+      .select("id, additional_deposit_required, reviewed_at, status")
+      .eq("move_id", move.id)
+      .in("status", ["approved", "adjusted"])
+      .gt("additional_deposit_required", 0)
+      .order("reviewed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const pendingInventoryCr = pendingIcRows?.[0] ?? null;
+  const st = String(move.status || "").toLowerCase();
+  const minH = Math.max(1, parseInt(icCfg.change_request_min_hours_before_move, 10) || 48);
+  const moveDate = move.scheduled_date ? parseDateOnly(move.scheduled_date) ?? new Date(move.scheduled_date) : null;
+  const hoursOk = moveDate ? moveDate.getTime() - Date.now() >= minH * 3600_000 : false;
+  const statusOk = ["confirmed", "scheduled", "paid"].includes(st);
+  const notTerminal = !["in_progress", "completed", "delivered", "cancelled"].includes(st);
+  const invChangeEnabled = icCfg.change_request_enabled === "true";
+  const noPending = !pendingInventoryCr && !move.pending_inventory_change_request_id;
+  const inventoryChangeEligible =
+    invChangeEnabled && statusOk && notTerminal && !!moveDate && hoursOk && noPending;
+  let inventoryChangeReason = "";
+  if (!invChangeEnabled) inventoryChangeReason = "Inventory change requests are turned off.";
+  else if (!statusOk || !notTerminal) inventoryChangeReason = "Not available for this move status.";
+  else if (!moveDate) inventoryChangeReason = "Add a move date first (contact your coordinator).";
+  else if (!hoursOk) inventoryChangeReason = `Changes must be at least ${minH} hours before move day.`;
+  else if (!noPending) inventoryChangeReason = "You already have a pending inventory change request.";
+
   return (
     <TrackMoveClient
       move={move}
@@ -111,6 +156,14 @@ export default async function TrackMovePage({
       showTipPrompt={showTipPrompt}
       tipData={tipData}
       crewSize={crewSize}
+      inventoryChangeFeatureOn={invChangeEnabled}
+      inventoryChangeItemWeights={itemWeights ?? []}
+      inventoryChangeEligible={inventoryChangeEligible}
+      inventoryChangeReason={inventoryChangeReason}
+      inventoryChangePending={pendingInventoryCr}
+      inventoryChangePerScoreRate={parseFloat(icCfg.change_request_per_score_rate) || 35}
+      inventoryChangeMaxItems={Math.max(1, parseInt(icCfg.change_request_max_items_per_request, 10) || 10)}
+      latestInventoryAdjustmentPayment={latestInvAdj ?? null}
     />
   );
 }

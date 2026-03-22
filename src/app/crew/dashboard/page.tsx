@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { X, Clock, Calendar, Check, Lock } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
+import { getDisplayLabel } from "@/lib/displayLabels";
 import Link from "next/link";
 import PageContent from "@/app/admin/components/PageContent";
 import ReadinessCheck from "./components/ReadinessCheck";
@@ -248,14 +249,18 @@ export default function CrewDashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {statusInfo && (
+                        {statusInfo ? (
                           <span
                             className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
                             style={{ background: statusInfo.bg, color: statusInfo.color }}
                           >
                             {statusInfo.label}
                           </span>
-                        )}
+                        ) : job.status ? (
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[var(--gdim)] text-[var(--gold)]">
+                            {getDisplayLabel(job.status, "status")}
+                          </span>
+                        ) : null}
                         <span className="text-[11px] font-medium text-[var(--tx3)]">
                           {job.scheduledTime}
                         </span>
