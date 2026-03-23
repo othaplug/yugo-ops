@@ -13,7 +13,8 @@ const HS_ASSOC = `${HS_BASE}/tasks`;
 
 /**
  * Vercel Cron: runs daily at 9 AM EST (14:00 UTC).
- * Auto-charges stored cards at T-24hr for moves where balance is unpaid.
+ * Auto-charges stored cards at T-48hr for moves where balance is unpaid.
+ * Processing costs are already baked into the quoted price — no fee added here.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -25,16 +26,16 @@ export async function GET(req: NextRequest) {
   const baseUrl = getEmailBaseUrl();
   const now = new Date();
 
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+  const twoDaysFromNow = new Date(now);
+  twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+  const chargeDateStr = twoDaysFromNow.toISOString().split("T")[0];
 
   const results = { charged: 0, failed: 0, skipped: 0, errors: [] as string[] };
 
   const { data: moves } = await supabase
     .from("moves")
     .select("*")
-    .eq("scheduled_date", tomorrowStr)
+    .eq("scheduled_date", chargeDateStr)
     .gt("balance_amount", 0)
     .not("square_card_id", "is", null)
     .not("deposit_paid_at", "is", null);
@@ -50,10 +51,8 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    const processingFee = balanceAmount * 0.033;
-    const transactionFee = 0.15;
-    const ccBalance = balanceAmount + processingFee + transactionFee;
-    const amountCents = Math.round(ccBalance * 100);
+    // Processing costs are already absorbed into the quoted price — charge the raw balance.
+    const amountCents = Math.round(balanceAmount * 100);
 
     try {
       const { locationId } = await getSquarePaymentConfig();
@@ -90,7 +89,7 @@ export async function GET(req: NextRequest) {
         entity_type: "move",
         entity_id: move.id,
         event_type: "payment_received",
-        description: `Auto-charged card — $${ccBalance.toFixed(2)} CAD (balance $${balanceAmount.toFixed(2)} + fees)`,
+        description: `Auto-charged card — $${balanceAmount.toFixed(2)} CAD (48 hrs before move)`,
         icon: "dollar",
       });
 
@@ -101,15 +100,15 @@ export async function GET(req: NextRequest) {
 
         await sendEmail({
           to: move.client_email,
-          subject: `Payment receipt ${formatCurrency(ccBalance)} charged for ${move.move_code || "your move"}`,
+          subject: `Payment receipt ${formatCurrency(balanceAmount)} charged for ${move.move_code || "your move"}`,
           template: "balance-auto-charge-receipt",
           data: {
             clientName: move.client_name || "",
             moveCode: move.move_code || move.id,
             baseBalance: balanceAmount,
-            processingFee,
-            transactionFee,
-            totalCharged: ccBalance,
+            processingFee: 0,
+            transactionFee: 0,
+            totalCharged: balanceAmount,
             trackingUrl,
           },
         }).catch(() => {});

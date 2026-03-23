@@ -59,11 +59,11 @@ function buildCosts(
   monthlyMoveCount: number,
   paymentMethod?: string | null,
 ): MoveCosts {
-  // E-transfer: Yugo receives full amount, no processing cost
-  const isEtransfer = (paymentMethod || "").toLowerCase().replace(/[^a-z]/g, "") === "etransfer";
-  const processing = isEtransfer
-    ? 0
-    : revenue * cfg(config, "payment_processing_pct", 0.029) + cfg(config, "payment_processing_flat", 0.3);
+  // Processing costs are absorbed into quoted prices via processing_recovery_rate/flat.
+  // For margin accounting purposes we still model it as a cost against revenue.
+  // paymentMethod param retained for API compatibility but no longer affects this calc.
+  void paymentMethod;
+  const processing = revenue * cfg(config, "payment_processing_pct", 0.029) + cfg(config, "payment_processing_flat", 0.3);
   const totalDirect = labour + fuel + truck + supplies + processing;
   const allocatedOverhead = allocateOverhead(config, monthlyMoveCount);
   const grossProfit = revenue - totalDirect;

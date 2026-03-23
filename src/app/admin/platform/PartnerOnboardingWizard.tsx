@@ -951,6 +951,19 @@ function Step3RateCardBilling({
           </div>
         </div>
       </div>
+
+      {/* Card on file — captured after partner is saved; shown as a reminder */}
+      <div className="rounded-xl border border-[var(--brd)]/70 p-4 space-y-2 bg-[var(--bg2)]/40">
+        <div className="flex items-start gap-3">
+          <Icon name="creditCard" className="w-4 h-4 mt-0.5 shrink-0 text-[var(--gold)]" />
+          <div>
+            <p className="text-[12px] font-semibold text-[var(--tx)]">Payment Method</p>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+              A card on file will be requested after the partner is activated. Statements are auto-charged on the billing anchor date — no manual payments needed.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

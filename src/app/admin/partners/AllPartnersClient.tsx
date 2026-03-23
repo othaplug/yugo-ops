@@ -308,7 +308,7 @@ export default function AllPartnersClient() {
     <div className="max-w-[1100px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
           <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Partners</h1>
         </div>
         <div className="flex items-center gap-3 shrink-0">

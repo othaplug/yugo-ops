@@ -51,7 +51,7 @@ export default async function ClientRevenuePage({ params }: { params: Promise<{ 
       </div>
 
       <div className="mb-2">
-        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance · Client Revenue</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance · Client Revenue</p>
         <h1 className="font-heading text-[28px] font-bold text-[var(--tx)] tracking-tight leading-none">{org.name}</h1>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mb-6">Revenue and invoices for this client</p>

@@ -341,7 +341,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Artwork Items</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Artwork Items</div>
           <div className="flex items-center gap-2 text-[11px] text-[var(--tx3)]">
             <span>{items.length} item{items.length !== 1 ? "s" : ""}</span>
             {conditionedCount > 0 && (

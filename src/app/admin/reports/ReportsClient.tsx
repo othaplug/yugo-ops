@@ -610,21 +610,21 @@ export default function ReportsClient({
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Sessions</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Sessions</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--tx)]">{trackingSessions.length}</div>
               </div>
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completed</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completed</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--grn)]">{completedSessions.length}</div>
               </div>
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--gold)]">
                   {trackingSessions.filter((s) => s.status === "active" || s.status === "in_progress").length}
                 </div>
               </div>
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completion Rate</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completion Rate</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--tx)]">
                   {trackingSessions.length > 0 ? `${Math.round((completedSessions.length / trackingSessions.length) * 100)}%` : "—"}
                 </div>

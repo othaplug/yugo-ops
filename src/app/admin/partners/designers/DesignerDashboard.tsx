@@ -92,7 +92,7 @@ export default function DesignerDashboard({
       <div className="pt-6 border-t border-[var(--brd)]/30">
         {activeTab === "deliveries" && (
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
                 <MagnifyingGlass size={15} weight="regular" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--tx3)]" />
@@ -140,7 +140,7 @@ export default function DesignerDashboard({
 
         {activeTab === "projects" && (
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4 flex items-center justify-between">
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4 flex items-center justify-between">
               <span>Projects</span>
               <Link href="/admin/deliveries?view=projects" className="admin-view-all-link">
                 View all projects
@@ -186,7 +186,7 @@ export default function DesignerDashboard({
 
         {activeTab === "partners" && (
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
             <div className="divide-y divide-[var(--brd)]/30">
             {orgs.length === 0 ? (
               <div className="px-4 py-10 text-center">

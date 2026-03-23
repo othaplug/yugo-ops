@@ -75,7 +75,7 @@ function SectionDivider({ label }: { label?: string }) {
         <div className="w-full border-t border-[var(--brd)]" />
       </div>
       <div className="relative flex justify-start">
-        <span className="bg-[var(--bg)] pr-4 text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 select-none">
+        <span className="bg-[var(--bg)] pr-4 text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 select-none">
           {label}
         </span>
       </div>
@@ -394,7 +394,7 @@ export default function RevenueClient({
       </div>
       <div className="flex items-end justify-between gap-4 mb-2">
         <div>
-          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">
             Financial Overview
           </p>
           <h1 className="font-heading text-[26px] font-bold text-[var(--tx)] leading-none">

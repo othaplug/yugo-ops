@@ -185,37 +185,64 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3">
-        <div>
+      <div className="space-y-2">
+        {/* Row 1: back + eyebrow */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => router.back()}
-            className="p-1.5 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)]"
+            className="p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Sales · Quote</p>
         </div>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales · Quote</p>
-            <h1 className="text-[22px] md:text-[24px] font-bold text-[var(--tx)] tracking-tight">
-              {quote.quote_id}
-            </h1>
-            <p className="text-[11px] text-[var(--tx3)] mt-1">
-              {toTitleCase(quote.service_type?.replace(/_/g, " "))} &middot; Created{" "}
-              {new Date(quote.created_at).toLocaleDateString("en-CA", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-          <span
-            className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}
-          >
+
+        {/* Row 2: title + status badge */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="font-heading text-[26px] sm:text-[30px] font-bold text-[var(--tx)] tracking-tight leading-none">
+            {quote.quote_id}
+          </h1>
+          <span className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full shrink-0 ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}>
             {toTitleCase(quote.status)}
           </span>
+        </div>
+
+        {/* Row 3: subtitle */}
+        <p className="text-[12px] text-[var(--tx3)]">
+          {toTitleCase(quote.service_type?.split("_").join(" "))} &middot; Created{" "}
+          {new Date(quote.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+        </p>
+
+        {/* Row 4: action buttons — wrap on mobile */}
+        <div className="flex items-center gap-2 flex-wrap pt-1">
+          <button
+            type="button"
+            onClick={() => router.push(`/admin/quotes/${quote.quote_id}/edit`)}
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold)]/80 px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/40 transition-colors"
+          >
+            <Pencil className="w-3 h-3" /> Edit All Details
+          </button>
+          {quote.quote_url && (
+            <a
+              href={quote.quote_url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] px-3 py-1.5 rounded-lg border border-[var(--brd)] transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" /> Client View
+            </a>
+          )}
+          {quote.status === "accepted" && (
+            <button
+              type="button"
+              onClick={handleRecoverMove}
+              disabled={recoveringMove}
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--grn)] px-3 py-1.5 rounded-lg border border-[var(--grn)]/40 hover:border-[var(--grn)] bg-[var(--grn)]/10 disabled:opacity-50 transition-colors"
+            >
+              {recoveringMove ? "Creating…" : "Create Move"}
+            </button>
+          )}
           {quote.status === "draft" && !showDeleteConfirm && (
             <button
               type="button"
@@ -226,7 +253,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
             </button>
           )}
           {showDeleteConfirm && (
-            <div className="flex items-center gap-1.5">
+            <>
               <button
                 type="button"
                 onClick={handleDeleteDraft}
@@ -242,36 +269,8 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               >
                 Cancel
               </button>
-            </div>
+            </>
           )}
-          {quote.status === "accepted" && (
-            <button
-              type="button"
-              onClick={handleRecoverMove}
-              disabled={recoveringMove}
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--grn)] hover:text-[var(--grn)]/80 px-3 py-1.5 rounded-lg border border-[var(--grn)]/40 hover:border-[var(--grn)] bg-[var(--grn)]/10 disabled:opacity-50 transition-colors"
-            >
-              {recoveringMove ? "Creating…" : "Create Move"}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => router.push(`/admin/quotes/${quote.quote_id}/edit`)}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold)]/80 px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/40"
-          >
-            <Pencil className="w-3 h-3" /> Edit All Details
-          </button>
-          {quote.quote_url && (
-            <a
-              href={quote.quote_url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] px-3 py-1.5 rounded-lg border border-[var(--brd)]"
-            >
-              <ExternalLink className="w-3 h-3" /> Client View
-            </a>
-          )}
-          </div>
         </div>
       </div>
 
@@ -283,9 +282,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
             <h2 className="admin-section-h2 mb-4">
               Quote Summary
             </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+            <div className="rounded-xl border border-[var(--brd)] overflow-hidden">
+            <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[var(--brd)]">
+              <div className="p-4">
+                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                   Client
                 </span>
                 <p className="text-[13px] font-medium text-[var(--tx)]">
@@ -296,11 +296,11 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                   <p className="text-[11px] text-[var(--tx3)]">{formatPhone(contact.phone)}</p>
                 )}
               </div>
-              <div>
-                <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+              <div className="p-4 border-t sm:border-t-0 border-[var(--brd)]">
+                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                   Move Date
                 </span>
-                <p className="text-[13px] font-medium text-[var(--tx)]">
+                <p className="text-[13px] font-medium text-[var(--tx)] mt-0.5">
                   {quote.move_date
                     ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                         weekday: "short",
@@ -311,20 +311,20 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                     : "TBD"}
                 </p>
               </div>
-              <div>
-                <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+            </div>
+            <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[var(--brd)] border-t border-[var(--brd)]">
+              <div className="p-4">
+                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                   Route
                 </span>
-                <p className="text-[11px] text-[var(--tx)]">{quote.from_address}</p>
+                <p className="text-[11px] text-[var(--tx)] mt-0.5">{quote.from_address}</p>
                 <p className="text-[11px] text-[var(--tx3)]">→ {quote.to_address}</p>
                 {quote.distance_km && (
-                  <p className="text-[10px] text-[var(--tx3)]/60 mt-0.5">
-                    {quote.distance_km} km
-                  </p>
+                  <p className="text-[10px] text-[var(--tx3)]/60 mt-0.5">{quote.distance_km} km</p>
                 )}
               </div>
-              <div>
-                <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+              <div className="p-4 border-t sm:border-t-0 border-[var(--brd)]">
+                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                   Amount
                 </span>
                 {(() => {
@@ -336,10 +336,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                     const hi = Math.max(...prices);
                     return (
                       <>
-                        <p className="text-[18px] font-bold text-[var(--gold)] font-heading">
+                        <p className="text-[20px] font-bold text-[var(--gold)] font-heading mt-0.5">
                           {fmtCurrency(lo)}–{fmtCurrency(hi)}
                         </p>
-                        <span className="text-[9px] text-[var(--tx3)]">
+                        <span className="text-[10px] text-[var(--tx3)]">
                           +{fmtCurrency(Math.round(lo * HST))}–{fmtCurrency(Math.round(hi * HST))} HST (13%)
                         </span>
                       </>
@@ -348,10 +348,10 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                   const base = quote.custom_price ?? 0;
                   return (
                     <>
-                      <p className="text-[18px] font-bold text-[var(--gold)] font-heading">
+                      <p className="text-[20px] font-bold text-[var(--gold)] font-heading mt-0.5">
                         {fmtCurrency(base)}
                       </p>
-                      <span className="text-[9px] text-[var(--tx3)]">
+                      <span className="text-[10px] text-[var(--tx3)]">
                         +{fmtCurrency(Math.round(base * HST))} HST (13%)
                       </span>
                     </>
@@ -359,15 +359,16 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 })()}
               </div>
             </div>
+            </div>
             {/* Truck + Crew */}
             {(quote.truck_primary || factors?.est_crew_size || quote.est_crew_size) && (
-              <div className="border-t border-[var(--brd)]/30 pt-3 flex flex-wrap gap-4">
+              <div className="mt-3 flex flex-wrap gap-4">
                 {quote.truck_primary && (
                   <div>
-                    <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                       Vehicle
                     </span>
-                    <p className="text-[11px] font-medium text-[var(--tx)]">
+                    <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
                       {toTitleCase(quote.truck_primary)}
                       {quote.truck_secondary ? ` + ${toTitleCase(quote.truck_secondary)}` : ""}
                     </p>
@@ -375,20 +376,20 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 )}
                 {(quote.est_crew_size ?? factors?.est_crew_size) && (
                   <div>
-                    <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                       Crew
                     </span>
-                    <p className="text-[11px] font-medium text-[var(--tx)]">
+                    <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
                       {quote.est_crew_size ?? factors?.est_crew_size} movers
                     </p>
                   </div>
                 )}
                 {quote.est_hours && (
                   <div>
-                    <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                       Est. Hours
                     </span>
-                    <p className="text-[11px] font-medium text-[var(--tx)]">
+                    <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
                       ~{quote.est_hours}h
                     </p>
                   </div>
@@ -583,7 +584,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
             <div className="space-y-2 text-[11px]">
               <div className="flex justify-between">
                 <span className="text-[var(--tx3)]">Service</span>
-                <span className="text-[var(--tx)] font-medium">{toTitleCase(quote.service_type?.replace(/_/g, " "))}</span>
+                <span className="text-[var(--tx)] font-medium">{toTitleCase(quote.service_type?.split("_").join(" "))}</span>
               </div>
               {quote.move_size && (
                 <div className="flex justify-between">

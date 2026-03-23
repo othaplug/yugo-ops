@@ -263,7 +263,7 @@ export default function PartnerHealthClient() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
-          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">
             Partners
           </p>
           <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">

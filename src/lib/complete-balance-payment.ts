@@ -3,10 +3,7 @@ import { calcHST } from "@/lib/format-currency";
 
 export type AdminClient = ReturnType<typeof createAdminClient>;
 
-export type BalanceSettlementMethod = "card" | "etransfer" | "auto-charge" | "client" | "admin";
-
-/** E-transfer address shown to clients when no card on file */
-export const CLIENT_ETRANSFER_EMAIL = "pay@helloyugo.com";
+export type BalanceSettlementMethod = "card" | "auto-charge" | "client" | "admin";
 
 export async function findInventoryChangeForBalancePayment(
   admin: AdminClient,
@@ -93,7 +90,7 @@ export async function finalizeBalancePaymentSettlement(opts: {
   const movePatch: Record<string, unknown> = {
     balance_amount: 0,
     balance_paid_at: paidAt,
-    balance_method: settlementMethod === "etransfer" ? "etransfer" : "card",
+    balance_method: "card",
     balance_auto_charged: settlementMethod === "auto-charge",
     payment_marked_paid: true,
     payment_marked_paid_at: paidAt,

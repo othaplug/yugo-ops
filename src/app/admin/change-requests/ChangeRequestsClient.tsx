@@ -239,22 +239,22 @@ export default function ChangeRequestsClient({
     <div className="space-y-8">
       {/* Stats bar */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[var(--brd)]/30">
           <div className="px-4 py-2 first:pl-0">
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pending</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Pending</div>
             <div className="text-xl font-bold font-heading text-[var(--tx)]">{pending.length}</div>
           </div>
           <div className="px-4 py-2">
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Approved today</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Approved today</div>
             <div className="text-xl font-bold font-heading text-[var(--grn)]">{approvedToday.length}</div>
           </div>
           <div className="px-4 py-2">
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Rejected</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Rejected</div>
             <div className="text-xl font-bold font-heading text-[var(--red)]">{rejected.length}</div>
           </div>
           <div className="px-4 py-2">
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total approved</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total approved</div>
             <div className="text-xl font-bold font-heading text-[var(--blue)]">{approved.length}</div>
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function ChangeRequestsClient({
 
       {/* Filter bar */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Filter</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Filter</div>
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -283,7 +283,7 @@ export default function ChangeRequestsClient({
 
       {/* Content */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Change requests</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Change requests</div>
         <DataTable
           data={filtered}
           columns={columns}

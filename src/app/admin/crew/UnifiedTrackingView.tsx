@@ -428,7 +428,7 @@ function CrewPopup({
       {/* Current job */}
       {(clientName || currentMove) && (
         <div className="pt-3 mt-3 border-t border-[var(--brd)]/30">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Current Job</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Current Job</div>
           <div className="text-[12px] font-semibold text-[var(--tx)]">{clientName || "—"}</div>
           {fromAddr && toAddr && (
             <div className="text-[11px] text-[var(--tx2)] mt-1">{fromAddr} → {toAddr}</div>
@@ -439,24 +439,24 @@ function CrewPopup({
       {/* Stats grid */}
       <div className="grid grid-cols-3 gap-2 mb-3 pt-3 mt-3 border-t border-[var(--brd)]/30">
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Speed</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Speed</div>
           <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{speedKmh != null ? `${speedKmh}` : "—"}</div>
           <div className="text-[8px] text-[var(--tx3)]">km/h</div>
         </div>
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">ETA</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">ETA</div>
           <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{etaMin != null ? `${etaMin}` : "—"}</div>
           <div className="text-[8px] text-[var(--tx3)]">min</div>
         </div>
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Last GPS</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Last GPS</div>
           <div className="text-[12px] font-semibold text-[var(--tx)] mt-0.5">{formatRelative(crewLocation?.updated_at || crew.updated_at || new Date().toISOString())}</div>
         </div>
       </div>
 
       {/* Team members */}
       <div className="mb-3 pt-3 border-t border-[var(--brd)]/30">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Team</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Team</div>
         <div className="flex flex-wrap gap-1.5">
           {(crew.members || []).map((m) => (
             <span key={m} className="px-2 py-1 rounded-md text-[10px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">{m}</span>
@@ -873,7 +873,7 @@ export default function UnifiedTrackingView({
                 {activeSessions.length === 0 && (todayMoves.length > 0 || todayDeliveries.length > 0) && (
                   <>
                     <div className="px-4 pt-3 pb-1">
-                      <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Scheduled Today</span>
+                      <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Scheduled Today</span>
                     </div>
                     {todayMoves.map((m) => {
                       const crew = crews.find((c) => c.id === m.crew_id);

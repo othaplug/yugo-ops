@@ -82,7 +82,7 @@ export default function UsersClient({ currentUserId }: UsersClientProps) {
 
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Platform</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Platform</p>
           <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Users</h1>
         </div>
         <button

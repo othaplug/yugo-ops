@@ -37,6 +37,7 @@ import {
   ClipboardText as ClipboardCheck,
   Package,
   CheckCircle,
+  EggCrack,
   type Icon as LucideIcon,
 } from "@phosphor-icons/react";
 import {
@@ -158,7 +159,7 @@ const TIER_FEATURES: Record<string, TierFeature[]> = {
  *  These are NOT shown as tier card bullets — they apply to all tiers. */
 const UNIVERSAL_FEATURES: TierFeature[] = [
   { card: "Guaranteed flat price", title: "Guaranteed flat price", desc: "The price you see is the price you pay", iconName: "DollarSign" },
-  { card: "Zero-damage commitment", title: "Zero-damage commitment", desc: "Your belongings, protected and insured", iconName: "Shield" },
+  { card: "Zero-damage commitment", title: "Zero-damage commitment", desc: "Your belongings, protected and insured", iconName: "EggCrack" },
 ];
 
 /** Renders a Lucide icon by string name. Falls back to CheckCircle for unknown names. */
@@ -167,7 +168,7 @@ function FeatureIcon({ iconName, className, style }: { iconName: string; classNa
     Truck, Users, Shield, ShieldCheck, Star, Clock, Gift, Wrench, Toolbox,
     Armchair, Suitcase, UserCircle, FrameCorners, Compass,
     Home, MapPin, DollarSign, Shirt, ClipboardCheck, Package, CheckCircle, Trash2,
-    Ruler, Radar, Camera, Hand, Lock,
+    Ruler, Radar, Camera, Hand, Lock, EggCrack,
   };
   const Icon = ICON_MAP[iconName] ?? CheckCircle;
   return <Icon className={className} style={style} weight="duotone" />;
@@ -839,28 +840,31 @@ export default function QuotePageClient({
       <div className="max-w-4xl md:max-w-5xl lg:max-w-7xl mx-auto px-5 md:px-6">
         {/* ═══ GUARANTEED PRICE BADGE (sticky) ═══ */}
         <div
-          className={`sticky top-0 z-20 mb-8 ${isResidential && currentStep >= 2 && !booked ? "mt-3" : "-mt-5"}`}
+          className={`sticky top-0 z-20 mb-8 py-3 ${isResidential && currentStep >= 2 && !booked ? "mt-3" : "mt-4"}`}
+          style={{ backgroundColor: CREAM }}
         >
-          <div
-            className="rounded-xl px-5 py-3.5 flex items-center gap-3 shadow-sm"
-            style={{
-              backgroundColor: "#FFFDF8",
-              border: `1px solid ${GOLD}40`,
-            }}
-          >
+          <div className="flex justify-center">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${GOLD}15` }}
+              className="inline-flex items-center gap-3 rounded-xl px-5 py-3 shadow-sm"
+              style={{
+                backgroundColor: "#FFFDF8",
+                border: `1px solid ${GOLD}60`,
+              }}
             >
-              <Lock className="w-4 h-4" style={{ color: GOLD }} />
-            </div>
-            <div>
-              <p className="text-[12px] font-bold tracking-wider uppercase" style={{ color: GOLD }}>
-                Guaranteed Price
-              </p>
-              <p className="text-[11px] leading-snug" style={{ color: `${FOREST}70` }}>
-                The price you see is the price you pay. No hourly surprises. No hidden fees.
-              </p>
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                style={{ backgroundColor: `${GOLD}18` }}
+              >
+                <Lock className="w-[18px] h-[18px]" style={{ color: GOLD }} />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold tracking-wider uppercase" style={{ color: GOLD }}>
+                  Guaranteed Price
+                </p>
+                <p className="text-[12px] leading-snug" style={{ color: `${FOREST}90` }}>
+                  The price you see is the price you pay. No hourly surprises. No hidden fees.
+                </p>
+              </div>
             </div>
           </div>
         </div>

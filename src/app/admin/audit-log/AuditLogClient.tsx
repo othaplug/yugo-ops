@@ -185,7 +185,7 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
       </div>
 
       <div className="mb-6">
-        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/70 mb-1.5">Operations</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/70 mb-1.5">Operations</p>
         <h1 className="font-heading text-[22px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight leading-tight">
           Audit log
         </h1>

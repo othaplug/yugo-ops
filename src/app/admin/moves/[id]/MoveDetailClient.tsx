@@ -208,7 +208,7 @@ export default function MoveDetailClient({
   const isPaid = move.status === "paid" || !!move.payment_marked_paid;
   const moveInProgress = isMoveInProgress(move.status, move.stage);
   const isBalancePaid = !!move.balance_paid_at;
-  const [balanceLoading, setBalanceLoading] = useState<"etransfer" | "card" | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState<"card" | null>(null);
   const [balanceJustSettled, setBalanceJustSettled] = useState(false);
   const [jobDuration, setJobDuration] = useState<{ startedAt: string | null; completedAt: string | null; isActive: boolean } | null>(null);
   const [jobDurationElapsed, setJobDurationElapsed] = useState(0);
@@ -287,10 +287,9 @@ export default function MoveDetailClient({
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
-      <BackButton label="Back" />
-
-      <div className="pt-4">
-        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1">Operations · {isOffice ? "Office Move" : "Residential Move"}</p>
+      <div className="flex items-center gap-2 mb-1">
+        <BackButton label="Back" />
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Operations · {isOffice ? "Office Move" : "Residential Move"}</p>
       </div>
 
       {isCompleted && (
@@ -1131,7 +1130,7 @@ export default function MoveDetailClient({
                   <div className="mt-1.5 flex items-center gap-2">
                     <span className="text-[10px] text-[var(--tx3)]/60">
                       {fullyPaid
-                        ? `Total collected${move.balance_method ? ` · ${move.balance_method === "etransfer" ? "E-Transfer" : "Card"}${move.balance_auto_charged ? " (auto)" : ""}` : ""}`
+                        ? `Total collected${move.balance_method ? ` · Card${move.balance_auto_charged ? " (auto)" : ""}` : ""}`
                         : `Balance due · +${formatCurrency(calcHST(balanceDue))} HST`}
                     </span>
                   </div>
@@ -1166,8 +1165,8 @@ export default function MoveDetailClient({
                           <span className="text-[var(--tx3)]/70 ml-1.5">
                             · {paid.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
                           </span>
-                          {row.settlement_method === "etransfer" && (
-                            <span className="text-[9px] text-[var(--tx3)] ml-1">(e-transfer)</span>
+                          {row.settlement_method === "admin" && (
+                            <span className="text-[9px] text-[var(--tx3)] ml-1">(override)</span>
                           )}
                         </div>
                         <div className="font-medium tabular-nums">
@@ -1214,44 +1213,12 @@ export default function MoveDetailClient({
                 )}
                 {balanceDue > 0 && !move.balance_auto_charged && (
                   <>
-                    {/* Only show e-transfer button when client is NOT paying by card */}
-                    {!move.square_card_id && (
-                      <button
-                        type="button"
-                        disabled={balanceLoading !== null}
-                        onClick={async () => {
-                          if (!window.confirm("Confirm that you've received the e-transfer for this move's balance?")) return;
-                          setBalanceLoading("etransfer");
-                          try {
-                            const res = await fetch(`/api/admin/moves/${move.id}`, {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ action: "mark_etransfer_received", marked_by: "admin" }),
-                            });
-                            const data = await res.json();
-                            if (!res.ok) throw new Error(data.error || "Failed");
-                            setBalanceJustSettled(true);
-                            setMove(data);
-                            router.refresh();
-                            toast("E-transfer marked as received", "check");
-                          } catch (err) {
-                            toast(err instanceof Error ? err.message : "Failed to mark e-transfer", "alertTriangle");
-                          } finally {
-                            setBalanceLoading(null);
-                          }
-                        }}
-                        className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/25 hover:bg-[var(--grn)]/20 transition-colors disabled:opacity-40"
-                      >
-                        {balanceLoading === "etransfer" ? "Processing…" : "Mark E-Transfer Received"}
-                      </button>
-                    )}
                     {move.square_card_id && (
                       <button
                         type="button"
                         disabled={balanceLoading !== null}
                         onClick={async () => {
-                          const ccTotal = (balanceDue * 1.033 + 0.15).toFixed(2);
-                          if (!window.confirm(`Charge ${ccTotal} CAD to the client's card on file? This includes the 3.3% processing fee.`)) return;
+                          if (!window.confirm(`Charge ${formatCurrency(balanceDue)} CAD to the client's card on file?`)) return;
                           setBalanceLoading("card");
                           try {
                             const res = await fetch(`/api/admin/moves/${move.id}`, {

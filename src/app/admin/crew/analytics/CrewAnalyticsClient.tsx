@@ -274,7 +274,7 @@ export default function CrewAnalyticsClient({
       {/* Header */}
       <div className="flex items-start justify-between mb-1">
         <div>
-          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
           <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
             Crew Performance
           </h1>
@@ -404,7 +404,7 @@ export default function CrewAnalyticsClient({
 
       {/* Summary strip */}
       <div className="border-t border-[var(--brd)]/30 pt-6 mt-6">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <SummaryCell label="Total Jobs" value={String(totalJobs)} sub={`${sorted.length} crews`} />
           <SummaryCell label="Satisfaction" value={avgSatAll} sub="/5 avg" accent />
@@ -421,7 +421,7 @@ export default function CrewAnalyticsClient({
         </div>
       ) : (
         <div className="border-t border-[var(--brd)]/30 pt-6 mt-6">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
             Crew Comparison
           </div>
           {/* Table header */}
@@ -648,7 +648,7 @@ function CrewDetailView({
           {detail.trends.length > 1 && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
                   Performance Trends
                 </div>
                 <div className="flex gap-1">
@@ -748,7 +748,7 @@ function CrewDetailView({
 
           {/* Job History Table */}
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
               Job History — {detail.jobs.length} job{detail.jobs.length !== 1 ? "s" : ""}
             </div>
 
@@ -949,7 +949,7 @@ function SummaryCell({
 }) {
   return (
     <div className="py-3">
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">{label}</div>
       <div className={`text-[22px] sm:text-[26px] font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"} leading-tight truncate`}>
         {value}
         {sub && <span className="text-[11px] font-normal text-[var(--tx3)] ml-1">{sub}</span>}
@@ -961,7 +961,7 @@ function SummaryCell({
 function KpiCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4">
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{label}</div>
       <div className="text-[22px] font-bold leading-tight" style={{ color }}>
         {value}
       </div>

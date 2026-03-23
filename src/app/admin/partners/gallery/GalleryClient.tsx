@@ -117,7 +117,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
         {/* ── Projects Tab ── */}
         {activeTab === "projects" && (
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Projects</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Projects</div>
 
             {/* Search + filter */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
@@ -246,7 +246,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
         {/* ── Partners Tab ── */}
         {activeTab === "partners" && (
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
             <div className="divide-y divide-[var(--brd)]/30">
               {galleryPartners.length === 0 ? (
                 <div className="px-4 py-10 text-center">
@@ -290,7 +290,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
             </div>
             <div className="space-y-3 text-[12px]">
               <div>
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Name</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Name</div>
                 <div className="text-[var(--tx)] font-semibold">{projectDetail.name}</div>
               </div>
               <div>
@@ -306,7 +306,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <div className="text-[var(--tx)]">{projectDetail.address || "—"}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Location</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Location</div>
                 <div className="text-[var(--tx)]">{projectDetail.location || "—"}</div>
               </div>
               <div>
@@ -318,7 +318,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 <div className="text-[var(--gold)] font-semibold">{projectDetail.insurance_value || "—"}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Status</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Status</div>
                 <Badge status={projectDetail.status} />
               </div>
               {(projectDetail.white_glove || projectDetail.crating_required || projectDetail.climate_controlled) && (
@@ -334,7 +334,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 </div>
               )}
               <div>
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Details</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Details</div>
                 <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details || "—"}</p>
               </div>
             </div>

@@ -21,7 +21,6 @@ import { getDisplayLabel } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
 import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
-import { CLIENT_ETRANSFER_EMAIL } from "@/lib/complete-balance-payment";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
@@ -592,6 +591,21 @@ export default function TrackMoveClient({
   return (
     <div className="h-screen flex flex-col overflow-hidden font-sans" data-theme="light" style={{ backgroundColor: "#FAF7F2", color: FOREST }}>
       <TrackingAgreementModal />
+      {/* Header — outside scroll container; always visible on mobile */}
+      <header className="shrink-0 z-50 border-b" style={{ backgroundColor: WINE, borderColor: `${WINE}80` }}>
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
+          <div className="flex items-center gap-2">
+            <YugoLogo size={20} variant="gold" />
+          </div>
+          <ClientSettingsMenu
+            moveId={move.id}
+            clientName={move.client_name || ""}
+            clientEmail={move.client_email || ""}
+            clientPhone={move.client_phone || ""}
+            valuationTier={move.tier_selected || move.service_tier || "released"}
+          />
+        </div>
+      </header>
       <div ref={pullRef as React.RefObject<HTMLDivElement>} className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {/* Pull-to-refresh indicator */}
         {(pullDistance > 0 || refreshing) && (
@@ -617,22 +631,6 @@ export default function TrackMoveClient({
             )}
           </div>
         )}
-        {/* Header — safe-area top so logo isn’t clipped under notch / status bar */}
-        <header className="sticky top-0 z-50 border-b backdrop-blur-md" style={{ backgroundColor: `${WINE}F5`, borderColor: `${WINE}80` }}>
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
-            <div className="flex items-center gap-2">
-              <YugoLogo size={20} variant="gold" />
-            </div>
-            <ClientSettingsMenu
-            moveId={move.id}
-            clientName={move.client_name || ""}
-            clientEmail={move.client_email || ""}
-            clientPhone={move.client_phone || ""}
-            valuationTier={move.tier_selected || move.service_tier || "released"}
-          />
-        </div>
-      </header>
-
       <main className="flex-1 max-w-[800px] mx-auto px-4 sm:px-5 md:px-6 py-4 sm:py-6 min-w-0 w-full pb-8">
         {showPaymentSuccess && (
           <div className="mb-5 text-center py-6 animate-fade-up">
@@ -690,7 +688,7 @@ export default function TrackMoveClient({
         {crewCrApprovalState === "approved_pending_payment" && (
           <div className="mb-5 rounded-2xl border border-amber-400/30 bg-amber-400/6 px-4 py-3">
             <p className="text-[12px] font-semibold text-amber-600">Approved — pending payment</p>
-            <p className="text-[11px] text-amber-700/70 mt-0.5">Send e-transfer to <strong>pay@helloyugo.com</strong> or contact your coordinator to add a card.</p>
+            <p className="text-[11px] text-amber-700/70 mt-0.5">Add a card below to authorize the charge, or contact your coordinator.</p>
           </div>
         )}
         {crewCrApprovalState === "declined" && (
@@ -1122,15 +1120,15 @@ export default function TrackMoveClient({
               <div
                 className="rounded-2xl overflow-hidden"
                 style={{
-                  border: `1px solid ${GOLD}38`,
-                  background: `linear-gradient(160deg, #1f0e16 0%, #2e1520 55%, #1a1108 100%)`,
-                  boxShadow: `0 12px 40px rgba(92, 26, 51, 0.22), 0 2px 8px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.05)`,
+                  backgroundColor: "#FFFDF8",
+                  border: `1px solid ${GOLD}40`,
+                  boxShadow: `0 2px 12px rgba(0,0,0,0.06)`,
                 }}
               >
                 {/* Gold accent stripe */}
                 <div
                   className="h-[3px] w-full"
-                  style={{ background: `linear-gradient(90deg, ${GOLD}bb 0%, ${GOLD} 50%, ${GOLD}bb 100%)` }}
+                  style={{ background: `linear-gradient(90deg, ${GOLD}80 0%, ${GOLD} 50%, ${GOLD}80 100%)` }}
                 />
 
                 <div className="px-5 pt-4 pb-5 sm:px-6">
@@ -1139,8 +1137,8 @@ export default function TrackMoveClient({
                     <div
                       className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center"
                       style={{
-                        backgroundColor: `${GOLD}20`,
-                        boxShadow: `inset 0 0 0 1px ${GOLD}40`,
+                        backgroundColor: `${GOLD}18`,
+                        boxShadow: `inset 0 0 0 1px ${GOLD}35`,
                       }}
                     >
                       <UsersThree size={22} weight="duotone" color={GOLD} aria-hidden />
@@ -1148,16 +1146,16 @@ export default function TrackMoveClient({
                     <div className="pt-0.5">
                       <div
                         className="text-[9px] font-bold uppercase tracking-[0.14em] mb-1"
-                        style={{ color: `${GOLD}99` }}
+                        style={{ color: GOLD }}
                       >
                         {serviceType === "office_move" ? "Refer another business" : "Refer a friend & earn cash"}
                       </div>
-                      <p className="text-[14px] font-semibold leading-snug mb-1" style={{ color: "#fff" }}>
+                      <p className="text-[14px] font-semibold leading-snug mb-1" style={{ color: FOREST }}>
                         {serviceType === "office_move"
                           ? "Know a business that's moving?"
                           : "Give a friend a discount. Get cash back."}
                       </p>
-                      <p className="text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.48)" }}>
+                      <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}80` }}>
                         {serviceType === "office_move"
                           ? "Refer them to Yugo and earn a $200 credit on your next move."
                           : "Share your code — your friend saves, you earn credit when they book."}
@@ -1168,7 +1166,7 @@ export default function TrackMoveClient({
                   {!referral ? (
                     <p
                       className="text-[11px] leading-relaxed rounded-xl px-4 py-3"
-                      style={{ color: "rgba(255,255,255,0.38)", backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      style={{ color: `${FOREST}60`, backgroundColor: `${FOREST}06`, border: `1px solid ${FOREST}12` }}
                     >
                       {isCompleted
                         ? "Your referral code is being prepared — check back in a moment."
@@ -1177,7 +1175,7 @@ export default function TrackMoveClient({
                   ) : referral.status !== "active" ? (
                     <p
                       className="text-[11px] leading-relaxed rounded-xl px-4 py-3"
-                      style={{ color: "rgba(255,255,255,0.38)", backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      style={{ color: `${FOREST}60`, backgroundColor: `${FOREST}06`, border: `1px solid ${FOREST}12` }}
                     >
                       Your referral code has expired.{" "}
                       <a href={`mailto:${YUGO_EMAIL}`} className="underline" style={{ color: GOLD }}>Contact us</a>{" "}
@@ -1186,26 +1184,33 @@ export default function TrackMoveClient({
                   ) : (
                     <>
                       {/* Value prop inline */}
-                      <p className="text-[12px] leading-relaxed mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>
+                      <p className="text-[12px] leading-relaxed mb-4" style={{ color: `${FOREST}85` }}>
                         Your friend gets{" "}
                         <span className="font-semibold" style={{ color: GOLD }}>${referral.referred_discount} off</span>
                         {" "}their first Yugo move. You earn a{" "}
-                        <span className="font-semibold" style={{ color: "#f4c2c2" }}>${referral.referrer_credit} credit</span>
+                        <span className="font-semibold" style={{ color: WINE }}>${referral.referrer_credit} credit</span>
                         {" "}when they book.
                       </p>
 
-                      {/* Code row */}
+                      {/* Code + actions row */}
                       <div
-                        className="flex items-center justify-between gap-3 rounded-lg px-3.5 py-2 mb-3"
-                        style={{
-                          backgroundColor: "rgba(0,0,0,0.30)",
-                          border: `1px solid ${GOLD}45`,
-                          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04)`,
-                        }}
+                        className="flex items-center gap-0 rounded-xl mb-3 overflow-hidden"
+                        style={{ border: `1px solid ${GOLD}50` }}
                       >
-                        <span className="font-mono text-[13px] font-bold tracking-[0.16em]" style={{ color: GOLD }}>
-                          {referral.referral_code}
-                        </span>
+                        {/* Code display */}
+                        <div
+                          className="flex-1 px-3.5 py-2"
+                          style={{ backgroundColor: `${GOLD}0c` }}
+                        >
+                          <span className="font-mono text-[12px] font-bold tracking-[0.18em]" style={{ color: FOREST }}>
+                            {referral.referral_code}
+                          </span>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="w-px self-stretch" style={{ backgroundColor: `${GOLD}50` }} />
+
+                        {/* Copy */}
                         <button
                           type="button"
                           aria-label={referralCopied ? "Copied" : "Copy referral code"}
@@ -1215,47 +1220,53 @@ export default function TrackMoveClient({
                               setTimeout(() => setReferralCopied(false), 2000);
                             });
                           }}
-                          className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all active:scale-95"
+                          className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-[11px] font-semibold transition-all hover:opacity-80 active:scale-95"
                           style={{
-                            backgroundColor: referralCopied ? `${GOLD}28` : "rgba(255,255,255,0.09)",
-                            color: referralCopied ? GOLD : "rgba(255,255,255,0.6)",
-                            border: referralCopied ? `1px solid ${GOLD}55` : "1px solid rgba(255,255,255,0.12)",
+                            backgroundColor: referralCopied ? `${GOLD}18` : "white",
+                            color: referralCopied ? GOLD : `${FOREST}80`,
                           }}
                         >
                           {referralCopied
-                            ? <><Check size={11} weight="bold" aria-hidden /> Copied</>
-                            : <><Copy size={11} weight="regular" aria-hidden /> Copy</>}
+                            ? <><Check size={12} weight="bold" aria-hidden /> Copied</>
+                            : <><Copy size={12} weight="regular" aria-hidden /> Copy</>}
                         </button>
-                      </div>
 
-                      {/* Share buttons */}
-                      <div className="flex gap-2 flex-wrap mb-3">
+                        {/* Divider */}
+                        <div className="w-px self-stretch" style={{ backgroundColor: `${GOLD}50` }} />
+
+                        {/* Share */}
                         <button
                           type="button"
+                          aria-label="Share referral code"
                           onClick={() => {
                             const msg = `I just moved with Yugo — they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
                             if (navigator.share) { navigator.share({ text: msg }).catch(() => {}); }
                             else { navigator.clipboard.writeText(msg); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }
                           }}
-                          className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-4 py-2 transition-all hover:opacity-90 active:scale-95"
-                          style={{ backgroundColor: WINE, color: "#FAF7F2" }}
+                          className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-[11px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                          style={{ backgroundColor: "white", color: WINE }}
                         >
-                          <ShareNetwork size={12} className="text-current" />
-                          Share with a friend
+                          <ShareNetwork size={13} weight="bold" aria-hidden />
+                          Share
                         </button>
+
+                        {/* Divider */}
+                        <div className="w-px self-stretch" style={{ backgroundColor: `${GOLD}50` }} />
+
+                        {/* SMS */}
                         <a
                           href={`sms:?body=${encodeURIComponent(`Moving soon? Use my YUGO referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
-                          className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-4 py-2 transition-all hover:opacity-90 active:scale-95"
-                          style={{ backgroundColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.12)" }}
+                          className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-[11px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                          style={{ backgroundColor: "white", color: `${FOREST}90` }}
                         >
-                          <ChatCircle size={12} className="text-current" />
-                          Send via SMS
+                          <ChatCircle size={13} weight="bold" aria-hidden />
+                          SMS
                         </a>
                       </div>
 
-                      <p className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                      <p className="text-[10px]" style={{ color: `${FOREST}55` }}>
                         Terms and conditions apply.{" "}
-                        <Link href="/terms" className="underline hover:opacity-80" style={{ color: `${GOLD}aa` }}>
+                        <Link href="/terms" className="underline hover:opacity-80" style={{ color: GOLD }}>
                           Read more.
                         </Link>
                       </p>
@@ -1743,11 +1754,7 @@ export default function TrackMoveClient({
                 )}
                 {totalBalance > 0 && outstandingInventoryAdj && !hasCardOnFile && (
                   <p className="text-[11px] leading-relaxed opacity-85" style={{ color: FOREST }}>
-                    Additional charge: {formatCurrency(totalBalance)} + {formatCurrency(calcHST(totalBalance))} HST. Pay by e-transfer to{" "}
-                    <a href={`mailto:${CLIENT_ETRANSFER_EMAIL}`} className="font-semibold underline underline-offset-2" style={{ color: GOLD }}>
-                      {CLIENT_ETRANSFER_EMAIL}
-                    </a>{" "}
-                    or add a card below.
+                    Additional charge: {formatCurrency(totalBalance)} + {formatCurrency(calcHST(totalBalance))} HST. Add a card below to authorize the charge, or contact your coordinator.
                   </p>
                 )}
                 {balanceChargeError && (

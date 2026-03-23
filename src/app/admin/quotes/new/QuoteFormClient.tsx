@@ -1394,7 +1394,7 @@ export default function QuoteFormClient({
         <div className={`flex flex-col transition-all duration-300 max-w-4xl w-full ${previewOpen ? "min-[480px]:w-[60%] min-w-0" : "min-[480px]:w-full"}`}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[var(--brd)]">
-              <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
+              <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
               <h1 className="font-heading text-[22px] font-bold text-[var(--tx)] tracking-tight leading-none">Generate Quote</h1>
               <p className="text-[11px] text-[var(--tx3)] mt-1.5">
                 Fill in the details and generate a quote. The live preview updates as you type.
@@ -1404,7 +1404,7 @@ export default function QuoteFormClient({
             <div className="p-5 space-y-0">
               {/* ── 1. Service type ── */}
               <div>
-                <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
+                <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                   {SERVICE_TYPES.map((card) => {
                     const sel = serviceType === card.value;
@@ -1439,7 +1439,7 @@ export default function QuoteFormClient({
 
               {/* ── 2. Client ── */}
               <div className="space-y-3">
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
                 <Field label="Select to auto fill">
                   <div ref={contactDropdownRef} className="relative">
                     <input
@@ -1505,7 +1505,7 @@ export default function QuoteFormClient({
 
               {/* ── Referral Code ── */}
               <div className="border-t border-[var(--brd)]/30 pt-4 pb-1">
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Referral Code</h3>
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Referral Code</h3>
                 <div className="flex gap-2">
                   <input
                     value={referralCode}
@@ -1533,7 +1533,7 @@ export default function QuoteFormClient({
 
               {/* ── 3. Addresses ── */}
               <div className="space-y-3">
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
                   {serviceType === "event" && eventMulti
                     ? "Addresses (per event below)"
                     : serviceType === "event"
@@ -1647,7 +1647,7 @@ export default function QuoteFormClient({
               {/* Event and labour_only manage their own date fields */}
               {serviceType !== "event" && (
               <div>
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
                   {serviceType === "labour_only" ? "Scheduling" : "Move Details"}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1755,7 +1755,7 @@ export default function QuoteFormClient({
               {/* ── 5. Specialty items ── */}
               {(serviceType === "local_move" || serviceType === "long_distance") && (
                 <div className="space-y-2">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Items</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {SPECIALTY_ITEM_TYPES.map((type) => {
                       const active = specialtyItems.some((i) => i.type === type);
@@ -1799,7 +1799,7 @@ export default function QuoteFormClient({
               {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "white_glove" || serviceType === "specialty") && (
                 <div className="space-y-2 mt-3">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Custom Crating</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Custom Crating</h3>
                     <label className="flex items-center gap-1.5 ml-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -1894,7 +1894,7 @@ export default function QuoteFormClient({
               {/* ── Office fields ── */}
               {serviceType === "office_move" && (
                 <div className="space-y-2">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office Details</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office Details</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Field label="Billable hours (crew block)">
                       <input
@@ -1958,7 +1958,7 @@ export default function QuoteFormClient({
               {/* ── Single item fields ── */}
               {serviceType === "single_item" && (
                 <div className="space-y-3">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</h3>
                   <div className="rounded-xl border-2 border-[var(--gold)]/40 bg-[var(--gold)]/8 px-3 py-3 space-y-2">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">Special handling instructions</p>
                     <p className="text-[9px] text-[var(--tx3)] leading-snug">
@@ -2016,7 +2016,7 @@ export default function QuoteFormClient({
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
                 <div className="space-y-2">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Items</h3>
                   <Field label="Item description *">
                     <input
                       value={itemDescription}
@@ -2061,7 +2061,7 @@ export default function QuoteFormClient({
               {/* ── Specialty fields ── */}
               {serviceType === "specialty" && (
                 <div className="space-y-4">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Move</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Move</h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Specialty Type">
@@ -2175,7 +2175,7 @@ export default function QuoteFormClient({
               {serviceType === "event" && (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Details</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Details</h3>
                     <Field label="Event Name">
                       <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g. L'Oréal Beauty Event" className={fieldInput} />
                     </Field>
@@ -2316,7 +2316,7 @@ export default function QuoteFormClient({
                   {!eventMulti && (
                     <>
                       <div className="space-y-2">
-                        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Venue</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Venue</h3>
                         {eventSameLocationSingle ? (
                           <p className="text-[11px] text-[var(--tx2)] rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
                             Venue matches origin — on-site event (no separate venue address).
@@ -2335,7 +2335,7 @@ export default function QuoteFormClient({
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery (Day 1)</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery (Day 1)</h3>
                         <div className="grid grid-cols-2 gap-2">
                           <Field label="Delivery Date *">
                             <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
@@ -2407,7 +2407,7 @@ export default function QuoteFormClient({
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Return (Day 2+)</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Return (Day 2+)</h3>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" checked={eventSameDay} onChange={(e) => setEventSameDay(e.target.checked)} className="accent-[var(--gold)] w-3.5 h-3.5" />
                           <span className="text-[11px] text-[var(--tx2)]">Same Day Event — delivery and return on same day</span>
@@ -2651,7 +2651,7 @@ export default function QuoteFormClient({
                       </button>
 
                       <div className="space-y-2">
-                        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Setup (program)</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Setup (program)</h3>
                         <p className="text-[10px] text-[var(--tx3)]">One setup fee for the bundled program (not per venue).</p>
                         {eventLuxury ? (
                           <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)] space-y-2">
@@ -2724,7 +2724,7 @@ export default function QuoteFormClient({
 
                   {/* Event Items */}
                   <div className="space-y-2">
-                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Items</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Items</h3>
                     <div className="space-y-1.5">
                       {eventItems.map((item, idx) => (
                         <div key={idx} className="flex items-center gap-2">
@@ -2766,7 +2766,7 @@ export default function QuoteFormClient({
 
                   {/* Additional Services */}
                   <div className="space-y-2">
-                    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Additional Services</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Additional Services</h3>
                     {[
                       "Furniture assembly at venue",
                       "Signage installation",
@@ -2792,7 +2792,7 @@ export default function QuoteFormClient({
               {/* ── Labour Only fields ── */}
               {serviceType === "labour_only" && (
                 <div className="space-y-3">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour Only</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour Only</h3>
                   <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
                     <div className="flex-1 min-w-0">
                       <AddressAutocomplete
@@ -2899,7 +2899,7 @@ export default function QuoteFormClient({
               {/* ── B2B One-Off fields ── */}
               {serviceType === "b2b_delivery" && (
                 <div className="space-y-3">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off</h3>
                   <p className="text-[10px] text-[var(--tx3)]">Contact info uses Client name, Email and Phone above.</p>
                   <Field label="Business Name *">
                     <input
@@ -2985,7 +2985,7 @@ export default function QuoteFormClient({
               {/* ── 6. Add-ons (popular first, show all expander) ── */}
               {applicableAddons.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Add-Ons</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Add-Ons</h3>
                   {recommendedTier === "estate" && serviceType === "local_move" && (
                     <p className="text-[10px] text-[var(--tx3)] bg-[var(--bg)] rounded-lg px-3 py-2 border border-[var(--brd)]">
                       Packing supplies are included with Estate. The &quot;Packing materials kit&quot; add-on is not needed.

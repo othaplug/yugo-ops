@@ -1316,7 +1316,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   });
 
   return (
-    <div className="flex gap-6 lg:gap-8 items-start min-h-0">
+    <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 sm:items-start min-h-0">
       {/* ── Vertical tab sidebar ── */}
       <nav className="hidden sm:flex flex-col gap-0.5 w-[168px] shrink-0 sticky top-[4.5rem]">
         {visibleTabs.map((t) => {

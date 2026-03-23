@@ -768,7 +768,7 @@ export default function ProfitabilityClient() {
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
           <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Profitability</h1>
           <p className="text-[11px] text-[var(--tx3)] mt-2">Cost, profit, and margin from labour, truck, fuel, and supplies</p>
           <Link href="/admin/finance/forecast" className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[var(--gold)] hover:underline">
@@ -892,17 +892,17 @@ export default function ProfitabilityClient() {
           {(revenueSplit.b2b.count > 0 || revenueSplit.residential.count > 0) && (
             <div className="grid grid-cols-3 gap-3 border-t border-[var(--brd)]/30 pt-5">
               <div className="py-3 space-y-1">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Residential Moves</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Residential Moves</div>
                 <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.residential.revenue)}</div>
                 <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.residential.count} moves · {pct(revenueSplit.residential.margin)} margin</div>
               </div>
               <div className="py-3 space-y-1">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Partner Deliveries</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Partner Deliveries</div>
                 <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.b2b.revenue)}</div>
                 <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.b2b.count} deliveries · {pct(revenueSplit.b2b.margin)} margin</div>
               </div>
               <div className="py-3 space-y-1">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Combined</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Combined</div>
                 <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.combined.revenue)}</div>
                 <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.combined.count} total · {pct(revenueSplit.combined.margin)} blended</div>
               </div>
@@ -1169,7 +1169,7 @@ function StatCard({ label, value, sub, className, bgClass, icon }: {
   return (
     <div className="py-3">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">{label}</span>
+        <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">{label}</span>
         {icon && <span className={className}>{icon}</span>}
       </div>
       <div className={`text-2xl font-heading font-bold ${className}`}>{value}</div>

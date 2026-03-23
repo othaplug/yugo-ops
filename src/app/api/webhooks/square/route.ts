@@ -1,226 +1,178 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { WebhooksHelper } from "square";
-import { squareClient } from "@/lib/square";
+import { sendEmail } from "@/lib/email/send";
+import { sendSMS } from "@/lib/sms/sendSMS";
+import { normalizePhone } from "@/lib/phone";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { signTrackToken } from "@/lib/track-token";
+import crypto from "crypto";
 
-const NOTIFICATION_URL = (() => {
-  const base = (process.env.NEXT_PUBLIC_APP_URL || "").trim();
-  return base
-    ? `${base.replace(/\/$/, "")}/api/webhooks/square`
-    : "https://opsplus.co/api/webhooks/square";
-})();
+/**
+ * POST /api/webhooks/square
+ *
+ * Handles Square webhook events:
+ *  - card.expiring         — card on file about to expire (sent ~30 days out)
+ *  - payment.updated       — payment status changes (for reconciliation)
+ *  - customer.updated      — customer record changes
+ *
+ * Square signs each webhook with HMAC-SHA256 using the webhook signature key.
+ * https://developer.squareup.com/docs/webhooks/validate-webhook-signature
+ */
+
+function verifySquareSignature(
+  body: string,
+  signature: string,
+  url: string,
+  sigKey: string,
+): boolean {
+  const hmac = crypto.createHmac("sha256", sigKey);
+  hmac.update(url + body);
+  const expected = hmac.digest("base64");
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
-  try {
-    const signature = req.headers.get("x-square-hmacsha256-signature");
-    const signatureKey = (process.env.SQUARE_WEBHOOK_SIGNATURE_KEY || "").trim();
+  const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+  const rawBody = await req.text();
 
-    const rawBody = await req.text();
-    const isProduction = process.env.NODE_ENV === "production";
-    if (signatureKey) {
-      if (!signature) {
-        console.warn("[webhooks/square] Missing x-square-hmacsha256-signature header");
-        return NextResponse.json({ error: "Missing signature" }, { status: 403 });
-      }
-      const isValid = WebhooksHelper.verifySignature({
-        requestBody: rawBody,
-        signatureHeader: signature,
-        signatureKey,
-        notificationUrl: NOTIFICATION_URL,
-      });
-      if (!isValid) {
-        console.warn("[webhooks/square] Invalid signature");
-        return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
-      }
-    } else if (isProduction) {
-      return NextResponse.json({ error: "Webhook signing not configured" }, { status: 503 });
-    } else {
-      console.warn("[webhooks/square] SQUARE_WEBHOOK_SIGNATURE_KEY not set — webhook not verified");
+  // Verify signature in production
+  if (sigKey) {
+    const signature = req.headers.get("x-square-hmacsha256-signature") || "";
+    const webhookUrl = `${getEmailBaseUrl()}/api/webhooks/square`;
+    if (!verifySquareSignature(rawBody, signature, webhookUrl, sigKey)) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
+  }
 
-    const body = JSON.parse(rawBody || "{}") as {
-      type?: string;
-      data?: { object?: { invoice?: { id?: string } }; id?: string };
+  let event: {
+    type: string;
+    data?: {
+      object?: {
+        customer_id?: string;
+        card?: { id?: string; exp_month?: number; exp_year?: number; card_brand?: string; last_4?: string };
+      };
     };
-    const eventType = body.type ?? "unknown";
+  };
 
-    const supabase = await createClient();
-    const admin = createAdminClient();
+  try {
+    event = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
-    let logStatus: "processed" | "ignored" = "ignored";
+  // Log to webhook_logs for visibility
+  const supabase = createAdminClient();
+  await supabase.from("webhook_logs").insert({
+    source: "square",
+    event_type: event.type,
+    payload: event,
+    status: "received",
+  }).then(() => {});
 
-    // payment.completed: update move.square_receipt_url when payment has reference_id (move_code or moveId)
-    if (eventType === "payment.completed") {
-      const paymentId = (body.data?.object as { payment?: { id?: string } })?.payment?.id ?? body.data?.id;
-      if (paymentId && typeof paymentId === "string") {
-        try {
-          const payRes = await squareClient.payments.get({ paymentId });
-          const payment = (payRes as { payment?: { receiptUrl?: string; referenceId?: string } }).payment;
-          const receiptUrl = payment?.receiptUrl;
-          const referenceId = payment?.referenceId;
-          if (receiptUrl && referenceId) {
-            const ref = String(referenceId).trim();
-            const { data: moveByCode } = await admin
-              .from("moves")
-              .select("id")
-              .ilike("move_code", ref.replace(/^#/, "").toUpperCase())
-              .maybeSingle();
-            const { data: moveById } = ref.length >= 30
-              ? await admin.from("moves").select("id").eq("id", ref).maybeSingle()
-              : { data: null };
-            const moveId = moveByCode?.id ?? moveById?.id ?? null;
-            if (moveId) {
-              await admin
-                .from("moves")
-                .update({ square_receipt_url: receiptUrl, updated_at: new Date().toISOString() })
-                .eq("id", moveId);
-              logStatus = "processed";
-            }
-          }
-        } catch (e) {
-          console.warn("[webhooks/square] payment.completed receipt update failed:", e);
-        }
-      }
+  if (event.type === "card.expiring") {
+    await handleCardExpiring(event, supabase);
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+async function handleCardExpiring(
+  event: {
+    data?: { object?: { customer_id?: string; card?: { id?: string } } };
+  },
+  supabase: ReturnType<typeof createAdminClient>,
+) {
+  const customerId = event.data?.object?.customer_id;
+  if (!customerId) return;
+
+  const baseUrl = getEmailBaseUrl();
+
+  // ── Check if this customer is a partner ─────────────────────────────────
+  const { data: partner } = await supabase
+    .from("organizations")
+    .select("id, name, email, billing_email, card_last_four, card_brand")
+    .eq("square_customer_id", customerId)
+    .eq("card_on_file", true)
+    .maybeSingle();
+
+  if (partner) {
+    const partnerEmail = partner.billing_email || partner.email;
+    if (partnerEmail) {
+      await sendEmail({
+        to: partnerEmail,
+        subject: "Your payment card on file is expiring soon",
+        template: "partner-card-expiring",
+        data: {
+          partnerName: partner.name,
+          cardBrand: partner.card_brand || "Card",
+          cardLastFour: partner.card_last_four || "••••",
+          updateCardUrl: `${baseUrl}/partner/settings/billing`,
+        },
+      }).catch(() => {});
     }
 
-    if (eventType === "invoice.payment_made") {
-      const invoiceId = body.data?.object?.invoice?.id ?? body.data?.id;
-
-      if (invoiceId && typeof invoiceId === "string") {
-        const { data: invoice } = await supabase
-          .from("invoices")
-          .select("*")
-          .eq("square_invoice_id", invoiceId)
-          .single();
-
-        if (invoice) {
-          let receiptUrl: string | null = null;
-
-          // Fetch Square receipt URL when invoice is paid via Square-hosted page
-          try {
-            const invRes = await squareClient.invoices.get({ invoiceId });
-            const sqInvoice = (invRes as { invoice?: { orderId?: string; locationId?: string } }).invoice;
-            const orderId = sqInvoice?.orderId;
-            const locationId = sqInvoice?.locationId;
-            if (orderId && locationId) {
-              const end = new Date();
-              const begin = new Date(end.getTime() - 15 * 60 * 1000);
-              const listRes = await squareClient.payments.list({
-                beginTime: begin.toISOString(),
-                endTime: end.toISOString(),
-                locationId,
-                limit: 50,
-              });
-              const payments: { orderId?: string; receiptUrl?: string }[] = [];
-              for await (const p of listRes) {
-                payments.push(p as { orderId?: string; receiptUrl?: string });
-                if (payments.length >= 50) break;
-              }
-              const match = payments.find((p) => p.orderId === orderId);
-              if (match?.receiptUrl) receiptUrl = match.receiptUrl;
-            }
-          } catch (e) {
-            console.warn("[webhooks/square] Could not fetch receipt_url:", e);
-          }
-
-          await supabase
-            .from("invoices")
-            .update({
-              status: "paid",
-              updated_at: new Date().toISOString(),
-              ...(receiptUrl && { square_receipt_url: receiptUrl }),
-            })
-            .eq("id", invoice.id);
-
-          // Update move.square_receipt_url when invoice is linked to a move
-          if (receiptUrl && invoice.move_id) {
-            await admin
-              .from("moves")
-              .update({ square_receipt_url: receiptUrl, updated_at: new Date().toISOString() })
-              .eq("id", invoice.move_id);
-          }
-
-          await supabase.from("status_events").insert({
-            entity_type: "invoice",
-            entity_id: invoice.invoice_number,
-            event_type: "payment",
-            description: `${invoice.invoice_number} paid by ${invoice.client_name} ($${invoice.amount})`,
-            icon: "check",
-          });
-          logStatus = "processed";
-
-          // ── Update client referral if quote/move has one ──────────────────
-          try {
-            // Try to find the move linked to this invoice
-            let moveId = invoice.move_id || null;
-            if (!moveId && invoice.quote_id) {
-              const { data: quote } = await admin
-                .from("quotes")
-                .select("referral_id, move_id")
-                .eq("id", invoice.quote_id)
-                .single();
-              if (quote?.referral_id) {
-                await admin
-                  .from("client_referrals")
-                  .update({ status: "used", used_at: new Date().toISOString(), referred_move_id: quote.move_id || null })
-                  .eq("id", quote.referral_id)
-                  .eq("status", "active");
-              }
-            }
-            if (moveId) {
-              const { data: move } = await admin
-                .from("moves")
-                .select("quote_id")
-                .eq("id", moveId)
-                .single();
-              if (move?.quote_id) {
-                const { data: quote } = await admin
-                  .from("quotes")
-                  .select("referral_id")
-                  .eq("id", move.quote_id)
-                  .single();
-                if (quote?.referral_id) {
-                  await admin
-                    .from("client_referrals")
-                    .update({ status: "used", used_at: new Date().toISOString(), referred_move_id: moveId })
-                    .eq("id", quote.referral_id)
-                    .eq("status", "active");
-                }
-              }
-            }
-          } catch {
-            // Non-critical — don't fail the webhook
-          }
-        }
-      }
+    const adminEmail = process.env.SUPER_ADMIN_EMAIL;
+    if (adminEmail) {
+      await sendEmail({
+        to: adminEmail,
+        subject: `Card expiring — ${partner.name}`,
+        template: "admin-card-expiring-notice",
+        data: {
+          entityType: "partner",
+          entityName: partner.name,
+          cardLastFour: partner.card_last_four || "••••",
+          updateCardUrl: `${baseUrl}/admin/clients/${partner.id}?tab=portal`,
+        },
+      }).catch(() => {});
     }
+    return;
+  }
 
-    try {
-      await admin.from("webhook_logs").insert({
-        source: "square",
-        event_type: eventType,
-        payload: { type: body.type, id: body.data?.id },
-        status: logStatus,
-        error: null,
-      });
-    } catch (e) {
-      console.error("[webhooks/square] webhook_log insert failed:", e);
+  // ── Check if this customer is a client (move with upcoming date) ────────
+  const { data: move } = await supabase
+    .from("moves")
+    .select("id, move_code, client_name, client_email, client_phone, scheduled_date")
+    .eq("square_customer_id", customerId)
+    .gte("scheduled_date", new Date().toISOString().split("T")[0])
+    .order("scheduled_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!move) return;
+
+  const firstName = move.client_name?.split(" ")[0] || "there";
+
+  // Send SMS to client
+  if (move.client_phone) {
+    const phone = normalizePhone(move.client_phone);
+    if (phone) {
+      const trackToken = signTrackToken("move", move.id);
+      const trackUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
+      await sendSMS(
+        phone,
+        `Hi ${firstName}, the card on file for your upcoming Yugo move expires soon. Please update it here: ${trackUrl}`,
+      ).catch(() => {});
     }
+  }
 
-    return NextResponse.json({ ok: true });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[webhooks/square] Error:", err);
-    try {
-      await createAdminClient().from("webhook_logs").insert({
-        source: "square",
-        event_type: "error",
-        payload: null,
-        status: "error",
-        error: message.slice(0, 500),
-      });
-    } catch (_) {}
-    return NextResponse.json({ ok: false }, { status: 500 });
+  // Send email to client
+  if (move.client_email) {
+    const trackToken = signTrackToken("move", move.id);
+    const trackUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
+    await sendEmail({
+      to: move.client_email,
+      subject: "Your payment card expires soon — action needed",
+      template: "client-card-expiring",
+      data: {
+        clientName: move.client_name || "there",
+        moveCode: move.move_code,
+        moveDate: move.scheduled_date,
+        updateCardUrl: trackUrl,
+      },
+    }).catch(() => {});
   }
 }

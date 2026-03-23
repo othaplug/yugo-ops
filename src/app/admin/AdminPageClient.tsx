@@ -458,7 +458,7 @@ export default function AdminPageClient({
               </button>
               {quickActionsOpen && (
                 <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
-                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 px-4 pt-2 pb-1.5">Create</p>
+                  <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 px-4 pt-2 pb-1.5">Create</p>
                   {[
                     { href: "/admin/quotes/new", label: "New Quote" },
                     { href: "/admin/moves/new", label: "New Move" },
@@ -474,7 +474,7 @@ export default function AdminPageClient({
                     </Link>
                   ))}
                   <div className="border-t border-[var(--brd)]/50 my-1" />
-                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 px-4 pt-1.5 pb-1.5">Navigate</p>
+                  <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 px-4 pt-1.5 pb-1.5">Navigate</p>
                   {[
                     { href: "/admin/deliveries", label: "Deliveries" },
                     { href: "/admin/reports", label: "Reports" },
@@ -745,7 +745,7 @@ export default function AdminPageClient({
           {todayJobs.length > 0 && upcomingJobs.length > 0 && (
             <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Coming up</h3>
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Coming up</h3>
                 <Link href="/admin/deliveries" className="admin-view-all-link shrink-0">
                   All
                 </Link>

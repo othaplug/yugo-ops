@@ -716,22 +716,13 @@ export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
     </p>
 
     <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Payment Options</div>
-
-      <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.2);border-radius:8px;padding:14px;margin-bottom:12px">
-        <div style="font-size:13px;color:#2D9F5A;font-weight:700;margin-bottom:6px">Option 1: E-Transfer — No fee</div>
-        <div style="font-size:12px;color:#B8B5B0;line-height:1.6">
-          Send <strong style="color:#E8E5E0">${formatCurrency(d.balanceAmount)}</strong> via e-transfer to:<br/>
-          <strong style="color:#C9A962">payments@helloyugo.com</strong><br/>
-          Reference: <strong style="color:#E8E5E0">${d.moveCode}</strong>
-        </div>
-      </div>
+      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Balance Payment</div>
 
       <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px">
-        <div style="font-size:13px;color:#C9A962;font-weight:700;margin-bottom:6px">Option 2: Credit Card, Charged 24 hours before your move</div>
+        <div style="font-size:13px;color:#C9A962;font-weight:700;margin-bottom:6px">Card on File — Charged 48 hours before your move</div>
         <div style="font-size:12px;color:#B8B5B0;line-height:1.6">
-          We&apos;ll charge your card on file 24 hours before your move.<br/>
-          Credit card payments include a <strong style="color:#E8E5E0">3.3% processing fee</strong>.
+          Your card on file will be automatically charged <strong style="color:#E8E5E0">${formatCurrency(d.balanceAmount)}</strong> 48 hours before your move.<br/>
+          No action required.
         </div>
       </div>
     </div>
@@ -759,36 +750,17 @@ export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
     <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Balance Due</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your balance of ${formatCurrency(d.balanceAmount)} is due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Choose how to pay your remaining balance before your move on <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>.
+      Your remaining balance will be automatically charged to your card on file before your move on <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>.
     </p>
 
     <div style="margin-bottom:20px">
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 10px">
-        <tr>
-          <td style="background:rgba(45,159,90,0.1);border:1px solid rgba(45,159,90,0.3);border-radius:10px;padding:20px;text-align:center">
-            <div style="font-size:11px;color:#2D9F5A;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">E-Transfer, $0 fee</div>
-            <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:10px">${formatCurrency(d.balanceAmount)}</div>
-            <div style="font-size:12px;color:#B8B5B0;line-height:1.6;margin-bottom:14px">
-              Send to <strong style="color:#C9A962">payments@helloyugo.com</strong><br/>
-              Reference: <strong style="color:#E8E5E0">${d.moveCode}</strong>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center">
-            <div style="font-size:11px;color:#C9A962;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Credit Card, Includes processing fee</div>
-            <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:24px;font-weight:700;color:#C9A962;margin-bottom:10px">${formatCurrency(d.ccTotal)}</div>
-            <a href="${d.paymentPageUrl}" style="display:inline-block;background-color:${GOLD_BTN};color:#0A0806;padding:10px 22px;font-size:11px;font-weight:700;letter-spacing:1px;text-decoration:none;margin-top:4px;text-transform:uppercase;">
-              Pay by Credit Card
-            </a>
-          </td>
-        </tr>
-      </table>
-    </div>
-
-    <div style="background:rgba(212,138,41,0.1);border:1px solid rgba(212,138,41,0.2);border-radius:8px;padding:14px;margin-bottom:20px;text-align:center">
-      <div style="font-size:12px;color:#D48A29;line-height:1.6">
-        If no payment is received, your card on file will be automatically charged <strong style="color:#E8E5E0">${formatCurrency(d.ccTotal)}</strong> on <strong style="color:#E8E5E0">${dateDisplay(d.autoChargeDate)}</strong>.
+      <div style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center">
+        <div style="font-size:11px;color:#C9A962;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Card on File — Auto-Charged</div>
+        <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:24px;font-weight:700;color:#C9A962;margin-bottom:10px">${formatCurrency(d.balanceAmount)}</div>
+        <div style="font-size:12px;color:#B8B5B0;line-height:1.6">
+          Your card on file will be charged automatically on <strong style="color:#E8E5E0">${dateDisplay(d.autoChargeDate)}</strong>.<br/>
+          No action needed.
+        </div>
       </div>
     </div>
 

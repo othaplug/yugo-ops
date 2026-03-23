@@ -1144,6 +1144,19 @@ async function calcResidential(
   const estGap = Math.min(Math.max(estPrice - sigPrice, minSigToEstate), maxSigToEstate);
   estPrice = sigPrice + estGap;
 
+  // Processing cost recovery — absorbs credit card fees into the displayed price.
+  // Applied after gap caps so tier spread is preserved, before tax and rounding
+  // so the recovery is invisible to clients (absorbed into the $50 round).
+  const procRate = cfgNum(config, "processing_recovery_rate", 0.029);
+  const procFlat = cfgNum(config, "processing_recovery_flat", 0.30);
+  curPrice  = Math.ceil((curPrice  + procFlat) / (1 - procRate));
+  sigPrice  = Math.ceil((sigPrice  + procFlat) / (1 - procRate));
+  estPrice  = Math.ceil((estPrice  + procFlat) / (1 - procRate));
+  // Re-apply rounding after recovery so prices land on the nearest $50
+  curPrice  = Math.round(curPrice  / rounding) * rounding;
+  sigPrice  = Math.round(sigPrice  / rounding) * rounding;
+  estPrice  = Math.round(estPrice  / rounding) * rounding;
+
   const curTax = Math.round(curPrice * taxRate);
   const sigTax = Math.round(sigPrice * taxRate);
   const estTax = Math.round(estPrice * taxRate);

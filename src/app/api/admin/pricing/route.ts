@@ -24,6 +24,7 @@ const TABLE_MAP: Record<string, string> = {
   "valuation-tiers": "valuation_tiers",
   "valuation-upgrades": "valuation_upgrades",
   "tier-features": "tier_features",
+  payment_recovery: "platform_config",
 };
 
 export async function GET(req: NextRequest) {

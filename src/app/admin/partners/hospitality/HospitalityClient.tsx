@@ -111,7 +111,7 @@ export default function HospitalityClient({
       <div className="pt-6 border-t border-[var(--brd)]/30">
         {activeTab === "deliveries" && (
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
             {/* Filter bar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">

@@ -623,7 +623,7 @@ function DateFactorsSection() {
 
   const renderGroup = (title: string, type: string) => (
     <div>
-      <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">{title}</h4>
+      <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">{title}</h4>
       <table className={tbl}>
         <thead><tr><th className={th}>Condition</th><th className={th}>Multiplier</th></tr></thead>
         <tbody>
@@ -1347,7 +1347,7 @@ function InventoryVolumeSection() {
     <div className="space-y-6">
       {/* ── Volume Benchmarks ── */}
       <div>
-        <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Volume Benchmarks by Move Size</h4>
+        <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Volume Benchmarks by Move Size</h4>
         <p className="text-[9px] text-[var(--tx3)] mb-3">
           These benchmarks define the &quot;standard&quot; inventory for each move size. The algorithm compares the client&apos;s actual inventory score to the benchmark.
         </p>
@@ -1419,7 +1419,7 @@ function InventoryVolumeSection() {
       {/* ── Item Weight Scores ── */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Weight Scores</h4>
+          <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Weight Scores</h4>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)] cursor-pointer">
               <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="accent-[var(--gold)]" />
@@ -1609,7 +1609,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
 
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6">
-      <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Custom Items Used in Quotes/Moves</h4>
+      <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Custom Items Used in Quotes/Moves</h4>
       <p className="text-[9px] text-[var(--tx3)] mb-3">
         Items coordinators entered that are not in the master list. Add popular ones to item_weights.
       </p>
@@ -1759,7 +1759,7 @@ function FleetVehiclesSection() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Vehicle Types</h4>
+          <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Vehicle Types</h4>
           <button type="button" onClick={() => fleet.add({ vehicle_type: `custom-${Date.now()}`, display_name: "New Vehicle", cargo_cubic_ft: 0, capacity_lbs: 0, is_available: true, display_order: 99 })} className="text-[10px] font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5">+ Add Vehicle</button>
         </div>
         {fleet.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
@@ -1800,7 +1800,7 @@ function FleetVehiclesSection() {
       </div>
 
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <h4 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Allocation Rules</h4>
+        <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Allocation Rules</h4>
         <p className="text-[9px] text-[var(--tx3)] mb-3">Maps move size + inventory level to recommended vehicle(s).</p>
         {rules.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
           <>
@@ -3156,8 +3156,92 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
       <Accordion title="System Learning — Calibration Suggestions" subtitle="AI-generated config proposals based on last 30 completed jobs per category">
         <CalibrationSection />
       </Accordion>
+
+      <Accordion title="Payment & Processing Recovery" subtitle="Credit card fee recovery baked into tier prices — invisible to clients">
+        <ProcessingRecoverySection />
+      </Accordion>
     </div>
     </PricingAdminContext.Provider>
+  );
+}
+
+/* ────────── PAYMENT & PROCESSING RECOVERY ────────── */
+function ProcessingRecoverySection() {
+  const { isSuperAdmin } = usePricingAdmin();
+  const { toast } = useToast();
+  const [rows, setRows] = useState<Row[]>([]);
+  const [orig, setOrig] = useState<Row[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchSection("payment_recovery")
+      .then((r) => { setRows(r); setOrig(r); })
+      .catch(() => toast("Failed to load payment config", "x"));
+  }, [toast]);
+
+  const updateRow = (id: string, field: string, val: unknown) =>
+    setRows((prev) => prev.map((r) => (String(r.id) === id ? { ...r, [field]: val } : r)));
+
+  const undo = () => setRows(orig);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await saveRows("payment_recovery", rows);
+      setOrig(rows);
+      toast("Payment settings saved", "check");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to save", "x");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const FIELDS: { key: string; label: string; hint: string }[] = [
+    {
+      key: "processing_recovery_rate",
+      label: "Processing Recovery Rate",
+      hint: "Credit card processing rate to absorb into tier prices (e.g. 0.029 = 2.9%). Applied after gap caps, before rounding — invisible to clients.",
+    },
+    {
+      key: "processing_recovery_flat",
+      label: "Processing Recovery Flat ($/transaction)",
+      hint: "Flat per-transaction recovery in dollars (e.g. 0.30). Added before the rate recovery calculation.",
+    },
+    {
+      key: "payment_method",
+      label: "Payment Method Mode",
+      hint: "\"card_only\" = card on file required for all clients. \"card_and_etransfer\" = re-enable e-transfer as fallback option.",
+    },
+  ];
+
+  return (
+    <div className="pt-4 space-y-4">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Processing cost recovery is baked silently into tier prices after gap caps are applied, then absorbed by the $50 rounding step. Clients never see a separate fee line item.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {FIELDS.map(({ key, label, hint }) => {
+          const row = rows.find((r) => r.key === key);
+          const val = String(row?.value ?? "");
+          return (
+            <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
+              {row ? (
+                <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} className="text-[15px] font-bold text-[var(--gold)]" />
+              ) : (
+                <div>
+                  <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+                  <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey={key} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
+    </div>
   );
 }
 

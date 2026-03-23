@@ -73,12 +73,25 @@ export async function PATCH(
       return NextResponse.json(move);
     }
 
-    if (action === "mark_etransfer_received") {
+    if (action === "mark_as_paid_override") {
+      const reason = (body.reason as string | undefined)?.trim();
+      const VALID_REASONS = ["wire_transfer", "cheque_deposited", "other"];
+      if (!reason || !VALID_REASONS.includes(reason)) {
+        return NextResponse.json({ error: "A valid override reason is required (wire_transfer, cheque_deposited, or other)" }, { status: 400 });
+      }
+      const reasonNote = (body.reason_note as string | undefined)?.trim() || "";
+      if (reason === "other" && !reasonNote) {
+        return NextResponse.json({ error: "Please explain the reason when selecting 'Other'" }, { status: 400 });
+      }
+
       const admin = createAdminClient();
       const { data: moveBefore, error: fetchE } = await admin.from("moves").select("*").eq("id", id).single();
       if (fetchE || !moveBefore) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
-      // Include approved change-request and extra-item fees, matching the client-side balanceDue calculation
+      if (moveBefore.balance_paid_at) {
+        return NextResponse.json({ error: "Balance has already been recorded" }, { status: 400 });
+      }
+
       const [{ data: approvedChanges }, { data: approvedExtras }] = await Promise.all([
         admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved"),
         admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved"),
@@ -86,16 +99,18 @@ export async function PATCH(
       const additionalCents =
         (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0) +
         (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
-      // Guard against double-processing
-      if (moveBefore.balance_paid_at) {
-        return NextResponse.json({ error: "Balance has already been marked as received" }, { status: 400 });
-      }
 
       const bal = Number(moveBefore.balance_amount || 0) + additionalCents / 100;
-
       if (bal <= 0) {
-        return NextResponse.json({ error: "No balance due to mark as received" }, { status: 400 });
+        return NextResponse.json({ error: "No balance due" }, { status: 400 });
       }
+
+      const REASON_LABELS: Record<string, string> = {
+        wire_transfer: "Wire transfer received",
+        cheque_deposited: "Cheque deposited",
+        other: `Other — ${reasonNote}`,
+      };
+      const reasonLabel = REASON_LABELS[reason] ?? reason;
 
       try {
         await finalizeBalancePaymentSettlement({
@@ -104,7 +119,7 @@ export async function PATCH(
           balancePreTax: bal,
           squarePaymentId: null,
           squareReceiptUrl: null,
-          settlementMethod: "etransfer",
+          settlementMethod: "admin",
           paymentMarkedBy: markedBy?.trim() || "admin",
         });
       } catch (e) {
@@ -118,11 +133,11 @@ export async function PATCH(
         entity_type: "move",
         entity_id: id,
         event_type: "payment_received",
-        description: `E-transfer received — balance marked as paid by ${markedBy?.trim() || "admin"}`,
+        description: `Balance marked as paid (override) — ${reasonLabel} — by ${markedBy?.trim() || "admin"}`,
         icon: "dollar",
       });
 
-      await auditAfter({ status: "paid", method: "etransfer" });
+      await auditAfter({ status: "paid", method: "admin_override", reason, reasonNote });
       return NextResponse.json(move);
     }
 
@@ -156,7 +171,8 @@ export async function PATCH(
         return NextResponse.json({ error: "No balance to charge" }, { status: 400 });
       }
 
-      const ccBalance = balanceAmount * 1.033 + 0.15;
+      // Processing costs are baked into quoted prices — charge the raw balance.
+      const ccBalance = balanceAmount;
       const amountCents = Math.round(ccBalance * 100);
 
       try {
@@ -170,7 +186,7 @@ export async function PATCH(
           amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
           customerId: move.square_customer_id || undefined,
           referenceId: move.move_code || id,
-          note: `Balance + processing fee — manual charge by admin`,
+          note: `Balance payment — manual charge by admin`,
           idempotencyKey: `bal-manual-${id}-${Date.now()}`,
           locationId,
         });

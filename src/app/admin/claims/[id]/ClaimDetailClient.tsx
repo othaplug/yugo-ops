@@ -200,28 +200,28 @@ export default function ClaimDetailClient({
 
   return (
     <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
-      {/* Back + Header */}
-      <button type="button" onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-[13px] text-[var(--tx3)] hover:text-[var(--tx)] mb-4 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </button>
-
-      <div className="mb-3">
-        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Operations · Claim</p>
+      {/* Back + eyebrow */}
+      <div className="flex items-center gap-2 mb-3">
+        <button type="button" onClick={() => router.back()} className="p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] shrink-0 transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Operations · Claim</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-[22px] font-bold text-[var(--tx)]">{claim.claim_number}</h1>
-            <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusBadge(claim.status)}`}>
-              {statusLabel(claim.status)}
-            </span>
-          </div>
-          <p className="text-[13px] text-[var(--tx3)]">
-            {claim.client_name} · {moveCode || "—"} · {VALUATION_LABELS[claim.valuation_tier] || claim.valuation_tier}
-          </p>
-        </div>
-        {claim.status === "submitted" && (
+      {/* Title + status */}
+      <div className="flex items-center gap-3 flex-wrap mb-1">
+        <h1 className="font-heading text-[26px] sm:text-[30px] font-bold text-[var(--tx)] tracking-tight leading-none">{claim.claim_number}</h1>
+        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0 ${statusBadge(claim.status)}`}>
+          {statusLabel(claim.status)}
+        </span>
+      </div>
+      <p className="text-[12px] text-[var(--tx3)] mb-4">
+        {claim.client_name} · {moveCode || "—"} · {VALUATION_LABELS[claim.valuation_tier] || claim.valuation_tier}
+      </p>
+
+      {/* Actions */}
+      {claim.status === "submitted" && (
+        <div className="mb-6">
           <button
             onClick={() => handleStatusChange("under_review")}
             disabled={saving}
@@ -229,8 +229,8 @@ export default function ClaimDetailClient({
           >
             Start Review
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main column */}

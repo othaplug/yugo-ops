@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import ClientDetailClient from "./ClientDetailClient";
 import { isSuperAdminEmail } from "@/lib/super-admin";
+import { getSquarePaymentConfig } from "@/lib/square-config";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -90,6 +91,8 @@ export default async function ClientDetailPage({
       })()
     : null;
 
+  const { appId: squareAppId, locationId: squareLocationId } = await getSquarePaymentConfig().catch(() => ({ appId: "", locationId: "" }));
+
   return (
     <Suspense fallback={<div className="max-w-[1200px] mx-auto px-4 py-6 animate-pulse text-[var(--tx3)] text-[12px]">Loading…</div>}>
       <ClientDetailClient
@@ -103,6 +106,8 @@ export default async function ClientDetailPage({
         partnerDuration={partnerDuration}
         backHref={backHref}
         isAdmin={!!isAdmin}
+        squareAppId={squareAppId}
+        squareLocationId={squareLocationId}
       />
     </Suspense>
   );

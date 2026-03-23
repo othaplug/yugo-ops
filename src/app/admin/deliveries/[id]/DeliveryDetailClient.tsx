@@ -372,10 +372,9 @@ export default function DeliveryDetailClient({
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 animate-fade-up">
-      <BackButton label="Back" />
-
-      <div className="pt-4">
-        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1">B2B Operations · Delivery</p>
+      <div className="flex items-center gap-2 mb-1">
+        <BackButton label="Back" />
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">B2B Operations · Delivery</p>
       </div>
 
       {/* ─── PROJECT CONTEXT BANNER ─── */}
@@ -686,7 +685,7 @@ export default function DeliveryDetailClient({
 
             {/* Route / Day rate stops */}
             <div className="pb-5">
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
                 {delivery.booking_type === "day_rate" && stops && stops.length > 0 ? `Route · ${stops.length} stop${stops.length !== 1 ? "s" : ""}` : "Route"}
               </div>
               <div className="space-y-0">
@@ -767,7 +766,7 @@ export default function DeliveryDetailClient({
             {itemsDisplay.length > 0 && (
               <div className="border-t border-[var(--brd)]/30 py-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</span>
+                  <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</span>
                   <span className="text-[10px] font-semibold text-[var(--gold)]">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="space-y-1.5">
@@ -793,21 +792,21 @@ export default function DeliveryDetailClient({
 
             {/* Crew photos (actual photos taken by crew) */}
             <div className="border-t border-[var(--brd)]/30 pt-5">
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Crew Photos</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Crew Photos</div>
               <DeliveryCrewPhotosSection deliveryId={delivery.id} />
             </div>
 
             {/* Proof of Delivery */}
             {isDone(delivery.status) && (
               <div className="border-t border-[var(--brd)]/30 pt-5">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Proof of Delivery</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Proof of Delivery</div>
                 <ProofOfDeliverySection jobId={delivery.id} jobType="delivery" />
               </div>
             )}
 
             {/* Instructions — seamless */}
             <div className="border-t border-[var(--brd)]/30 py-5">
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Instructions & Notes</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Instructions & Notes</div>
               <p className="text-[11px] text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">
                 {delivery.instructions || delivery.notes || "No instructions added."}
               </p>
@@ -822,7 +821,7 @@ export default function DeliveryDetailClient({
 
             {/* Schedule */}
             <div className="pb-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3 pt-3">Schedule</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3 pt-3">Schedule</div>
               <div className="space-y-1.5 text-[12px]">
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)] text-[11px]">Date</span>
@@ -846,7 +845,7 @@ export default function DeliveryDetailClient({
             {/* Crew */}
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew</span>
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew</span>
                 {!deliveryInProgress && (
                   <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">
                     {selectedCrew ? "Change" : "Assign"}
@@ -877,7 +876,7 @@ export default function DeliveryDetailClient({
             {/* Customer */}
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Customer</span>
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Customer</span>
                 <button type="button" onClick={() => setContactModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">Details</button>
               </div>
               <div className="text-[13px] font-semibold text-[var(--tx)]">{delivery.customer_name || "—"}</div>
@@ -898,7 +897,7 @@ export default function DeliveryDetailClient({
 
           {/* Pricing — keeps card treatment (hero/actionable) */}
           <div className={`mt-5 rounded-xl p-4 ${price > 0 ? "bg-gradient-to-br from-[var(--gold)]/8 to-transparent border border-[var(--gold)]/20" : ""}`}>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-1.5">
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-1.5">
               {delivery.quoted_price ? "Quoted Price" : "Pricing"}
             </div>
             {price > 0 ? (

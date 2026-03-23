@@ -10,7 +10,7 @@ import { rateLimit } from "@/lib/rate-limit";
 // POST /api/track/moves/[id]/crew-change-request/[requestId]/approve?token=...
 // Client approves the crew-submitted walkthrough change request.
 // If card on file → charge immediately.
-// If no card → mark approved_pending_payment and show e-transfer instructions.
+// If no card → mark approved_pending_payment and prompt client to add a card.
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; requestId: string }> },

@@ -356,7 +356,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
         {/* Box count */}
         {!loading && (
           <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-[var(--tx3)]">Boxes</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">Boxes</span>
             {canEditInventory && editingBoxCount ? (
               <>
                 <input

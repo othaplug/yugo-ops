@@ -1,4 +1,4 @@
-import { Check, CaretRight as ChevronRight, Target, Crown, Diamond as Gem, type Icon as LucideIcon } from "@phosphor-icons/react";
+import { Check, CaretRight as ChevronRight, Target, Crown, Star, SketchLogo, type Icon as LucideIcon } from "@phosphor-icons/react";
 import {
   type Quote,
   type TierData,
@@ -14,7 +14,7 @@ import {
 const TIER_ICONS: Record<string, LucideIcon> = {
   essential: Target,
   signature: Crown,
-  estate: Gem,
+  estate: SketchLogo,
 };
 
 interface Props {
@@ -63,19 +63,25 @@ export default function ResidentialLayout({
       </div>
 
       {recTier === "estate" && (
-        <div
-          className="mb-6 rounded-xl px-5 py-3 text-center text-[12px] border"
-          style={{ backgroundColor: `${WINE}08`, borderColor: `${WINE}30`, color: FOREST }}
-        >
-          Your move coordinator recommended <strong style={{ color: WINE }}>Estate</strong> based on your requirements.
+        <div className="mb-6 flex justify-center">
+          <div
+            className="inline-flex items-center gap-2.5 rounded-xl px-5 py-2.5 border text-[13px]"
+            style={{ backgroundColor: `${WINE}10`, borderColor: `${WINE}40`, color: FOREST }}
+          >
+            <Star className="w-4 h-4 shrink-0" style={{ color: WINE }} weight="fill" />
+            <span>Your move coordinator recommended <strong style={{ color: WINE }}>Estate</strong> based on your requirements.</span>
+          </div>
         </div>
       )}
       {recTier === "signature" && (
-        <div
-          className="mb-6 rounded-xl px-5 py-3 text-center text-[12px] border"
-          style={{ backgroundColor: `${GOLD}08`, borderColor: `${GOLD}30`, color: FOREST }}
-        >
-          Your move coordinator recommended <strong style={{ color: GOLD }}>Signature</strong> for full-service protection.
+        <div className="mb-6 flex justify-center">
+          <div
+            className="inline-flex items-center gap-2.5 rounded-xl px-5 py-2.5 border text-[13px]"
+            style={{ backgroundColor: `${GOLD}10`, borderColor: `${GOLD}45`, color: FOREST }}
+          >
+            <Star className="w-4 h-4 shrink-0" style={{ color: GOLD }} weight="fill" />
+            <span>Your move coordinator recommended <strong style={{ color: GOLD }}>Signature</strong> for full-service protection.</span>
+          </div>
         </div>
       )}
 

@@ -532,7 +532,7 @@ export default function CreateMoveForm({
       </div>
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-4 py-4 border-b border-[var(--brd)]">
-          <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
           <h1 className="font-heading text-[22px] font-bold text-[var(--tx)] tracking-tight leading-none">Create New Move</h1>
           <p className="text-[10px] text-[var(--tx3)] mt-1.5">
             Choose a service type, then fill in the details. Select a client to auto-fill, or enter details to create a new one.
@@ -541,7 +541,7 @@ export default function CreateMoveForm({
         <form onSubmit={handleSubmit} className="p-4 space-y-0">
           {/* Move type selector */}
           <div>
-            <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
+            <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               {(
                 [
@@ -605,7 +605,7 @@ export default function CreateMoveForm({
 
           {/* Client section */}
           <div className="space-y-2">
-            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
             <Field label="Select to auto fill">
               <div ref={contactDropdownRef} className="relative">
                 <input
@@ -756,7 +756,7 @@ export default function CreateMoveForm({
           {/* Office: Company info */}
           <AnimatedSection show={moveType === "office"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Business Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Business Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Company Name">
                   <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Business name" className={fieldInput} />
@@ -830,7 +830,7 @@ export default function CreateMoveForm({
           {/* White Glove: item info */}
           <AnimatedSection show={moveType === "white_glove"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Item Info</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Item Info</h3>
               <Field label="Item Description *">
                 <input value={wgItemDescription} onChange={(e) => setWgItemDescription(e.target.value)} placeholder="Describe the item in detail" className={fieldInput} />
               </Field>
@@ -862,7 +862,7 @@ export default function CreateMoveForm({
           {/* Specialty: project info */}
           <AnimatedSection show={moveType === "specialty"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Project Type *">
                   <select value={spProjectType} onChange={(e) => setSpProjectType(e.target.value)} className={fieldInput}>
@@ -882,7 +882,7 @@ export default function CreateMoveForm({
 
           <AnimatedSection show={moveType === "event"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event details</h3>
               <p className="text-[10px] text-[var(--tx3)]">
                 Multi-leg event bookings from quotes become several linked moves. For a manual event, use From → staging / warehouse and To → venue if applicable.
               </p>
@@ -927,7 +927,7 @@ export default function CreateMoveForm({
 
           <AnimatedSection show={moveType === "labour_only"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour scope</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour scope</h3>
               <p className="text-[10px] text-[var(--tx3)]">
                 Use the same address for From and To if all work is at one site.
               </p>
@@ -953,7 +953,7 @@ export default function CreateMoveForm({
               <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--gold)]">
                 For one-off business deliveries. For recurring partner deliveries, use <span className="font-bold">Partners → Create Project</span>.
               </div>
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off Delivery</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off Delivery</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Source Business Name">
                   <input value={b2bSourceBusiness} onChange={(e) => setB2bSourceBusiness(e.target.value)} placeholder="Company the item is coming from" className={fieldInput} />
@@ -988,7 +988,7 @@ export default function CreateMoveForm({
 
           {/* Addresses */}
           <div className="space-y-2">
-            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
             {moveType === "labour_only" && (
               <p className="text-[10px] text-[var(--tx3)]">Work site or primary location — you can use the same address twice.</p>
             )}
@@ -1073,7 +1073,7 @@ export default function CreateMoveForm({
           {/* Residential-only fields */}
           <AnimatedSection show={moveType === "residential"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Residential Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Move Size *">
                   <select
@@ -1172,7 +1172,7 @@ export default function CreateMoveForm({
           {/* Office-only detail fields */}
           <AnimatedSection show={moveType === "office"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office / Commercial Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office / Commercial Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <Field label="Square Footage">
                   <input type="number" min={0} value={squareFootage} onChange={(e) => setSquareFootage(e.target.value)} placeholder="e.g. 2500" className={`${fieldInput} min-w-0`} />
@@ -1284,7 +1284,7 @@ export default function CreateMoveForm({
           {/* White Glove: after-address fields */}
           <AnimatedSection show={moveType === "white_glove"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Service Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Service Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Assembly Required">
                   <select value={wgAssemblyRequired} onChange={(e) => setWgAssemblyRequired(e.target.value)} className={fieldInput}>
@@ -1331,7 +1331,7 @@ export default function CreateMoveForm({
           {/* Specialty: after-address fields */}
           <AnimatedSection show={moveType === "specialty"}>
             <div className="space-y-2">
-              <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty — Logistics</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty — Logistics</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Timeline">
                   <select value={spTimeline} onChange={(e) => setSpTimeline(e.target.value)} className={fieldInput}>
@@ -1478,7 +1478,7 @@ export default function CreateMoveForm({
 
           {/* Crew / team */}
           <div className="space-y-2">
-            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Move Team</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Move Team</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Field label="Crew">
                 <select
@@ -1581,7 +1581,7 @@ export default function CreateMoveForm({
                 />
               ) : (
                 <div className="space-y-2">
-                  <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
                     Client Inventory (optional)
                   </h3>
                   <p className="text-[10px] text-[var(--tx3)]">Add items from the move detail page after creating.</p>
@@ -1593,7 +1593,7 @@ export default function CreateMoveForm({
 
           {/* Documents */}
           <div className="space-y-2">
-            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
               Documents & Invoices (optional)
             </h3>
             <p className="text-[10px] text-[var(--tx3)]">
@@ -1642,7 +1642,7 @@ export default function CreateMoveForm({
 
           {/* Complexity indicators */}
           <div className="space-y-2">
-            <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Complexity Indicators</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Complexity Indicators</h3>
             <div className="flex flex-wrap gap-2 mb-2">
               {COMPLEXITY_PRESETS.map((preset) => (
                 <button
