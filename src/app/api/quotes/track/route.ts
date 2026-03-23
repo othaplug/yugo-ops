@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { rateLimit } from "@/lib/rate-limit";
 import { getFeatureConfig } from "@/lib/platform-settings";
+import { logActivity } from "@/lib/activity";
 
 const LEGACY_EVENTS = new Set([
   "quote_viewed",
@@ -83,6 +84,25 @@ export async function POST(req: Request) {
           device_type: device_type ?? null,
         });
       }
+    }
+
+    // Feed notable client engagement events to the admin activity feed
+    const activityMap: Record<string, { description: string; icon: "quote" | "pen" | "payment" | "mail" }> = {
+      quote_viewed:     { description: `Quote viewed by client — ${quote_id}`, icon: "quote" },
+      tier_selected:    { description: `Client selected a tier — ${quote_id}${metadata?.tier ? ` (${metadata.tier})` : ""}`, icon: "quote" },
+      contract_started: { description: `Client started contract — ${quote_id}`, icon: "pen" },
+      contract_signed:  { description: `Contract signed by client — ${quote_id}`, icon: "pen" },
+      payment_started:  { description: `Client started payment — ${quote_id}`, icon: "payment" },
+    };
+    const activityEntry = activityMap[event_type];
+    if (activityEntry) {
+      await logActivity({
+        entity_type: "quote",
+        entity_id: quote_id,
+        event_type,
+        description: activityEntry.description,
+        icon: activityEntry.icon,
+      });
     }
 
     return NextResponse.json({ ok: true });

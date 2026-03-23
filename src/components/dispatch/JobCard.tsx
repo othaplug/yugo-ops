@@ -85,10 +85,6 @@ function getStatusInfo(status: string) {
   return STATUS_DOT[s] || { icon: Circle, color: "text-[var(--tx3)]", label: (status || "—").replace(/_/g, " ").toUpperCase() };
 }
 
-function truncate(str: string, len: number) {
-  if (!str) return "—";
-  return str.length > len ? str.slice(0, len) + "…" : str;
-}
 
 interface JobCardProps {
   job: DispatchJob;
@@ -103,13 +99,6 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
   const StatusIcon = statusInfo.icon;
   const canReassign = !isJobInProgress(job.status, job.stage);
   const isUnassigned = !job.crewId;
-
-  const routeText =
-    job.fromAddress && job.toAddress
-      ? `${truncate(job.fromAddress, 22)} → ${truncate(job.toAddress, 22)}`
-      : job.toAddress
-        ? truncate(job.toAddress, 48)
-        : "—";
 
   return (
     <div
@@ -132,7 +121,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
           )}
         </div>
         <span
-          className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+          className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
             job.type === "move"
               ? "bg-[#3B82F6]/15 text-[#3B82F6]"
               : "bg-[#A855F7]/15 text-[#A855F7]"
@@ -156,10 +145,12 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
         )}
       </div>
 
-      {/* Route */}
-      <div className="flex items-start gap-2">
-        <MapPin className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0 mt-0.5" />
-        <span className="text-[11px] text-[var(--tx2)]">{routeText}</span>
+      {/* Move / Job ID */}
+      <div className="flex items-center gap-2">
+        <MapPin className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0" />
+        <span className="text-[11px] font-mono text-[var(--tx3)]">
+          {job.id}
+        </span>
       </div>
 
       {/* Crew + truck + ETA */}

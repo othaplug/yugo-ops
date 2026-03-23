@@ -62,12 +62,16 @@ export default function InvoicesTable({
       accessor: (r) => r.invoice_number,
       render: (r) => (
         <div>
-          <span className="font-mono font-semibold">{r.invoice_number}</span>
+          <span className="dt-text-id">{r.invoice_number}</span>
           {r.delivery_id && (
-            <span className="ml-2 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)]">Delivery</span>
+            <span className="ml-2 inline-flex items-center dt-text-meta px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)]">
+              Delivery
+            </span>
           )}
           {r.move_id && !r.delivery_id && (
-            <span className="ml-2 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">Move</span>
+            <span className="ml-2 inline-flex items-center dt-text-meta px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">
+              Move
+            </span>
           )}
         </div>
       ),
@@ -96,9 +100,9 @@ export default function InvoicesTable({
         const amt = Number(r.amount);
         return (
           <>
-            <span className="font-bold text-[var(--tx)]">{formatCurrency(r.amount)}</span>
+            <span className="dt-amount-neutral">{formatCurrency(r.amount)}</span>
             {amt > 0 && (
-              <span className="text-[9px] text-[var(--tx3)] ml-1 block sm:inline">
+              <span className="dt-text-meta ml-1 block sm:inline">
                 +{formatCurrency(calcHST(amt))} HST
               </span>
             )}

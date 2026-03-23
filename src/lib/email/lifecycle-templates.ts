@@ -324,7 +324,7 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
 
 export interface ReviewRequestTierData {
   clientName: string;
-  tier: "curated" | "signature" | "estate" | string;
+  tier: "essential" | "signature" | "estate" | string;
   reviewUrl: string;
   /** URL for 4–5 star clicks: saves rating and redirects to Google. */
   reviewRedirectUrl: string;

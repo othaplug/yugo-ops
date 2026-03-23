@@ -151,7 +151,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
       {visits >= 2 && (
         <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: `${GOLD}40` }}>
           <div className="px-5 py-3.5 border-b" style={{ backgroundColor: `${GOLD}08`, borderColor: `${GOLD}25` }}>
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: WINE }}>Two-Visit Schedule</h2>
+            <h2 className="admin-section-h2" style={{ color: WINE }}>Two-Visit Schedule</h2>
           </div>
           <div className="divide-y" style={{ borderColor: "#E2DDD5" }}>
             <div className="px-5 py-4 flex items-center justify-between">
@@ -174,7 +174,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
 
       {/* Service includes */}
       <div className="pt-5 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+        <h2 className="admin-section-h2 mb-3">
           Service Includes
         </h2>
         <div className="grid sm:grid-cols-2 gap-2">
@@ -190,7 +190,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
       {/* Investment summary */}
       <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: GOLD }}>
         <div className="px-5 py-4 border-b" style={{ backgroundColor: `${GOLD}08`, borderColor: "#E2DDD5" }}>
-          <h2 className="font-heading text-[13px] font-bold tracking-wider uppercase" style={{ color: WINE }}>
+          <h2 className="admin-section-h2" style={{ color: WINE }}>
             Investment Summary
           </h2>
         </div>

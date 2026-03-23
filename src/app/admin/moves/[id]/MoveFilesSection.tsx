@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Upload, FileText, Image, X, CaretDown as ChevronDown, CaretRight as ChevronRight, ArrowSquareOut as ExternalLink, ArrowsClockwise as RefreshCw, Trash as Trash2 } from "@phosphor-icons/react";
+import { Upload, FileText, Image, X, CaretDown as ChevronDown, CaretRight as ChevronRight, ArrowSquareOut as ExternalLink, ArrowsClockwise as RefreshCw, Trash as Trash2, Warning } from "@phosphor-icons/react";
+
+
 import { useToast } from "../../components/Toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -150,14 +152,14 @@ function FileGroup({
                   {/* Badge + date tooltip */}
                   <div className="mt-1 space-y-0.5">
                     <div className="flex items-center gap-1 flex-wrap">
-                      <span className={`text-[8px] font-semibold px-1.5 py-0.5 rounded-full ${BADGE_STYLES[f.badge]}`}>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${BADGE_STYLES[f.badge]}`}>
                         {BADGE_LABELS[f.badge]}
                       </span>
                     </div>
                     <p className="text-[9px] text-[var(--tx3)] truncate" title={f.name}>
                       {f.caption || f.name}
                     </p>
-                    <p className="text-[8px] text-[var(--tx3)]/70">{formatShort(f.date)}</p>
+                    <p className="text-[9px] text-[var(--tx3)]/70">{formatShort(f.date)}</p>
                   </div>
                 </div>
               ))}
@@ -421,7 +423,7 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
                     <div className="col-span-full"><span className="text-[var(--tx3)]">Note: </span>{signOff.feedback_note}</div>
                   )}
                   {signOff.escalation_triggered && (
-                    <div className="col-span-full text-red-600 font-semibold">⚠ Escalation: {signOff.escalation_reason}</div>
+                    <div className="col-span-full text-red-600 font-semibold flex items-center gap-1.5"><Warning size={13} className="shrink-0" /> Escalation: {signOff.escalation_reason}</div>
                   )}
                   <div className="col-span-full">
                     <a

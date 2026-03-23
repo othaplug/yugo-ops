@@ -6,6 +6,7 @@ import { sendEmail, type TemplateName } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { sendQuoteFollowupSms } from "@/lib/quote-sms";
+import { logActivity } from "@/lib/activity";
 
 const HS_TASKS = "https://api.hubapi.com/crm/v3/objects/tasks";
 const HS_ASSOC = "https://api.hubapi.com/crm/v4/objects/tasks";
@@ -97,10 +98,11 @@ function chooseFollowUpVariant(
     if (eng.paymentStarted || (eng.tierClicked && eng.contractViewed)) {
       const tier = eng.tierClicked ?? "signature";
       const tierLabel: Record<string, string> = {
-        curated: "Curated",
+        essential: "Essential",
+        curated: "Essential",
         signature: "Signature",
         estate: "Estate",
-        essentials: "Curated",
+        essentials: "Essential",
         premier: "Signature",
       };
       return {
@@ -110,11 +112,11 @@ function chooseFollowUpVariant(
       };
     }
 
-    if (eng.tierClicked === "curated" || eng.tierClicked === "essentials") {
+    if (eng.tierClicked === "essential" || eng.tierClicked === "curated" || eng.tierClicked === "essentials") {
       return {
         subject: "Quick question about your move",
-        template: "quote-followup-2-curated",
-        extraData: { tier: "curated" },
+        template: "quote-followup-2-essential",
+        extraData: { tier: "essential" },
       };
     }
 
@@ -271,6 +273,13 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
 
         if (res.success) {
           results.followup1++;
+          logActivity({
+            entity_type: "quote",
+            entity_id: q.quote_id,
+            event_type: "follow_up_sent",
+            description: `Follow-up #1 sent to ${contact.name || contact.email} — ${q.quote_id}`,
+            icon: "follow_up",
+          }).catch(() => {});
           if (contact.phone) {
             const f1 = (q as { factors_applied?: Record<string, unknown> | null }).factors_applied;
             const eventName =
@@ -353,6 +362,13 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
 
         if (res.success) {
           results.followup2++;
+          logActivity({
+            entity_type: "quote",
+            entity_id: q.quote_id,
+            event_type: "follow_up_sent",
+            description: `Follow-up #2 sent to ${contact.name || contact.email} — ${q.quote_id}`,
+            icon: "follow_up",
+          }).catch(() => {});
           if (contact.phone) {
             const f2 = (q as { factors_applied?: Record<string, unknown> | null }).factors_applied;
             const eventName =
@@ -443,6 +459,13 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
 
         if (res.success) {
           results.followup3++;
+          logActivity({
+            entity_type: "quote",
+            entity_id: q.quote_id,
+            event_type: "follow_up_sent",
+            description: `Follow-up #3 sent to ${contact.name || contact.email} — ${q.quote_id}`,
+            icon: "follow_up",
+          }).catch(() => {});
           if (contact.phone) {
             const f3 = (q as { factors_applied?: Record<string, unknown> | null }).factors_applied;
             const eventName =

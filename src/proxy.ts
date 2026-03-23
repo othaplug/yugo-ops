@@ -13,6 +13,7 @@ const PUBLIC_PATHS = new Set([
   "/terms",
   "/cookies",
   "/review",
+  "/client",
   "/api/health",
   "/api/auth/role",
   "/api/crew/login",
@@ -27,32 +28,33 @@ function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
   if (pathname.startsWith("/crew/")) return true;
   if (pathname.startsWith("/quote/")) return true;
+  if (pathname.startsWith("/quote-widget")) return true;
   if (pathname.startsWith("/pay/")) return true;
   if (pathname.startsWith("/track/")) return true;
-  if (pathname.startsWith("/tracking/")) return true;
+  if (pathname.startsWith("/tracking")) return true;
   if (pathname.startsWith("/widget/")) return true;
+  if (pathname.startsWith("/embed/")) return true;
   if (pathname.startsWith("/claim/")) return true;
+  if (pathname.startsWith("/legal/")) return true;
+  if (pathname.startsWith("/api/client/")) return true;
   if (pathname.startsWith("/api/contracts/")) return true;
   if (pathname.startsWith("/api/quotes/")) return true;
   if (pathname.startsWith("/api/payments/")) return true;
   if (pathname.startsWith("/api/tips/")) return true;
   if (pathname.startsWith("/api/track/")) return true;
-  if (pathname.startsWith("/api/tracking/stream/")) return true;
-  if (pathname.startsWith("/api/tracking/checkpoint")) return true;
-  if (pathname.startsWith("/api/tracking/location")) return true;
-  if (pathname.startsWith("/api/tracking/start")) return true;
-  if (pathname.startsWith("/api/tracking/lookup")) return true;
+  if (pathname.startsWith("/api/tracking/")) return true;
   if (pathname.startsWith("/api/crew/")) return true;
   if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/api/widget/")) return true;
   if (pathname.startsWith("/api/webhooks/")) return true;
-  /** Slack Events API (url_verification + event_callback) — no session cookies */
   if (pathname.startsWith("/api/slack/")) return true;
   if (pathname.startsWith("/api/claims/")) return true;
   if (pathname.startsWith("/api/review/")) return true;
+  if (pathname.startsWith("/api/perks/")) return true;
+  if (pathname.startsWith("/api/referrals/")) return true;
   if (pathname.startsWith("/_next/")) return true;
   if (pathname.startsWith("/favicon")) return true;
-  if (/\.(svg|png|jpg|ico|css|js|woff2?)$/.test(pathname)) return true;
+  if (/\.(svg|png|jpg|ico|css|js|woff2?|webmanifest|json)$/.test(pathname)) return true;
   return false;
 }
 
@@ -120,7 +122,7 @@ export async function proxy(request: NextRequest) {
     if (pathname.startsWith("/partner") && !pathname.startsWith("/partner/login")) {
       return NextResponse.redirect(new URL("/partner/login", request.url));
     }
-    if (pathname.startsWith("/api/") && !pathname.startsWith("/api/crew/")) {
+    if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }

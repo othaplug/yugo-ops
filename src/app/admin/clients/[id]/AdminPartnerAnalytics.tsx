@@ -80,27 +80,27 @@ export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
       {/* KPI Grid */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Deliveries</div>
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Deliveries</div>
           <div className="text-[20px] font-bold text-[var(--tx)] mt-0.5">{d.totalDeliveries}</div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Revenue</div>
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Revenue</div>
           <div className="text-[20px] font-bold text-[var(--gold)] mt-0.5">{formatCurrency(d.revenue)}</div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Per Delivery</div>
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Per Delivery</div>
           <div className="text-[20px] font-bold text-[var(--tx)] mt-0.5">{formatCurrency(d.avgRevenuePerDelivery)}</div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">On-Time</div>
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">On-Time</div>
           <div className="text-[20px] font-bold text-emerald-500 mt-0.5">{d.onTimeRate}%</div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Satisfaction</div>
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Satisfaction</div>
           <div className="text-[20px] font-bold text-[var(--gold)] mt-0.5">{d.satisfactionScore != null ? `${d.satisfactionScore}/5` : "—"}</div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Damage</div>
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Damage</div>
           <div className="text-[20px] font-bold mt-0.5" style={{ color: d.damageRate <= 1 ? "#22C55E" : "#EF4444" }}>{d.damageRate}%</div>
         </div>
       </div>

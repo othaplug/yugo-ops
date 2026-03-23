@@ -90,7 +90,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
 
       {/* Scope of Work */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+        <h2 className="admin-section-h2 mb-4">
           Scope of Work
         </h2>
         <div className="grid sm:grid-cols-2 gap-3">
@@ -128,7 +128,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
 
       {/* Timeline & Phasing */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+        <h2 className="admin-section-h2 mb-4">
           Timeline &amp; Phasing
         </h2>
         <div className="space-y-4">
@@ -153,7 +153,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
 
       {/* Crew & Equipment */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+        <h2 className="admin-section-h2 mb-4">
           Crew &amp; Equipment
         </h2>
         <div className="grid grid-cols-3 gap-4 text-center">
@@ -188,7 +188,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
 
       {/* Service Includes */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+        <h2 className="admin-section-h2 mb-4">
           Service Includes
         </h2>
         <div className="grid sm:grid-cols-2 gap-2.5">

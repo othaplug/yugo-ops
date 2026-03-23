@@ -63,7 +63,7 @@ function Field({ label, children, className = "" }: { label: string; children: R
 }
 
 const inputBase =
-  "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
+  "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
 
 export default function EditMoveDetailsModal({ open, onClose, section = null, moveId, initial, crews = [], isCompleted = false, onSaved }: EditMoveDetailsModalProps) {
   const router = useRouter();

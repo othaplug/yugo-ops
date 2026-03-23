@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Organization not found", skipped: true });
   }
   if (org.type === "b2c") {
-    return NextResponse.json({ message: "Invoices only for B2B partners", skipped: true });
+    return NextResponse.json({ message: "Invoices only for partners", skipped: true });
   }
 
   const amount = Number(

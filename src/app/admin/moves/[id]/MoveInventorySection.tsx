@@ -48,6 +48,10 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
   const [loading, setLoading] = useState(true);
   const [extraLoading, setExtraLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [boxCount, setBoxCount] = useState(0);
+  const [editingBoxCount, setEditingBoxCount] = useState(false);
+  const [boxCountInput, setBoxCountInput] = useState("0");
+  const [savingBoxCount, setSavingBoxCount] = useState(false);
   const [newRoom, setNewRoom] = useState("");
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState(1);
@@ -148,7 +152,12 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
   const fetchItems = () => {
     fetch(`/api/admin/moves/${moveId}/inventory`)
       .then((r) => r.json())
-      .then((data) => setItems(data.items ?? []))
+      .then((data) => {
+        setItems(data.items ?? []);
+        const bc = typeof data.boxCount === "number" ? data.boxCount : 0;
+        setBoxCount(bc);
+        setBoxCountInput(String(bc));
+      })
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   };
@@ -318,11 +327,66 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
   };
   const isExpanded = (room: string) => !collapsedRooms.has(room);
 
+  const saveBoxCount = async () => {
+    const val = Math.max(0, parseInt(boxCountInput, 10) || 0);
+    setSavingBoxCount(true);
+    try {
+      const res = await fetch(`/api/admin/moves/${moveId}/inventory`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ box_count: val }),
+      });
+      const data = await res.json();
+      if (data.error) { toast(data.error, "x"); return; }
+      setBoxCount(val);
+      setBoxCountInput(String(val));
+      setEditingBoxCount(false);
+      toast("Box count updated", "check");
+    } finally {
+      setSavingBoxCount(false);
+    }
+  };
+
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4">
-      <h3 className="font-heading text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">
-        Client inventory
-      </h3>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h3 className="font-heading text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+          Client inventory
+        </h3>
+        {/* Box count */}
+        {!loading && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-semibold uppercase tracking-wider text-[var(--tx3)]">Boxes</span>
+            {canEditInventory && editingBoxCount ? (
+              <>
+                <input
+                  type="number"
+                  min={0}
+                  value={boxCountInput}
+                  onChange={(e) => setBoxCountInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") saveBoxCount(); if (e.key === "Escape") { setEditingBoxCount(false); setBoxCountInput(String(boxCount)); } }}
+                  className="w-14 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-1.5 py-0.5 text-[var(--tx)] outline-none text-center"
+                  autoFocus
+                />
+                <button type="button" onClick={saveBoxCount} disabled={savingBoxCount} className="text-[10px] font-semibold text-[var(--grn)] hover:opacity-80 disabled:opacity-50">Save</button>
+                <button type="button" onClick={() => { setEditingBoxCount(false); setBoxCountInput(String(boxCount)); }} className="text-[10px] text-[var(--tx3)]">Cancel</button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => canEditInventory && setEditingBoxCount(true)}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-semibold tabular-nums ${
+                  canEditInventory ? "border-[var(--brd)] hover:border-[var(--brd)]/80 cursor-pointer" : "border-transparent cursor-default"
+                } text-[var(--tx)]`}
+                title={canEditInventory ? "Click to edit box count" : undefined}
+              >
+                {boxCount}
+                {canEditInventory && <Pencil className="w-[10px] h-[10px] text-[var(--tx3)]" />}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
       {loading ? (
         <p className="text-[11px] text-[var(--tx3)]">Loading…</p>
       ) : (
@@ -504,7 +568,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
             {bulkMode ? (
               <div className="flex flex-col gap-2">
                 <div>
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
+                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
                   <select
                     value={newRoom}
                     onChange={(e) => setNewRoom(e.target.value)}
@@ -517,7 +581,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Items (comma or newline, e.g. Table x1, Couch x2)</label>
+                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Items (comma or newline, e.g. Table x1, Couch x2)</label>
                   <textarea
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
@@ -528,7 +592,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                 </div>
                 {parsedBulkItems.length > 0 && (
                   <div className="rounded-md border border-[var(--brd)] bg-[var(--bg)]/50 overflow-hidden">
-                    <div className="text-[8px] font-semibold uppercase text-[var(--tx3)] px-2 py-1.5 border-b border-[var(--brd)]/50">
+                    <div className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-2 py-1.5 border-b border-[var(--brd)]/50">
                       List — check items to add
                     </div>
                     <ul className="divide-y divide-[var(--brd)]/30 max-h-[200px] overflow-y-auto">
@@ -561,7 +625,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
             ) : (
               <div className="flex flex-wrap items-end gap-2">
                 <div>
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
+                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
                   <select
                     value={newRoom}
                     onChange={(e) => setNewRoom(e.target.value)}
@@ -574,7 +638,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                   </select>
                 </div>
                 <div className="flex-1 min-w-[120px]">
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Item</label>
+                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Item</label>
                   <input
                     type="text"
                     value={newItemName}
@@ -585,7 +649,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                   />
                 </div>
                 <div className="w-14">
-                  <label className="block text-[8px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Qty</label>
+                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Qty</label>
                   <input
                     type="number"
                     min={1}

@@ -54,7 +54,7 @@ const TYPE_TAB_KEYS = ["all", "retail", "designer", "hospitality", "gallery", "r
 
 /** Tab labels (realtor tab = referral partners; realtor is the primary channel) */
 const PARTNER_TAB_LABELS: Partial<Record<(typeof TYPE_TAB_KEYS)[number], string>> = {
-  realtor: "Realtors & referrals",
+  realtor: "Referral Partners",
 };
 
 // Maps each tab key → all DB type values that should appear under that tab
@@ -117,10 +117,15 @@ const columns: ColumnDef<Partner>[] = [
         <div className="mt-1">
           <PartnerTypeChip type={p.type || ""} />
         </div>
-        {p.contact_name ? (
-          <div className="mt-1 text-[11px] text-[var(--tx3)]">{p.contact_name}</div>
-        ) : null}
       </div>
+    ),
+  },
+  {
+    id: "contact_name",
+    label: "Contact Name",
+    accessor: (p) => p.contact_name || "",
+    render: (p) => (
+      <span className="text-[12px] text-[var(--tx2)]">{p.contact_name?.trim() || "—"}</span>
     ),
   },
   {
@@ -304,7 +309,7 @@ export default function AllPartnersClient() {
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
-          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">B2B Partners</h1>
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Partners</h1>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <Link
@@ -384,7 +389,7 @@ export default function AllPartnersClient() {
           tableId="all-partners-realtors"
           onRowClick={() => router.push("/admin/partners/realtors")}
           emptyMessage="No realtors in the database yet"
-          emptySubtext="Add agents under Partners → Realtors & referrals."
+          emptySubtext="Add agents under Partners → Referral Partners."
         />
       ) : (
         <DataTable
@@ -393,7 +398,7 @@ export default function AllPartnersClient() {
           keyField="id"
           searchPlaceholder="Search by company, contact, email..."
           exportFilename="partners"
-          tableId="all-partners-v2"
+          tableId="all-partners-v3"
           onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
           emptyMessage="No partners found"
           emptySubtext={activeTab !== "all" ? `No ${getTypeLabel(activeTab)} partners yet` : undefined}

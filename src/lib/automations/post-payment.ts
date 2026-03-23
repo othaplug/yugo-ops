@@ -7,9 +7,11 @@ import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { getCompanyDisplayName } from "@/lib/config";
+import { autoScheduleMove } from "@/lib/scheduling/auto-schedule";
 import {
   bookingConfirmationEmail,
   internalBookingAlertEmail,
+  essentialConfirmationEmail,
   curatedConfirmationEmail,
   signatureConfirmationEmail,
   estateConfirmationEmail,
@@ -43,12 +45,13 @@ export interface PostPaymentResult {
 }
 
 const TIER_LABELS: Record<string, string> = {
-  curated: "Curated",
+  essential: "Essential",
+  curated: "Essential",
   signature: "Signature",
   estate: "Estate",
   custom: "Standard",
   // legacy keys for moves created before the rename
-  essentials: "Curated",
+  essentials: "Essential",
   premier: "Signature",
 };
 
@@ -291,16 +294,18 @@ export async function runPostPaymentActions(
         };
 
         const templateFns: Record<string, (p: TierConfirmationParams) => string> = {
-          curated: curatedConfirmationEmail,
+          essential: essentialConfirmationEmail,
+          curated: essentialConfirmationEmail,
           signature: signatureConfirmationEmail,
           estate: estateConfirmationEmail,
           // legacy keys for moves created before the rename
-          essentials: curatedConfirmationEmail,
+          essentials: essentialConfirmationEmail,
           premier: signatureConfirmationEmail,
         };
         const templateFn = templateFns[tier] ?? signatureConfirmationEmail;
 
         const subjects: Record<string, string> = {
+          essential: `Your Yugo move is confirmed — ${input.moveCode}`,
           curated: `Your Yugo move is confirmed — ${input.moveCode}`,
           signature: `Your Yugo Signature move is confirmed — ${input.moveCode}`,
           estate: `Welcome to your Yugo Estate experience — ${input.moveCode}`,
@@ -380,7 +385,7 @@ export async function runPostPaymentActions(
           paymentId: input.paymentId,
         });
 
-        const subjectPrefix = isEstate ? "🏆 Estate booking" : "New booking";
+        const subjectPrefix = isEstate ? "[Estate] New booking" : "New booking";
         const emailFrom2 = await getEmailFrom();
         await resend.emails.send({
           from: emailFrom2,
@@ -464,6 +469,15 @@ export async function runPostPaymentActions(
             move_code: input.moveCode,
           },
         });
+      },
+    },
+
+    /* ── 7a. Auto-scheduling ── */
+    {
+      name: "auto_scheduling",
+      critical: false,
+      fn: async () => {
+        await autoScheduleMove(input.moveId, input.quoteId, input.moveCode);
       },
     },
 

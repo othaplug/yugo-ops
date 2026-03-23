@@ -8,7 +8,7 @@ import { Check } from "@phosphor-icons/react";
 const VALUATION_INFO: Record<string, { label: string; desc: string }> = {
   released: {
     label: "Released Value Protection",
-    desc: "Coverage: $0.60/lb per item. Included with Curated package.",
+    desc: "Coverage: $0.60/lb per item. Included with Essential package.",
   },
   enhanced: {
     label: "Enhanced Value Protection",

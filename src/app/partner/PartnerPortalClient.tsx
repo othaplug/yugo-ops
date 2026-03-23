@@ -78,6 +78,7 @@ interface DashboardData {
   totalEarned: number;
   completedReferrals: number;
   projects: ProjectData[];
+  statements?: PartnerStatement[];
 }
 
 interface Delivery {
@@ -139,6 +140,23 @@ interface Referral {
   status: string;
   commission: number;
   move_type: string | null;
+  created_at: string;
+}
+
+interface PartnerStatement {
+  id: string;
+  statement_number: string;
+  period_start: string;
+  period_end: string;
+  delivery_count: number;
+  subtotal: number;
+  hst: number;
+  total: number;
+  due_date: string;
+  payment_terms: string;
+  status: string;
+  paid_amount: number;
+  paid_at: string | null;
   created_at: string;
 }
 
@@ -777,7 +795,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
             <PartnerInvoicesTab invoices={data.invoices} />
           )}
           {activeTab === "billing" && data && (
-            <PartnerBillingTab data={data} orgName={orgName} onViewInvoices={() => setActiveTab("invoices")} />
+            <PartnerBillingTab data={data} orgName={orgName} statements={data.statements ?? []} onViewInvoices={() => setActiveTab("invoices")} />
           )}
           {activeTab === "recurring" && showRecurring && (
             <PartnerRecurringTab orgId={orgId} />
@@ -1018,7 +1036,7 @@ function ReferralForm() {
         <input value={form.property} onChange={(e) => setForm((f) => ({ ...f, property: e.target.value }))} placeholder="Property address" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
         <input value={form.move_date} onChange={(e) => setForm((f) => ({ ...f, move_date: e.target.value }))} placeholder="Target move date" type="date" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
         <select value={form.tier} onChange={(e) => setForm((f) => ({ ...f, tier: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] focus:border-[#C9A962] focus:outline-none transition-colors bg-white">
-          <option value="standard">Curated</option>
+          <option value="standard">Essential</option>
           <option value="premium">Signature</option>
           <option value="luxury">Estate</option>
         </select>

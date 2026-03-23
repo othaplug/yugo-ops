@@ -142,12 +142,12 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                         Stop {stop.stop_number} of {totalCount}
                       </span>
                       <span
-                        className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full"
+                        className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full"
                         style={{ background: cfg.bg, color: cfg.color }}
                       >
                         {cfg.label}
                       </span>
-                      <span className="text-[8px] text-[var(--tx3)]/60 uppercase font-semibold">
+                      <span className="text-[9px] text-[var(--tx3)]/60 uppercase font-semibold">
                         {STOP_TYPE_LABELS[stop.stop_type] || "Delivery"}
                       </span>
                     </div>

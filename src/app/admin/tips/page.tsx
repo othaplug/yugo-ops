@@ -11,11 +11,37 @@ export default async function TipsPage() {
     .from("tips")
     .select("id, move_id, crew_id, crew_name, client_name, amount, processing_fee, net_amount, charged_at")
     .order("charged_at", { ascending: false })
-    .limit(100);
+    .limit(200);
 
-  const totalTips = (tips || []).reduce((s, t) => s + Number(t.amount || 0), 0);
-  const tipCount = (tips || []).length;
+  const allTips = tips || [];
+  const totalTips = allTips.reduce((s, t) => s + Number(t.amount || 0), 0);
+  const tipCount = allTips.length;
   const avgTip = tipCount > 0 ? totalTips / tipCount : 0;
 
-  return <TipsClient tips={tips || []} totalTips={totalTips} avgTip={avgTip} tipCount={tipCount} />;
+  // Aggregate by crew
+  const crewMap: Record<string, { name: string; total: number; count: number; highest: number }> = {};
+  for (const t of allTips) {
+    const key = t.crew_id || "unknown";
+    if (!crewMap[key]) {
+      crewMap[key] = { name: t.crew_name || "Unknown", total: 0, count: 0, highest: 0 };
+    }
+    const net = Number(t.net_amount ?? t.amount ?? 0);
+    crewMap[key]!.total += net;
+    crewMap[key]!.count += 1;
+    if (net > crewMap[key]!.highest) crewMap[key]!.highest = net;
+  }
+
+  const crewAllocations = Object.entries(crewMap)
+    .map(([id, v]) => ({ id, ...v, avg: v.count > 0 ? v.total / v.count : 0 }))
+    .sort((a, b) => b.total - a.total);
+
+  return (
+    <TipsClient
+      tips={allTips.slice(0, 100)}
+      totalTips={totalTips}
+      avgTip={avgTip}
+      tipCount={tipCount}
+      crewAllocations={crewAllocations}
+    />
+  );
 }

@@ -79,7 +79,7 @@ export default function ClientsPageClient({
         return (
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-semibold text-[var(--tx)]">{c.name}</span>
-            {isActive && <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>}
+            {isActive && <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>}
           </div>
         );
       },
@@ -108,7 +108,7 @@ export default function ClientsPageClient({
       id: "status", label: "Status",
       accessor: (c) => c.move_status || "",
       render: (c) => (
-        <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold ${
+        <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold ${
           c.move_status === "completed" ? "bg-[var(--grdim)] text-[var(--grn)]" :
           c.move_status === "cancelled" ? "bg-[var(--rdim)] text-[var(--red)]" :
           "bg-[var(--gdim)] text-[var(--gold)]"
@@ -142,24 +142,14 @@ export default function ClientsPageClient({
     <div className="max-w-[1200px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
       <div className="mb-6"><BackButton label="Back" /></div>
 
-      <div className="flex items-start justify-between gap-4 mb-8">
+      <div className="flex items-center justify-between gap-3 mb-6">
         <div>
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
-          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Contacts</h1>
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Contacts</h1>
         </div>
-        <div className="flex gap-1.5 shrink-0 mt-1">
-          <Link
-            href="/admin/clients/new"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
-          >
-            + Add Client
-          </Link>
-          <Link
-            href="/admin/partners"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
-          >
-            B2B Partners
-          </Link>
+        <div className="flex gap-1.5 shrink-0">
+          <Link href="/admin/clients/new" className="admin-btn admin-btn-primary">+ Add Client</Link>
+          <Link href="/admin/partners" className="admin-btn admin-btn-ghost hidden sm:inline-flex">Partners</Link>
         </div>
       </div>
 

@@ -109,7 +109,7 @@ export default function MovePhotosSection({ moveId }: { moveId: string }) {
                       <Trash2 className="w-[11px] h-[11px]" />
                     </button>
                     {isClient && (
-                      <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--gold)]/90 text-[var(--btn-text-on-accent)]">
+                      <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[var(--gold)]/90 text-[var(--btn-text-on-accent)]">
                         Client
                       </div>
                     )}

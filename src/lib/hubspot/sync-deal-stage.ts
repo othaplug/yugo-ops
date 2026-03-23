@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const HS_DEALS = "https://api.hubapi.com/crm/v3/objects/deals";
 
 /**
- * Stage mapping: OPS+ move status → platform_config key for the HubSpot
+ * Stage mapping: Yugo+ move status → platform_config key for the HubSpot
  * pipeline stage internal ID. Falls back to env vars if the DB row is missing.
  */
 const STATUS_TO_CONFIG_KEY: Record<string, string> = {
@@ -22,7 +22,7 @@ const STATUS_TO_CONFIG_KEY: Record<string, string> = {
  * It's fire-and-forget: failures are logged but never block the caller.
  *
  * @param hubspotDealId  The deal ID from `moves.hubspot_deal_id` (null = skip)
- * @param newStatus      The new OPS+ move status value
+ * @param newStatus      The new Yugo+ move status value
  */
 export async function syncDealStage(
   hubspotDealId: string | null | undefined,

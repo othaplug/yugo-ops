@@ -264,9 +264,9 @@ export default function PartnerHealthClient() {
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">
-            B2B Partners
+            Partners
           </p>
-          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
             Partner Health
           </h1>
         </div>
@@ -410,13 +410,22 @@ export default function PartnerHealthClient() {
                           Re-engage
                         </button>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/admin/clients/${p.id}`)}
-                          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
-                        >
-                          View
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/admin/clients/${p.id}`)}
+                            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                          >
+                            View
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/admin/partners/${p.id}/billing`)}
+                            className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                          >
+                            Billing
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>

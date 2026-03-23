@@ -18,17 +18,17 @@ import PricingControlPanel from "./PricingControlPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
 import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
-import { House, Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X } from "@phosphor-icons/react";
+import { House, Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText } from "@phosphor-icons/react";
 
 const TABS = [
-  { id: "pricing", label: "Pricing" },
-  { id: "rate-templates", label: "Rate Templates", ownerOnly: true },
-  { id: "crews", label: "Teams" },
-  { id: "devices", label: "Devices" },
-  { id: "app", label: "App Settings" },
-  { id: "partners", label: "Partners" },
-  { id: "users", label: "Users" },
-  { id: "audit", label: "Audit Log" },
+  { id: "pricing",        label: "Pricing",        desc: "Rates & service fees",      Icon: CurrencyDollar },
+  { id: "rate-templates", label: "Rate Templates",  desc: "Reusable rate cards",       Icon: ListBullets,   ownerOnly: true },
+  { id: "crews",          label: "Teams",           desc: "Staff & crew groups",       Icon: UsersThree },
+  { id: "devices",        label: "Devices",         desc: "Tablets, trucks & fleet",   Icon: DeviceMobile },
+  { id: "app",            label: "App Settings",    desc: "Toggles & integrations",    Icon: Sliders },
+  { id: "partners",       label: "Partners",        desc: "Partner access & perms",    Icon: Handshake },
+  { id: "users",          label: "Users",           desc: "Roles & permissions",       Icon: UserCircleGear },
+  { id: "audit",          label: "Audit Log",       desc: "Activity & access history", Icon: ClipboardText },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -107,7 +107,7 @@ function ReadinessChecklistSection() {
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="admin-section-h2 flex items-center gap-2">
           <Icon name="clipboard" className="w-[14px] h-[14px]" /> Readiness Checklist
         </h2>
         <p className="text-[11px] text-[var(--tx3)] mt-1">Configure items for crew pre-trip readiness check</p>
@@ -174,24 +174,31 @@ const ACTION_BADGE: Record<string, string> = {
   send_quote: "bg-blue-500/15 text-blue-400",
 };
 
-const ACTION_OPTIONS = [
-  "login",
-  "config_change",
-  "edit_pricing",
-  "edit_specialty_pricing",
-  "edit_b2b_surcharges",
-  "send_quote",
-  "quote_status_change",
-  "access_denied",
-  "edit_move",
-  "move_status_change",
-  "create_move",
-  "update_move",
-  "create_quote",
-  "update_quote",
-  "invite_user",
-  "update_role",
+const ACTION_OPTIONS: { value: string; label: string }[] = [
+  { value: "login",                  label: "Login" },
+  { value: "config_change",          label: "Config Change" },
+  { value: "edit_pricing",           label: "Edit Pricing" },
+  { value: "edit_specialty_pricing", label: "Edit Specialty Pricing" },
+  { value: "edit_b2b_surcharges",    label: "Edit B2B Surcharges" },
+  { value: "send_quote",             label: "Send Quote" },
+  { value: "quote_status_change",    label: "Quote Status Change" },
+  { value: "access_denied",          label: "Access Denied" },
+  { value: "edit_move",              label: "Edit Move" },
+  { value: "move_status_change",     label: "Move Status Change" },
+  { value: "create_move",            label: "Create Move" },
+  { value: "update_move",            label: "Update Move" },
+  { value: "create_quote",           label: "Create Quote" },
+  { value: "update_quote",           label: "Update Quote" },
+  { value: "invite_user",            label: "Invite User" },
+  { value: "update_role",            label: "Update Role" },
 ];
+
+function humanizeAction(action: string): string {
+  if (!action) return "—";
+  const match = ACTION_OPTIONS.find((o) => o.value === action);
+  if (match) return match.label;
+  return action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function formatAuditTime(iso: string): string {
   const d = new Date(iso);
@@ -235,7 +242,7 @@ function AuditLogSection() {
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
       <div className="mb-4">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="admin-section-h2 flex items-center gap-2">
           <Icon name="clipboard" className="w-[14px] h-[14px]" /> Audit Log
         </h2>
         <p className="text-[11px] text-[var(--tx3)] mt-1">Platform activity and access history</p>
@@ -252,7 +259,7 @@ function AuditLogSection() {
           >
             <option value="">All</option>
             {ACTION_OPTIONS.map((a) => (
-              <option key={a} value={a}>{a}</option>
+              <option key={a.value} value={a.value}>{a.label}</option>
             ))}
           </select>
         </div>
@@ -306,7 +313,7 @@ function AuditLogSection() {
                         <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${roleCls}`}>{roleKey || "—"}</span>
                       </td>
                       <td className="py-2.5 pr-4">
-                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${actionCls}`}>{log.action}</span>
+                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${actionCls}`}>{humanizeAction(log.action)}</span>
                       </td>
                       <td className="text-[11px] text-[var(--tx3)] py-2.5 pr-4 max-w-[120px] truncate" title={log.resource_id}>{log.resource_id || "—"}</td>
                       <td className="text-[11px] text-[var(--tx3)] py-2.5">
@@ -446,7 +453,7 @@ function BusinessInfoSection() {
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="admin-section-h2 flex items-center gap-2">
           <Icon name="building" className="w-[14px] h-[14px]" /> Business Information
         </h2>
         <p className="text-[11px] text-[var(--tx3)] mt-1">Company details used across quotes, invoices, emails, and customer-facing pages. Update here instead of in code.</p>
@@ -568,7 +575,7 @@ function QuotingDefaultsSection() {
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="admin-section-h2 flex items-center gap-2">
           <Icon name="fileText" className="w-[14px] h-[14px]" /> Quoting Defaults
         </h2>
         <p className="text-[11px] text-[var(--tx3)] mt-1">Default settings for quote generation</p>
@@ -748,7 +755,7 @@ function FeatureTogglesSection() {
   return (
     <section className="pt-5 border-t border-[var(--brd)]/30">
       <div className="mb-3">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="admin-section-h2 flex items-center gap-2">
           <Icon name="toggleRight" className="w-[14px] h-[14px]" /> Feature Toggles
         </h2>
         <p className="text-[11px] text-[var(--tx3)] mt-0.5">Enable or disable platform features</p>
@@ -876,7 +883,7 @@ function EmailTemplatesSection() {
     <>
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+        <h2 className="admin-section-h2 flex items-center gap-2">
           <Icon name="mail" className="w-[14px] h-[14px]" /> Email Templates
         </h2>
         <p className="text-[11px] text-[var(--tx3)] mt-1">Customize client-facing emails. Use merge variables like {"{{client_name}}"}, {"{{move_date}}"}, {"{{quote_link}}"}</p>
@@ -1309,24 +1316,66 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   });
 
   return (
-    <div className="space-y-6">
-      {/* Tabbed navigation */}
-      <div className="flex flex-wrap items-end gap-x-0 border-b border-[var(--brd)]">
-        {visibleTabs.map((t) => (
-          <Link
-            key={t.id}
-            id={`tab-${t.id}`}
-            href={`/admin/platform?tab=${t.id}`}
-            className={`relative text-[12px] font-semibold px-4 pb-2.5 pt-1 transition-colors ${
-              activeTab === t.id
-                ? "text-[var(--gold)] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[var(--gold)] after:rounded-t-full"
-                : "text-[var(--tx3)] hover:text-[var(--tx1)]"
-            }`}
-          >
-            {t.label}
-          </Link>
-        ))}
+    <div className="flex gap-6 lg:gap-8 items-start min-h-0">
+      {/* ── Vertical tab sidebar ── */}
+      <nav className="hidden sm:flex flex-col gap-0.5 w-[168px] shrink-0 sticky top-[4.5rem]">
+        {visibleTabs.map((t) => {
+          const TabIcon = t.Icon;
+          const active = activeTab === t.id;
+          return (
+            <Link
+              key={t.id}
+              id={`tab-${t.id}`}
+              href={`/admin/platform?tab=${t.id}`}
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                active
+                  ? "bg-[var(--gdim)] text-[var(--gold)]"
+                  : "text-[var(--tx3)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)]"
+              }`}
+            >
+              <TabIcon
+                size={16}
+                weight={active ? "fill" : "regular"}
+                className={`shrink-0 transition-colors ${active ? "text-[var(--gold)]" : "text-[var(--tx3)] group-hover:text-[var(--tx2)]"}`}
+              />
+              <div className="min-w-0">
+                <div className={`text-[12px] font-semibold leading-tight truncate ${active ? "text-[var(--gold)]" : ""}`}>
+                  {t.label}
+                </div>
+                <div className="text-[10px] text-[var(--tx3)] leading-tight truncate mt-0.5 hidden lg:block">
+                  {"desc" in t ? t.desc : ""}
+                </div>
+              </div>
+              {active && <span className="ml-auto w-1 h-1 rounded-full bg-[var(--gold)] shrink-0" />}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* ── Mobile: horizontal scrollable tabs ── */}
+      <div className="sm:hidden flex overflow-x-auto gap-1 pb-1 mb-4 -mx-1 px-1 scrollbar-hide w-full shrink-0">
+        {visibleTabs.map((t) => {
+          const TabIcon = t.Icon;
+          const active = activeTab === t.id;
+          return (
+            <Link
+              key={t.id}
+              href={`/admin/platform?tab=${t.id}`}
+              className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all shrink-0 ${
+                active
+                  ? "bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/30"
+                  : "text-[var(--tx3)] border border-transparent hover:bg-[var(--gdim)]/50"
+              }`}
+            >
+              <TabIcon size={13} weight={active ? "fill" : "regular"} />
+              {t.label}
+            </Link>
+          );
+        })}
       </div>
+
+      {/* ── Content panel ── */}
+      <div className="flex-1 min-w-0 space-y-6">
 
       {/* Pricing Control Panel */}
       {activeTab === "pricing" && (
@@ -1344,7 +1393,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-1">
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">1</span>
-              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+              <h2 className="admin-section-h2 flex items-center gap-2">
                 <Icon name="users" className="w-[14px] h-[14px]" /> Staff Roster
               </h2>
             </div>
@@ -1390,83 +1439,70 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </div>
 
             {/* Active staff list */}
-            {staffLoading ? (
-              <p className="text-[12px] text-[var(--tx3)]">Loading staff roster...</p>
-            ) : staffRoster.filter((s) => s.is_active).length === 0 ? (
-              <div className="py-6 text-center">
-                <p className="text-[13px] text-[var(--tx3)]">No staff yet. Add your first employee above.</p>
+            <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)] bg-[var(--bg)]/40">
+                <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Active Employees</span>
+                {!staffLoading && (
+                  <span className="text-[10px] font-semibold text-[var(--tx3)] tabular-nums">{staffRoster.filter((s) => s.is_active).length}</span>
+                )}
               </div>
-            ) : (
-              <>
-                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Active Employees ({staffRoster.filter((s) => s.is_active).length})</div>
-                <div className="space-y-1.5">
-                  {(showAllActiveStaff ? staffRoster.filter((s) => s.is_active) : staffRoster.filter((s) => s.is_active).slice(0, 8)).map((s) => {
-                    const memberOfTeams = teams.filter((t) => t.memberIds.some((id) => id.trim().toLowerCase() === s.name.trim().toLowerCase()));
-                    return (
-                      <div key={s.id} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
-                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                          <span className="text-[12px] font-semibold text-[var(--tx)]">{s.name}</span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] font-semibold capitalize shrink-0">{s.role}</span>
-                          {s.hourly_rate != null && <span className="text-[9px] text-[var(--tx3)] shrink-0">${s.hourly_rate}/hr</span>}
-                          {memberOfTeams.length > 0 ? (
-                            <span className="text-[9px] text-[var(--grn)] shrink-0">{memberOfTeams.map((t) => t.label).join(", ")}</span>
-                          ) : (
-                            <span className="text-[9px] text-[var(--tx3)] italic shrink-0">Not on a team</span>
-                          )}
-                          {s.specialties && s.specialties.length > 0 && (
-                            <span className="flex items-center gap-1 flex-wrap">
-                              {s.specialties.map((sp) => (
-                                <span key={sp} className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-medium capitalize shrink-0">{sp.replace(/_/g, " ")}</span>
-                              ))}
-                            </span>
-                          )}
+              {staffLoading ? (
+                <div className="px-4 py-6 text-center text-[12px] text-[var(--tx3)]">Loading staff roster…</div>
+              ) : staffRoster.filter((s) => s.is_active).length === 0 ? (
+                <div className="px-4 py-8 text-center"><p className="text-[13px] text-[var(--tx3)]">No staff yet. Add your first employee above.</p></div>
+              ) : (
+                <>
+                  <div className="divide-y divide-[var(--brd)]/60">
+                    {(showAllActiveStaff ? staffRoster.filter((s) => s.is_active) : staffRoster.filter((s) => s.is_active).slice(0, 8)).map((s) => {
+                      const memberOfTeams = teams.filter((t) => t.memberIds.some((id) => id.trim().toLowerCase() === s.name.trim().toLowerCase()));
+                      return (
+                        <div key={s.id} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-[var(--bg)]/30 transition-colors">
+                          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                            <span className="text-[12px] font-semibold text-[var(--tx)]">{s.name}</span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)] font-semibold capitalize shrink-0">{s.role}</span>
+                            {s.hourly_rate != null && <span className="text-[9px] text-[var(--tx3)] shrink-0">${s.hourly_rate}/hr</span>}
+                            {memberOfTeams.length > 0 ? (
+                              <span className="text-[9px] text-[var(--grn)] shrink-0">{memberOfTeams.map((t) => t.label).join(", ")}</span>
+                            ) : (
+                              <span className="text-[9px] text-[var(--tx3)] italic shrink-0">Not on a team</span>
+                            )}
+                            {s.specialties && s.specialties.length > 0 && (
+                              <span className="flex items-center gap-1 flex-wrap">
+                                {s.specialties.map((sp) => (
+                                  <span key={sp} className="text-[8px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-medium capitalize shrink-0">{sp.replace(/_/g, " ")}</span>
+                                ))}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => { setEditingStaff(s); setEditStaffName(s.name); setEditStaffRole(s.role); setEditStaffPhone(s.phone || ""); setEditStaffEmail(s.email || ""); }}
+                              className="px-2.5 py-1 rounded text-[10px] font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)] transition-all"
+                            >Edit</button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeactivateStaff(s)}
+                              className="px-2.5 py-1 rounded text-[10px] font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-red-400 hover:border-red-400 transition-all"
+                            >Remove</button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingStaff(s);
-                              setEditStaffName(s.name);
-                              setEditStaffRole(s.role);
-                              setEditStaffPhone(s.phone || "");
-                              setEditStaffEmail(s.email || "");
-                            }}
-                            className="px-2.5 py-1 rounded text-[10px] font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--gold)] hover:border-[var(--gold)] transition-all"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeactivateStaff(s)}
-                            className="px-2.5 py-1 rounded text-[10px] font-medium border border-[var(--brd)] text-[var(--tx3)] hover:text-red-400 hover:border-red-400 transition-all"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {!showAllActiveStaff && staffRoster.filter((s) => s.is_active).length > 8 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllActiveStaff(true)}
-                    className="w-full mt-2 py-2 text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] border border-dashed border-[var(--brd)] rounded-lg hover:border-[var(--gold)]/30 transition-colors"
-                  >
-                    Show all {staffRoster.filter((s) => s.is_active).length} employees
-                  </button>
-                )}
-                {showAllActiveStaff && staffRoster.filter((s) => s.is_active).length > 8 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllActiveStaff(false)}
-                    className="w-full mt-2 py-2 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
-                  >
-                    Show fewer
-                  </button>
-                )}
-              </>
-            )}
+                      );
+                    })}
+                  </div>
+                  {staffRoster.filter((s) => s.is_active).length > 8 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllActiveStaff((v) => !v)}
+                      className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] border-t border-[var(--brd)]/60 hover:bg-[var(--bg)]/30 transition-all group"
+                    >
+                      <span>{showAllActiveStaff ? "Show fewer" : `Show all ${staffRoster.filter((s) => s.is_active).length} employees`}</span>
+                      <CaretDown size={13} weight="bold" className={`transition-transform duration-200 ${showAllActiveStaff ? "rotate-180" : ""}`} />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
 
             {/* Inactive / former staff */}
             {inactiveStaff.length > 0 && (
@@ -1509,7 +1545,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">2</span>
-                <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Teams</h2>
+                <h2 className="admin-section-h2">Teams</h2>
               </div>
               <div className="flex flex-nowrap items-center gap-2 sm:ml-auto">
                 <button
@@ -1528,12 +1564,12 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </div>
             <p className="text-[11px] text-[var(--tx3)] mt-2 ml-7">Group staff into moving crews. Click a team to add/remove members, set leads, or delete.</p>
           </div>
-          <div className="space-y-3">
+          <div className="rounded-xl border border-[var(--brd)] overflow-hidden">
             {teams.length === 0 ? (
-              <div className="py-6 text-center"><p className="text-[13px] text-[var(--tx3)]">No teams yet. Create your first team above.</p></div>
+              <div className="py-8 text-center"><p className="text-[13px] text-[var(--tx3)]">No teams yet. Create your first team above.</p></div>
             ) : null}
           {teams.map((team, i) => (
-            <div key={team.id} className="border border-[var(--brd)] rounded-lg overflow-hidden">
+            <div key={team.id} className={`overflow-hidden ${i > 0 ? "border-t border-[var(--brd)]" : ""}`}>
               <div
                 onClick={() => setEditingTeam(editingTeam === team.id ? null : team.id)}
                 className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-[var(--bg)] transition-colors"
@@ -1733,7 +1769,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               )}
             </div>
           ))}
-        </div>
+          </div>
         </section>
 
         {/* ═══ SECTION 3: CREW PORTAL ACCESS ═══ */}
@@ -1742,7 +1778,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[10px] font-bold shrink-0">3</span>
-                <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew Portal Access</h3>
+                <h3 className="admin-section-h2">Crew Portal Access</h3>
               </div>
               <p className="text-[11px] text-[var(--tx3)] ml-7">People who can log in on the tablet with a PIN. Each person needs portal access to use the Crew app.</p>
             </div>
@@ -1753,19 +1789,19 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               + Add portal access
             </button>
           </div>
-          <div className="px-5 py-4">
+          <div className="rounded-xl border border-[var(--brd)] overflow-hidden">
             {crewPortalLoading ? (
-              <p className="text-[12px] text-[var(--tx3)]">Loading…</p>
+              <div className="px-4 py-6 text-center text-[12px] text-[var(--tx3)]">Loading…</div>
             ) : crewPortalMembers.filter((m) => m.is_active).length === 0 ? (
-              <div className="py-6 text-center"><p className="text-[13px] text-[var(--tx3)]">No portal access set up yet.</p><p className="text-[11px] text-[var(--tx3)] mt-1">Click &quot;+ Add Portal Access&quot; to give someone a PIN.</p></div>
+              <div className="px-4 py-8 text-center"><p className="text-[13px] text-[var(--tx3)]">No portal access set up yet.</p><p className="text-[11px] text-[var(--tx3)] mt-1">Click &quot;+ Add Portal Access&quot; to give someone a PIN.</p></div>
             ) : (
-              <ul className="space-y-2">
+              <ul className="divide-y divide-[var(--brd)]/60">
                 {crewPortalMembers
                   .filter((m) => m.is_active)
                   .map((m) => {
                     const teamLabel = teams.find((t) => t.id === m.team_id)?.label ?? "—";
                     return (
-                      <li key={m.id} className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)] flex-wrap">
+                      <li key={m.id} className="flex items-center justify-between gap-3 py-3 px-4 hover:bg-[var(--bg)]/30 transition-colors flex-wrap">
                         <div>
                           <span className="text-[13px] font-medium text-[var(--tx)]">{m.name}</span>
                           <span className="text-[10px] text-[var(--tx3)] ml-2">({teamLabel})</span>
@@ -1841,7 +1877,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       <div id="app" className="space-y-5 scroll-mt-4">
       <section className="pt-0 first:pt-0">
         <div className="mb-3">
-          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <h2 className="admin-section-h2 flex items-center gap-2">
             <Icon name="settings" className="w-[14px] h-[14px]" /> App
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Platform-wide settings</p>
@@ -1956,7 +1992,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {/* Danger Zone - in App Settings */}
       <section className="pt-6 border-t border-[var(--brd)]/30">
         <div className="mb-4">
-          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+          <h2 className="admin-section-h2 flex items-center gap-2">
             <Icon name="alertTriangle" className="w-[14px] h-[14px] text-[var(--red)]" /> Danger Zone
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-1">Irreversible platform actions</p>
@@ -1986,7 +2022,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="min-w-0">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 flex items-center gap-2">
+            <h2 className="admin-section-h2 flex items-center gap-2">
               <Icon name="lock" className="w-[14px] h-[14px]" /> User Management
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-1">Roles, permissions, and access control</p>
@@ -2427,6 +2463,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
           </form>
         )}
       </ModalOverlay>
+      </div>{/* end content panel */}
     </div>
   );
 }

@@ -5,6 +5,8 @@ export const metadata = { title: "Command Center" };
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTodayString } from "@/lib/business-timezone";
+import { formatCompactCurrency } from "@/lib/format-currency";
+import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 import AdminPageClient from "./AdminPageClient";
 
 export default async function AdminPage() {
@@ -18,6 +20,9 @@ export default async function AdminPage() {
     activityResult,
     { data: quotes },
     pendingChangesResult,
+    { data: crews },
+    { data: quotesExpanded },
+    { data: reviewRequests },
   ] = await Promise.all([
     admin.from("deliveries").select("*").order("scheduled_date"),
     admin.from("moves").select("*"),
@@ -42,6 +47,24 @@ export default async function AdminPage() {
           .eq("status", "pending")
           .order("created_at", { ascending: false })
           .limit(10);
+      } catch {
+        return { data: [] };
+      }
+    })(),
+    admin.from("crews").select("id, name, is_active").eq("is_active", true),
+    admin.from("quotes")
+      .select("id, quote_number, status, custom_price, tiers, client_name, viewed_at, accepted_at, created_at, expires_at")
+      .in("status", ["sent", "viewed", "accepted", "expired", "declined"])
+      .order("created_at", { ascending: false })
+      .limit(200),
+    (async () => {
+      try {
+        return await admin
+          .from("review_requests")
+          .select("id, move_id, client_rating, client_feedback, status, created_at")
+          .not("client_rating", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(30);
       } catch {
         return { data: [] };
       }
@@ -110,12 +133,18 @@ export default async function AdminPage() {
     tag: string;
     delivery_number?: string | null;
     move_code?: string | null;
+    /** For Mapbox route / traffic briefs (Command Center) */
+    fromAddress?: string | null;
+    toAddress?: string | null;
+    /** Set by daily weather cron (`/api/cron/weather-alerts`) on `moves.weather_alert` */
+    weatherAlert?: string | null;
+    /** Rich daytime forecast at pickup (cron → `moves.weather_brief`) */
+    weatherBrief?: MoveWeatherBrief | null;
   };
 
   const mapDelivery = (d: Record<string, unknown>): Job => {
-    const from = d.from_address ? String(d.from_address) : "";
     const num = d.delivery_number ? String(d.delivery_number) : "";
-    const subtitle = from || num || "";
+    const subtitle = num || `Delivery ${String(d.id).slice(0, 8)}`;
     return {
       id: String(d.id),
       type: "delivery",
@@ -126,20 +155,35 @@ export default async function AdminPage() {
       date: String(d.scheduled_date || ""),
       tag: String(d.category || "Delivery"),
       delivery_number: d.delivery_number ? String(d.delivery_number) : null,
+      fromAddress: d.pickup_address != null ? String(d.pickup_address) : null,
+      toAddress: d.delivery_address != null ? String(d.delivery_address) : null,
+      weatherAlert: null,
+      weatherBrief: null,
     };
   };
 
-  const mapMove = (m: Record<string, unknown>): Job => ({
-    id: String(m.id),
-    type: "move",
-    name: String(m.client_name || "Move"),
-    subtitle: m.from_address && m.to_address ? `${m.from_address} → ${m.to_address}` : String(m.from_address || ""),
-    time: String(m.time_slot || "TBD"),
-    status: String(m.status || "confirmed").toLowerCase(),
-    date: String(m.scheduled_date || ""),
-    tag: m.service_type === "office_move" ? "Office" : m.service_type === "single_item" ? "Single Item" : "Move",
-    move_code: m.move_code ? String(m.move_code) : null,
-  });
+  const mapMove = (m: Record<string, unknown>): Job => {
+    const codeRaw = m.move_code ? String(m.move_code).replace(/^#/, "").trim() : "";
+    const subtitle = codeRaw ? codeRaw.toUpperCase() : `Move ${String(m.id).slice(0, 8)}`;
+    const alert = m.weather_alert != null && String(m.weather_alert).trim() !== "" ? String(m.weather_alert) : null;
+    const wb = m.weather_brief;
+    const weatherBrief = isMoveWeatherBrief(wb) ? wb : null;
+    return {
+      id: String(m.id),
+      type: "move",
+      name: String(m.client_name || "Move"),
+      subtitle,
+      time: String(m.scheduled_time || m.time_slot || "TBD"),
+      status: String(m.status || "confirmed").toLowerCase(),
+      date: String(m.scheduled_date || ""),
+      tag: m.service_type === "office_move" ? "Office" : m.service_type === "single_item" ? "Single Item" : "Move",
+      move_code: m.move_code ? String(m.move_code) : null,
+      fromAddress: m.from_address != null ? String(m.from_address) : null,
+      toAddress: (m.to_address != null ? String(m.to_address) : null) ?? (m.delivery_address != null ? String(m.delivery_address) : null),
+      weatherAlert: alert,
+      weatherBrief,
+    };
+  };
 
   const activeDeliveries = allDeliveries.filter((d) => !DONE_DELIVERY.has(String(d.status)));
   const activeMoves = allMoves.filter((m) => !DONE_MOVE.has(String(m.status)));
@@ -246,6 +290,215 @@ export default async function AdminPage() {
     monthlyRevenue.push({ m: monthLabels[monthIdx], moves: movSum / 1000, deliveries: dlvSum / 1000, invoices: invSum / 1000 });
   }
 
+  // ── Unassigned Jobs (next 72h) ──
+
+  const d72h = new Date();
+  d72h.setDate(d72h.getDate() + 3);
+  const cutoff72h = d72h.toISOString().slice(0, 10);
+
+  type UnassignedJob = { id: string; name: string; date: string; type: "move" | "delivery"; code: string; href: string };
+  const unassignedJobs: UnassignedJob[] = [];
+
+  for (const m of activeMoves) {
+    const sd = String(m.scheduled_date || "");
+    if (!m.crew_id && sd >= today && sd <= cutoff72h) {
+      const code = m.move_code ? String(m.move_code).replace(/^#/, "").trim().toUpperCase() : String(m.id).slice(0, 8);
+      unassignedJobs.push({
+        id: String(m.id),
+        name: String(m.client_name || "Move"),
+        date: sd,
+        type: "move",
+        code,
+        href: `/admin/moves/${m.move_code ? code : m.id}`,
+      });
+    }
+  }
+  for (const d of activeDeliveries) {
+    const sd = String(d.scheduled_date || "");
+    if (!d.crew_id && sd >= today && sd <= cutoff72h) {
+      const code = d.delivery_number ? String(d.delivery_number) : String(d.id).slice(0, 8);
+      unassignedJobs.push({
+        id: String(d.id),
+        name: String(d.customer_name || d.client_name || "Delivery"),
+        date: sd,
+        type: "delivery",
+        code,
+        href: `/admin/deliveries/${d.delivery_number || d.id}`,
+      });
+    }
+  }
+  unassignedJobs.sort((a, b) => a.date.localeCompare(b.date));
+
+  // ── Crew Capacity (today + next 2 days) ──
+
+  type CrewCapacityDay = { date: string; label: string; total: number; booked: number };
+  const totalCrews = (crews ?? []).length;
+  const crewCapacity: CrewCapacityDay[] = [];
+  const dayLabels = ["Today", "Tomorrow"];
+  for (let offset = 0; offset < 3; offset++) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    const ds = d.toISOString().slice(0, 10);
+    const label = offset < 2 ? dayLabels[offset] : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+    const bookedCrewIds = new Set<string>();
+    for (const m of activeMoves) {
+      if (String(m.scheduled_date || "") === ds && m.crew_id) bookedCrewIds.add(String(m.crew_id));
+    }
+    for (const dl of activeDeliveries) {
+      if (String(dl.scheduled_date || "") === ds && dl.crew_id) bookedCrewIds.add(String(dl.crew_id));
+    }
+    crewCapacity.push({ date: ds, label, total: totalCrews, booked: bookedCrewIds.size });
+  }
+
+  // ── Quote Pipeline ──
+
+  const allQuotesExpanded = (quotesExpanded ?? []) as Record<string, unknown>[];
+  const openQuotes = allQuotesExpanded.filter((q) => q.status === "sent" || q.status === "viewed");
+  const viewedQuotes = allQuotesExpanded.filter((q) => q.status === "viewed");
+
+  const getQuoteValue = (q: Record<string, unknown>): number => {
+    if (q.custom_price) return Number(q.custom_price) || 0;
+    const tiers = q.tiers as Record<string, { total?: number }> | null;
+    if (tiers) {
+      const first = Object.values(tiers)[0];
+      return Number(first?.total) || 0;
+    }
+    return 0;
+  };
+
+  const openValue = openQuotes.reduce((s, q) => s + getQuoteValue(q), 0);
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const acceptedThisWeek = allQuotesExpanded.filter(
+    (q) => q.status === "accepted" && q.accepted_at && new Date(String(q.accepted_at)) >= sevenDaysAgo
+  ).length;
+
+  const last30 = allQuotesExpanded.filter((q) => new Date(String(q.created_at)) >= thirtyDaysAgo);
+  const acceptedLast30 = last30.filter((q) => q.status === "accepted").length;
+  const decidedLast30 = last30.filter((q) => ["accepted", "expired", "declined"].includes(String(q.status))).length;
+  const conversionRate = decidedLast30 > 0 ? Math.round((acceptedLast30 / decidedLast30) * 100) : 0;
+
+  const expiringToday = openQuotes.filter((q) => {
+    const exp = String(q.expires_at || "").slice(0, 10);
+    return exp === today;
+  }).length;
+
+  type QuotePipeline = {
+    openCount: number;
+    openValue: number;
+    viewedCount: number;
+    acceptedThisWeek: number;
+    conversionRate: number;
+    expiringToday: number;
+  };
+  const quotePipeline: QuotePipeline = {
+    openCount: openQuotes.length,
+    openValue,
+    viewedCount: viewedQuotes.length,
+    acceptedThisWeek,
+    conversionRate,
+    expiringToday,
+  };
+
+  // ── Today's Earnings ──
+
+  type TodayEarnings = { potential: number; collected: number; pending: number; jobCount: number };
+  const todayMoves = allMoves.filter((m) => String(m.scheduled_date || "") === today);
+  const todayDeliveriesAll = allDeliveries.filter((d) => String(d.scheduled_date || "") === today);
+
+  let potentialEarnings = 0;
+  let collectedEarnings = 0;
+  for (const m of todayMoves) {
+    const val = movRev(m);
+    potentialEarnings += val;
+    if (PAID_MOVE_STATUSES.has(String(m.status)) || m.payment_marked_paid === true) collectedEarnings += val;
+  }
+  for (const d of todayDeliveriesAll) {
+    const val = dlvRev(d);
+    potentialEarnings += val;
+    if (PAID_DLV_STATUSES.has(String(d.status))) collectedEarnings += val;
+  }
+
+  const todayEarnings: TodayEarnings = {
+    potential: potentialEarnings,
+    collected: collectedEarnings,
+    pending: potentialEarnings - collectedEarnings,
+    jobCount: todayMoves.length + todayDeliveriesAll.length,
+  };
+
+  // ── Customer Satisfaction ──
+
+  type SatisfactionData = { avgRating: number; count: number; pendingReviews: number };
+  const ratings = (reviewRequests ?? []) as { client_rating?: number; status?: string }[];
+  const ratedReviews = ratings.filter((r) => r.client_rating != null && Number(r.client_rating) > 0);
+  const avgRating = ratedReviews.length > 0
+    ? Math.round((ratedReviews.reduce((s, r) => s + Number(r.client_rating), 0) / ratedReviews.length) * 10) / 10
+    : 0;
+  const pendingReviewCount = ratings.filter((r) => r.status === "sent" || r.status === "reminded").length;
+
+  const satisfaction: SatisfactionData = {
+    avgRating,
+    count: ratedReviews.length,
+    pendingReviews: pendingReviewCount,
+  };
+
+  // ── Daily Brief (natural-language summary) ──
+
+  const briefParts: string[] = [];
+  const todayTotal = todayJobs.length;
+  if (todayTotal > 0) {
+    const moveCount = todayJobs.filter((j) => j.type === "move").length;
+    const dlvCount = todayJobs.filter((j) => j.type === "delivery").length;
+    const parts = [];
+    if (moveCount > 0) parts.push(`${moveCount} move${moveCount > 1 ? "s" : ""}`);
+    if (dlvCount > 0) parts.push(`${dlvCount} deliver${dlvCount > 1 ? "ies" : "y"}`);
+    briefParts.push(`${todayTotal} job${todayTotal > 1 ? "s" : ""} today (${parts.join(", ")})`);
+  } else {
+    briefParts.push("No jobs scheduled today");
+  }
+
+  if (unassignedJobs.length > 0) {
+    const todayUnassigned = unassignedJobs.filter((j) => j.date === today).length;
+    if (todayUnassigned > 0) {
+      briefParts.push(`${todayUnassigned} unassigned today — needs crew`);
+    } else {
+      briefParts.push(`${unassignedJobs.length} upcoming job${unassignedJobs.length > 1 ? "s" : ""} still need crew assignment`);
+    }
+  }
+
+  if (potentialEarnings > 0) {
+    briefParts.push(`$${potentialEarnings.toLocaleString()} potential revenue on the board today`);
+  }
+
+  const availableToday = crewCapacity[0];
+  if (availableToday && availableToday.total > 0) {
+    const free = availableToday.total - availableToday.booked;
+    if (free > 0) {
+      briefParts.push(`${free} crew${free > 1 ? "s" : ""} available for same-day dispatch`);
+    } else {
+      briefParts.push("All crews booked today");
+    }
+  }
+
+  if (quotePipeline.expiringToday > 0) {
+    briefParts.push(`${quotePipeline.expiringToday} quote${quotePipeline.expiringToday > 1 ? "s" : ""} expiring today — follow up`);
+  }
+
+  if (overdueAmount > 0) {
+    briefParts.push(`${formatCompactCurrency(overdueAmount)} overdue across ${overdueInvoices.length} invoice${overdueInvoices.length > 1 ? "s" : ""}`);
+  }
+
+  const currentRevTrack = currentMonthRevenue > 0 && revenuePctChange !== 0
+    ? `Revenue tracking ${revenuePctChange >= 0 ? `${revenuePctChange}% ahead of` : `${Math.abs(revenuePctChange)}% behind`} last month`
+    : null;
+  if (currentRevTrack) briefParts.push(currentRevTrack);
+
+  const dailyBrief = briefParts.join(". ") + ".";
+
   return (
     <AdminPageClient
       todayJobs={todayJobs}
@@ -260,6 +513,12 @@ export default async function AdminPage() {
       activityEvents={activity}
       activeQuotesCount={activeQuotesCount}
       actionTasks={actionTasks}
+      unassignedJobs={unassignedJobs}
+      crewCapacity={crewCapacity}
+      quotePipeline={quotePipeline}
+      todayEarnings={todayEarnings}
+      satisfaction={satisfaction}
+      dailyBrief={dailyBrief}
     />
   );
 }

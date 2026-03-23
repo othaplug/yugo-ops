@@ -402,16 +402,16 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                   {/* Flags */}
                   <div className="shrink-0 flex gap-1">
                     {item.fragile && (
-                      <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-[#F59E0B]/15 text-[#F59E0B]">FRAGILE</span>
+                      <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-[#F59E0B]/15 text-[#F59E0B]">FRAGILE</span>
                     )}
                     {item.crating_required && (
-                      <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-[#8B5CF6]/15 text-[#8B5CF6]">CRATING</span>
+                      <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-[#8B5CF6]/15 text-[#8B5CF6]">CRATING</span>
                     )}
                     {item.climate_sensitive && (
-                      <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-[#3B82F6]/15 text-[#3B82F6]">CLIMATE</span>
+                      <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-[#3B82F6]/15 text-[#3B82F6]">CLIMATE</span>
                     )}
                     {hasDiscrepancy && (
-                      <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-[#EF4444]/15 text-[#EF4444]">DISCREPANCY</span>
+                      <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-[#EF4444]/15 text-[#EF4444]">DISCREPANCY</span>
                     )}
                   </div>
 

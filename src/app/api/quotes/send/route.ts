@@ -6,6 +6,7 @@ import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { requireStaff } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
+import { logActivity } from "@/lib/activity";
 import { getCompanyDisplayName } from "@/lib/config";
 import { sendQuoteLinkSms } from "@/lib/quote-sms";
 
@@ -292,6 +293,7 @@ export async function POST(req: NextRequest) {
       const token = process.env.HUBSPOT_ACCESS_TOKEN;
       if (token) {
         const curatedPrice =
+          (quote.tiers as Record<string, { price: number }> | null)?.essential?.price ??
           (quote.tiers as Record<string, { price: number }> | null)?.curated?.price ??
           (quote.tiers as Record<string, { price: number }> | null)?.essentials?.price ??
           quote.custom_price;
@@ -333,6 +335,14 @@ export async function POST(req: NextRequest) {
       resourceType: "quote",
       resourceId: quoteId,
       details: { method: body.method ?? "email" },
+    });
+
+    await logActivity({
+      entity_type: "quote",
+      entity_id: quoteId,
+      event_type: "sent",
+      description: `Quote sent to ${fullName || clientEmail} — ${quoteId}`,
+      icon: "mail",
     });
 
     return NextResponse.json({ success: true, emailId: result.id });

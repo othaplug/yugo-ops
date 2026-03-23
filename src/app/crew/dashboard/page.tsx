@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Clock, Calendar, Check, Lock } from "@phosphor-icons/react";
+import { X, Clock, Calendar, Check, Lock, ChartBar } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { getDisplayLabel } from "@/lib/displayLabels";
 import Link from "next/link";
 import PageContent from "@/app/admin/components/PageContent";
 import ReadinessCheck from "./components/ReadinessCheck";
 import { formatDate } from "@/lib/client-timezone";
+import CrewWeatherRoads from "@/components/crew/CrewWeatherRoads";
+import type { MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
 interface Job {
   id: string;
@@ -25,6 +27,8 @@ interface Job {
   bookingType?: string | null;
   eventPhase?: string | null;
   eventName?: string | null;
+  weatherBrief?: MoveWeatherBrief | null;
+  weatherAlert?: string | null;
 }
 
 interface DashboardData {
@@ -190,8 +194,15 @@ export default function CrewDashboardPage() {
           </div>
         )}
 
+        {/* Weather & road hints (moves with postal — from nightly OpenWeather job) */}
+        {totalCount > 0 && (
+          <div className="pt-5 mt-5 border-t border-[var(--brd)]/30">
+            <CrewWeatherRoads jobs={jobs} />
+          </div>
+        )}
+
         {/* Jobs list */}
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 pt-6 mt-6 border-t border-[var(--brd)]/30 mb-4">
+        <h2 className="admin-section-h2 pt-6 mt-6 border-t border-[var(--brd)]/30 mb-4">
           Today&apos;s Jobs
         </h2>
 
@@ -268,18 +279,21 @@ export default function CrewDashboardPage() {
                     </div>
 
                     {/* Addresses */}
-                    <div className="ml-[38px] space-y-1.5">
-                      <div className="flex items-start gap-2">
-                        <div className="w-4 h-4 rounded-full border-2 border-[var(--gold)]/40 flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="ml-[38px] flex gap-2">
+                      {/* Dot + connector column */}
+                      <div className="flex flex-col items-center shrink-0 pt-0.5">
+                        <div className="w-4 h-4 rounded-full border-2 border-[var(--gold)]/50 flex items-center justify-center shrink-0">
                           <div className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
                         </div>
-                        <span className="text-[12px] text-[var(--tx2)] truncate">{job.fromAddress}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-4 h-4 rounded-full border-2 border-[#22C55E]/40 flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="w-[2px] flex-1 my-1 rounded-full bg-[var(--brd)]/60" style={{ minHeight: 14 }} />
+                        <div className="w-4 h-4 rounded-full border-2 border-[#22C55E]/50 flex items-center justify-center shrink-0">
                           <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
                         </div>
-                        <span className="text-[12px] text-[var(--tx2)] truncate">{job.toAddress}</span>
+                      </div>
+                      {/* Address text column */}
+                      <div className="flex flex-col justify-between min-w-0 flex-1 gap-2">
+                        <span className="text-[12px] text-[var(--tx2)] truncate pt-0.5">{job.fromAddress}</span>
+                        <span className="text-[12px] text-[var(--tx2)] truncate pb-0.5">{job.toAddress}</span>
                       </div>
                     </div>
 
@@ -381,6 +395,15 @@ export default function CrewDashboardPage() {
             End Day Report
           </Link>
         )}
+
+        {/* My Stats link */}
+        <Link
+          href="/crew/stats"
+          className="mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
+        >
+          <ChartBar size={14} />
+          My Stats &amp; Leaderboard
+        </Link>
       </section>
     </PageContent>
   );

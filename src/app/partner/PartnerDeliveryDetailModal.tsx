@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import ProofOfDeliverySection from "@/components/ProofOfDeliverySection";
+import DeliveryScoreCard from "@/components/partner/DeliveryScoreCard";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 
@@ -54,6 +55,10 @@ interface Delivery {
   booking_type?: string | null;
   num_stops?: number | null;
   stops_detail?: { address: string; customer_name?: string | null; customer_phone?: string | null; items?: { name: string; size: string; quantity: number }[]; instructions?: string | null; zone?: number | null }[] | null;
+  delivery_score?: number | null;
+  score_arrived_late?: boolean | null;
+  score_damage_reported?: boolean | null;
+  score_end_customer_rating?: number | null;
 }
 
 interface DeliveryStop {
@@ -551,7 +556,17 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           )}
 
           {activeSection === "pod" && (
-            <ProofOfDeliverySection jobId={d.id} jobType="delivery" />
+            <div className="space-y-4">
+              {isDelivered && (
+                <DeliveryScoreCard
+                  score={d.delivery_score ?? 100}
+                  onTime={!d.score_arrived_late}
+                  damageFree={!d.score_damage_reported}
+                  rating={d.score_end_customer_rating ?? null}
+                />
+              )}
+              <ProofOfDeliverySection jobId={d.id} jobType="delivery" />
+            </div>
           )}
         </div>
       </div>

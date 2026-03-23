@@ -346,7 +346,7 @@ function quickEstimate(
   inventoryScore?: number,
   specialtyItems?: { type: string; qty: number }[],
   moveDate?: string,
-): { curated: number; signature: number; estate: number } | null {
+): { essential: number; signature: number; estate: number } | null {
   if (serviceType !== "local_move" && serviceType !== "long_distance") return null;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
@@ -397,7 +397,7 @@ function quickEstimate(
   const est = roundTo(curBase * cfgNum(config, "tier_estate_multiplier", 3.15), rounding);
 
   return {
-    curated: curBase + addonTotal,
+    essential: curBase + addonTotal,
     signature: sig + addonTotal,
     estate: est + addonTotal,
   };
@@ -628,7 +628,7 @@ export default function QuoteFormClient({
   const [cratingItems, setCratingItems] = useState<{ description: string; size: "small" | "medium" | "large" | "oversized" }[]>([]);
 
   // Recommended tier (coordinator judgment)
-  const [recommendedTier, setRecommendedTier] = useState<"curated" | "signature" | "estate">("signature");
+  const [recommendedTier, setRecommendedTier] = useState<"essential" | "signature" | "estate">("signature");
 
   // Add-ons
   const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonSelection>>(new Map());
@@ -1329,10 +1329,10 @@ export default function QuoteFormClient({
 
       // Push quote data back to HubSpot deal (price + deal fields for left column)
       if (hubspotDealId && quoteResult) {
-        const curatedTier = quoteResult.tiers?.curated ?? quoteResult.tiers?.essentials;
-        const price = curatedTier?.price ?? quoteResult.custom_price?.price ?? null;
-        const tax = curatedTier?.tax ?? quoteResult.custom_price?.tax ?? null;
-        const total = curatedTier?.total ?? quoteResult.custom_price?.total ?? null;
+        const essentialTier = quoteResult.tiers?.essential ?? quoteResult.tiers?.curated ?? quoteResult.tiers?.essentials;
+        const price = essentialTier?.price ?? quoteResult.custom_price?.price ?? null;
+        const tax = essentialTier?.tax ?? quoteResult.custom_price?.tax ?? null;
+        const total = essentialTier?.total ?? quoteResult.custom_price?.total ?? null;
 
         const dealProps: Record<string, unknown> = {
           amount: price,
@@ -1552,7 +1552,7 @@ export default function QuoteFormClient({
 
                 {/* Event single: origin here; multi: per-leg below. Labour Only: own section. */}
                 {serviceType !== "labour_only" && !(serviceType === "event" && eventMulti) && (
-                <div className="flex flex-col min-[400px]:flex-row gap-3 items-end">
+                <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <AddressAutocomplete
                       value={fromAddress}
@@ -1574,7 +1574,7 @@ export default function QuoteFormClient({
                 </div>
                 )}
                 {serviceType !== "event" && serviceType !== "labour_only" && (
-                <div className="flex flex-col min-[400px]:flex-row gap-3 items-end">
+                <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <AddressAutocomplete
                       value={toAddress}
@@ -1678,10 +1678,10 @@ export default function QuoteFormClient({
                       <div className="flex items-center gap-2">
                         <select
                           value={recommendedTier}
-                          onChange={(e) => setRecommendedTier(e.target.value as "curated" | "signature" | "estate")}
+                          onChange={(e) => setRecommendedTier(e.target.value as "essential" | "signature" | "estate")}
                           className={`${fieldInput} w-[140px] min-w-0`}
                         >
-                          <option value="curated">Curated</option>
+                          <option value="essential">Essential</option>
                           <option value="signature">Signature</option>
                           <option value="estate">Estate</option>
                         </select>
@@ -2793,7 +2793,7 @@ export default function QuoteFormClient({
               {serviceType === "labour_only" && (
                 <div className="space-y-3">
                   <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour Only</h3>
-                  <div className="flex flex-col min-[400px]:flex-row gap-3 items-end">
+                  <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
                     <div className="flex-1 min-w-0">
                       <AddressAutocomplete
                         value={workAddress}
@@ -3013,7 +3013,7 @@ export default function QuoteFormClient({
                               <div className="flex items-center gap-2">
                                 <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                                 {addon.is_popular && (
-                                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
                                 )}
                                 <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                               </div>
@@ -3083,7 +3083,7 @@ export default function QuoteFormClient({
                               <div className="flex items-center gap-2">
                                 <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                                 {addon.is_popular && (
-                                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
                                 )}
                                 <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                               </div>
@@ -3189,7 +3189,7 @@ export default function QuoteFormClient({
             <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
               <div className="px-5 py-3 border-b border-[var(--brd)] flex items-center justify-between">
                 <div>
-                  <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">
+                  <h2 className="admin-section-h2">
                     {quoteResult ? `Quote ${quoteResult.quote_id}` : "Live Quote Preview"}
                   </h2>
                   {!quoteResult && (
@@ -3273,7 +3273,7 @@ export default function QuoteFormClient({
                 ) : (
                   /* ── Optimistic live preview ── */
                   <>
-                    {liveEstimate && "curated" in liveEstimate ? (
+                    {liveEstimate && "essential" in liveEstimate ? (
                       <OptimisticTiers est={liveEstimate} isLongDistance={serviceType === "long_distance"} />
                     ) : specialtyLivePreview ? (
                       <div className="space-y-2">
@@ -3435,8 +3435,8 @@ export default function QuoteFormClient({
             {quoteResult?.valuation && (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Valuation Protection</h4>
-                {["curated", "signature", "estate"].map((pkg) => {
-                  const included = { curated: "Released Value", signature: "Enhanced Value", estate: "Full Replacement" }[pkg] ?? pkg;
+                {["essential", "signature", "estate"].map((pkg) => {
+                  const included = { essential: "Released Value", signature: "Enhanced Value", estate: "Full Replacement" }[pkg] ?? pkg;
                   const upgrade = quoteResult.valuation?.upgrades?.[pkg];
                   return (
                     <div key={pkg} className="flex items-center justify-between">
@@ -3454,30 +3454,31 @@ export default function QuoteFormClient({
             {/* ── Margin estimate — ADMIN ONLY, never shown to clients ── */}
             {quoteResult?.factors &&
               (userRole === "owner" || userRole === "admin") &&
-              typeof (quoteResult.factors as Record<string, unknown>).estimated_margin_curated === "number" && (
+              (typeof (quoteResult.factors as Record<string, unknown>).estimated_margin_essential === "number" ||
+               typeof (quoteResult.factors as Record<string, unknown>).estimated_margin_curated === "number") && (
               <div className="bg-[var(--bg2)] border border-[var(--brd)] rounded-xl p-4 space-y-3 text-[11px]">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Margin Estimate</h4>
-                  <span className="text-[8px] font-bold uppercase tracking-wide bg-[var(--tx3)]/20 text-[var(--tx3)] px-1.5 py-0.5 rounded">Admin Only</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wide bg-[var(--tx3)]/20 text-[var(--tx3)] px-1.5 py-0.5 rounded">Admin Only</span>
                 </div>
                 {(() => {
                   const f = quoteResult.factors as Record<string, unknown>;
                   const cost = (f.estimated_cost as { labour?: number; truck?: number; fuel?: number; supplies?: number; total?: number } | undefined);
                   const tiers = quoteResult.tiers as Record<string, { price: number }> | undefined;
-                  const curPrice = tiers?.curated?.price ?? tiers?.essentials?.price ?? 0;
+                  const curPrice = tiers?.essential?.price ?? tiers?.curated?.price ?? tiers?.essentials?.price ?? 0;
                   const sigPrice = tiers?.signature?.price ?? tiers?.premier?.price ?? 0;
                   const estPrice = tiers?.estate?.price ?? 0;
                   const estTotalCost = cost?.total ?? 0;
                   const margins = [
-                    { label: "Curated", price: curPrice, margin: typeof f.estimated_margin_curated === "number" ? f.estimated_margin_curated : 0 },
+                    { label: "Essential", price: curPrice, margin: typeof f.estimated_margin_essential === "number" ? f.estimated_margin_essential : (typeof f.estimated_margin_curated === "number" ? f.estimated_margin_curated : 0) },
                     { label: "Signature", price: sigPrice, margin: typeof f.estimated_margin_signature === "number" ? f.estimated_margin_signature : 0 },
                     { label: "Estate", price: estPrice, margin: typeof f.estimated_margin_estate === "number" ? f.estimated_margin_estate : 0 },
                   ].filter((t) => t.price > 0);
 
                   function marginFlag(m: number) {
-                    if (m < 25) return { emoji: "🔴", cls: "text-red-400" };
-                    if (m < 35) return { emoji: "🟡", cls: "text-[var(--gold)]" };
-                    return { emoji: "🟢", cls: "text-emerald-400" };
+                    if (m < 25) return { dot: "bg-red-400", cls: "text-red-400" };
+                    if (m < 35) return { dot: "bg-[var(--gold)]", cls: "text-[var(--gold)]" };
+                    return { dot: "bg-emerald-400", cls: "text-emerald-400" };
                   }
 
                   return (
@@ -3492,7 +3493,10 @@ export default function QuoteFormClient({
                               <span className="text-[var(--tx3)] ml-1.5">{fmtPrice(price)}</span>
                             </div>
                             <div className="text-right shrink-0">
-                              <span className={`font-bold tabular-nums ${flag.cls}`}>{margin}% {flag.emoji}</span>
+                              <span className={`inline-flex items-center gap-1.5 font-bold tabular-nums ${flag.cls}`}>
+                                {margin}%
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${flag.dot}`} />
+                              </span>
                               <p className="text-[9px] text-[var(--tx3)]">profit {fmtPrice(profit)}</p>
                             </div>
                           </div>
@@ -3522,17 +3526,17 @@ export default function QuoteFormClient({
               return (
                 <div className={`rounded-xl border px-4 py-3.5 ${isCritical ? "border-red-400/40 bg-red-400/6" : "border-amber-400/40 bg-amber-400/6"}`}>
                   <div className="flex items-start gap-2.5">
-                    <span className={`text-[16px] shrink-0 ${isCritical ? "text-red-400" : "text-amber-500"}`}>⚠</span>
+                    <Warning size={16} weight="bold" className={`shrink-0 mt-0.5 ${isCritical ? "text-red-400" : "text-amber-500"}`} />
                     <div className="flex-1 min-w-0">
                       <p className={`text-[11px] font-bold uppercase tracking-wider ${isCritical ? "text-red-400" : "text-amber-600"}`}>
                         Margin {isCritical ? "Alert" : "Warning"}
                       </p>
                       <p className={`text-[11px] mt-1 ${isCritical ? "text-red-400/80" : "text-amber-700/80"}`}>
-                        Curated margin: <strong>{mw.estimated_margin}%</strong> (target: {mw.target_margin}%)
+                        Essential margin: <strong>{mw.estimated_margin}%</strong> (target: {mw.target_margin}%)
                       </p>
                       {mw.signature_margin !== null && (
                         <p className="text-[11px] text-[var(--tx3)] mt-0.5">
-                          Signature margin: <strong className="text-emerald-500">{mw.signature_margin}%</strong> ✅ — Consider recommending Signature for this move.
+                          Signature margin: <strong className="text-emerald-500">{mw.signature_margin}%</strong> — Consider recommending Signature for this move.
                         </p>
                       )}
                     </div>
@@ -3576,9 +3580,9 @@ const PRICE_CARD = {
 } as const;
 
 function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<string, TierResult>; recommendedTier?: string }) {
-  const tierOrder = ["curated", "signature", "estate"] as const;
+  const tierOrder = ["essential", "signature", "estate"] as const;
   const tierColors: Record<string, { bg: string; border: string; accent: string; muted: string; body: string; list: string }> = {
-    curated: {
+    essential: {
       bg: "bg-[var(--bg)]",
       border: "border-[var(--brd)]",
       accent: "text-[var(--tx)]",
@@ -3603,7 +3607,7 @@ function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<
       list: "text-[#D4CFC4]",
     },
   };
-  const tierLabels: Record<string, string> = { curated: "Curated", signature: "Signature", estate: "Estate" };
+  const tierLabels: Record<string, string> = { essential: "Essential", signature: "Signature", estate: "Estate" };
 
   return (
     <div className="space-y-3">
@@ -3618,7 +3622,7 @@ function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<
               <div className="flex items-center gap-2">
                 <span className={`text-[13px] font-extrabold tracking-tight ${c.accent}`}>{tierLabels[name]}</span>
                 {isRecommended && (
-                  <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
                     Recommended
                   </span>
                 )}
@@ -4023,9 +4027,9 @@ function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; fact
   );
 }
 
-function OptimisticTiers({ est, isLongDistance }: { est: { curated: number; signature: number; estate: number }; isLongDistance?: boolean }) {
+function OptimisticTiers({ est, isLongDistance }: { est: { essential: number; signature: number; estate: number }; isLongDistance?: boolean }) {
   const tiers = [
-    { name: "Curated", price: est.curated },
+    { name: "Essential", price: est.essential },
     { name: "Signature", price: est.signature },
     { name: "Estate", price: est.estate },
   ];
@@ -4069,7 +4073,7 @@ function PriceBreakdownResidential({
   distance,
   time,
   moveSize,
-  curatedPrice,
+  curatedPrice: essentialPrice,
   signaturePrice,
   estatePrice,
 }: {
@@ -4228,11 +4232,11 @@ function PriceBreakdownResidential({
       </div>
 
       {/* Tier formula summary */}
-      {curatedPrice != null && (
+      {essentialPrice != null && (
         <>
           <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] pt-2">Tier prices</p>
           <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] divide-y divide-[var(--brd)]">
-            <Row label="Curated (×1.0)" value={<span className="font-bold text-[var(--tx)]">{fmtPrice(curatedPrice)}</span>} />
+            <Row label="Essential (×1.0)" value={<span className="font-bold text-[var(--tx)]">{fmtPrice(essentialPrice)}</span>} />
             {signaturePrice != null && (
               <Row label="Signature (×1.50)" value={<span className="font-bold text-[#B8962E]">{fmtPrice(signaturePrice)}</span>} />
             )}
@@ -4279,7 +4283,7 @@ function FactorsDisplayCollapsible({
             distance={distance}
             time={time}
             moveSize={moveSize}
-            curatedPrice={tiers?.curated?.price}
+            curatedPrice={tiers?.essential?.price ?? tiers?.curated?.price}
             signaturePrice={tiers?.signature?.price}
             estatePrice={tiers?.estate?.price}
           />

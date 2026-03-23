@@ -79,6 +79,7 @@ export const DELIVERY_STATUS_LABELS: Record<string, string> = {
 
 // Tier labels (internal keys → client copy)
 export const TIER_LABELS: Record<string, string> = {
+  essential: "Essential",
   curated: "Essential",
   signature: "Signature",
   estate: "Estate",

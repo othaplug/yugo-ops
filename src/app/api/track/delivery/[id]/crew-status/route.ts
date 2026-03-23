@@ -32,7 +32,7 @@ async function getMapboxDrivingEtaMinutes(
   if (!MAPBOX_TOKEN) return null;
   try {
     const coords = `${fromLng},${fromLat};${toLng},${toLat}`;
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?access_token=${MAPBOX_TOKEN}&overview=false`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coords}?access_token=${MAPBOX_TOKEN}&overview=false`;
     const res = await fetch(url, { next: { revalidate: 60 } });
     const data = await res.json();
     const durationSec = data?.routes?.[0]?.duration;

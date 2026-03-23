@@ -17,14 +17,16 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
       { name: "Dispatch", href: "/admin/dispatch", Icon: Icons.dispatch },
       { name: "Calendar", href: "/admin/calendar", Icon: Icons.calendar },
       { name: "Live Tracking", href: "/admin/crew", Icon: Icons.mapPin },
+      { name: "Crew Analytics", href: "/admin/crew/analytics", Icon: Icons.barChart },
+      { name: "Reports", href: "/admin/reports", Icon: Icons.clipboardList },
     ],
   },
   {
     group: "Partners",
     items: [
-      { name: "All Partners", href: "/admin/partners", Icon: Icons.users },
+      { name: "Partners", href: "/admin/partners", Icon: Icons.users },
       { name: "Partner Health", href: "/admin/partners/health", Icon: Icons.barChart },
-      { name: "Realtors & referrals", href: "/admin/partners/realtors", Icon: Icons.handshake },
+      { name: "Referral Partners", href: "/admin/partners/realtors", Icon: Icons.handshake },
       { name: "Jobs", href: "/admin/deliveries", Icon: Icons.briefcase },
     ],
   },
@@ -43,6 +45,7 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
       { name: "Revenue", href: "/admin/revenue", Icon: Icons.dollarSign },
       { name: "Tips", href: "/admin/tips", Icon: Icons.creditCard },
       { name: "Claims", href: "/admin/claims", Icon: Icons.shield },
+      { name: "Profitability", href: "/admin/finance/profitability", Icon: Icons.trendingUp },
     ],
   },
   {
@@ -51,6 +54,14 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
       { name: "Contacts", href: "/admin/clients", Icon: Icons.userCheck },
       { name: "Change Requests", href: "/admin/change-requests", Icon: Icons.clipboardList },
       { name: "Perks & Referrals", href: "/admin/perks", Icon: Icons.gift },
+    ],
+  },
+  {
+    group: "Settings",
+    items: [
+      { name: "Platform", href: "/admin/platform", Icon: Icons.settings },
+      { name: "Users", href: "/admin/users", Icon: Icons.usersThree },
+      { name: "Account Settings", href: "/admin/settings", Icon: Icons.lock },
     ],
   },
 ];

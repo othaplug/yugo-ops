@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
 import { createPartnerNotification } from "@/lib/notifications";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(
   req: NextRequest,
@@ -42,6 +43,14 @@ export async function POST(
       deliveryId: delivery.id,
     });
   }
+
+  await logActivity({
+    entity_type: "delivery",
+    entity_id: id,
+    event_type: "rejected",
+    description: `Delivery rejected: ${delivery?.customer_name || delivery?.delivery_number || id}${body.reason ? ` — ${body.reason}` : ""}`,
+    icon: "x",
+  });
 
   return NextResponse.json({ ok: true });
 }

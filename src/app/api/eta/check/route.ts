@@ -58,7 +58,7 @@ async function getETAMinutes(
   destLng: number
 ): Promise<number> {
   if (!MAPBOX_TOKEN) return 999;
-  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${crewLng},${crewLat};${destLng},${destLat}?access_token=${MAPBOX_TOKEN}`;
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${crewLng},${crewLat};${destLng},${destLat}?access_token=${MAPBOX_TOKEN}`;
   const res = await fetch(url);
   const data = await res.json();
   if (data.routes?.[0]?.duration) {
@@ -209,7 +209,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
         await notifyAllAdmins({
           title: "Crew running behind schedule",
           body: `${move.client_name} · ETA ${etaMinutes} min (10+ mins behind)`,
-          icon: "⚠️",
+          icon: "alertTriangle",
           link: `/admin/moves/${move.tracking_code ?? move.id}`,
           sourceType: "move",
           sourceId: move.id,
@@ -439,7 +439,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
         await notifyAllAdmins({
           title: "Crew running behind schedule",
           body: `${delivery.end_customer_name || org?.name || "Delivery"} · ETA ${etaMinutes} min (10+ mins behind)`,
-          icon: "⚠️",
+          icon: "alertTriangle",
           link: `/admin/deliveries/${delivery.tracking_code ?? delivery.id}`,
           sourceType: "delivery",
           sourceId: delivery.id,
@@ -450,7 +450,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
             orgId: delivery.organization_id,
             title: "Crew running behind schedule",
             body: `Delivery to ${delivery.end_customer_name || "customer"} · ETA ${etaMinutes} min (10+ mins behind)`,
-            icon: "⚠️",
+            icon: "alertTriangle",
             link: `/partner`,
             deliveryId: delivery.id,
           });

@@ -23,6 +23,22 @@
     {
       "path": "/api/cron/quote-followups",
       "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/daily-brief",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/partner-statements",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/quote-reengagement",
+      "schedule": "30 11 * * *"
+    },
+    {
+      "path": "/api/cron/weather-alerts",
+      "schedule": "0 11 * * *"
     }
   ]
 }

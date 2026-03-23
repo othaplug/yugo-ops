@@ -3,7 +3,7 @@ import BackButton from "../../components/BackButton";
 import KpiCard from "@/components/ui/KpiCard";
 import { formatCurrency } from "@/lib/format-currency";
 
-export const metadata = { title: "Realtors & Referrals" };
+export const metadata = { title: "Referral Partners" };
 
 import RealtorsTable from "./RealtorsTable";
 
@@ -44,12 +44,12 @@ export default async function RealtorsPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="mb-6">
-        <BackButton label="B2B Partners" href="/admin/platform?tab=partners" />
+        <BackButton label="Partners" href="/admin/platform?tab=partners" />
       </div>
 
       <div className="mb-8">
-        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Partners</p>
-        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Realtors & Referrals</h1>
+        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Partners</p>
+        <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Referral Partners</h1>
         <p className="mt-2 text-[13px] text-[var(--tx3)] max-w-2xl leading-relaxed">
           Referrals from referral partners — led by <span className="text-[var(--tx2)] font-medium">realtors</span> (property managers &amp; developers share the same pipeline).
         </p>

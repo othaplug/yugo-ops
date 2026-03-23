@@ -119,7 +119,7 @@ export default function JobDetailPanel({ event, crews, onClose, onRescheduled }:
                 </span>
               )}
             </div>
-            <h2 className="text-[18px] font-bold text-[var(--tx)]">{event.name}</h2>
+            <h2 className="admin-section-h2">{event.name}</h2>
             <p className="text-[12px] text-[var(--tx3)] mt-0.5">{toTitleCase(event.description)}</p>
           </div>
           <button

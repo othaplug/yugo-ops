@@ -6,6 +6,7 @@ import { signTrackToken } from "@/lib/track-token";
 import { requireAuth } from "@/lib/api-auth";
 import { getEmailFrom } from "@/lib/email/send";
 import { logAudit } from "@/lib/audit";
+import { logActivity } from "@/lib/activity";
 import { getDistance } from "@/lib/maps/distance";
 
 import { isSuperAdminEmail } from "@/lib/super-admin";
@@ -242,7 +243,7 @@ export async function POST(req: NextRequest) {
             crew: labourCrew ?? 2,
             recommendedTruck: (truckPrimary || "sprinter").toLowerCase().replace(/[^a-z0-9]/g, ""),
             distanceKm: distanceKm ?? 20,
-            tier: (body.tier_selected as string) || "curated",
+            tier: (body.tier_selected as string) || "essential",
             moveSize: moveSize || "2br",
           },
           cfg,
@@ -477,6 +478,16 @@ export async function POST(req: NextRequest) {
       resourceType: "move",
       resourceId: moveId,
       details: { action: "create", move_code: move.move_code },
+    });
+
+    const { getMoveCode, formatJobId } = await import("@/lib/move-code");
+    const moveCodeDisplay = formatJobId(move.move_code || getMoveCode({ id: moveId }), "move");
+    await logActivity({
+      entity_type: "move",
+      entity_id: moveId,
+      event_type: "created",
+      description: `Move created: ${clientName} — ${moveCodeDisplay}`,
+      icon: "move",
     });
 
     return NextResponse.json({

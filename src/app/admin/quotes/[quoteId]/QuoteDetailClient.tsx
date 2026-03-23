@@ -280,7 +280,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
         <div className="lg:col-span-2 space-y-0">
           {/* Quote Summary */}
           <div className="pb-6">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+            <h2 className="admin-section-h2 mb-4">
               Quote Summary
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -400,7 +400,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
           {/* Client Engagement */}
           <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+              <h2 className="admin-section-h2">
                 Client Engagement
               </h2>
               <span className={`text-[10px] font-bold ${signal.color}`}>{signal.label}</span>
@@ -502,7 +502,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
         <div className="space-y-0">
           {/* Timeline — card treatment for prominence */}
           <div className="rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] p-4 mb-5">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-3">
+            <h2 className="admin-section-h2 text-[var(--gold)] mb-3">
               Timeline
             </h2>
             <div className="space-y-2.5 text-[11px]">
@@ -579,7 +579,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
 
           {/* Move Details */}
           <div className="pb-5">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Move Details</h2>
+            <h2 className="admin-section-h2 mb-3">Move Details</h2>
             <div className="space-y-2 text-[11px]">
               <div className="flex justify-between">
                 <span className="text-[var(--tx3)]">Service</span>
@@ -627,7 +627,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
           {/* Engagement Stats */}
           {engagement.length > 0 && (
             <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+              <h2 className="admin-section-h2 mb-3">
                 Engagement Stats
               </h2>
               <div className="space-y-2 text-[11px]">

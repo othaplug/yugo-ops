@@ -150,7 +150,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <div>
-                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Destination</p>
+                <p className="admin-section-h2">Destination</p>
                 <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
 
       {(buildingReqs.length > 0 || accessLabel) && (
         <div className="pt-6 border-t border-[var(--brd)]/30">
-          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+          <h2 className="admin-section-h2 mb-3">
             Site &amp; building
           </h2>
           {buildingReqs.length > 0 ? (
@@ -205,7 +205,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
       {/* Special Requirements */}
       {requirements.length > 0 && (
         <div className="pt-6 border-t border-[var(--brd)]/30">
-          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+          <h2 className="admin-section-h2 mb-4">
             Special Requirements
           </h2>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -231,7 +231,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
 
       {/* Service Includes */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+        <h2 className="admin-section-h2 mb-4">
           Service Includes
         </h2>
         <div className="grid sm:grid-cols-2 gap-2.5">

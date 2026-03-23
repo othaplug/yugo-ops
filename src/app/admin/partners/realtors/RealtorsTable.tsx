@@ -48,7 +48,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 const TIER_OPTIONS = [
   { value: "", label: "All tiers" },
-  { value: "Curated", label: "Curated" },
+  { value: "Curated", label: "Essential" },
   { value: "Essentials", label: "Essentials" },
   { value: "Premier", label: "Premier" },
   { value: "Signature", label: "Signature" },
@@ -56,6 +56,7 @@ const TIER_OPTIONS = [
 ];
 
 const TIER_STYLES: Record<string, string> = {
+  essential:  "bg-[var(--brd)] text-[var(--tx3)]",
   curated:    "bg-[var(--brd)] text-[var(--tx3)]",
   essentials: "bg-[var(--brd)] text-[var(--tx3)]",
   premier:    "bg-[var(--gdim)] text-[var(--gold)]",

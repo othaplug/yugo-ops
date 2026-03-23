@@ -66,7 +66,7 @@ const MapboxMap = dynamic(
                 id="route-tracking-layer"
                 type="line"
                 paint={{
-                  "line-color": routeLineColor ?? "#8B5CF6",
+                  "line-color": routeLineColor ?? "#C9A962",
                   "line-width": 5,
                   "line-opacity": 1,
                 }}
@@ -87,7 +87,7 @@ const MapboxMap = dynamic(
             <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">
               <div
                 className="w-4 h-4 rounded-full border-2 border-white shadow-md"
-                style={{ backgroundColor: routeLineColor ?? "#8B5CF6" }}
+                style={{ backgroundColor: routeLineColor ?? "#C9A962" }}
                 title={crewName || crew.name || "Crew"}
               />
             </Marker>
@@ -136,6 +136,7 @@ export default function LiveTrackingMap({
   dropoff,
   moveId,
   deliveryId,
+  hideHeader,
 }: {
   crewId: string;
   crewName?: string;
@@ -147,6 +148,8 @@ export default function LiveTrackingMap({
   moveId?: string;
   /** Delivery ID: checks for an active tracking session before showing GPS */
   deliveryId?: string;
+  /** When the map is inside a CollapsibleSection that already shows title/crew name, hide the internal card header */
+  hideHeader?: boolean;
 }) {
   const [crew, setCrew] = useState<Crew | null>(null);
   const [loading, setLoading] = useState(true);
@@ -162,7 +165,7 @@ export default function LiveTrackingMap({
   const mapStyle = theme === "light"
     ? "mapbox://styles/mapbox/light-v11"
     : "mapbox://styles/mapbox/dark-v11";
-  const routeLineColor = "#8B5CF6";
+  const routeLineColor = "#C9A962";
 
   // When deliveryId is set and parent didn't pass coords, fetch delivery and geocode so we can draw the route
   useEffect(() => {
@@ -321,7 +324,7 @@ export default function LiveTrackingMap({
     const from = `${crew.current_lng},${crew.current_lat}`;
     const to = `${effectiveDestination.lng},${effectiveDestination.lat}`;
     const url = MAPBOX_TOKEN
-      ? `https://api.mapbox.com/directions/v5/mapbox/driving/${from};${to}?geometries=geojson&access_token=${MAPBOX_TOKEN}`
+      ? `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${from};${to}?geometries=geojson&access_token=${MAPBOX_TOKEN}`
       : `/api/mapbox/directions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
     fetch(url)
       .then((res) => {
@@ -385,10 +388,14 @@ export default function LiveTrackingMap({
   if (!HAS_MAPBOX) {
     return (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-        <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
-        <p className="text-[11px] text-[var(--tx3)] mb-3">
-          {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
-        </p>
+        {!hideHeader && (
+          <>
+            <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
+            <p className="text-[11px] text-[var(--tx3)] mb-3">
+              {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
+            </p>
+          </>
+        )}
         <div className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`} style={isFullscreen ? undefined : { height: 320 }}>
           {/* Fullscreen toggle */}
           <button
@@ -420,7 +427,9 @@ export default function LiveTrackingMap({
                       ? "Crew is unloading items"
                       : liveStage === "completed"
                         ? "Move is complete"
-                        : "Crew is on the way"}
+                        : liveStage === "scheduled"
+                          ? "Crew hasn't departed yet"
+                          : "Crew is on the way"}
                 </div>
               </div>
             </div>
@@ -450,10 +459,14 @@ export default function LiveTrackingMap({
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-      <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
-      <p className="text-[11px] text-[var(--tx3)] mb-3">
-        {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
-      </p>
+      {!hideHeader && (
+        <>
+          <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
+          <p className="text-[11px] text-[var(--tx3)] mb-3">
+            {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
+          </p>
+        </>
+      )}
       <div className={`relative rounded-lg border border-[var(--brd)] overflow-hidden ${isFullscreen ? "map-fullscreen" : ""}`} style={isFullscreen ? undefined : { height: 320 }}>
         {/* Fullscreen toggle */}
         <button
@@ -478,24 +491,26 @@ export default function LiveTrackingMap({
               <div className="text-[13px] font-bold text-[var(--tx)]">
                 {CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)}
               </div>
-              <div className="text-[11px] text-[var(--tx3)]">
-                {liveStage === "loading"
-                  ? "Crew is loading items"
-                  : liveStage === "unloading"
-                    ? "Crew is unloading items"
-                    : liveStage === "completed"
-                      ? "Move is complete"
-                      : "Crew is on the way"}
+                <div className="text-[11px] text-[var(--tx3)]">
+                  {liveStage === "loading"
+                    ? "Crew is loading items"
+                    : liveStage === "unloading"
+                      ? "Crew is unloading items"
+                      : liveStage === "completed"
+                        ? "Move is complete"
+                        : liveStage === "scheduled"
+                          ? "Crew hasn't departed yet"
+                          : "Crew is on the way"}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        {loading ? (
-          <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-[12px]">
-            Loading map...
-          </div>
-        ) : (
-          <MapboxMap
+          )}
+          {loading ? (
+            <div className="w-full h-full flex items-center justify-center bg-[var(--bg)] text-[var(--tx3)] text-[12px]">
+              Loading map...
+            </div>
+          ) : (
+            <MapboxMap
             token={MAPBOX_TOKEN}
             center={center}
             hasPosition={hasPosition}

@@ -86,6 +86,8 @@ const FEATURE_DEFAULTS: Record<string, string> = {
   change_request_per_score_rate: "35",
   change_request_min_hours_before_move: "48",
   change_request_max_items_per_request: "10",
+  /** Daily cron: rain/snow daytime forecast → moves.weather_alert (requires OPENWEATHER_API_KEY) */
+  weather_alerts_enabled: "true",
 };
 
 /**

@@ -56,14 +56,15 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       { href: "/admin/calendar", label: "Calendar", Icon: Icons.calendar, minRole: "sales" },
       { href: "/admin/crew", label: "Live Tracking", Icon: Icons.mapPin },
       { href: "/admin/crew/analytics", label: "Crew Analytics", Icon: Icons.barChart, minRole: "admin" },
+      { href: "/admin/reports", label: "Reports", Icon: Icons.clipboardList, minRole: "admin" },
     ],
   },
   {
-    label: "B2B Partners",
+    label: "Partners",
     items: [
       { href: "/admin/partners", label: "All Partners", Icon: Icons.handshake, minRole: "coordinator" },
       { href: "/admin/partners/health", label: "Partner Health", Icon: Icons.barChart, minRole: "coordinator" },
-      { href: "/admin/partners/realtors", label: "Realtors & referrals", Icon: Icons.handshake, minRole: "coordinator" },
+      { href: "/admin/partners/realtors", label: "Referral Partners", Icon: Icons.handshake, minRole: "coordinator" },
       { href: "/admin/deliveries", label: "Jobs", Icon: Icons.briefcase, minRole: "coordinator" },
     ],
   },
@@ -97,6 +98,8 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "Settings",
     items: [
       { href: "/admin/platform", label: "Platform", Icon: Icons.settings, minRole: "owner" },
+      { href: "/admin/users", label: "Users", Icon: Icons.usersThree, minRole: "owner" },
+      { href: "/admin/settings", label: "Account", Icon: Icons.lock, minRole: "coordinator" },
     ],
   },
 ];

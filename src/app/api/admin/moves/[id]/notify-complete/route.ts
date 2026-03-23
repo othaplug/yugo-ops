@@ -9,6 +9,7 @@ import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
 import { calcActualMargin } from "@/lib/pricing/engine";
+import { collectCalibrationData } from "@/lib/learning/engine";
 
 /**
  * When admin marks a move as completed in the UI, this endpoint sends the
@@ -107,6 +108,11 @@ export async function POST(
   } catch (e) {
     console.error("[notify-complete] margin calculation failed:", e);
   }
+
+  // 6. Learning engine — fire-and-forget calibration data collection
+  collectCalibrationData(moveId).catch((e) =>
+    console.error("[notify-complete] calibration data collection failed:", e)
+  );
 
   return NextResponse.json({
     ok: true,

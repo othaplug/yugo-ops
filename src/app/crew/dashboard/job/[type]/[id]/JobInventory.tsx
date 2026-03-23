@@ -195,7 +195,7 @@ export default function JobInventory({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-hero text-[18px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+        <h2 className="admin-section-h2 text-[var(--tx2)]">
           {isCompleted
             ? "Inventory verified (pickup & delivery)"
             : isRoomBasedVerification

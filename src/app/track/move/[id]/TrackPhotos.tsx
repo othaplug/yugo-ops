@@ -207,7 +207,7 @@ export default function TrackPhotos({
                   </span>
                   {isClient && (
                     <span
-                      className="text-[8px] font-bold px-1.5 py-0.5 rounded-full"
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                       style={{ backgroundColor: `${GOLD}18`, color: GOLD }}
                     >
                       YOU

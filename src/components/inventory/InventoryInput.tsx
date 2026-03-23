@@ -575,9 +575,9 @@ export default function InventoryInput({
       {/* Custom item input + Box count */}
       <div className="border-t border-[var(--brd)]/30 pt-3 space-y-2">
         <p className="text-[9px] text-[var(--tx3)]">Can&apos;t find an item?</p>
-        <div className="flex flex-wrap gap-2 items-end">
-          <div className="w-[160px] min-w-0">
-            <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Item name</label>
+        <div className="flex flex-wrap gap-2 items-start">
+          <div className="flex-1 min-w-[120px]">
+            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Item name</label>
             <input
               type="text"
               value={customName}
@@ -587,8 +587,8 @@ export default function InventoryInput({
               className={fieldInput}
             />
           </div>
-          <div className="w-24">
-            <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Weight</label>
+          <div className="w-24 flex-none">
+            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Weight</label>
             <select
               value={customWeight}
               onChange={(e) => setCustomWeight(Number(e.target.value))}
@@ -603,7 +603,7 @@ export default function InventoryInput({
             type="button"
             onClick={addCustomItem}
             disabled={!customName.trim()}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+            className="flex-none self-end inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
           >
             <Plus className="w-[12px] h-[12px]" /> Add Custom Item
           </button>
@@ -720,7 +720,7 @@ export default function InventoryInput({
                       type="button"
                       title="Click to adjust weight"
                       onClick={() => setEditingWeightKey(key)}
-                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[8px] font-semibold transition-colors hover:opacity-80 ${weightChipClass(item.weight_score)}`}
+                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[10px] font-semibold transition-colors hover:opacity-80 ${weightChipClass(item.weight_score)}`}
                     >
                       {weightLabel(item.weight_score)}
                       {isOverridden && (

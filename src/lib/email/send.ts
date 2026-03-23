@@ -69,6 +69,7 @@ export type TemplateName =
   | "quote-followup-2-warm"
   | "quote-followup-2-essentials"
   | "quote-followup-2-cold"
+  | "quote-followup-2-essential"
   | "quote-followup-2-curated"
   | "quote-followup-3"
   | "quote-followup-3-hot"
@@ -83,6 +84,7 @@ export type TemplateName =
   | "review-request-essentials"
   | "review-request-premier"
   | "review-request-estate"
+  | "review-request-essential"
   | "review-request-curated"
   | "review-request-signature"
   | "review-request-reminder";
@@ -106,6 +108,7 @@ type TemplateDataMap = {
   "quote-followup-2-warm": QuoteFollowup2Data;
   "quote-followup-2-essentials": QuoteFollowup2Data;
   "quote-followup-2-cold": QuoteFollowup2Data;
+  "quote-followup-2-essential": QuoteFollowup2Data;
   "quote-followup-2-curated": QuoteFollowup2Data;
   "quote-followup-3": QuoteFollowup3Data;
   "quote-followup-3-hot": QuoteFollowup3Data;
@@ -120,6 +123,7 @@ type TemplateDataMap = {
   "review-request-essentials": ReviewRequestTierData;
   "review-request-premier": ReviewRequestTierData;
   "review-request-estate": ReviewRequestTierData;
+  "review-request-essential": ReviewRequestTierData;
   "review-request-curated": ReviewRequestTierData;
   "review-request-signature": ReviewRequestTierData;
   "review-request-reminder": ReviewRequestReminderData;
@@ -169,6 +173,7 @@ function renderTemplate(template: string, data: unknown): string {
     "quote-followup-2-warm": quoteFollowup2Email,
     "quote-followup-2-essentials": quoteFollowup2Email,
     "quote-followup-2-cold": quoteFollowup2Email,
+    "quote-followup-2-essential": quoteFollowup2Email,
     "quote-followup-2-curated": quoteFollowup2Email,
     "quote-followup-3": quoteFollowup3Email,
     "quote-followup-3-hot": quoteFollowup3Email,
@@ -180,6 +185,7 @@ function renderTemplate(template: string, data: unknown): string {
     "balance-auto-charge-receipt": balanceAutoChargeReceiptEmail,
     "balance-charge-failed-client": balanceChargeFailedClientEmail,
     "balance-charge-failed-admin": balanceChargeFailedAdminEmail,
+    "review-request-essential": reviewRequestCuratedEmail,
     "review-request-curated": reviewRequestCuratedEmail,
     "review-request-signature": reviewRequestSignatureEmail,
     "review-request-estate": reviewRequestEstateEmail,

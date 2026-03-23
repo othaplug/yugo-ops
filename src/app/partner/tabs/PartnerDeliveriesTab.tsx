@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { MagnifyingGlass, Check, Link, PencilSimple, ShareNetwork, Info } from "@phosphor-icons/react";
+import { MagnifyingGlass, Check, Link, PencilSimple, ShareNetwork, Info, CalendarBlank } from "@phosphor-icons/react";
+import RescheduleDeliveryModal from "@/components/partner/RescheduleDeliveryModal";
 import { getDeliveryTimelineIndex, DELIVERY_TIMELINE_STEPS } from "@/lib/partner-type";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import { toTitleCase } from "@/lib/format-text";
@@ -192,9 +193,16 @@ export default function PartnerDeliveriesTab({
 function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { delivery: Delivery; onShare: () => void; onDetailClick?: () => void; onEditClick?: () => void }) {
   const [liveStage, setLiveStage] = useState<string | null>(d.stage || null);
   const [copied, setCopied] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const isInProgress = IN_PROGRESS_STATUSES.includes((d.status || "").toLowerCase().replace(/-/g, "_"));
   const isCompleted = ["delivered", "completed"].includes((d.status || "").toLowerCase());
   const isLocked = ["delivered", "completed", "cancelled"].includes((d.status || "").toLowerCase());
+
+  // Allow reschedule if not locked and > 24hr away
+  const hoursUntil = d.scheduled_date
+    ? (new Date(d.scheduled_date + "T12:00:00").getTime() - Date.now()) / 3600000
+    : 0;
+  const canReschedule = !isLocked && !isInProgress && hoursUntil >= 24;
 
   useEffect(() => {
     if (!isInProgress && !isCompleted) return;
@@ -287,6 +295,17 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
               <Link size={15} />
             )}
           </button>
+          {/* Reschedule */}
+          {canReschedule && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setRescheduleOpen(true); }}
+              className="icon-btn"
+              title="Reschedule delivery"
+              data-no-min-height
+            >
+              <CalendarBlank size={15} />
+            </button>
+          )}
           {/* Edit */}
           {!isLocked && onEditClick && (
             <button
@@ -361,6 +380,17 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
           </div>
         )}
       </div>
+
+      {rescheduleOpen && (
+        <RescheduleDeliveryModal
+          deliveryId={d.id}
+          deliveryNumber={d.delivery_number}
+          currentDate={d.scheduled_date}
+          currentWindow={d.time_slot}
+          onClose={() => setRescheduleOpen(false)}
+          onSuccess={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

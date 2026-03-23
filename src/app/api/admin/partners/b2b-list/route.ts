@@ -18,7 +18,7 @@ export async function GET() {
     return NextResponse.json({ partners: data ?? [] });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to fetch B2B partners" },
+      { error: err instanceof Error ? err.message : "Failed to fetch partners" },
       { status: 500 }
     );
   }

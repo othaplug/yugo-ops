@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { getTodayString, getLocalDateDisplay, getAppTimezone } from "@/lib/business-timezone";
+import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
@@ -19,7 +20,9 @@ export async function GET(req: NextRequest) {
   const [movesRes, deliveriesRes] = await Promise.all([
     supabase
       .from("moves")
-      .select("id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name")
+      .select(
+        "id, move_code, client_name, from_address, to_address, from_postal_code, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert",
+      )
       .eq("crew_id", payload.teamId)
       .gte("scheduled_date", today)
       .lte("scheduled_date", today)
@@ -54,6 +57,8 @@ export async function GET(req: NextRequest) {
     bookingType?: string | null;
     eventPhase?: string | null;
     eventName?: string | null;
+    weatherBrief?: MoveWeatherBrief | null;
+    weatherAlert?: string | null;
   };
 
   const jobs: Job[] = [];
@@ -65,6 +70,11 @@ export async function GET(req: NextRequest) {
     const eventJobTypeLabel = eventName
       ? `${eventName} ${eventPhase === "delivery" ? "Delivery & Setup" : eventPhase === "return" ? "Teardown & Return" : eventPhase === "setup" ? "Setup" : "Event"}`
       : null;
+    const wbRaw = (m as { weather_brief?: unknown }).weather_brief;
+    const weatherBrief = isMoveWeatherBrief(wbRaw) ? wbRaw : null;
+    const wa = (m as { weather_alert?: string | null }).weather_alert;
+    const weatherAlert = wa != null && String(wa).trim() !== "" ? String(wa) : null;
+
     jobs.push({
       id: m.id,
       jobId: m.move_code || m.id,
@@ -78,6 +88,8 @@ export async function GET(req: NextRequest) {
       completedAt: null,
       eventPhase,
       eventName,
+      weatherBrief,
+      weatherAlert,
     });
   }
 
@@ -101,6 +113,8 @@ export async function GET(req: NextRequest) {
       completedAt: null,
       isRecurring: isRec,
       bookingType: bType,
+      weatherBrief: null,
+      weatherAlert: null,
     });
   }
 

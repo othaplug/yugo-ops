@@ -134,7 +134,7 @@ export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; del
     return (
       <>
         <div className="mb-4">
-          <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">Live Tracking</h2>
+          <h2 className="admin-section-h2">Live Tracking</h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Using OpenStreetMap (add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for Mapbox)</p>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 relative z-0">
@@ -154,7 +154,7 @@ export default function CrewMap({ crews, deliveries = [] }: { crews: Crew[]; del
   return (
     <>
       <div className="mb-4">
-        <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">Live Tracking</h2>
+        <h2 className="admin-section-h2">Live Tracking</h2>
         <p className="text-[11px] text-[var(--tx3)] mt-0.5">Click a team for details</p>
       </div>
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-4 relative z-0">

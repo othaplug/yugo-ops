@@ -223,7 +223,7 @@ export default function DeviceSetupCodes() {
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+            <h2 className="admin-section-h2 flex items-center gap-2.5">
               <Icon name="plug" className="w-[16px] h-[16px]" /> iPad Setup Codes
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">
@@ -320,7 +320,7 @@ export default function DeviceSetupCodes() {
       {trucks.length > 0 && (
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)] flex items-center gap-2 min-w-0">
+            <h2 className="admin-section-h2 flex items-center gap-2.5 min-w-0">
               <Icon name="truck" className="w-[14px] h-[14px]" /> Fleet Trucks
             </h2>
             <button

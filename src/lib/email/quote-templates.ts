@@ -301,38 +301,38 @@ function detailsPlain(rows: [string, string][]): string {
 }
 
 function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommendedTier?: string | null): string {
-  const order = ["curated", "signature", "estate"];
+  const order = ["essential", "signature", "estate"];
   const rec = recommendedTier || "signature";
 
   /* Tier card backgrounds — user-specified premium dark palette */
   const tierBgs: Record<string, string> = {
-    curated:   CURATED_BG,
+    essential: CURATED_BG,
     signature: SIG_BG,
     estate:    ESTATE_BG,
   };
 
   /* Border: muted version of the accent, stronger on recommended */
   const tierBorderMuted: Record<string, string> = {
-    curated:   `${CURATED_ACCENT}50`,
+    essential: `${CURATED_ACCENT}50`,
     signature: `${SIG_ACCENT}50`,
     estate:    `${ESTATE_ACCENT}50`,
   };
   const tierBorderRec: Record<string, string> = {
-    curated:   CURATED_ACCENT,
+    essential: CURATED_ACCENT,
     signature: SIG_ACCENT,
     estate:    ESTATE_ACCENT,
   };
 
   const tierAccents: Record<string, string> = {
-    curated:   CURATED_ACCENT,
+    essential: CURATED_ACCENT,
     signature: SIG_ACCENT,
     estate:    ESTATE_ACCENT,
   };
 
   const badgeLabels: Record<string, Record<string, string>> = {
-    curated:   { curated: "",  signature: "Upgrade available",        estate: "Premium option" },
-    signature: { curated: "",  signature: "RECOMMENDED",              estate: "For the ultimate experience" },
-    estate:    { curated: "",  signature: "",                         estate: "RECOMMENDED FOR YOU" },
+    essential: { essential: "",  signature: "Upgrade available",        estate: "Premium option" },
+    signature: { essential: "",  signature: "RECOMMENDED",              estate: "For the ultimate experience" },
+    estate:    { essential: "",  signature: "",                         estate: "RECOMMENDED FOR YOU" },
   };
 
   return order
@@ -506,7 +506,7 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
   if (d.truckSize) rows.push(["Truck", d.truckSize]);
 
-  const price = d.customPrice ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
+  const price = d.customPrice ?? d.tiers?.essential?.price ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
 
   return quoteEmailLayout(`
     ${subHeading("Long Distance Quote")}
@@ -556,7 +556,7 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
 
-  const price = d.customPrice ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
+  const price = d.customPrice ?? d.tiers?.essential?.price ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
 
   return quoteEmailLayout(`
     ${subHeading("Your Delivery Quote")}
@@ -580,7 +580,7 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
   if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
 
-  const price = d.customPrice ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
+  const price = d.customPrice ?? d.tiers?.essential?.price ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
 
   return quoteEmailLayout(`
     ${subHeading("White Glove Service Quote")}

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Mapbox Directions API uses lng,lat order
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${lng1},${lat1};${lng2},${lat2}?access_token=${MAPBOX_TOKEN}`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${lng1},${lat1};${lng2},${lat2}?access_token=${MAPBOX_TOKEN}`;
 
     const response = await fetch(url);
     const data = await response.json();

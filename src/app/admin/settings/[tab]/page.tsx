@@ -65,7 +65,7 @@ export default async function SettingsTabPage({
             {/* Profile */}
             <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-                <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+                <h2 className="admin-section-h2 flex items-center gap-2.5">
                   <Icon name="user" className="w-[16px] h-[16px]" /> Profile
                 </h2>
                 <p className="text-[11px] text-[var(--tx3)] mt-0.5">Your name, contact details, and role</p>
@@ -83,7 +83,7 @@ export default async function SettingsTabPage({
             {/* Email (separate card) */}
             <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-                <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+                <h2 className="admin-section-h2 flex items-center gap-2.5">
                   <Icon name="mail" className="w-[16px] h-[16px]" /> Email Address
                 </h2>
                 <p className="text-[11px] text-[var(--tx3)] mt-0.5">Changing your email will require verification</p>
@@ -103,7 +103,7 @@ export default async function SettingsTabPage({
       <div className="space-y-6">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-            <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+            <h2 className="admin-section-h2 flex items-center gap-2.5">
               <Icon name="lock" className="w-[16px] h-[16px]" /> Security
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Password and two-factor authentication</p>
@@ -125,7 +125,7 @@ export default async function SettingsTabPage({
 
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-            <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+            <h2 className="admin-section-h2 flex items-center gap-2.5">
               <Icon name="clock" className="w-[16px] h-[16px]" /> Login History
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Recent sign-in activity and active sessions</p>
@@ -150,7 +150,7 @@ export default async function SettingsTabPage({
     return (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <h2 className="admin-section-h2 flex items-center gap-2.5">
             <Icon name="bell" className="w-[16px] h-[16px]" /> Notifications
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage how you receive updates</p>
@@ -183,7 +183,7 @@ export default async function SettingsTabPage({
     return (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+          <h2 className="admin-section-h2 flex items-center gap-2.5">
             <Icon name="plug" className="w-[16px] h-[16px]" /> Integrations
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Connected services, APIs, and health monitoring</p>

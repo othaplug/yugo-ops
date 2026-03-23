@@ -75,17 +75,19 @@ interface MoveDetailClientProps {
     square_payment_id: string | null;
     inventory_change_request_id: string | null;
   }[];
+  moveStatusEvents?: { event_type: string; created_at: string }[];
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
+import RecommendedCrewPanel from "./RecommendedCrewPanel";
 
 function tierDisplayLabel(tier: string | null | undefined): string | null {
   if (!tier) return null;
   const t = tier.toLowerCase().trim();
   const map: Record<string, string> = {
-    curated: "Curated",
+    essential: "Essential",
     signature: "Signature",
     estate: "Estate",
-    essentials: "Curated",
+    essentials: "Essential",
     premier: "Signature",
   };
   return map[t] ?? tier.charAt(0).toUpperCase() + tier.slice(1);
@@ -144,6 +146,7 @@ export default function MoveDetailClient({
   itemWeights = [],
   pendingInventoryChange,
   paymentLedger = [],
+  moveStatusEvents = [],
 }: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -188,12 +191,25 @@ export default function MoveDetailClient({
   const scheduledDateLocal = parseDateOnly(move.scheduled_date);
   const daysUntil = scheduledDateLocal ? Math.ceil((scheduledDateLocal.getTime() - Date.now()) / 86400000) : null;
   const balanceUnpaid = balanceDue > 0 && daysUntil !== null && daysUntil <= 1;
+
+  /** Timestamps for each move status step, derived from status_events + move fields */
+  const stepTimestamps: Record<string, string | null> = {
+    confirmed: move.created_at ?? null,
+    scheduled: moveStatusEvents?.find((e) => e.event_type === "status_changed_to_scheduled")?.created_at ?? null,
+    paid:
+      move.payment_marked_paid_at ??
+      moveStatusEvents?.find((e) => e.event_type === "status_changed_to_paid" || e.event_type === "payment_received")?.created_at ??
+      null,
+    in_progress: moveStatusEvents?.find((e) => e.event_type === "status_changed_to_in_progress")?.created_at ?? null,
+    completed: move.completed_at ?? moveStatusEvents?.find((e) => e.event_type === "status_changed_to_completed")?.created_at ?? null,
+  };
   const lastUpdatedRelative = useRelativeTime(move.updated_at);
   const isCompleted = isMoveStatusCompleted(move.status);
   const isPaid = move.status === "paid" || !!move.payment_marked_paid;
   const moveInProgress = isMoveInProgress(move.status, move.stage);
   const isBalancePaid = !!move.balance_paid_at;
   const [balanceLoading, setBalanceLoading] = useState<"etransfer" | "card" | null>(null);
+  const [balanceJustSettled, setBalanceJustSettled] = useState(false);
   const [jobDuration, setJobDuration] = useState<{ startedAt: string | null; completedAt: string | null; isActive: boolean } | null>(null);
   const [jobDurationElapsed, setJobDurationElapsed] = useState(0);
 
@@ -284,7 +300,7 @@ export default function MoveDetailClient({
       )}
 
       {/* Hero - compact header */}
-      <div className="p-4 sm:p-5">
+      <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -308,12 +324,13 @@ export default function MoveDetailClient({
               </span>
               <MoveNotifyButton move={move} />
               <ResendTrackingLinkButton move={move} />
+              <span className="w-px h-3.5 bg-[var(--brd)]/60 mx-0.5 shrink-0" />
               <button
                 type="button"
                 onClick={() => setDeleteConfirmOpen(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-semibold border border-[var(--red)]/50 text-[var(--red)] hover:bg-[var(--rdim)] transition-all"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-medium text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--rdim)] transition-all"
               >
-                Delete move
+                Delete
               </button>
             </div>
           </div>
@@ -376,6 +393,12 @@ export default function MoveDetailClient({
                     if (data) setMove(data);
                     setEditingCard(null);
                     router.refresh();
+                    // Log the status change so progress bar can show timestamps
+                    fetch(`/api/admin/moves/${move.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ action: "log_status_change", new_status: v, previous_status: move.status }),
+                    }).catch(() => {});
                     if (v.toLowerCase() === "completed") {
                       fetch(`/api/admin/moves/${move.id}/notify-complete`, { method: "POST" }).catch(() => {});
                     }
@@ -405,7 +428,7 @@ export default function MoveDetailClient({
                     }
                   }}
                 >
-                  {MOVE_STATUS_OPTIONS.filter((s) => s.value !== "paid").map((s) => (
+                  {MOVE_STATUS_OPTIONS.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
                 </select>
@@ -433,7 +456,7 @@ export default function MoveDetailClient({
                 Live stage
               </span>
               <span className="text-[12px] font-medium text-[var(--tx)] truncate" title="Updated by crew from portal">
-                {LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? "—"}
+                {LIVE_TRACKING_STAGES.find((o) => o.key === move.stage)?.label ?? "Not started"}
               </span>
             </div>
 
@@ -443,10 +466,14 @@ export default function MoveDetailClient({
             </div>
           </div>
           {(normalizeStatus(move.status) || move.status) !== "cancelled" && (
-            <div className="mt-4 pt-4 border-t border-[var(--brd)]/40">
+            <div className="mt-4">
               <SegmentedProgressBar
                 label="MOVE STATUS"
-                steps={MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s) => ({ key: s.value, label: s.label }))}
+                steps={MOVE_STATUS_OPTIONS.filter((s) => s.value !== "cancelled").map((s) => ({
+                  key: s.value,
+                  label: s.label,
+                  timestamp: stepTimestamps[s.value] ?? null,
+                }))}
                 currentIndex={Math.max(0, MOVE_STATUS_INDEX[normalizeStatus(move.status) || move.status || "confirmed"] ?? 0)}
               />
             </div>
@@ -562,6 +589,7 @@ export default function MoveDetailClient({
             pickup={move.from_lat != null && move.from_lng != null ? { lat: move.from_lat, lng: move.from_lng } : undefined}
             dropoff={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
             moveId={move.id}
+            hideHeader
           />
         </CollapsibleSection>
       )}
@@ -582,6 +610,22 @@ export default function MoveDetailClient({
 
       <ModalOverlay open={crewModalOpen} onClose={() => setCrewModalOpen(false)} title="Assign Crew" maxWidth="sm">
         <div className="p-5 space-y-4">
+          {!moveInProgress && (
+            <RecommendedCrewPanel
+              moveId={move.id}
+              moveDate={move.move_date ?? null}
+              serviceType={move.service_type ?? null}
+              tierSelected={move.tier_selected ?? null}
+              hasPiano={move.has_piano ?? false}
+              estimate={move.estimate ?? null}
+              currentCrewId={move.crew_id ?? null}
+              onAssign={(_userId, name) => {
+                toast(`${name} assigned to this move`, "check");
+                router.refresh();
+                setCrewModalOpen(false);
+              }}
+            />
+          )}
           {moveInProgress && (
             <p className="text-[11px] text-amber-600 bg-amber-500/10 rounded-lg p-3">
               Cannot reassign: this move is in progress. Reassignment is only allowed before the crew has started.
@@ -823,7 +867,7 @@ export default function MoveDetailClient({
                 onChange={(e) => setOverrideStatusNewStatus(e.target.value)}
                 className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-3 py-2 text-[var(--tx)] focus:border-[var(--gold)] outline-none"
               >
-                {MOVE_STATUS_OPTIONS.filter((s) => !["completed", "cancelled", "paid"].includes(s.value)).map((s) => (
+                {MOVE_STATUS_OPTIONS.filter((s) => !["completed", "cancelled"].includes(s.value)).map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
@@ -882,13 +926,13 @@ export default function MoveDetailClient({
       )}
 
       {/* ─── Seamless info sections ─── */}
-      <div className="mt-1 space-y-0">
+      <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden px-5 mt-1">
 
         {/* Time Intelligence */}
         <div className="group/s relative py-4">
           {!isCompleted ? (
-            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
-              <Pencil weight="regular" className="w-[11px] h-[11px]" />
+            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100" onClick={() => setDetailsModalOpen(true)} aria-label="Edit date & time">
+              <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
             <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
@@ -897,19 +941,38 @@ export default function MoveDetailClient({
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Date</span><div className="text-[11px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[11px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "—"}</div></div>
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Completed at</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.completed_at ? new Date(move.completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</div></div>
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Days Left</span><div className="text-[11px] font-bold text-[var(--gold)]">{daysUntil ?? "—"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Date</span><div className="text-[13px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "—"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Completed at</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.completed_at ? new Date(move.completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</div></div>
+            <div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Days Left</span>
+              <div className={`text-[13px] font-bold tabular-nums ${
+                daysUntil === null || daysUntil === undefined
+                  ? "text-[var(--tx3)]"
+                  : daysUntil < 0
+                  ? "text-[var(--red)]"
+                  : daysUntil <= 1
+                  ? "text-amber-400"
+                  : "text-[var(--gold)]"
+              }`}>
+                {daysUntil === null || daysUntil === undefined
+                  ? "—"
+                  : daysUntil < 0
+                  ? `${Math.abs(daysUntil)}d overdue`
+                  : daysUntil === 0
+                  ? "Today"
+                  : `${daysUntil}d`}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Addresses */}
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
           {!isCompleted ? (
-            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => { setDetailsModalSection("addresses"); setDetailsModalOpen(true); }} aria-label="Edit addresses">
-              <Pencil weight="regular" className="w-[11px] h-[11px]" />
+            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100" onClick={() => { setDetailsModalSection("addresses"); setDetailsModalOpen(true); }} aria-label="Edit addresses">
+              <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
             <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
@@ -919,13 +982,13 @@ export default function MoveDetailClient({
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Addresses</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <div>
-              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">From</span>
-              <div className="text-[11px] font-medium text-[var(--tx)]">{move.from_address || "—"}</div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">From</span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">{move.from_address || "—"}</div>
               {formatAccessForDisplay(move.from_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.from_access)}</div>}
             </div>
             <div>
-              <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">To</span>
-              <div className="text-[11px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">To</span>
+              <div className="text-[13px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
               {formatAccessForDisplay(move.to_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.to_access)}</div>}
             </div>
           </div>
@@ -934,8 +997,8 @@ export default function MoveDetailClient({
         {/* Crew */}
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
           {!isCompleted ? (
-            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} aria-label="Edit crew" title={moveInProgress ? "Cannot reassign job in progress" : "Change crew"}>
-              <Pencil weight="regular" className="w-[11px] h-[11px]" />
+            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} aria-label="Edit crew" title={moveInProgress ? "Cannot reassign job in progress" : "Change crew"}>
+              <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
             <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
@@ -944,12 +1007,12 @@ export default function MoveDetailClient({
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[11px] font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.coordinator_name || "—"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.coordinator_name || "—"}</div></div>
             {isCompleted ? (
-              <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
+              <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
             ) : (
-              <button type="button" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`} title={moveInProgress ? "Cannot reassign job in progress" : undefined}><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[11px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+              <button type="button" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`} title={moveInProgress ? "Cannot reassign job in progress" : undefined}><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
             )}
           </div>
         </div>
@@ -957,8 +1020,8 @@ export default function MoveDetailClient({
         {/* Vehicle */}
         <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
           {!isCompleted ? (
-            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => setVehicleModalOpen(true)} aria-label="Edit vehicle">
-              <Pencil weight="regular" className="w-[11px] h-[11px]" />
+            <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100" onClick={() => setVehicleModalOpen(true)} aria-label="Edit vehicle">
+              <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
             <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
@@ -967,9 +1030,9 @@ export default function MoveDetailClient({
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "—"}</div></div>
-            <div><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[11px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "—"}</div></div>
-            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "—"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "—"}</div></div>
+            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
           </div>
         </div>
 
@@ -979,21 +1042,21 @@ export default function MoveDetailClient({
             <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Valuation Protection</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
               <div>
-                <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Tier</span>
-                <div className="text-[11px] font-medium text-[var(--tx)]">
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Tier</span>
+                <div className="text-[13px] font-medium text-[var(--tx)]">
                   {move.valuation_tier === "full_replacement" ? "Full Replacement" : move.valuation_tier === "enhanced" ? "Enhanced Value" : "Released Value"}
                 </div>
               </div>
               {(move.valuation_upgrade_cost ?? 0) > 0 && (
                 <div>
-                  <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Upgrade Cost</span>
-                  <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Upgrade Cost</span>
+                  <div className="text-[13px] font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
                 </div>
               )}
               {(move.declaration_total ?? 0) > 0 && (
                 <div>
-                  <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Declarations</span>
-                  <div className="text-[11px] font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Declarations</span>
+                  <div className="text-[13px] font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
                 </div>
               )}
             </div>
@@ -1027,13 +1090,13 @@ export default function MoveDetailClient({
                 {(() => {
                   const label = tierDisplayLabel(move.tier_selected);
                   return label ? (
-                    <span className="text-[8px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/15">
+                    <span className="text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)] border border-[var(--gold)]/15">
                       {label}
                     </span>
                   ) : null;
                 })()}
                 {move.service_type && (
-                  <span className="text-[8px] text-[var(--tx3)]/50">
+                  <span className="text-[9px] text-[var(--tx3)]/50">
                     {SERVICE_LABELS[move.service_type as string] || move.service_type}
                   </span>
                 )}
@@ -1046,16 +1109,16 @@ export default function MoveDetailClient({
                   {/* Status badge sits above the number */}
                   <div className="mb-2">
                     {fullyPaid ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/20">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/20">
                         <Check size={7} className="text-current" weight="bold" />
                         Paid
                       </span>
                     ) : balanceUnpaid ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-[var(--red)]/10 text-[var(--red)] border border-[var(--red)]/20">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--red)]/10 text-[var(--red)] border border-[var(--red)]/20">
                         Overdue
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20">
                         Pending
                       </span>
                     )}
@@ -1123,7 +1186,7 @@ export default function MoveDetailClient({
             )}
 
             {/* Action row — only when action is needed */}
-            {!fullyPaid && (
+            {!fullyPaid && !balanceJustSettled && !isBalancePaid && (
               <div className="px-4 py-3 border-t border-[var(--brd)]/40 flex flex-wrap items-center gap-2">
                 {!isPaid && (
                   <button
@@ -1149,35 +1212,39 @@ export default function MoveDetailClient({
                     Mark Deposit Paid
                   </button>
                 )}
-                {balanceDue > 0 && (
+                {balanceDue > 0 && !move.balance_auto_charged && (
                   <>
-                    <button
-                      type="button"
-                      disabled={balanceLoading !== null}
-                      onClick={async () => {
-                        if (!window.confirm("Confirm that you've received the e-transfer for this move's balance?")) return;
-                        setBalanceLoading("etransfer");
-                        try {
-                          const res = await fetch(`/api/admin/moves/${move.id}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ action: "mark_etransfer_received", marked_by: "admin" }),
-                          });
-                          const data = await res.json();
-                          if (!res.ok) throw new Error(data.error || "Failed");
-                          setMove(data);
-                          router.refresh();
-                          toast("E-transfer marked as received", "check");
-                        } catch (err) {
-                          toast(err instanceof Error ? err.message : "Failed to mark e-transfer", "alertTriangle");
-                        } finally {
-                          setBalanceLoading(null);
-                        }
-                      }}
-                      className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/25 hover:bg-[var(--grn)]/20 transition-colors disabled:opacity-40"
-                    >
-                      {balanceLoading === "etransfer" ? "Processing…" : "Mark E-Transfer Received"}
-                    </button>
+                    {/* Only show e-transfer button when client is NOT paying by card */}
+                    {!move.square_card_id && (
+                      <button
+                        type="button"
+                        disabled={balanceLoading !== null}
+                        onClick={async () => {
+                          if (!window.confirm("Confirm that you've received the e-transfer for this move's balance?")) return;
+                          setBalanceLoading("etransfer");
+                          try {
+                            const res = await fetch(`/api/admin/moves/${move.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ action: "mark_etransfer_received", marked_by: "admin" }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error || "Failed");
+                            setBalanceJustSettled(true);
+                            setMove(data);
+                            router.refresh();
+                            toast("E-transfer marked as received", "check");
+                          } catch (err) {
+                            toast(err instanceof Error ? err.message : "Failed to mark e-transfer", "alertTriangle");
+                          } finally {
+                            setBalanceLoading(null);
+                          }
+                        }}
+                        className="text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/25 hover:bg-[var(--grn)]/20 transition-colors disabled:opacity-40"
+                      >
+                        {balanceLoading === "etransfer" ? "Processing…" : "Mark E-Transfer Received"}
+                      </button>
+                    )}
                     {move.square_card_id && (
                       <button
                         type="button"
@@ -1194,6 +1261,7 @@ export default function MoveDetailClient({
                             });
                             const data = await res.json();
                             if (!res.ok) throw new Error(data.error || "Failed");
+                            setBalanceJustSettled(true);
                             setMove(data);
                             router.refresh();
                             toast("Card charged successfully", "check");
@@ -1265,8 +1333,8 @@ export default function MoveDetailClient({
       {/* Internal Notes — seamless */}
       <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
         {!isCompleted ? (
-          <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-70 group-hover/s:opacity-100" onClick={() => { setDetailsModalSection("notes"); setDetailsModalOpen(true); }} aria-label="Edit internal notes">
-            <Pencil weight="regular" className="w-[11px] h-[11px]" />
+          <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100" onClick={() => { setDetailsModalSection("notes"); setDetailsModalOpen(true); }} aria-label="Edit internal notes">
+            <Pencil weight="regular" className="w-[13px] h-[13px]" />
           </button>
         ) : (
           <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
@@ -1404,7 +1472,7 @@ function MoveProfitCard({ move }: { move: any }) {
     <div className="border-t border-[var(--brd)]/30 py-4">
       <div className="flex items-center gap-2 mb-3">
         <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Profitability</div>
-        <span className="text-[8px] px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 font-medium">Owner Only</span>
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 font-medium">Owner Only</span>
       </div>
       <div className="space-y-1.5 text-[11px]">
         <div className="flex justify-between"><span className="text-[var(--tx3)]">Revenue</span><span className="text-[var(--tx)] font-medium">{formatCurrency(revenue)}</span></div>

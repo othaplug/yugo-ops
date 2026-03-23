@@ -29,7 +29,7 @@ export default function KpiCard({
   const inner = (
     <div className={href ? "group cursor-pointer" : "group cursor-default"}>
       <p
-        className={`text-[9px] font-bold tracking-[0.16em] uppercase mb-2 transition-colors flex items-center gap-1 ${
+        className={`text-[9px] font-bold tracking-[0.16em] uppercase mb-1 sm:mb-2 transition-colors flex items-center gap-1 ${
           href
             ? "text-[var(--tx3)]/60 group-hover:text-[var(--tx3)]"
             : "text-[var(--tx3)]/60"
@@ -41,7 +41,7 @@ export default function KpiCard({
         )}
       </p>
       <p
-        className={`text-[28px] font-bold font-heading leading-none transition-opacity ${
+        className={`text-[20px] sm:text-[28px] font-bold font-heading leading-none transition-opacity ${
           href ? "group-hover:opacity-75" : ""
         } ${valueColor}`}
       >

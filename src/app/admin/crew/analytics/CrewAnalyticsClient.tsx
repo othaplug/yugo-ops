@@ -275,7 +275,7 @@ export default function CrewAnalyticsClient({
       <div className="flex items-start justify-between mb-1">
         <div>
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
-          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
             Crew Performance
           </h1>
         </div>
@@ -586,7 +586,7 @@ function CrewDetailView({
                       key={m}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--card)] border border-[var(--brd)]/50 text-[11px] font-medium text-[var(--tx2)]"
                     >
-                      <div className="w-4 h-4 rounded-full bg-[var(--gold)]/20 flex items-center justify-center text-[8px] font-bold text-[var(--gold)]">
+                      <div className="w-4 h-4 rounded-full bg-[var(--gold)]/20 flex items-center justify-center text-[9px] font-bold text-[var(--gold)]">
                         {m.charAt(0).toUpperCase()}
                       </div>
                       {m}

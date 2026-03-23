@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
 import { Plus, PaperPlaneTilt, Trash as Trash2 } from "@phosphor-icons/react";
-import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import CreateButton from "../components/CreateButton";
 import { useToast } from "../components/Toast";
 import KpiCard from "@/components/ui/KpiCard";
@@ -112,6 +112,33 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
   const router = useRouter();
   const { toast } = useToast();
 
+  const runBulk = useCallback(
+    async (action: "resend" | "expire", ids: string[]) => {
+      const res = await fetch("/api/admin/quotes/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ids }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const labels: Record<string, string> = { resend: "Resent", expire: "Marked expired" };
+        toast(`${labels[action]} ${data.updated} quote${data.updated !== 1 ? "s" : ""}`, "check");
+        router.refresh();
+      } else {
+        toast("Error: " + (data.error || "Failed"), "x");
+      }
+    },
+    [toast, router],
+  );
+
+  const bulkActions: BulkAction[] = useMemo(
+    () => [
+      { label: "Resend", onClick: (ids) => runBulk("resend", ids) },
+      { label: "Mark Expired", onClick: (ids) => runBulk("expire", ids), variant: "danger" as const },
+    ],
+    [runBulk],
+  );
+
   const filtered = useMemo(
     () => (filter ? quotes.filter((q) => q.status === filter) : quotes),
     [quotes, filter],
@@ -192,6 +219,9 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         id: "quote_id",
         label: "Quote ID",
         accessor: (q) => q.quote_id,
+        render: (q) => (
+          <span className="dt-text-id whitespace-nowrap">{q.quote_id || "—"}</span>
+        ),
         searchable: true,
         exportAccessor: (q) => q.quote_id ?? "",
       },
@@ -223,7 +253,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
           return (
             <span className="inline-flex items-center gap-1.5 flex-wrap">
               <span
-                className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${statusBadge(q.status)}`}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${statusBadge(q.status)}`}
               >
                 {toTitleCase(q.status)}
               </span>
@@ -251,7 +281,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         align: "right",
         minWidth: "92px",
         render: (q) => (
-          <span className="block text-right font-bold text-[var(--gold)] font-heading">
+          <span className="block text-right dt-amount">
             {quoteAmount(q)}
           </span>
         ),
@@ -449,6 +479,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
           exportFilename="yugo-quotes"
           columnToggle
           selectable
+          bulkActions={bulkActions}
           mobileCardLayout={{
             primaryColumnId: "client",
             subtitleColumnId: "quote_id",

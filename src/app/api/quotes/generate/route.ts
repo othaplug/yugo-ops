@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
+import { logActivity } from "@/lib/activity";
 import { validateInventoryQuantities } from "@/lib/inventory-quantity-validation";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
 import { getDrivingDistance } from "@/lib/mapbox/driving-distance";
@@ -111,7 +112,7 @@ interface QuoteInput {
   labour_storage_needed?: boolean;
   labour_storage_weeks?: number;
   // Recommended tier (coordinator's manual selection)
-  recommended_tier?: "curated" | "signature" | "estate";
+  recommended_tier?: "essential" | "signature" | "estate";
   // Custom crating (all service types)
   crating_pieces?: { description?: string; size: "small" | "medium" | "large" | "oversized" }[];
   // Parking / long carry (all service types); optional truck when not inventory-recommended
@@ -661,80 +662,78 @@ async function residentialIncludes(
   minCrew: number,
   estHours: number,
   moveSize?: string,
-): Promise<{ curated: string[]; signature: string[]; estate: string[] }> {
+): Promise<{ essential: string[]; signature: string[]; estate: string[] }> {
   const truckLabel = DEFAULT_TRUCK_BY_SIZE[moveSize ?? "2br"] ?? "Dedicated moving truck";
 
-  const [dbCur, dbSig, dbEst] = await Promise.all([
-    fetchTierFeatures(sb, "local_move", "curated"),
+  const [dbEss, dbSig, dbEst] = await Promise.all([
+    fetchTierFeatures(sb, "local_move", "essential"),
     fetchTierFeatures(sb, "local_move", "signature"),
     fetchTierFeatures(sb, "local_move", "estate"),
   ]);
 
   const crewLine = `Professional crew of ${minCrew}`;
-  const estateCrewLine = `White glove specialist crew of ${minCrew}`;
   const hydrate = (list: string[]) =>
     list.map((f) => {
       if (f === "Dedicated moving truck") return truckLabel;
-      if (f.toLowerCase().includes("white glove specialist crew of")) return estateCrewLine;
       if (f === "Professional movers" || f.toLowerCase().includes("professional crew of")) return crewLine;
-      if (f === "Moving blankets") return f;
       return f;
     });
 
-  const estateSuppliesLine = "All packing supplies included (boxes, wrapping, protection materials)";
-  if (dbCur.length > 0) {
-    const estateList = hydrate(dbEst.length > 0 ? dbEst : dbSig.length > 0 ? dbSig : dbCur);
-    if (!estateList.some((f) => f.toLowerCase().includes("packing supplies"))) estateList.push(estateSuppliesLine);
+  if (dbEss.length > 0) {
     return {
-      curated: hydrate(dbCur),
-      signature: hydrate(dbSig.length > 0 ? dbSig : dbCur),
-      estate: estateList,
+      essential: hydrate(dbEss),
+      signature: hydrate(dbSig.length > 0 ? dbSig : dbEss),
+      estate: hydrate(dbEst.length > 0 ? dbEst : dbSig.length > 0 ? dbSig : dbEss),
     };
   }
 
   // Hardcoded fallback — aligned with "Your Move Includes" (QuotePageClient)
-  const curated = [
+  const essential = [
     truckLabel,
     crewLine,
-    "Premium moving blankets",
-    "Floor & doorway protection",
-    "All equipment included",
+    "Protective wrapping for key furniture",
+    "Basic disassembly & reassembly",
+    "Floor & entryway protection",
+    "All standard equipment included",
+    "Standard valuation coverage",
     "Real-time GPS tracking",
-    "Guaranteed flat price",
-    "Zero-damage commitment",
   ];
   const signature = [
     truckLabel,
     crewLine,
-    "Premium moving blankets",
-    "Floor & doorway protection",
-    "All equipment included",
-    "Real-time GPS tracking",
-    "Guaranteed flat price",
-    "Zero-damage commitment",
+    "Full protective wrapping for all furniture",
     "Basic disassembly & reassembly",
-    "Debris & packaging removal",
-    "Room of choice placement",
+    "Floor & door frame protection",
+    "Mattress and TV protection included",
+    "Room-of-choice placement throughout the home",
+    "Wardrobe box for immediate use",
+    "Debris and packing removal at completion",
+    "All equipment included",
+    "Enhanced valuation coverage",
+    "Real-time GPS tracking",
   ];
   const estate = [
     truckLabel,
     crewLine,
-    "Premium moving blankets",
-    "Floor & doorway protection",
-    "All equipment included",
+    "Dedicated move coordinator from booking to final placement",
+    "Pre-move walkthrough with room-by-room plan",
+    "Full furniture wrapping and protection throughout",
+    "Full disassembly & precision reassembly",
+    "Floor and property protection throughout",
+    "Mattress and TV protection included",
+    "All packing materials and supplies included",
+    "White glove handling for furniture, art, and high-value items",
+    "Precision placement in every room",
+    "Full replacement valuation coverage",
+    "Wardrobe box included",
+    "Debris and packaging removal",
+    "Pre-move inventory planning and oversight",
+    "Premium handling for art, antiques, and specialty items",
+    "30-day post-move concierge support",
     "Real-time GPS tracking",
-    "Guaranteed flat price",
-    "Zero-damage commitment",
-    "Basic disassembly & reassembly",
-    "Debris & packaging removal",
-    "All packing supplies included (boxes, wrapping, protection materials)",
-    "Pre-move inventory walkthrough",
-    "White glove item handling & precision placement",
-    "Dedicated move coordinator",
-    "30 day concierge support",
     "Exclusive partner offers & perks",
   ];
-  return { curated, signature, estate };
+  return { essential, signature, estate };
 }
 
 // ═══════════════════════════════════════════════
@@ -1038,15 +1037,15 @@ async function calcResidential(
 
   // ── Tiered labour delta (v2): extra hours above baseline, per-tier rates ─
   const labourRates = {
-    curated:   cfgNum(config, "labour_rate_curated",   cfgNum(config, "labour_rate_per_mover_hour", 55)),
+    essential: cfgNum(config, "labour_rate_essential", cfgNum(config, "labour_rate_curated", cfgNum(config, "labour_rate_per_mover_hour", 55))),
     signature: cfgNum(config, "labour_rate_signature", cfgNum(config, "labour_rate_per_mover_hour", 65)),
     estate:    cfgNum(config, "labour_rate_estate",    cfgNum(config, "labour_rate_per_mover_hour", 75)),
   };
   // Legacy single rate for breakdown display
-  const labourRate = labourRates.curated;
+  const labourRate = labourRates.essential;
 
   let labourDelta = 0;
-  const tieredLabourDelta = { curated: 0, signature: 0, estate: 0 };
+  const tieredLabourDelta = { essential: 0, signature: 0, estate: 0 };
   let benchmark: { baseline_crew: number; baseline_hours: number } | null = null;
 
   if (labour && labour.crewSize > 0 && labour.estimatedHours > 0) {
@@ -1072,20 +1071,21 @@ async function calcResidential(
       const actualManHours = labour.crewSize * effectiveHours;
       const extraManHours = Math.max(0, actualManHours - baselineManHours);
 
-      tieredLabourDelta.curated   = Math.round(extraManHours * labourRates.curated);
+      tieredLabourDelta.essential = Math.round(extraManHours * labourRates.essential);
       tieredLabourDelta.signature = Math.round(extraManHours * labourRates.signature);
       tieredLabourDelta.estate    = Math.round(extraManHours * labourRates.estate);
 
-      // Legacy single delta (curated rate) for backward-compatible breakdown display
-      labourDelta = tieredLabourDelta.curated;
+      // Legacy single delta (essential rate) for backward-compatible breakdown display
+      labourDelta = tieredLabourDelta.essential;
     }
   }
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const minJob = cfgNum(config, "minimum_job_amount", 549);
   // Support both old and new config key names during transition
-  const curatedMult = cfgNum(config, "tier_curated_multiplier",
-    cfgNum(config, "tier_essentials_multiplier", 1.0));
+  const curatedMult = cfgNum(config, "tier_essential_multiplier",
+    cfgNum(config, "tier_curated_multiplier",
+    cfgNum(config, "tier_essentials_multiplier", 1.0)));
   const signatureMult = cfgNum(config, "tier_signature_multiplier",
     cfgNum(config, "tier_premier_multiplier", 1.50));
   const estateMult = cfgNum(config, "tier_estate_multiplier", 3.15);
@@ -1093,7 +1093,7 @@ async function calcResidential(
 
   // Step 5: TIER MULTIPLIERS applied to market-adjusted price
   // Step 6: TIERED LABOUR DELTA added after (so premium tiers pay more for overages)
-  let curBase = roundTo(subtotal * curatedMult, rounding) + tieredLabourDelta.curated;
+  let curBase = roundTo(subtotal * curatedMult, rounding) + tieredLabourDelta.essential;
   let sigBase = roundTo(subtotal * signatureMult, rounding) + tieredLabourDelta.signature;
   let estBase = roundTo(subtotal * estateMult, rounding) + tieredLabourDelta.estate;
 
@@ -1124,7 +1124,7 @@ async function calcResidential(
   if (sigBase < curBase) sigBase = curBase;
   if (estBase < sigBase) estBase = sigBase;
 
-  const addonForCur = addonResult.total - (addonResult.byTierExclusion.get("curated") ?? (addonResult.byTierExclusion.get("essentials") ?? 0));
+  const addonForCur = addonResult.total - (addonResult.byTierExclusion.get("essential") ?? (addonResult.byTierExclusion.get("curated") ?? (addonResult.byTierExclusion.get("essentials") ?? 0)));
   const addonForSig = addonResult.total - (addonResult.byTierExclusion.get("signature") ?? (addonResult.byTierExclusion.get("premier") ?? 0));
   const addonForEst = addonResult.total - (addonResult.byTierExclusion.get("estate") ?? 0);
 
@@ -1135,9 +1135,9 @@ async function calcResidential(
   if (estPrice < sigPrice) estPrice = sigPrice;
 
   // Tier spread caps: avoid flat multipliers inflating Signature/Estate on small moves
-  const minCuratedToSig = cfgNum(config, "min_curated_signature_gap", 350);
+  const minCuratedToSig = cfgNum(config, "min_essential_signature_gap", cfgNum(config, "min_curated_signature_gap", 350));
   const minSigToEstate = cfgNum(config, "min_signature_estate_gap", 800);
-  const maxCuratedToSig = cfgNum(config, "max_curated_signature_gap", 1200);
+  const maxCuratedToSig = cfgNum(config, "max_essential_signature_gap", cfgNum(config, "max_curated_signature_gap", 1200));
   const maxSigToEstate = cfgNum(config, "max_signature_estate_gap", 3000);
   const sigGap = Math.min(Math.max(sigPrice - curPrice, minCuratedToSig), maxCuratedToSig);
   sigPrice = curPrice + sigGap;
@@ -1149,8 +1149,8 @@ async function calcResidential(
   const estTax = Math.round(estPrice * taxRate);
 
   // Tiered deposits from platform_config (Residential tier-based rules)
-  const curPct = cfgNum(config, "deposit_curated_pct", 10);
-  const curMin = cfgNum(config, "deposit_curated_min", 150);
+  const curPct = cfgNum(config, "deposit_essential_pct", cfgNum(config, "deposit_curated_pct", 10));
+  const curMin = cfgNum(config, "deposit_essential_min", cfgNum(config, "deposit_curated_min", 150));
   const sigPct = cfgNum(config, "deposit_signature_pct", 15);
   const sigMin = cfgNum(config, "deposit_signature_min", 250);
   const estPct = cfgNum(config, "deposit_estate_pct", 25);
@@ -1162,12 +1162,12 @@ async function calcResidential(
   const inc = await residentialIncludes(sb, minCrew, estHours, input.move_size);
 
   const tiers = {
-    curated: {
+    essential: {
       price: curPrice,
       deposit: curDep,
       tax: curTax,
       total: curPrice + curTax,
-      includes: inc.curated,
+      includes: inc.essential,
     } as TierResult,
     signature: {
       price: sigPrice,
@@ -1239,7 +1239,7 @@ async function calcResidential(
       specialty_surcharge: specialtySurcharge,
       labour_delta: labourDelta,
       labour_component: labourDelta,
-      labour_delta_curated: tieredLabourDelta.curated,
+      labour_delta_essential: tieredLabourDelta.essential,
       labour_delta_signature: tieredLabourDelta.signature,
       labour_delta_estate: tieredLabourDelta.estate,
       deadhead_surcharge: deadheadSurcharge,
@@ -1255,7 +1255,7 @@ async function calcResidential(
       labour_baseline_hours: benchmark?.baseline_hours ?? null,
       labour_rate: labourRate,
       labour_rate_per_mover_hour: labourRate,
-      labour_rate_curated: labourRates.curated,
+      labour_rate_essential: labourRates.essential,
       labour_rate_signature: labourRates.signature,
       labour_rate_estate: labourRates.estate,
       labour_extra_man_hours:
@@ -1278,7 +1278,7 @@ async function calcResidential(
         supplies: estSuppliesCost,
         total: estTotalCost,
       },
-      estimated_margin_curated:   estMarginPct,
+      estimated_margin_essential:   estMarginPct,
       estimated_margin_signature: estSigMarginPct,
       estimated_margin_estate:    estEstMarginPct,
     },
@@ -1577,7 +1577,7 @@ async function calcWhiteGlove(
     deadheadInfo,
     returnInfo,
   );
-  const t = res.tiers.curated;
+  const t = res.tiers.essential;
   let price = t.price;
   const wgDvThreshold = cfgNum(config, "white_glove_declared_value_threshold", 5000);
   const wgDvPremium = cfgNum(config, "white_glove_declared_value_premium", 50);
@@ -2706,18 +2706,18 @@ export async function POST(req: NextRequest) {
 
   // ── Valuation upgrades lookup ──
   const INCLUDED_VALUATION: Record<string, string> = {
-    curated: "released",
+    essential: "released",
     signature: "enhanced",
     estate: "full_replacement",
   };
   const UPGRADE_PATHS: Record<string, string | null> = {
-    curated: "enhanced",
+    essential: "enhanced",
     signature: "full_replacement",
     estate: null,
   };
   const moveSize = input.move_size ?? "2br";
   const valuationUpgrades: Record<string, { price: number; to_tier: string; assumed_shipment_value: number } | null> = {};
-  for (const pkg of ["curated", "signature", "estate"]) {
+  for (const pkg of ["essential", "signature", "estate"]) {
     const target = UPGRADE_PATHS[pkg];
     if (!target) { valuationUpgrades[pkg] = null; continue; }
     const { data: vu } = await sb
@@ -2748,8 +2748,8 @@ export async function POST(req: NextRequest) {
     quoteId = await generateQuoteId(sb);
   }
 
-  const primaryPrice = tiers ? tiers.curated.price : custom_price!.price;
-  const depositAmount = tiers ? tiers.curated.deposit : custom_price!.deposit;
+  const primaryPrice = tiers ? tiers.essential.price : custom_price!.price;
+  const depositAmount = tiers ? tiers.essential.deposit : custom_price!.deposit;
 
   // Resolve contact: use provided contact_id, or look up / create from client info
   let contactId = input.contact_id || null;
@@ -2889,9 +2889,9 @@ export async function POST(req: NextRequest) {
   // Margin warning — admin-only, shown on quote preview
   if (factors && typeof factors === "object") {
     const f = factors as Record<string, unknown>;
-    const estMarginCurated = typeof f.estimated_margin_curated === "number" ? f.estimated_margin_curated : null;
+    const estMarginEssential = typeof f.estimated_margin_essential === "number" ? f.estimated_margin_essential : (typeof f.estimated_margin_curated === "number" ? f.estimated_margin_curated : null);
     const estMarginSig = typeof f.estimated_margin_signature === "number" ? f.estimated_margin_signature : null;
-    if (estMarginCurated !== null) {
+    if (estMarginEssential !== null) {
       const warnThreshold = typeof config.get === "function"
         ? Number(config.get("margin_warning_threshold") ?? "35") || 35
         : 35;
@@ -2899,15 +2899,15 @@ export async function POST(req: NextRequest) {
         ? Number(config.get("margin_critical_threshold") ?? "25") || 25
         : 25;
       const targetMargin = typeof config.get === "function"
-        ? Number(config.get("margin_target_curated") ?? "40") || 40
+        ? Number(config.get("margin_target_essential") ?? config.get("margin_target_curated") ?? "40") || 40
         : 40;
-      if (estMarginCurated < warnThreshold) {
+      if (estMarginEssential < warnThreshold) {
         response.margin_warning = {
-          level: estMarginCurated < critThreshold ? "critical" : "warning",
-          message: estMarginCurated < critThreshold
-            ? `Estimated margin ${estMarginCurated}% is critically low (threshold: ${critThreshold}%). Review pricing or recommend Signature.`
-            : `Estimated margin ${estMarginCurated}% is below target ${targetMargin}%. Consider adjusting.`,
-          estimated_margin: estMarginCurated,
+          level: estMarginEssential < critThreshold ? "critical" : "warning",
+          message: estMarginEssential < critThreshold
+            ? `Estimated margin ${estMarginEssential}% is critically low (threshold: ${critThreshold}%). Review pricing or recommend Signature.`
+            : `Estimated margin ${estMarginEssential}% is below target ${targetMargin}%. Consider adjusting.`,
+          estimated_margin: estMarginEssential,
           target_margin: targetMargin,
           signature_margin: estMarginSig,
         };
@@ -2923,6 +2923,18 @@ export async function POST(req: NextRequest) {
     resourceId: response.quote_id as string | undefined,
     details: { service_type: input.service_type, preview: isPreview, source: "generate" },
   });
+
+  if (!isPreview && !isUpdate) {
+    const svcLabel = (input.service_type || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const contactId = input.contact_id;
+    await logActivity({
+      entity_type: "quote",
+      entity_id: String(response.quote_id),
+      event_type: "created",
+      description: `Quote created: ${svcLabel}${contactId ? "" : ""} — ${String(response.quote_id)}`,
+      icon: "quote",
+    });
+  }
 
   return NextResponse.json(response);
 }

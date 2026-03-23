@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     const token = signReviewToken(rr.id);
     const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(token)}`;
     const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(token)}`;
-    const tier = (rr.tier || "curated").toLowerCase();
+    const tier = (rr.tier || "essential").toLowerCase();
     const { data: move } = rr.move_id
       ? await supabase.from("moves").select("move_code, id").eq("id", rr.move_id).single()
       : { data: null };
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
         ? "review-request-estate"
         : tier === "signature" || tier === "premier"
           ? "review-request-signature"
-          : "review-request-curated";
+          : "review-request-essential";
 
     const firstName = (rr.client_name || "").trim().split(/\s+/)[0] || "";
 

@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
 import GlobalModal from "@/components/ui/Modal";
 import YugoLogo from "@/components/YugoLogo";
-
-const VERIFIED_KEY = "ops-2fa-verified";
 
 export default function TwoFAGate({ children }: { children: React.ReactNode }) {
   const [showModal, setShowModal] = useState(false);
@@ -16,52 +13,59 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
   const [verifying, setVerifying] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  // Prevent auto-send from firing more than once per mount
+  const hasAutoSent = useRef(false);
   const router = useRouter();
-  const { toast } = useToast();
+  const toastRef = useRef(useToast().toast);
 
-  const sendCode = useCallback(async () => {
+  // Keep toastRef in sync without it being a dependency
+  const { toast } = useToast();
+  useEffect(() => { toastRef.current = toast; }, [toast]);
+
+  const sendCode = async (isAuto = false) => {
+    if (isAuto && hasAutoSent.current) return;
+    if (isAuto) hasAutoSent.current = true;
     setSending(true);
     setError("");
     try {
       const res = await fetch("/api/account/2fa/send", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send code");
-      toast("Code sent to your email", "check");
+      if (!isAuto) toastRef.current("Code sent to your email", "check");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to send code");
-      toast(err instanceof Error ? err.message : "Failed", "x");
+      const msg = err instanceof Error ? err.message : "Failed to send code";
+      setError(msg);
+      toastRef.current(msg, "x");
+      // Release the auto-send lock on failure so user can retry manually
+      if (isAuto) hasAutoSent.current = false;
     } finally {
       setSending(false);
     }
-  }, [toast]);
+  };
 
   useEffect(() => {
+    // Check trust cookie server-side — a single GET, no email sent
+    let cancelled = false;
     const check = async () => {
       try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const res = await fetch("/api/account/2fa/status");
+        if (cancelled) return;
+        if (!res.ok) { setLoading(false); return; }
+        const { needsVerify } = await res.json() as { trusted: boolean; needsVerify: boolean };
         setLoading(false);
-        if (!user) return;
-
-        const verified = sessionStorage.getItem(VERIFIED_KEY);
-        if (verified === user.id) return;
-
-        const { data: platformUser } = await supabase
-          .from("platform_users")
-          .select("two_factor_enabled")
-          .eq("user_id", user.id)
-          .single();
-
-        if (platformUser?.two_factor_enabled) {
+        if (needsVerify) {
           setShowModal(true);
-          sendCode();
+          // Auto-send exactly once per mount
+          sendCode(true);
         }
       } catch {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     check();
-  }, [sendCode]);
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,14 +80,13 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Invalid code");
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) sessionStorage.setItem(VERIFIED_KEY, user.id);
+      // Trust is now stored in httpOnly cookie — no sessionStorage needed
       setShowModal(false);
       router.refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Invalid code");
-      toast(err instanceof Error ? err.message : "Invalid code", "x");
+      const msg = err instanceof Error ? err.message : "Invalid code";
+      setError(msg);
+      toastRef.current(msg, "x");
     } finally {
       setVerifying(false);
     }
@@ -108,7 +111,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
           <div className="p-6">
             <div className="text-center mb-6">
               <YugoLogo size={22} variant="gold" className="mb-4 inline-block" />
-              <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">Two-factor verification</h2>
+              <h2 className="admin-section-h2">Two-factor verification</h2>
               <p className="text-[12px] text-[var(--tx3)] mt-1">Enter the 6-digit code sent to your email</p>
             </div>
             <form onSubmit={handleVerify} className="space-y-4">
@@ -131,7 +134,7 @@ export default function TwoFAGate({ children }: { children: React.ReactNode }) {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={sendCode}
+                  onClick={() => sendCode(false)}
                   disabled={sending}
                   className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50"
                 >

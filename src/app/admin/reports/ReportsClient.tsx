@@ -1,42 +1,39 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { generateEODReportPDF } from "@/lib/pdf";
-import { toTitleCase } from "@/lib/format-text";
-import { Funnel, CaretDown } from "@phosphor-icons/react";
+import { useState, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import KpiCard from "@/components/ui/KpiCard";
+import CrewReportsTab from "./CrewReportsTab";
+import {
+  ChartBar,
+  ClipboardText,
+  GearSix,
+  Clock,
+  Users,
+  CheckCircle,
+  TrendUp,
+  CurrencyDollar,
+} from "@phosphor-icons/react";
 
-function getCrewName(crews: unknown): string {
-  const crew = Array.isArray(crews) ? crews[0] : crews;
-  return (crew as { name?: string } | undefined)?.name || "Team";
-}
+/* ── Shared types ── */
 
-function formatDateShort(d: string) {
-  const [y, m, day] = d.split("-");
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${months[parseInt(m || "1", 10) - 1]} ${parseInt(day || "1", 10)}`;
-}
-
-interface JobEnriched {
-  jobId: string;
-  type: string;
-  sessionId?: string | null;
-  duration: number;
-  status?: string;
-  signOff?: boolean;
-  rating?: number | null;
-  displayId: string;
-  clientName: string;
-  hasDamage?: boolean;
-}
-
-interface Report {
+interface EodReport {
   id: string;
   team_id: string;
   report_date: string;
   summary?: Record<string, unknown>;
-  jobs?: JobEnriched[];
+  jobs?: {
+    jobId: string;
+    type: string;
+    sessionId?: string | null;
+    duration: number;
+    status?: string;
+    signOff?: boolean;
+    rating?: number | null;
+    displayId: string;
+    clientName: string;
+    hasDamage?: boolean;
+  }[];
   crew_note?: string | null;
   readiness?: { passed?: boolean; flaggedItems?: string[] } | null;
   expenses?: { category: string; amount: number; description?: string }[];
@@ -44,575 +41,594 @@ interface Report {
   crews?: { name: string } | null;
 }
 
-interface JobDetail {
-  job: {
-    displayId: string;
-    clientName: string;
-    fromAddress?: string;
-    toAddress?: string;
-    type: string;
-    scheduledDate?: string;
-    arrivalWindow?: string;
-    crewName?: string;
-    notFound?: boolean;
-  };
-  signOff: { rating: number | null; signedBy: string; signedAt?: string } | null;
-  session: { startedAt: string | null; completedAt: string | null } | null;
-  timeBreakdown: { stage: string; label: string; minutes: number; from: string; to: string }[];
-  summary: { totalMinutes: number; driveMinutes: number; loadingMinutes: number; unloadingMinutes: number };
-  checkpoints: { status: string; timestamp: string; note?: string | null }[];
-  photosCount?: number;
-  incidents?: { id: string; issue_type: string; description?: string | null; created_at: string }[];
-  kmTravelled?: number | null;
-  stopsMade?: number | null;
-  error?: string;
+interface MoveFinancial {
+  id: string;
+  service_type: string;
+  estimate: number;
+  status: string;
+  scheduled_date: string;
+}
+
+interface DeliveryFinancial {
+  id: string;
+  total_price: number;
+  status: string;
+  scheduled_date: string;
+}
+
+interface Invoice {
+  id: string;
+  amount: number;
+  status: string;
+}
+
+interface OpsMove {
+  id: string;
+  status: string;
+  crew_id: string | null;
+  scheduled_date: string;
+  completed_at: string | null;
+}
+
+interface TrackingSession {
+  id: string;
+  job_id: string;
+  job_type: string;
+  status: string;
+  started_at: string | null;
+  completed_at: string | null;
+  team_id: string | null;
+}
+
+const SERVICE_LABELS: Record<string, string> = {
+  local_move: "Residential",
+  long_distance: "Long Distance",
+  office_move: "Office",
+  single_item: "Single Item",
+  white_glove: "White Glove",
+  specialty: "Specialty",
+  event: "Event",
+  b2b_delivery: "B2B Delivery",
+  labour_only: "Labour Only",
+};
+
+const TABS = [
+  { key: "crew", label: "Crew Reports", icon: ClipboardText },
+  { key: "financial", label: "Financial", icon: ChartBar },
+  { key: "operations", label: "Operations", icon: GearSix },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
+function formatCurrency(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
+}
+
+function formatCurrencyFull(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
+function monthLabel(dateStr: string): string {
+  const [y, m] = dateStr.split("-");
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+  return `${months[parseInt(m || "1", 10) - 1]} ${y}`;
+}
+
+function monthKey(dateStr: string): string {
+  return dateStr.slice(0, 7);
 }
 
 export default function ReportsClient({
-  initialReports,
+  eodReports,
+  eodKpis,
   initialDate,
   initialFrom,
   initialTo,
+  initialTab,
+  financialMoves,
+  financialDeliveries,
+  invoices,
+  opsMovesThisMonth,
+  trackingSessions,
+  crewNames = {},
 }: {
-  initialReports: Report[];
+  eodReports: EodReport[];
+  eodKpis: { reportCount: number; totalJobs: number; teamCount: number };
   initialDate: string;
   initialFrom?: string;
   initialTo?: string;
+  initialTab?: string;
+  financialMoves: MoveFinancial[];
+  financialDeliveries: DeliveryFinancial[];
+  invoices: Invoice[];
+  opsMovesThisMonth: OpsMove[];
+  trackingSessions: TrackingSession[];
+  crewNames?: Record<string, string>;
 }) {
   const router = useRouter();
-  const [date, setDate] = useState(initialDate);
-  const [from, setFrom] = useState(initialFrom ?? initialDate);
-  const [to, setTo] = useState(initialTo ?? initialDate);
-  const [reports, setReports] = useState(initialReports);
-  const [filterJobType, setFilterJobType] = useState<string>("all");
-  const [filterTeamId, setFilterTeamId] = useState<string>("all");
-  const [detailModal, setDetailModal] = useState<{ report: Report; job: JobEnriched } | null>(null);
-  const [detailData, setDetailData] = useState<JobDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<TabKey>(
+    (TABS.find((t) => t.key === initialTab)?.key as TabKey) || "crew",
+  );
 
-  useEffect(() => {
-    setDate(initialDate);
-    setFrom(initialFrom ?? initialDate);
-    setTo(initialTo ?? initialDate);
-    setReports(initialReports);
-  }, [initialDate, initialFrom, initialTo, initialReports]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
-    };
-    if (filterOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [filterOpen]);
-
-  const filteredReports = useMemo(() => {
-    let list = reports;
-    if (filterTeamId !== "all") list = list.filter((r) => r.team_id === filterTeamId);
-    if (filterJobType !== "all") {
-      list = list.map((r) => ({
-        ...r,
-        jobs: (r.jobs || []).filter((j) => j.type === filterJobType),
-      })).filter((r) => (r.jobs?.length ?? 0) > 0);
-    }
-    return list;
-  }, [reports, filterJobType, filterTeamId]);
-
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const d = e.target.value;
-    setDate(d);
-    router.push(`/admin/reports?date=${d}`);
+  const switchTab = (tab: TabKey) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`/admin/reports?${params.toString()}`, { scroll: false });
   };
 
-  const handleDateRangeApply = () => {
-    if (from && to && from <= to) {
-      router.push(`/admin/reports?from=${from}&to=${to}`);
-    } else {
-      router.push(`/admin/reports?date=${date}`);
-    }
-  };
+  /* ══════════ Financial computations ══════════ */
 
-  const exportFilename = from === to ? `eod-reports-${from}` : `eod-reports-${from}-${to}`;
-
-  const exportCSV = () => {
-    const headers = ["Date", "Team", "Job ID", "Client", "Type", "Duration (min)", "Sign-off", "Damage", "Generated"];
-    const rows: string[][] = [headers];
-    filteredReports.forEach((r) => {
-      const crewName = getCrewName(r.crews);
-      (r.jobs || []).forEach((j) => {
-        rows.push([
-          r.report_date,
-          crewName,
-          j.displayId ?? j.jobId?.slice(0, 8) ?? "—",
-          j.clientName ?? "—",
-          j.type,
-          String(j.duration ?? 0),
-          j.signOff ? "Yes" : "No",
-          j.hasDamage ? "Yes" : "No",
-          r.generated_at ? new Date(r.generated_at).toLocaleString() : "—",
-        ]);
-      });
+  const revenueByServiceType = useMemo(() => {
+    const map = new Map<string, { count: number; total: number }>();
+    financialMoves.forEach((m) => {
+      const key = m.service_type;
+      const cur = map.get(key) || { count: 0, total: 0 };
+      cur.count += 1;
+      cur.total += m.estimate;
+      map.set(key, cur);
     });
-    const csv = rows.map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${exportFilename}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+    return Array.from(map.entries())
+      .map(([type, val]) => ({ type, label: SERVICE_LABELS[type] || type, ...val }))
+      .sort((a, b) => b.total - a.total);
+  }, [financialMoves]);
 
-  const exportPDF = () => {
-    const doc = generateEODReportPDF(filteredReports);
-    doc.save(`${exportFilename}.pdf`);
-  };
+  const monthlyRevenue = useMemo(() => {
+    const map = new Map<string, { moves: number; deliveries: number; total: number; count: number }>();
 
-  const openDetail = (report: Report, job: JobEnriched) => {
-    setDetailModal({ report, job });
-    setDetailData(null);
-    setDetailLoading(true);
-    const params = new URLSearchParams({ jobId: job.jobId, jobType: job.type });
-    if (job.sessionId) params.set("sessionId", job.sessionId);
-    else {
-      params.set("teamId", report.team_id);
-      params.set("reportDate", report.report_date);
-    }
-    const crewNameFromReport = getCrewName(report.crews) || undefined;
-    const fallbackJob = {
-      displayId: job?.displayId ?? job?.jobId?.slice(0, 8) ?? "—",
-      clientName: job?.clientName ?? "—",
-      type: job?.type ?? "move",
-      notFound: true as const,
-      crewName: crewNameFromReport,
-    };
-    fetch(`/api/admin/reports/job-detail?${params}`, { credentials: "include" })
-      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-      .then(({ ok, data }) => {
-        if (!ok || !data?.job) {
-          setDetailData({
-            job: fallbackJob,
-            signOff: null,
-            session: null,
-            timeBreakdown: [],
-            summary: { totalMinutes: 0, driveMinutes: 0, loadingMinutes: 0, unloadingMinutes: 0 },
-            checkpoints: [],
-            error: data?.error || "Could not load details",
-          });
-        } else {
-          setDetailData(data);
-        }
+    financialMoves.forEach((m) => {
+      const mk = monthKey(m.scheduled_date);
+      const cur = map.get(mk) || { moves: 0, deliveries: 0, total: 0, count: 0 };
+      cur.moves += m.estimate;
+      cur.total += m.estimate;
+      cur.count += 1;
+      map.set(mk, cur);
+    });
+
+    financialDeliveries.forEach((d) => {
+      const mk = monthKey(d.scheduled_date);
+      const cur = map.get(mk) || { moves: 0, deliveries: 0, total: 0, count: 0 };
+      cur.deliveries += d.total_price;
+      cur.total += d.total_price;
+      cur.count += 1;
+      map.set(mk, cur);
+    });
+
+    return Array.from(map.entries())
+      .map(([month, val]) => ({ month, ...val }))
+      .sort((a, b) => b.month.localeCompare(a.month))
+      .slice(0, 6);
+  }, [financialMoves, financialDeliveries]);
+
+  const totalMoveRevenue = financialMoves.reduce((s, m) => s + m.estimate, 0);
+  const totalDeliveryRevenue = financialDeliveries.reduce((s, d) => s + d.total_price, 0);
+  const totalRevenue = totalMoveRevenue + totalDeliveryRevenue;
+  const totalJobsFinancial = financialMoves.length + financialDeliveries.length;
+  const avgJobValue = totalJobsFinancial > 0 ? Math.round(totalRevenue / totalJobsFinancial) : 0;
+
+  const invoicePaid = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
+  const invoiceTotal = invoices.reduce((s, i) => s + i.amount, 0);
+
+  const maxServiceRevenue = revenueByServiceType.length > 0 ? revenueByServiceType[0].total : 1;
+
+  /* ══════════ Operations computations ══════════ */
+
+  const completedMovesThisMonth = opsMovesThisMonth.filter(
+    (m) => m.status === "completed" || m.status === "done",
+  ).length;
+  const totalMovesThisMonth = opsMovesThisMonth.length;
+
+  const completedSessions = trackingSessions.filter((s) => s.status === "completed");
+  const avgDurationMinutes = useMemo(() => {
+    const durations = completedSessions
+      .filter((s) => s.started_at && s.completed_at)
+      .map((s) => {
+        const start = new Date(s.started_at!).getTime();
+        const end = new Date(s.completed_at!).getTime();
+        return (end - start) / 60000;
       })
-      .catch(() => {
-        setDetailData({
-          job: fallbackJob,
-          signOff: null,
-          session: null,
-          timeBreakdown: [],
-          summary: { totalMinutes: 0, driveMinutes: 0, loadingMinutes: 0, unloadingMinutes: 0 },
-          checkpoints: [],
-          error: "Network error",
-        });
-      })
-      .finally(() => { setDetailLoading(false); });
-  };
+      .filter((d) => d > 0 && d < 1440);
 
-  const teamNames = useMemo(() => {
-    const map = new Map<string, string>();
-    reports.forEach((r) => {
-      const name = getCrewName(r.crews);
-      map.set(r.team_id, name);
+    if (durations.length === 0) return 0;
+    return Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
+  }, [completedSessions]);
+
+  const crewUtilization = useMemo(() => {
+    const crewJobs = new Map<string, number>();
+    opsMovesThisMonth.forEach((m) => {
+      if (m.crew_id) {
+        crewJobs.set(m.crew_id, (crewJobs.get(m.crew_id) || 0) + 1);
+      }
+    });
+    const counts = Array.from(crewJobs.values());
+    if (counts.length === 0) return { avgPerCrew: 0, crewCount: 0 };
+    const avg = Math.round((counts.reduce((a, b) => a + b, 0) / counts.length) * 10) / 10;
+    return { avgPerCrew: avg, crewCount: counts.length };
+  }, [opsMovesThisMonth]);
+
+  const onTimeRate = useMemo(() => {
+    const movesWithCompletion = opsMovesThisMonth.filter(
+      (m) => m.completed_at && m.scheduled_date,
+    );
+    if (movesWithCompletion.length === 0) return null;
+
+    const onTime = movesWithCompletion.filter((m) => {
+      const scheduled = new Date(m.scheduled_date + "T23:59:59").getTime();
+      const completed = new Date(m.completed_at!).getTime();
+      return completed <= scheduled;
+    }).length;
+
+    return Math.round((onTime / movesWithCompletion.length) * 100);
+  }, [opsMovesThisMonth]);
+
+  const sessionsByTeam = useMemo(() => {
+    const map = new Map<string, number>();
+    trackingSessions.forEach((s) => {
+      if (s.team_id && s.status === "completed") {
+        map.set(s.team_id, (map.get(s.team_id) || 0) + 1);
+      }
     });
     return map;
-  }, [reports]);
+  }, [trackingSessions]);
 
-  const dateLabel = from === to ? formatDateShort(date) : `${formatDateShort(from)} – ${formatDateShort(to)}`;
-  const hasActiveFilters = filterJobType !== "all" || filterTeamId !== "all";
+  const statusBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+    opsMovesThisMonth.forEach((m) => {
+      map.set(m.status, (map.get(m.status) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([status, count]) => ({ status, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [opsMovesThisMonth]);
 
-  const applyPreset = (preset: "day" | "week" | "month" | "year") => {
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
-    let newFrom: string;
-    let newTo: string;
-    if (preset === "day") {
-      newFrom = todayStr;
-      newTo = todayStr;
-    } else if (preset === "week") {
-      const mon = new Date(today);
-      mon.setDate(mon.getDate() - mon.getDay() + (mon.getDay() === 0 ? -6 : 1));
-      newFrom = mon.toISOString().split("T")[0];
-      newTo = todayStr;
-    } else if (preset === "month") {
-      newFrom = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-      newTo = todayStr;
-    } else {
-      newFrom = `${today.getFullYear()}-01-01`;
-      newTo = todayStr;
-    }
-    setDate(newTo);
-    setFrom(newFrom);
-    setTo(newTo);
-    router.push(`/admin/reports?from=${newFrom}&to=${newTo}`);
-    setFilterOpen(false);
+  const STATUS_LABELS: Record<string, string> = {
+    draft: "Draft",
+    quoted: "Quoted",
+    sent: "Sent",
+    viewed: "Viewed",
+    accepted: "Accepted",
+    expired: "Expired",
+    pending: "Pending",
+    pending_approval: "Pending Approval",
+    confirmed: "Confirmed",
+    scheduled: "Scheduled",
+    assigned: "Assigned",
+    en_route: "En Route",
+    en_route_to_pickup: "En Route to Pickup",
+    arrived: "Arrived",
+    in_progress: "In Progress",
+    completed: "Completed",
+    done: "Completed",
+    invoiced: "Invoiced",
+    paid: "Paid",
+    unpaid: "Unpaid",
+    overdue: "Overdue",
+    cancelled: "Cancelled",
+    hold: "On Hold",
+    on_hold: "On Hold",
+    disputed: "Disputed",
+    refunded: "Refunded",
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2" ref={filterRef}>
-          <div className="flex items-center gap-1.5">
-            {(["day", "week", "month", "year"] as const).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => applyPreset(p)}
-                className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--gdim)]/30 transition-colors capitalize"
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-          <div className="relative">
+    <div className="space-y-0">
+      {/* ── Tab bar ── */}
+      <div className="flex items-center gap-1 border-b border-[var(--brd)] mb-6">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.key;
+          return (
             <button
+              key={tab.key}
               type="button"
-              onClick={() => setFilterOpen((o) => !o)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--gdim)]/30 transition-colors"
+              onClick={() => switchTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-3 text-[13px] font-semibold transition-colors relative ${
+                isActive
+                  ? "text-[var(--gold)]"
+                  : "text-[var(--tx3)] hover:text-[var(--tx)]"
+              }`}
             >
-              <Funnel size={14} className="shrink-0 text-current" />
-              <span>{dateLabel}</span>
-              {hasActiveFilters && (
-                <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)]/20 text-[var(--gold)] text-[10px] font-bold flex items-center justify-center">
-                  {[filterJobType !== "all", filterTeamId !== "all"].filter(Boolean).length}
-                </span>
+              <Icon size={16} weight={isActive ? "fill" : "regular"} />
+              {tab.label}
+              {isActive && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--gold)] rounded-t-full" />
               )}
-              <CaretDown size={12} weight="regular" className={`shrink-0 transition-transform text-current ${filterOpen ? "rotate-180" : ""}`} />
             </button>
-            {filterOpen && (
-              <div className="absolute top-full right-0 mt-1.5 w-[280px] rounded-lg bg-[var(--card)] shadow-xl z-50 overflow-hidden">
-                <div className="p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Date & filters</span>
-                    <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[11px] font-semibold hover:underline">Done</button>
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-[10px] font-medium text-[var(--tx3)] mb-1">Single date</label>
-                      <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => { const d = e.target.value; setDate(d); setFrom(d); setTo(d); router.push(`/admin/reports?date=${d}`); }}
-                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-medium text-[var(--tx3)] mb-1">Date range</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="date"
-                          value={from}
-                          onChange={(e) => setFrom(e.target.value)}
-                          className="flex-1 px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)]"
-                        />
-                        <span className="text-[10px] text-[var(--tx3)]">–</span>
-                        <input
-                          type="date"
-                          value={to}
-                          onChange={(e) => setTo(e.target.value)}
-                          className="flex-1 px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)]"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => { handleDateRangeApply(); setFilterOpen(false); }}
-                        className="mt-2 w-full px-3 py-2 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold text-[11px] hover:opacity-90"
-                      >
-                        Apply range
-                      </button>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-medium text-[var(--tx3)] mb-1">Job type</label>
-                      <select
-                        value={filterJobType}
-                        onChange={(e) => setFilterJobType(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)]"
-                      >
-                        <option value="all">All</option>
-                        <option value="move">Moves</option>
-                        <option value="delivery">Deliveries</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-medium text-[var(--tx3)] mb-1">Crew</label>
-                      <select
-                        value={filterTeamId}
-                        onChange={(e) => setFilterTeamId(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)]"
-                      >
-                        <option value="all">All crews</option>
-                        {reports.map((r) => (
-                          <option key={r.team_id} value={r.team_id}>{teamNames.get(r.team_id) || r.team_id.slice(0, 8)}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={exportCSV}
-            disabled={filteredReports.length === 0}
-            className="px-3 py-2 rounded-lg text-[var(--tx)] font-semibold text-[12px] hover:bg-[var(--gdim)]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            CSV
-          </button>
-          <button
-            type="button"
-            onClick={exportPDF}
-            disabled={filteredReports.length === 0}
-            className="px-3 py-2 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold text-[12px] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            PDF
-          </button>
-        </div>
+          );
+        })}
       </div>
 
-      {filteredReports.length === 0 ? (
-        <div className="border-t border-[var(--brd)]/30 pt-12 pb-12 text-center">
-          <p className="text-[var(--text-base)] text-[var(--tx3)]">
-            No end-of-day reports{from !== to ? ` for ${from} to ${to}` : ` for ${date}`}{filterJobType !== "all" || filterTeamId !== "all" ? " with current filters" : ""}.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-0">
-          {filteredReports.map((r) => (
-            <div
-              key={r.id}
-              className="border-t border-[var(--brd)]/30 pt-6 pb-6 first:border-t-0 first:pt-0 first:mt-0"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-                <h2 className="font-heading text-[17px] font-semibold text-[var(--tx)]">
-                  {getCrewName(r.crews)}
-                </h2>
-                <span className="text-[12px] text-[var(--tx3)]">
-                  {r.generated_at ? new Date(r.generated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—"}
-                </span>
-              </div>
-              <div className="space-y-5">
-                {r.summary && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div>
-                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Jobs</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{String(r.summary.jobsCompleted ?? 0)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage</div>
-                      <div className={`text-[16px] font-bold font-heading mt-0.5 ${(r.jobs?.filter((j) => j.hasDamage).length ?? 0) > 0 ? "text-[var(--org)]" : "text-[var(--tx)]"}`}>{r.jobs?.filter((j) => j.hasDamage).length ?? 0}</div>
-                    </div>
-                    <div>
-                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total time</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">
-                        {Math.floor((Number(r.summary.totalJobTime) || 0) / 60)}h {(Number(r.summary.totalJobTime) || 0) % 60}m
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Sign-offs</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{String(r.summary.clientSignOffs ?? 0)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Expenses</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">${((Number(r.summary.expensesTotal) || 0) / 100).toFixed(2)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Avg rating</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{typeof r.summary.averageSatisfaction === "number" || typeof r.summary.averageSatisfaction === "string" ? r.summary.averageSatisfaction : "—"}</div>
-                    </div>
-                  </div>
-                )}
-                {r.jobs && r.jobs.length > 0 && (
-                  <div className="border-t border-[var(--brd)]/30 pt-5">
-                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Jobs</div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {r.jobs.map((j, i) => (
-                        <button
-                          key={`${j.jobId}-${i}`}
-                          type="button"
-                          onClick={() => openDetail(r, j)}
-                          className="text-left px-4 py-3.5 rounded-lg hover:bg-[var(--gold)]/5 active:bg-[var(--gold)]/10 transition-colors group touch-manipulation"
-                        >
-                          <div className="flex justify-between items-start gap-2">
-                            <div className="min-w-0">
-                              <div className="font-heading font-semibold text-[var(--tx)] text-[13px] truncate">{j.displayId ?? j.jobId?.slice(0, 8) ?? "—"}</div>
-                              <div className="text-[12px] text-[var(--tx2)] truncate mt-0.5">{j.clientName}</div>
-                              <div className="text-[11px] text-[var(--tx3)] mt-1 capitalize">{j.type}</div>
-                            </div>
-                            <div className="shrink-0 flex items-center gap-2">
-                              <span className="text-[13px] font-heading font-semibold text-[var(--tx)] tabular-nums">{j.duration}m</span>
-                              {j.hasDamage && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--ordim)] text-[var(--org)]">Damage</span>}
-                              {j.signOff && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--g)]">Signed</span>}
-                              <span className="text-[var(--tx3)] group-hover:text-[var(--gold)] transition-colors">View details →</span>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {r.crew_note && (
-                  <div className="border-t border-[var(--brd)]/30 pt-5">
-                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Crew note</div>
-                    <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap font-heading">{r.crew_note}</p>
-                  </div>
-                )}
-                {r.readiness && !r.readiness.passed && r.readiness.flaggedItems?.length ? (
-                  <div className="border-t border-[var(--brd)]/30 pt-5">
-                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--org)] mb-1">Readiness flagged</div>
-                    <p className="text-[12px] text-[var(--tx2)]">{r.readiness.flaggedItems.join(", ")}</p>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ))}
+      {/* ── Crew Reports tab ── */}
+      {activeTab === "crew" && (
+        <div className="animate-fade-up">
+          <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
+            <KpiCard label="Reports" value={String(eodKpis.reportCount)} sub="for selected period" />
+            <KpiCard label="Jobs Covered" value={String(eodKpis.totalJobs)} sub="across all reports" />
+            <KpiCard label="Active Teams" value={String(eodKpis.teamCount)} sub="in period" accent={eodKpis.teamCount > 0} />
+          </div>
+          <CrewReportsTab
+            initialReports={eodReports}
+            initialDate={initialDate}
+            initialFrom={initialFrom}
+            initialTo={initialTo}
+          />
         </div>
       )}
 
-      {detailModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999]" onClick={() => setDetailModal(null)}>
-          <div className="bg-[var(--card)] rounded-2xl shadow-xl max-w-lg w-full overflow-y-auto" style={{ maxHeight: "min(90dvh, 90vh)" }} onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">
-              <h3 className="font-heading text-[18px] font-bold text-[var(--tx)]">Job details</h3>
-              <button type="button" onClick={() => setDetailModal(null)} className="p-2 rounded-lg hover:bg-[var(--bg)] text-[var(--tx3)] font-semibold text-[16px] leading-none" aria-label="Close">×</button>
+      {/* ── Financial tab ── */}
+      {activeTab === "financial" && (
+        <div className="animate-fade-up space-y-8">
+          {/* KPI row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
+            <KpiCard
+              label="Total Revenue"
+              value={formatCurrency(totalRevenue)}
+              sub="last 6 months"
+            />
+            <KpiCard
+              label="Avg Job Value"
+              value={formatCurrency(avgJobValue)}
+              sub={`${totalJobsFinancial} jobs`}
+            />
+            <KpiCard
+              label="Invoiced"
+              value={formatCurrency(invoiceTotal)}
+              sub={`${invoices.length} invoices`}
+            />
+            <KpiCard
+              label="Collected"
+              value={formatCurrency(invoicePaid)}
+              sub={invoiceTotal > 0 ? `${Math.round((invoicePaid / invoiceTotal) * 100)}% collected` : "—"}
+              accent={invoicePaid > 0}
+            />
+          </div>
+
+          {/* Revenue by service type */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <CurrencyDollar size={16} className="text-[var(--gold)]" weight="bold" />
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
+                Revenue by Service Type
+              </h2>
             </div>
-            <div className="p-5 space-y-5">
-              {detailLoading ? (
-                <p className="text-[13px] text-[var(--tx3)]">Loading…</p>
-              ) : detailData?.job ? (
-                <>
-                  {detailData.error && (
-                    <div className="bg-[var(--ordim)]/30 px-3 py-2.5 flex items-center justify-between gap-2">
-                      <span className="text-[12px] text-[var(--org)]">{detailData.error}</span>
-                      {detailModal && (
-                        <button type="button" onClick={() => openDetail(detailModal.report, detailModal.job)} className="shrink-0 text-[11px] font-semibold text-[var(--gold)] hover:underline">Retry</button>
-                      )}
-                    </div>
-                  )}
-                  <div>
-                    <div className="font-heading font-semibold text-[var(--tx)] text-[17px]">{detailData.job?.displayId ?? "—"}</div>
-                    <div className="text-[var(--text-base)] text-[var(--tx2)] mt-0.5 font-heading">{detailData.job?.clientName ?? "—"}</div>
-                    <p className="text-[11px] text-[var(--tx3)] mt-1">Crew: {detailData.job?.crewName || "—"}</p>
-                    <p className="text-[11px] text-[var(--tx3)] mt-1">
-                      {detailData.job?.scheduledDate ? new Date(detailData.job.scheduledDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "—"}
-                      {detailData.job?.arrivalWindow ? ` · ${detailData.job.arrivalWindow}` : ""}
-                    </p>
-                    <p className="text-[11px] text-[var(--tx3)] mt-2">From: {detailData.job?.fromAddress || "—"}</p>
-                    <p className="text-[11px] text-[var(--tx3)]">To: {detailData.job?.toAddress || "—"}</p>
-                  </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Trip</div>
-                    <div className="grid grid-cols-2 gap-2 text-[12px]">
-                      <div><span className="text-[var(--tx3)]">KM travelled</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.kmTravelled != null ? `${detailData.kmTravelled.toFixed(1)} km` : "—"}</span></div>
-                      <div><span className="text-[var(--tx3)]">Stops</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.stopsMade ?? "—"}</span></div>
-                    </div>
-                  </div>
-                  <div className={`rounded-xl border p-4 ${(detailData.incidents?.filter((i) => i.issue_type === "damage").length ?? 0) > 0 ? "border-[var(--org)]/60 bg-[var(--ordim)]/30" : "border-[var(--brd)] bg-[var(--bg)]"}`}>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Damage</div>
-                    {detailData.incidents?.filter((i) => i.issue_type === "damage").length ? (
-                      <ul className="space-y-2">
-                        {detailData.incidents.filter((i) => i.issue_type === "damage").map((inc) => (
-                          <li key={inc.id} className="text-[12px] text-[var(--tx2)]">
-                            <span className="font-semibold text-[var(--org)]">Damage reported</span>
-                            {inc.description && <span className="block text-[11px] text-[var(--tx3)] mt-0.5">{inc.description}</span>}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-[12px] text-[var(--tx3)]">No damage reported.</p>
-                    )}
-                  </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Session</div>
-                    {detailData.session?.startedAt || detailData.session?.completedAt ? (
-                      <p className="text-[12px] text-[var(--tx2)]">
-                        {detailData.session.startedAt && <span>Started: {new Date(detailData.session.startedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
-                        {detailData.session.completedAt && <span className="ml-3">Completed: {new Date(detailData.session.completedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
-                      </p>
-                    ) : (
-                      <p className="text-[12px] text-[var(--tx3)]">—</p>
-                    )}
-                  </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Time breakdown</div>
-                    <div className="grid grid-cols-2 gap-2 text-[12px]">
-                      <div><span className="text-[var(--tx3)]">Total</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.summary?.totalMinutes ?? 0} min</span></div>
-                      <div><span className="text-[var(--tx3)]">Drive</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.summary?.driveMinutes ?? 0} min</span></div>
-                      <div><span className="text-[var(--tx3)]">Loading</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.summary?.loadingMinutes ?? 0} min</span></div>
-                      <div><span className="text-[var(--tx3)]">Unloading</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.summary?.unloadingMinutes ?? 0} min</span></div>
-                    </div>
-                    {detailData.timeBreakdown && detailData.timeBreakdown.length > 0 ? (
-                      <div className="mt-3 pt-3 border-t border-[var(--brd)]">
-                        <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase mb-2">By stage</div>
-                        <ul className="space-y-1 text-[11px] text-[var(--tx2)]">
-                          {detailData.timeBreakdown.map((t, i) => (
-                            <li key={i} className="flex justify-between"><span>{t.label}</span><span className="tabular-nums">{t.minutes}m</span></li>
-                          ))}
-                        </ul>
+            {revenueByServiceType.length === 0 ? (
+              <p className="text-[13px] text-[var(--tx3)]">No move data in the last 6 months.</p>
+            ) : (
+              <div className="space-y-3">
+                {revenueByServiceType.map((item) => (
+                  <div key={item.type}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[13px] font-medium text-[var(--tx)]">{item.label}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] text-[var(--tx3)] tabular-nums">{item.count} jobs</span>
+                        <span className="text-[13px] font-heading font-semibold text-[var(--tx)] tabular-nums">
+                          {formatCurrency(item.total)}
+                        </span>
                       </div>
-                    ) : (
-                      <p className="text-[11px] text-[var(--tx3)] mt-2">No stage data recorded.</p>
-                    )}
-                  </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Client sign-off</div>
-                    {detailData.signOff ? (
-                      <>
-                        <p className="text-[13px] text-[var(--tx)]">Signed by {detailData.signOff.signedBy}</p>
-                        {detailData.signOff.rating != null && <p className="text-[13px] text-[var(--tx2)] mt-1">Rating: {detailData.signOff.rating}/5</p>}
-                        {detailData.signOff.signedAt && <p className="text-[11px] text-[var(--tx3)] mt-0.5">{new Date(detailData.signOff.signedAt).toLocaleString("en-US")}</p>}
-                      </>
-                    ) : (
-                      <p className="text-[12px] text-[var(--tx3)]">No sign-off recorded.</p>
-                    )}
-                  </div>
-                  {(detailData.photosCount != null && detailData.photosCount > 0) && (
-                    <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Photos</div>
-                      <p className="text-[12px] text-[var(--tx2)]">{detailData.photosCount} photo{detailData.photosCount !== 1 ? "s" : ""} captured</p>
                     </div>
-                  )}
-                  {detailData.incidents && detailData.incidents.length > 0 && (
-                    <div className="rounded-xl border border-[var(--org)]/40 bg-[var(--ordim)]/30 p-4">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--org)] mb-2">Incidents</div>
-                      <ul className="space-y-2">
-                        {detailData.incidents.map((inc) => (
-                          <li key={inc.id} className="text-[12px] text-[var(--tx2)]">
-                            <span className="font-semibold capitalize">{toTitleCase(inc.issue_type)}</span>
-                            {inc.description && <span className="block text-[11px] text-[var(--tx3)] mt-0.5">{inc.description}</span>}
-                          </li>
-                        ))}
-                      </ul>
+                    <div className="h-2 rounded-full bg-[var(--brd)]/40 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[var(--gold)] transition-all duration-500"
+                        style={{ width: `${Math.max(2, (item.total / maxServiceRevenue) * 100)}%` }}
+                      />
                     </div>
-                  )}
-                  {detailModal && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      <Link
-                        href={(detailData.job?.type === "move"
-                          ? `/admin/moves/${detailData.job?.notFound ? detailModal?.job?.jobId : (detailData.job?.displayId ?? "").replace(/^#/, "")}`
-                          : `/admin/deliveries/${detailData.job?.notFound ? detailModal?.job?.jobId : encodeURIComponent((detailData.job?.displayId ?? "").replace(/^#/, ""))}`)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold text-[12px] py-2.5 px-4 hover:opacity-90 transition-opacity"
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Monthly revenue table */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <TrendUp size={16} className="text-[var(--gold)]" weight="bold" />
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
+                Monthly Revenue (Last 6 Months)
+              </h2>
+            </div>
+            {monthlyRevenue.length === 0 ? (
+              <p className="text-[13px] text-[var(--tx3)]">No revenue data available.</p>
+            ) : (
+              <div className="rounded-xl border border-[var(--brd)] overflow-hidden">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="bg-[var(--bg)]">
+                      <th className="text-left px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Month</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Moves</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Deliveries</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Total</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Jobs</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyRevenue.map((row, i) => (
+                      <tr
+                        key={row.month}
+                        className={`border-t border-[var(--brd)]/40 ${i === 0 ? "bg-[var(--gold)]/[0.03]" : ""}`}
                       >
-                        Open {detailData.job?.type === "move" ? "move" : "delivery"} →
-                      </Link>
-                      <button type="button" onClick={() => setDetailModal(null)} className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[var(--tx)] font-semibold text-[12px] py-2.5 px-4 hover:bg-[var(--brd)]/30 transition-colors">
-                        Close
-                      </button>
-                    </div>
-                  )}
-                </>
+                        <td className="px-4 py-3 font-medium text-[var(--tx)]">{monthLabel(row.month + "-01")}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-[var(--tx2)]">
+                          {formatCurrencyFull(row.moves)}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-[var(--tx2)]">
+                          {formatCurrencyFull(row.deliveries)}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums font-heading font-semibold text-[var(--tx)]">
+                          {formatCurrencyFull(row.total)}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-[var(--tx3)]">{row.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Operations tab ── */}
+      {activeTab === "operations" && (
+        <div className="animate-fade-up space-y-8">
+          {/* KPI row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
+            <KpiCard
+              label="Moves This Month"
+              value={String(totalMovesThisMonth)}
+              sub={`${completedMovesThisMonth} completed`}
+            />
+            <KpiCard
+              label="Avg Duration"
+              value={avgDurationMinutes > 0 ? `${Math.floor(avgDurationMinutes / 60)}h ${avgDurationMinutes % 60}m` : "—"}
+              sub="per completed session"
+            />
+            <KpiCard
+              label="Crew Utilization"
+              value={crewUtilization.avgPerCrew > 0 ? String(crewUtilization.avgPerCrew) : "—"}
+              sub={crewUtilization.crewCount > 0 ? `jobs/crew · ${crewUtilization.crewCount} crews` : "no data"}
+            />
+            <KpiCard
+              label="On-Time Rate"
+              value={onTimeRate !== null ? `${onTimeRate}%` : "—"}
+              sub="completed on scheduled day"
+              accent={onTimeRate !== null && onTimeRate >= 90}
+              warn={onTimeRate !== null && onTimeRate < 70}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Move status breakdown */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle size={16} className="text-[var(--gold)]" weight="bold" />
+                <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
+                  Move Status Breakdown
+                </h2>
+              </div>
+              {statusBreakdown.length === 0 ? (
+                <p className="text-[13px] text-[var(--tx3)]">No moves this month.</p>
               ) : (
-                <p className="text-[13px] text-[var(--tx3)]">Could not load details.</p>
+                <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-3">
+                  {statusBreakdown.map((item) => {
+                    const pct = totalMovesThisMonth > 0 ? (item.count / totalMovesThisMonth) * 100 : 0;
+                    return (
+                      <div key={item.status}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[12px] font-medium text-[var(--tx)]">
+                            {STATUS_LABELS[item.status] || item.status}
+                          </span>
+                          <span className="text-[12px] text-[var(--tx3)] tabular-nums">
+                            {item.count} ({Math.round(pct)}%)
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-[var(--brd)]/40 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              item.status === "completed" || item.status === "done" || item.status === "paid"
+                                ? "bg-[var(--grn)]"
+                                : item.status === "cancelled" || item.status === "disputed"
+                                  ? "bg-[var(--red)]"
+                                  : item.status === "in_progress" || item.status === "en_route" || item.status === "en_route_to_pickup"
+                                    ? "bg-[var(--gold)]"
+                                    : item.status === "invoiced" || item.status === "overdue" || item.status === "unpaid"
+                                      ? "bg-amber-500"
+                                      : "bg-[var(--tx3)]/40"
+                            }`}
+                            style={{ width: `${Math.max(2, pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
+            </div>
+
+            {/* Tracking sessions by team */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Users size={16} className="text-[var(--gold)]" weight="bold" />
+                <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
+                  Completed Sessions by Team
+                </h2>
+              </div>
+              {sessionsByTeam.size === 0 ? (
+                <p className="text-[13px] text-[var(--tx3)]">No completed sessions this month.</p>
+              ) : (
+                <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-3">
+                  {Array.from(sessionsByTeam.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([teamId, count]) => {
+                      const maxTeam = Math.max(...Array.from(sessionsByTeam.values()));
+                      const pct = maxTeam > 0 ? (count / maxTeam) * 100 : 0;
+                      const teamName = crewNames[teamId] || `Crew ${teamId.slice(0, 6)}`;
+                      return (
+                        <div key={teamId}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[12px] font-medium text-[var(--tx)] truncate max-w-[200px]">
+                              {teamName}
+                            </span>
+                            <span className="text-[12px] font-heading font-semibold text-[var(--tx)] tabular-nums">
+                              {count} session{count !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-[var(--brd)]/40 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-[var(--gold)] transition-all duration-500"
+                              style={{ width: `${Math.max(2, pct)}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Session performance */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Clock size={16} className="text-[var(--gold)]" weight="bold" />
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
+                Session Performance
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Sessions</div>
+                <div className="text-[22px] font-bold font-heading text-[var(--tx)]">{trackingSessions.length}</div>
+              </div>
+              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completed</div>
+                <div className="text-[22px] font-bold font-heading text-[var(--grn)]">{completedSessions.length}</div>
+              </div>
+              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
+                <div className="text-[22px] font-bold font-heading text-[var(--gold)]">
+                  {trackingSessions.filter((s) => s.status === "active" || s.status === "in_progress").length}
+                </div>
+              </div>
+              <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completion Rate</div>
+                <div className="text-[22px] font-bold font-heading text-[var(--tx)]">
+                  {trackingSessions.length > 0 ? `${Math.round((completedSessions.length / trackingSessions.length) * 100)}%` : "—"}
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -19,7 +19,7 @@ export async function GET() {
 
     const { data: org } = await supabase
       .from("organizations")
-      .select("id, name, type, contact_name, email, phone")
+      .select("id, name, type, contact_name, email, phone, billing_email")
       .eq("id", partnerUser.org_id)
       .single();
 

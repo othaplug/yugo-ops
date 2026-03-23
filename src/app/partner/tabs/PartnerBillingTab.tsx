@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { DownloadSimple } from "@phosphor-icons/react";
+import Link from "next/link";
+import { DownloadSimple, Invoice, Warning, CheckCircle, ArrowRight } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
 import YugoLogo from "@/components/YugoLogo";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
@@ -15,6 +16,39 @@ interface DashboardData {
   outstandingDueDate: string | null;
   allDeliveries: { id: string; status: string; scheduled_date: string | null }[];
   invoices: { id: string; amount: number; status: string; created_at: string }[];
+}
+
+interface PartnerStatement {
+  id: string;
+  statement_number: string;
+  period_start: string;
+  period_end: string;
+  delivery_count: number;
+  total: number;
+  due_date: string;
+  status: string;
+  paid_amount: number;
+}
+
+const STMT_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  draft:   { label: "Draft",   color: "#9c9489", bg: "rgba(156,148,137,0.12)" },
+  sent:    { label: "Sent",    color: "#60a5fa", bg: "rgba(96,165,250,0.12)"  },
+  viewed:  { label: "Viewed",  color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
+  paid:    { label: "Paid",    color: "#22c55e", bg: "rgba(34,197,94,0.12)"   },
+  partial: { label: "Partial", color: "#f59e0b", bg: "rgba(245,158,11,0.12)"  },
+  overdue: { label: "Overdue", color: "#ef4444", bg: "rgba(239,68,68,0.12)"   },
+};
+
+function fmtStmtDate(d: string) {
+  return new Date(d + "T12:00:00").toLocaleDateString("en-CA", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function fmtStmtPeriod(start: string, end: string) {
+  return `${new Date(start + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })} – ${fmtStmtDate(end)}`;
 }
 
 type MonthlyRow = {
@@ -140,10 +174,12 @@ const monthlyPerformanceColumns: ColumnDef<MonthlyRow>[] = [
 export default function PartnerBillingTab({
   data,
   orgName,
+  statements = [],
   onViewInvoices,
 }: {
   data: DashboardData;
   orgName: string;
+  statements?: PartnerStatement[];
   onViewInvoices?: () => void;
 }) {
   const [periodMonths, setPeriodMonths] = useState("6");
@@ -194,8 +230,115 @@ export default function PartnerBillingTab({
 
   const hasNoDeliveries = totalDeliveries === 0;
 
+  const unpaidStatements = statements.filter(
+    (s) => !["paid", "draft"].includes(s.status),
+  );
+  const totalStatementOutstanding = unpaidStatements.reduce(
+    (sum, s) => sum + (Number(s.total) - Number(s.paid_amount || 0)),
+    0,
+  );
+
   return (
     <div className="space-y-8">
+      {/* Statements — show when any exist */}
+      {statements.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Invoice size={16} color="#B8962E" />
+              <h3 className="text-[20px] font-bold text-[var(--tx)] font-hero">
+                Statements
+              </h3>
+            </div>
+            {totalStatementOutstanding > 0 && (
+              <span className="text-[12px] font-semibold px-3 py-1 rounded-full" style={{ background: "rgba(239,68,68,0.10)", color: "#ef4444" }}>
+                {formatCurrency(totalStatementOutstanding)} outstanding
+              </span>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-[var(--brd)]/40 overflow-hidden bg-white">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--brd)]/30">
+                  {["Statement", "Period", "Deliveries", "Total", "Due", "Status", ""].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {statements.map((s) => {
+                  const cfg = STMT_STATUS[s.status] ?? STMT_STATUS.draft!;
+                  const balance = Number(s.total) - Number(s.paid_amount || 0);
+                  const canPay = !["paid", "draft"].includes(s.status) && balance > 0.01;
+                  const isOverdue = s.status === "overdue";
+                  return (
+                    <tr
+                      key={s.id}
+                      className="border-b border-[var(--brd)]/20 last:border-0"
+                    >
+                      <td className="px-4 py-3 text-[12px] font-mono font-semibold text-[var(--gold)]">
+                        {s.statement_number}
+                      </td>
+                      <td className="px-4 py-3 text-[12px] text-[var(--tx3)]">
+                        {fmtStmtPeriod(s.period_start, s.period_end)}
+                      </td>
+                      <td className="px-4 py-3 text-[12px] text-[var(--tx)] text-center">
+                        {s.delivery_count}
+                      </td>
+                      <td className="px-4 py-3 text-[13px] font-bold text-[var(--tx)]">
+                        {formatCurrency(Number(s.total))}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-[12px] font-semibold ${isOverdue ? "text-[#ef4444]" : "text-[var(--tx3)]"}`}>
+                          {fmtStmtDate(s.due_date)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                          style={{ color: cfg.color, background: cfg.bg }}
+                        >
+                          {cfg.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {canPay ? (
+                          <Link
+                            href={`/partner/statements/${s.id}/pay`}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg text-white"
+                            style={{ background: "#5C1A33" }}
+                          >
+                            Pay {formatCurrency(balance)}
+                          </Link>
+                        ) : s.status === "paid" ? (
+                          <span className="flex items-center gap-1 text-[11px] text-[#22c55e]">
+                            <CheckCircle size={12} weight="fill" /> Paid
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/partner/statements/${s.id}/pay`}
+                            className="flex items-center gap-1 text-[11px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
+                          >
+                            <ArrowRight size={12} />
+                            View
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Empty state when no deliveries yet */}
       {hasNoDeliveries && (
         <div className="py-4 text-center">

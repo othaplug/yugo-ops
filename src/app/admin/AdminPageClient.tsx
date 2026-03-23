@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import Link from "next/link";
@@ -10,7 +10,30 @@ import { getStatusLabel, normalizeStatus, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import LiveActivityFeed from "./components/LiveActivityFeed";
 import { createButtonBaseClass } from "./components/CreateButton";
-import { Plus, CaretRight, CalendarBlank, ArrowUpRight, ArrowsClockwise } from "@phosphor-icons/react";
+import {
+  Plus,
+  CaretRight,
+  CalendarBlank,
+  ArrowUpRight,
+  ArrowsClockwise,
+  CloudRain,
+  Thermometer,
+  Wind,
+  Car,
+  Drop,
+  Warning,
+  UsersThree,
+  Funnel,
+  CurrencyDollar,
+  Star,
+  Lightning,
+  Eye,
+  CheckCircle,
+  Clock,
+} from "@phosphor-icons/react";
+import RevenueForecastWidget from "@/components/admin/RevenueForecastWidget";
+import { buildPrecipAlertText, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
+import type { DrivingTrafficBrief } from "@/lib/mapbox/driving-traffic-brief";
 
 /* ── Types ── */
 
@@ -25,6 +48,13 @@ type Job = {
   tag: string;
   delivery_number?: string | null;
   move_code?: string | null;
+  /** Rain/snow alerts from `moves.weather_alert` (daily cron) */
+  weatherAlert?: string | null;
+  /** Daytime forecast at pickup (`moves.weather_brief`) */
+  weatherBrief?: MoveWeatherBrief | null;
+  /** Pickup / drop-off for route conditions */
+  fromAddress?: string | null;
+  toAddress?: string | null;
 };
 
 type ActionTask = {
@@ -60,6 +90,19 @@ interface LiveSession {
 
 type MonthRevenue = { m: string; moves: number; deliveries: number; invoices: number };
 
+type UnassignedJob = { id: string; name: string; date: string; type: "move" | "delivery"; code: string; href: string };
+type CrewCapacityDay = { date: string; label: string; total: number; booked: number };
+type QuotePipeline = {
+  openCount: number;
+  openValue: number;
+  viewedCount: number;
+  acceptedThisWeek: number;
+  conversionRate: number;
+  expiringToday: number;
+};
+type TodayEarnings = { potential: number; collected: number; pending: number; jobCount: number };
+type SatisfactionData = { avgRating: number; count: number; pendingReviews: number };
+
 interface Props {
   todayJobs: Job[];
   upcomingJobs: Job[];
@@ -73,6 +116,12 @@ interface Props {
   activityEvents: ActivityEvent[];
   activeQuotesCount: number;
   actionTasks: ActionTask[];
+  unassignedJobs: UnassignedJob[];
+  crewCapacity: CrewCapacityDay[];
+  quotePipeline: QuotePipeline;
+  todayEarnings: TodayEarnings;
+  satisfaction: SatisfactionData;
+  dailyBrief: string;
 }
 
 /* ── Helpers ── */
@@ -185,6 +234,12 @@ export default function AdminPageClient({
   activityEvents,
   activeQuotesCount,
   actionTasks,
+  unassignedJobs,
+  crewCapacity,
+  quotePipeline,
+  todayEarnings,
+  satisfaction,
+  dailyBrief,
 }: Props) {
   const router = useRouter();
   const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
@@ -192,6 +247,11 @@ export default function AdminPageClient({
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const quickActionsRef = useRef<HTMLDivElement>(null);
+  const [trafficByMoveId, setTrafficByMoveId] = useState<Record<string, DrivingTrafficBrief>>({});
+  const [trafficLoading, setTrafficLoading] = useState(false);
+  const [weatherByMoveId, setWeatherByMoveId] = useState<Record<string, { brief: MoveWeatherBrief; alert: string | null }>>({});
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [briefOpen, setBriefOpen] = useState(true);
 
   const refresh = useCallback(async () => { router.refresh(); }, [router]);
   const { containerRef: pullRef, pullDistance, refreshing } = usePullToRefresh({ onRefresh: refresh });
@@ -216,6 +276,82 @@ export default function AdminPageClient({
     return () => clearInterval(id);
   }, []);
 
+  // ── Client-side weather fetch (moves + deliveries) ──
+  const weatherInput = useMemo(() => {
+    return [...todayJobs, ...upcomingJobs]
+      .filter((j) => !j.weatherBrief && j.fromAddress && j.fromAddress.length >= 4 && j.date)
+      .slice(0, 8)
+      .map((j) => ({ id: j.id, fromAddress: j.fromAddress!, date: j.date }));
+  }, [todayJobs, upcomingJobs]);
+
+  useEffect(() => {
+    if (weatherInput.length === 0) {
+      setWeatherByMoveId({});
+      return;
+    }
+    let cancelled = false;
+    setWeatherLoading(true);
+    fetch("/api/admin/command-center-weather", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ moves: weatherInput }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("weather"))))
+      .then((d: { weather?: Record<string, { brief: MoveWeatherBrief; alert: string | null }> }) => {
+        if (!cancelled) setWeatherByMoveId(d.weather || {});
+      })
+      .catch(() => {
+        if (!cancelled) setWeatherByMoveId({});
+      })
+      .finally(() => {
+        if (!cancelled) setWeatherLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(weatherInput)]);
+
+  const moveTrafficKey = useMemo(() => {
+    const ids = new Set<string>();
+    for (const j of [...todayJobs, ...upcomingJobs]) {
+      if (j.type !== "move") continue;
+      const f = j.fromAddress?.trim();
+      const t = j.toAddress?.trim();
+      if (f && t && f.length >= 4 && t.length >= 4) ids.add(j.id);
+    }
+    return [...ids].sort().slice(0, 12).join("|");
+  }, [todayJobs, upcomingJobs]);
+
+  useEffect(() => {
+    if (!moveTrafficKey) {
+      setTrafficByMoveId({});
+      return;
+    }
+    const moveIds = moveTrafficKey.split("|").filter(Boolean);
+    if (moveIds.length === 0) return;
+    let cancelled = false;
+    setTrafficLoading(true);
+    fetch("/api/admin/command-center-traffic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ moveIds }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("traffic"))))
+      .then((d: { traffic?: Record<string, DrivingTrafficBrief> }) => {
+        if (!cancelled) setTrafficByMoveId(d.traffic || {});
+      })
+      .catch(() => {
+        if (!cancelled) setTrafficByMoveId({});
+      })
+      .finally(() => {
+        if (!cancelled) setTrafficLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [moveTrafficKey]);
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
@@ -230,6 +366,42 @@ export default function AdminPageClient({
   const hasJobs = todayJobs.length > 0 || upcomingJobs.length > 0;
   const displayJobs = todayJobs.length > 0 ? todayJobs : upcomingJobs;
   const scheduleLabel = todayJobs.length > 0 ? "Today\u2019s Schedule" : "Upcoming";
+
+  // Merge SSR weather_brief (from DB cron) + client-fetched weather (all job types)
+  const allWeatherRows = useMemo(() => {
+    const rows: { id: string; subtitle: string; date: string; brief: MoveWeatherBrief; alert: string | null }[] = [];
+    const seen = new Set<string>();
+    for (const j of [...todayJobs, ...upcomingJobs]) {
+      if (seen.has(j.id)) continue;
+      seen.add(j.id);
+      const brief = j.weatherBrief || weatherByMoveId[j.id]?.brief || null;
+      const alert = j.weatherAlert || weatherByMoveId[j.id]?.alert || null;
+      if (brief) {
+        rows.push({ id: j.id, subtitle: j.subtitle, date: j.date, brief, alert: alert || buildPrecipAlertText(brief) });
+      }
+    }
+    return rows
+      .sort((a, b) => {
+        if (a.date !== b.date) return (a.date || "").localeCompare(b.date || "");
+        return a.subtitle.localeCompare(b.subtitle);
+      })
+      .slice(0, 12);
+  }, [todayJobs, upcomingJobs, weatherByMoveId]);
+
+  const trafficRows = useMemo(() => {
+    const out: { id: string; subtitle: string; date: string; brief: DrivingTrafficBrief }[] = [];
+    for (const j of [...todayJobs, ...upcomingJobs]) {
+      if (j.type !== "move") continue;
+      const brief = trafficByMoveId[j.id];
+      if (brief) out.push({ id: j.id, subtitle: j.subtitle, date: j.date, brief });
+    }
+    return out
+      .sort((a, b) => {
+        if (a.date !== b.date) return (a.date || "").localeCompare(b.date || "");
+        return a.subtitle.localeCompare(b.subtitle);
+      })
+      .slice(0, 12);
+  }, [todayJobs, upcomingJobs, trafficByMoveId]);
 
   return (
     <div
@@ -337,6 +509,29 @@ export default function AdminPageClient({
         )}
       </div>
 
+      {/* ── Daily Brief ── */}
+      {dailyBrief && (
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => setBriefOpen((v) => !v)}
+            className="flex items-center gap-2 group w-full text-left"
+          >
+            <Lightning size={14} className="text-[var(--gold)]" weight="duotone" aria-hidden />
+            <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]">Daily Brief</span>
+            <CaretRight
+              weight="regular"
+              className={`w-2.5 h-2.5 text-[var(--gold)]/50 transition-transform duration-200 ${briefOpen ? "rotate-90" : ""}`}
+            />
+          </button>
+          {briefOpen && (
+            <p className="text-[12px] text-[var(--tx2)] leading-relaxed mt-2 pl-[22px]">
+              {dailyBrief}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* ── Live Crew Banner (only when active) ── */}
       {liveSessions.length > 0 && (
         <div className="mb-6 flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
@@ -358,7 +553,7 @@ export default function AdminPageClient({
                 {s.teamName}
               </span>
               <span className="text-[10px] text-[var(--tx3)] whitespace-nowrap">
-                {CREW_STATUS_TO_LABEL[s.status] || s.status} · {formatRelative(s.updatedAt)}
+                {CREW_STATUS_TO_LABEL[s.status] || s.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} · {formatRelative(s.updatedAt)}
               </span>
             </Link>
           ))}
@@ -374,6 +569,41 @@ export default function AdminPageClient({
         {/* ── LEFT: Schedule ── */}
         <div className="min-w-0">
 
+          {/* ── Unassigned Jobs Alert ── */}
+          {unassignedJobs.length > 0 && (
+            <div className="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-500/10">
+                <Warning size={14} className="text-amber-400" weight="duotone" aria-hidden />
+                <span className="text-[11px] font-bold text-amber-400">
+                  {unassignedJobs.length} unassigned job{unassignedJobs.length > 1 ? "s" : ""} in the next 72h
+                </span>
+              </div>
+              <div className="divide-y divide-amber-500/10">
+                {unassignedJobs.slice(0, 5).map((job) => (
+                  <Link
+                    key={`unassigned-${job.id}`}
+                    href={job.href}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-amber-500/[0.04] transition-colors"
+                  >
+                    <span className="text-[10px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">
+                      {formatMoveDate(job.date)}
+                    </span>
+                    <span className={`text-[9px] font-bold uppercase ${job.type === "move" ? "text-[#3B82F6]/80" : "text-[var(--org)]/80"}`}>
+                      {job.type}
+                    </span>
+                    <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">{job.name}</span>
+                    <span className="text-[10px] font-mono text-[var(--tx3)]">{job.code}</span>
+                  </Link>
+                ))}
+              </div>
+              {unassignedJobs.length > 5 && (
+                <Link href="/admin/dispatch" className="flex items-center justify-center py-2 text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors border-t border-amber-500/10">
+                  View all {unassignedJobs.length} unassigned &rarr;
+                </Link>
+              )}
+            </div>
+          )}
+
           {/* ── Action Tasks (collapsible) ── */}
           {actionTasks.length > 0 && (
             <div className="mb-6">
@@ -387,7 +617,7 @@ export default function AdminPageClient({
                     weight="regular"
                     className={`w-3 h-3 text-[var(--tx3)] transition-transform duration-200 ${tasksOpen ? "rotate-90" : ""}`}
                   />
-                  <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 group-hover:text-[var(--tx2)] transition-colors">Tasks</h2>
+                  <h2 className="admin-section-h2 text-[var(--tx2)] group-hover:text-[var(--tx)] transition-colors">Tasks</h2>
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">
                     {actionTasks.length}
                   </span>
@@ -427,7 +657,7 @@ export default function AdminPageClient({
           )}
 
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">{scheduleLabel}</h2>
+            <h2 className="admin-section-h2">{scheduleLabel}</h2>
             <Link href="/admin/calendar" className="admin-view-all-link shrink-0 gap-1">
               Calendar
               <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
@@ -475,7 +705,15 @@ export default function AdminPageClient({
                         {job.name}
                       </div>
                       {job.subtitle && (
-                        <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">{job.subtitle}</div>
+                        <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate font-mono tabular-nums">
+                          {job.subtitle}
+                        </div>
+                      )}
+                      {job.weatherAlert && (
+                        <div className="flex items-start gap-1.5 mt-1.5 text-[10px] text-sky-400/90 leading-snug">
+                          <CloudRain size={14} className="shrink-0 mt-0.5" weight="duotone" aria-hidden />
+                          <span>{job.weatherAlert}</span>
+                        </div>
                       )}
                     </div>
 
@@ -531,15 +769,187 @@ export default function AdminPageClient({
               </div>
             </div>
           )}
+
+          {/* ── Weather & Route Conditions ── */}
+          {hasJobs && (
+            <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
+              <div className="flex items-center gap-2 mb-4">
+                <CloudRain size={14} className="text-sky-400/80" weight="duotone" aria-hidden />
+                <h2 className="admin-section-h2">Weather &amp; Route Conditions</h2>
+              </div>
+
+              {(weatherLoading || trafficLoading) && allWeatherRows.length === 0 && trafficRows.length === 0 && (
+                <p className="text-[11px] text-[var(--tx3)] mb-3">Loading conditions…</p>
+              )}
+
+              {(allWeatherRows.length > 0 || trafficRows.length > 0) && (
+                <div className="space-y-3">
+                  {allWeatherRows.map(({ id, subtitle, date, brief: b, alert }) => {
+                    const popPct = b.precipProbabilityMax != null ? Math.round(b.precipProbabilityMax * 100) : null;
+                    const tr = trafficRows.find((r) => r.id === id);
+                    return (
+                      <div key={`wx-${id}`} className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)]/60 px-4 py-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                          <span className="text-[11px] font-bold text-[var(--tx)] font-mono tracking-wide">{subtitle}</span>
+                          <span className="text-[10px] text-[var(--tx3)]">{date ? formatMoveDate(date) : ""}</span>
+                        </div>
+
+                        {alert && (
+                          <div className="mb-2 flex gap-1.5 rounded-lg border border-sky-500/15 bg-sky-500/[0.06] px-2.5 py-1.5">
+                            <CloudRain size={12} className="text-sky-400 shrink-0 mt-0.5" weight="duotone" aria-hidden />
+                            <p className="text-[10px] text-[var(--tx2)] leading-snug">{alert}</p>
+                          </div>
+                        )}
+
+                        <p className="text-[10px] text-[var(--tx2)] capitalize">{b.conditionsSummary}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[10px] text-[var(--tx2)]">
+                          <span className="inline-flex items-center gap-1">
+                            <Thermometer size={12} className="text-orange-300/90 shrink-0" aria-hidden />
+                            {b.tempLowC}°–{b.tempHighC}°C
+                            {b.feelsLikeAvgC != null && <span className="text-[var(--tx3)]">(feels ~{b.feelsLikeAvgC}°)</span>}
+                          </span>
+                          {b.windMaxKmh != null && (
+                            <span className="inline-flex items-center gap-1">
+                              <Wind size={12} className="text-sky-300/80 shrink-0" aria-hidden />
+                              {b.windMaxKmh} km/h
+                              {b.windGustMaxKmh != null && b.windGustMaxKmh > b.windMaxKmh && (
+                                <span className="text-[var(--tx3)]">gusts {b.windGustMaxKmh}</span>
+                              )}
+                            </span>
+                          )}
+                          {popPct != null && (
+                            <span className="inline-flex items-center gap-1">
+                              <Drop size={12} className="text-sky-400/70 shrink-0" aria-hidden />
+                              {popPct}% rain
+                            </span>
+                          )}
+                          {b.humidityAvg != null && (
+                            <span className="text-[var(--tx3)]">Humidity ~{b.humidityAvg}%</span>
+                          )}
+                        </div>
+                        <div className="mt-2 pt-1.5 border-t border-[var(--brd)]/25 flex gap-1.5">
+                          <Car size={12} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
+                          <p className="text-[10px] text-[var(--tx2)] leading-snug">{b.roadConditionsNote}</p>
+                        </div>
+
+                        {tr && (
+                          <div className="mt-2 pt-1.5 border-t border-[var(--brd)]/25">
+                            <div className="flex gap-1.5">
+                              <Car size={12} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
+                              <div className="text-[10px] text-[var(--tx2)] leading-snug space-y-0.5">
+                                <p>
+                                  {tr.brief.distanceKm} km · ~{tr.brief.durationTrafficMin} min
+                                  {tr.brief.trafficDelayMin >= 3 && (
+                                    <span className="text-amber-300"> (+{tr.brief.trafficDelayMin} min delay)</span>
+                                  )}
+                                  {tr.brief.congestionSummary === "heavy" && <span className="text-[var(--red)]"> · Heavy traffic</span>}
+                                  {tr.brief.congestionSummary === "mixed" && <span className="text-amber-300"> · Moderate traffic</span>}
+                                  {tr.brief.congestionSummary === "light" && <span className="text-[var(--grn)]"> · Light traffic</span>}
+                                </p>
+                                {tr.brief.closureNotes.length > 0 && (
+                                  <ul className="pl-3 list-disc text-[9px] text-amber-200/90 space-y-0.5">
+                                    {tr.brief.closureNotes.map((note, i) => (
+                                      <li key={i}>{note}</li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Traffic-only rows (moves with route data but no weather) */}
+                  {trafficRows.filter((r) => !allWeatherRows.some((w) => w.id === r.id)).map((row) => (
+                    <div key={`tr-${row.id}`} className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)]/60 px-4 py-3">
+                      <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                        <span className="text-[11px] font-bold text-[var(--tx)] font-mono tracking-wide">{row.subtitle}</span>
+                        <span className="text-[10px] text-[var(--tx3)]">{row.date ? formatMoveDate(row.date) : ""}</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <Car size={12} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
+                        <div className="text-[10px] text-[var(--tx2)] leading-snug space-y-0.5">
+                          <p>
+                            {row.brief.distanceKm} km · ~{row.brief.durationTrafficMin} min
+                            {row.brief.trafficDelayMin >= 3 && (
+                              <span className="text-amber-300"> (+{row.brief.trafficDelayMin} min delay)</span>
+                            )}
+                            {row.brief.congestionSummary === "heavy" && <span className="text-[var(--red)]"> · Heavy traffic</span>}
+                            {row.brief.congestionSummary === "mixed" && <span className="text-amber-300"> · Moderate traffic</span>}
+                            {row.brief.congestionSummary === "light" && <span className="text-[var(--grn)]"> · Light traffic</span>}
+                          </p>
+                          {row.brief.closureNotes.length > 0 && (
+                            <ul className="pl-3 list-disc text-[9px] text-amber-200/90 space-y-0.5">
+                              {row.brief.closureNotes.map((note, i) => (
+                                <li key={i}>{note}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {allWeatherRows.length === 0 && trafficRows.length === 0 && !weatherLoading && !trafficLoading && (
+                <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+                  Forecasts and route conditions appear when jobs have pickup addresses. Ensure moves have a street address for the best intel.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── RIGHT: Intelligence Column ── */}
         <div className="min-w-0 space-y-0">
 
+          {/* Today's Earnings */}
+          {todayEarnings.jobCount > 0 && (
+            <div className="pb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <CurrencyDollar size={14} className="text-[var(--grn)]" weight="duotone" aria-hidden />
+                <h2 className="admin-section-h2">Today&apos;s Earnings</h2>
+              </div>
+              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4">
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">
+                    {formatCurrency(todayEarnings.potential)}
+                  </span>
+                  <span className="text-[10px] text-[var(--tx3)]">potential</span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="h-2 rounded-full bg-[var(--brd)]/30 overflow-hidden mb-2">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${todayEarnings.potential > 0 ? Math.round((todayEarnings.collected / todayEarnings.potential) * 100) : 0}%`,
+                      background: "var(--grn)",
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="flex items-center gap-1.5 text-[var(--grn)]">
+                    <CheckCircle size={11} weight="duotone" aria-hidden />
+                    {formatCurrency(todayEarnings.collected)} collected
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[var(--tx3)]">
+                    <Clock size={11} weight="duotone" aria-hidden />
+                    {formatCurrency(todayEarnings.pending)} pending
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Revenue (multi-source) */}
           <div className="pb-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Revenue</h2>
+              <h2 className="admin-section-h2">Revenue</h2>
               <Link href="/admin/revenue" className="admin-view-all-link shrink-0 gap-1">
                 Details
                 <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
@@ -643,6 +1053,168 @@ export default function AdminPageClient({
                   <ArrowUpRight weight="regular" className="w-3.5 h-3.5 text-[var(--red)]/30 group-hover:text-[var(--red)]/70 transition-colors" />
                 </div>
               </Link>
+            </div>
+          )}
+
+          {/* Crew Capacity */}
+          {crewCapacity.length > 0 && crewCapacity[0].total > 0 && (
+            <div className="pt-6 border-t border-[var(--brd)]/30">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <UsersThree size={14} className="text-[var(--tx2)]" weight="duotone" aria-hidden />
+                  <h2 className="admin-section-h2">Crew Capacity</h2>
+                </div>
+                <Link href="/admin/dispatch" className="admin-view-all-link shrink-0 gap-1">
+                  Dispatch
+                  <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {crewCapacity.map((day) => {
+                  const free = day.total - day.booked;
+                  const pct = Math.round((day.booked / day.total) * 100);
+                  const isFull = free === 0;
+                  return (
+                    <div key={day.date} className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] px-3 py-3 text-center">
+                      <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{day.label}</div>
+                      <div className="relative w-10 h-10 mx-auto mb-2">
+                        <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
+                          <circle cx="18" cy="18" r="15" fill="none" stroke="var(--brd)" strokeWidth="3" opacity="0.3" />
+                          <circle
+                            cx="18" cy="18" r="15" fill="none"
+                            stroke={isFull ? "var(--red)" : pct >= 60 ? "var(--gold)" : "var(--grn)"}
+                            strokeWidth="3"
+                            strokeDasharray={`${pct * 0.942} 100`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-[var(--tx)] tabular-nums">
+                          {day.booked}/{day.total}
+                        </span>
+                      </div>
+                      <div className={`text-[10px] font-semibold ${isFull ? "text-[var(--red)]" : "text-[var(--grn)]"}`}>
+                        {isFull ? "Full" : `${free} available`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Quote Pipeline */}
+          {(quotePipeline.openCount > 0 || quotePipeline.acceptedThisWeek > 0) && (
+            <div className="pt-6 border-t border-[var(--brd)]/30">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Funnel size={14} className="text-[var(--tx2)]" weight="duotone" aria-hidden />
+                  <h2 className="admin-section-h2">Quote Pipeline</h2>
+                </div>
+                <Link href="/admin/quotes" className="admin-view-all-link shrink-0 gap-1">
+                  Quotes
+                  <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
+                </Link>
+              </div>
+              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-3">
+                {/* Funnel rows */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
+                      <span className="text-[11px] font-medium text-[var(--tx)]">Open quotes</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">{quotePipeline.openCount}</span>
+                      {quotePipeline.openValue > 0 && (
+                        <span className="text-[10px] text-[var(--tx3)] tabular-nums">{formatCompactCurrency(quotePipeline.openValue)}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Eye size={10} className="text-[#3B82F6]" aria-hidden />
+                      <span className="text-[11px] font-medium text-[var(--tx)]">Viewed</span>
+                    </div>
+                    <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">{quotePipeline.viewedCount}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={10} className="text-[var(--grn)]" weight="duotone" aria-hidden />
+                      <span className="text-[11px] font-medium text-[var(--tx)]">Accepted this week</span>
+                    </div>
+                    <span className="text-[11px] font-bold text-[var(--grn)] tabular-nums">{quotePipeline.acceptedThisWeek}</span>
+                  </div>
+                </div>
+
+                {/* Divider + stats */}
+                <div className="border-t border-[var(--brd)]/30 pt-2.5 flex items-center justify-between">
+                  <span className="text-[10px] text-[var(--tx3)]">30-day conversion</span>
+                  <span className="text-[12px] font-bold text-[var(--tx)] tabular-nums">{quotePipeline.conversionRate}%</span>
+                </div>
+
+                {quotePipeline.expiringToday > 0 && (
+                  <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/15 bg-amber-500/[0.06] px-2.5 py-1.5">
+                    <Clock size={11} className="text-amber-400 shrink-0" weight="duotone" aria-hidden />
+                    <span className="text-[10px] text-amber-300 font-medium">
+                      {quotePipeline.expiringToday} quote{quotePipeline.expiringToday > 1 ? "s" : ""} expiring today
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Revenue Forecast */}
+          <div className="pt-6 border-t border-[var(--brd)]/30">
+            <RevenueForecastWidget />
+          </div>
+
+          {/* Customer Satisfaction */}
+          {satisfaction.count > 0 && (
+            <div className="pt-6 border-t border-[var(--brd)]/30">
+              <div className="flex items-center gap-2 mb-3">
+                <Star size={14} className="text-[var(--gold)]" weight="duotone" aria-hidden />
+                <h2 className="admin-section-h2">Customer Satisfaction</h2>
+              </div>
+              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="text-center">
+                    <div className="text-[28px] font-bold font-heading text-[var(--tx)] tabular-nums leading-none">
+                      {satisfaction.avgRating.toFixed(1)}
+                    </div>
+                    <div className="flex items-center gap-0.5 mt-1 justify-center">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          size={10}
+                          weight={s <= Math.round(satisfaction.avgRating) ? "fill" : "regular"}
+                          className={s <= Math.round(satisfaction.avgRating) ? "text-[var(--gold)]" : "text-[var(--tx3)]/30"}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-[var(--tx3)]">Recent reviews</span>
+                      <span className="font-bold text-[var(--tx)] tabular-nums">{satisfaction.count}</span>
+                    </div>
+                    {satisfaction.pendingReviews > 0 && (
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-[var(--tx3)]">Awaiting response</span>
+                        <span className="font-bold text-amber-400 tabular-nums">{satisfaction.pendingReviews}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-[var(--tx3)]">Rating</span>
+                      <span className={`font-bold tabular-nums ${satisfaction.avgRating >= 4.5 ? "text-[var(--grn)]" : satisfaction.avgRating >= 3.5 ? "text-[var(--gold)]" : "text-[var(--red)]"}`}>
+                        {satisfaction.avgRating >= 4.5 ? "Excellent" : satisfaction.avgRating >= 3.5 ? "Good" : "Needs attention"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

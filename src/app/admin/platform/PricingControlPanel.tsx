@@ -13,6 +13,7 @@ import {
   Shield,
   CheckCircle,
   WarningCircle,
+  CircleNotch,
 } from "@phosphor-icons/react";
 
 /* ────────── helpers ────────── */
@@ -322,11 +323,18 @@ function AnalyticsDashboard() {
   ];
 
   return (
-    <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
-      {metrics.map((m) => (
-        <div key={m.label} className="bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2.5">
-          <div className="text-[8px] font-bold tracking-wider uppercase text-[var(--tx3)]/60 whitespace-nowrap">{m.label}</div>
-          <div className="text-[13px] font-bold text-[var(--tx)] mt-0.5 truncate">{m.value}</div>
+    <div className="flex flex-wrap gap-px mb-6 rounded-xl overflow-hidden border border-[var(--brd)] bg-[var(--brd)]">
+      {metrics.map((m, i) => (
+        <div
+          key={m.label}
+          className="flex-1 min-w-[100px] bg-[var(--card)] px-4 py-3 flex flex-col gap-1"
+        >
+          <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--tx3)] leading-none">
+            {m.label}
+          </div>
+          <div className="text-[18px] font-bold font-heading text-[var(--tx)] leading-tight break-words">
+            {m.value}
+          </div>
         </div>
       ))}
     </div>
@@ -426,7 +434,7 @@ function TierMultipliersSection() {
 
   const getVal = (key: string) => rows.find((r) => r.key === key);
   // Support both old and new config keys after migration
-  const curM = Number(getVal("tier_curated_multiplier")?.value ?? getVal("tier_essentials_multiplier")?.value) || 1;
+  const curM = Number(getVal("tier_essential_multiplier")?.value ?? getVal("tier_curated_multiplier")?.value ?? getVal("tier_essentials_multiplier")?.value) || 1;
   const sigM = Number(getVal("tier_signature_multiplier")?.value ?? getVal("tier_premier_multiplier")?.value) || 1.50;
   const estM = Number(getVal("tier_estate_multiplier")?.value) || 3.15;
   const minJob = Number(getVal("minimum_job_amount")?.value) || 549;
@@ -438,8 +446,8 @@ function TierMultipliersSection() {
 
   const tiers = [
     {
-      key: getVal("tier_curated_multiplier") ? "tier_curated_multiplier" : "tier_essentials_multiplier",
-      label: "Curated",
+      key: getVal("tier_essential_multiplier") ? "tier_essential_multiplier" : getVal("tier_curated_multiplier") ? "tier_curated_multiplier" : "tier_essentials_multiplier",
+      label: "Essential",
       desc: "Base rate — reliable move",
       m: curM,
     },
@@ -473,7 +481,7 @@ function TierMultipliersSection() {
 
       <div className="bg-[var(--bg)] rounded-lg px-4 py-3 text-[11px] text-[var(--tx3)]">
         <span className="font-semibold text-[var(--tx)]">Live preview</span> (base ${previewBase.toLocaleString()}):
-        <span className="ml-2">Curated = <b className="text-[var(--gold)]">{currency(preview(curM))}</b></span>
+        <span className="ml-2">Essential = <b className="text-[var(--gold)]">{currency(preview(curM))}</b></span>
         <span className="ml-2">→ Signature = <b className="text-[var(--gold)]">{currency(preview(sigM))}</b></span>
         <span className="ml-2">→ Estate = <b className="text-[var(--gold)]">{currency(preview(estM))}</b></span>
       </div>
@@ -780,7 +788,7 @@ const BRACKET_LABELS: Record<string, string> = { under_500: "<$500", "500_999": 
 const SERVICE_TYPES = ["residential", "long_distance", "office", "single_item", "white_glove", "specialty"];
 
 const DEPOSIT_TIER_KEYS = [
-  { tier: "Curated", pctKey: "deposit_curated_pct", minKey: "deposit_curated_min", pctDefault: 10, minDefault: 150 },
+  { tier: "Essential", pctKey: "deposit_essential_pct", minKey: "deposit_essential_min", pctDefault: 10, minDefault: 150 },
   { tier: "Signature", pctKey: "deposit_signature_pct", minKey: "deposit_signature_min", pctDefault: 15, minDefault: 250 },
   { tier: "Estate", pctKey: "deposit_estate_pct", minKey: "deposit_estate_min", pctDefault: 25, minDefault: 500 },
 ] as const;
@@ -840,7 +848,7 @@ function DepositRulesSection() {
                 <td className={`${td} font-medium capitalize`}>{st.replace(/_/g, " ")}</td>
                 {st === "residential" ? (
                   <td colSpan={BRACKETS.length} className={`${td} bg-[var(--gold)]/5 text-[11px] text-[var(--tx3)]`}>
-                    Tier-based (Curated / Signature / Estate) — defined above.
+                    Tier-based (Essential / Signature / Estate) — defined above.
                   </td>
                 ) : (
                   BRACKETS.map((b) => {
@@ -932,7 +940,7 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 };
 
 const ALL_SERVICE_TYPES = Object.keys(SERVICE_TYPE_LABELS);
-const TIER_OPTIONS = ["curated", "signature", "estate"];
+const TIER_OPTIONS = ["essential", "signature", "estate"];
 
 const FILTER_TABS = [
   { key: "", label: "All" },
@@ -1081,7 +1089,7 @@ function ServiceTypeMultiSelect({ selected, onChange }: { selected: string[]; on
       <button type="button" onClick={() => setOpen(!open)} className="flex flex-wrap gap-1 min-h-[24px] cursor-pointer">
         {selected.length === 0 && <span className="text-[9px] text-[var(--tx3)]">None</span>}
         {selected.map((s) => (
-          <span key={s} className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-bold border ${SERVICE_TYPE_BADGES[s] || "bg-[var(--bg)] text-[var(--tx3)]"}`}>
+          <span key={s} className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${SERVICE_TYPE_BADGES[s] || "bg-[var(--bg)] text-[var(--tx3)]"}`}>
             {SERVICE_TYPE_LABELS[s] || s}
           </span>
         ))}
@@ -1115,7 +1123,7 @@ function ExcludedTiersSelect({ selected, onChange }: { selected: string[] | null
           key={t}
           type="button"
           onClick={() => onChange(vals.includes(t) ? vals.filter((v) => v !== t) : [...vals, t])}
-          className={`px-1.5 py-0.5 rounded text-[8px] font-semibold border capitalize transition-colors ${
+          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border capitalize transition-colors ${
             vals.includes(t)
               ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
               : "bg-[var(--bg)] text-[var(--tx3)] border-[var(--brd)] hover:border-[var(--gold)]/40"
@@ -1906,7 +1914,7 @@ function IconPreview({ iconName }: { iconName: string }) {
 }
 
 const SERVICE_TYPE_META: { key: string; label: string; tiers: string[] }[] = [
-  { key: "local_move",    label: "Residential (Local)",  tiers: ["curated", "signature", "estate"] },
+  { key: "local_move",    label: "Residential (Local)",  tiers: ["essential", "signature", "estate"] },
   { key: "long_distance", label: "Long Distance",        tiers: ["custom"] },
   { key: "office_move",   label: "Office / Commercial",  tiers: ["custom"] },
   { key: "single_item",   label: "Single Item Delivery", tiers: ["custom"] },
@@ -1917,16 +1925,18 @@ const SERVICE_TYPE_META: { key: string; label: string; tiers: string[] }[] = [
 ];
 
 const TIER_LABEL: Record<string, string> = {
-  curated: "Curated",
+  essential: "Essential",
+  curated: "Essential",
   signature: "Signature",
   estate: "Estate",
   custom: "Package",
   // legacy keys
-  essentials: "Curated",
+  essentials: "Essential",
   premier: "Signature",
 };
 
 const TIER_COLOR: Record<string, string> = {
+  essential: "text-[var(--tx3)] border-[var(--brd)]",
   curated: "text-[var(--tx3)] border-[var(--brd)]",
   signature: "text-blue-400 border-blue-400/30",
   estate: "text-[var(--gold)] border-[var(--gold)]/30",
@@ -2543,7 +2553,7 @@ function WhiteGlovePricingSection() {
   if (loading) return <Skeleton />;
 
   const fields = [
-    { key: "white_glove_declared_value_threshold", label: "Declared value threshold ($)", hint: "Above this, the premium below is added to the Curated-tier price." },
+    { key: "white_glove_declared_value_threshold", label: "Declared value threshold ($)", hint: "Above this, the premium below is added to the Essential-tier price." },
     { key: "white_glove_declared_value_premium", label: "Declared value premium ($)", hint: "Flat add-on when declared value exceeds the threshold." },
     { key: "white_glove_minimum_price", label: "Minimum subtotal ($)", hint: "Floor before tax; uses same residential base + tier multipliers as local moves." },
   ];
@@ -2974,7 +2984,7 @@ function EngineConfigSection() {
     // Market stack
     { key: "market_stack_cap", label: "Market Stack Cap", hint: "Maximum combined neighbourhood × day × season multiplier (default 1.38). Prevents excessive compounding." },
     // Labour rates per tier
-    { key: "labour_rate_curated", label: "Labour Rate — Curated ($/mover-hr)", hint: "Hourly rate applied to extra mover-hours above baseline for Curated tier." },
+    { key: "labour_rate_essential", label: "Labour Rate — Essential ($/mover-hr)", hint: "Hourly rate applied to extra mover-hours above baseline for Essential tier." },
     { key: "labour_rate_signature", label: "Labour Rate — Signature ($/mover-hr)", hint: "Higher rate for Signature tier overages — premium clients pay more for extra time." },
     { key: "labour_rate_estate", label: "Labour Rate — Estate ($/mover-hr)", hint: "Highest rate for Estate tier overages." },
     // Deadhead
@@ -2992,11 +3002,11 @@ function EngineConfigSection() {
     // Truck costs (for margin)
     { key: "truck_costs_per_job", label: "Truck Cost Per Job (JSON)", hint: '{"sprinter":90,"16ft":115,"20ft":150,"24ft":175,"26ft":200}', type: "json" },
     // Change request rates
-    { key: "change_request_rate_curated", label: "Change Request Rate — Curated ($/hr)", hint: "Hourly rate for post-booking change requests on Curated moves." },
+    { key: "change_request_rate_essential", label: "Change Request Rate — Essential ($/hr)", hint: "Hourly rate for post-booking change requests on Essential moves." },
     { key: "change_request_rate_signature", label: "Change Request Rate — Signature ($/hr)", hint: "Hourly rate for change requests on Signature moves." },
     { key: "change_request_rate_estate", label: "Change Request Rate — Estate ($/hr)", hint: "Hourly rate for change requests on Estate moves." },
     // Margin targets (soft targets — warnings only, never override pricing)
-    { key: "margin_target_curated", label: "Margin Target — Curated (%)", hint: "Soft target margin % for Curated moves. Warnings shown when below threshold. Never inflates prices automatically." },
+    { key: "margin_target_essential", label: "Margin Target — Essential (%)", hint: "Soft target margin % for Essential moves. Warnings shown when below threshold. Never inflates prices automatically." },
     { key: "margin_target_signature", label: "Margin Target — Signature (%)", hint: "Soft target margin % for Signature moves." },
     { key: "margin_target_estate", label: "Margin Target — Estate (%)", hint: "Soft target margin % for Estate moves." },
     { key: "margin_warning_threshold", label: "Margin Warning Threshold (%)", hint: "Show a warning when estimated margin falls below this %. Default 35." },
@@ -3059,7 +3069,7 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
         <LabourPricingSection />
       </Accordion>
 
-      <Accordion title="Tier Multipliers" subtitle="Curated, Signature, Estate pricing tiers">
+      <Accordion title="Tier Multipliers" subtitle="Essential, Signature, Estate pricing tiers">
         <TierMultipliersSection />
       </Accordion>
 
@@ -3099,7 +3109,7 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
         <B2BOneOffPricingSection />
       </Accordion>
 
-      <Accordion title="Deposit Rules" subtitle="Residential = tier-based (Curated/Signature/Estate). Other types = matrix below">
+      <Accordion title="Deposit Rules" subtitle="Residential = tier-based (Essential/Signature/Estate). Other types = matrix below">
         <DepositRulesSection />
       </Accordion>
 
@@ -3141,6 +3151,10 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
 
       <Accordion title="Engine Configuration (v2)" subtitle="Market stack cap, tiered labour rates, deadhead, mobilization, cost tracking, minimum hours">
         <EngineConfigSection />
+      </Accordion>
+
+      <Accordion title="System Learning — Calibration Suggestions" subtitle="AI-generated config proposals based on last 30 completed jobs per category">
+        <CalibrationSection />
       </Accordion>
     </div>
     </PricingAdminContext.Provider>
@@ -3246,6 +3260,216 @@ function B2BSurchargesSection() {
       <button type="button" onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50">
         {saving ? "Saving…" : "Save B2B Surcharges"}
       </button>
+    </div>
+  );
+}
+
+/* ────────── CALIBRATION SUGGESTIONS (System Learning) ────────── */
+interface CalibrationSuggestion {
+  id: string;
+  type: string;
+  move_size: string | null;
+  service_type: string | null;
+  current_value: string;
+  suggested_value: string;
+  confidence: "low" | "medium" | "high";
+  reason: string;
+  sample_size: number;
+  status: "pending" | "applied" | "dismissed";
+  created_at: string;
+}
+
+const CONFIDENCE_BADGE: Record<string, string> = {
+  high:   "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  medium: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  low:    "bg-[var(--tx3)]/10 text-[var(--tx3)] border-[var(--tx3)]/20",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  hours_baseline:     "Hours",
+  truck_threshold:    "Truck",
+  crew_recommendation: "Crew",
+};
+
+const MOVE_SIZE_LABELS: Record<string, string> = {
+  studio: "Studio",
+  "1br": "1BR",
+  "2br": "2BR",
+  "3br": "3BR",
+  "4br": "4BR",
+  "5br_plus": "5BR+",
+  partial: "Partial",
+};
+
+function CalibrationSection() {
+  const [suggestions, setSuggestions] = useState<CalibrationSuggestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState<string | null>(null);
+  const [dismissModal, setDismissModal] = useState<string | null>(null);
+  const [dismissReason, setDismissReason] = useState("");
+  const { toast } = useToast();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/calibration?status=pending", { credentials: "same-origin" });
+      const json = await res.json() as { data?: CalibrationSuggestion[]; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Failed to load");
+      setSuggestions(json.data ?? []);
+    } catch {
+      toast("Failed to load calibration suggestions", "x");
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleAction(id: string, action: "apply" | "dismiss", reason?: string) {
+    setActing(id);
+    try {
+      const res = await fetch("/api/admin/calibration", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ id, action, dismissed_reason: reason }),
+      });
+      const json = await res.json() as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Failed");
+      toast(action === "apply" ? "Calibration applied" : "Suggestion dismissed", "check");
+      setSuggestions((prev) => prev.filter((s) => s.id !== id));
+    } catch (e) {
+      toast(String(e), "x");
+    } finally {
+      setActing(null);
+      setDismissModal(null);
+      setDismissReason("");
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-6 text-[var(--tx3)] text-[13px]">
+        <CircleNotch size={16} className="animate-spin" />
+        Loading calibration data…
+      </div>
+    );
+  }
+
+  if (suggestions.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <CheckCircle size={32} className="mx-auto mb-3 text-emerald-400" />
+        <p className="text-[13px] font-semibold text-[var(--tx)]">All calibrations are current</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">No suggestions pending. The system will surface recommendations after 20+ completed jobs per category.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[12px] text-[var(--tx3)]">
+          Based on the last 30 completed jobs per category. Suggestions require 20+ data points to generate.
+        </p>
+        <span className="text-[11px] font-bold text-[var(--gold)] bg-[var(--gold)]/10 border border-[var(--gold)]/20 px-2 py-0.5 rounded-full">
+          {suggestions.length} pending
+        </span>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-[var(--brd)]">
+        <table className="w-full text-[12px]">
+          <thead>
+            <tr className="border-b border-[var(--brd)] bg-[var(--bg)]/40">
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Type</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Move Size</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Current</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Suggested</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Confidence</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Sample</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Reason</th>
+              <th className="py-3 px-4" />
+            </tr>
+          </thead>
+          <tbody>
+            {suggestions.map((s) => (
+              <tr key={s.id} className="border-b border-[var(--brd)]/50 hover:bg-[var(--gold)]/3 transition-colors">
+                <td className="py-3 px-4">
+                  <span className="font-semibold text-[var(--tx)]">
+                    {TYPE_LABELS[s.type] ?? s.type}
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-[var(--tx)]">
+                  {s.move_size ? MOVE_SIZE_LABELS[s.move_size] ?? s.move_size : "—"}
+                </td>
+                <td className="py-3 px-4 text-[var(--tx3)]">{s.current_value}</td>
+                <td className="py-3 px-4">
+                  <span className="font-semibold text-[var(--gold)]">{s.suggested_value}</span>
+                </td>
+                <td className="py-3 px-4">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${CONFIDENCE_BADGE[s.confidence] ?? CONFIDENCE_BADGE.low}`}>
+                    {s.confidence.charAt(0).toUpperCase() + s.confidence.slice(1)}
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-[var(--tx3)]">{s.sample_size} jobs</td>
+                <td className="py-3 px-4 text-[var(--tx3)] max-w-[260px]">{s.reason}</td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={acting === s.id}
+                      onClick={() => handleAction(s.id, "apply")}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {acting === s.id ? "…" : "Apply"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={acting === s.id}
+                      onClick={() => { setDismissModal(s.id); setDismissReason(""); }}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--tx3)] hover:text-[var(--tx)] transition-colors whitespace-nowrap"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Dismiss reason modal */}
+      {dismissModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-[15px] font-bold text-[var(--tx)] mb-2">Dismiss suggestion</h3>
+            <p className="text-[12px] text-[var(--tx3)] mb-4">Optional: add a reason so the system learns what to ignore.</p>
+            <textarea
+              value={dismissReason}
+              onChange={(e) => setDismissReason(e.target.value)}
+              placeholder="e.g. This size category had unusual data due to holiday period…"
+              className="w-full h-20 px-3 py-2 rounded-xl border border-[var(--brd)] bg-[var(--bg)] text-[var(--tx)] text-[12px] resize-none outline-none focus:border-[var(--gold)] transition-colors"
+            />
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => handleAction(dismissModal, "dismiss", dismissReason || undefined)}
+                className="flex-1 px-4 py-2 rounded-xl text-[12px] font-bold bg-[var(--tx3)]/10 text-[var(--tx)] hover:bg-[var(--tx3)]/20 transition-colors"
+              >
+                Confirm Dismiss
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissModal(null)}
+                className="px-4 py-2 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

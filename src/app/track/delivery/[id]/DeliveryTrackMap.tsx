@@ -136,7 +136,7 @@ export default function DeliveryTrackMap({
     lastFetchRef.current = key;
     try {
       const coords = `${from.lng},${from.lat};${to.lng},${to.lat}`;
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coords}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
       const res = await fetch(url);
       const data = await res.json();
       const coordsList = data?.routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;

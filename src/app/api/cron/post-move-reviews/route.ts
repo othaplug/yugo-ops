@@ -299,7 +299,7 @@ export async function GET(req: NextRequest) {
 
       await sendEmail({
         to: move.client_email,
-        subject: `One year since your move happy move-iversary! 🎉`,
+        subject: `One year since your move — happy move-iversary!`,
         html,
       });
 

@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+// 2FA trust cookie: survives tab closes / new tabs for this many hours
+const TRUST_HOURS = 8;
+export const TWO_FA_TRUST_COOKIE = "yugo-2fa-trust";
+
 export async function POST(req: NextRequest) {
   try {
     const { code } = await req.json();
@@ -41,7 +45,16 @@ export async function POST(req: NextRequest) {
 
     await admin.from("email_verification_codes").delete().eq("id", row.id);
 
-    return NextResponse.json({ ok: true });
+    // Set a secure trust cookie so the admin doesn't re-verify on every new tab/refresh
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set(TWO_FA_TRUST_COOKIE, user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: TRUST_HOURS * 3600,
+      path: "/",
+    });
+    return res;
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to verify" },

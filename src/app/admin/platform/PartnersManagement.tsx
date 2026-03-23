@@ -270,7 +270,7 @@ export default function PartnersManagement() {
         {/* Header */}
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
+            <h2 className="admin-section-h2 flex items-center gap-2.5">
               <Icon name="handshake" className="w-[16px] h-[16px]" /> Partner User Management
             </h2>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">Invite partners, manage portal access, revoke credentials</p>

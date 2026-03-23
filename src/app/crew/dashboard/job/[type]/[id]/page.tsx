@@ -470,34 +470,44 @@ export default function CrewJobPage({
             <span className="shrink-0 px-2.5 py-1 rounded-lg bg-[#22C55E]/12 border border-[#22C55E]/30 text-[10px] font-bold text-[#22C55E]">Complete</span>
           )}
         </div>
-        <div className="border-t border-[var(--brd)]/50 pt-3 space-y-2">
-          <div className="flex items-start gap-2.5">
-            <div className="mt-1 flex flex-col items-center gap-0.5 shrink-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-[var(--gold)]" />
-              <div className="w-px h-3 bg-[var(--brd)]" />
+        <div className="border-t border-[var(--brd)]/50 pt-3">
+          <div className="flex gap-3">
+            {/* Dot + connector column */}
+            <div className="flex flex-col items-center shrink-0 pt-1">
+              {/* Pickup dot — outlined ring with gold inner */}
+              <div className="w-4 h-4 rounded-full border-2 border-[var(--gold)]/60 flex items-center justify-center shrink-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
+              </div>
+              {/* Connector line */}
+              <div className="w-[2px] flex-1 my-1 rounded-full" style={{ background: "rgba(255,255,255,0.1)", minHeight: 20 }} />
+              {/* Drop-off dot — solid green */}
+              <div className="w-4 h-4 rounded-full border-2 border-[#22C55E]/60 flex items-center justify-center shrink-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup</p>
-              <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.fromAddress}</p>
-              {job.fromAccess && (
-                <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
-                  <Lock size={9} />
-                  {job.fromAccess}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-start gap-2.5">
-            <div className="mt-1 shrink-0 w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
-            <div className="min-w-0">
-              <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Drop-off</p>
-              <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.toAddress}</p>
-              {job.toAccess && (
-                <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
-                  <Lock size={9} />
-                  {job.toAccess}
-                </p>
-              )}
+
+            {/* Address column */}
+            <div className="flex flex-col justify-between min-w-0 flex-1 gap-3">
+              <div className="min-w-0">
+                <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup</p>
+                <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.fromAddress}</p>
+                {job.fromAccess && (
+                  <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
+                    <Lock size={9} />
+                    {job.fromAccess}
+                  </p>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Drop-off</p>
+                <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.toAddress}</p>
+                {job.toAccess && (
+                  <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
+                    <Lock size={9} />
+                    {job.toAccess}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -533,7 +543,7 @@ export default function CrewJobPage({
               stages={
                 jobType === "move"
                   ? [{ label: "En Route" }, { label: "Loading" }, { label: "Unloading" }, { label: "Complete" }]
-                  : [{ label: "En Route" }, { label: "At Pickup" }, { label: "Delivering" }, { label: "Complete" }]
+                  : [{ label: "En Route" }, { label: "Arrived" }, { label: "Delivering" }, { label: "Complete" }]
               }
               currentIndex={
                 isCompleted
@@ -639,43 +649,101 @@ export default function CrewJobPage({
                 const isLast = i === statusFlow.length - 1;
                 const state = isPast ? "done" : isCurrent ? "act" : "wait";
 
-                /* elapsed between this step and the previous one */
                 const prevCp = i > 0 ? session?.checkpoints?.find((c) => c.status === statusFlow[i - 1]) : null;
                 const stepTs = cp?.timestamp ?? (isLast && isCompleted ? session?.completedAt ?? null : null);
                 const elapsed = stepTs && prevCp?.timestamp
                   ? Math.round((new Date(stepTs).getTime() - new Date(prevCp.timestamp).getTime()) / 60000)
                   : null;
 
+                // Dot styles — Uber-style solid circles
+                const DOT = 20;
+                const dotBg = state === "done"
+                  ? (isLast && isCompleted ? "#22C55E" : "rgba(34,197,94,0.18)")
+                  : state === "act"
+                  ? "var(--gold)"
+                  : "transparent";
+                const dotBorder = state === "done"
+                  ? (isLast && isCompleted ? "#22C55E" : "rgba(34,197,94,0.5)")
+                  : state === "act"
+                  ? "var(--gold)"
+                  : "rgba(255,255,255,0.12)";
+                const dotShadow = state === "act"
+                  ? "0 0 0 5px rgba(201,169,98,0.18)"
+                  : isLast && isCompleted
+                  ? "0 0 0 4px rgba(34,197,94,0.12)"
+                  : "none";
+
+                // Connector: gold for active step leading down, green for done, faint for wait
+                const connectorColor = state === "done"
+                  ? "rgba(34,197,94,0.35)"
+                  : state === "act"
+                  ? "rgba(201,169,98,0.3)"
+                  : "rgba(255,255,255,0.08)";
+
                 return (
-                  <div key={s} className="relative flex gap-3.5 py-3 last:pb-0">
-                    {/* Connector line */}
-                    {!isLast && (
-                      <span className={`absolute left-[11px] top-[28px] bottom-0 w-px ${state === "done" ? "bg-[#22C55E]/40" : "bg-[var(--brd)]"}`} />
-                    )}
-                    {/* Dot */}
-                    <div className="shrink-0 mt-0.5">
-                      {state === "done" ? (
-                        <div className={`flex items-center justify-center rounded-full ${isLast ? "w-5 h-5 bg-[#22C55E] shadow-[0_0_0_4px_rgba(34,197,94,0.12)]" : "w-4 h-4 bg-[#22C55E]/20 border border-[#22C55E]/50"}`}>
-                          <Check size={isLast ? 10 : 8} color={isLast ? "#fff" : "#22C55E"} weight="bold" />
-                        </div>
-                      ) : state === "act" ? (
-                        <div className="w-4 h-4 rounded-full bg-[var(--gold)] shadow-[0_0_0_4px_rgba(201,169,98,0.2)] flex items-center justify-center">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
-                        </div>
-                      ) : (
-                        <div className="w-4 h-4 rounded-full border border-[var(--brd)] bg-[var(--bg)]" />
+                  <div key={s} className="flex gap-3.5">
+                    {/* Dot + connector column */}
+                    <div className="flex flex-col items-center shrink-0" style={{ width: DOT }}>
+                      {/* Dot */}
+                      <div
+                        className="shrink-0 rounded-full z-10 flex items-center justify-center"
+                        style={{
+                          width: DOT,
+                          height: DOT,
+                          background: dotBg,
+                          border: `2px solid ${dotBorder}`,
+                          boxShadow: dotShadow,
+                        }}
+                      >
+                        {state === "done" && (
+                          <span
+                            className="rounded-full"
+                            style={{
+                              width: isLast && isCompleted ? 8 : 7,
+                              height: isLast && isCompleted ? 8 : 7,
+                              background: isLast && isCompleted ? "rgba(255,255,255,0.9)" : "#22C55E",
+                              opacity: isLast && isCompleted ? 1 : 0.9,
+                            }}
+                          />
+                        )}
+                        {state === "act" && (
+                          <span className="rounded-full animate-pulse" style={{ width: 7, height: 7, background: "rgba(255,255,255,0.85)" }} />
+                        )}
+                        {state === "wait" && (
+                          <span className="rounded-full" style={{ width: 6, height: 6, background: "rgba(255,255,255,0.1)" }} />
+                        )}
+                      </div>
+                      {/* Connector */}
+                      {!isLast && (
+                        <div
+                          style={{
+                            width: 2,
+                            flex: 1,
+                            marginTop: 3,
+                            marginBottom: 3,
+                            minHeight: 18,
+                            background: connectorColor,
+                            borderRadius: 1,
+                          }}
+                        />
                       )}
                     </div>
+
                     {/* Content */}
-                    <div className="flex-1 min-w-0">
+                    <div className={`flex-1 min-w-0 ${isLast ? "pb-0" : "pb-4"}`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`text-[12px] font-semibold leading-tight ${
-                          state === "done" ? "text-[var(--tx)]"
-                          : state === "act" ? "text-[var(--gold)]"
-                          : "text-[var(--tx3)]/40"
-                        }`}>
-                          {getStatusLabel(s)}
-                        </span>
+                        <div className="min-w-0">
+                          <span className={`text-[12px] font-semibold leading-tight block ${
+                            state === "done" ? "text-[var(--tx)]"
+                            : state === "act" ? "text-[var(--gold)]"
+                            : "text-[var(--tx3)]/35"
+                          }`}>
+                            {getStatusLabel(s)}
+                          </span>
+                          {state === "act" && (
+                            <span className="text-[9px] font-bold text-[var(--gold)]/70 uppercase tracking-widest block mt-0.5">Now</span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {elapsed !== null && elapsed > 0 && (
                             <span className="text-[9px] text-[var(--tx3)]/40 tabular-nums">{elapsed}m</span>
@@ -686,8 +754,6 @@ export default function CrewJobPage({
                               <span className={`text-[10px] tabular-nums font-medium ${state === "done" && isLast ? "text-[#22C55E]" : "text-[var(--tx3)]"}`}>
                                 {formatTime(ts, { hour: "numeric", minute: "2-digit" })}
                               </span>
-                            ) : state === "act" ? (
-                              <span className="text-[9px] font-bold text-[var(--gold)] uppercase tracking-widest">Now</span>
                             ) : null;
                           })()}
                         </div>

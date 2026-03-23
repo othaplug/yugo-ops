@@ -126,7 +126,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                 <p className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 flex flex-wrap items-center gap-2" style={{ color: WINE }}>
                   <span>{leg.label || `Event ${idx + 1}`}</span>
                   {leg.is_on_site ? (
-                    <span className="normal-case font-semibold text-[8px] px-2 py-0.5 rounded-full border" style={{ borderColor: `${FOREST}35`, color: FOREST }}>
+                    <span className="normal-case font-semibold text-[10px] px-2 py-0.5 rounded-full border" style={{ borderColor: `${FOREST}35`, color: FOREST }}>
                       On-site Event
                     </span>
                   ) : null}
@@ -177,7 +177,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
       {/* Phase breakdown */}
       <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: `${GOLD}40` }}>
         <div className="px-5 py-3.5 border-b" style={{ backgroundColor: `${GOLD}08`, borderColor: `${GOLD}25` }}>
-          <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase" style={{ color: WINE }}>
+          <h2 className="admin-section-h2" style={{ color: WINE }}>
             Service Breakdown
           </h2>
         </div>

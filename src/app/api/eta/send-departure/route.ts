@@ -15,7 +15,7 @@ async function getETAMinutes(
   destLng: number
 ): Promise<number> {
   if (!MAPBOX_TOKEN) return 30;
-  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${crewLng},${crewLat};${destLng},${destLat}?access_token=${MAPBOX_TOKEN}`;
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${crewLng},${crewLat};${destLng},${destLat}?access_token=${MAPBOX_TOKEN}`;
   const res = await fetch(url);
   const data = await res.json();
   if (data.routes?.[0]?.duration) {

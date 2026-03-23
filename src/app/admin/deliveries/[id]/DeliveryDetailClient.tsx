@@ -127,7 +127,7 @@ function MetricPill({ icon: Icon, label, value, accent }: { icon: React.ElementT
         <Icon className={`w-3.5 h-3.5 ${accent ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`} />
       </div>
       <div className="min-w-0">
-        <div className="text-[8px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 leading-none">{label}</div>
+        <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 leading-none">{label}</div>
         <div className={`text-[12px] font-semibold mt-0.5 truncate ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
       </div>
     </div>
@@ -716,7 +716,7 @@ export default function DeliveryDetailClient({
                     return (
                       <div key={stop.id} className="flex items-start gap-3.5">
                         <div className="flex flex-col items-center shrink-0">
-                          <div className="w-3 h-3 rounded-full border-2 flex items-center justify-center text-[8px]" style={{ borderColor: dotColor, backgroundColor: `${dotColor}20` }} />
+                          <div className="w-3 h-3 rounded-full border-2 flex items-center justify-center text-[9px]" style={{ borderColor: dotColor, backgroundColor: `${dotColor}20` }} />
                           {i < stops.length - 1 && <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />}
                         </div>
                         <div className="flex-1 min-w-0 pb-4">
@@ -728,15 +728,15 @@ export default function DeliveryDetailClient({
                               Stop {stop.stop_number}
                             </div>
                             {stop.stop_type && (
-                              <span className="text-[8px] uppercase font-semibold text-[var(--tx3)]/60">
+                              <span className="text-[9px] uppercase font-semibold text-[var(--tx3)]/60">
                                 {stop.stop_type}
                               </span>
                             )}
                             {isDoneStop && completedTime && (
-                              <span className="text-[8px] text-[#22C55E] ml-auto">Done {completedTime}</span>
+                              <span className="text-[9px] text-[#22C55E] ml-auto">Done {completedTime}</span>
                             )}
                             {isCurrentStop && (
-                              <span className="text-[8px] text-[#F59E0B] ml-auto">In Progress</span>
+                              <span className="text-[9px] text-[#F59E0B] ml-auto">In Progress</span>
                             )}
                           </div>
                           <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{stop.address || "—"}</div>

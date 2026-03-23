@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
 import { createPartnerNotification } from "@/lib/notifications";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(
   req: NextRequest,
@@ -52,6 +53,14 @@ export async function POST(
       deliveryId: delivery.id,
     });
   }
+
+  await logActivity({
+    entity_type: "delivery",
+    entity_id: id,
+    event_type: "approved",
+    description: `Delivery approved: ${delivery.customer_name || delivery.delivery_number}`,
+    icon: "check",
+  });
 
   return NextResponse.json({ ok: true });
 }

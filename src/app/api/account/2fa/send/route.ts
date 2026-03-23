@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { verificationCodeEmail } from "@/lib/email-templates";
 import { getEmailFrom } from "@/lib/email/send";
+import { rateLimit } from "@/lib/rate-limit";
 
 function generateCode(): string {
   const arr = new Uint8Array(6);
@@ -16,6 +17,16 @@ export async function POST() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // Rate limit: max 3 codes per user per 10 minutes
+    const rl = rateLimit(`2fa-send:${user.id}`, 3, 10 * 60 * 1000);
+    if (!rl.allowed) {
+      const waitMin = Math.ceil(rl.retryAfterMs / 60_000);
+      return NextResponse.json(
+        { error: `Too many codes sent. Try again in ${waitMin} minute${waitMin !== 1 ? "s" : ""}.` },
+        { status: 429 }
+      );
+    }
 
     const { data: platformUser } = await supabase
       .from("platform_users")

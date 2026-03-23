@@ -118,7 +118,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
 
       {/* Service includes */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+        <h2 className="admin-section-h2 mb-3">
           Service Includes
         </h2>
         <div className="space-y-2">

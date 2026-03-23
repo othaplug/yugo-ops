@@ -10,6 +10,7 @@ import {
   type PartnerProfile,
   PARTNER_SEGMENT_GROUPS,
   VERTICAL_TO_TEMPLATE_SLUG,
+  TEMPLATE_SLUG_LABELS,
 } from "@/lib/partner-type";
 
 function generatePassword(length = 12): string {
@@ -63,11 +64,18 @@ const BILLING_OPTIONS = [
 ];
 
 const PAYMENT_TERMS_OPTIONS = [
+  { value: "due_on_receipt", label: "Due on Receipt (default)" },
   { value: "net_15", label: "Net 15" },
   { value: "net_30", label: "Net 30" },
-  { value: "due_on_delivery", label: "Due on delivery" },
   { value: "prepay", label: "Pre-pay" },
 ];
+
+const PAYMENT_TERMS_DESCRIPTIONS: Record<string, string> = {
+  due_on_receipt: "Per-delivery invoice. Due immediately (3-day grace). Default for new partners until trust is established.",
+  net_15: "Bi-monthly statements on the 1st and 16th. Payment due on statement date. Maximum wait: 15 days per delivery.",
+  net_30: "Monthly statement on anchor day. Payment due on statement date. Maximum wait: 30 days per delivery.",
+  prepay: "Partner pre-loads a credit balance. Deliveries draw down against credits.",
+};
 
 const STEPS = [
   { id: 1, label: "Business", description: "Company profile & contact info" },
@@ -109,6 +117,8 @@ interface WizardState {
   templateSlug: string;
   billingMethod: string;
   paymentTerms: string;
+  billingAnchorDay: number;
+  billingEmail: string;
   taxId: string;
   insuranceCertRequired: boolean;
   // Step 4
@@ -142,7 +152,9 @@ const DEFAULT_STATE: WizardState = {
   pickupLocations: [""],
   templateSlug: "",
   billingMethod: "per_delivery",
-  paymentTerms: "net_30",
+  paymentTerms: "due_on_receipt",
+  billingAnchorDay: 1,
+  billingEmail: "",
   taxId: "",
   insuranceCertRequired: false,
   createPortalLogin: true,
@@ -260,6 +272,8 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
           template_slug: VERTICAL_TO_TEMPLATE_SLUG[state.type] || state.templateSlug || undefined,
           billing_method: state.billingMethod,
           payment_terms: state.paymentTerms,
+          billing_anchor_day: state.billingAnchorDay,
+          billing_email: state.billingEmail.trim() || undefined,
           tax_id: state.taxId.trim() || undefined,
           insurance_cert_required: state.insuranceCertRequired || undefined,
           create_portal_login: state.createPortalLogin,
@@ -795,6 +809,8 @@ function Step3RateCardBilling({
 }) {
   const autoSlug = VERTICAL_TO_TEMPLATE_SLUG[state.type] || "";
   const effectiveSlug = state.templateSlug || autoSlug;
+  const effectiveLabel = TEMPLATE_SLUG_LABELS[effectiveSlug] || effectiveSlug;
+  const autoLabel = TEMPLATE_SLUG_LABELS[autoSlug] || autoSlug;
 
   return (
     <div className="space-y-6">
@@ -806,7 +822,7 @@ function Step3RateCardBilling({
           className={inputCls}
         >
           <option value="">
-            {autoSlug ? `Auto-assigned: ${autoSlug}` : "Select template…"}
+            {autoSlug ? `Auto-assigned: ${autoLabel}` : "Select template…"}
           </option>
           {templates.map((t) => (
             <option key={t.id} value={t.template_slug}>{t.name}</option>
@@ -814,7 +830,7 @@ function Step3RateCardBilling({
         </select>
         {effectiveSlug && (
           <p className="text-[11px] text-[var(--tx3)] mt-1.5">
-            Template applied: <span className="font-semibold text-[var(--tx2)]">{effectiveSlug}</span>
+            Template applied: <span className="font-semibold text-[var(--tx2)]">{effectiveLabel}</span>
           </p>
         )}
       </div>
@@ -836,13 +852,67 @@ function Step3RateCardBilling({
           <label className={labelCls}>Payment Terms</label>
           <select
             value={state.paymentTerms}
-            onChange={(e) => update("paymentTerms", e.target.value)}
+            onChange={(e) => {
+              const terms = e.target.value;
+              update("paymentTerms", terms);
+              // Auto-set billing method and anchor day to match
+              if (terms === "due_on_receipt") update("billingMethod", "per_delivery");
+              else update("billingMethod", "monthly_statement");
+              // Net 15 always runs on 1st and 16th — lock anchor to 1
+              if (terms === "net_15") update("billingAnchorDay", 1);
+            }}
             className={inputCls}
           >
             {PAYMENT_TERMS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+          {PAYMENT_TERMS_DESCRIPTIONS[state.paymentTerms] && (
+            <p className="text-[11px] text-[var(--tx3)] mt-1.5">
+              {PAYMENT_TERMS_DESCRIPTIONS[state.paymentTerms]}
+            </p>
+          )}
+        </div>
+
+        {state.paymentTerms === "net_15" && (
+          <div>
+            <label className={labelCls}>Billing Cycle Days</label>
+            <div className={`${inputCls} bg-[var(--bg)]/60 text-[var(--tx3)] cursor-default select-none`}>
+              1st &amp; 16th of every month (fixed)
+            </div>
+            <p className="text-[11px] text-[var(--tx3)] mt-1.5">
+              Net 15 always generates two statements per month. Due on statement date.
+            </p>
+          </div>
+        )}
+
+        {state.paymentTerms === "net_30" && (
+          <div>
+            <label className={labelCls}>Billing Anchor Day</label>
+            <select
+              value={state.billingAnchorDay}
+              onChange={(e) => update("billingAnchorDay", Number(e.target.value))}
+              className={inputCls}
+            >
+              {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                <option key={d} value={d}>{d === 1 ? "1st" : d === 2 ? "2nd" : d === 3 ? "3rd" : `${d}th`} of month</option>
+              ))}
+            </select>
+            <p className="text-[11px] text-[var(--tx3)] mt-1.5">
+              Statement generated on this day each month. Payment due on statement date. Deliveries completed in the prior 30 days are included.
+            </p>
+          </div>
+        )}
+
+        <div>
+          <label className={labelCls}>Billing Contact Email</label>
+          <input
+            type="email"
+            value={state.billingEmail}
+            onChange={(e) => update("billingEmail", e.target.value)}
+            placeholder="If different from primary"
+            className={inputCls}
+          />
         </div>
 
         <div>
@@ -1008,10 +1078,10 @@ const BILLING_LABELS: Record<string, string> = {
   prepaid_credits: "Pre-paid credits",
 };
 const TERMS_LABELS: Record<string, string> = {
-  net_15: "Net 15",
-  net_30: "Net 30",
-  due_on_delivery: "Due on delivery",
-  prepay: "Pre-pay",
+  due_on_receipt: "Due on Receipt — per-delivery, due immediately",
+  net_15: "Net 15 — statements 1st & 16th, due on statement date",
+  net_30: "Net 30 — monthly statement, due on statement date",
+  prepay: "Pre-pay — credits pre-loaded",
 };
 const DELIVERY_LABELS: Record<string, string> = Object.fromEntries(
   DELIVERY_TYPE_OPTIONS.map((o) => [o.id, o.label])

@@ -16,7 +16,7 @@ function generateTempPassword(): string {
 
 /**
  * Partner portal self-serve forgot password.
- * Sends the OPS+ custom password reset email (same as admin-initiated reset) instead of Supabase's default.
+ * Sends the Yugo+ custom password reset email (same as admin-initiated reset) instead of Supabase's default.
  * Always returns 200 with a generic message to avoid revealing whether the email is registered.
  */
 export async function POST(req: NextRequest) {

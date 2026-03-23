@@ -414,6 +414,7 @@ export default function CreateMoveForm({
           name: i.name,
           quantity: i.quantity,
           weight_score: i.weight_score,
+          room: i.room || "other",
           ...(i.weightNote ? { weightNote: i.weightNote } : {}),
         }))
       ));
@@ -595,7 +596,7 @@ export default function CreateMoveForm({
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${moveType === "b2b_oneoff" ? "max-h-12 opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"}`}>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--gold)]/8 border border-[var(--gold)]/20 text-[10px] text-[var(--tx3)]">
                 <Info className="w-3 h-3 shrink-0 text-[var(--gold)]" aria-hidden />
-                For recurring partner deliveries, use <span className="font-semibold text-[var(--tx2)] mx-0.5">B2B Partners → Create Project</span> instead.
+                For recurring partner deliveries, use <span className="font-semibold text-[var(--tx2)] mx-0.5">Partners → Create Project</span> instead.
               </div>
             </div>
           </div>
@@ -950,7 +951,7 @@ export default function CreateMoveForm({
           <AnimatedSection show={moveType === "b2b_oneoff"}>
             <div className="space-y-2">
               <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--gold)]">
-                For one-off business deliveries. For recurring partner deliveries, use <span className="font-bold">B2B Partners → Create Project</span>.
+                For one-off business deliveries. For recurring partner deliveries, use <span className="font-bold">Partners → Create Project</span>.
               </div>
               <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off Delivery</h3>
               <div className="grid sm:grid-cols-2 gap-2">
@@ -992,7 +993,7 @@ export default function CreateMoveForm({
               <p className="text-[10px] text-[var(--tx3)]">Work site or primary location — you can use the same address twice.</p>
             )}
             <div className="space-y-1.5">
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 items-end">
+              <div className="flex flex-col sm:flex-row gap-2 items-start">
                 <div className="flex-1 min-w-0 w-full">
                   <AddressAutocomplete
                     value={fromAddress}
@@ -1008,7 +1009,7 @@ export default function CreateMoveForm({
                     className={fieldInput}
                   />
                 </div>
-                <div className="w-full sm:w-[140px]">
+                <div className="w-full sm:w-[140px] shrink-0">
                   <Field label="From Access">
                     <select
                     name="from_access"
@@ -1028,7 +1029,7 @@ export default function CreateMoveForm({
                   </Field>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 items-end">
+              <div className="flex flex-col sm:flex-row gap-2 items-start">
                 <div className="flex-1 min-w-0 w-full">
                   <AddressAutocomplete
                     value={toAddress}
@@ -1044,7 +1045,7 @@ export default function CreateMoveForm({
                     className={fieldInput}
                   />
                 </div>
-                <div className="w-full sm:w-[140px]">
+                <div className="w-full sm:w-[140px] shrink-0">
                   <Field label="To Access">
                     <select
                     name="to_access"

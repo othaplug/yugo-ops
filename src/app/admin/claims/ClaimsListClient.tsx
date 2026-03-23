@@ -4,7 +4,8 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
-import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
+import { useToast } from "../components/Toast";
 import CreateButton from "../components/CreateButton";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
@@ -137,6 +138,34 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
   const [stats, setStats] = useState<Stats>(initialStats);
   const [statusFilter, setStatusFilter] = useState("");
   const router = useRouter();
+  const { toast } = useToast();
+
+  const runBulk = useCallback(
+    async (action: "resolve" | "close", ids: string[]) => {
+      const res = await fetch("/api/admin/claims/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ids }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const labels: Record<string, string> = { resolve: "Marked resolved", close: "Closed" };
+        toast(`${labels[action]} ${data.updated} claim${data.updated !== 1 ? "s" : ""}`, "check");
+        router.refresh();
+      } else {
+        toast("Error: " + (data.error || "Failed"), "x");
+      }
+    },
+    [toast, router],
+  );
+
+  const bulkActions: BulkAction[] = useMemo(
+    () => [
+      { label: "Mark Resolved", onClick: (ids) => runBulk("resolve", ids) },
+      { label: "Close", onClick: (ids) => runBulk("close", ids), variant: "danger" as const },
+    ],
+    [runBulk],
+  );
 
   const refreshClaims = useCallback(async () => {
     try {
@@ -177,7 +206,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
-          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Claims</h1>
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Claims</h1>
         </div>
         <CreateButton href="/admin/claims/new" title="New Claim" />
       </div>
@@ -222,6 +251,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
         exportFilename="yugo-claims"
         columnToggle
         selectable
+        bulkActions={bulkActions}
         mobileCardLayout={{
           primaryColumnId: "client",
           subtitleColumnId: "claim_number",

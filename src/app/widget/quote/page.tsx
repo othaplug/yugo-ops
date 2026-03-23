@@ -1,13 +1,5 @@
-import QuoteWidgetClient from "@/app/quote-widget/QuoteWidgetClient";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Get a Quote",
-};
-
-export default function WidgetQuotePage() {
-  return (
-    <div className="min-h-screen flex items-start justify-center p-4 sm:p-6 sm:pt-10" style={{ background: "#FAF7F2" }}>
-      <QuoteWidgetClient />
-    </div>
-  );
+export default function WidgetQuoteRedirect() {
+  redirect("/quote-widget");
 }

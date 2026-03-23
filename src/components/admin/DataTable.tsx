@@ -278,13 +278,34 @@ export default function DataTable<T>({
     return columns.map((c) => c.id);
   });
 
-  /* Keep colOrder in sync if columns prop changes (new columns added) */
+  /* Keep colOrder in sync if columns prop changes (new columns added).
+   * Insert new ids where they belong in the column definition order — not at the end —
+   * so e.g. "Contact Name" stays next to "Company" for users with saved table layouts. */
   useEffect(() => {
     const allIds = columns.map((c) => c.id);
     setColOrder((prev) => {
       const pruned = prev.filter((id) => allIds.includes(id));
       const added = allIds.filter((id) => !pruned.includes(id));
-      return added.length > 0 ? [...pruned, ...added] : pruned.length === prev.length ? prev : pruned;
+      if (added.length === 0) {
+        return pruned.length === prev.length ? prev : pruned;
+      }
+      const addedSorted = [...added].sort((a, b) => allIds.indexOf(a) - allIds.indexOf(b));
+      let merged = [...pruned];
+      for (const addId of addedSorted) {
+        const canonicalIndex = allIds.indexOf(addId);
+        const beforeIds = allIds.slice(0, canonicalIndex);
+        let insertAt = 0;
+        for (let i = beforeIds.length - 1; i >= 0; i--) {
+          const bid = beforeIds[i];
+          const idx = merged.indexOf(bid);
+          if (idx !== -1) {
+            insertAt = idx + 1;
+            break;
+          }
+        }
+        merged.splice(insertAt, 0, addId);
+      }
+      return merged;
     });
   }, [columns]);
 
@@ -697,9 +718,9 @@ export default function DataTable<T>({
             <button
               type="button"
               onClick={handleExport}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-[var(--brd)] text-[10px] font-semibold leading-none text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
             >
-              <Download className="w-3 h-3" /> Export
+              <Download className="w-3 h-3 shrink-0" /> Export
             </button>
           )}
           {/* Column toggle */}
@@ -708,9 +729,9 @@ export default function DataTable<T>({
               <button
                 type="button"
                 onClick={() => setShowColMenu((v) => !v)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-[var(--brd)] text-[10px] font-semibold leading-none text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--tx3)]/40 transition-colors"
               >
-                <Columns3 className="w-3 h-3" /> Columns
+                <Columns3 className="w-3 h-3 shrink-0" /> Columns
               </button>
               {showColMenu && (
                 <>
@@ -745,15 +766,15 @@ export default function DataTable<T>({
               type="button"
               onClick={handleResetView}
               title="Reset to default view (columns, sort, page size)"
-              className="inline-flex items-center gap-1 px-2 py-2 rounded-lg text-[10px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]/50 transition-colors"
+              className="inline-flex items-center justify-center gap-0 p-1 rounded-md text-[10px] font-semibold leading-none text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)]/50 transition-colors min-w-[26px] min-h-[26px]"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3 h-3 shrink-0" />
             </button>
             <button
               type="button"
               onClick={handleSaveView}
               title={savedViewExists ? "Update saved view" : "Save current view (sort, columns, page size)"}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-[10px] font-semibold transition-all duration-200 ${
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-semibold leading-none transition-all duration-200 ${
                 saveFlash
                   ? "border-[var(--grn)]/40 bg-[var(--grn)]/10 text-[var(--grn)]"
                   : savedViewExists
@@ -762,11 +783,11 @@ export default function DataTable<T>({
               }`}
             >
               {saveFlash ? (
-                <BookmarkCheck className="w-3 h-3" />
+                <BookmarkCheck className="w-3 h-3 shrink-0" />
               ) : savedViewExists ? (
-                <BookmarkCheck className="w-3 h-3" />
+                <BookmarkCheck className="w-3 h-3 shrink-0" />
               ) : (
-                <Bookmark className="w-3 h-3" />
+                <Bookmark className="w-3 h-3 shrink-0" />
               )}
               {saveFlash ? "Saved!" : "Save view"}
             </button>
@@ -779,18 +800,18 @@ export default function DataTable<T>({
         <div
           className={`${
             selectableDesktopOnly ? "hidden md:flex" : "flex"
-          } flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3 mb-3 rounded-2xl bg-[var(--gdim)] border border-[var(--gold)]/35 shadow-sm`}
+          } flex-row items-center gap-2 sm:gap-3 px-3 py-1.5 mb-2 rounded-xl bg-[var(--gdim)] border border-[var(--gold)]/35 shadow-sm`}
         >
-          <span className="text-[12px] font-semibold text-[var(--tx)] shrink-0">
+          <span className="text-[11px] font-semibold text-[var(--tx)] shrink-0">
             {selectedKeys.size} selected
           </span>
-          <div className="flex flex-wrap items-stretch sm:items-center gap-2 sm:gap-2.5 sm:ml-auto w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-1.5 ml-auto">
             {effectiveBulkActions.map((action) => (
               <button
                 key={action.label}
                 type="button"
                 onClick={() => action.onClick([...selectedKeys])}
-                className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 rounded-full text-[12px] font-semibold transition-colors touch-manipulation ${
+                className={`inline-flex items-center justify-center gap-1.5 h-7 px-3 rounded-lg text-[11px] font-semibold transition-colors ${
                   action.variant === "danger"
                     ? "bg-[var(--red)]/15 text-[var(--red)] hover:bg-[var(--red)]/25 border border-[var(--red)]/25"
                     : "bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)]/50"
@@ -803,7 +824,7 @@ export default function DataTable<T>({
             <button
               type="button"
               onClick={() => setSelectedKeys(new Set())}
-              className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-full text-[12px] font-medium text-[var(--tx2)] hover:bg-[var(--brd)]/30 transition-colors"
+              className="inline-flex items-center justify-center h-7 px-2.5 rounded-lg text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--brd)]/30 transition-colors"
             >
               Clear
             </button>
@@ -816,7 +837,7 @@ export default function DataTable<T>({
         className={`hidden md:block w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pr-1 ${stickyHeader ? "max-h-[calc(100vh-240px)] overflow-y-auto" : ""}`}
       >
         <table
-          className={`border-collapse w-full min-w-[600px] text-[12px] ${striped ? "dt-striped" : ""}`}
+          className={`border-collapse w-full min-w-[600px] ${striped ? "dt-striped" : ""}`}
           style={{ tableLayout: "fixed" }}
         >
           <colgroup>

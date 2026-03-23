@@ -12,7 +12,7 @@ import {
 } from "../quote-shared";
 
 const TIER_ICONS: Record<string, LucideIcon> = {
-  curated: Target,
+  essential: Target,
   signature: Crown,
   estate: Gem,
 };
@@ -140,7 +140,7 @@ export default function ResidentialLayout({
                       </h3>
                       {isRecommended && (
                         <span
-                          className="uppercase text-[8px] font-bold tracking-wider"
+                          className="uppercase text-[9px] font-bold tracking-wider"
                           style={{
                             letterSpacing: "0.5px",
                             color: "#0A0A0A",

@@ -117,7 +117,7 @@ const marginBg = (m: number, t: number) =>
   m >= t ? "bg-emerald-500/10 border-emerald-500/20" : m >= t - 5 ? "bg-[var(--gold)]/10 border-[var(--gold)]/20" : "bg-red-500/10 border-red-500/20";
 
 const TIER_COLORS: Record<string, string> = {
-  curated: "#6B7280", essentials: "#6B7280",
+  essential: "#6B7280", curated: "#6B7280", essentials: "#6B7280",
   signature: "#C9A962", premier: "#C9A962",
   estate: "#2D6A4F",
 };
@@ -376,7 +376,7 @@ function OverheadEditor({
             <div key={t.key} className="flex items-center gap-3">
               <div className="w-24 text-[10px] font-medium text-[var(--tx)]">{t.label}</div>
               <div className="flex-1">
-                <label className="block text-[8px] text-[var(--tx3)] mb-0.5">Monthly lease/rental</label>
+                <label className="block text-[9px] text-[var(--tx3)] mb-0.5">Monthly lease/rental</label>
                 <div className="relative">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[var(--tx3)]">$</span>
                   <input
@@ -388,12 +388,12 @@ function OverheadEditor({
                 </div>
               </div>
               <div className="w-32 text-right">
-                <div className="text-[8px] text-[var(--tx3)] mb-0.5">Daily rate used</div>
+                <div className="text-[9px] text-[var(--tx3)] mb-0.5">Daily rate used</div>
                 <div className="text-[12px] font-semibold text-[var(--gold)]">
                   {formatCurrency(derivedDaily(t.key))}<span className="text-[9px] text-[var(--tx3)] font-normal">/day</span>
                 </div>
                 {parseFloat(truckMonthly[t.key] ?? "0") === 0 && (
-                  <div className="text-[8px] text-[var(--tx3)]">industry default</div>
+                  <div className="text-[9px] text-[var(--tx3)]">industry default</div>
                 )}
               </div>
             </div>
@@ -769,7 +769,7 @@ export default function ProfitabilityClient() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
-          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Profitability</h1>
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Profitability</h1>
           <p className="text-[11px] text-[var(--tx3)] mt-2">Cost, profit, and margin from labour, truck, fuel, and supplies</p>
           <Link href="/admin/finance/forecast" className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[var(--gold)] hover:underline">
             <TrendingUp size={10} weight="regular" className="text-current shrink-0" aria-hidden />
@@ -1098,7 +1098,7 @@ export default function ProfitabilityClient() {
                           <span className="font-medium text-[var(--tx)] truncate">{r.client}</span>
                           {r.tier && (
                             <span
-                              className="ml-1.5 inline-flex items-center px-1 py-px rounded text-[8px] font-bold leading-none capitalize"
+                              className="ml-1.5 inline-flex items-center px-1 py-px rounded text-[10px] font-bold leading-none capitalize"
                               style={{ color: TIER_COLORS[r.tier] ?? "#C9A962", backgroundColor: `${TIER_COLORS[r.tier] ?? "#C9A962"}22` }}
                             >
                               {r.tier}
@@ -1181,7 +1181,7 @@ function StatCard({ label, value, sub, className, bgClass, icon }: {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-      <h2 className="text-[13px] font-bold text-[var(--tx)] mb-4">{title}</h2>
+      <h2 className="admin-section-h2 mb-4">{title}</h2>
       {children}
     </div>
   );

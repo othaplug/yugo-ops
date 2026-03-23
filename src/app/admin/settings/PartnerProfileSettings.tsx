@@ -78,7 +78,7 @@ export default function PartnerProfileSettings() {
   return (
     <div id="partner-profile" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
       <div className="px-5 py-5 border-b border-[var(--brd)] bg-[var(--bg2)]">
-        <h2 className="font-heading text-[18px] font-bold text-[var(--tx)] flex items-center gap-2">
+        <h2 className="admin-section-h2 flex items-center gap-2.5">
           <Icon name="handshake" className="w-[18px] h-[18px]" /> Partner Profile
         </h2>
         <p className="text-[12px] text-[var(--tx3)] mt-1.5">Update your contact details. Company name and partner type can only be changed by an administrator.</p>

@@ -36,15 +36,24 @@ export async function PATCH(
       const admin = createAdminClient();
       const now = new Date().toISOString();
 
+      const { data: current, error: fetchErr } = await admin.from("moves").select("status").eq("id", id).single();
+      if (fetchErr || !current) return NextResponse.json({ error: "Move not found" }, { status: 404 });
+
+      // Don't regress a move that's already in_progress, completed, or cancelled
+      const PAST_PAID_STATUSES = new Set(["in_progress", "completed", "cancelled"]);
+      const patch: Record<string, unknown> = {
+        payment_marked_paid: true,
+        payment_marked_paid_at: now,
+        payment_marked_paid_by: markedBy.trim(),
+        updated_at: now,
+      };
+      if (!PAST_PAID_STATUSES.has(current.status ?? "")) {
+        patch.status = "paid";
+      }
+
       const { data: move, error: updateErr } = await admin
         .from("moves")
-        .update({
-          status: "paid",
-          payment_marked_paid: true,
-          payment_marked_paid_at: now,
-          payment_marked_paid_by: markedBy.trim(),
-          updated_at: now,
-        })
+        .update(patch)
         .eq("id", id)
         .select()
         .single();
@@ -55,12 +64,12 @@ export async function PATCH(
       await admin.from("status_events").insert({
         entity_type: "move",
         entity_id: id,
-        event_type: "status_change",
+        event_type: "payment_received",
         description: `Move marked as paid by ${markedBy.trim()}`,
         icon: "dollar",
       });
 
-      await auditAfter({ status: "paid", markedBy: markedBy.trim() });
+      await auditAfter({ status: move.status, markedBy: markedBy.trim() });
       return NextResponse.json(move);
     }
 
@@ -68,7 +77,22 @@ export async function PATCH(
       const admin = createAdminClient();
       const { data: moveBefore, error: fetchE } = await admin.from("moves").select("*").eq("id", id).single();
       if (fetchE || !moveBefore) return NextResponse.json({ error: "Move not found" }, { status: 404 });
-      const bal = Number(moveBefore.balance_amount || 0);
+
+      // Include approved change-request and extra-item fees, matching the client-side balanceDue calculation
+      const [{ data: approvedChanges }, { data: approvedExtras }] = await Promise.all([
+        admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved"),
+        admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved"),
+      ]);
+      const additionalCents =
+        (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0) +
+        (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+      // Guard against double-processing
+      if (moveBefore.balance_paid_at) {
+        return NextResponse.json({ error: "Balance has already been marked as received" }, { status: 400 });
+      }
+
+      const bal = Number(moveBefore.balance_amount || 0) + additionalCents / 100;
+
       if (bal <= 0) {
         return NextResponse.json({ error: "No balance due to mark as received" }, { status: 400 });
       }
@@ -118,7 +142,16 @@ export async function PATCH(
         return NextResponse.json({ error: "No card on file for this move" }, { status: 400 });
       }
 
-      const balanceAmount = Number(move.balance_amount || 0);
+      // Include approved change-request and extra-item fees, matching the client-side balanceDue calculation
+      const [{ data: chargeChanges }, { data: chargeExtras }] = await Promise.all([
+        admin.from("move_change_requests").select("fee_cents").eq("move_id", id).eq("status", "approved"),
+        admin.from("extra_items").select("fee_cents").eq("job_id", id).eq("job_type", "move").eq("status", "approved"),
+      ]);
+      const chargeAdditionalCents =
+        (chargeChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0) +
+        (chargeExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
+      const balanceAmount = Number(move.balance_amount || 0) + chargeAdditionalCents / 100;
+
       if (balanceAmount <= 0) {
         return NextResponse.json({ error: "No balance to charge" }, { status: 400 });
       }
@@ -178,6 +211,20 @@ export async function PATCH(
         const msg = e instanceof Error ? e.message : "Payment processing failed";
         return NextResponse.json({ error: msg }, { status: 500 });
       }
+    }
+
+    if (action === "log_status_change") {
+      const admin = createAdminClient();
+      const { new_status, previous_status } = body as { new_status?: string; previous_status?: string };
+      if (!new_status) return NextResponse.json({ error: "new_status required" }, { status: 400 });
+      await admin.from("status_events").insert({
+        entity_type: "move",
+        entity_id: id,
+        event_type: `status_changed_to_${new_status}`,
+        description: `Status changed: ${previous_status ?? "unknown"} → ${new_status}`,
+        icon: "move",
+      });
+      return NextResponse.json({ ok: true });
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });

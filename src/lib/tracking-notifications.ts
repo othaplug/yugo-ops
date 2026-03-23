@@ -182,6 +182,7 @@ export async function notifyOnCheckpoint(
     body,
     ctaUrl: trackUrl,
     ctaLabel: trackUrl ? "Track your job" : undefined,
+    includeFooter: false,
   });
 
   const toSend: string[] = [];

@@ -39,7 +39,7 @@ const NAV_SEARCH_ITEMS: { name: string; href: string; keywords: string[] }[] = [
   { name: "Designers", href: "/admin/partners/designers", keywords: ["designers", "partners"] },
   { name: "Hospitality", href: "/admin/partners/hospitality", keywords: ["hospitality", "partners"] },
   { name: "Art Gallery", href: "/admin/partners/gallery", keywords: ["gallery", "art", "partners"] },
-  { name: "Realtors & referrals", href: "/admin/partners/realtors", keywords: ["realtors", "referrals", "referral partners", "property manager", "developer", "commission"] },
+  { name: "Referral Partners", href: "/admin/partners/realtors", keywords: ["realtors", "referrals", "referral partners", "property manager", "developer", "commission"] },
   { name: "All Moves", href: "/admin/moves", keywords: ["moves", "all"] },
   { name: "Quotes", href: "/admin/quotes", keywords: ["quotes"] },
   { name: "Invoices", href: "/admin/invoices", keywords: ["invoices", "finance"] },
@@ -228,7 +228,7 @@ export default function SearchBox() {
                 {r.sub && <div className="text-[9px] text-[var(--tx3)] truncate">{r.sub}</div>}
               </div>
               <span
-                className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full shrink-0"
+                className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full shrink-0"
                 style={{
                   color: TYPE_COLORS[r.type] || "var(--tx3)",
                   backgroundColor: `${TYPE_COLORS[r.type]}18` || "var(--gdim)",

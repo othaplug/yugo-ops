@@ -149,7 +149,7 @@ const PHASE_COLORS: Record<string, { bg: string; text: string; icon: typeof Chec
 };
 
 const TABS = ["Overview", "Phases", "Inventory", "Vendor Tracker", "Deliveries", "Timeline", "Invoice"];
-const fieldInput = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
+const fieldInput = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
 function EditProjectModal({ open, onClose, data, onSaved }: { open: boolean; onClose: () => void; data: ProjectData; onSaved: () => void }) {
   const { toast } = useToast();

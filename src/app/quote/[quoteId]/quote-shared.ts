@@ -125,32 +125,32 @@ export interface HighValueDeclaration {
 
 /* ─── Constants ──────────────────────────────── */
 
-export const TIER_ORDER = ["curated", "signature", "estate"] as const;
+export const TIER_ORDER = ["essential", "signature", "estate"] as const;
 
 export const TIER_META: Record<
   string,
   { label: string; tagline: string; badge?: string; footer?: string; accent: string; bg: string; border: string }
 > = {
-  curated: {
-    label: TIER_LABELS.curated,
-    tagline: "Precision and care for a seamless move.",
+  essential: {
+    label: TIER_LABELS.essential,
+    tagline: "Precision and care, handled efficiently.",
     accent: FOREST,
     bg: "#FFFFFF",
     border: "#E2DDD5",
-    footer: "Best for: straightforward moves with quality assurance.",
+    footer: "Best for: simple, well-prepared moves with minimal handling needs.",
   },
   signature: {
     label: TIER_LABELS.signature,
-    tagline: "Every detail handled. Nothing left to chance.",
+    tagline: "A fully managed move, where everything is handled before you have to think about it.",
     badge: "RECOMMENDED",
     accent: GOLD,
     bg: "#FFFDF8",
     border: GOLD,
-    footer: "Best for: full-home moves where nothing gets overlooked.",
+    footer: "Best for: complete home moves where time, flow, and peace of mind matter.",
   },
   estate: {
     label: TIER_LABELS.estate,
-    tagline: "A private standard for those who expect more than a move.",
+    tagline: "A private standard, executed with intention from start to finish.",
     accent: WINE,
     bg: "#FDF8FA",
     border: WINE,
@@ -231,6 +231,16 @@ export function fmtPrice(n: number) {
   });
 }
 
+/**
+ * Per-pound rates must show cents (e.g. $0.60/lb). `fmtPrice` uses 0 fraction digits and rounds $0.60 → $1.
+ * Uses fixed decimals (not Intl) so the value cannot vary by runtime locale.
+ */
+export function fmtPricePerLb(n: number) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "—";
+  return `$${x.toFixed(2)}`;
+}
+
 export function fmtDate(d: string | null) {
   if (!d) return "\u2014";
   return new Date(d + "T00:00:00").toLocaleDateString("en-CA", {
@@ -280,7 +290,7 @@ export function addDays(d: Date, n: number) {
 /** Tiered deposit for residential local moves — 10 / 15 / 25 % with minimums. */
 export function calculateTieredDeposit(tier: string, total: number): number {
   switch (tier) {
-    case "curated":
+    case "essential":
       return Math.max(150, Math.round(total * 0.10));
     case "signature":
       return Math.max(250, Math.round(total * 0.15));

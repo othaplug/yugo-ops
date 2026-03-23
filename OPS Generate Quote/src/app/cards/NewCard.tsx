@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, Button, Flex, hubspot } from "@hubspot/ui-extensions";
 
-const OPS_BASE_URL = "https://opsplus.co";
+const YUGO_APP_BASE_URL = "https://opsplus.co";
 
 hubspot.extend<"crm.record.sidebar">(({ context }) => (
   <Extension context={context} />
@@ -15,7 +15,7 @@ const Extension = ({ context }) => {
 
   return (
     <Flex direction="column" gap="medium">
-      <Text>Create a quote in OPS using this deal's details.</Text>
+      <Text>Create a quote in Yugo+ using this deal&apos;s details.</Text>
       {quoteUrl && (
         <Button
           href={{
@@ -24,7 +24,7 @@ const Extension = ({ context }) => {
           }}
           variant="primary"
         >
-          Generate Quote in OPS
+          Generate Quote in Yugo+
         </Button>
       )}
     </Flex>

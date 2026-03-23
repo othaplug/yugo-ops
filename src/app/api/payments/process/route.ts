@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
 import { runPostPaymentActions } from "@/lib/automations/post-payment";
 import { rateLimit } from "@/lib/rate-limit";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(req: Request) {
   try {
@@ -183,7 +184,16 @@ export async function POST(req: Request) {
       });
     }
 
-    // ── 7. Post-payment actions (fire-and-forget) ──
+    // ── 7. Log to activity feed ──
+    await logActivity({
+      entity_type: "quote",
+      entity_id: quoteId,
+      event_type: "accepted",
+      description: `Quote accepted by ${clientName} — $${amount.toLocaleString()} deposit paid (${quoteId})`,
+      icon: "payment",
+    });
+
+    // ── 8. Post-payment actions (fire-and-forget) ──
     if (moveId && moveCode && squarePaymentId) {
       runPostPaymentActions({
         quoteId,

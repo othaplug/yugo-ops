@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
+import { registerCrewServiceWorker } from "@/lib/crew/register-sw";
 
 const IDLE_INTERVAL_MS = 30_000;
 
@@ -11,6 +12,10 @@ const IDLE_INTERVAL_MS = 30_000;
  * Renders a small live indicator visible to the crew.
  */
 export default function CrewAlwaysOnLocation() {
+  useEffect(() => {
+    registerCrewServiceWorker();
+  }, []);
+
   const pathname = usePathname();
   const watchIdRef = useRef<number | null>(null);
   const lastSentRef = useRef(0);

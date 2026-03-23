@@ -79,9 +79,9 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
               {(() => {
                 const hasBalance = (c.outstanding_balance ?? 0) > 0;
                 const isActive = Number(c.deliveries_per_month ?? 0) > 0;
-                if (hasBalance) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--ordim)] text-[var(--org)]">Owing</span>;
-                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
-                return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--bg)] text-[var(--tx3)]">Inactive</span>;
+                if (hasBalance) return <span className="inline-flex px-2 py-[2px] rounded text-[10px] font-bold bg-[var(--ordim)] text-[var(--org)]">Owing</span>;
+                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-[10px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
+                return <span className="inline-flex px-2 py-[2px] rounded text-[10px] font-bold bg-[var(--bg)] text-[var(--tx3)]">Inactive</span>;
               })()}
             </div>
           </td>

@@ -13,6 +13,9 @@ interface SectionErrorProps {
 export default function SectionError({ error, reset, section }: SectionErrorProps) {
   useEffect(() => {
     console.error(`[${section ?? "admin"} error]`, error);
+    // #region agent log
+    fetch('/api/debug-capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'a968d1',location:`SectionError/${section}`,message:'Section error boundary caught',data:{message:error.message,stack:error.stack,digest:error.digest},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
   }, [error, section]);
 
   return (
@@ -22,7 +25,7 @@ export default function SectionError({ error, reset, section }: SectionErrorProp
           <WarningCircle size={24} color="var(--red)" aria-hidden />
         </div>
         <div>
-          <h2 className="text-[16px] font-bold text-[var(--tx)]">
+          <h2 className="admin-section-h2">
             {section ? `${section} failed to load` : "Something went wrong"}
           </h2>
           <p className="text-[12px] text-[var(--tx3)] mt-1.5 leading-relaxed">
@@ -35,6 +38,9 @@ export default function SectionError({ error, reset, section }: SectionErrorProp
               ref: {error.digest}
             </p>
           )}
+          {/* #region agent log */}
+          {error.stack && <pre style={{fontSize:'8px',textAlign:'left',opacity:0.4,maxHeight:'100px',overflow:'auto',whiteSpace:'pre-wrap',wordBreak:'break-all',marginTop:'8px'}}>{error.stack}</pre>}
+          {/* #endregion */}
         </div>
         <div className="flex gap-3 justify-center">
           <button

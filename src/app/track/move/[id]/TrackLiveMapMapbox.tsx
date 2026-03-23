@@ -181,7 +181,7 @@ export function TrackLiveMapMapbox({
     if (!routeOrigin || !routeDest || !mapboxAccessToken) return;
     if (routeOrigin === routeDest) return;
     const coords = `${routeOrigin.lng},${routeOrigin.lat};${routeDest.lng},${routeDest.lat}`;
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${mapboxAccessToken}`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coords}?geometries=geojson&access_token=${mapboxAccessToken}`;
     try {
       const res = await fetch(url);
       const data = await res.json();

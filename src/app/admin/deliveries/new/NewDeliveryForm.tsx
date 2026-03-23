@@ -66,7 +66,7 @@ const TIME_OPTIONS = (() => {
 })();
 
 const fieldInput =
-  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
+  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
 export default function NewDeliveryForm({ organizations, crews = [] }: { organizations: Org[]; crews?: Crew[] }) {
   const router = useRouter();
@@ -636,7 +636,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
               </select>
               <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())} placeholder="Item name" className={`${fieldInput} flex-1 min-w-[120px]`} />
               <input type="number" min={1} max={99} value={newItemQty} onChange={(e) => setNewItemQty(Math.max(1, parseInt(e.target.value, 10) || 1))} className={`${fieldInput} w-16`} />
-              <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
+              <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim() || !newRoom} className="flex-none inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50">
                 <Plus className="w-[14px] h-[14px]" /> Add
               </button>
             </div>

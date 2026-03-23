@@ -1,8 +1,9 @@
-/** Move lifecycle status (admin + client timeline). Values are DB/enum; labels only in UI. */
+/** Move lifecycle status (admin + client timeline). Values are DB/enum; labels only in UI.
+ *  Note: "paid" is a DB payment-flag status and is intentionally excluded from selectable options
+ *  and progress bar steps — it should not appear as a manual dropdown choice or a named stage. */
 export const MOVE_STATUS_OPTIONS = [
   { value: "confirmed", label: "Confirmed" },
   { value: "scheduled", label: "Scheduled" },
-  { value: "paid", label: "Paid" },
   { value: "in_progress", label: "In Progress" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
@@ -67,11 +68,15 @@ export const MOVE_STATUS_INDEX: Record<string, number> = {
   /** Pre-booking / CRM pipeline — same step as confirmed in admin UX */
   quoted: 0,
   quote: 0,
+  /** Auto-scheduling outcomes — show at the "Confirmed" step until slot is resolved */
+  confirmed_pending_schedule: 0,
+  confirmed_unassigned: 0,
   scheduled: 1,
-  paid: 2,
-  final_payment_received: 2, // legacy, map to same as paid
-  in_progress: 3,
-  completed: 4,
+  /** "paid" is a DB payment flag, not a selectable stage — display at the "Scheduled" step */
+  paid: 1,
+  final_payment_received: 1, // legacy alias
+  in_progress: 2,
+  completed: 3,
   cancelled: -1,
 };
 
@@ -89,6 +94,8 @@ export const MOVE_STATUS_COLORS: Record<string, string> = {
   delivered: "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30",
   pending: "bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30",
   "in-transit": "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30",
+  confirmed_pending_schedule: "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30",
+  confirmed_unassigned: "bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30",
 };
 
 /** Admin dark theme status colors */
@@ -105,6 +112,8 @@ export const MOVE_STATUS_COLORS_ADMIN: Record<string, string> = {
   delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.12)]",
   pending: "text-[var(--org)] bg-[rgba(212,138,41,0.12)]",
   "in-transit": "text-[var(--gold)] bg-[var(--gdim)]",
+  confirmed_pending_schedule: "text-[var(--gold)] bg-[var(--gdim)]",
+  confirmed_unassigned: "text-[var(--red)] bg-[rgba(209,67,67,0.12)]",
 };
 
 /** Timeline/line color by move status (CSS var or hex for the vertical line next to time) */
@@ -121,6 +130,8 @@ export const MOVE_STATUS_LINE_COLOR: Record<string, string> = {
   delivered: "var(--grn)",
   pending: "var(--gold)",
   "in-transit": "var(--gold)",
+  confirmed_pending_schedule: "var(--gold)",
+  confirmed_unassigned: "var(--red)",
 };
 
 /** Timeline/line color by delivery status */
@@ -140,7 +151,9 @@ export function getStatusLabel(status: string | null): string {
   const found = MOVE_STATUS_OPTIONS.find((o) => o.value === status);
   if (found) return found.label;
   const legacy: Record<string, string> = {
-    final_payment_received: "Paid",
+    // "paid" is a DB payment flag, not a selectable stage — surface it as "Scheduled"
+    paid: "Scheduled",
+    final_payment_received: "Scheduled",
     delivered: "Completed",
     pending: "Confirmed",
     "in-transit": "In Progress",
@@ -148,6 +161,9 @@ export function getStatusLabel(status: string | null): string {
     quote: "Confirmed",
     /** DB/CRM value — not a selectable admin status; same bucket as confirmed */
     quoted: "Confirmed",
+    // Auto-scheduling outcomes
+    confirmed_pending_schedule: "Pending Time Slot",
+    confirmed_unassigned: "Needs Scheduling",
   };
   if (legacy[status]) return legacy[status];
   return status.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -157,13 +173,18 @@ export function getStatusLabel(status: string | null): string {
 export function normalizeStatus(status: string | null): string | null {
   if (!status) return null;
   const legacy: Record<string, string> = {
-    final_payment_received: "paid",
+    // "paid" and legacy aliases resolve to "scheduled" (the canonical selectable stage)
+    paid: "scheduled",
+    final_payment_received: "scheduled",
     delivered: "completed",
     pending: "confirmed",
     "in-transit": "in_progress",
     dispatched: "in_progress",
     quote: "confirmed",
     quoted: "confirmed",
+    // Auto-scheduling statuses pass through as-is — don't normalize them away
+    confirmed_pending_schedule: "confirmed_pending_schedule",
+    confirmed_unassigned: "confirmed_unassigned",
   };
   return legacy[status] || status;
 }

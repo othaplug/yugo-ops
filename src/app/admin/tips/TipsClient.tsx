@@ -17,6 +17,15 @@ interface Tip {
   charged_at: string;
 }
 
+interface CrewAllocation {
+  id: string;
+  name: string;
+  total: number;
+  count: number;
+  avg: number;
+  highest: number;
+}
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
@@ -27,11 +36,13 @@ export default function TipsClient({
   totalTips,
   avgTip,
   tipCount,
+  crewAllocations = [],
 }: {
   tips: Tip[];
   totalTips: number;
   avgTip: number;
   tipCount: number;
+  crewAllocations?: CrewAllocation[];
 }) {
   const columns: ColumnDef<Tip>[] = [
     {
@@ -91,13 +102,69 @@ export default function TipsClient({
   return (
     <div className="max-w-[1000px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
       <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
-      <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none mb-8">Tips</h1>
+      <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none mb-8">Tips</h1>
 
       <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
         <KpiCard label="Total Collected" value={formatCurrency(totalTips)} sub={`${tipCount} gratuities`} accent />
         <KpiCard label="Average Tip" value={formatCurrency(avgTip)} sub="per completed move" />
         <KpiCard label="Total Count" value={String(tipCount)} sub="all time" />
       </div>
+
+      {crewAllocations.length > 0 && (
+        <>
+          <SectionDivider label="Crew Tip Allocation" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {crewAllocations.slice(0, 6).map((crew, i) => (
+              <div
+                key={crew.id}
+                className="rounded-xl border border-[var(--brd)] p-4 bg-[var(--card)]"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                    style={{
+                      background: i === 0 ? "rgba(201,169,98,0.15)" : "var(--bg)",
+                      color: i === 0 ? "var(--gold)" : "var(--tx3)",
+                      border: "1px solid var(--brd)",
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-bold text-[var(--tx)] truncate">{crew.name}</p>
+                    <p className="text-[10px] text-[var(--tx3)]">{crew.count} gratuities</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-[15px] font-bold text-[var(--gold)]">{formatCurrency(crew.total)}</p>
+                    <p className="text-[9px] text-[var(--tx3)] uppercase tracking-wide">Total</p>
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold text-[var(--tx)]">{formatCurrency(crew.avg)}</p>
+                    <p className="text-[9px] text-[var(--tx3)] uppercase tracking-wide">Avg</p>
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold text-[#22c55e]">{formatCurrency(crew.highest)}</p>
+                    <p className="text-[9px] text-[var(--tx3)] uppercase tracking-wide">Best</p>
+                  </div>
+                </div>
+                {/* Proportion bar */}
+                <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--brd)" }}>
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.round((crew.total / (crewAllocations[0]?.total || 1)) * 100)}%`,
+                      background: "var(--gold)",
+                      opacity: 0.7,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <SectionDivider label="Recent Tips" />
       <DataTable<Tip>

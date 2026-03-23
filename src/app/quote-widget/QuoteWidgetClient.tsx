@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import YugoLogo from "@/components/YugoLogo";
+import SeasonalPricingPreview from "@/components/SeasonalPricingPreview";
 import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import {
@@ -724,7 +725,7 @@ export default function QuoteWidgetClient() {
                                   <div className="flex items-center gap-2">
                                     <span className="text-[13px]" style={{ color: `${FOREST}90` }}>{item.name}</span>
                                     {item.fragile && (
-                                      <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>
+                                      <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>
                                         Fragile
                                       </span>
                                     )}
@@ -834,7 +835,7 @@ export default function QuoteWidgetClient() {
                     <span className="text-[13px] font-semibold" style={{ color: FOREST }}>Special handling</span>
                     <span className="flex items-center gap-2">
                       {specialHandling.trim() && (
-                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>Filled</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>Filled</span>
                       )}
                       <CaretDown
                         size={14}
@@ -985,7 +986,7 @@ export default function QuoteWidgetClient() {
                               </div>
                               <div className="space-y-1">
                                 <div
-                                  className="text-[8px] sm:text-[9px] font-bold uppercase rounded-md py-0.5 cursor-pointer transition-colors"
+                                  className="text-[10px] sm:text-[9px] font-bold uppercase rounded-md py-0.5 cursor-pointer transition-colors"
                                   style={{
                                     backgroundColor: isSelected && selectedTime === "am" ? GOLD : `${FOREST}06`,
                                     color: isSelected && selectedTime === "am" ? "white" : `${FOREST}60`,
@@ -998,7 +999,7 @@ export default function QuoteWidgetClient() {
                                   </div>
                                 </div>
                                 <div
-                                  className="text-[8px] sm:text-[9px] font-bold uppercase rounded-md py-0.5 cursor-pointer transition-colors"
+                                  className="text-[10px] sm:text-[9px] font-bold uppercase rounded-md py-0.5 cursor-pointer transition-colors"
                                   style={{
                                     backgroundColor: isSelected && selectedTime === "pm" ? GOLD : `${FOREST}06`,
                                     color: isSelected && selectedTime === "pm" ? "white" : `${FOREST}60`,
@@ -1047,6 +1048,15 @@ export default function QuoteWidgetClient() {
                         </div>
                       </div>
                     )}
+
+                    {/* ── Seasonal pricing preview ── */}
+                    <div className="mb-5">
+                      <SeasonalPricingPreview
+                        basePrice={selectedPrice || 1200}
+                        selectedMonth={selectedDate ? new Date(selectedDate + "T12:00:00").getMonth() + 1 : undefined}
+                        compact
+                      />
+                    </div>
 
                     {/* ── Disclaimer ── */}
                     <div className="rounded-xl p-4 mb-5 border" style={{ backgroundColor: `${FOREST}04`, borderColor: `${FOREST}08` }}>

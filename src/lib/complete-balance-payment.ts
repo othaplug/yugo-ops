@@ -60,7 +60,7 @@ export async function finalizeBalancePaymentSettlement(opts: {
   const label = inventoryChangeRequestId ? "Change request adjustment" : "Balance payment";
   const entryType = inventoryChangeRequestId ? "inventory_change" : "balance";
 
-  const { data: move, error: moveErr } = await admin.from("moves").select("total_paid, amount").eq("id", moveId).single();
+  const { data: move, error: moveErr } = await admin.from("moves").select("total_paid, amount, status").eq("id", moveId).single();
   if (moveErr || !move) throw new Error(moveErr?.message || "Move not found");
 
   const prev = move.total_paid != null ? Number(move.total_paid) : null;
@@ -87,18 +87,24 @@ export async function finalizeBalancePaymentSettlement(opts: {
   });
   if (ledErr) throw new Error(ledErr.message);
 
+  // Only advance status to "paid" if the move hasn't already progressed further
+  // (in_progress = 3, completed = 4 must not be regressed back to paid = 2)
+  const PAST_PAID_STATUSES = new Set(["in_progress", "completed", "cancelled"]);
   const movePatch: Record<string, unknown> = {
     balance_amount: 0,
     balance_paid_at: paidAt,
     balance_method: settlementMethod === "etransfer" ? "etransfer" : "card",
     balance_auto_charged: settlementMethod === "auto-charge",
-    status: "paid",
     payment_marked_paid: true,
     payment_marked_paid_at: paidAt,
     payment_marked_paid_by: paymentMarkedBy,
     total_paid: newTotalPaid,
     updated_at: paidAt,
   };
+
+  if (!PAST_PAID_STATUSES.has(move.status ?? "")) {
+    movePatch.status = "paid";
+  }
 
   if (updateMoveReceiptUrl && squareReceiptUrl) {
     movePatch.square_receipt_url = squareReceiptUrl;

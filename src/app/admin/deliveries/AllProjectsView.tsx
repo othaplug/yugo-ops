@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import CreateButton from "../components/CreateButton";
 import { useRouter } from "next/navigation";
 import MoveDateFilter, { getDateRangeFromPreset } from "../components/MoveDateFilter";
-import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
+import { useToast } from "../components/Toast";
 import { formatMoveDate } from "@/lib/date-format";
 import { getDeliveryDetailPath, formatJobId } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
@@ -157,6 +158,7 @@ export default function AllDeliveriesView({
   initialScheduleId?: string;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [activeView, setActiveView] = useState<"deliveries" | "projects" | "recurring">(initialView || "deliveries");
   const [createDropOpen, setCreateDropOpen] = useState(false);
   const createDropRef = useRef<HTMLDivElement>(null);
@@ -190,6 +192,33 @@ export default function AllDeliveriesView({
     if (dateTo) list = list.filter((d) => (d.scheduled_date || "") <= dateTo);
     return list;
   }, [deliveries, partnerType, statusFilter, dateFrom, dateTo]);
+
+  const runBulk = useCallback(
+    async (action: "deliver" | "cancel", ids: string[]) => {
+      const res = await fetch("/api/admin/deliveries/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ids }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const labels: Record<string, string> = { deliver: "Marked delivered", cancel: "Cancelled" };
+        toast(`${labels[action]} ${data.updated} delivery${data.updated !== 1 ? "ies" : ""}`, "check");
+        router.refresh();
+      } else {
+        toast("Error: " + (data.error || "Failed"), "x");
+      }
+    },
+    [toast, router],
+  );
+
+  const deliveryBulkActions: BulkAction[] = useMemo(
+    () => [
+      { label: "Mark Delivered", onClick: (ids) => runBulk("deliver", ids) },
+      { label: "Cancel", onClick: (ids) => runBulk("cancel", ids), variant: "danger" as const },
+    ],
+    [runBulk],
+  );
 
   const hasActiveFilters = !!(statusFilter || moveDatePreset);
   const activeFilterCount = [statusFilter, moveDatePreset].filter(Boolean).length;
@@ -247,7 +276,7 @@ export default function AllDeliveriesView({
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
-          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">All Deliveries</h1>
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">All Deliveries</h1>
         </div>
         <div className="relative" ref={createDropRef}>
           <CreateButton onClick={() => setCreateDropOpen((v) => !v)} title="New Delivery" />
@@ -383,6 +412,7 @@ export default function AllDeliveriesView({
           exportable
           columnToggle
           selectable
+          bulkActions={deliveryBulkActions}
           mobileCardLayout={{
             primaryColumnId: "partner",
             subtitleColumnId: "delivery_id",

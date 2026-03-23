@@ -150,7 +150,7 @@ export default function ForecastClient() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
-          <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Revenue Forecast</h1>
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Revenue Forecast</h1>
           <p className="text-[11px] text-[var(--tx3)] mt-2">Pipeline, capacity &amp; revenue projections</p>
         </div>
         <div className="flex items-center gap-1 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2 py-1.5">
@@ -361,7 +361,7 @@ export default function ForecastClient() {
               <div className="text-[11px] font-bold text-[var(--tx)]">
                 {s.month}
                 {s.isCurrent && (
-                  <span className="ml-1.5 text-[8px] bg-[var(--gold)]/20 text-[var(--gold)] px-1.5 py-0.5 rounded-full font-semibold">
+                  <span className="ml-1.5 text-[10px] bg-[var(--gold)]/20 text-[var(--gold)] px-1.5 py-0.5 rounded-full font-semibold">
                     NOW
                   </span>
                 )}
@@ -472,7 +472,7 @@ function Section({
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
         {icon && <span className="text-[var(--tx3)]">{icon}</span>}
-        <h2 className="text-[13px] font-bold text-[var(--tx)]">{title}</h2>
+        <h2 className="admin-section-h2">{title}</h2>
       </div>
       {children}
     </div>

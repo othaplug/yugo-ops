@@ -25,7 +25,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const TIER_LABEL: Record<string, string> = {
-  standard: "Curated",
+  standard: "Essential",
   premium: "Signature",
   luxury: "Estate",
 };

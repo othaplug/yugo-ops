@@ -53,7 +53,7 @@ function getEffectiveValue(
 function StatusBadge({ source, isLocked }: { source: "override" | "discounted" | "template"; isLocked?: boolean }) {
   if (source === "override") {
     return (
-      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold ${isLocked ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--bldim)] text-[var(--blue)]"}`}>
+      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${isLocked ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--bldim)] text-[var(--blue)]"}`}>
         ✦ Custom{isLocked ? " (locked)" : ""}
       </span>
     );

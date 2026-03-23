@@ -27,6 +27,7 @@ export function getActivityHref(e: ActivityEventRow): string {
   if (e.entity_type === "move") return `/admin/moves/${e.entity_id}`;
   if (e.entity_type === "delivery") return e.entity_id ? `/admin/deliveries/${e.entity_id}` : "/admin/deliveries";
   if (e.entity_type === "invoice") return "/admin/invoices";
+  if (e.entity_type === "quote") return `/admin/quotes/${e.entity_id}/edit`;
   return "/admin/activity";
 }
 

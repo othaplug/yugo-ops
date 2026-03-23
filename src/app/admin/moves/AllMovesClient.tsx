@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { StatPctChange } from "../components/StatPctChange";
 import CreateMovesDropdown from "../components/CreateMovesDropdown";
 import MoveNotifyButton from "./MoveNotifyButton";
-import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
+import { useToast } from "../components/Toast";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath } from "@/lib/move-code";
@@ -77,10 +78,10 @@ const STATUS_FILTERS = [
 ];
 
 const MARGIN_FILTERS = [
-  { value: "", label: "All Margins" },
-  { value: "red", label: "🔴 Red (<25%)" },
-  { value: "yellow", label: "🟡 Yellow (25–34%)" },
-  { value: "green", label: "🟢 Green (≥35%)" },
+  { value: "", label: "All Margins", dot: null },
+  { value: "red", label: "Red (<25%)", dot: "bg-red-400" },
+  { value: "yellow", label: "Yellow (25–34%)", dot: "bg-[var(--gold)]" },
+  { value: "green", label: "Green (≥35%)", dot: "bg-emerald-400" },
 ];
 
 function normalizeType(move: Move): string {
@@ -139,10 +140,10 @@ function tierBadgeStyle(tier: string): string {
 
 function tierDisplayLabel(tier: string): string {
   const map: Record<string, string> = {
-    curated: "Curated",
+    essential: "Essential",
     signature: "Signature",
     estate: "Estate",
-    essentials: "Curated",
+    essentials: "Essential",
     premier: "Signature",
   };
   const t = (tier || "").toLowerCase();
@@ -226,7 +227,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Move ID",
       accessor: (m) => m.move_code || "",
       render: (m) => (
-        <span className="text-[11px] font-mono font-bold text-[var(--gold)] whitespace-nowrap">
+        <span className="dt-text-id whitespace-nowrap">
           {m.move_code || "—"}
         </span>
       ),
@@ -237,7 +238,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Date",
       accessor: (m) => m.scheduled_date || "",
       render: (m) => (
-        <span className="text-[11px] font-semibold text-[var(--tx)] tabular-nums whitespace-nowrap">
+        <span className="dt-text-date whitespace-nowrap">
           {formatMoveDate(m.scheduled_date)}
         </span>
       ),
@@ -251,7 +252,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
         const isComplete = ["completed", "delivered"].includes((m.status || "").toLowerCase());
         return (
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[12px] font-bold text-[var(--tx)] truncate" title={m.client_name || "—"}>
+            <span className="dt-text-strong truncate" title={m.client_name || "—"}>
               {m.client_name || "—"}
             </span>
             {!isComplete && (
@@ -269,7 +270,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Status",
       accessor: (m) => m.status || "",
       render: (m) => (
-        <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${statusBadgeStyle(m.status || "")}`}>
+        <span className={`inline-flex items-center px-1.5 py-0.5 rounded dt-badge ${statusBadgeStyle(m.status || "")}`}>
           {getStatusLabel(m.status ?? null)}
         </span>
       ),
@@ -280,11 +281,11 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       accessor: (m) => m._type || "",
       render: (m) => (
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex px-1.5 py-0.5 rounded text-[8px] font-medium bg-[var(--bg2)] text-[var(--tx3)] border border-[var(--brd)]/50">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded dt-pill bg-[var(--bg2)] text-[var(--tx3)] border border-[var(--brd)]/50">
             {typeLabel(m._type)}
           </span>
           {m._type === "residential" && m.tier_selected && (
-            <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide ${tierBadgeStyle(m.tier_selected)}`}>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded dt-pill font-bold tracking-wide ${tierBadgeStyle(m.tier_selected)}`}>
               {tierDisplayLabel(m.tier_selected)}
             </span>
           )}
@@ -296,7 +297,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Crew",
       accessor: (m) => (m.crew_id ? crewMap[m.crew_id] || "" : ""),
       render: (m) => (
-        <span className="text-[11px] text-[var(--tx3)]">{m.crew_id ? crewMap[m.crew_id] || "—" : "—"}</span>
+        <span className="dt-text-muted">{m.crew_id ? crewMap[m.crew_id] || "—" : "—"}</span>
       ),
       defaultHidden: false,
     },
@@ -305,7 +306,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Estimate",
       accessor: (m) => m.estimate ?? 0,
       render: (m) => (
-        <span className="block text-right text-[12px] font-bold text-[var(--gold)] font-heading">
+        <span className="block text-right dt-amount">
           {formatCurrency(Number(m.estimate ?? 0))}
         </span>
       ),
@@ -322,10 +323,10 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       render: (m) => {
         const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
         const isQuote = ["quoted", "quote"].includes((m.status || "").toLowerCase());
-        if (isQuote) return <span className="block text-right text-[11px] text-[var(--tx3)]">—</span>;
+        if (isQuote) return <span className="block text-right dt-text-muted">—</span>;
 
         const pct = isCompleted ? m.margin_percent : m.est_margin_percent;
-        if (pct == null) return <span className="block text-right text-[11px] text-[var(--tx3)]">—</span>;
+        if (pct == null) return <span className="block text-right dt-text-muted">—</span>;
 
         const flag = m.margin_flag || (pct >= 35 ? "green" : pct >= 25 ? "yellow" : "red");
         const dotColor = flag === "green"
@@ -342,9 +343,9 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
         return (
           <div className="flex items-center justify-end gap-1.5">
             {!isCompleted && (
-              <span className="text-[8px] text-[var(--tx3)] font-medium">est.</span>
+              <span className="dt-text-meta font-medium">est.</span>
             )}
-            <span className={`text-[11px] font-bold tabular-nums ${textColor}`}>{pct}%</span>
+            <span className={`dt-metric ${textColor}`}>{pct}%</span>
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
           </div>
         );
@@ -373,6 +374,34 @@ export default function AllMovesClient({
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
+
+  const runBulk = useCallback(
+    async (action: "complete" | "cancel", ids: string[]) => {
+      const res = await fetch("/api/admin/moves/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ids }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const labels: Record<string, string> = { complete: "Marked completed", cancel: "Cancelled" };
+        toast(`${labels[action]} ${data.updated} move${data.updated !== 1 ? "s" : ""}`, "check");
+        router.refresh();
+      } else {
+        toast("Error: " + (data.error || "Failed"), "x");
+      }
+    },
+    [toast, router],
+  );
+
+  const bulkActions: BulkAction[] = useMemo(
+    () => [
+      { label: "Mark Completed", onClick: (ids) => runBulk("complete", ids) },
+      { label: "Cancel", onClick: (ids) => runBulk("cancel", ids), variant: "danger" as const },
+    ],
+    [runBulk],
+  );
 
   const activeType = searchParams.get("type") || "";
   const activeStatus = searchParams.get("status") || "";
@@ -568,6 +597,7 @@ export default function AllMovesClient({
                     : "border-transparent text-[var(--tx3)] hover:border-[var(--brd)] hover:bg-[var(--bg2)] hover:text-[var(--tx2)]"
                 }`}
               >
+                {f.dot && <span className={`w-2 h-2 rounded-full shrink-0 ${f.dot}`} />}
                 {f.label}
               </button>
             );
@@ -590,6 +620,7 @@ export default function AllMovesClient({
           exportFilename="yugo-moves"
           columnToggle
           selectable
+          bulkActions={bulkActions}
           mobileCardLayout={{
             primaryColumnId: "client",
             subtitleColumnId: "move_code",
@@ -606,7 +637,7 @@ export default function AllMovesClient({
       {recentQuotes.length > 0 && (
         <div className="border-t border-[var(--brd)]/30 pt-6 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Recent Quotes</h2>
+            <h2 className="admin-section-h2">Recent Quotes</h2>
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[var(--brd)] scrollbar-track-transparent">
             {recentQuotes.map((q) => {
@@ -620,7 +651,7 @@ export default function AllMovesClient({
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span className="text-[10px] font-mono text-[var(--tx3)]">{q.quote_id}</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide ${badge.bg} ${badge.text}`}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${badge.bg} ${badge.text}`}
                     >
                       {toTitleCase(q.status)}
                     </span>

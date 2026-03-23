@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowsClockwise as RefreshCw, PaperPlaneTilt as Send, CheckCircle, CircleNotch as Loader2, TrendUp as TrendingUp } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowsClockwise as RefreshCw, PaperPlaneTilt as Send, CheckCircle, CircleNotch as Loader2, TrendUp as TrendingUp, Warning } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -194,8 +194,8 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Resolve previous quote price: curated (current) or essentials (legacy) tier, or custom_price for non-tiered
-  const oldPrice = oq.tiers?.curated?.price ?? oq.tiers?.essentials?.price ?? (typeof oq.custom_price === "number" ? oq.custom_price : null) ?? 0;
+  // Resolve previous quote price: essential (current) or curated/essentials (legacy) tier, or custom_price for non-tiered
+  const oldPrice = oq.tiers?.essential?.price ?? oq.tiers?.curated?.price ?? oq.tiers?.essentials?.price ?? (typeof oq.custom_price === "number" ? oq.custom_price : null) ?? 0;
 
   // ── Addon helpers ─────────────────────────────────────────
   const applicableAddons = useMemo(
@@ -382,11 +382,11 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
     }
   }, [newQuoteId, oq.quote_id, oq.hubspot_deal_id]);
 
-  const newPrice = newQuoteResult?.tiers?.curated?.price ?? newQuoteResult?.tiers?.essentials?.price ?? newQuoteResult?.custom_price?.price ?? null;
-  const livePrice = livePreview?.tiers?.curated?.price ?? livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
+  const newPrice = newQuoteResult?.tiers?.essential?.price ?? newQuoteResult?.tiers?.curated?.price ?? newQuoteResult?.tiers?.essentials?.price ?? newQuoteResult?.custom_price?.price ?? null;
+  const livePrice = livePreview?.tiers?.essential?.price ?? livePreview?.tiers?.curated?.price ?? livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
 
-  const inputClass = "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
-  const labelClass = "block text-[11px] font-semibold text-[var(--tx2)] mb-1.5";
+  const inputClass = "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
+  const labelClass = "block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1";
 
   if (done) {
     return (
@@ -477,12 +477,12 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
             <>
               {livePreview.tiers ? (
                 <div className="grid grid-cols-3 gap-2">
-                  {(["curated", "signature", "estate"] as const).map((tier) => {
+                  {(["essential", "signature", "estate"] as const).map((tier) => {
                     const t = livePreview.tiers[tier];
                     if (!t) return null;
-                    const isCurated = tier === "curated";
+                    const isEssential = tier === "essential";
                     return (
-                      <div key={tier} className={`rounded-lg p-3 text-center border ${isCurated ? "border-[var(--gold)]/40 bg-[var(--gold)]/8" : "border-[var(--brd)] bg-[var(--bg)]"}`}>
+                      <div key={tier} className={`rounded-lg p-3 text-center border ${isEssential ? "border-[var(--gold)]/40 bg-[var(--gold)]/8" : "border-[var(--brd)] bg-[var(--bg)]"}`}>
                         <div className="text-[9px] text-[var(--gold)] font-semibold uppercase mb-0.5">{tier}</div>
                         <div className="text-[16px] font-bold text-[var(--tx)]">{formatCurrency(t.price)}</div>
                         <div className="text-[9px] text-[var(--tx3)] mt-0.5">+{formatCurrency(t.tax)} HST</div>
@@ -526,7 +526,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
               {/* Algorithm anomaly warnings */}
               {(livePreview.inventory_warnings?.length ?? 0) > 0 && (
                 <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 space-y-1 text-[11px]">
-                  <p className="font-semibold text-amber-600 dark:text-amber-400">⚠ Check inventory quantities</p>
+                  <p className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5"><Warning size={13} /> Check inventory quantities</p>
                   <ul className="list-disc list-inside text-[var(--tx2)]">
                     {livePreview.inventory_warnings.map((w: string, i: number) => (
                       <li key={i}>{w}</li>
@@ -852,7 +852,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                         <div className="flex items-center gap-2">
                           <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                           {addon.is_popular && (
-                            <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
                           )}
                           <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                         </div>
@@ -1011,7 +1011,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
           {newQuoteResult.tiers && (
             <div className="grid grid-cols-3 gap-3 mb-4">
-              {["curated", "signature", "estate"].map((tier) => {
+              {["essential", "signature", "estate"].map((tier) => {
                 const t = newQuoteResult.tiers[tier];
                 if (!t) return null;
                 return (

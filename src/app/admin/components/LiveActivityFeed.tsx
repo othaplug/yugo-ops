@@ -84,7 +84,7 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
     <div className="pt-6 border-t border-[var(--brd)]/30">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <h2 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Activity</h2>
+          <h2 className="admin-section-h2">Activity</h2>
           <span className="relative flex h-1.5 w-1.5 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-60" />
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--gold)]" />

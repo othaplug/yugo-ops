@@ -84,9 +84,9 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
                 const s = (c.move_status || "").toLowerCase();
                 const isActive = ["confirmed", "scheduled", "in_progress"].includes(s);
                 const isCompleted = s === "completed";
-                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
-                if (isCompleted) return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Completed</span>;
-                if (s === "cancelled") return <span className="inline-flex px-2 py-[2px] rounded text-[8px] font-bold bg-[var(--rdim)] text-[var(--red)]">Cancelled</span>;
+                if (isActive) return <span className="inline-flex px-2 py-[2px] rounded text-[10px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Active</span>;
+                if (isCompleted) return <span className="inline-flex px-2 py-[2px] rounded text-[10px] font-bold bg-[var(--grdim)] text-[var(--grn)]">Completed</span>;
+                if (s === "cancelled") return <span className="inline-flex px-2 py-[2px] rounded text-[10px] font-bold bg-[var(--rdim)] text-[var(--red)]">Cancelled</span>;
                 return null;
               })()}
             </div>
@@ -98,7 +98,7 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
           </td>
           <td className="hidden md:table-cell px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.move_date ? formatMoveDate(c.move_date) : "—"}</td>
           <td className="px-3 py-2 border-b border-[var(--brd)]">
-            <span className={`inline-flex px-2 py-[2px] rounded text-[8px] font-bold ${
+            <span className={`inline-flex px-2 py-[2px] rounded text-[10px] font-bold ${
               c.move_status === "completed" ? "bg-[var(--grdim)] text-[var(--grn)]" :
               c.move_status === "cancelled" ? "bg-[var(--rdim)] text-[var(--red)]" :
               "bg-[var(--gdim)] text-[var(--gold)]"

@@ -5,7 +5,12 @@ import Link from "next/link";
 import { XCircle } from "@phosphor-icons/react";
 
 export default function AdminError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => { console.error("Admin error:", error); }, [error]);
+  useEffect(() => {
+    console.error("Admin error:", error);
+    // #region agent log
+    fetch('/api/debug-capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'a968d1',location:'admin/error.tsx',message:'Admin error boundary caught',data:{message:error.message,stack:error.stack,digest:error.digest},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+  }, [error]);
 
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
@@ -15,6 +20,9 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
         </div>
         <h1 className="text-[18px] font-bold text-[var(--tx)]">Something went wrong</h1>
         <p className="text-[13px] text-[var(--tx3)]">{error.message || "An unexpected error occurred."}</p>
+        {/* #region agent log */}
+        {error.stack && <pre style={{fontSize:'9px',textAlign:'left',opacity:0.5,maxHeight:'120px',overflow:'auto',whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{error.stack}</pre>}
+        {/* #endregion */}
         <div className="flex gap-3 justify-center">
           <button onClick={reset} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Try again</button>
           <Link href="/admin" className="px-4 py-2 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx)]">Dashboard</Link>

@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing from, to, or Mapbox token" }, { status: 400 });
   }
   const coords = `${from};${to}`;
-  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coords}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
   try {
     const res = await fetch(url);
     const data = await res.json();

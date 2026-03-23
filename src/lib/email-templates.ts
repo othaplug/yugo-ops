@@ -37,12 +37,14 @@ function emailLogoRow(): string {
   `;
 }
 
-/** Link color in footer for visibility on dark background (blue). */
-const EMAIL_FOOTER_LINK = "#2563eb";
-/** Subtle highlight for company name in copyright. */
-const EMAIL_FOOTER_HIGHLIGHT_BG = "rgba(201,169,98,0.2)";
+/** Link color in footer for visibility on dark background (blue, address lines). */
+const EMAIL_FOOTER_LINK = "#60A5FA";
+/** Inner footer panel on client dark emails. */
+const EMAIL_FOOTER_BOX = "#2C2C2C";
+/** Muted secondary text in footer. */
+const EMAIL_FOOTER_MUTED = "#A0A0A0";
 
-/** Client contact email and phone for footer (no app URLs — mailto/tel only). */
+/** Client contact email and phone for footer. */
 function getContactEmail(): string {
   return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) || "notifications@opsplus.co";
 }
@@ -50,45 +52,71 @@ function getContactPhone(): string {
   return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) || "(647) 370-4525";
 }
 
+/**
+ * Table rows: security note (on black), then grey card with legal/support block.
+ * Table-based for email clients; matches Yugo dark brand emails.
+ */
 function emailFooterRow(_loginUrl?: string): string {
+  void _loginUrl;
   const base = getEmailBaseUrl();
+  const year = new Date().getFullYear();
   const privacyUrl = `${base}/privacy`;
+  const termsUrl = `${base}/legal/terms-of-use`;
   const contactEmail = getContactEmail();
   const contactPhone = getContactPhone();
   const mailto = `mailto:${contactEmail}`;
+  const mailtoPrefs = `mailto:${contactEmail}?subject=${encodeURIComponent("Communication preferences")}`;
   const tel = `tel:${contactPhone.replace(/\s/g, "").replace(/[()]/g, "")}`;
+  const addrLine1 = "507 King Street E";
+  const addrLine2 = "Toronto, Ontario";
+  const addrLine3 = "M5A 1M3";
+  const fullAddr = `${addrLine1}, ${addrLine2} ${addrLine3}, Canada`;
+  const mapsUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(fullAddr)}`;
+
   return `
     <tr>
-      <td style="padding:24px 24px 0;border-top:1px solid ${EMAIL_BRD};font-family:'DM Sans',sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:560px;margin:0 auto;">
+      <td align="center" style="padding:28px 24px 14px;font-family:'DM Sans',sans-serif;">
+        <p style="margin:0;max-width:520px;font-size:11px;line-height:1.55;color:${EMAIL_TX};text-align:center;">
+          Do not share this email with others. It may contain links that provide access to your booking information.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding:0 24px 40px;font-family:'DM Sans',sans-serif;">
+        <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;background-color:${EMAIL_FOOTER_BOX};border-radius:12px;">
           <tr>
-            <td align="center" style="padding-bottom:20px;font-size:12px;color:${EMAIL_TX2};">
-              <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Email us</a>
-              <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
-              <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Call us</a>
-              <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
-              <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Privacy</a>
-            </td>
-          </tr>
-          <tr>
-            <td style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;padding-bottom:12px;">
-              This is a servicing communication from <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo</span>. For support, <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">email us</a> or <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">call ${contactPhone}</a> This address is not monitored and we cannot respond to messages sent here.
-            </td>
-          </tr>
-          <tr>
-            <td style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;padding-bottom:12px;">
-              You received this email because you are the contact for a move or quote with Yugo.
-            </td>
-          </tr>
-          <tr>
-            <td style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;padding-bottom:16px;">
-              Learn how we collect, use and safeguard your information at <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">${base.replace(/^https?:\/\//, "")}/privacy</a>
-            </td>
-          </tr>
-          <tr>
-            <td style="font-size:11px;color:${EMAIL_TX3};padding-bottom:32px;">
-              &copy; 2026 Yugo Inc. All rights reserved.<br/>
-              <span style="font-size:10px;color:${EMAIL_TX3};margin-top:4px;display:inline-block;">507 King Street E, Toronto, ON</span>
+            <td align="center" style="padding:28px 24px 32px;">
+              <p style="margin:0 0 18px;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
+                Please don&apos;t reply to this email &mdash; this address is not monitored and we won&apos;t receive your message.
+              </p>
+              <p style="margin:0 0 22px;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
+                Need help? <a href="${mailto}" style="color:${EMAIL_TX};text-decoration:underline;">Email us</a>
+                <span style="color:${EMAIL_FOOTER_MUTED};"> &middot; </span>
+                <a href="${tel}" style="color:${EMAIL_TX};text-decoration:underline;">Call ${contactPhone}</a>
+              </p>
+              <p style="margin:0 0 26px;font-size:12px;line-height:1.65;text-align:center;">
+                <a href="${mailtoPrefs}" style="color:${EMAIL_TX};text-decoration:underline;">Update communication preferences</a>
+              </p>
+              <p style="margin:0 0 22px;font-size:11px;line-height:1.5;color:${EMAIL_FOOTER_MUTED};text-align:center;">
+                &copy; ${year} Yugo Inc.
+              </p>
+              <p style="margin:0 0 6px;font-size:12px;line-height:1.5;text-align:center;">
+                <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine1}</a>
+              </p>
+              <p style="margin:0 0 6px;font-size:12px;line-height:1.5;text-align:center;">
+                <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine2}</a>
+              </p>
+              <p style="margin:0 0 22px;font-size:12px;line-height:1.5;text-align:center;">
+                <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine3}</a>
+              </p>
+              <p style="margin:0 0 18px;font-size:11px;line-height:1.5;color:${EMAIL_FOOTER_MUTED};text-align:center;">
+                Registered in Ontario, Canada
+              </p>
+              <p style="margin:0;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
+                <a href="${privacyUrl}" style="color:${EMAIL_TX};text-decoration:underline;">Privacy policy</a>
+                <span style="color:${EMAIL_FOOTER_MUTED};margin:0 10px;">|</span>
+                <a href="${termsUrl}" style="color:${EMAIL_TX};text-decoration:underline;">Terms of use</a>
+              </p>
             </td>
           </tr>
         </table>
@@ -124,8 +152,10 @@ export function statusUpdateEmailHtml(params: {
   body: string;
   ctaUrl?: string;
   ctaLabel?: string;
+  /** Set false for live move/delivery tracking pings (no legal footer). Default true. */
+  includeFooter?: boolean;
 }): string {
-  const { headline, body, ctaUrl, ctaLabel } = params;
+  const { headline, body, ctaUrl, ctaLabel, includeFooter = true } = params;
   const ctaHtml = ctaUrl && ctaLabel
     ? `
     <tr>
@@ -135,11 +165,12 @@ export function statusUpdateEmailHtml(params: {
     </tr>
   `
     : "";
+  const bottomPad = includeFooter ? "16px" : "40px";
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL_BG};font-family:'DM Sans',sans-serif;">
   ${emailLogoRow()}
   <tr>
-    <td align="center" style="padding:0 24px 16px;">
+    <td align="center" style="padding:0 24px ${bottomPad};">
       <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;">
         <tr>
           <td style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;letter-spacing:-0.3px;color:${EMAIL_TX};padding-bottom:16px;line-height:1.25;">${headline}</td>
@@ -151,7 +182,7 @@ export function statusUpdateEmailHtml(params: {
       </table>
     </td>
   </tr>
-  ${emailFooterRow()}
+  ${includeFooter ? emailFooterRow() : ""}
 </table>
   `;
 }
@@ -167,24 +198,59 @@ function emailLogo() {
 }
 
 function emailFooter(_loginUrl?: string) {
+  void _loginUrl;
   const base = getEmailBaseUrl();
+  const year = new Date().getFullYear();
   const privacyUrl = `${base}/privacy`;
+  const termsUrl = `${base}/legal/terms-of-use`;
   const contactEmail = getContactEmail();
   const contactPhone = getContactPhone();
   const mailto = `mailto:${contactEmail}`;
+  const mailtoPrefs = `mailto:${contactEmail}?subject=${encodeURIComponent("Communication preferences")}`;
   const tel = `tel:${contactPhone.replace(/\s/g, "").replace(/[()]/g, "")}`;
+  const addrLine1 = "507 King Street E";
+  const addrLine2 = "Toronto, Ontario";
+  const addrLine3 = "M5A 1M3";
+  const fullAddr = `${addrLine1}, ${addrLine2} ${addrLine3}, Canada`;
+  const mapsUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(fullAddr)}`;
   return `
-    <div style="font-size:11px;color:${EMAIL_TX2};line-height:1.6;margin-top:32px;padding-top:24px;border-top:1px solid ${EMAIL_BRD};font-family:'DM Sans',sans-serif;">
-      <p style="text-align:center;margin:0 0 12px;">
-        <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Email us</a>
-        <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
-        <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Call us</a>
-        <span style="color:${EMAIL_BRD};margin:0 10px">|</span>
-        <a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Privacy</a>
+    <div style="font-family:'DM Sans',sans-serif;">
+      <p style="text-align:center;margin:28px auto 14px;font-size:11px;line-height:1.55;color:${EMAIL_TX};max-width:520px;">
+        Do not share this email with others. It may contain links that provide access to your booking information.
       </p>
-      <p style="margin:0 0 8px;">This is a servicing communication from <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo</span>. This address is not monitored. For support, <a href="${mailto}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">email us</a> or <a href="${tel}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">call ${contactPhone}</a>.</p>
-      <p style="margin:0 0 8px;"><a href="${privacyUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:none;">Privacy policy</a> — how we collect, use and safeguard your information.</p>
-      <p style="font-size:10px;color:${EMAIL_TX3};margin:16px 0 0;">&copy; 2025 <span style="background:${EMAIL_FOOTER_HIGHLIGHT_BG};padding:1px 4px;border-radius:2px;">Yugo Inc.</span> All rights reserved. 507 King Street E, Toronto, ON.</p>
+      <div style="max-width:560px;margin:0 auto 40px;background-color:${EMAIL_FOOTER_BOX};border-radius:12px;padding:28px 24px 32px;">
+        <p style="margin:0 0 18px;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
+          Please don&apos;t reply to this email &mdash; this address is not monitored and we won&apos;t receive your message.
+        </p>
+        <p style="margin:0 0 22px;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
+          Need help? <a href="${mailto}" style="color:${EMAIL_TX};text-decoration:underline;">Email us</a>
+          <span style="color:${EMAIL_FOOTER_MUTED};"> &middot; </span>
+          <a href="${tel}" style="color:${EMAIL_TX};text-decoration:underline;">Call ${contactPhone}</a>
+        </p>
+        <p style="margin:0 0 26px;font-size:12px;line-height:1.65;text-align:center;">
+          <a href="${mailtoPrefs}" style="color:${EMAIL_TX};text-decoration:underline;">Update communication preferences</a>
+        </p>
+        <p style="margin:0 0 22px;font-size:11px;line-height:1.5;color:${EMAIL_FOOTER_MUTED};text-align:center;">
+          &copy; ${year} Yugo Inc.
+        </p>
+        <p style="margin:0 0 6px;font-size:12px;line-height:1.5;text-align:center;">
+          <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine1}</a>
+        </p>
+        <p style="margin:0 0 6px;font-size:12px;line-height:1.5;text-align:center;">
+          <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine2}</a>
+        </p>
+        <p style="margin:0 0 22px;font-size:12px;line-height:1.5;text-align:center;">
+          <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine3}</a>
+        </p>
+        <p style="margin:0 0 18px;font-size:11px;line-height:1.5;color:${EMAIL_FOOTER_MUTED};text-align:center;">
+          Registered in Ontario, Canada
+        </p>
+        <p style="margin:0;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
+          <a href="${privacyUrl}" style="color:${EMAIL_TX};text-decoration:underline;">Privacy policy</a>
+          <span style="color:${EMAIL_FOOTER_MUTED};margin:0 10px;">|</span>
+          <a href="${termsUrl}" style="color:${EMAIL_TX};text-decoration:underline;">Terms of use</a>
+        </p>
+      </div>
     </div>
   `;
 }
@@ -925,10 +991,12 @@ function confirmDateDisplay(dateStr: string | null): string {
   });
 }
 
-/** @deprecated Use curatedConfirmationEmail */
-export const essentialsConfirmationEmail = (p: TierConfirmationParams): string => curatedConfirmationEmail(p);
+/** @deprecated Use essentialConfirmationEmail */
+export const essentialsConfirmationEmail = (p: TierConfirmationParams): string => essentialConfirmationEmail(p);
+/** @deprecated Use essentialConfirmationEmail */
+export const curatedConfirmationEmail = (p: TierConfirmationParams): string => essentialConfirmationEmail(p);
 
-export function curatedConfirmationEmail(p: TierConfirmationParams): string {
+export function essentialConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   return emailLayout(`
     <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Move Confirmed</div>
@@ -943,7 +1011,7 @@ export function curatedConfirmationEmail(p: TierConfirmationParams): string {
         <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
         <tr><td style="color:#666;padding:4px 0">From:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
         <tr><td style="color:#666;padding:4px 0">To:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.toAddress}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">Curated</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">Essential</td></tr>
         <tr><td style="color:#666;padding:4px 0">Crew:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
         <tr><td style="color:#666;padding:4px 0">Vehicle:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed flat rate)</td></tr>

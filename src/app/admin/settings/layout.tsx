@@ -22,14 +22,18 @@ export default async function SettingsLayout({
   const isPartner = !!partnerUser && !platformUser && !isSuperAdmin;
 
   return (
-    <div className="max-w-[720px] mx-auto px-5 md:px-6 py-6 md:py-8 space-y-6 animate-fade-up">
+    <div className="max-w-[900px] mx-auto px-5 md:px-6 py-6 md:py-8 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
-      <div>
-        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Admin</p>
-        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Settings</h1>
+      <div className="mb-6">
+        <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Account</p>
+        <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Settings</h1>
       </div>
-      <SettingsTabs isPartner={isPartner} />
-      {children}
+      <div className="flex gap-6 lg:gap-8 items-start">
+        <SettingsTabs isPartner={isPartner} />
+        <div className="flex-1 min-w-0">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

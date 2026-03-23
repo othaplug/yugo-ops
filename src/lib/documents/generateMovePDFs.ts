@@ -33,8 +33,11 @@ const BUCKET = "move-documents";
 const HST_RATE = 0.13;
 
 const TIER_FEATURES: Record<string, string> = {
+  essential: "Professional crew, dedicated truck, protective wrapping for key furniture, floor & entryway protection.",
+  curated: "Professional crew, dedicated truck, protective wrapping for key furniture, floor & entryway protection.",
   essentials: "Standard crew, truck, basic wrap & pad, local move support.",
-  curated: "Curated crew, premium truck, full wrap & pad, dedicated support.",
+  signature: "Fully managed move — full furniture wrapping, room-of-choice placement, wardrobe box, debris removal.",
+  estate: "White glove service — dedicated coordinator, full wrapping & packing, precision placement, 30-day concierge.",
   premium: "Premium crew, premium truck, white-glove handling, priority support.",
 };
 
@@ -200,7 +203,7 @@ function generateMoveSummaryPDF(
   y += SUB_SECTION_GAP;
   setBodyText(doc, 8);
   const tierKey = (move.tier_selected || "").toLowerCase().replace(/\s+/g, "_");
-  doc.text(TIER_FEATURES[tierKey] || TIER_FEATURES.curated || "Moving service as agreed.", margin, y);
+  doc.text(TIER_FEATURES[tierKey] || TIER_FEATURES.essential || "Moving service as agreed.", margin, y);
   y += SECTION_GAP;
 
   setSectionLabel(doc, 9);
@@ -408,7 +411,7 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: s
   const extras = (extraItems ?? []) as ExtraRow;
   const approvedExtras = extras.filter((e) => (e.status ?? "approved") === "approved");
 
-  const tierLabel = (moveRow.tier_selected || "Curated").replace(/_/g, " ");
+  const tierLabel = (moveRow.tier_selected || "Essential").replace(/_/g, " ");
   const tierPrice = Number(moveRow.estimate ?? moveRow.amount ?? 0);
   const depositPaid = Number(moveRow.deposit_amount ?? Math.round(tierPrice * 0.25));
   const balancePaid = Number(moveRow.balance_amount ?? (tierPrice - depositPaid));

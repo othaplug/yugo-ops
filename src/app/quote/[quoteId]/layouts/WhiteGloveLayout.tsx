@@ -100,7 +100,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
 
       {/* 5-Step Handling Protocol */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+        <h2 className="admin-section-h2 mb-1">
           Our 5-Step Handling Protocol
         </h2>
         <p className="text-[11px] mb-4" style={{ color: `${FOREST}60` }}>

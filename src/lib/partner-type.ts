@@ -88,10 +88,12 @@ export const PARTNER_SEGMENT_GROUPS: {
 // Build lookup maps from segment groups
 export const VERTICAL_LABELS: Record<string, string> = {};
 export const VERTICAL_TO_TEMPLATE_SLUG: Record<string, string> = {};
+export const TEMPLATE_SLUG_LABELS: Record<string, string> = {};
 export const ALL_VERTICALS: PartnerVertical[] = [];
 
 for (const segment of PARTNER_SEGMENT_GROUPS) {
   for (const group of segment.groups) {
+    TEMPLATE_SLUG_LABELS[group.templateSlug] = group.label;
     for (const v of group.verticals) {
       VERTICAL_LABELS[v.value] = v.label;
       VERTICAL_TO_TEMPLATE_SLUG[v.value] = group.templateSlug;

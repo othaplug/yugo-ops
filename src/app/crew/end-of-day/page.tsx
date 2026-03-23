@@ -53,7 +53,7 @@ export default function CrewEndOfDayPage() {
         ← Back to Dashboard
       </Link>
       <div className="mt-2">
-        <p className="text-[8px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-0.5">Crew</p>
+        <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-0.5">Crew</p>
         <h1 className="font-hero text-[26px] font-bold text-[var(--tx)]">End of Day Report</h1>
       </div>
       {preview?.alreadySubmitted ? (
@@ -72,7 +72,7 @@ export default function CrewEndOfDayPage() {
 
       {preview?.summary && (
         <div className="mt-4 p-4 rounded-xl bg-[var(--bg)]">
-          <h2 className="font-hero text-[18px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Today&apos;s summary</h2>
+          <h2 className="admin-section-h2 text-[var(--tx2)] mb-3">Today&apos;s summary</h2>
           <div className="grid grid-cols-2 gap-2 text-[12px]">
             <div><span className="text-[var(--tx3)]">Jobs completed:</span> {preview.summary.jobsCompleted ?? 0}</div>
             <div><span className="text-[var(--tx3)]">Total job time:</span> {Math.floor((preview.summary.totalJobTime ?? 0) / 60)}h {((preview.summary.totalJobTime ?? 0) % 60)}m</div>

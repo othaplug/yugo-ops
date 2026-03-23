@@ -139,7 +139,7 @@ export default function CrewExpenseClient() {
         ← Back
       </button>
       <div className="mt-2">
-        <p className="text-[8px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-0.5">Crew</p>
+        <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-0.5">Crew</p>
         <h1 className="font-hero text-[26px] font-bold text-[var(--tx)]">Log Expense</h1>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mt-1">Today&apos;s expenses: ${(todayTotal / 100).toFixed(2)}</p>
@@ -236,7 +236,7 @@ export default function CrewExpenseClient() {
       </form>
 
       <div className="mt-8 pt-8 border-t border-[var(--brd)]/30">
-        <h2 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Expense history</h2>
+        <h2 className="admin-section-h2 mb-4">Expense history</h2>
         {expenses.length === 0 ? (
           <p className="text-[13px] text-[var(--tx3)]">No expenses yet.</p>
         ) : (

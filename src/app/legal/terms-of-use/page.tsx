@@ -105,7 +105,7 @@ export default async function TermsOfUsePage() {
         </LegalSection>
 
         <LegalSection title="7. Third-Party Services">
-          <p>The Platform may integrate with or link to third-party services (Mapbox, Stripe, email providers). These integrations are governed by the third parties&apos; own terms and privacy policies. {brand} is not responsible for the content, practices, or availability of third-party services.</p>
+          <p>The Platform may integrate with or link to third-party services (Mapbox, Square, email providers). These integrations are governed by the third parties&apos; own terms and privacy policies. {brand} is not responsible for the content, practices, or availability of third-party services.</p>
         </LegalSection>
 
         <LegalSection title="8. Disclaimers">

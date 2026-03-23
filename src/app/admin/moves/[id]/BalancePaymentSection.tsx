@@ -88,17 +88,17 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <div>
-          <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance amount</span>
+          <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance amount</span>
           <div className="text-[15px] font-bold text-[var(--tx)]">{formatCurrency(balanceAmount)}</div>
           {balanceAmount > 0 && <div className="text-[9px] text-[var(--tx3)]">+{formatCurrency(calcHST(balanceAmount))} HST</div>}
         </div>
         <div>
-          <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>
+          <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>
           <div className={`text-[13px] font-bold ${status.color}`}>{status.label}</div>
         </div>
         {move.balance_method && (
           <div>
-            <span className="text-[8px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Method</span>
+            <span className="text-[9px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Method</span>
             <div className="text-[13px] font-medium text-[var(--tx)]">
               {move.balance_method === "etransfer" ? "E-Transfer" : "Credit Card"}
               {move.balance_auto_charged && " (auto)"}

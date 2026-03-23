@@ -15,13 +15,13 @@ const NAV = [
     { name: "Calendar", icon: "calendar", href: "/admin/calendar" },
     { name: "Tracking", icon: "mapPin", href: "/admin/crew" },
   ]},
-  { label: "B2B Partners", items: [
+  { label: "Partners", items: [
     { name: "Jobs", icon: "mapPin", href: "/admin/deliveries", badge: "pending_deliveries" },
     { name: "Retail", icon: "sofa", href: "/admin/partners/retail" },
     { name: "Designers", icon: "palette", href: "/admin/partners/designers" },
     { name: "Hospitality", icon: "hotel", href: "/admin/partners/hospitality" },
     { name: "Art Gallery", icon: "image", href: "/admin/partners/gallery" },
-    { name: "Realtors", icon: "handshake", href: "/admin/partners/realtors" },
+    { name: "Referral Partners", icon: "handshake", href: "/admin/partners/realtors" },
   ]},
   { label: "Moves", items: [
     { name: "All Moves", icon: "package", href: "/admin/moves" },
@@ -137,7 +137,7 @@ export default function Sidebar() {
           </div>
           <div>
             <div className="text-[10px] font-semibold text-[var(--tx)]">Settings</div>
-            <div className="text-[8px] text-[var(--tx3)]">Account</div>
+            <div className="text-[9px] text-[var(--tx3)]">Account</div>
           </div>
         </Link>
       </div>

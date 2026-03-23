@@ -33,6 +33,10 @@ import {
   Gift,
   House,
   Pulse,
+  Bell,
+  Scroll,
+  UsersThree,
+  Envelope,
 } from "@phosphor-icons/react";
 
 const SIZE = 16;
@@ -76,4 +80,8 @@ export const Icons = {
   home:           ic(House),
   /** Live activity / status stream */
   activity:       ic(Pulse),
+  bell:           ic(Bell),
+  auditLog:       ic(Scroll),
+  usersThree:     ic(UsersThree),
+  envelope:       ic(Envelope),
 };

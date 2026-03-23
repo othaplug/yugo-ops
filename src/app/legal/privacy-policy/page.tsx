@@ -66,7 +66,7 @@ export default async function PrivacyPolicyPage() {
           </ul>
           <SubHeading>1.3 Information from Third Parties</SubHeading>
           <ul>
-            <li><strong>Payment processors:</strong> Transaction confirmation and limited card information from our payment partners (Stripe).</li>
+            <li><strong>Payment processors:</strong> Transaction confirmation and limited card information from our payment partners (Square).</li>
             <li><strong>Mapping services:</strong> Geocoded addresses and routing data via Mapbox.</li>
             <li><strong>Email service providers:</strong> Delivery and engagement statistics for communications we send.</li>
           </ul>

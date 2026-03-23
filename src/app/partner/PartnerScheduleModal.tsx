@@ -295,7 +295,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   };
 
   const fieldInput =
-    "w-full text-[var(--text-base)] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
+    "w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
 
   const fmtCurrency = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
@@ -603,7 +603,7 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
                   <div className="flex flex-wrap gap-2 items-end">
                     <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())} placeholder="Item (e.g. Couch x2)" className={`${fieldInput} flex-1 min-w-[120px]`} />
                     <input type="number" min={1} max={99} value={newItemQty} onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))} className={`${fieldInput} w-16`} />
-                    <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim()} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
+                    <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim()} className="flex-none inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
                       <Plus className="w-[14px] h-[14px]" /> Add
                     </button>
                   </div>

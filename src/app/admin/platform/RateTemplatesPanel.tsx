@@ -707,7 +707,7 @@ export default function RateTemplatesPanel() {
     <div>
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="font-heading text-[18px] font-bold text-[var(--tx)]">Rate Card Templates</h2>
+          <h2 className="admin-section-h2">Rate Card Templates</h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">Industry templates applied to partners. Changes affect all partners on the template.</p>
         </div>
         <CreateButton onClick={() => setCreateOpen(true)} title="New Template" />
@@ -719,7 +719,7 @@ export default function RateTemplatesPanel() {
             {/* Top row: name + status badge */}
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="font-heading font-bold text-[15px] text-[var(--tx)]">{t.template_name}</span>
-              <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${t.is_active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"}`}>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${t.is_active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"}`}>
                 {t.is_active ? "Active" : "Inactive"}
               </span>
             </div>

@@ -41,10 +41,18 @@ import {
   ChatCircle,
   CaretRight,
   Plus,
+  HandHeart,
   X,
   Lock,
   Copy,
+  Warning,
+  Receipt,
+  UsersThree,
+  ArrowsCounterClockwise,
 } from "@phosphor-icons/react";
+import PreMoveChecklist from "@/components/tracking/PreMoveChecklist";
+import LiveMoveTimeline from "@/components/tracking/LiveMoveTimeline";
+import ClientRoomPhotoCapture from "@/components/tracking/ClientRoomPhotoCapture";
 
 function formatPerkOffer(offerType: string, discountValue: number | null): string {
   if (offerType === "percentage_off" && discountValue) return `${discountValue}% off`;
@@ -718,7 +726,7 @@ export default function TrackMoveClient({
                         ) || null;
                 return label ? (
                   <span
-                    className="text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
+                    className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
                     style={{ backgroundColor: `${GOLD}18`, color: GOLD, opacity: 1 }}
                   >
                     {label}
@@ -818,60 +826,66 @@ export default function TrackMoveClient({
             <ExperienceRatingSection moveId={move.id} token={token} />
 
             {/* ── Compact move summary bar (collapsible) ── */}
-            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: `${FOREST}15` }}>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                border: `1px solid ${FOREST}18`,
+                background: `linear-gradient(155deg, #f5f1ea 0%, #ede8de 100%)`,
+                boxShadow: "0 4px 20px rgba(44, 62, 45, 0.08), 0 1px 4px rgba(0,0,0,0.05)",
+              }}
+            >
+              {/* Top accent stripe */}
+              <div className="h-[3px] w-full" style={{ background: `linear-gradient(90deg, ${WINE} 0%, ${GOLD} 100%)` }} />
+
+              {/* Header toggle */}
               <button
                 type="button"
                 onClick={() => setShowMoveDetails(v => !v)}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:opacity-80"
-                style={{ backgroundColor: `${FOREST}04`, boxShadow: "none" }}
+                className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 text-left transition-opacity hover:opacity-80"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12px] font-semibold font-sans" style={{ color: FOREST }}>
-                      {(() => {
-                        const name = move.client_name?.trim() || "";
-                        if (!name) return "Your Move";
-                        const parts = name.split(/\s+/).filter(Boolean);
-                        if (parts.length >= 2) return `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}.`;
-                        return parts[0] || "Your Move";
-                      })()}
-                    </span>
-                    <span
-                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
-                      style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
-                    >
-                      Move Details
-                    </span>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center"
+                    style={{ backgroundColor: `${FOREST}10`, boxShadow: `inset 0 0 0 1px ${FOREST}18` }}
+                  >
+                    <Receipt size={18} weight="duotone" color={FOREST} aria-hidden />
                   </div>
-                  <div className="text-[10px] opacity-50 mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: FOREST }}>
-                    <span>{displayCode}</span>
-                    {scheduledDate && <><span>·</span><span>{formatMoveDate(scheduledDate)}</span></>}
+                  <div className="min-w-0">
+                    <div className="text-[12px] font-semibold mb-0.5" style={{ color: FOREST }}>Move Details</div>
+                    <div className="text-[10px] flex items-center gap-1.5 flex-wrap" style={{ color: `${FOREST}55` }}>
+                      <span>{displayCode}</span>
+                      {scheduledDate && <><span>·</span><span>{formatMoveDate(scheduledDate)}</span></>}
+                    </div>
                   </div>
                 </div>
                 <CaretDown
                   size={14}
                   color={FOREST}
-                  style={{ opacity: 0.4, transition: "transform 0.2s", transform: showMoveDetails ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}
+                  style={{ opacity: 0.35, transition: "transform 0.2s", transform: showMoveDetails ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}
                   aria-hidden
                 />
               </button>
 
               {showMoveDetails && (
-                <div className="border-t px-4 pb-5 pt-3" style={{ borderColor: `${FOREST}10`, boxShadow: "none" }}>
-                  {/* Sub-tab nav: Details | Photos & Documents | Inventory (hidden for single_item) */}
-                  <div className="flex gap-4 mb-4 border-b pb-2" style={{ borderColor: `${FOREST}08` }}>
+                <div
+                  className="px-4 sm:px-5 pb-5 pt-0"
+                  style={{ borderTop: `1px solid ${FOREST}10` }}
+                >
+                  {/* Sub-tab nav */}
+                  <div className="flex gap-5 pt-3 mb-4 border-b" style={{ borderColor: `${FOREST}10` }}>
                     {(["details", "photos_docs", ...(isSingleItem ? [] : ["inv"])] as ("details" | "photos_docs" | "inv")[]).map((t) => {
-                      const label = t === "inv" ? "Inventory" : t === "photos_docs" ? "Photos & Documents" : "Details";
+                      const label = t === "inv" ? "Inventory" : t === "photos_docs" ? "Photos & Docs" : "Details";
+                      const active = detailsSubTab === t;
                       return (
                         <button
                           key={t}
                           type="button"
                           onClick={() => setDetailsSubTab(t)}
-                          className="text-[11px] font-semibold pb-1.5 border-b-[1.5px] transition-all"
+                          className="text-[11px] font-semibold pb-2.5 border-b-[2px] transition-all -mb-px"
                           style={{
-                            borderColor: detailsSubTab === t ? GOLD : "transparent",
-                            color: detailsSubTab === t ? GOLD : FOREST,
-                            opacity: detailsSubTab === t ? 1 : 0.4,
+                            borderColor: active ? GOLD : "transparent",
+                            color: active ? GOLD : FOREST,
+                            opacity: active ? 1 : 0.4,
                           }}
                         >
                           {label}
@@ -880,12 +894,12 @@ export default function TrackMoveClient({
                     })}
                   </div>
 
-                  {/* Details */}
+                  {/* Details tab */}
                   {detailsSubTab === "details" && (
                     <div className="space-y-4">
                       {isSingleItem && (move as { item_description?: string | null }).item_description && (
-                        <div className="pb-3 border-b" style={{ borderColor: `${FOREST}12` }}>
-                          <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-0.5" style={{ color: FOREST }}>Item</div>
+                        <div className="pb-3 border-b" style={{ borderColor: `${FOREST}10` }}>
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: `${FOREST}55` }}>Item</div>
                           <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>
                             <SafeText fallback="Item details are unavailable here. Check your confirmation email.">
                               {(move as { item_description?: string | null }).item_description ?? ""}
@@ -894,49 +908,93 @@ export default function TrackMoveClient({
                         </div>
                       )}
                       {(serviceType === "white_glove" || serviceType === "specialty") && (
-                        <div className="pb-3 border-b" style={{ borderColor: `${FOREST}12` }}>
-                          <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-1" style={{ color: FOREST }}>Your service included</div>
-                          <p className="text-[11px] leading-relaxed opacity-90" style={{ color: FOREST }}>
+                        <div className="pb-3 border-b" style={{ borderColor: `${FOREST}10` }}>
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: `${FOREST}55` }}>Service included</div>
+                          <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}90` }}>
                             White glove handling, custom crating when needed, and specialty care for high-value items.
                           </p>
                         </div>
                       )}
-                      <div className="flex items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: `${FOREST}12` }}>
-                        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60" style={{ color: FOREST }}>Total balance</span>
-                        <span className="text-[var(--text-base)] font-bold" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
-                          {totalBalance > 0 ? formatCurrency(totalBalance) : "Paid"}
-                        </span>
-                      </div>
-                      <div className="flex gap-3 items-stretch">
-                        <div className="flex flex-col items-center pt-1 shrink-0">
-                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
-                          <div className="w-px flex-1 my-1" style={{ background: `linear-gradient(to bottom, ${GOLD}70, ${GOLD}20)` }} />
-                          <div className="w-1.5 h-1.5 rounded-sm rotate-45" style={{ backgroundColor: `${GOLD}90` }} />
+
+                      {/* Balance row */}
+                      <div
+                        className="rounded-xl px-3.5 py-2.5"
+                        style={{ backgroundColor: totalBalance > 0 ? `${GOLD}10` : `${FOREST}08`, border: `1px solid ${totalBalance > 0 ? GOLD : FOREST}18` }}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: `${FOREST}70` }}>Total balance</span>
+                          <span className="text-[15px] font-bold" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
+                            {totalBalance > 0 ? formatCurrency(totalBalance) : "Paid ✓"}
+                          </span>
                         </div>
-                        <div className="flex flex-col gap-3 min-w-0 flex-1">
+                        {isCompleted && totalBalance > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5" style={{ borderTop: `1px solid ${GOLD}20` }}>
+                            {hasCardOnFile && (
+                              <button
+                                type="button"
+                                onClick={() => void handlePayWithSavedCard()}
+                                disabled={chargingSavedCard}
+                                className="rounded-full font-semibold text-[11px] py-1.5 px-4 transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+                                style={{ backgroundColor: GOLD, color: "#FAF7F2", boxShadow: `0 2px 8px ${GOLD}40` }}
+                              >
+                                {chargingSavedCard ? "Processing…" : "Pay Now"}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => { setSqError(null); setPaymentModalOpen(true); }}
+                              className="rounded-full font-semibold text-[11px] py-1.5 px-4 transition-all border hover:opacity-90 active:scale-95"
+                              style={{ borderColor: `${FOREST}25`, color: FOREST, backgroundColor: "transparent" }}
+                            >
+                              {hasCardOnFile ? "Use a different card" : "Pay with card"}
+                            </button>
+                          </div>
+                        )}
+                        {balanceChargeError && isCompleted && (
+                          <p className="text-[10px] mt-2 font-medium" style={{ color: "#D14343" }}>{balanceChargeError}</p>
+                        )}
+                      </div>
+
+                      {/* From / To */}
+                      <div className="flex gap-3 items-stretch">
+                        <div className="flex flex-col items-center pt-1.5 shrink-0">
+                          <div className="w-2 h-2 rounded-full border-[1.5px]" style={{ borderColor: GOLD, backgroundColor: `${GOLD}30` }} />
+                          <div className="w-px flex-1 my-1.5" style={{ background: `linear-gradient(to bottom, ${GOLD}60, ${GOLD}18)` }} />
+                          <div className="w-2 h-2 rounded-sm rotate-45 border-[1.5px]" style={{ borderColor: `${WINE}80`, backgroundColor: `${WINE}18` }} />
+                        </div>
+                        <div className="flex flex-col gap-3.5 min-w-0 flex-1">
                           <div>
-                            <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-0.5" style={{ color: FOREST }}>From</div>
+                            <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-0.5" style={{ color: `${FOREST}50` }}>From</div>
                             <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{shortAddress(move.from_address)}</div>
                             {(move as { from_access?: string | null }).from_access && formatAccessForDisplay((move as { from_access?: string | null }).from_access) && (
-                              <div className="text-[10px] opacity-70 mt-0.5" style={{ color: FOREST }}>Access: {formatAccessForDisplay((move as { from_access?: string | null }).from_access)}</div>
+                              <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}65` }}>Access: {formatAccessForDisplay((move as { from_access?: string | null }).from_access)}</div>
                             )}
                           </div>
                           <div>
-                            <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-0.5" style={{ color: FOREST }}>To</div>
+                            <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-0.5" style={{ color: `${FOREST}50` }}>To</div>
                             <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{shortAddress(move.to_address || move.delivery_address)}</div>
                             {(move as { to_access?: string | null }).to_access && formatAccessForDisplay((move as { to_access?: string | null }).to_access) && (
-                              <div className="text-[10px] opacity-70 mt-0.5" style={{ color: FOREST }}>Access: {formatAccessForDisplay((move as { to_access?: string | null }).to_access)}</div>
+                              <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}65` }}>Access: {formatAccessForDisplay((move as { to_access?: string | null }).to_access)}</div>
                             )}
                           </div>
                         </div>
                       </div>
+
+                      {/* Crew */}
                       {crewMembers.length > 0 && (
-                        <div>
-                          <div className="text-[9px] font-bold uppercase tracking-widest opacity-40 mb-2" style={{ color: FOREST }}>Your Crew</div>
-                          <div className="flex flex-wrap gap-2.5">
+                        <div className="pt-1 border-t" style={{ borderColor: `${FOREST}10` }}>
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-2" style={{ color: `${FOREST}50` }}>Your Crew</div>
+                          <div className="flex flex-wrap gap-2">
                             {crewMembers.map((name: string, i: number) => (
-                              <div key={i} className="flex items-center gap-1.5">
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold text-white" style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}>
+                              <div
+                                key={i}
+                                className="flex items-center gap-1.5 rounded-full px-2.5 py-1"
+                                style={{ backgroundColor: `${FOREST}08`, border: `1px solid ${FOREST}12` }}
+                              >
+                                <div
+                                  className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                                  style={{ background: `linear-gradient(135deg, ${GOLD}, #8B7332)` }}
+                                >
                                   {(name || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                                 </div>
                                 <span className="text-[11px] font-medium" style={{ color: FOREST }}>{name}</span>
@@ -945,17 +1003,17 @@ export default function TrackMoveClient({
                           </div>
                         </div>
                       )}
-                      <div className="pt-1 space-y-2">
-                        <p className="text-[11px] flex items-center gap-1.5" style={{ color: FOREST }}>
+
+                      {/* Call Us */}
+                      <div className="pt-1">
+                        <a
+                          href={`tel:${normalizePhone(YUGO_PHONE)}`}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-semibold transition-opacity hover:opacity-70"
+                          style={{ color: FOREST }}
+                        >
                           <Phone size={12} className="text-current" aria-hidden />
-                          <a
-                            href={`tel:${normalizePhone(YUGO_PHONE)}`}
-                            className="inline-flex items-center font-semibold text-[11px] transition-opacity hover:opacity-70 focus:outline-none focus:ring-1 focus:ring-offset-1 rounded-md"
-                            style={{ color: FOREST }}
-                          >
-                            Call Us
-                          </a>
-                        </p>
+                          Call Us
+                        </a>
                       </div>
                     </div>
                   )}
@@ -1018,7 +1076,7 @@ export default function TrackMoveClient({
                               </span>
                             )}
                             {perk.valid_until && (
-                              <span className="text-[8px] text-white/45">Ends {formatPerkExpiry(perk.valid_until)}</span>
+                              <span className="text-[9px] text-white/45">Ends {formatPerkExpiry(perk.valid_until)}</span>
                             )}
                             {perk.redemption_url ? (
                               <a
@@ -1060,93 +1118,150 @@ export default function TrackMoveClient({
                 </p>
               ) : null}
 
-              {/* Referral: personal (residential) or business (office) */}
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1" style={{ color: FOREST }}>
-                  {serviceType === "office_move" ? "Refer another business" : "Refer a friend & earn cash"}
-                </div>
-                <p className="text-[11px] opacity-70 mb-3" style={{ color: FOREST }}>
-                  {serviceType === "office_move"
-                    ? "Know another business that's moving? Refer them to Yugo and earn a $200 credit on your next move."
-                    : "Share your code — your friend saves, you earn credit when they book."}
-                </p>
-                {!referral ? (
-                <div className="rounded-2xl border p-4 text-center" style={{ borderColor: `${FOREST}15`, backgroundColor: `${FOREST}03` }}>
-                  <p className="text-[12px] opacity-50 leading-relaxed" style={{ color: FOREST }}>
-                    {isCompleted
-                      ? "Your referral code is being prepared — check back in a moment."
-                      : "Your referral code will appear here once your move is complete."}
-                  </p>
-                </div>
-              ) : referral.status !== "active" ? (
-                <div className="rounded-2xl border p-4 text-center" style={{ borderColor: `${FOREST}15`, backgroundColor: `${FOREST}03` }}>
-                  <p className="text-[12px] opacity-60 leading-relaxed" style={{ color: FOREST }}>
-                    Your referral code has expired.{" "}
-                    <a href={`mailto:${YUGO_EMAIL}`} className="underline" style={{ color: GOLD }}>Contact us</a>{" "}
-                    for a new one.
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: `${FOREST}20`, backgroundColor: `${FOREST}04` }}>
-                  <p className="text-[12px] leading-relaxed mb-4" style={{ color: FOREST }}>
-                    Your friend gets{" "}
-                    <span className="font-semibold" style={{ color: WINE }}>${referral.referred_discount} off</span>{" "}
-                    their first Yugo move. When they book, you earn a{" "}
-                    <span className="font-semibold" style={{ color: WINE }}>${referral.referrer_credit} credit</span>.
-                  </p>
-                  <div
-                    className="flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 mb-3"
-                    style={{ borderColor: `${GOLD}35`, backgroundColor: `${GOLD}08` }}
-                  >
-                    <span className="font-mono text-[var(--text-base)] font-bold tracking-widest" style={{ color: WINE }}>
-                      {referral.referral_code}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label={referralCopied ? "Copied" : "Copy referral code"}
-                      onClick={() => {
-                        navigator.clipboard.writeText(referral.referral_code).then(() => {
-                          setReferralCopied(true);
-                          setTimeout(() => setReferralCopied(false), 2000);
-                        });
+              {/* Referral card */}
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{
+                  border: `1px solid ${GOLD}38`,
+                  background: `linear-gradient(160deg, #1f0e16 0%, #2e1520 55%, #1a1108 100%)`,
+                  boxShadow: `0 12px 40px rgba(92, 26, 51, 0.22), 0 2px 8px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.05)`,
+                }}
+              >
+                {/* Gold accent stripe */}
+                <div
+                  className="h-[3px] w-full"
+                  style={{ background: `linear-gradient(90deg, ${GOLD}bb 0%, ${GOLD} 50%, ${GOLD}bb 100%)` }}
+                />
+
+                <div className="px-5 pt-4 pb-5 sm:px-6">
+                  {/* Icon + eyebrow + headline */}
+                  <div className="flex items-start gap-3 mb-4">
+                    <div
+                      className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center"
+                      style={{
+                        backgroundColor: `${GOLD}20`,
+                        boxShadow: `inset 0 0 0 1px ${GOLD}40`,
                       }}
-                      className="shrink-0 w-10 h-10 inline-flex items-center justify-center rounded-xl transition-all active:scale-95"
-                      style={{ color: FOREST }}
                     >
-                      {referralCopied ? <Check size={18} weight="bold" aria-hidden /> : <Copy size={18} weight="regular" aria-hidden />}
-                    </button>
+                      <UsersThree size={22} weight="duotone" color={GOLD} aria-hidden />
+                    </div>
+                    <div className="pt-0.5">
+                      <div
+                        className="text-[9px] font-bold uppercase tracking-[0.14em] mb-1"
+                        style={{ color: `${GOLD}99` }}
+                      >
+                        {serviceType === "office_move" ? "Refer another business" : "Refer a friend & earn cash"}
+                      </div>
+                      <p className="text-[14px] font-semibold leading-snug mb-1" style={{ color: "#fff" }}>
+                        {serviceType === "office_move"
+                          ? "Know a business that's moving?"
+                          : "Give a friend a discount. Get cash back."}
+                      </p>
+                      <p className="text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.48)" }}>
+                        {serviceType === "office_move"
+                          ? "Refer them to Yugo and earn a $200 credit on your next move."
+                          : "Share your code — your friend saves, you earn credit when they book."}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-[10px] opacity-60 mb-3" style={{ color: FOREST }}>
-                    Terms and conditions apply.{" "}
-                    <Link href="/terms" className="underline hover:opacity-80" style={{ color: GOLD }}>
-                      Click here to read more.
-                    </Link>
-                  </p>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const msg = `I just moved with Yugo — they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
-                        if (navigator.share) { navigator.share({ text: msg }).catch(() => {}); }
-                        else { navigator.clipboard.writeText(msg); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }
-                      }}
-                      className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
-                      style={{ backgroundColor: WINE, color: "#FAF7F2" }}
+
+                  {!referral ? (
+                    <p
+                      className="text-[11px] leading-relaxed rounded-xl px-4 py-3"
+                      style={{ color: "rgba(255,255,255,0.38)", backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
                     >
-                      <ShareNetwork size={11} className="text-current" />
-                      Share with a friend
-                    </button>
-                    <a
-                      href={`sms:?body=${encodeURIComponent(`Moving soon? Use my YUGO referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
-                      className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
-                      style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
+                      {isCompleted
+                        ? "Your referral code is being prepared — check back in a moment."
+                        : "Your referral code will appear here once your move is complete."}
+                    </p>
+                  ) : referral.status !== "active" ? (
+                    <p
+                      className="text-[11px] leading-relaxed rounded-xl px-4 py-3"
+                      style={{ color: "rgba(255,255,255,0.38)", backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
                     >
-                      <ChatCircle size={11} className="text-current" />
-                      Send via SMS
-                    </a>
-                  </div>
+                      Your referral code has expired.{" "}
+                      <a href={`mailto:${YUGO_EMAIL}`} className="underline" style={{ color: GOLD }}>Contact us</a>{" "}
+                      for a new one.
+                    </p>
+                  ) : (
+                    <>
+                      {/* Value prop inline */}
+                      <p className="text-[12px] leading-relaxed mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>
+                        Your friend gets{" "}
+                        <span className="font-semibold" style={{ color: GOLD }}>${referral.referred_discount} off</span>
+                        {" "}their first Yugo move. You earn a{" "}
+                        <span className="font-semibold" style={{ color: "#f4c2c2" }}>${referral.referrer_credit} credit</span>
+                        {" "}when they book.
+                      </p>
+
+                      {/* Code row */}
+                      <div
+                        className="flex items-center justify-between gap-3 rounded-lg px-3.5 py-2 mb-3"
+                        style={{
+                          backgroundColor: "rgba(0,0,0,0.30)",
+                          border: `1px solid ${GOLD}45`,
+                          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04)`,
+                        }}
+                      >
+                        <span className="font-mono text-[13px] font-bold tracking-[0.16em]" style={{ color: GOLD }}>
+                          {referral.referral_code}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={referralCopied ? "Copied" : "Copy referral code"}
+                          onClick={() => {
+                            navigator.clipboard.writeText(referral.referral_code).then(() => {
+                              setReferralCopied(true);
+                              setTimeout(() => setReferralCopied(false), 2000);
+                            });
+                          }}
+                          className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all active:scale-95"
+                          style={{
+                            backgroundColor: referralCopied ? `${GOLD}28` : "rgba(255,255,255,0.09)",
+                            color: referralCopied ? GOLD : "rgba(255,255,255,0.6)",
+                            border: referralCopied ? `1px solid ${GOLD}55` : "1px solid rgba(255,255,255,0.12)",
+                          }}
+                        >
+                          {referralCopied
+                            ? <><Check size={11} weight="bold" aria-hidden /> Copied</>
+                            : <><Copy size={11} weight="regular" aria-hidden /> Copy</>}
+                        </button>
+                      </div>
+
+                      {/* Share buttons */}
+                      <div className="flex gap-2 flex-wrap mb-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const msg = `I just moved with Yugo — they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
+                            if (navigator.share) { navigator.share({ text: msg }).catch(() => {}); }
+                            else { navigator.clipboard.writeText(msg); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }
+                          }}
+                          className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-4 py-2 transition-all hover:opacity-90 active:scale-95"
+                          style={{ backgroundColor: WINE, color: "#FAF7F2" }}
+                        >
+                          <ShareNetwork size={12} className="text-current" />
+                          Share with a friend
+                        </button>
+                        <a
+                          href={`sms:?body=${encodeURIComponent(`Moving soon? Use my YUGO referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
+                          className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-4 py-2 transition-all hover:opacity-90 active:scale-95"
+                          style={{ backgroundColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.12)" }}
+                        >
+                          <ChatCircle size={12} className="text-current" />
+                          Send via SMS
+                        </a>
+                      </div>
+
+                      <p className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                        Terms and conditions apply.{" "}
+                        <Link href="/terms" className="underline hover:opacity-80" style={{ color: `${GOLD}aa` }}>
+                          Read more.
+                        </Link>
+                      </p>
+                    </>
+                  )}
                 </div>
-              )}
               </div>
             </div>
             )}
@@ -1155,7 +1270,7 @@ export default function TrackMoveClient({
             {(() => {
               const isOffice = serviceType === "office_move";
               const raw = (move.tier_selected || move.tier || move.service_tier || "").toLowerCase().trim().replace(/\s+/g, "_");
-              const tier = raw === "essentials" ? "curated" : raw === "premier" ? "signature" : raw;
+              const tier = (raw === "essentials" || raw === "curated") ? "essential" : raw === "premier" ? "signature" : raw;
               let ctas: { label: string; sub: string; href: string }[];
               let title = "Moving again? We've got you.";
               let heading = "Need Yugo again?";
@@ -1172,7 +1287,7 @@ export default function TrackMoveClient({
                 ];
               } else {
                 ctas =
-                  tier === "curated"
+                  tier === "essential"
                     ? [
                         { label: "Upgrade to Signature", sub: "Full protection, nothing left to chance", href: "https://yugoplus.co" },
                         { label: "Single Item Delivery", sub: "Sofa, piano, art piece — we deliver one item too", href: "https://yugoplus.co" },
@@ -1194,23 +1309,71 @@ export default function TrackMoveClient({
                           ];
               }
               return (
-                <div className="rounded-2xl border p-5 sm:p-6 text-left" style={{ borderColor: `${FOREST}18`, backgroundColor: `${FOREST}03`, boxShadow: "0px 4px 12px 0px rgba(0, 0, 0, 0.15)" }}>
-                  <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1.5" style={{ color: FOREST }}>{heading}</div>
-                  <h3 className="font-hero text-[18px] sm:text-[20px] font-semibold mb-4 leading-tight" style={{ color: WINE }}>
-                    {title}
-                  </h3>
-                  <div className={`grid gap-2.5 ${ctas.length === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}>
-                    {ctas.map(({ label, sub, href }) => (
-                      <a
-                        key={label}
-                        href={href}
-                        className="flex flex-col rounded-xl border px-4 py-3 transition-all hover:opacity-80 active:scale-[0.99]"
-                        style={{ borderColor: `${FOREST}20` }}
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    border: `1px solid ${FOREST}22`,
+                    background: `linear-gradient(155deg, #f5f1ea 0%, #ede8de 100%)`,
+                    boxShadow: "0 8px 32px rgba(44, 62, 45, 0.10), 0 2px 8px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  {/* Top stripe */}
+                  <div
+                    className="h-1 w-full"
+                    style={{ background: `linear-gradient(90deg, ${WINE} 0%, ${GOLD} 100%)` }}
+                  />
+
+                  <div className="px-5 pt-4 pb-5 sm:px-6 sm:pt-5 sm:pb-6">
+                    {/* Icon + eyebrow + headline */}
+                    <div className="flex items-start gap-3 mb-4">
+                      <div
+                        className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center"
+                        style={{ backgroundColor: `${WINE}12`, boxShadow: `inset 0 0 0 1px ${WINE}22` }}
                       >
-                        <span className="text-[12px] font-semibold" style={{ color: FOREST }}>{label}</span>
-                        <span className="text-[10px] opacity-50 mt-0.5" style={{ color: FOREST }}>{sub}</span>
-                      </a>
-                    ))}
+                        <ArrowsCounterClockwise size={22} weight="duotone" color={WINE} aria-hidden />
+                      </div>
+                      <div className="pt-0.5">
+                        <div
+                          className="text-[9px] font-bold uppercase tracking-[0.13em] mb-1"
+                          style={{ color: `${FOREST}80` }}
+                        >
+                          {heading}
+                        </div>
+                        <h3
+                          className="font-hero text-[19px] sm:text-[21px] font-semibold leading-snug"
+                          style={{ color: WINE }}
+                        >
+                          {title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* CTA cards */}
+                    <div className={`grid gap-2 ${ctas.length === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}>
+                      {ctas.map(({ label, sub, href }) => (
+                        <a
+                          key={label}
+                          href={href}
+                          className="group flex items-center justify-between gap-2 rounded-xl px-4 py-3 transition-all hover:scale-[1.015] hover:shadow-md active:scale-[0.99]"
+                          style={{
+                            background: "rgba(255, 255, 255, 0.72)",
+                            border: `1px solid ${FOREST}18`,
+                            backdropFilter: "blur(4px)",
+                          }}
+                        >
+                          <div className="min-w-0">
+                            <span className="block text-[12px] font-semibold leading-tight" style={{ color: FOREST }}>{label}</span>
+                            <span className="block text-[10px] mt-0.5 leading-tight" style={{ color: `${FOREST}70` }}>{sub}</span>
+                          </div>
+                          <CaretRight
+                            size={13}
+                            weight="bold"
+                            className="shrink-0 transition-transform group-hover:translate-x-0.5"
+                            style={{ color: `${WINE}80` }}
+                          />
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
@@ -1222,11 +1385,7 @@ export default function TrackMoveClient({
                 pct,
                 dollars: moveTotal > 0 ? Math.round((moveTotal * pct) / 100 * 100) / 100 : pct === 10 ? 5 : pct === 20 ? 10 : 20,
               }));
-              const crewInitial = (crew?.name || "C").charAt(0).toUpperCase();
-              const submitTip = async () => {
-                const amount = tipSectionShowCustom
-                  ? parseFloat(tipSectionCustom) || 0
-                  : (tipAmounts.find((a) => a.pct === tipSectionPercent)?.dollars ?? 0);
+              const submitTipAmount = async (amount: number) => {
                 if (amount < 5) { setTipSectionError("Minimum tip is $5.00"); return; }
                 setTipSectionError(null);
                 setTipSectionSubmitting(true);
@@ -1244,124 +1403,140 @@ export default function TrackMoveClient({
                 finally { setTipSectionSubmitting(false); }
               };
               return (
-                <div className="rounded-2xl border p-4" style={{ borderColor: "#2A2A2A", backgroundColor: "#1A1A1A" }}>
-                  {/* Header row */}
-                  <div className="flex items-start gap-3 mb-4">
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    border: `1px solid ${GOLD}40`,
+                    background: `linear-gradient(165deg, ${WINE} 0%, #3a1422 38%, #1a0c12 100%)`,
+                    boxShadow: `0 16px 48px rgba(92, 26, 51, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06)`,
+                  }}
+                >
+                  {/* Header */}
+                  <div
+                    className="flex items-start gap-3 px-4 pt-4 pb-3"
+                    style={{ borderBottom: `1px solid rgba(255, 255, 255, 0.08)` }}
+                  >
                     <div
-                      className="w-12 h-12 rounded-full shrink-0 flex items-center justify-center text-[18px] font-bold"
-                      style={{ backgroundColor: "#2A2A2A", color: "#B8962E" }}
-                    >
-                      {crewInitial}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-[16px] leading-tight" style={{ color: "#fff" }}>
-                        Tip {crew?.name || "your crew"}?
-                      </div>
-                      <div
-                        className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                        style={{ backgroundColor: "#1A3A2A", color: "#4ADE80" }}
-                      >
-                        <span>💸</span> Choose tip
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTipState("can_tip_later");
-                        fetch("/api/tips/decline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moveId: move.id, slug: urlSlug || undefined, token }) }).catch(() => {});
+                      className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center"
+                      style={{
+                        backgroundColor: `${GOLD}24`,
+                        boxShadow: `inset 0 0 0 1px ${GOLD}45`,
                       }}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[18px] opacity-50 hover:opacity-80 transition-opacity"
-                      style={{ backgroundColor: "#2A2A2A", color: "#fff" }}
-                      aria-label="Dismiss"
                     >
-                      ···
-                    </button>
+                      <HandHeart size={22} weight="duotone" color={GOLD} aria-hidden />
+                    </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <span className="block text-[15px] font-semibold tracking-tight text-white">
+                        Tip Your Crew
+                      </span>
+                      <span
+                        className="mt-0.5 block text-[11px] leading-snug"
+                        style={{ color: "rgba(255, 255, 255, 0.52)" }}
+                      >
+                        A thank-you that goes straight to the people who moved you.
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Amount buttons — 4 equal squares */}
-                  <div className="grid grid-cols-4 gap-2 mb-3">
-                    {tipAmounts.map(({ pct, dollars }) => {
-                      const isSelected = !tipSectionShowCustom && tipSectionPercent === pct;
-                      return (
+                  {/* Amount pills */}
+                  <div className="px-4 pt-4 pb-1">
+                    <div className="flex flex-wrap gap-2 sm:flex-nowrap">
+                      {tipAmounts.map(({ dollars }) => (
                         <button
-                          key={pct}
+                          key={dollars}
                           type="button"
-                          onClick={() => { setTipSectionPercent(pct); setTipSectionShowCustom(false); setTipSectionCustom(""); setTipSectionError(null); }}
-                          className="aspect-square rounded-xl flex items-center justify-center text-[15px] font-semibold transition-all"
+                          disabled={tipSectionSubmitting}
+                          onClick={() => {
+                            setTipSectionShowCustom(false);
+                            setTipSectionCustom("");
+                            setTipSectionError(null);
+                            submitTipAmount(dollars);
+                          }}
+                          className="min-w-[4.5rem] flex-1 py-2.5 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.98] disabled:opacity-40 border"
                           style={{
-                            backgroundColor: isSelected ? "#B8962E" : "#2A2A2A",
-                            color: isSelected ? "#0D0D0D" : "#fff",
+                            backgroundColor: "rgba(255, 255, 255, 0.07)",
+                            color: "#fff",
+                            borderColor: `${GOLD}35`,
                           }}
                         >
                           {formatCurrency(dollars)}
                         </button>
-                      );
-                    })}
-                    {/* Custom / pencil button */}
-                    <button
-                      type="button"
-                      onClick={() => { setTipSectionShowCustom(true); setTipSectionError(null); }}
-                      className="aspect-square rounded-xl flex items-center justify-center text-[20px] transition-all"
-                      style={{
-                        backgroundColor: tipSectionShowCustom ? "#B8962E" : "#2A2A2A",
-                        color: tipSectionShowCustom ? "#0D0D0D" : "#fff",
-                      }}
-                      aria-label="Custom amount"
-                    >
-                      ✏️
-                    </button>
+                      ))}
+                      <button
+                        type="button"
+                        disabled={tipSectionSubmitting}
+                        onClick={() => { setTipSectionShowCustom(true); setTipSectionError(null); }}
+                        className="shrink-0 px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all active:scale-[0.98] disabled:opacity-40 border"
+                        style={{
+                          backgroundColor: tipSectionShowCustom ? `${GOLD}28` : "rgba(255, 255, 255, 0.05)",
+                          color: tipSectionShowCustom ? "#fff" : "rgba(255, 255, 255, 0.65)",
+                          borderColor: tipSectionShowCustom ? `${GOLD}70` : `${GOLD}30`,
+                        }}
+                      >
+                        Custom
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Custom input (shown when pencil selected) */}
+                  {/* Custom input */}
                   {tipSectionShowCustom && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[13px] opacity-60" style={{ color: "#fff" }}>$</span>
-                      <input
-                        type="number"
-                        min={5}
-                        step={1}
-                        placeholder="Enter amount"
-                        value={tipSectionCustom}
-                        onChange={(e) => { setTipSectionCustom(e.target.value.replace(/[^0-9.]/g, "")); setTipSectionError(null); }}
-                        className="flex-1 rounded-xl border px-3 py-2 bg-[#2A2A2A] border-[#3A3A3A] text-[14px] outline-none focus:border-[#B8962E]"
-                        style={{ color: "#fff" }}
-                        autoFocus
-                      />
+                    <div className="px-4 pt-2 pb-1">
+                      <div
+                        className="flex items-center rounded-xl px-3 gap-1"
+                        style={{
+                          backgroundColor: "rgba(0, 0, 0, 0.25)",
+                          border: `1px solid ${GOLD}50`,
+                          boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.04)`,
+                        }}
+                      >
+                        <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>$</span>
+                        <input
+                          type="number"
+                          min={5}
+                          step={1}
+                          placeholder="Enter amount"
+                          value={tipSectionCustom}
+                          onChange={(e) => { setTipSectionCustom(e.target.value.replace(/[^0-9.]/g, "")); setTipSectionError(null); }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const v = parseFloat(tipSectionCustom) || 0;
+                              submitTipAmount(v);
+                            }
+                          }}
+                          className="flex-1 bg-transparent text-[13px] font-medium outline-none py-2.5 placeholder:opacity-25"
+                          style={{ color: "#fff" }}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          disabled={tipSectionSubmitting || (parseFloat(tipSectionCustom) || 0) < 5}
+                          onClick={() => submitTipAmount(parseFloat(tipSectionCustom) || 0)}
+                          className="text-[11px] font-semibold px-2 py-0.5 rounded-md transition-opacity disabled:opacity-30"
+                          style={{ color: GOLD }}
+                        >
+                          {tipSectionSubmitting ? "…" : "Send"}
+                        </button>
+                      </div>
                     </div>
                   )}
 
+                  {/* Submitting / error state */}
+                  {tipSectionSubmitting && !tipSectionError && (
+                    <p className="px-4 pt-2 text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+                      Processing…
+                    </p>
+                  )}
                   {tipSectionError && (
-                    <p className="text-[11px] text-red-400 mb-2">{tipSectionError}</p>
+                    <p className="px-4 pt-2 text-[11px] text-red-400">{tipSectionError}</p>
                   )}
 
-                  {/* Footer text */}
-                  <p className="text-[11px] mb-3" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  {/* Footer */}
+                  <p
+                    className="px-4 pt-3 pb-4 text-[10px] font-medium tracking-wide uppercase"
+                    style={{ color: `${GOLD}cc`, letterSpacing: "0.06em" }}
+                  >
                     100% goes directly to your crew
                   </p>
-
-                  {/* Action row */}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      disabled={tipSectionSubmitting}
-                      onClick={submitTip}
-                      className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold transition-opacity disabled:opacity-40"
-                      style={{ backgroundColor: "#B8962E", color: "#0D0D0D" }}
-                    >
-                      {tipSectionSubmitting ? "Processing…" : "Done"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTipState("can_tip_later");
-                        fetch("/api/tips/decline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moveId: move.id, slug: urlSlug || undefined, token }) }).catch(() => {});
-                      }}
-                      className="flex-1 py-2.5 rounded-xl text-[13px] font-medium transition-opacity hover:opacity-80"
-                      style={{ color: "rgba(255,255,255,0.6)", backgroundColor: "#2A2A2A" }}
-                    >
-                      Skip for now
-                    </button>
-                  </div>
                 </div>
               );
             })()}
@@ -1658,6 +1833,42 @@ export default function TrackMoveClient({
               </div>
             )}
 
+            {/* ── Pre-Move Checklist (72hr window, non-completed moves) ── */}
+            {!isCompleted && daysUntil != null && daysUntil >= 0 && daysUntil <= 3 && !isInProgress && (
+              <div className="mt-5">
+                <PreMoveChecklist
+                  moveId={move.id}
+                  token={token}
+                  initialChecked={(move.pre_move_checklist as Record<string, boolean>) || {}}
+                  crewName={crewMembers.length > 0 ? crewMembers.slice(0, 2).join(" & ") : undefined}
+                  arrivalWindow={arrivalWindow || undefined}
+                  moveDateStr={move.scheduled_date || undefined}
+                />
+              </div>
+            )}
+
+            {/* ── Client Room Photo Capture (3-day window, pre-move) ── */}
+            {!isCompleted && daysUntil != null && daysUntil >= 0 && daysUntil <= 5 && !isInProgress && (
+              <div className="mt-5">
+                <ClientRoomPhotoCapture
+                  moveId={move.id}
+                  token={token}
+                  initialPhotos={(move.client_room_photos as Record<string, { url: string; uploadedAt: string }>) || {}}
+                />
+              </div>
+            )}
+
+            {/* ── Live Move Timeline (move day or in-progress) ── */}
+            {!isCompleted && (daysUntil === 0 || isInProgress) && (
+              <div className="mt-5">
+                <LiveMoveTimeline
+                  moveId={move.id}
+                  token={token}
+                  currentStatus={move.status || ""}
+                />
+              </div>
+            )}
+
             {!isCompleted && (
               <div className="pt-5 mt-3 space-y-3">
                 {inventoryChangeFeatureOn && inventoryChangeItemWeights.length > 0 && (
@@ -1789,7 +2000,7 @@ export default function TrackMoveClient({
                                   </span>
                                 )}
                                 {perk.valid_until && (
-                                  <span className="text-[8px] text-white/45">Ends {formatPerkExpiry(perk.valid_until)}</span>
+                                  <span className="text-[9px] text-white/45">Ends {formatPerkExpiry(perk.valid_until)}</span>
                                 )}
                                 {perk.redemption_url ? (
                                   <a
@@ -2229,7 +2440,7 @@ function CrewChangeRequestBanner({
     <div className="mb-5 rounded-2xl border border-amber-400/30 bg-amber-400/6 overflow-hidden">
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-start gap-2.5 mb-3">
-          <span className="text-amber-500 text-[18px] shrink-0">⚠</span>
+          <Warning size={18} className="text-amber-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-[13px] font-bold text-amber-800">Inventory Update</p>
             <p className="text-[11px] text-amber-700/70 mt-0.5">Your crew found differences during the walkthrough.</p>

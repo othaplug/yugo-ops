@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
+import { squarePaymentErrorsToMessage, squareThrownErrorMessage } from "@/lib/square-payment-errors";
 
 /**
  * POST /api/track/delivery/[id]/tip
@@ -86,9 +87,10 @@ export async function POST(
     });
 
     if (paymentRes.errors && paymentRes.errors.length > 0) {
-      const first = paymentRes.errors[0] as { code?: string; message?: string; detail?: string };
-      const msg = first?.message || first?.detail || "Payment failed";
-      return NextResponse.json({ error: msg }, { status: 400 });
+      return NextResponse.json(
+        { error: squarePaymentErrorsToMessage(paymentRes.errors) },
+        { status: 400 }
+      );
     }
 
     if (!paymentRes.payment?.id) {
@@ -105,9 +107,6 @@ export async function POST(
     });
   } catch (err: unknown) {
     console.error("[delivery tip]", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "An error occurred. Please try again." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: squareThrownErrorMessage(err) }, { status: 500 });
   }
 }

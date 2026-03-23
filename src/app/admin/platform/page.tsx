@@ -70,10 +70,10 @@ export default async function PlatformPage() {
   }));
 
   return (
-    <div className="w-full max-w-[720px] min-w-0 mx-auto px-4 sm:px-5 md:px-6 py-6 md:py-8 animate-fade-up">
+    <div className="w-full max-w-[1100px] min-w-0 mx-auto px-4 sm:px-5 md:px-6 py-6 md:py-8 animate-fade-up">
       <div className="mb-8">
         <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Admin</p>
-        <h1 className="font-heading text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Platform Settings</h1>
+        <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Platform Settings</h1>
       </div>
       <PlatformSettingsClient initialTeams={initialTeams} initialToggles={initialToggles} initialReviewConfig={initialReviewConfig} currentUserId={user?.id} isSuperAdmin={isSuperAdmin} />
     </div>

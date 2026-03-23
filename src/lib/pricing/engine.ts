@@ -72,14 +72,14 @@ export function applyMarketStackCap(
 // ═══════════════════════════════════════════════
 
 export interface TieredLabourRates {
-  curated: number;
+  essential: number;
   signature: number;
   estate: number;
 }
 
 export function getLabourRates(config: ConfigMap): TieredLabourRates {
   return {
-    curated: cfgNum(config, "labour_rate_curated", 55),
+    essential: cfgNum(config, "labour_rate_essential", cfgNum(config, "labour_rate_curated", 55)),
     signature: cfgNum(config, "labour_rate_signature", 65),
     estate: cfgNum(config, "labour_rate_estate", 75),
   };
@@ -93,10 +93,10 @@ export function calcTieredLabourDelta(
   extraHours: number,
   crew: number,
   rates: TieredLabourRates,
-): { curated: number; signature: number; estate: number } {
+): { essential: number; signature: number; estate: number } {
   const safe = Math.max(0, extraHours);
   return {
-    curated: Math.max(0, Math.round(safe * crew * rates.curated)),
+    essential: Math.max(0, Math.round(safe * crew * rates.essential)),
     signature: Math.max(0, Math.round(safe * crew * rates.signature)),
     estate: Math.max(0, Math.round(safe * crew * rates.estate)),
   };
@@ -214,7 +214,7 @@ export function calcMarginWarning(
     ? "margin_target_estate"
     : tier === "signature"
       ? "margin_target_signature"
-      : "margin_target_curated";
+      : "margin_target_essential";
   const marginTarget = cfgNum(config, targetKey, tier === "estate" ? 55 : tier === "signature" ? 48 : 40);
   const marginWarning = cfgNum(config, "margin_warning_threshold", 35);
   const marginCritical = cfgNum(config, "margin_critical_threshold", 25);
@@ -271,7 +271,7 @@ export function calcActualMargin(
   const crew = move.actualCrew ?? move.crewSize ?? 2;
   const truck = (move.truckType ?? "sprinter").toLowerCase().replace(/[^a-z0-9]/g, "");
   const distanceKm = move.distanceKm ?? 20;
-  const tier = move.tier ?? "curated";
+  const tier = move.tier ?? "essential";
   const moveSize = move.moveSize ?? "2br";
   const revenue = move.totalPrice ?? 0;
 

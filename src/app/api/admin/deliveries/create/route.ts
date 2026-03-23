@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 import { generateDeliveryNumber } from "@/lib/delivery-number";
+import { logActivity } from "@/lib/activity";
 
 /** POST /api/admin/deliveries/create — Create delivery as admin (e.g. day rate with skip-approval). */
 export async function POST(req: NextRequest) {
@@ -123,6 +124,16 @@ export async function POST(req: NextRequest) {
         zone: s.zone ?? null,
       }));
       await admin.from("delivery_stops").insert(stopRows);
+    }
+
+    if (created) {
+      await logActivity({
+        entity_type: "delivery",
+        entity_id: created.id,
+        event_type: "created",
+        description: `Delivery created: ${customerName}${scheduledDate ? ` — ${scheduledDate}` : ""} (${created.delivery_number})`,
+        icon: "delivery",
+      });
     }
 
     return NextResponse.json({ ok: true, delivery: created });

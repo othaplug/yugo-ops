@@ -260,13 +260,13 @@ export default function AddressAutocomplete({
   };
 
   const inputClass =
-    "w-full px-3.5 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all " +
+    "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all " +
     (className || "");
 
   return (
     <div ref={containerRef} className="w-full relative">
       {label && (
-        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1.5">
+        <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
           {label}
           {required && <span className="text-[var(--red)] ml-0.5">*</span>}
         </label>

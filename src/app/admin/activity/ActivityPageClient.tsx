@@ -84,7 +84,7 @@ export default function ActivityPageClient({ initialEvents }: { initialEvents: A
         </div>
       </div>
       <p className="text-[var(--text-md)] text-[var(--tx3)] mb-4 leading-snug font-medium">
-        Live stream of status updates logged across moves, deliveries, invoices, and notifications. New events appear automatically.
+        Real-time updates from jobs and billing.
       </p>
 
       {visible.length > 0 ? (

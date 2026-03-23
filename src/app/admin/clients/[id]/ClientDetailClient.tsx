@@ -422,7 +422,7 @@ export default function ClientDetailClient({
                 <div className="text-[11px] font-semibold">{inv.invoice_number}</div>
                 <div className="text-[9px] text-[var(--tx3)]">Due: {inv.due_date}</div>
               </div>
-              <div className="text-[10px] font-bold">{formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? <span className="text-[8px] text-[var(--tx3)] ml-0.5">+{formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST</span> : null}</div>
+              <div className="text-[10px] font-bold">{formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? <span className="text-[9px] text-[var(--tx3)] ml-0.5">+{formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST</span> : null}</div>
               <Badge status={inv.status} />
             </button>
           ))}

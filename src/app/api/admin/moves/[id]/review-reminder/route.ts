@@ -81,7 +81,7 @@ export async function POST(
     const token = signReviewToken(rr.id);
     const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(token)}`;
     const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(token)}`;
-    const tier = (rr.tier || "curated").toLowerCase();
+    const tier = (rr.tier || "essential").toLowerCase();
     const trackSlug = move ? getTrackMoveSlug({ move_code: move.move_code, id: move.id }) : rr.move_id;
     const trackToken = rr.move_id ? signTrackToken("move", rr.move_id) : "";
     const trackingUrl = trackSlug ? `${baseUrl}/track/move/${trackSlug}?token=${trackToken}` : baseUrl;
@@ -90,7 +90,7 @@ export async function POST(
         ? "review-request-estate"
         : tier === "signature" || tier === "premier"
           ? "review-request-signature"
-          : "review-request-curated";
+          : "review-request-essential";
     const firstName = (displayName || "").trim().split(/\s+/)[0] || "";
 
     const { data: configRows } = await admin

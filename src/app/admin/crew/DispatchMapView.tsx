@@ -143,7 +143,7 @@ export default function DispatchMapView() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-heading text-[15px] font-bold text-[var(--tx)]">Active Operations</h2>
+        <h2 className="admin-section-h2">Active Operations</h2>
         <div className="flex gap-2">
           <button
             onClick={() => setView("map")}

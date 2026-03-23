@@ -14,7 +14,7 @@ interface Org {
 }
 
 const fieldInput =
-  "w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
+  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
 
 export default function AdminDayRateForm({ organizations }: { organizations: Org[] }) {
   const router = useRouter();
@@ -41,7 +41,7 @@ export default function AdminDayRateForm({ organizations }: { organizations: Org
   if (!organizationId || !selectedOrg) {
     return (
       <div className="space-y-4">
-        <h2 className="text-[18px] font-bold text-[var(--tx)]">Day Rate — Select Partner</h2>
+        <h2 className="admin-section-h2">Day Rate — Select Partner</h2>
         <div className="relative" ref={dropdownRef}>
           <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Partner / Organization</label>
           <input
@@ -74,7 +74,7 @@ export default function AdminDayRateForm({ organizations }: { organizations: Org
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="text-[18px] font-bold text-[var(--tx)]">Day Rate — {selectedOrg.name}</h2>
+        <h2 className="admin-section-h2">Day Rate — {selectedOrg.name}</h2>
         <button
           type="button"
           onClick={() => setOrganizationId("")}

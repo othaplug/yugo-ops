@@ -36,6 +36,7 @@ export async function GET() {
     invoicesRes,
     referralsRes,
     galleryProjectsRes,
+    statementsRes,
   ] = await Promise.all([
     admin
       .from("deliveries")
@@ -70,6 +71,12 @@ export async function GET() {
     (orgType === "designer" || orgType === "gallery" || orgType === "interior_designer" || orgType === "art_gallery" || orgType === "antique_dealer")
       ? admin.from("gallery_projects").select("*").in("gallery_org_id", orgIds).order("created_at", { ascending: false })
       : Promise.resolve({ data: [] as never[], error: null }),
+    admin
+      .from("partner_statements")
+      .select("id, statement_number, period_start, period_end, delivery_count, subtotal, hst, total, due_date, payment_terms, status, paid_amount, paid_at, created_at")
+      .in("partner_id", orgIds)
+      .order("created_at", { ascending: false })
+      .limit(24),
   ]);
 
   // Surface any query errors so they're not silently swallowed
@@ -84,6 +91,7 @@ export async function GET() {
   const invoices = invoicesRes.data;
   const referrals = referralsRes.data;
   const galleryProjects = galleryProjectsRes.data;
+  const partnerStatements = statementsRes.data ?? [];
 
   console.log("[portal-data] orgIds:", orgIds, "byOrgId count:", byOrgId?.length ?? "null", "byClientName count:", byClientName?.length ?? "null");
 
@@ -201,5 +209,6 @@ export async function GET() {
     totalEarned,
     completedReferrals: completedRefs.length,
     projects: galleryProjects || [],
+    statements: partnerStatements,
   });
 }

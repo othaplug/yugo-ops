@@ -8,6 +8,7 @@ import { getAdminNotificationEmail } from "@/lib/config";
 import { tipReceivedAdminEmailHtml } from "@/lib/email/admin-templates";
 import { isFeatureEnabled } from "@/lib/platform-settings";
 import { getSquarePaymentConfig } from "@/lib/square-config";
+import { squarePaymentErrorsToMessage, squareThrownErrorMessage } from "@/lib/square-payment-errors";
 
 export async function POST(req: NextRequest) {
   if (!(await isFeatureEnabled("tipping_enabled"))) {
@@ -117,6 +118,13 @@ export async function POST(req: NextRequest) {
       locationId,
     });
 
+    if (paymentRes.errors && paymentRes.errors.length > 0) {
+      return NextResponse.json(
+        { error: squarePaymentErrorsToMessage(paymentRes.errors) },
+        { status: 400 }
+      );
+    }
+
     const paymentId = paymentRes.payment?.id;
     if (!paymentId) {
       return NextResponse.json({ error: "Payment could not be completed" }, { status: 500 });
@@ -182,9 +190,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: unknown) {
     console.error("[tips/charge]", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "An error occurred" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: squareThrownErrorMessage(err) }, { status: 500 });
   }
 }
