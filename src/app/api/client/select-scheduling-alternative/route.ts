@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   await notifyAdmins("move_scheduled", {
     moveId: body.moveId,
     subject: "Client selected alternative slot",
-    body: `Client chose ${alt.alt_date} ${alt.alt_window}${alt.team_name ? ` — ${alt.team_name}` : ""} for move ${body.moveId}.`,
+    body: `Client chose ${alt.alt_date} ${alt.alt_window}${alt.team_name ? `, ${alt.team_name}` : ""} for move ${body.moveId}.`,
     description: `Client chose ${alt.alt_date} ${alt.alt_window} for their move.`,
   }).catch(() => {});
 

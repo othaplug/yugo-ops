@@ -92,7 +92,7 @@ export default function LiveMoveTimeline({ moveId, token, currentStatus, initial
           <p className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1" style={{ color: GOLD }}>
             {isLive ? "Live" : "Move"} Timeline
           </p>
-          <h3 className="text-[15px] font-bold" style={{ color: FOREST }}>Your Move — Step by Step</h3>
+          <h3 className="text-[15px] font-bold" style={{ color: FOREST }}>Your Move, Step by Step</h3>
         </div>
         {isLive && (
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: `${GREEN}14`, border: `1px solid ${GREEN}30` }}>

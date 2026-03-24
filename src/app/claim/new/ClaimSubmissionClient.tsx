@@ -38,6 +38,7 @@ interface MoveInfo {
   client_phone: string;
   valuation_tier: string;
   was_upgraded: boolean;
+  status: string | null;
 }
 
 function newItem(): ClaimedItem {
@@ -461,7 +462,10 @@ export default function ClaimSubmissionClient() {
       )}
 
       {/* Step 3: Review & Submit */}
-      {step === 3 && moveInfo && (
+      {step === 3 && moveInfo && (() => {
+        const COMPLETED_STATUSES = ["completed", "delivered", "done"];
+        const moveIsComplete = COMPLETED_STATUSES.includes((moveInfo.status || "").toLowerCase());
+        return (
         <div className="space-y-4">
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-4">Review Your Claim</h2>
@@ -470,6 +474,12 @@ export default function ClaimSubmissionClient() {
               <p className="text-[13px] text-[#888]">Claimant: <strong>{clientName}</strong> ({clientEmail})</p>
               <p className="text-[13px] text-[#888]">Valuation: <strong>{VALUATION_INFO[moveInfo.valuation_tier]?.label || moveInfo.valuation_tier}</strong></p>
             </div>
+            {!moveIsComplete && (
+              <div className="rounded-xl p-4 mb-2 border border-amber-200 bg-amber-50">
+                <p className="text-[13px] font-semibold text-amber-800">Move not yet completed</p>
+                <p className="text-[12px] text-amber-700 mt-0.5">Claims can only be submitted once your move has been marked as completed. Please check back after your move day.</p>
+              </div>
+            )}
 
             <h3 className="text-[var(--text-base)] font-bold text-[#555] mb-3">Items ({items.filter((i) => i.name.trim()).length})</h3>
             {items.filter((i) => i.name.trim()).map((item, idx) => (
@@ -516,7 +526,7 @@ export default function ClaimSubmissionClient() {
             </button>
             <button
               onClick={handleSubmit}
-              disabled={!confirmed || submitting}
+              disabled={!confirmed || submitting || !moveIsComplete}
               className="flex-1 py-3 rounded-xl text-[var(--text-base)] font-bold text-white disabled:opacity-40"
               style={{ backgroundColor: "#722F37" }}
             >
@@ -524,7 +534,8 @@ export default function ClaimSubmissionClient() {
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

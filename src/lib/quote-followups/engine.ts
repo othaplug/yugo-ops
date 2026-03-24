@@ -106,7 +106,7 @@ function chooseFollowUpVariant(
         premier: "Signature",
       };
       return {
-        subject: `Your ${tierLabel[tier] ?? tier} move is almost booked`,
+        subject: `Your ${tierLabel[tier] ?? tier} package is ready to confirm`,
         template: "quote-followup-2-warm",
         extraData: { tier, addons: eng.addonsSeen },
       };
@@ -114,7 +114,7 @@ function chooseFollowUpVariant(
 
     if (eng.tierClicked === "essential" || eng.tierClicked === "curated" || eng.tierClicked === "essentials") {
       return {
-        subject: "Quick question about your move",
+        subject: "A note about your Yugo quote",
         template: "quote-followup-2-essential",
         extraData: { tier: "essential" },
       };
@@ -122,14 +122,14 @@ function chooseFollowUpVariant(
 
     if (eng.maxSessionSeconds < 30 && eng.pageViews <= 1) {
       return {
-        subject: "Only a few days left on your Yugo quote",
+        subject: "Your Yugo quote is still available",
         template: "quote-followup-2-cold",
         extraData: { includeInlinePrices: true },
       };
     }
 
     return {
-      subject: "Your date is filling up secure it today",
+      subject: "A gentle reminder about your move date",
       template: "quote-followup-2",
       extraData: {},
     };
@@ -137,7 +137,7 @@ function chooseFollowUpVariant(
 
   if (eng.paymentStarted) {
     return {
-      subject: "We saved your spot finish booking",
+      subject: "Pick up where you left off",
       template: "quote-followup-3-hot",
       extraData: { tier: eng.tierClicked },
     };
@@ -145,14 +145,14 @@ function chooseFollowUpVariant(
 
   if (eng.pageViews === 0) {
     return {
-      subject: "Did you receive your Yugo quote?",
+      subject: "Your Yugo quote is waiting",
       template: "quote-followup-3-unseen",
       extraData: {},
     };
   }
 
   return {
-    subject: "Last chance your quote expires tomorrow",
+    subject: "Your Yugo quote expires tomorrow",
     template: "quote-followup-3",
     extraData: {},
   };
@@ -262,7 +262,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
 
         const res = await sendEmail({
           to: contact.email,
-          subject: `Just checking in your Yugo quote is ready`,
+          subject: `Your Yugo quote is ready whenever you are`,
           template: "quote-followup-1",
           data: {
             clientName: contact.name || "",
@@ -277,7 +277,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
             entity_type: "quote",
             entity_id: q.quote_id,
             event_type: "follow_up_sent",
-            description: `Follow-up #1 sent to ${contact.name || contact.email} — ${q.quote_id}`,
+            description: `Follow-up #1 sent to ${contact.name || contact.email}, ${q.quote_id}`,
             icon: "follow_up",
           }).catch(() => {});
           if (contact.phone) {
@@ -366,7 +366,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
             entity_type: "quote",
             entity_id: q.quote_id,
             event_type: "follow_up_sent",
-            description: `Follow-up #2 sent to ${contact.name || contact.email} — ${q.quote_id}`,
+            description: `Follow-up #2 sent to ${contact.name || contact.email}, ${q.quote_id}`,
             icon: "follow_up",
           }).catch(() => {});
           if (contact.phone) {
@@ -391,7 +391,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
         if (q.hubspot_deal_id) {
           await createHubSpotTask(
             q.hubspot_deal_id,
-            `Follow up: ${contact.name || "Client"} — ${eng.tierClicked ? `explored ${eng.tierClicked}` : "viewed"}`,
+            `Follow up: ${contact.name || "Client"}, ${eng.tierClicked ? `explored ${eng.tierClicked}` : "viewed"}`,
             `Quote ${q.quote_id} was viewed 48+ hours ago. Engagement: ${eng.paymentStarted ? "started payment" : eng.contractViewed ? "viewed contract" : eng.tierClicked ? `clicked ${eng.tierClicked} tier` : "browsed briefly"}. ${eng.maxSessionSeconds}s max session.`,
           );
         }
@@ -463,7 +463,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
             entity_type: "quote",
             entity_id: q.quote_id,
             event_type: "follow_up_sent",
-            description: `Follow-up #3 sent to ${contact.name || contact.email} — ${q.quote_id}`,
+            description: `Follow-up #3 sent to ${contact.name || contact.email}, ${q.quote_id}`,
             icon: "follow_up",
           }).catch(() => {});
           if (contact.phone) {
@@ -488,7 +488,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
         if (q.hubspot_deal_id) {
           await createHubSpotTask(
             q.hubspot_deal_id,
-            `URGENT: Final follow-up — ${eng.paymentStarted ? "payment was started" : "quote expiring"}`,
+            `URGENT: Final follow-up, ${eng.paymentStarted ? "payment was started" : "quote expiring"}`,
             `Quote ${q.quote_id} for ${contact.name || "client"} expires soon. Engagement level: ${eng.paymentStarted ? "HOT (started payment)" : eng.contractViewed ? "WARM (viewed contract)" : eng.tierClicked ? "ENGAGED (browsed tiers)" : "COLD"}. Personal outreach recommended.`,
           );
         }

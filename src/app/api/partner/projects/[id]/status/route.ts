@@ -141,7 +141,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const vendorLabel = item.vendor_name || item.vendor || "vendor";
     await notifyAllAdmins({
       title: `Project item: ${STATUS_LABELS[item_status]}`,
-      body: `${item.item_name} (${vendorLabel}) — ${project.project_name}`,
+      body: `${item.item_name} (${vendorLabel}), ${project.project_name}`,
       icon: item_status === "issue_reported" ? "alert" : "projects",
       link: `/admin/projects/${projectId}`,
       sourceType: "project",

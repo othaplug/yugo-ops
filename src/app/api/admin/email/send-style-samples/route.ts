@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const templateJobs: TemplateJob[] = [
     {
       template: "pre-move-72hr",
-      subject: "[Yugo sample] Pre-move — 72 hours",
+      subject: "[Yugo sample] Pre-move, 72 hours",
       data: {
         clientName: "Alex Sample",
         moveCode: "MV-SAMPLE",
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     },
     {
       template: "pre-move-24hr",
-      subject: "[Yugo sample] Pre-move — 24 hours",
+      subject: "[Yugo sample] Pre-move, 24 hours",
       data: {
         clientName: "Alex Sample",
         moveCode: "MV-SAMPLE",
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     },
     {
       template: "balance-reminder-72hr",
-      subject: "[Yugo sample] Balance reminder — 72h",
+      subject: "[Yugo sample] Balance reminder, 72h",
       data: {
         clientName: "Alex Sample",
         moveCode: "MV-SAMPLE",
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     },
     {
       template: "balance-reminder-48hr",
-      subject: "[Yugo sample] Balance reminder — 48h",
+      subject: "[Yugo sample] Balance reminder, 48h",
       data: {
         clientName: "Alex Sample",
         moveCode: "MV-SAMPLE",
@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
     },
     {
       template: "review-request-curated",
-      subject: "[Yugo sample] Review — curated tier (legacy shell)",
+      subject: "[Yugo sample] Review, curated tier (legacy shell)",
       data: {
         clientName: "Alex Sample",
         tier: "signature",
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
     },
     {
       template: "review-request-signature",
-      subject: "[Yugo sample] Review — signature (legacy shell)",
+      subject: "[Yugo sample] Review, signature (legacy shell)",
       data: {
         clientName: "Alex Sample",
         tier: "signature",
@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
     },
     {
       template: "review-request-estate",
-      subject: "[Yugo sample] Review — estate (legacy shell)",
+      subject: "[Yugo sample] Review, estate (legacy shell)",
       data: {
         clientName: "Alex Sample",
         tier: "estate",

@@ -181,7 +181,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-7 py-6 space-y-5 min-h-0">
 
-          {/* Job type — card selectors */}
+          {/* Job type, card selectors */}
           <div>
             <p className={labelCls}>Job Type</p>
             <div className="grid grid-cols-3 gap-2.5">

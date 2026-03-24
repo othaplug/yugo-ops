@@ -44,7 +44,7 @@ function quoteSubject(
 ): string {
   const namePart = firstName ? `${firstName}, ` : "";
   if (serviceType === "event" && eventName?.trim()) {
-    return `${namePart}Your Yugo Event Quote — ${eventName.trim()} (${quoteId})`;
+    return `${namePart}Your Yugo Event Quote, ${eventName.trim()} (${quoteId})`;
   }
   const subjectBase = SERVICE_SUBJECT[serviceType] ?? "Your Quote is Ready";
   return `${namePart}${subjectBase} ${quoteId}`;
@@ -341,7 +341,7 @@ export async function POST(req: NextRequest) {
       entity_type: "quote",
       entity_id: quoteId,
       event_type: "sent",
-      description: `Quote sent to ${fullName || clientEmail} — ${quoteId}`,
+      description: `Quote sent to ${fullName || clientEmail}, ${quoteId}`,
       icon: "mail",
     });
 

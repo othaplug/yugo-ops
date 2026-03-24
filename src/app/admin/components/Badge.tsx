@@ -37,7 +37,7 @@ export default function Badge({ status }: { status: string }) {
   const moveStyle = MOVE_STATUS_COLORS_ADMIN[key];
   const colors = moveStyle ?? BADGE_COLORS[key] ?? BADGE_COLORS.pending;
   const moveLabel = getStatusLabel(status || null);
-  const label = moveLabel !== "—" ? moveLabel : (status ? toTitleCase(status) : "—");
+  const label = moveLabel !== "-" ? moveLabel : (status ? toTitleCase(status) : "-");
   return (
     <span className={`inline-flex items-center px-2.5 py-[3px] rounded-full dt-badge ${colors}`}>
       {label}

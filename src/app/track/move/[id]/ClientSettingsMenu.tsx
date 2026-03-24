@@ -261,7 +261,7 @@ export default function ClientSettingsMenu({
                 </span>
               </button>
 
-              {/* View claim status — only when a claim exists */}
+              {/* View claim status, only when a claim exists */}
               {existingClaim && (
                 <button
                   onClick={() => { setOpen(false); setClaimStatusOpen(true); }}

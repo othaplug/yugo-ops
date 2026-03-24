@@ -57,13 +57,13 @@ export default function DistanceLogistics({
         <div>
           <span className="text-[10px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Distance</span>
           <div className="text-[11px] font-medium text-[var(--tx)]">
-            {!hasAddresses ? "Add addresses above" : loading ? "Loading…" : error ? error : distance ?? "—"}
+            {!hasAddresses ? "Add addresses above" : loading ? "Loading…" : error ? error : distance ?? "-"}
           </div>
         </div>
         <div>
           <span className="text-[10px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Drive Time</span>
           <div className="text-[11px] font-medium text-[var(--tx)]">
-            {!hasAddresses ? "—" : loading ? "Loading…" : error ? "—" : duration ?? "—"}
+            {!hasAddresses ? "-" : loading ? "Loading…" : error ? "-" : duration ?? "-"}
           </div>
         </div>
       </div>

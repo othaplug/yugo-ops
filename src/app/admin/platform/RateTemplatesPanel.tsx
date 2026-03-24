@@ -229,7 +229,7 @@ function TemplateRateEditor({
                       {r.price_max != null ? (
                         <EditableCell table="delivery_rates" id={r.id} field="price_max" original={r.price_max} />
                       ) : (
-                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">—</td>
+                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">-</td>
                       )}
                     </tr>
                   ))}
@@ -254,7 +254,7 @@ function TemplateRateEditor({
                       {r.price_unit === "percentage" ? (
                         <>
                           <EditableCell table="services" id={r.id} field="price_min" original={r.price_min} isPercent />
-                          <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">—</td>
+                          <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">-</td>
                         </>
                       ) : (
                         <>
@@ -262,7 +262,7 @@ function TemplateRateEditor({
                           {r.price_max != null ? (
                             <EditableCell table="services" id={r.id} field="price_max" original={r.price_max} />
                           ) : (
-                            <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">—</td>
+                            <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">-</td>
                           )}
                         </>
                       )}
@@ -311,7 +311,7 @@ function TemplateRateEditor({
                       {r.surcharge > 0 ? (
                         <EditableCell table="zones" id={r.id} field="surcharge" original={r.surcharge} />
                       ) : (
-                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">—</td>
+                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">-</td>
                       )}
                     </tr>
                   ))}
@@ -446,7 +446,7 @@ function CreateTemplateModal({
             onChange={(e) => setCopyFrom(e.target.value)}
             className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
           >
-            <option value="">— Start blank —</option>
+            <option value="">- Start blank -</option>
             {existingTemplates.map((t) => (
               <option key={t.id} value={t.id}>{t.template_name}</option>
             ))}
@@ -604,7 +604,7 @@ function DeleteTemplateModal({
 
 function ViewPartnersModal({ templateName, partners, onClose }: { templateName: string; partners: any[]; onClose: () => void }) {
   return (
-    <ModalOverlay open onClose={onClose} title={`Partners — ${templateName}`} maxWidth="md">
+    <ModalOverlay open onClose={onClose} title={`Partners, ${templateName}`} maxWidth="md">
       <div className="p-5">
         {partners.length === 0 ? (
           <p className="text-[12px] text-[var(--tx3)] text-center py-6">No partners using this template yet.</p>
@@ -736,7 +736,7 @@ export default function RateTemplatesPanel() {
               <span>·</span>
               <span>Updated {new Date(t.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
             </div>
-            {/* Action buttons row — full-width on mobile */}
+            {/* Action buttons row, full-width on mobile */}
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => handleEditRates(t.id)}
@@ -760,7 +760,7 @@ export default function RateTemplatesPanel() {
               </button>
               <button
                 onClick={() => setDeletingTemplate(t)}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--red)] hover:border-[var(--red)] hover:bg-[var(--rdim)] transition-all"
+                className="px-3 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
               >
                 Delete
               </button>

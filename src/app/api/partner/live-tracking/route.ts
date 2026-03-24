@@ -108,6 +108,10 @@ export async function GET() {
   const enriched = deliveries.map((d, i) => {
     const crew = d.crew_id ? crewMap[d.crew_id] : null;
     const session = sessionMap[d.id];
+    // is_job_active = true only when this specific delivery has an active tracking session.
+    // crew GPS is only surfaced when is_job_active is true to prevent leaking the crew's
+    // location to partners whose delivery hasn't started yet.
+    const isJobActive = session != null;
     const liveStage = session?.live_stage || "";
     const headingToPickup = PICKUP_STAGES.includes(liveStage) || !liveStage.trim();
     const { pickup: pickupCoords, dropoff: dropoffCoords } = allCoords[i];
@@ -121,18 +125,20 @@ export async function GET() {
       delivery_address: d.delivery_address,
       crew_id: d.crew_id,
       crew_name: crew?.name || null,
-      crew_lat: crew?.current_lat || null,
-      crew_lng: crew?.current_lng || null,
+      // Only expose GPS when this delivery's job is active
+      crew_lat: isJobActive ? (crew?.current_lat || null) : null,
+      crew_lng: isJobActive ? (crew?.current_lng || null) : null,
       dest_lat: destCoords?.lat ?? null,
       dest_lng: destCoords?.lng ?? null,
       live_stage: session?.live_stage || null,
+      is_job_active: isJobActive,
     };
   });
 
   // Current delivery first (has active tracking session), then rest in schedule order
   enriched.sort((a, b) => {
-    const aActive = a.live_stage != null ? 1 : 0;
-    const bActive = b.live_stage != null ? 1 : 0;
+    const aActive = a.is_job_active ? 1 : 0;
+    const bActive = b.is_job_active ? 1 : 0;
     return bActive - aActive;
   });
 

@@ -24,7 +24,7 @@ export function formatSlackApiError(data: { ok?: boolean; error?: string; needed
     );
   }
   if (code === "not_allowed_token_type") {
-    return "Wrong token type — use the Bot User OAuth Token (xoxb-…), not a user or legacy token.";
+    return "Wrong token type, use the Bot User OAuth Token (xoxb-…), not a user or legacy token.";
   }
   if (code === "not_in_channel") {
     return (

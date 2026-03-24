@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
     try {
       const dist = await getDistance(fromAddress, toAddress);
       if (dist) { distanceKm = dist.distance_km; driveTimeMin = dist.drive_time_min; }
-    } catch { /* non-blocking — move still creates without distance */ }
+    } catch { /* non-blocking, move still creates without distance */ }
 
     const moveSize =
       moveType === "residential"
@@ -486,7 +486,7 @@ export async function POST(req: NextRequest) {
       entity_type: "move",
       entity_id: moveId,
       event_type: "created",
-      description: `Move created: ${clientName} — ${moveCodeDisplay}`,
+      description: `Move created: ${clientName}, ${moveCodeDisplay}`,
       icon: "move",
     });
 

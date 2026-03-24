@@ -377,7 +377,7 @@ export default function LiveTrackingMap({
         <div className="w-10 h-10 rounded-full bg-[var(--gdim)] flex items-center justify-center mx-auto mb-3">
           <Clock size={20} className="text-[var(--tx3)]" aria-hidden />
         </div>
-        <p className="text-[12px] font-medium text-[var(--tx2)]">Crew assigned — waiting to start</p>
+        <p className="text-[12px] font-medium text-[var(--tx2)]">Crew assigned, waiting to start</p>
         <p className="text-[10px] text-[var(--tx3)] mt-1">
           Live tracking will activate when {crewName || "the crew"} starts this job and their GPS goes live
         </p>

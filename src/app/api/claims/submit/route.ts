@@ -20,13 +20,21 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
+    const COMPLETED_STATUSES = ["completed", "delivered", "done"];
+
     if (moveId) {
-      const { data: move } = await supabase.from("moves").select("id").eq("id", moveId).maybeSingle();
+      const { data: move } = await supabase.from("moves").select("id, status").eq("id", moveId).maybeSingle();
       if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
+      if (!COMPLETED_STATUSES.includes((move.status || "").toLowerCase())) {
+        return NextResponse.json({ error: "Claims can only be submitted after the move has been completed." }, { status: 422 });
+      }
     }
     if (deliveryId) {
-      const { data: delivery } = await supabase.from("deliveries").select("id").eq("id", deliveryId).maybeSingle();
+      const { data: delivery } = await supabase.from("deliveries").select("id, status").eq("id", deliveryId).maybeSingle();
       if (!delivery) return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
+      if (!COMPLETED_STATUSES.includes((delivery.status || "").toLowerCase())) {
+        return NextResponse.json({ error: "Claims can only be submitted after the delivery has been completed." }, { status: 422 });
+      }
     }
 
     const totalClaimedValue = items.reduce((sum: number, item: { declared_value?: number }) => sum + (item.declared_value || 0), 0);

@@ -458,8 +458,8 @@ function EditablePerkCell({
   const display = formatDisplay
     ? formatDisplay(value)
     : options
-      ? (options.find((o) => o.value === value)?.label ?? (value != null && value !== "" ? String(value) : "—"))
-      : (value != null && value !== "" ? String(value) : "—");
+      ? (options.find((o) => o.value === value)?.label ?? (value != null && value !== "" ? String(value) : "-"))
+      : (value != null && value !== "" ? String(value) : "-");
   return (
     <span className="group/cell inline-flex items-center gap-1 cursor-pointer" title="Click to edit" onClick={startEdit}>
       <span>{display}</span>
@@ -790,7 +790,7 @@ export default function PerksPage() {
           {/* ─── Referrals Tab ───────────────────────────────────── */}
           {tab === "referrals" && (
             <div>
-              {/* Stats row — inline, no cards */}
+              {/* Stats row, inline, no cards */}
               <div className="text-[12px] text-[var(--tx2)] mb-6">
                 <span className="font-semibold text-[var(--tx)]">Active Codes {activeRefs}</span>
                 <span className="mx-2 text-[var(--tx3)]">·</span>
@@ -825,7 +825,7 @@ export default function PerksPage() {
                           ? [ref.referred_name, ref.referred_email].filter(Boolean).join(" · ")
                           : ref.status === "active"
                             ? "Not used yet"
-                            : "—";
+                            : "-";
                         return (
                           <tr key={ref.id} className="hover:bg-[var(--bg)]/40">
                             <td className="px-4 py-3">
@@ -906,7 +906,7 @@ export default function PerksPage() {
                       {vipContacts.map((c) => (
                         <tr key={c.id} className="hover:bg-[var(--bg)]/40">
                           <td className="px-4 py-3">
-                            <div className="font-semibold text-[var(--tx)]">{c.name || "—"}</div>
+                            <div className="font-semibold text-[var(--tx)]">{c.name || "-"}</div>
                             <div className="text-[10px] text-[var(--tx3)]">{c.email}</div>
                           </td>
                           <td className="px-4 py-3 text-[var(--gold)] font-semibold">{formatCurrency(c.lifetime_value)}</td>

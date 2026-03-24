@@ -9,7 +9,7 @@ const EFFECTIVE = "March 15, 2026";
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getCompanyDisplayName();
   return {
-    title: `Terms of Use — ${brand}`,
+    title: `Terms of Use, ${brand}`,
     description: `Terms governing your access to and use of the ${brand} platform.`,
   };
 }

@@ -20,7 +20,7 @@ function routablePair(from?: string, to?: string): boolean {
   const f = from?.trim();
   const t = to?.trim();
   if (!f || !t) return false;
-  if (f === "—" || t === "—") return false;
+  if (f === "-" || t === "-") return false;
   if (f.length < 4 || t.length < 4) return false;
   return true;
 }
@@ -110,7 +110,7 @@ export default function CrewWeatherRoads({ jobs }: { jobs: JobWx[] }) {
           <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/70">Weather &amp; Route Conditions</p>
         </div>
         <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
-          Forecasts and route conditions appear when jobs have pickup addresses — ensure a street address is set for the best intel.
+          Forecasts and route conditions appear when jobs have pickup addresses, ensure a street address is set for the best intel.
         </p>
       </div>
     );

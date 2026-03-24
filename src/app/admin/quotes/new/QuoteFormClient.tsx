@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { toTitleCase } from "@/lib/format-text";
@@ -119,7 +120,7 @@ const SERVICE_TYPES = [
   { value: "specialty", label: "Specialty", desc: "Art, piano, trade show, staging, estate" },
   { value: "event", label: "Event", desc: "Round-trip venue delivery, setup & teardown" },
   { value: "b2b_delivery", label: "B2B One-Off", desc: "One-off delivery from a business source" },
-  { value: "labour_only", label: "Labour Only", desc: "Crew work at one location — no transit" },
+  { value: "labour_only", label: "Labour Only", desc: "Crew work at one location, no transit" },
 ] as const;
 
 const MOVE_SIZES = [
@@ -479,6 +480,8 @@ export default function QuoteFormClient({
 
   const [fromAddress, setFromAddress] = useState("");
   const [toAddress, setToAddress] = useState("");
+  const [extraFromStops, setExtraFromStops] = useState<StopEntry[]>([]);
+  const [extraToStops, setExtraToStops] = useState<StopEntry[]>([]);
   const [fromAccess, setFromAccess] = useState("");
   const [toAccess, setToAccess] = useState("");
   const [fromParking, setFromParking] = useState<"dedicated" | "street" | "no_dedicated">("dedicated");
@@ -1388,6 +1391,19 @@ export default function QuoteFormClient({
       setQuoteResult(data);
       setQuoteId(id);
       toast(`Quote ${id} generated`, "check");
+
+      // Persist additional stops if any were added
+      const allExtraStops = [
+        ...extraFromStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "pickup", sort_order: i + 1 })),
+        ...extraToStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "dropoff", sort_order: i + 1 })),
+      ];
+      if (allExtraStops.length > 0) {
+        fetch("/api/admin/job-stops", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ job_type: "quote", job_id: id, stops: allExtraStops }),
+        }).catch(() => {});
+      }
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Failed", "x");
     } finally {
@@ -1484,7 +1500,7 @@ export default function QuoteFormClient({
 
       {/* Side-by-side from 480px so preview is on the right even with sidebar (no dependency on hubspot_deal_id at paint) */}
       <div className="flex flex-col min-[480px]:flex-row gap-5 relative">
-        {/* ═══ LEFT PANEL — Form ═══ */}
+        {/* ═══ LEFT PANEL, Form ═══ */}
         <div className={`flex flex-col transition-all duration-300 max-w-4xl w-full ${previewOpen ? "min-[480px]:w-[60%] min-w-0" : "min-[480px]:w-full"}`}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[var(--brd)]">
@@ -1568,8 +1584,8 @@ export default function QuoteFormClient({
                             className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
                           >
                             {c.name}
-                            {c.email && <span className="text-[var(--tx3)] ml-1">— {c.email}</span>}
-                            {c.phone && <span className="text-[var(--tx3)] ml-1">— {formatPhone(c.phone)}</span>}
+                            {c.email && <span className="text-[var(--tx3)] ml-1">- {c.email}</span>}
+                            {c.phone && <span className="text-[var(--tx3)] ml-1">- {formatPhone(c.phone)}</span>}
                           </button>
                         ))}
                       </div>
@@ -1628,7 +1644,7 @@ export default function QuoteFormClient({
                         <p className="text-[11px] text-[var(--tx3)] mb-2">
                           Previous move: {clientDedupResult.opsPrevMove.move_number}
                           {clientDedupResult.opsPrevMove.move_date && `, ${clientDedupResult.opsPrevMove.move_date}`}
-                          {clientDedupResult.opsPrevMove.from_address && ` — ${clientDedupResult.opsPrevMove.from_address}`}
+                          {clientDedupResult.opsPrevMove.from_address && `, ${clientDedupResult.opsPrevMove.from_address}`}
                           {clientDedupResult.opsPrevMove.to_address && ` → ${clientDedupResult.opsPrevMove.to_address}`}
                         </p>
                       )}
@@ -1749,14 +1765,15 @@ export default function QuoteFormClient({
                 {serviceType !== "labour_only" && !(serviceType === "event" && eventMulti) && (
                 <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
-                    <AddressAutocomplete
-                      value={fromAddress}
-                      onRawChange={setFromAddress}
-                      onChange={(r) => setFromAddress(r.fullAddress)}
-                      placeholder={serviceType === "event" ? "Where items come from (office/warehouse/home)" : serviceType === "b2b_delivery" ? "Pickup address" : "Origin address"}
+                    <MultiStopAddressField
                       label={serviceType === "event" ? "Origin Address *" : serviceType === "b2b_delivery" ? "Pickup *" : "From"}
-                      required
-                      className={fieldInput}
+                      placeholder={serviceType === "event" ? "Where items come from (office/warehouse/home)" : serviceType === "b2b_delivery" ? "Pickup address" : "Origin address"}
+                      stops={[{ address: fromAddress }, ...extraFromStops]}
+                      onChange={(stops) => {
+                        setFromAddress(stops[0]?.address ?? "");
+                        setExtraFromStops(stops.slice(1));
+                      }}
+                      inputClassName={fieldInput}
                     />
                   </div>
                   <div className="w-full min-[400px]:w-[150px] shrink-0">
@@ -1771,14 +1788,15 @@ export default function QuoteFormClient({
                 {serviceType !== "event" && serviceType !== "labour_only" && (
                 <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
-                    <AddressAutocomplete
-                      value={toAddress}
-                      onRawChange={setToAddress}
-                      onChange={(r) => setToAddress(r.fullAddress)}
-                      placeholder="Destination address"
+                    <MultiStopAddressField
                       label="To"
-                      required
-                      className={fieldInput}
+                      placeholder="Destination address"
+                      stops={[{ address: toAddress }, ...extraToStops]}
+                      onChange={(stops) => {
+                        setToAddress(stops[0]?.address ?? "");
+                        setExtraToStops(stops.slice(1));
+                      }}
+                      inputClassName={fieldInput}
                     />
                   </div>
                   <div className="w-full min-[400px]:w-[150px] shrink-0">
@@ -1990,7 +2008,7 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-              {/* ── 5b. Custom crating (all service types — coordinator decides) ── */}
+              {/* ── 5b. Custom crating (all service types, coordinator decides) ── */}
               {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "white_glove" || serviceType === "specialty") && (
                 <div className="space-y-2 mt-3">
                   <div className="flex items-center gap-2">
@@ -2030,7 +2048,7 @@ export default function QuoteFormClient({
                               className={`${fieldInput} w-40 shrink-0`}
                             >
                               {Object.entries(CRATING_SIZE_LABELS).map(([k, label]) => (
-                                <option key={k} value={k}>{label} — ${(priceMap[k] ?? CRATING_SIZE_FALLBACK[k]).toLocaleString()}</option>
+                                <option key={k} value={k}>{label}, ${(priceMap[k] ?? CRATING_SIZE_FALLBACK[k]).toLocaleString()}</option>
                               ))}
                             </select>
                             <span className="text-[10px] text-[var(--gold)] w-14 text-right shrink-0">${piecePrice.toLocaleString()}</span>
@@ -2157,13 +2175,13 @@ export default function QuoteFormClient({
                   <div className="rounded-xl border-2 border-[var(--gold)]/40 bg-[var(--gold)]/8 px-3 py-3 space-y-2">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">Special handling instructions</p>
                     <p className="text-[9px] text-[var(--tx3)] leading-snug">
-                      Shown on the client quote and to crew — fragile areas, disassembly, narrow access, orientation, etc.
+                      Shown on the client quote and to crew, fragile areas, disassembly, narrow access, orientation, etc.
                     </p>
                     <textarea
                       value={singleItemSpecialHandling}
                       onChange={(e) => setSingleItemSpecialHandling(e.target.value)}
                       rows={4}
-                      placeholder="e.g. Glass top — keep upright; marble base; 32&quot; door clearance; do not lay flat…"
+                      placeholder="e.g. Glass top, keep upright; marble base; 32&quot; door clearance; do not lay flat…"
                       className={`${fieldInput} resize-y min-h-[88px]`}
                     />
                   </div>
@@ -2211,7 +2229,7 @@ export default function QuoteFormClient({
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove, Items</h3>
                   <Field label="Item description *">
                     <input
                       value={itemDescription}
@@ -2384,7 +2402,7 @@ export default function QuoteFormClient({
                       <div>
                         <span className="text-[11px] font-semibold text-[var(--tx)]">Luxury / White glove event</span>
                         <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
-                          High-value furniture, art, or premium brand events — uses white glove crew rate.
+                          High-value furniture, art, or premium brand events, uses white glove crew rate.
                         </p>
                       </div>
                     </label>
@@ -2403,7 +2421,7 @@ export default function QuoteFormClient({
                             className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
                           />
                           <div>
-                            <span className="text-[11px] font-semibold text-[var(--tx)]">Same location — items moved within venue</span>
+                            <span className="text-[11px] font-semibold text-[var(--tx)]">Same location, items moved within venue</span>
                             <p className="text-[10px] text-[var(--tx2)] mt-0.5 leading-snug">
                               On-site event: no road transit, no truck surcharge, return day priced at a reduced rate (default 85%).
                             </p>
@@ -2445,7 +2463,7 @@ export default function QuoteFormClient({
                     )}
                     {!eventMulti && eventSameLocationSingle ? (
                       <p className="text-[10px] text-[var(--tx2)] rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]">
-                        Truck: <strong className="text-[var(--tx)]">No truck</strong> — on-site event (no road transit for this program).
+                        Truck: <strong className="text-[var(--tx)]">No truck</strong>, on-site event (no road transit for this program).
                       </p>
                     ) : null}
                     <label className="flex items-start gap-2 cursor-pointer rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
@@ -2514,7 +2532,7 @@ export default function QuoteFormClient({
                         <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Venue</h3>
                         {eventSameLocationSingle ? (
                           <p className="text-[11px] text-[var(--tx2)] rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
-                            Venue matches origin — on-site event (no separate venue address).
+                            Venue matches origin, on-site event (no separate venue address).
                           </p>
                         ) : (
                           <AddressAutocomplete
@@ -2562,10 +2580,10 @@ export default function QuoteFormClient({
                               <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
                                 <Field label="Complex setup duration">
                                   <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
-                                    <option value={1}>1 hour — $150</option>
-                                    <option value={2}>2 hours — $275</option>
-                                    <option value={3}>3 hours — $400</option>
-                                    <option value={99}>Half day — $600</option>
+                                    <option value={1}>1 hour, $150</option>
+                                    <option value={2}>2 hours, $275</option>
+                                    <option value={3}>3 hours, $400</option>
+                                    <option value={99}>Half day, $600</option>
                                   </select>
                                 </Field>
                                 <Field label="Setup Instructions">
@@ -2586,10 +2604,10 @@ export default function QuoteFormClient({
                               <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
                                 <Field label="Setup Duration">
                                   <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
-                                    <option value={1}>1 hour — $150</option>
-                                    <option value={2}>2 hours — $275</option>
-                                    <option value={3}>3 hours — $400</option>
-                                    <option value={99}>Half day — $600</option>
+                                    <option value={1}>1 hour, $150</option>
+                                    <option value={2}>2 hours, $275</option>
+                                    <option value={3}>3 hours, $400</option>
+                                    <option value={99}>Half day, $600</option>
                                   </select>
                                 </Field>
                                 <Field label="Setup Instructions">
@@ -2605,7 +2623,7 @@ export default function QuoteFormClient({
                         <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Return (Day 2+)</h3>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" checked={eventSameDay} onChange={(e) => setEventSameDay(e.target.checked)} className="accent-[var(--gold)] w-3.5 h-3.5" />
-                          <span className="text-[11px] text-[var(--tx2)]">Same Day Event — delivery and return on same day</span>
+                          <span className="text-[11px] text-[var(--tx2)]">Same Day Event, delivery and return on same day</span>
                         </label>
                         {!eventSameDay ? (
                           <div className="grid grid-cols-2 gap-2">
@@ -2653,13 +2671,13 @@ export default function QuoteFormClient({
                           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[var(--brd)]/50">
                             <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">
                               Round trip {idx + 1}
-                              {leg.label?.trim() ? <span className="text-[var(--tx2)] font-semibold normal-case"> — {leg.label.trim()}</span> : null}
+                              {leg.label?.trim() ? <span className="text-[var(--tx2)] font-semibold normal-case">, {leg.label.trim()}</span> : null}
                             </span>
                             {eventLegs.length > 1 ? (
                               <button
                                 type="button"
                                 onClick={() => removeEventLeg(idx)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-red-500 border border-red-500/35 hover:bg-red-500/10"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
                                 aria-label={`Delete ${leg.label?.trim() || `event ${idx + 1}`}`}
                               >
                                 <Trash2 className="w-3.5 h-3.5" aria-hidden />
@@ -2736,7 +2754,7 @@ export default function QuoteFormClient({
                               className="accent-[var(--gold)] w-3.5 h-3.5 mt-0.5 shrink-0"
                             />
                             <span className="text-[11px] text-[var(--tx2)] leading-snug">
-                              Same location — items moved within venue (on-site event)
+                              Same location, items moved within venue (on-site event)
                             </span>
                           </label>
                           {!leg.event_same_location_onsite ? (
@@ -2751,7 +2769,7 @@ export default function QuoteFormClient({
                             />
                           ) : (
                             <p className="text-[10px] text-[var(--tx3)] rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]">
-                              Venue same as origin — no road transit for this leg.
+                              Venue same as origin, no road transit for this leg.
                             </p>
                           )}
                           {!leg.event_same_location_onsite && (
@@ -2867,10 +2885,10 @@ export default function QuoteFormClient({
                               <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
                                 <Field label="Complex setup duration">
                                   <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
-                                    <option value={1}>1 hour — $150</option>
-                                    <option value={2}>2 hours — $275</option>
-                                    <option value={3}>3 hours — $400</option>
-                                    <option value={99}>Half day — $600</option>
+                                    <option value={1}>1 hour, $150</option>
+                                    <option value={2}>2 hours, $275</option>
+                                    <option value={3}>3 hours, $400</option>
+                                    <option value={99}>Half day, $600</option>
                                   </select>
                                 </Field>
                                 <Field label="Instructions">
@@ -2891,10 +2909,10 @@ export default function QuoteFormClient({
                               <div className="space-y-2 pl-2 border-l-2 border-[var(--gold)]/30">
                                 <Field label="Setup Duration">
                                   <select value={eventSetupHours} onChange={(e) => setEventSetupHours(Number(e.target.value))} className={`${fieldInput} w-40`}>
-                                    <option value={1}>1 hour — $150</option>
-                                    <option value={2}>2 hours — $275</option>
-                                    <option value={3}>3 hours — $400</option>
-                                    <option value={99}>Half day — $600</option>
+                                    <option value={1}>1 hour, $150</option>
+                                    <option value={2}>2 hours, $275</option>
+                                    <option value={3}>3 hours, $400</option>
+                                    <option value={99}>Half day, $600</option>
                                   </select>
                                 </Field>
                                 <Field label="Setup Instructions">
@@ -3036,7 +3054,7 @@ export default function QuoteFormClient({
                     <Field label="Truck Required">
                       <select value={labourTruckRequired ? "yes" : "no"} onChange={(e) => setLabourTruckRequired(e.target.value === "yes")} className={fieldInput}>
                         <option value="no">No truck</option>
-                        <option value="yes">Yes — truck needed</option>
+                        <option value="yes">Yes, truck needed</option>
                       </select>
                     </Field>
                     <Field label="Number of Visits">
@@ -3074,7 +3092,7 @@ export default function QuoteFormClient({
                           />
                         </Field>
                         <p className="text-[10px] text-[var(--tx3)]">
-                          Storage fee on quote uses platform <code className="text-[9px]">storage_weekly_rate</code> (default $75/wk) × weeks — coordinator refines volume if needed.
+                          Storage fee on quote uses platform <code className="text-[9px]">storage_weekly_rate</code> (default $75/wk) × weeks, coordinator refines volume if needed.
                         </p>
                       </div>
                     )}
@@ -3239,7 +3257,7 @@ export default function QuoteFormClient({
                                 className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
                               >
                                 {addon.tiers.map((t, i) => (
-                                  <option key={i} value={i}>{t.label} — {fmtPrice(t.price)}</option>
+                                  <option key={i} value={i}>{t.label}, {fmtPrice(t.price)}</option>
                                 ))}
                               </select>
                             </div>
@@ -3309,7 +3327,7 @@ export default function QuoteFormClient({
                                 className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
                               >
                                 {addon.tiers.map((t, i) => (
-                                  <option key={i} value={i}>{t.label} — {fmtPrice(t.price)}</option>
+                                  <option key={i} value={i}>{t.label}, {fmtPrice(t.price)}</option>
                                 ))}
                               </select>
                             </div>
@@ -3364,7 +3382,7 @@ export default function QuoteFormClient({
           </div>
         </div>
 
-        {/* ═══ RIGHT PANEL — Live Quote Preview ═══ */}
+        {/* ═══ RIGHT PANEL, Live Quote Preview ═══ */}
 
         {/* Collapsed toggle tab */}
         {!previewOpen && (
@@ -3455,7 +3473,7 @@ export default function QuoteFormClient({
                     {quoteResult.factors && typeof quoteResult.factors.inventory_modifier === "number" && typeof quoteResult.factors.inventory_max_modifier === "number" && quoteResult.factors.inventory_modifier >= quoteResult.factors.inventory_max_modifier && (
                       <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-[11px] text-[var(--tx2)]">
                         <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ Inventory at volume ceiling (×{Number(quoteResult.factors.inventory_max_modifier).toFixed(2)})</p>
-                        <p className="mt-0.5">Price is capped — consider manual adjustment for this move.</p>
+                        <p className="mt-0.5">Price is capped, consider manual adjustment for this move.</p>
                       </div>
                     )}
                     {quoteResult.factors && typeof quoteResult.factors.labour_component === "number" && typeof quoteResult.factors.subtotal_before_labour === "number" && (quoteResult.factors.subtotal_before_labour as number) > 0 && (quoteResult.factors.labour_component as number) > 0.5 * (quoteResult.factors.subtotal_before_labour as number) && (
@@ -3483,8 +3501,8 @@ export default function QuoteFormClient({
                             {specialtyRouteKm != null
                               ? `, ${specialtyRouteKm} km route`
                               : specialtyRouteLoading
-                                ? " — calculating distance…"
-                                : " — add addresses for distance adjustment"}
+                                ? ", calculating distance…"
+                                : ", add addresses for distance adjustment"}
                             {specialtyLivePreview.distSur > 0
                               ? ` (+${fmtPrice(specialtyLivePreview.distSur)} distance)`
                               : ""}
@@ -3537,16 +3555,16 @@ export default function QuoteFormClient({
                       ? String(quoteResult.factors.event_distance_summary)
                       : quoteResult.distance_km
                         ? `${quoteResult.distance_km} km`
-                        : "—"}
+                        : "-"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Drive Time</span>
-                  <span className="text-[var(--tx)]">{quoteResult.drive_time_min ? `${quoteResult.drive_time_min} min` : "—"}</span>
+                  <span className="text-[var(--tx)]">{quoteResult.drive_time_min ? `${quoteResult.drive_time_min} min` : "-"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Move Date</span>
-                  <span className="text-[var(--tx)]">{quoteResult.move_date || "—"}</span>
+                  <span className="text-[var(--tx)]">{quoteResult.move_date || "-"}</span>
                 </div>
                 {quoteResult.service_type === "event" &&
                   (quoteResult.factors?.event_same_location_onsite === true ||
@@ -3646,7 +3664,7 @@ export default function QuoteFormClient({
               </div>
             )}
 
-            {/* ── Margin estimate — ADMIN ONLY, never shown to clients ── */}
+            {/* ── Margin estimate, ADMIN ONLY, never shown to clients ── */}
             {quoteResult?.factors &&
               (userRole === "owner" || userRole === "admin") &&
               (typeof (quoteResult.factors as Record<string, unknown>).estimated_margin_essential === "number" ||
@@ -3731,7 +3749,7 @@ export default function QuoteFormClient({
                       </p>
                       {mw.signature_margin !== null && (
                         <p className="text-[11px] text-[var(--tx3)] mt-0.5">
-                          Signature margin: <strong className="text-emerald-500">{mw.signature_margin}%</strong> — Consider recommending Signature for this move.
+                          Signature margin: <strong className="text-emerald-500">{mw.signature_margin}%</strong>, Consider recommending Signature for this move.
                         </p>
                       )}
                     </div>
@@ -3977,7 +3995,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
           <div>
             <span className="text-[13px] font-bold text-[#B8962E]">Event quote</span>
             <p className={`text-[9px] mt-0.5 font-medium uppercase tracking-wide ${PRICE_CARD.muted}`}>
-              Multi-event bundle — {eventLegs.length} round trip{eventLegs.length === 1 ? "" : "s"}
+              Multi-event bundle, {eventLegs.length} round trip{eventLegs.length === 1 ? "" : "s"}
             </p>
           </div>
           <span className="text-2xl sm:text-3xl font-black tabular-nums text-[#B8962E] shrink-0">
@@ -4051,7 +4069,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
         <span className="text-[13px] font-bold text-[#B8962E]">Event Quote</span>
         <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
       </div>
-      {/* Breakdown — single round trip */}
+      {/* Breakdown, single round trip */}
       <div className="space-y-1.5 text-[11px]">
         {deliveryCharge !== undefined && (
           <div className="flex justify-between">
@@ -4119,7 +4137,7 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
         )}
         {weightSurcharge > 0 && (
           <div className="flex justify-between">
-            <span className={PRICE_CARD.muted}>Weight ({weightCategory ?? "—"})</span>
+            <span className={PRICE_CARD.muted}>Weight ({weightCategory ?? "-"})</span>
             <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(weightSurcharge)}</span>
           </div>
         )}
@@ -4199,7 +4217,7 @@ function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; fact
         )}
         {visits >= 2 && visit2Price !== undefined && (
           <div className="flex justify-between">
-            <span className={PRICE_CARD.muted}>Visit 2 ({visit2Date ?? "TBD"}) — return discount</span>
+            <span className={PRICE_CARD.muted}>Visit 2 ({visit2Date ?? "TBD"}), return discount</span>
             <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(visit2Price)}</span>
           </div>
         )}
@@ -4247,8 +4265,8 @@ function OptimisticTiers({ est, isLongDistance }: { est: { essential: number; si
       })}
       <p className="text-[9px] text-[var(--tx3)] italic text-center">
         {isLongDistance
-          ? "Drive time not included — generate for exact long-distance pricing"
-          : "Estimate only — generate quote for exact pricing with distance factor"}
+          ? "Drive time not included, generate for exact long-distance pricing"
+          : "Estimate only, generate quote for exact pricing with distance factor"}
       </p>
     </div>
   );
@@ -4339,7 +4357,7 @@ function PriceBreakdownResidential({
     <div className="space-y-0.5 text-[10px]">
       {/* Distance & time */}
       {distance != null && (
-        <Row label="Distance" value={<span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "—"} min)</span>} />
+        <Row label="Distance" value={<span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "-"} min)</span>} />
       )}
 
       {/* Multiplicative chain */}
@@ -4355,7 +4373,7 @@ function PriceBreakdownResidential({
           <Row
             label="Inventory modifier"
             value={fmtMod(invMod)}
-            sub={invScore != null && invBenchmark != null ? `score ${invScore.toFixed(1)} / benchmark ${invBenchmark.toFixed(1)} — ${invLabel}` : invLabel}
+            sub={invScore != null && invBenchmark != null ? `score ${invScore.toFixed(1)} / benchmark ${invBenchmark.toFixed(1)}, ${invLabel}` : invLabel}
           />
         )}
         {distMod !== null && (
@@ -4385,7 +4403,7 @@ function PriceBreakdownResidential({
           label="Access surcharge"
           value={accessSurch > 0
             ? <span className="font-semibold text-amber-600">+{fmtPrice(accessSurch)}</span>
-            : <span className="text-[var(--tx3)]">$0 — no hard access</span>}
+            : <span className="text-[var(--tx3)]">$0, no hard access</span>}
         />
         {specialtySurch > 0 && (
           <Row label="Specialty surcharge" value={<span className="font-semibold text-amber-600">+{fmtPrice(specialtySurch)}</span>} />
@@ -4407,7 +4425,7 @@ function PriceBreakdownResidential({
           label="Labour delta"
           value={labourDelta != null && labourDelta > 0
             ? <span className="font-semibold text-[var(--gold)]">+{fmtPrice(labourDelta)}</span>
-            : <span className="text-[var(--tx3)]">$0 — below baseline{labourDelta === 0 && labourMH != null ? ` (${labourMH} extra hr)` : ""}</span>}
+            : <span className="text-[var(--tx3)]">$0, below baseline{labourDelta === 0 && labourMH != null ? ` (${labourMH} extra hr)` : ""}</span>}
           sub={labourDelta != null && labourDelta > 0 && labourMH != null && labourRate != null
             ? `${labourMH} extra man-hours × $${labourRate}/hr`
             : undefined}
@@ -4416,7 +4434,7 @@ function PriceBreakdownResidential({
           label="Deadhead surcharge"
           value={deadheadSurch > 0
             ? <span className="font-semibold text-amber-600">+{fmtPrice(deadheadSurch)}</span>
-            : <span className="text-[var(--tx3)]">$0{deadheadKm > 0 ? ` (${deadheadKm.toFixed(1)}km — within free zone)` : ""}</span>}
+            : <span className="text-[var(--tx3)]">$0{deadheadKm > 0 ? ` (${deadheadKm.toFixed(1)}km, within free zone)` : ""}</span>}
         />
         {cratingTotal > 0 && (
           <Row label="Custom crating" value={<span className="font-semibold text-amber-600">+{fmtPrice(cratingTotal)}</span>} />
@@ -4542,7 +4560,7 @@ function LegacyFactorsDisplay({
       ) : distance != null ? (
         <div className="flex items-center justify-between text-[10px]">
           <span className="text-[var(--tx3)]">Distance</span>
-          <span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "—"} min)</span>
+          <span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "-"} min)</span>
         </div>
       ) : null}
       {labourDelta !== null && (
@@ -4574,7 +4592,7 @@ function LegacyFactorsDisplay({
 }
 
 function ExpiryLabel({ expiresAt }: { expiresAt?: string | null }) {
-  if (!expiresAt) return <span className="text-[var(--tx)]">—</span>;
+  if (!expiresAt) return <span className="text-[var(--tx)]">-</span>;
   const exp = new Date(expiresAt);
   const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86_400_000);
   const dateStr = exp.toLocaleDateString("en-CA", { month: "short", day: "numeric" });

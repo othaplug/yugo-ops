@@ -386,7 +386,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                 </div>
               </div>
 
-              {/* Full nav — visible in expanded mode (and always on mobile) */}
+              {/* Full nav, visible in expanded mode (and always on mobile) */}
               <nav className={`icon-glow flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pb-[max(4rem,env(safe-area-inset-bottom))] overscroll-contain scrollbar-hide ${sidebarCollapsed ? "md:hidden" : ""}`} style={{ WebkitOverflowScrolling: "touch" }}>
                 {sidebarSections.map((section) => {
                   const isCollapsed = collapsedSections[section.label] ?? false;
@@ -432,7 +432,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                 })}
               </nav>
 
-              {/* Rail nav — icon-only, desktop collapsed mode */}
+              {/* Rail nav, icon-only, desktop collapsed mode */}
               <nav className={`hidden ${sidebarCollapsed ? "md:flex" : ""} flex-col flex-1 min-h-0 overflow-y-auto py-3 pb-4 gap-0.5 items-center overscroll-contain scrollbar-hide`}>
                 {sidebarSections.map((section, si) => (
                   <div key={section.label} className={`w-full flex flex-col items-center gap-0.5 ${si > 0 ? "mt-2 pt-2 border-t border-[var(--brd)]/30" : ""}`}>
@@ -607,7 +607,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     );
                   })}
 
-                  {/* More — opens full sidebar drawer */}
+                  {/* More, opens full sidebar drawer */}
                   <button
                     onClick={() => setSidebarOpen(true)}
                     className="flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation text-[var(--tx3)]"

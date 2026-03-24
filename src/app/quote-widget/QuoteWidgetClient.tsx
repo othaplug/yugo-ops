@@ -57,9 +57,9 @@ const BUILDING_TYPES = [
 const ACCESS_OPTIONS = [
   { key: "ground", label: "Ground Floor" },
   { key: "elevator", label: "Elevator" },
-  { key: "stairs_2", label: "Stairs — 2nd Floor" },
-  { key: "stairs_3", label: "Stairs — 3rd Floor" },
-  { key: "stairs_4", label: "Stairs — 4th+ Floor" },
+  { key: "stairs_2", label: "Stairs, 2nd Floor" },
+  { key: "stairs_3", label: "Stairs, 3rd Floor" },
+  { key: "stairs_4", label: "Stairs, 4th+ Floor" },
   { key: "loading_dock", label: "Loading Dock" },
 ];
 
@@ -690,7 +690,7 @@ export default function QuoteWidgetClient() {
                   </div>
                 </div>
 
-                {/* Furniture catalog — residential vs office */}
+                {/* Furniture catalog, residential vs office */}
                 <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
                   {Object.entries(moveType === "office" ? OFFICE_FURNITURE_CATALOG : FURNITURE_CATALOG).map(([room, items]) => {
                     const isExpanded = expandedRooms[room];
@@ -1158,7 +1158,7 @@ export default function QuoteWidgetClient() {
                 <div className="mt-6 rounded-xl p-4 border" style={{ backgroundColor: `${FOREST}04`, borderColor: `${FOREST}08` }}>
                   <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}65` }}>
                     A Yugo move coordinator will review your details and send a detailed, guaranteed quote.
-                    No surprises — that&rsquo;s the Yugo promise.
+                    No surprises, that&rsquo;s the Yugo promise.
                   </p>
                 </div>
               </div>

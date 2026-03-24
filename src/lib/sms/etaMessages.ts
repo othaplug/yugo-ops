@@ -19,8 +19,8 @@ export function buildETAMessage(messageType: string, data: ETAMessageData): stri
         firstName +
         ", your " +
         partner +
-        "Yugo crew is on their way. " +
-        "Estimated arrival: " +
+        "Yugo crew is on the way. " +
+        "Estimated arrival in " +
         data.etaMinutes +
         " minutes. " +
         "Track live: " +
@@ -29,22 +29,30 @@ export function buildETAMessage(messageType: string, data: ETAMessageData): stri
 
     case "eta_15_min":
       return (
-        "Your " +
+        "Hi " +
+        firstName +
+        ", your " +
         partner +
         "Yugo crew is about 15 minutes away. " +
-        "Please ensure access is clear. " +
-        "Track: " +
+        "Please ensure access is clear and parking is available. " +
+        "Track live: " +
         data.trackingLink
       );
 
     case "crew_arrived":
-      return "Your " + partner + "Yugo crew has arrived! " + "They will be at your door shortly.";
+      return (
+        "Hi " +
+        firstName +
+        ", your " +
+        partner +
+        "Yugo crew has arrived. They will be with you shortly."
+      );
 
     case "in_progress":
       return (
-        "Your move is underway. Your crew is taking great care " +
-        "of your belongings. " +
-        "Track: " +
+        "Your move is underway. Your crew is taking excellent care " +
+        "of your belongings every step of the way. " +
+        "Track live: " +
         data.trackingLink
       );
 
@@ -52,20 +60,21 @@ export function buildETAMessage(messageType: string, data: ETAMessageData): stri
       return (
         "Your " +
         partner +
-        "delivery is complete! " +
-        "We hope everything went perfectly. " +
-        "Rate your experience: " +
+        "move is complete. " +
+        "It was a pleasure taking care of you today. " +
+        "Share your experience: " +
         data.trackingLink
       );
 
     case "crew_running_late":
       return (
-        "Your " +
+        "Hi " +
+        firstName +
+        ", we want to keep you informed. Your " +
         partner +
-        "Yugo crew is running about " +
+        "Yugo crew is running approximately " +
         data.etaMinutes +
-        " minutes behind the estimated arrival time. " +
-        "We apologize for the delay. Track live: " +
+        " minutes behind schedule. We apologize for any inconvenience. Track live: " +
         data.trackingLink
       );
 

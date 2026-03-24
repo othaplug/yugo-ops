@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Map from "react-map-gl/mapbox";
 import { Marker, Source, Layer, useMap } from "react-map-gl/mapbox";
-import { Car, Clock, House, Sun } from "@phosphor-icons/react";
+import { Clock, House, Sun } from "@phosphor-icons/react";
 
 type Center = { latitude: number; longitude: number };
 type CenterLatLng = { lat: number; lng: number };
@@ -54,6 +54,35 @@ function useAnimatedPosition(target: { lat: number; lng: number } | null, durati
 
 const YUGO_GOLD = "#C9A962";
 const YUGO_PURPLE = "#8B5CF6";
+const CREW_RED = "#DC2626";
+
+/** Bearing in degrees (0 = north, 90 = east) from point A → point B. */
+function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLng = toRad(to.lng - from.lng);
+  const lat1 = toRad(from.lat);
+  const lat2 = toRad(to.lat);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+/** Tracks heading from consecutive raw GPS positions. */
+function useBearing(rawLat: number | null | undefined, rawLng: number | null | undefined): number | null {
+  const [bearing, setBearing] = useState<number | null>(null);
+  const prevRef = useRef<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    if (rawLat == null || rawLng == null) return;
+    const curr = { lat: rawLat, lng: rawLng };
+    const prev = prevRef.current;
+    if (prev && (prev.lat !== curr.lat || prev.lng !== curr.lng)) {
+      const b = calcBearing(prev, curr);
+      setBearing(b);
+    }
+    prevRef.current = curr;
+  }, [rawLat, rawLng]);
+  return bearing;
+}
 
 const PICKUP_STAGES = [
   "en_route_to_pickup",
@@ -152,6 +181,7 @@ export function TrackLiveMapMapbox({
   const animatedCrew = useAnimatedPosition(
     crew ? { lat: crew.current_lat, lng: crew.current_lng } : null,
   );
+  const bearing = useBearing(crew?.current_lat, crew?.current_lng);
 
   // Last known location freshness
   const isLocationStale = lastLocationAt
@@ -334,7 +364,7 @@ export function TrackLiveMapMapbox({
         </Marker>
       )}
 
-      {/* Destination — Home icon (dark, pin-style); dimmed during pickup phase */}
+      {/* Destination, Home icon (dark, pin-style); dimmed during pickup phase */}
       {dropoff && (
         <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="bottom">
           <div className="flex flex-col items-center" style={{ opacity: isPickupPhase ? 0.45 : 1 }}>
@@ -356,24 +386,50 @@ export function TrackLiveMapMapbox({
         </Marker>
       )}
 
-      {/* Crew — Car icon (red/gold when stale, with pulse) */}
+      {/* Crew, directional arrow rotated to heading */}
       {hasPosition && animatedCrew && (
         <Marker longitude={animatedCrew.lng} latitude={animatedCrew.lat} anchor="center">
-          <div className="relative" style={{ transition: "transform 0.1s linear" }}>
+          <div className="relative flex items-center justify-center" style={{ width: 52, height: 52 }}>
+            {/* Pulse ring */}
             {!isLocationStale && (
-              <div className="absolute -inset-2 rounded-full bg-[#DC2626] opacity-20 animate-ping" style={{ animationDuration: "2s" }} />
+              <span
+                className="absolute rounded-full animate-ping"
+                style={{
+                  inset: 4,
+                  background: isLocationStale ? YUGO_GOLD : CREW_RED,
+                  opacity: 0.22,
+                  animationDuration: "2s",
+                }}
+              />
             )}
-            <div
-              className="w-10 h-10 rounded-full border-2 border-white shadow-lg flex items-center justify-center"
-              style={{ backgroundColor: isLocationStale ? YUGO_GOLD : "#DC2626" }}
+            {/* Arrow SVG, rotates to heading */}
+            <svg
+              width="44"
+              height="44"
+              viewBox="0 0 44 44"
+              style={{
+                transform: bearing != null ? `rotate(${bearing}deg)` : "none",
+                transition: "transform 0.8s ease-out",
+                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.35))",
+              }}
+              aria-hidden
             >
-              <Car size={18} color="#FFFFFF" aria-hidden />
-            </div>
+              {/* Arrow pointing north (up); CSS rotation turns it to heading */}
+              <polygon
+                points="22,5 34,36 22,29 10,36"
+                fill={isLocationStale ? YUGO_GOLD : CREW_RED}
+                stroke="white"
+                strokeWidth="2.5"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {/* Speed badge */}
             {speed != null && speed > 0 && !isLocationStale && (
               <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                 {Math.round(speed)} km/h
               </div>
             )}
+            {/* Stale label */}
             {isLocationStale && lastSeenLabel && (
               <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/75 text-[#C9A962] text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
                 {lastSeenLabel}

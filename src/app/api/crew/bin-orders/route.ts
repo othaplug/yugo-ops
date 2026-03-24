@@ -83,7 +83,7 @@ export async function PATCH(req: NextRequest) {
         .toLocaleDateString("en-CA", { month: "short", day: "numeric" });
       sendSMS(
         order.client_phone,
-        `Your Yugo bins have been delivered! Start packing — we pick up on ${pickupDate}. Questions? (647) 370-4525`,
+        `Your Yugo bins have been delivered! Start packing. We pick up on ${pickupDate}. Questions? Call (647) 370-4525`,
       ).catch(() => {});
     }
 
@@ -114,7 +114,7 @@ export async function PATCH(req: NextRequest) {
             amountMoney: { amount: BigInt(Math.round(missingCharge * 100)), currency: "CAD" },
             customerId: order.square_customer_id || undefined,
             referenceId: order.order_number,
-            note: `Missing bins — ${binsMissing} × $${MISSING_BIN_FEE}`,
+            note: `Missing bins, ${binsMissing} × $${MISSING_BIN_FEE}`,
             idempotencyKey: `bin-missing-crew-${id}-${Date.now()}`,
             locationId,
           });

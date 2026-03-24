@@ -4,7 +4,19 @@ import "leaflet/dist/leaflet.css";
 import { MapPin } from "@phosphor-icons/react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const YUGO_GOLD = "#C9A962";
+
+function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLng = toRad(to.lng - from.lng);
+  const lat1 = toRad(from.lat);
+  const lat2 = toRad(to.lat);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
 
 function MyLocationButtonLeaflet() {
   const map = useMap();
@@ -41,19 +53,22 @@ interface ActiveDelivery {
   dest_lat: number | null;
   dest_lng: number | null;
   live_stage: string | null;
+  is_job_active: boolean;
 }
 
-function makeCrewIcon(name?: string | null) {
-  const initial = (name || "C").replace("Team ", "").charAt(0).toUpperCase();
+function makeCrewArrowIcon(bearing: number | null = null) {
+  const rot = bearing != null ? bearing : 0;
   return new L.DivIcon({
     className: "",
-    html: `<div style="width:44px;height:44px;position:relative;display:flex;align-items:center;justify-content:center">
-      <span style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,#C9A962,#8B7332);opacity:0.25;animation:pulse 2s infinite"></span>
-      <span style="position:relative;z-index:1;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#C9A962,#8B7332);display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;box-shadow:0 2px 10px rgba(201,169,98,0.45)">${initial}</span>
+    html: `<div style="position:relative;width:52px;height:52px;display:flex;align-items:center;justify-content:center">
+      <span style="position:absolute;inset:6px;border-radius:50%;background:${YUGO_GOLD};opacity:0.18;animation:pulse 2s ease-out infinite"></span>
+      <svg width="48" height="48" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.35))" aria-hidden="true">
+        <polygon points="22,5 34,36 22,29 10,36" fill="${YUGO_GOLD}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+      </svg>
     </div>`,
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
-    popupAnchor: [0, -22],
+    iconSize: [52, 52],
+    iconAnchor: [26, 26],
+    popupAnchor: [0, -26],
   });
 }
 
@@ -92,6 +107,20 @@ export default function PartnerMapLeaflet({
   currentDelivery: ActiveDelivery | null;
   onSelect: (d: ActiveDelivery) => void;
 }) {
+  const [bearing, setBearing] = useState<number | null>(null);
+  const prevCrewRef = useRef<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    const lat = currentDelivery?.crew_lat;
+    const lng = currentDelivery?.crew_lng;
+    if (lat == null || lng == null) return;
+    const curr = { lat, lng };
+    const prev = prevCrewRef.current;
+    if (prev && (prev.lat !== curr.lat || prev.lng !== curr.lng)) {
+      setBearing(calcBearing(prev, curr));
+    }
+    prevCrewRef.current = curr;
+  }, [currentDelivery?.crew_lat, currentDelivery?.crew_lng]);
+
   return (
     <div className="relative w-full h-full">
     <MapContainer
@@ -108,7 +137,7 @@ export default function PartnerMapLeaflet({
       {currentDelivery?.crew_lat != null && currentDelivery?.crew_lng != null && (
         <Marker
           position={[currentDelivery.crew_lat, currentDelivery.crew_lng]}
-          icon={makeCrewIcon(currentDelivery.crew_name)}
+          icon={makeCrewArrowIcon(bearing)}
           eventHandlers={{ click: () => onSelect(currentDelivery) }}
         >
           <Popup>

@@ -158,7 +158,7 @@ export async function PATCH(
           .insert({
             project_id: projectId,
             event_type: "item_delivered",
-            event_description: `${itemsToUpdate.length} item${itemsToUpdate.length > 1 ? "s" : ""} delivered — delivery ${data.delivery_number || id} completed`,
+            event_description: `${itemsToUpdate.length} item${itemsToUpdate.length > 1 ? "s" : ""} delivered, delivery ${data.delivery_number || id} completed`,
             phase_id: phaseId || null,
           });
       } catch { /* non-fatal */ }

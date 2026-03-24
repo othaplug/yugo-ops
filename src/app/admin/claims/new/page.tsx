@@ -22,7 +22,7 @@ export default async function NewClaimPage() {
     <NewClaimClient
       moves={(moves || []).map((m) => ({
         id: m.id,
-        label: `${m.move_code || ""} — ${m.client_name || "Unknown"}`,
+        label: `${m.move_code || ""}, ${m.client_name || "Unknown"}`,
         clientName: m.client_name || "",
         valuationTier: m.valuation_tier || "released",
         address: [m.from_address, m.to_address].filter(Boolean).join(" → "),
@@ -30,7 +30,7 @@ export default async function NewClaimPage() {
       }))}
       deliveries={(deliveries || []).map((d) => ({
         id: d.id,
-        label: `${d.delivery_number || ""} — ${d.customer_name || d.client_name || "Unknown"}`,
+        label: `${d.delivery_number || ""}, ${d.customer_name || d.client_name || "Unknown"}`,
         clientName: d.customer_name || d.client_name || "",
         address: [d.from_address, d.to_address].filter(Boolean).join(" → "),
         date: d.scheduled_date || "",

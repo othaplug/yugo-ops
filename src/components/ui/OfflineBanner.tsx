@@ -44,7 +44,7 @@ export default function OfflineBanner() {
       ) : (
         <>
           <WifiSlash size={13} className="shrink-0 text-current" aria-hidden />
-          You&apos;re offline — some features may be unavailable
+          You&apos;re offline, some features may be unavailable
         </>
       )}
     </div>

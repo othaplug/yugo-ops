@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import EmbedQuoteCalculator from "@/components/EmbedQuoteCalculator";
 
 export const metadata: Metadata = {
-  title: "Instant Moving Quote — Yugo",
+  title: "Instant Moving Quote, Yugo",
   description: "Get a fast moving estimate from Yugo.",
 };
 

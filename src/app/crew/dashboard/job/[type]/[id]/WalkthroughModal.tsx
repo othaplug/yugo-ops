@@ -357,7 +357,7 @@ export default function WalkthroughModal({
               <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 px-4 py-3 text-left">
                 <p className="text-[11px] font-bold text-[var(--gold)] uppercase tracking-wider mb-1">Remember</p>
                 <p className="text-[12px] text-[var(--tx2)]">
-                  You cannot set or change prices. Just identify what's here and what's missing —
+                  You cannot set or change prices. Just identify what's here and what's missing -
                   your coordinator will handle any price adjustments.
                 </p>
               </div>
@@ -548,7 +548,7 @@ export default function WalkthroughModal({
                       )}
                       {searchQuery && !searching && searchResults.length === 0 && (
                         <p className="mt-1.5 text-[11px] text-[var(--tx3)]">
-                          Not found —{" "}
+                          Not found -{" "}
                           <button
                             onClick={() => { setCustomItemName(searchQuery); setSearchQuery(""); }}
                             className="text-[var(--gold)] font-medium"
@@ -732,7 +732,7 @@ export default function WalkthroughModal({
               {/* No-change hint */}
               {extraItems.length === 0 && missingItems().length === 0 && (
                 <div className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/5 px-4 py-3 text-center">
-                  <p className="text-[13px] text-[#22C55E] font-medium">Everything matches — no changes needed.</p>
+                  <p className="text-[13px] text-[#22C55E] font-medium">Everything matches, no changes needed.</p>
                 </div>
               )}
 
@@ -826,7 +826,7 @@ export default function WalkthroughModal({
                   className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white"
                   style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                 >
-                  No Changes — Inventory Matches
+                  No Changes, Inventory Matches
                 </button>
               )}
             </>

@@ -56,14 +56,14 @@ export async function GET(req: NextRequest) {
     if (access.includes("walk_up") || access.includes("walkup")) {
       const floors = access.match(/(\d+)th|(\d+)rd|(\d+)nd|(\d+)st/);
       const floorStr = floors ? floors[0] : "upper floor";
-      alerts.push(`${job.move_code || job.id}: Walk-up ${floorStr} at pickup — allow extra time`);
+      alerts.push(`${job.move_code || job.id}: Walk-up ${floorStr} at pickup, allow extra time`);
     }
     const specialties = job.specialty_items as Record<string, unknown> | null;
     if (specialties?.piano_grand || specialties?.piano_upright) {
-      alerts.push(`${job.move_code || job.id}: Piano — specialty crew required`);
+      alerts.push(`${job.move_code || job.id}: Piano, specialty crew required`);
     }
     if ((job.tier || "").toLowerCase() === "estate") {
-      alerts.push(`${job.move_code || job.id}: Estate tier — white glove standard`);
+      alerts.push(`${job.move_code || job.id}: Estate tier, white glove standard`);
     }
   }
 
@@ -106,9 +106,9 @@ export async function GET(req: NextRequest) {
       (j) =>
         `<tr>
           <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#C9A962;font-weight:600;">${j.move_code || j.id}</td>
-          <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#e8e0d0;">${j.client_name || "—"}</td>
-          <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#9c9489;">${j.tier || j.service_type || "—"}</td>
-          <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#9c9489;">${j.arrival_window || "—"}</td>
+          <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#e8e0d0;">${j.client_name || "-"}</td>
+          <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#9c9489;">${j.tier || j.service_type || "-"}</td>
+          <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#9c9489;">${j.arrival_window || "-"}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#9c9489;text-align:right;">${j.crew_id ? "" : '<span style="color:#ef4444;font-weight:700;">UNASSIGNED</span>'}</td>
         </tr>`
     )
@@ -116,13 +116,13 @@ export async function GET(req: NextRequest) {
 
   const alertRows = alerts.length
     ? alerts.map((a) => `<li style="margin-bottom:6px;font-size:12px;color:#f59e0b;">${a}</li>`).join("")
-    : '<li style="font-size:12px;color:#22c55e;">No alerts — clean day ahead</li>';
+    : '<li style="font-size:12px;color:#22c55e;">No alerts, clean day ahead</li>';
 
   const quoteRows = expiring.length
     ? expiring
         .map(
           (q) =>
-            `<li style="margin-bottom:4px;font-size:12px;color:#e8e0d0;">${q.quote_number || q.id} — ${q.client_name} ($${Number(q.essential_price || 0).toLocaleString()})</li>`
+            `<li style="margin-bottom:4px;font-size:12px;color:#e8e0d0;">${q.quote_number || q.id}, ${q.client_name} ($${Number(q.essential_price || 0).toLocaleString()})</li>`
         )
         .join("")
     : '<li style="font-size:12px;color:#9c9489;">None expiring today</li>';
@@ -208,7 +208,7 @@ export async function GET(req: NextRequest) {
     </div>
 
     <p style="font-size:11px;color:#5c5650;text-align:center;margin-top:24px;">
-      Yugo+ — Auto-generated at 7 AM EST
+      Yugo+, Auto-generated at 7 AM EST
     </p>
   </div>
 </body>
@@ -217,7 +217,7 @@ export async function GET(req: NextRequest) {
   // ── Send email ──
   await sendEmail({
     to: coordinatorEmail,
-    subject: `Yugo Daily Brief — ${jobs.length} job${jobs.length !== 1 ? "s" : ""} today${alerts.length ? ` · ${alerts.length} alert${alerts.length !== 1 ? "s" : ""}` : ""}`,
+    subject: `Yugo Daily Brief, ${jobs.length} job${jobs.length !== 1 ? "s" : ""} today${alerts.length ? ` · ${alerts.length} alert${alerts.length !== 1 ? "s" : ""}` : ""}`,
     html,
   });
 

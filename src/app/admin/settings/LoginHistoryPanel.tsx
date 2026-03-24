@@ -60,8 +60,8 @@ export default function LoginHistoryPanel() {
             <div key={entry.id} className="grid grid-cols-1 sm:grid-cols-5 gap-1 sm:gap-2 px-3 py-2.5 border-t border-[var(--brd)] text-[11px]">
               <div className="text-[var(--tx)]">{formatDate(entry.created_at)}</div>
               <div className="text-[var(--tx3)]">{entry.device || "Unknown"}</div>
-              <div className="text-[var(--tx3)] font-mono text-[10px]">{entry.ip_address || "—"}</div>
-              <div className="text-[var(--tx3)]">{entry.location || "—"}</div>
+              <div className="text-[var(--tx3)] font-mono text-[10px]">{entry.ip_address || "-"}</div>
+              <div className="text-[var(--tx3)]">{entry.location || "-"}</div>
               <div className="text-right">
                 {entry.status === "success" ? (
                   <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-[rgba(45,159,90,0.12)] text-[var(--grn)]">Success</span>

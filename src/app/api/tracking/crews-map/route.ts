@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
       lat = lat ?? FALLBACK_LAT;
       lng = lng ?? FALLBACK_LNG;
     }
-    if (lat == null || lng == null) continue; // no position and not active — skip
+    if (lat == null || lng == null) continue; // no position and not active, skip
     const members = membersByTeam.get(teamId) || [];
     const displayName = members[0] || `Team ${teamId.slice(0, 8)}`;
     const pendingDeliveries = (deliveryByCrew.get(teamId) || []).filter((d) => !["delivered", "cancelled"].includes(d.status || ""));

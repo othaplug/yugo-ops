@@ -193,7 +193,7 @@ export default function CrewStatsPage() {
         {stats.leaderboard.length > 0 && (
           <div>
             <h2 className="admin-section-h2 text-[var(--tx2)] mb-3">
-              Leaderboard — {monthLabel}
+              Leaderboard, {monthLabel}
             </h2>
             <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl overflow-hidden">
               {stats.leaderboard.map((entry, i) => (
@@ -219,7 +219,7 @@ export default function CrewStatsPage() {
                   <div className="flex items-center gap-1 shrink-0">
                     <Star size={12} color="#F59E0B" weight="fill" />
                     <span className="text-[12px] font-bold text-[var(--tx)]">
-                      {entry.avgRating > 0 ? entry.avgRating.toFixed(1) : "—"}
+                      {entry.avgRating > 0 ? entry.avgRating.toFixed(1) : "-"}
                     </span>
                   </div>
                 </div>

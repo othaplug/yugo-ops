@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     const job = s.job_type === "move" ? moveMap.get(s.job_id) : deliveryMap.get(s.job_id);
     const jobName = job
       ? (s.job_type === "move" ? (job as any).client_name : `${(job as any).customer_name} (${(job as any).client_name})`)
-      : "—";
+      : "-";
     const jobId = job
       ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number)
       : s.job_id;
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     const job = s.job_type === "move" ? moveMap.get(s.job_id) : deliveryMap.get(s.job_id);
     const jobName = job
       ? (s.job_type === "move" ? (job as any).client_name : `${(job as any).customer_name} (${(job as any).client_name})`)
-      : "—";
+      : "-";
     const jobId = job
       ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number)
       : s.job_id;
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
       jobType: s.job_type,
       jobName,
       status: s.status,
-      teamName: teamMap.get(s.team_id) || "—",
+      teamName: teamMap.get(s.team_id) || "-",
       lastLocation: loc,
       updatedAt: s.updated_at,
       toAddress,

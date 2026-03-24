@@ -317,9 +317,9 @@ function AnalyticsDashboard() {
     { label: "Quotes (30d)", value: data.quotesSent || 0 },
     { label: "Conversion", value: `${data.conversionRate || 0}%` },
     { label: "Avg Quote", value: currency(Number(data.avgQuoteAmount) || 0) },
-    { label: "Top Tier", value: TIER_LABEL[String(data.mostQuotedTier || "")] || String(data.mostQuotedTier || "—") },
-    { label: "Best Hood", value: data.highestConvertingHood || "—" },
-    { label: "Lost Reason", value: data.topLostReason || "—" },
+    { label: "Top Tier", value: TIER_LABEL[String(data.mostQuotedTier || "")] || String(data.mostQuotedTier || "-") },
+    { label: "Best Hood", value: data.highestConvertingHood || "-" },
+    { label: "Lost Reason", value: data.topLostReason || "-" },
   ];
 
   return (
@@ -448,7 +448,7 @@ function TierMultipliersSection() {
     {
       key: getVal("tier_essential_multiplier") ? "tier_essential_multiplier" : getVal("tier_curated_multiplier") ? "tier_curated_multiplier" : "tier_essentials_multiplier",
       label: "Essential",
-      desc: "Base rate — reliable move",
+      desc: "Base rate, reliable move",
       m: curM,
     },
     {
@@ -804,7 +804,7 @@ function DepositRulesSection() {
   return (
     <div className="pt-4 space-y-4">
       <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 px-4 py-3">
-        <p className="font-semibold text-[var(--gold)] mb-2 text-[12px]">Residential (local) — tier-based deposits</p>
+        <p className="font-semibold text-[var(--gold)] mb-2 text-[12px]">Residential (local), tier-based deposits</p>
         <p className="text-[11px] text-[var(--tx3)] mb-3">These values are used for quotes and payments. Editable below.</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {DEPOSIT_TIER_KEYS.map(({ tier, pctKey, minKey, pctDefault, minDefault }) => {
@@ -848,12 +848,12 @@ function DepositRulesSection() {
                 <td className={`${td} font-medium capitalize`}>{st.replace(/_/g, " ")}</td>
                 {st === "residential" ? (
                   <td colSpan={BRACKETS.length} className={`${td} bg-[var(--gold)]/5 text-[11px] text-[var(--tx3)]`}>
-                    Tier-based (Essential / Signature / Estate) — defined above.
+                    Tier-based (Essential / Signature / Estate), defined above.
                   </td>
                 ) : (
                   BRACKETS.map((b) => {
                     const cell = getCell(st, b);
-                    if (!cell) return <td key={b} className={td}>—</td>;
+                    if (!cell) return <td key={b} className={td}>-</td>;
                     return (
                       <td key={b} className={td}>
                         <div className="flex items-center gap-1">
@@ -1275,7 +1275,7 @@ function AddOnsSection() {
                     </td>
                     <td className={td}>
                       {(a.price_type === "per_unit" || a.price_type === "flat") && (
-                        <EditCell value={a.unit_label || "—"} onChange={(v) => updateAddon(a.id, "unit_label", v === "—" ? "" : v)} className="text-[var(--tx3)]" />
+                        <EditCell value={a.unit_label || "-"} onChange={(v) => updateAddon(a.id, "unit_label", v === "-" ? "" : v)} className="text-[var(--tx3)]" />
                       )}
                     </td>
                     <td className={td}>
@@ -1636,8 +1636,8 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
                   <td className={`${td} font-medium text-[var(--tx)]`}>{row.item_name}</td>
                   <td className={td}>{row.weight_used} ({row.weight_used >= 2 ? "Heavy" : row.weight_used <= 0.5 ? "Light" : "Medium"})</td>
                   <td className={td}>{row.times_used}</td>
-                  <td className={td}>{row.first_used ? new Date(row.first_used).toLocaleDateString() : "—"}</td>
-                  <td className={td}>{row.last_used ? new Date(row.last_used).toLocaleDateString() : "—"}</td>
+                  <td className={td}>{row.first_used ? new Date(row.first_used).toLocaleDateString() : "-"}</td>
+                  <td className={td}>{row.last_used ? new Date(row.last_used).toLocaleDateString() : "-"}</td>
                   <td className={td}>
                     <div className="flex gap-1">
                       <button
@@ -1782,7 +1782,7 @@ function FleetVehiclesSection() {
                       <td className={td}><EditCell value={String(r.display_name)} onChange={(v) => fleet.updateRow(String(r.id), "display_name", v)} className="font-medium text-[var(--tx)]" /></td>
                       <td className={td}><EditCell value={Number(r.cargo_cubic_ft)} onChange={(v) => fleet.updateRow(String(r.id), "cargo_cubic_ft", Number(v))} type="number" className="w-16" /></td>
                       <td className={td}><EditCell value={Number(r.capacity_lbs)} onChange={(v) => fleet.updateRow(String(r.id), "capacity_lbs", Number(v))} type="number" className="w-16" /></td>
-                      <td className={td}><EditCell value={String(r.license_plate || "—")} onChange={(v) => fleet.updateRow(String(r.id), "license_plate", v === "—" ? "" : v)} className="text-[var(--tx3)] font-mono" /></td>
+                      <td className={td}><EditCell value={String(r.license_plate || "-")} onChange={(v) => fleet.updateRow(String(r.id), "license_plate", v === "-" ? "" : v)} className="text-[var(--tx3)] font-mono" /></td>
                       <td className={`${td} text-center`}>
                         <button type="button" role="switch" aria-checked={!!r.is_available} onClick={() => fleet.updateRow(String(r.id), "is_available", !r.is_available)} className={`relative w-8 h-4 rounded-full transition-colors ${r.is_available ? "bg-green-500" : "bg-[var(--brd)]"}`}>
                           <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${r.is_available ? "translate-x-4" : ""}`} />
@@ -1829,7 +1829,7 @@ function FleetVehiclesSection() {
                           {VEHICLE_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
                         </select>
                       </td>
-                      <td className={td}><EditCell value={String(r.notes || "—")} onChange={(v) => rules.updateRow(String(r.id), "notes", v === "—" ? "" : v)} className="text-[var(--tx3)]" /></td>
+                      <td className={td}><EditCell value={String(r.notes || "-")} onChange={(v) => rules.updateRow(String(r.id), "notes", v === "-" ? "" : v)} className="text-[var(--tx3)]" /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -2161,7 +2161,7 @@ function TierFeaturesSection() {
                       </select>
                     </div>
 
-                    {/* Reorder + delete — visible on hover */}
+                    {/* Reorder + delete, visible on hover */}
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <button
                         type="button"
@@ -2225,7 +2225,7 @@ function TierFeaturesSection() {
           <span className="text-[var(--gold)]">Tip:</span> Use{" "}
           <code className="bg-[var(--bg)] px-1 py-0.5 rounded text-[10px]">Professional movers</code> and{" "}
           <code className="bg-[var(--bg)] px-1 py-0.5 rounded text-[10px]">Dedicated moving truck</code>{" "}
-          as placeholders — the system replaces them with the actual crew count and truck size at quote time.
+          as placeholders, the system replaces them with the actual crew count and truck size at quote time.
         </p>
       )}
 
@@ -2400,7 +2400,7 @@ function InventoryModifierSection() {
       {/* Live preview */}
       {floorRow && capRow && (
         <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3 text-[11px] space-y-1">
-          <p className="font-semibold text-[var(--tx)]">Live example — 2BR base $1,199</p>
+          <p className="font-semibold text-[var(--tx)]">Live example, 2BR base $1,199</p>
           <p className="text-[var(--tx3)]">Light move (17 items): modifier ≈ {floor} → <span className="font-semibold text-[var(--tx)]">{currency(Math.round(1199 * floor))}</span></p>
           <p className="text-[var(--tx3)]">Heavy move (55+ items): modifier ≈ {cap} → <span className="font-semibold text-[var(--tx)]">{currency(Math.round(1199 * cap))}</span></p>
         </div>
@@ -2491,7 +2491,7 @@ function DistanceDeadheadSection() {
       <div>
         <h4 className="text-[11px] font-bold text-[var(--tx)] mb-1">Deadhead Surcharge</h4>
         <p className="text-[11px] text-[var(--tx3)] mb-3">
-          Charged when pickup address is more than the free-zone km from Yugo base (507 King St E). Crew travel cost. Applied flat — not multiplied by tier.
+          Charged when pickup address is more than the free-zone km from Yugo base (507 King St E). Crew travel cost. Applied flat, not multiplied by tier.
         </p>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
@@ -2984,16 +2984,16 @@ function EngineConfigSection() {
     // Market stack
     { key: "market_stack_cap", label: "Market Stack Cap", hint: "Maximum combined neighbourhood × day × season multiplier (default 1.38). Prevents excessive compounding." },
     // Labour rates per tier
-    { key: "labour_rate_essential", label: "Labour Rate — Essential ($/mover-hr)", hint: "Hourly rate applied to extra mover-hours above baseline for Essential tier." },
-    { key: "labour_rate_signature", label: "Labour Rate — Signature ($/mover-hr)", hint: "Higher rate for Signature tier overages — premium clients pay more for extra time." },
-    { key: "labour_rate_estate", label: "Labour Rate — Estate ($/mover-hr)", hint: "Highest rate for Estate tier overages." },
+    { key: "labour_rate_essential", label: "Labour Rate, Essential ($/mover-hr)", hint: "Hourly rate applied to extra mover-hours above baseline for Essential tier." },
+    { key: "labour_rate_signature", label: "Labour Rate, Signature ($/mover-hr)", hint: "Higher rate for Signature tier overages, premium clients pay more for extra time." },
+    { key: "labour_rate_estate", label: "Labour Rate, Estate ($/mover-hr)", hint: "Highest rate for Estate tier overages." },
     // Deadhead
     { key: "deadhead_rate_per_km", label: "Deadhead Rate ($/km)", hint: "Cost per km beyond the free zone. Crew travel from 507 King St E." },
     { key: "deadhead_free_zone_km", label: "Deadhead Free Zone (km)", hint: "Jobs within this radius from HQ have no deadhead charge (default 15 km)." },
     // Mobilization
-    { key: "mobilization_25_35", label: "Mobilization Fee — 25–35 km ($)", hint: "Flat fee for jobs 25–35 km from HQ." },
-    { key: "mobilization_35_50", label: "Mobilization Fee — 35–50 km ($)", hint: "Flat fee for jobs 35–50 km from HQ." },
-    { key: "mobilization_50plus", label: "Mobilization Fee — 50+ km ($)", hint: "Flat fee for jobs beyond 50 km from HQ." },
+    { key: "mobilization_25_35", label: "Mobilization Fee, 25–35 km ($)", hint: "Flat fee for jobs 25–35 km from HQ." },
+    { key: "mobilization_35_50", label: "Mobilization Fee, 35–50 km ($)", hint: "Flat fee for jobs 35–50 km from HQ." },
+    { key: "mobilization_50plus", label: "Mobilization Fee, 50+ km ($)", hint: "Flat fee for jobs beyond 50 km from HQ." },
     // Cost tracking
     { key: "cost_per_mover_hour", label: "Cost Per Mover-Hour ($)", hint: "Internal labour cost per mover per hour (for margin calculations, not pricing)." },
     { key: "fuel_cost_per_km", label: "Fuel Cost Per km ($)", hint: "Round-trip fuel cost per km (default $0.45). Used for margin estimates." },
@@ -3002,13 +3002,13 @@ function EngineConfigSection() {
     // Truck costs (for margin)
     { key: "truck_costs_per_job", label: "Truck Cost Per Job (JSON)", hint: '{"sprinter":90,"16ft":115,"20ft":150,"24ft":175,"26ft":200}', type: "json" },
     // Change request rates
-    { key: "change_request_rate_essential", label: "Change Request Rate — Essential ($/hr)", hint: "Hourly rate for post-booking change requests on Essential moves." },
-    { key: "change_request_rate_signature", label: "Change Request Rate — Signature ($/hr)", hint: "Hourly rate for change requests on Signature moves." },
-    { key: "change_request_rate_estate", label: "Change Request Rate — Estate ($/hr)", hint: "Hourly rate for change requests on Estate moves." },
+    { key: "change_request_rate_essential", label: "Change Request Rate, Essential ($/hr)", hint: "Hourly rate for post-booking change requests on Essential moves." },
+    { key: "change_request_rate_signature", label: "Change Request Rate, Signature ($/hr)", hint: "Hourly rate for change requests on Signature moves." },
+    { key: "change_request_rate_estate", label: "Change Request Rate, Estate ($/hr)", hint: "Hourly rate for change requests on Estate moves." },
     // Margin targets (soft targets — warnings only, never override pricing)
-    { key: "margin_target_essential", label: "Margin Target — Essential (%)", hint: "Soft target margin % for Essential moves. Warnings shown when below threshold. Never inflates prices automatically." },
-    { key: "margin_target_signature", label: "Margin Target — Signature (%)", hint: "Soft target margin % for Signature moves." },
-    { key: "margin_target_estate", label: "Margin Target — Estate (%)", hint: "Soft target margin % for Estate moves." },
+    { key: "margin_target_essential", label: "Margin Target, Essential (%)", hint: "Soft target margin % for Essential moves. Warnings shown when below threshold. Never inflates prices automatically." },
+    { key: "margin_target_signature", label: "Margin Target, Signature (%)", hint: "Soft target margin % for Signature moves." },
+    { key: "margin_target_estate", label: "Margin Target, Estate (%)", hint: "Soft target margin % for Estate moves." },
     { key: "margin_warning_threshold", label: "Margin Warning Threshold (%)", hint: "Show a warning when estimated margin falls below this %. Default 35." },
     { key: "margin_critical_threshold", label: "Margin Critical Threshold (%)", hint: "Show a critical alert when estimated margin falls below this %. Default 25." },
   ];
@@ -3097,7 +3097,7 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
         <WhiteGlovePricingSection />
       </Accordion>
 
-      <Accordion title="Specialty" subtitle="Project bases, equipment surcharges, crating & climate — used by specialty quotes">
+      <Accordion title="Specialty" subtitle="Project bases, equipment surcharges, crating & climate, used by specialty quotes">
         <SpecialtyPricingSection />
       </Accordion>
 
@@ -3133,7 +3133,7 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
         <InventoryVolumeSection />
       </Accordion>
 
-      <Accordion title="Package & Tier Features" subtitle="What's included in each move package — shown on customer quotes">
+      <Accordion title="Package & Tier Features" subtitle="What's included in each move package, shown on customer quotes">
         <TierFeaturesSection />
       </Accordion>
 
@@ -3153,11 +3153,11 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
         <EngineConfigSection />
       </Accordion>
 
-      <Accordion title="System Learning — Calibration Suggestions" subtitle="AI-generated config proposals based on last 30 completed jobs per category">
+      <Accordion title="System Learning, Calibration Suggestions" subtitle="AI-generated config proposals based on last 30 completed jobs per category">
         <CalibrationSection />
       </Accordion>
 
-      <Accordion title="Payment & Processing Recovery" subtitle="Credit card fee recovery baked into tier prices — invisible to clients">
+      <Accordion title="Payment & Processing Recovery" subtitle="Credit card fee recovery baked into tier prices, invisible to clients">
         <ProcessingRecoverySection />
       </Accordion>
     </div>
@@ -3201,7 +3201,7 @@ function ProcessingRecoverySection() {
     {
       key: "processing_recovery_rate",
       label: "Processing Recovery Rate",
-      hint: "Credit card processing rate to absorb into tier prices (e.g. 0.029 = 2.9%). Applied after gap caps, before rounding — invisible to clients.",
+      hint: "Credit card processing rate to absorb into tier prices (e.g. 0.029 = 2.9%). Applied after gap caps, before rounding, invisible to clients.",
     },
     {
       key: "processing_recovery_flat",
@@ -3484,7 +3484,7 @@ function CalibrationSection() {
                   </span>
                 </td>
                 <td className="py-3 px-4 text-[var(--tx)]">
-                  {s.move_size ? MOVE_SIZE_LABELS[s.move_size] ?? s.move_size : "—"}
+                  {s.move_size ? MOVE_SIZE_LABELS[s.move_size] ?? s.move_size : "-"}
                 </td>
                 <td className="py-3 px-4 text-[var(--tx3)]">{s.current_value}</td>
                 <td className="py-3 px-4">

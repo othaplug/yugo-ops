@@ -48,7 +48,7 @@ export default function TrackingLookup() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: CREAM }}>
       <div className="flex-1 flex flex-col items-center justify-center px-5 py-12">
 
-        {/* Logo — no card, no border */}
+        {/* Logo, no card, no border */}
         <div className="mb-8">
           <Link href="/">
             <YugoLogo size={30} variant="gold" />
@@ -114,7 +114,7 @@ export default function TrackingLookup() {
           )}
         </form>
 
-        {/* Feature hints — Live GPS and ETA side by side, Status Updates below */}
+        {/* Feature hints, Live GPS and ETA side by side, Status Updates below */}
         <div className="flex flex-col items-center gap-8 mt-14 w-full max-w-lg">
           <div className="flex flex-row items-center justify-center gap-10 sm:gap-14 w-full">
             {[

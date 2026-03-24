@@ -148,7 +148,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
       {/* Required photo nudge */}
       {needsPhoto && (
         <p className="text-[10px] text-[var(--gold)] mb-2.5">
-          Take at least 1 photo to advance — or skip below.
+          Take at least 1 photo to advance, or skip below.
         </p>
       )}
 

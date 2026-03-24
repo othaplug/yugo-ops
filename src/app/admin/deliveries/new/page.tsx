@@ -14,7 +14,7 @@ export default async function NewDeliveryPage({
 
   const [{ data: orgs }, { data: crews }] = await Promise.all([
     db.from("organizations").select("id, name, type, vertical, email, contact_name, phone, default_pickup_address").not("name", "like", "\\_%").order("name"),
-    db.from("crews").select("id, name, members").order("name"),
+    db.from("crews").select("id, name, members").eq("is_active", true).order("name"),
   ]);
 
   return (

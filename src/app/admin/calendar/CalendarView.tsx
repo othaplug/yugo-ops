@@ -150,7 +150,7 @@ export default function CalendarView() {
             )}
           </div>
 
-          {/* Detail panel — full-screen overlay on mobile, sidebar on sm+ */}
+          {/* Detail panel, full-screen overlay on mobile, sidebar on sm+ */}
           {detailEvent && (
             <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--card)] sm:static sm:inset-auto sm:z-auto sm:w-[380px] sm:shrink-0 sm:border-l sm:border-[var(--brd)] sm:overflow-y-auto sm:bg-transparent">
               <JobDetailPanel

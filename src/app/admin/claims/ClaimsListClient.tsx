@@ -112,7 +112,7 @@ const claimColumns: ColumnDef<Claim>[] = [
     id: "approved",
     label: "Approved",
     accessor: (c) => c.approved_amount,
-    render: (c) => (c.approved_amount != null ? formatCurrency(c.approved_amount) : "—"),
+    render: (c) => (c.approved_amount != null ? formatCurrency(c.approved_amount) : "-"),
     align: "right",
   },
   {
@@ -129,7 +129,7 @@ const claimColumns: ColumnDef<Claim>[] = [
     id: "crew",
     label: "Crew",
     accessor: (c) => c.crew_team || "",
-    render: (c) => c.crew_team || "—",
+    render: (c) => c.crew_team || "-",
   },
 ];
 

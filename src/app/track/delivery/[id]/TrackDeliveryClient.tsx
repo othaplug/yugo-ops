@@ -342,7 +342,7 @@ export default function TrackDeliveryClient({
             </div>
           </div>
         )}
-        {/* Minimize / close button — prominent pill */}
+        {/* Minimize / close button, prominent pill */}
         <button
           type="button"
           onClick={() => setIsFullscreen(false)}
@@ -405,7 +405,7 @@ export default function TrackDeliveryClient({
         {/* ── Gold progress bar with stage icons ── */}
         {(isInProgress || isCompleted) && (
           <div className="mb-7 anim-slide-up anim-delay-2">
-            {/* Progress bar with stage nodes (no title row — stage labels are under each node; "Complete" badge is in header) */}
+            {/* Progress bar with stage nodes (no title row, stage labels are under each node; "Complete" badge is in header) */}
             {/* Each node is fixed 64 px wide so the absolute track can be anchored at left/right: 32 (= half node width) */}
             <div className="relative" style={{ paddingBottom: 30 }}>
               {/* Track */}
@@ -670,7 +670,7 @@ export default function TrackDeliveryClient({
             className="rounded-2xl border overflow-hidden mb-5 anim-slide-up anim-delay-4 transition-colors duration-300"
             style={{ borderColor: crewHasStarted ? `#22C55E30` : `${GOLD}20`, backgroundColor: "white" }}
           >
-            {/* Card header — toggle collapse */}
+            {/* Card header, toggle collapse */}
             <button
               type="button"
               onClick={() => setMapExpanded((v) => !v)}
@@ -763,7 +763,7 @@ export default function TrackDeliveryClient({
               style={{ maxHeight: mapExpanded ? 340 : 0, opacity: mapExpanded ? 1 : 0 }}
             >
               <div className="relative h-[300px] bg-[#1A1A1A]">
-                {/* Map layer — blurred when crew hasn't started */}
+                {/* Map layer, blurred when crew hasn't started */}
                 <div
                   className="absolute inset-0 transition-[filter] duration-700"
                   style={{ filter: crewHasStarted ? "none" : "blur(6px) saturate(0.5) brightness(0.7)" }}
@@ -780,7 +780,7 @@ export default function TrackDeliveryClient({
                   )}
                 </div>
 
-                {/* Waiting overlay when crew hasn't started — z-[1000] above Leaflet */}
+                {/* Waiting overlay when crew hasn't started, z-[1000] above Leaflet */}
                 {!crewHasStarted && (
                   <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-black/30">
                     <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2.5 border border-white/10" style={{ backgroundColor: `${GOLD}18` }}>
@@ -793,7 +793,7 @@ export default function TrackDeliveryClient({
                   </div>
                 )}
 
-                {/* Live status badge inside map when active — z-[1000] so it sits above Leaflet map panes */}
+                {/* Live status badge inside map when active, z-[1000] so it sits above Leaflet map panes */}
                 {crewHasStarted && liveStage && (
                   <div className="absolute top-3 left-3 z-[1000] rounded-xl bg-white/95 backdrop-blur-sm border px-3 py-2 flex items-center gap-2 shadow-lg" style={{ borderColor: `${FOREST}15` }}>
                     <span className="relative flex h-2.5 w-2.5 shrink-0">
@@ -806,7 +806,7 @@ export default function TrackDeliveryClient({
                   </div>
                 )}
 
-                {/* Fullscreen button — z-[1000] so it sits above Leaflet map panes */}
+                {/* Fullscreen button, z-[1000] so it sits above Leaflet map panes */}
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setIsFullscreen(true); }}

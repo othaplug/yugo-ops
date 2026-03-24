@@ -24,7 +24,7 @@ export async function GET() {
     for (const q of quotes) {
       if (q.selected_tier) tierCounts[q.selected_tier] = (tierCounts[q.selected_tier] || 0) + 1;
     }
-    const mostQuotedTier = Object.entries(tierCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+    const mostQuotedTier = Object.entries(tierCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
 
     const { data: analytics } = await supabase
       .from("quote_analytics")
@@ -56,7 +56,7 @@ export async function GET() {
     const topLostEntry = Object.entries(lostReasons).sort((a, b) => b[1] - a[1])[0];
     const topLostReason = topLostEntry
       ? `${topLostEntry[0]} (${totalLost > 0 ? Math.round((topLostEntry[1] / totalLost) * 100) : 0}%)`
-      : "—";
+      : "-";
 
     return NextResponse.json({
       quotesSent: total,
@@ -65,10 +65,10 @@ export async function GET() {
       mostQuotedTier,
       highestConvertingHood: highestConvertingHood
         ? `${highestConvertingHood[0]} (${Math.round((highestConvertingHood[1].won / highestConvertingHood[1].total) * 100)}%)`
-        : "—",
+        : "-",
       lowestConvertingHood: lowestConvertingHood
         ? `${lowestConvertingHood[0]} (${Math.round((lowestConvertingHood[1].won / lowestConvertingHood[1].total) * 100)}%)`
-        : "—",
+        : "-",
       topLostReason,
     });
   } catch (err: unknown) {

@@ -208,9 +208,9 @@ function renderTemplate(template: string, data: unknown): string {
     "review-request-reminder": reviewRequestReminderEmail,
 
     // Partner billing & card lifecycle — simple transactional templates
-    "partner-statement-due": (d: any) => `<p>Hi ${d.partnerName},</p><p>Statement <strong>${d.statementNumber}</strong> is due — <strong>$${Number(d.amount).toFixed(2)} CAD</strong>.</p><p><a href="${d.paymentUrl}">Pay Now</a></p>`,
-    "partner-statement-paid": (d: any) => `<p>Hi ${d.partnerName},</p><p>Payment confirmed for statement <strong>${d.statementNumber}</strong> — <strong>$${Number(d.amount).toFixed(2)} CAD</strong>.</p>${d.receiptUrl ? `<p><a href="${d.receiptUrl}">View Receipt</a></p>` : ""}`,
-    "partner-statement-charge-failed": (d: any) => `<p>URGENT: Card declined for <strong>${d.partnerName}</strong> — statement ${d.statementNumber} ($${Number(d.amount).toFixed(2)}).</p><p>Error: ${d.errorMessage}</p>`,
+    "partner-statement-due": (d: any) => `<p>Hi ${d.partnerName},</p><p>Statement <strong>${d.statementNumber}</strong> is due, <strong>$${Number(d.amount).toFixed(2)} CAD</strong>.</p><p><a href="${d.paymentUrl}">Pay Now</a></p>`,
+    "partner-statement-paid": (d: any) => `<p>Hi ${d.partnerName},</p><p>Payment confirmed for statement <strong>${d.statementNumber}</strong>, <strong>$${Number(d.amount).toFixed(2)} CAD</strong>.</p>${d.receiptUrl ? `<p><a href="${d.receiptUrl}">View Receipt</a></p>` : ""}`,
+    "partner-statement-charge-failed": (d: any) => `<p>URGENT: Card declined for <strong>${d.partnerName}</strong>, statement ${d.statementNumber} ($${Number(d.amount).toFixed(2)}).</p><p>Error: ${d.errorMessage}</p>`,
     "partner-statement-charge-failed-partner": (d: any) => `<p>Hi ${d.partnerName},</p><p>We were unable to charge your card on file for statement <strong>${d.statementNumber}</strong> ($${Number(d.amount).toFixed(2)} CAD).</p><p>Please <a href="${d.updateCardUrl}">update your payment method</a> to avoid service interruption.</p>`,
     "partner-card-expiring": (d: any) => `<p>Hi ${d.partnerName},</p><p>Your <strong>${d.cardBrand} ending in ${d.cardLastFour}</strong> on file with Yugo expires soon.</p><p><a href="${d.updateCardUrl}">Update your card</a> to avoid any interruption to automatic billing.</p>`,
     "admin-card-expiring-notice": (d: any) => `<p>${d.entityType === "partner" ? "Partner" : "Client"} <strong>${d.entityName}</strong> has a card expiring soon (ending ${d.cardLastFour}).</p><p><a href="${d.updateCardUrl}">View profile</a></p>`,

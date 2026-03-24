@@ -4,7 +4,7 @@ const OFFLINE_URL = "/crew/login";
 const PRECACHE_URLS = ["/crew/login", "/crew/dashboard"];
 
 function offlineFallbackResponse() {
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Offline — Yugo Crew</title><style>body{font-family:system-ui,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f0f0f;color:#fafafa;padding:24px;text-align:center}p{max-width:22rem;line-height:1.5;color:#a3a3a3}</style></head><body><div><h1 style="font-size:1.25rem;margin:0 0 8px">You are offline</h1><p>Connection lost. Your screen may still show the last page. Status updates will send when you are back online.</p></div></body></html>`;
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Offline, Yugo Crew</title><style>body{font-family:system-ui,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f0f0f;color:#fafafa;padding:24px;text-align:center}p{max-width:22rem;line-height:1.5;color:#a3a3a3}</style></head><body><div><h1 style="font-size:1.25rem;margin:0 0 8px">You are offline</h1><p>Connection lost. Your screen may still show the last page. Status updates will send when you are back online.</p></div></body></html>`;
   return new Response(html, {
     status: 503,
     headers: { "Content-Type": "text/html; charset=utf-8" },

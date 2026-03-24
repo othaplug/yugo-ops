@@ -474,13 +474,13 @@ export default function CrewJobPage({
           <div className="flex gap-3">
             {/* Dot + connector column */}
             <div className="flex flex-col items-center shrink-0 pt-1">
-              {/* Pickup dot — outlined ring with gold inner */}
+              {/* Pickup dot, outlined ring with gold inner */}
               <div className="w-4 h-4 rounded-full border-2 border-[var(--gold)]/60 flex items-center justify-center shrink-0">
                 <div className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
               </div>
               {/* Connector line */}
               <div className="w-[2px] flex-1 my-1 rounded-full" style={{ background: "rgba(255,255,255,0.1)", minHeight: 20 }} />
-              {/* Drop-off dot — solid green */}
+              {/* Drop-off dot, solid green */}
               <div className="w-4 h-4 rounded-full border-2 border-[#22C55E]/60 flex items-center justify-center shrink-0">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
               </div>
@@ -558,7 +558,7 @@ export default function CrewJobPage({
             />
           </div>
 
-          {/* Walkthrough gate — shown when at pickup and walkthrough not done */}
+          {/* Walkthrough gate, shown when at pickup and walkthrough not done */}
           {currentStatus === "arrived_at_pickup" && blockedByWalkthrough && (
             <div className="rounded-2xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-4 space-y-3">
               <div className="flex items-center gap-2.5">
@@ -814,7 +814,7 @@ export default function CrewJobPage({
             <div className="mx-0 mb-4 px-4 py-3 rounded-2xl border border-[var(--gold)]/20 bg-[var(--gold)]/5">
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--gold)]/60 mb-0.5">Part of Project</p>
               <p className="text-[13px] font-semibold text-[var(--tx)]">
-                {job.projectContext.projectNumber} — {job.projectContext.projectName}
+                {job.projectContext.projectNumber}, {job.projectContext.projectName}
               </p>
               {job.projectContext.phaseName && (
                 <p className="text-[11px] text-[var(--gold)] mt-0.5">{job.projectContext.phaseName}</p>
@@ -949,7 +949,7 @@ export default function CrewJobPage({
         />
       )}
 
-      {/* Photo verification modal — shown after walkthrough */}
+      {/* Photo verification modal, shown after walkthrough */}
       {pickupModalOpen && job && (
         <div className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99990] animate-fade-in p-4 sm:p-5">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] overflow-y-auto shadow-2xl" style={{ maxHeight: "min(90dvh, 90vh)" }}>
@@ -990,7 +990,7 @@ export default function CrewJobPage({
               >
                 {pickupPhotosCount < 1 && totalItems > 0
                   ? "Take at least 1 photo to continue"
-                  : "Complete — Start Loading"}
+                  : "Complete, Start Loading"}
               </button>
               <button
                 type="button"

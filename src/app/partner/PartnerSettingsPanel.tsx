@@ -141,7 +141,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           email_invoice_ready: notifPrefs.email_invoice_ready,
         }),
       });
-    } catch { /* graceful fail — localStorage already saved */ }
+    } catch { /* graceful fail, localStorage already saved */ }
     setPrefsSaved(true);
     setTimeout(() => setPrefsSaved(false), 2000);
   };

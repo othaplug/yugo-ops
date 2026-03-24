@@ -157,7 +157,7 @@ function generateRecommendationReason(
     reasons.push("Top white glove specialist");
   }
   if (crew.score_art_handling > 80 && (move.has_art || move.has_antiques)) {
-    reasons.push("Art handling specialist — zero incidents");
+    reasons.push("Art handling specialist, zero incidents");
   }
   if (crew.avg_satisfaction >= 4.8) {
     reasons.push(`${crew.avg_satisfaction.toFixed(1)}-star average`);

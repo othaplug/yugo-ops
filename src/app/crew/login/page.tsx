@@ -374,7 +374,7 @@ export default function CrewLoginPage() {
                 {selectedMember?.initials ?? "?"}
               </div>
               <div style={{ fontSize: 18, fontWeight: 600, color: "#F5F5F3", marginBottom: 4 }}>
-                {selectedMember?.name ?? "—"}
+                {selectedMember?.name ?? "-"}
               </div>
               <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
                 {selectedMember?.role === "lead" ? "Lead" : selectedMember?.role} · {context.teamName ?? "Team"}

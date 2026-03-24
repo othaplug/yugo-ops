@@ -36,7 +36,7 @@ export default async function CrewPage() {
     <div
       className="relative w-full min-h-[500px] [height:calc(100dvh-3.5rem-4rem-env(safe-area-inset-bottom,0px))] md:[height:calc(100dvh-3.5rem)]"
     >
-      {/* Floating header overlay — hidden on mobile where it conflicts with live status chip */}
+      {/* Floating header overlay, hidden on mobile where it conflicts with live status chip */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none hidden sm:flex">
         <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--brd)] shadow-sm">
           <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Operations</span>

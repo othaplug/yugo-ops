@@ -488,7 +488,7 @@ export default function PartnersManagement() {
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleRevoke(partner.id, u.user_id); }}
                                   disabled={revoking === u.user_id}
-                                  className="px-2 py-0.5 rounded text-[9px] font-semibold border border-[var(--red)]/40 text-[var(--red)] hover:bg-[var(--rdim)] transition-all disabled:opacity-50"
+                                  className="px-2 py-0.5 rounded text-[9px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
                                 >
                                   {revoking === u.user_id ? "..." : "Revoke"}
                                 </button>

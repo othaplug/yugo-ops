@@ -20,7 +20,7 @@ export default function TipConfirmation({ amount }: TipConfirmationProps) {
         <Check weight="bold" size={10} color={FOREST_GREEN} aria-hidden />
       </div>
       <span className="text-[13px] font-medium" style={{ color: FOREST }}>
-        You tipped {formatCurrency(amount)} — thank you.
+        You tipped {formatCurrency(amount)}, thank you.
       </span>
     </div>
   );

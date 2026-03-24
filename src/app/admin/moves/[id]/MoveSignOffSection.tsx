@@ -47,7 +47,7 @@ type Skip = {
 function YesNo({ value }: { value: boolean | null | undefined }) {
   if (value === true) return <span className="text-green-600 font-medium">Yes</span>;
   if (value === false) return <span className="text-red-500 font-medium">No</span>;
-  return <span className="text-[var(--tx3)]">—</span>;
+  return <span className="text-[var(--tx3)]">-</span>;
 }
 
 function NpsLabel({ score }: { score: number }) {
@@ -133,8 +133,8 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 text-[11px]">
             <div><span className="text-[var(--tx3)]">Signed by:</span> {signOff.signed_by}</div>
             <div><span className="text-[var(--tx3)]">Date:</span> {new Date(signOff.signed_at).toLocaleString()}</div>
-            <div><span className="text-[var(--tx3)]">Rating:</span> {signOff.satisfaction_rating ? `${signOff.satisfaction_rating}/5` : "—"}</div>
-            <div><span className="text-[var(--tx3)]">NPS:</span> {signOff.nps_score != null ? <NpsLabel score={signOff.nps_score} /> : "—"}</div>
+            <div><span className="text-[var(--tx3)]">Rating:</span> {signOff.satisfaction_rating ? `${signOff.satisfaction_rating}/5` : "-"}</div>
+            <div><span className="text-[var(--tx3)]">NPS:</span> {signOff.nps_score != null ? <NpsLabel score={signOff.nps_score} /> : "-"}</div>
             <div><span className="text-[var(--tx3)]">Would recommend:</span> <YesNo value={signOff.would_recommend} /></div>
             {signOff.signed_lat != null && (
               <div><span className="text-[var(--tx3)]">Location:</span> {signOff.signed_lat.toFixed(4)}, {signOff.signed_lng?.toFixed(4)}</div>

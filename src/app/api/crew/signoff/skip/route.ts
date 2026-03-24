@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       entity_type: jobType,
       entity_id: entityId,
       event_type: "signoff_skipped",
-      description: `Sign-off skipped: ${reasonLabels[skipReason] || skipReason}${skipNote ? ` — ${skipNote}` : ""}`,
+      description: `Sign-off skipped: ${reasonLabels[skipReason] || skipReason}${skipNote ? `, ${skipNote}` : ""}`,
       icon: "user-x",
     });
   } catch {}

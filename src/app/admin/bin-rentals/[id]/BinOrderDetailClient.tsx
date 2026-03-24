@@ -76,13 +76,13 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
   const [dropoffProcessing, setDropoffProcessing] = useState(false);
 
   const fmtDate = (d: string | null) => {
-    if (!d) return "—";
+    if (!d) return "-";
     return new Date(d + (d.includes("T") ? "" : "T12:00:00"))
       .toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
   };
 
   const fmtMoney = (n: number | null) =>
-    n != null ? `$${Number(n).toFixed(2)}` : "—";
+    n != null ? `$${Number(n).toFixed(2)}` : "-";
 
   const patchOrder = async (payload: Record<string, unknown>) => {
     setSaving(true);
@@ -139,7 +139,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
       setMsg({
         type: "ok",
         text: missing > 0
-          ? `Pickup complete. ${missing} bin(s) missing — $${data.missingCharge?.toFixed(2)} charged to card.`
+          ? `Pickup complete. ${missing} bin(s) missing, $${data.missingCharge?.toFixed(2)} charged to card.`
           : "Pickup complete. Client thanked via SMS.",
       });
       router.refresh();
@@ -231,7 +231,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
         <Section title="Delivery" icon={<MapPin size={14} />}>
           <InfoRow label="Address" value={order.delivery_address} />
           {order.delivery_postal && <InfoRow label="Postal code" value={order.delivery_postal} />}
-          <InfoRow label="Access" value={ACCESS_LABELS[order.delivery_access] || order.delivery_access || "—"} />
+          <InfoRow label="Access" value={ACCESS_LABELS[order.delivery_access] || order.delivery_access || "-"} />
           {order.delivery_notes && <InfoRow label="Notes" value={order.delivery_notes} />}
         </Section>
 
@@ -279,7 +279,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
             value={
               order.payment_status === "paid"
                 ? <span className="flex items-center gap-1"><CheckCircle size={12} weight="fill" /> Paid</span>
-                : order.payment_status || "—"
+                : order.payment_status || "-"
             }
           />
           {order.square_payment_id && (
@@ -357,7 +357,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
           />
           {pickupBins < order.bin_count && (
             <p className="text-[12px] text-red-400 mb-3 flex items-center gap-1">
-              <Warning size={12} /> {order.bin_count - pickupBins} missing — ${(order.bin_count - pickupBins) * 20} charge will be applied to card on file.
+              <Warning size={12} /> {order.bin_count - pickupBins} missing, ${(order.bin_count - pickupBins) * 20} charge will be applied to card on file.
             </p>
           )}
           <label className="block text-[12px] font-semibold text-[var(--tx3)] mb-1.5">Crew member name (optional)</label>

@@ -23,13 +23,13 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: false,
-    clientMessage: "Your Yugo crew is en route to the pickup location they're on their way!",
+    clientMessage: "Your crew is on the way. We will keep you updated as your move day unfolds.",
   },
   arrived_at_pickup: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: false,
-    clientMessage: "Your crew has arrived at the pickup address and is ready to begin loading.",
+    clientMessage: "Your crew has arrived and is ready to begin. You are in good hands.",
   },
   loading: {
     notifyClient: false,
@@ -41,13 +41,13 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Loading complete! Your crew is now en route to the destination with your items.",
+    clientMessage: "Everything is loaded and your crew is now heading to your new home.",
   },
   arrived_at_destination: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your crew has arrived at the destination and is ready to unload.",
+    clientMessage: "Your crew has arrived and is ready to unload. You are almost there.",
   },
   unloading: {
     notifyClient: false,
@@ -59,19 +59,19 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your move is complete. Thank you for choosing Yugo!",
+    clientMessage: "Your move is complete. It was a privilege to take care of you today.",
   },
   en_route: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your delivery is on the way!",
+    clientMessage: "Your delivery is underway. We will notify you when your crew arrives.",
   },
   arrived: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your crew has arrived!",
+    clientMessage: "Your crew has arrived at your address.",
   },
   delivering: {
     notifyClient: false,
@@ -83,9 +83,10 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
 
 function getClientMessage(status: TrackingStatus, jobType: "move" | "delivery", defaultMessage: string): string {
   if (jobType === "delivery") {
-    if (status === "en_route_to_pickup" || status === "en_route") return "Your crew is heading to pickup.";
-    if (status === "en_route_to_destination") return "Your delivery is on the way to you!";
-    if (status === "arrived_at_destination") return "Your crew has arrived at your address!";
+    if (status === "en_route_to_pickup" || status === "en_route") return "Your crew is on the way to collect your delivery.";
+    if (status === "en_route_to_destination") return "Your delivery is on its way to you.";
+    if (status === "arrived_at_destination") return "Your crew has arrived. Your delivery will be placed shortly.";
+    if (status === "completed") return "Your delivery is complete. Thank you for choosing Yugo.";
   }
   return defaultMessage;
 }
@@ -114,7 +115,7 @@ export async function notifyOnCheckpoint(
         : status === "en_route_to_destination"
           ? `${teamName} en route to destination ${toAddress || "-"}`
           : status === "arrived_at_destination" || status === "arrived"
-            ? `${teamName} arrived at ${toAddress || "—"}`
+            ? `${teamName} arrived at ${toAddress || "-"}`
             : `${teamName} ${status}`;
 
   if (cfg.notifyAdmin) {
@@ -170,18 +171,18 @@ export async function notifyOnCheckpoint(
   }
 
   const subject = status === "completed"
-    ? jobType === "delivery" ? `Your delivery is complete ${formatJobId(moveCode || jobId, jobType)}` : `Your move is complete ${formatJobId(moveCode || jobId, jobType)}`
-    : `Your crew is on the way ${formatJobId(moveCode || jobId, jobType)}`;
+    ? jobType === "delivery" ? `Your delivery is complete - ${formatJobId(moveCode || jobId, jobType)}` : `Your move is complete - ${formatJobId(moveCode || jobId, jobType)}`
+    : `Your crew update - ${formatJobId(moveCode || jobId, jobType)}`;
 
-  const headline = getClientMessage(status, jobType, cfg.clientMessage) || cfg.clientMessage || "Status update";
+  const headline = getClientMessage(status, jobType, cfg.clientMessage) || cfg.clientMessage || "A status update on your move";
   const body = status === "completed"
-    ? "Thank you for choosing Yugo. We hope your move went smoothly."
-    : "Your crew has updated the status of your job.";
+    ? "It was a pleasure taking care of you today. Your documents and receipt are available in your portal."
+    : "Your crew has provided a live update. Track your move in real time using the link below.";
   const html = statusUpdateEmailHtml({
     headline,
     body,
     ctaUrl: trackUrl,
-    ctaLabel: trackUrl ? "Track your job" : undefined,
+    ctaLabel: trackUrl ? "Track your move" : undefined,
     includeFooter: false,
   });
 

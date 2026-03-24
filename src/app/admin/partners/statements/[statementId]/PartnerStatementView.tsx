@@ -24,10 +24,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 };
 
 const TERMS_LABELS: Record<string, string> = {
-  net_30: "Net 30 — monthly, due on statement date",
-  net_15: "Net 15 — bi-monthly (1st & 16th), due on statement date",
-  due_on_delivery: "Due on Receipt — per-delivery, due immediately",
-  due_on_receipt: "Due on Receipt — per-delivery, due immediately",
+  net_30: "Net 30, monthly, due on statement date",
+  net_15: "Net 15, bi-monthly (1st & 16th), due on statement date",
+  due_on_delivery: "Due on Receipt, per-delivery, due immediately",
+  due_on_receipt: "Due on Receipt, per-delivery, due immediately",
   prepay: "Pre-paid",
 };
 
@@ -212,15 +212,15 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
                     className="border-b border-[var(--brd)]/20 last:border-0"
                   >
                     <td className="px-4 py-3 text-[12px] font-mono text-[var(--gold)]">
-                      {d.number || "—"}
+                      {d.number || "-"}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[var(--tx3)]">
                       {d.date
                         ? new Date(d.date).toLocaleDateString("en-CA", { month: "short", day: "numeric" })
-                        : "—"}
+                        : "-"}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[var(--tx2)] max-w-[180px] truncate">
-                      {d.description || "—"}
+                      {d.description || "-"}
                     </td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-[var(--tx)] text-right">
                       ${Number(d.price || 0).toFixed(2)}

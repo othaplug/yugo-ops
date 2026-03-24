@@ -102,7 +102,7 @@ export default function ClientsPageClient({
     {
       id: "move_date", label: "Move Date",
       accessor: (c) => c.move_date || "",
-      render: (c) => <span className="text-[11px] text-[var(--tx2)]">{c.move_date ? formatMoveDate(c.move_date) : "—"}</span>,
+      render: (c) => <span className="text-[11px] text-[var(--tx2)]">{c.move_date ? formatMoveDate(c.move_date) : "-"}</span>,
     },
     {
       id: "status", label: "Status",
@@ -113,7 +113,7 @@ export default function ClientsPageClient({
           c.move_status === "cancelled" ? "bg-[var(--rdim)] text-[var(--red)]" :
           "bg-[var(--gdim)] text-[var(--gold)]"
         }`}>
-          {(c.move_status || "—").replace("_", " ")}
+          {(c.move_status || "-").replace("_", " ")}
         </span>
       ),
     },
@@ -122,7 +122,7 @@ export default function ClientsPageClient({
       accessor: (c) => c.outstanding_balance ?? 0,
       render: (c) => (
         <span className="text-[11px] text-[var(--tx)]">
-          {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "—"}
+          {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "-"}
         </span>
       ),
       align: "right",

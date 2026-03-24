@@ -102,34 +102,10 @@ export async function GET(
       lastLocationAt = loc.timestamp || null;
     }
 
-    // Fallback: check crew_locations table (gets freshest GPS data from watchPosition)
-    if (!crew && move.crew_id) {
-      const { data: cl } = await admin
-        .from("crew_locations")
-        .select("lat, lng, updated_at, crew_name, status")
-        .eq("crew_id", move.crew_id)
-        .maybeSingle();
-      if (cl && cl.lat != null && cl.lng != null) {
-        crew = { current_lat: cl.lat, current_lng: cl.lng, name: cl.crew_name || "Crew" };
-        lastLocationAt = cl.updated_at || null;
-      }
-    }
-
-    // Final fallback: crews table
-    if (!crew && move.crew_id) {
-      const { data: c } = await admin
-        .from("crews")
-        .select("current_lat, current_lng, name")
-        .eq("id", move.crew_id)
-        .single();
-      if (c && c.current_lat != null && c.current_lng != null) {
-        crew = {
-          current_lat: c.current_lat,
-          current_lng: c.current_lng,
-          name: c.name || "Crew",
-        };
-      }
-    }
+    // NOTE: We intentionally do NOT fall back to crew_locations or crews table here.
+    // Those contain the crew's general GPS and would leak their location to clients
+    // whose move has not started yet. Crew GPS is only surfaced when there is an
+    // active tracking_session for this specific move.
 
     // Resolve crew phone: truck.phone (stable) > registered_devices.phone > crews.phone > dispatch
     let crewPhone: string | null = null;
@@ -180,6 +156,25 @@ export async function GET(
       dropoff = await geocodeAddress(move.to_address);
     }
 
+    // Fetch any additional stops (sort_order >= 1) for sequenced routing
+    const { data: extraStops } = await admin
+      .from("job_stops")
+      .select("id, stop_type, address, lat, lng, sort_order")
+      .eq("job_type", "move")
+      .eq("job_id", moveId)
+      .order("stop_type")
+      .order("sort_order");
+
+    // Geocode extra stops that are missing coordinates
+    const resolvedExtraStops = await Promise.all(
+      (extraStops || []).map(async (s) => {
+        if (s.lat != null && s.lng != null) return { ...s, lat: Number(s.lat), lng: Number(s.lng) };
+        const geo = await geocodeAddress(s.address);
+        return geo ? { ...s, lat: geo.lat, lng: geo.lng } : null;
+      })
+    );
+    const validExtraStops = resolvedExtraStops.filter(Boolean) as { id: string; stop_type: string; address: string; lat: number; lng: number; sort_order: number }[];
+
     // Compute ETA — use Mapbox Directions for actual driving time, Haversine as fallback
     let etaMinutes: number | null = null;
     const etaStages = [
@@ -189,7 +184,7 @@ export async function GET(
     if (
       etaMinutes == null &&
       crew &&
-      (ts?.is_active || liveStage) &&
+      ts?.is_active &&
       etaStages.includes(liveStage || "")
     ) {
       const toPickup = liveStage === "en_route_to_pickup";
@@ -206,10 +201,15 @@ export async function GET(
       }
     }
 
-    // Show live map when: active tracking session, move status is in_progress, or move has a stage set (crew/admin started — so client always sees map once crew has begun)
+    // Show live tracking only when:
+    // 1. There is an active tracking_session for this specific move (crew started job from crew portal), OR
+    // 2. Move status is in_progress AND the scheduled date is today or in the past
+    //    (admin-started moves on the day of the move).
+    // We never use the stage field or general crew GPS as a trigger — those would
+    // expose crew location to clients whose move is days away.
     const moveInProgress = move?.status === "in_progress";
-    const hasStageSet = liveStage != null && String(liveStage).trim() !== "" && liveStage !== "pending";
-    const hasActiveTracking = !!ts?.is_active || !!moveInProgress || !!hasStageSet;
+    const moveDateArrived = !move?.scheduled_date || move.scheduled_date <= new Date().toISOString().slice(0, 10);
+    const hasActiveTracking = !!ts?.is_active || (!!moveInProgress && moveDateArrived);
 
     return NextResponse.json(
       {
@@ -217,6 +217,7 @@ export async function GET(
         center,
         pickup,
         dropoff,
+        extra_stops: validExtraStops,
         liveStage,
         lastLocationAt,
         etaMinutes: etaMinutes ?? null,

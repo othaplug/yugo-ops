@@ -157,7 +157,7 @@ export default function RecommendedCrewPanel({
                 <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--tx3)]">
                   <div className="flex items-center gap-1">
                     <Star size={11} className="text-amber-400" weight="fill" />
-                    <span>{rec.crew.avg_satisfaction?.toFixed(1) ?? "—"}</span>
+                    <span>{rec.crew.avg_satisfaction?.toFixed(1) ?? "-"}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <ShieldCheck size={11} className="text-emerald-400" />

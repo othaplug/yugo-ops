@@ -108,7 +108,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
           accent={GOLD}
         />
         <KPICard label="Damage Rate" value={`${data.damageRate}%`} sublabel="Industry avg: 3-5%" accent={data.damageRate <= 1 ? "#22C55E" : "#EF4444"} />
-        <KPICard label="Avg Delivery" value={data.avgDeliveryMinutes > 0 ? `${data.avgDeliveryMinutes}m` : "—"} sublabel="Average delivery time" />
+        <KPICard label="Avg Delivery" value={data.avgDeliveryMinutes > 0 ? `${data.avgDeliveryMinutes}m` : "-"} sublabel="Average delivery time" />
       </div>
 
       {/* Delivery Volume Trend */}
@@ -242,7 +242,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
                 <td className="py-2 pr-3">
                   <span className={d.onTime ? "text-emerald-500" : "text-red-500"}>{d.onTime ? "Yes" : "No"}</span>
                 </td>
-                <td className="py-2 pr-3 text-[var(--tx3)]">{d.rating ? `${d.rating} stars` : "—"}</td>
+                <td className="py-2 pr-3 text-[var(--tx3)]">{d.rating ? `${d.rating} stars` : "-"}</td>
                 <td className="py-2">
                   <span className={d.hasDamage ? "text-red-500" : "text-emerald-500"}>{d.hasDamage ? "Yes" : "No"}</span>
                 </td>

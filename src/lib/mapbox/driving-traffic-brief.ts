@@ -138,12 +138,12 @@ export async function getDrivingTrafficBrief(
 
   let trafficSummaryLine = `${distanceKm} km · ~${durationTrafficMin} min drive`;
   if (trafficDelayMin >= 5) {
-    trafficSummaryLine += ` — expect ~${trafficDelayMin} min extra due to traffic`;
+    trafficSummaryLine += `, expect ~${trafficDelayMin} min extra due to traffic`;
   } else if (trafficDelayMin >= 3) {
-    trafficSummaryLine += ` — minor delays (~${trafficDelayMin} min)`;
+    trafficSummaryLine += `, minor delays (~${trafficDelayMin} min)`;
   }
   if (congestionSummary === "heavy") {
-    trafficSummaryLine += " · Heavy traffic — allow buffer time";
+    trafficSummaryLine += " · Heavy traffic, allow buffer time";
   } else if (congestionSummary === "mixed") {
     trafficSummaryLine += " · Moderate traffic";
   } else if (congestionSummary === "light") {

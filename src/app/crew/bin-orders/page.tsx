@@ -139,7 +139,7 @@ export default function CrewBinOrdersPage() {
         activeTask.taskType === "dropoff"
           ? "Bins delivered! Client has been notified."
           : data.binsMissing > 0
-          ? `Pickup complete. ${data.binsMissing} missing — $${data.missingCharge?.toFixed(2)} charged.`
+          ? `Pickup complete. ${data.binsMissing} missing, $${data.missingCharge?.toFixed(2)} charged.`
           : "Bins collected! Client thanked.";
 
       setDone({ orderNumber: activeTask.order_number, message: msg });
@@ -249,7 +249,7 @@ export default function CrewBinOrdersPage() {
               </div>
 
               <div className="space-y-2 text-[13px]">
-                <DetailRow icon={<Package size={13} />} label={`${BUNDLE_SHORT[activeTask.bundle_type]} bundle — ${activeTask.bin_count} bins`} />
+                <DetailRow icon={<Package size={13} />} label={`${BUNDLE_SHORT[activeTask.bundle_type]} bundle, ${activeTask.bin_count} bins`} />
                 <DetailRow icon={<MapPin size={13} />} label={activeTask.delivery_address} />
                 <DetailRow icon={<Phone size={13} />} label={activeTask.client_name} sub={activeTask.client_phone} isPhone />
                 <DetailRow icon={<Truck size={13} />} label={`Access: ${ACCESS_LABELS[activeTask.delivery_access] || activeTask.delivery_access}`} />
@@ -293,7 +293,7 @@ export default function CrewBinOrdersPage() {
                     {binsReturned < activeTask.bin_count && (
                       <p className="text-[12px] text-red-400 mt-1.5 flex items-center gap-1">
                         <Warning size={12} />
-                        {activeTask.bin_count - binsReturned} bins missing — $
+                        {activeTask.bin_count - binsReturned} bins missing, $
                         {((activeTask.bin_count - binsReturned) * 20).toFixed(0)} charge will be applied
                       </p>
                     )}
@@ -370,7 +370,7 @@ function DetailRow({
       <div>
         {isPhone ? (
           <a href={`tel:${sub}`} className="text-[#C9A962] hover:underline">
-            {label} — {sub}
+            {label}, {sub}
           </a>
         ) : (
           <>

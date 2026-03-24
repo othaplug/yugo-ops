@@ -213,7 +213,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                 {linkedInvoices.map((inv) => (
                   <li key={inv.id} className="flex items-center justify-between gap-2 text-[11px]">
                     <span className="text-[var(--tx)]">
-                      {inv.invoice_number} — {inv.client_name} ({formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? ` +${formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST` : ""})
+                      {inv.invoice_number}, {inv.client_name} ({formatCurrency(inv.amount)}{Number(inv.amount) > 0 ? ` +${formatCurrency(Math.round(Number(inv.amount) * 0.13))} HST` : ""})
                     </span>
                     <button
                       type="button"
@@ -236,7 +236,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                   <option value="">Select invoice…</option>
                   {unlinkedInvoices.map((i) => (
                     <option key={i.id} value={i.id}>
-                      {i.invoice_number} — {i.client_name}
+                      {i.invoice_number}, {i.client_name}
                     </option>
                   ))}
                 </select>

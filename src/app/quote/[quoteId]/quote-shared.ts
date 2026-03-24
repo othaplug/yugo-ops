@@ -213,11 +213,11 @@ export const HERO_CONFIG: Record<string, { headline: string; subtitle: string }>
   },
   event: {
     headline: "Your Event Logistics Quote",
-    subtitle: "Round-trip event logistics — delivery, setup, and return handled by the same crew.",
+    subtitle: "Round-trip event logistics, delivery, setup, and return handled by the same crew.",
   },
   labour_only: {
     headline: "Your Service Quote",
-    subtitle: "Professional crew for your labour needs — no truck required.",
+    subtitle: "Professional crew for your labour needs, no truck required.",
   },
 };
 
@@ -238,7 +238,7 @@ export function fmtPrice(n: number) {
  */
 export function fmtPricePerLb(n: number) {
   const x = Number(n);
-  if (!Number.isFinite(x)) return "—";
+  if (!Number.isFinite(x)) return "-";
   return `$${x.toFixed(2)}`;
 }
 

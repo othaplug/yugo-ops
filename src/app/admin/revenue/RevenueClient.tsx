@@ -228,11 +228,11 @@ export default function RevenueClient({
 
   const byClient: Record<string, number> = {};
   paid.forEach((i) => {
-    const name = i.client_name ?? "—";
+    const name = i.client_name ?? "-";
     byClient[name] = (byClient[name] || 0) + Number(i.amount);
   });
   paidMovesList.forEach((m) => {
-    const name = m.client_name || "—";
+    const name = m.client_name || "-";
     byClient[name] = (byClient[name] || 0) + Number(m.estimate || 0);
   });
   const topClients = Object.entries(byClient)

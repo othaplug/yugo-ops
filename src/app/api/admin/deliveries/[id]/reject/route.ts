@@ -48,7 +48,7 @@ export async function POST(
     entity_type: "delivery",
     entity_id: id,
     event_type: "rejected",
-    description: `Delivery rejected: ${delivery?.customer_name || delivery?.delivery_number || id}${body.reason ? ` — ${body.reason}` : ""}`,
+    description: `Delivery rejected: ${delivery?.customer_name || delivery?.delivery_number || id}${body.reason ? `, ${body.reason}` : ""}`,
     icon: "x",
   });
 

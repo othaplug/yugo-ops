@@ -282,7 +282,7 @@ export default function DeviceSetupCodes() {
                       </button>
                     </div>
                     <div className="text-[11px] text-[var(--tx3)] mt-0.5">
-                      {c.truck_id ? truckMap.get(c.truck_id) || "Truck" : "—"} · {c.default_team_id ? teamMap.get(c.default_team_id) || "Team" : "—"}
+                      {c.truck_id ? truckMap.get(c.truck_id) || "Truck" : "-"} · {c.default_team_id ? teamMap.get(c.default_team_id) || "Team" : "-"}
                       {c.device_name && ` · ${c.device_name}`}
                     </div>
                   </div>
@@ -332,7 +332,7 @@ export default function DeviceSetupCodes() {
           </div>
           <div className="px-5 py-4">
             <p className="text-[11px] text-[var(--tx3)] mb-3">
-              Set the call number for each truck. Customers see this number on the live tracking page. One number per truck — no duplicate rows when tablets are re-registered.
+              Set the call number for each truck. Customers see this number on the live tracking page. One number per truck, no duplicate rows when tablets are re-registered.
             </p>
             <div className="space-y-3">
               {trucks.map((t) => (
@@ -452,7 +452,7 @@ export default function DeviceSetupCodes() {
                 onChange={(e) => setFormTruckId(e.target.value)}
                 className="flex-1 px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
               >
-                <option value="">— None —</option>
+                <option value="">- None -</option>
                 {trucks.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -473,7 +473,7 @@ export default function DeviceSetupCodes() {
               onChange={(e) => setFormTeamId(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
             >
-              <option value="">— None —</option>
+              <option value="">- None -</option>
               {teams.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}

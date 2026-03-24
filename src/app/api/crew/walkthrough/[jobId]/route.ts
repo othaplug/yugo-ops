@@ -197,7 +197,7 @@ ${removed.length > 0 ? `<p><strong>Missing items:</strong><br>${missingLines.rep
         await resend.emails.send({
           from: emailFrom,
           to,
-          subject: `Walkthrough change request — ${moveCode} — ${String(move.client_name || "Client")}`,
+          subject: `Walkthrough change request, ${moveCode}, ${String(move.client_name || "Client")}`,
           html,
         });
       } catch { /* non-fatal */ }

@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
       if (r < 1 || r > 5 || !p.satisfaction_comment) continue;
       recentComments.push({
         name: p.signer_name || "Customer",
-        date: p.completed_at ? new Date(p.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—",
+        date: p.completed_at ? new Date(p.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-",
         rating: r,
         comment: p.satisfaction_comment,
       });
@@ -200,7 +200,7 @@ export async function GET(req: NextRequest) {
     );
     const rowRating = ratingByDelivery.get(d.id) ?? null;
     return {
-      date: d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—",
+      date: d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-",
       type: d.booking_type === "day_rate" ? "Day Rate" : d.delivery_type || "delivery",
       zone: d.zone || 1,
       minutes: 0,

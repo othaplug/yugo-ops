@@ -495,7 +495,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
               <ul className="space-y-2">
                 {extraItems.map((e) => {
                   const pending = e.status === "pending";
-                  const desc = `${e.description ?? "—"}${(e.quantity ?? 1) > 1 ? ` x${e.quantity}` : ""}`;
+                  const desc = `${e.description ?? "-"}${(e.quantity ?? 1) > 1 ? ` x${e.quantity}` : ""}`;
                   const by = e.requested_by === "client" ? "Client" : "Crew";
                   return (
                     <li
@@ -593,7 +593,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                 {parsedBulkItems.length > 0 && (
                   <div className="rounded-md border border-[var(--brd)] bg-[var(--bg)]/50 overflow-hidden">
                     <div className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-2 py-1.5 border-b border-[var(--brd)]/50">
-                      List — check items to add
+                      List, check items to add
                     </div>
                     <ul className="divide-y divide-[var(--brd)]/30 max-h-[200px] overflow-y-auto">
                       {parsedBulkItems.map((item, i) => (

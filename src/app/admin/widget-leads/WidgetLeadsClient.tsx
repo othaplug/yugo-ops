@@ -181,7 +181,7 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
                     <td className="px-4 py-3 text-[var(--tx)] font-medium">
                       {l.widget_estimate_low && l.widget_estimate_high
                         ? `${formatCurrency(l.widget_estimate_low)}–${formatCurrency(l.widget_estimate_high)}`
-                        : "—"}
+                        : "-"}
                     </td>
                     <td className="px-4 py-3">
                       <select

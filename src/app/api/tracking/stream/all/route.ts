@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
           const activeOnly = (sessions || []).filter((s) => !completedStatuses.includes((s.status || "").toLowerCase()));
           const sessionsWithDetails = activeOnly.map((s) => {
             const job = s.job_type === "move" ? moveMap.get(s.job_id) : deliveryMap.get(s.job_id);
-            const jobName = job ? (s.job_type === "move" ? (job as any).client_name : `${(job as any).customer_name} (${(job as any).client_name})`) : "—";
+            const jobName = job ? (s.job_type === "move" ? (job as any).client_name : `${(job as any).customer_name} (${(job as any).client_name})`) : "-";
             const jobId = job ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number) : s.job_id;
             const detailHref = s.job_type === "move" ? `/admin/moves/${jobId}` : `/admin/deliveries/${jobId}`;
             const teamName = teamNameMap.get(s.team_id) || membersByTeam.get(s.team_id)?.[0] || `Team ${(s.team_id || "").slice(0, 8)}`;

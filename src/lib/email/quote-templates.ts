@@ -84,7 +84,6 @@ function quoteEmailLayout(innerHtml: string): string {
     ${INSTRUMENT_SERIF_FACE}
     @media only screen and (max-width:600px) {
       .eq-inner { padding: 24px 20px 28px !important; }
-      .eq-hdr   { padding: 28px 20px 0 !important; }
     }
   </style>
 </head>
@@ -94,13 +93,11 @@ function quoteEmailLayout(innerHtml: string): string {
     <td align="center" style="padding:32px 16px 0;">
       <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:560px;width:100%;background-color:${BG};border:1px solid ${CARD_BORDER};">
         <tr>
-          <td class="eq-hdr" align="center" style="padding:36px 36px 0;background-color:${BG};">
-            <img src="${logoUrl}" alt="Yugo+" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0;margin:0 auto;" />
-            <div style="width:40px;height:1px;background-color:${GOLD};margin:18px auto 0;line-height:0;font-size:0;">&nbsp;</div>
-          </td>
-        </tr>
-        <tr>
           <td class="eq-inner" style="padding:32px 36px 40px;background-color:${BG};color:${TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+            <div class="eq-hdr" align="center" style="margin:0 0 24px;">
+              <img src="${logoUrl}" alt="Yugo+" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0;margin:0 auto;" />
+              <div style="width:40px;height:1px;background-color:${GOLD};margin:14px auto 0;line-height:0;font-size:0;">&nbsp;</div>
+            </div>
             ${innerHtml}
           </td>
         </tr>
@@ -211,7 +208,7 @@ function expiryNote(expiresAt: string | null | undefined): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 28px;">
       <tr>
         <td style="background-color:#DC262618;border-left:3px solid #DC2626;padding:12px 16px;">
-          <span style="font-size:12px;color:#FCA5A5;font-weight:600;line-height:1.5;">This quote is valid until ${formatted}. Book now to secure your rate.</span>
+          <span style="font-size:12px;color:#FCA5A5;font-weight:600;line-height:1.5;">Your rate is guaranteed until ${formatted}. Book before then to secure your date and price.</span>
         </td>
       </tr>
     </table>
@@ -229,16 +226,16 @@ function ctaButton(url: string, label: string, sub?: string): string {
         </td>
       </tr>
     </table>
-    <p style="font-size:10px;color:${TX3};text-align:center;margin:0 0 24px;letter-spacing:0.3px;">${sub ?? "Takes less than 2 minutes"}</p>
+    <p style="font-size:10px;color:${TX3};text-align:center;margin:0 0 24px;letter-spacing:0.3px;">${sub ?? "Booking takes less than two minutes"}</p>
   `;
 }
 
 function whyYugoBlock(): string {
   const items = [
-    ["Flat-rate guarantee", "no hidden fees, no surprises"],
-    ["Real-time tracking", "follow your crew live from your phone"],
-    ["Dedicated coordinator", "a single expert guides your move from confirmation through completion"],
-    ["Fully Insured", "WSIB coverage, $2M General Liability & Comprehensive cargo insurance"],
+    ["Flat-rate guarantee", "transparent pricing with nothing added on the day"],
+    ["Real-time tracking", "follow your crew from your phone, every step of the way"],
+    ["Dedicated coordinator", "a single point of contact from booking through the final placement"],
+    ["Fully insured", "WSIB coverage, $2M General Liability, and comprehensive cargo insurance"],
   ];
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 0;border-top:1px solid ${CARD_BORDER};">
@@ -249,7 +246,7 @@ function whyYugoBlock(): string {
             ${items.map(([strong, rest]) => `
               <tr>
                 <td style="padding:6px 0;font-size:10px;color:${GOLD};vertical-align:top;width:18px;line-height:1.6;">&#10003;</td>
-                <td style="padding:6px 0;font-size:12px;color:${TX2};line-height:1.6;"><strong style="color:${TX};font-weight:600;">${strong}</strong> &mdash; ${rest}</td>
+                <td style="padding:6px 0;font-size:12px;color:${TX2};line-height:1.6;"><strong style="color:${TX};font-weight:600;">${strong}</strong> - ${rest}</td>
               </tr>
             `).join("")}
           </table>
@@ -262,13 +259,13 @@ function whyYugoBlock(): string {
 function questionsFooter(coordinatorName?: string | null, coordinatorPhone?: string | null): string {
   const support = getClientSupportEmail();
   const contact = coordinatorName
-    ? `Reach out to ${coordinatorName}${coordinatorPhone ? ` at ${coordinatorPhone}` : ""} or email ${support}.`
-    : `Email ${support} &mdash; we typically respond within a few hours.`;
+    ? `Your coordinator ${coordinatorName} is available${coordinatorPhone ? ` at ${coordinatorPhone}` : ""} or by email at ${support}.`
+    : `Email us at ${support} and we will get back to you within a few hours.`;
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:24px;border-top:1px solid ${CARD_BORDER};">
       <tr>
         <td style="padding-top:18px;">
-          <p style="font-size:12px;color:${TX2};line-height:1.7;margin:0;"><strong style="color:${TX};font-weight:500;">Have questions?</strong> ${contact}</p>
+          <p style="font-size:12px;color:${TX2};line-height:1.7;margin:0;"><strong style="color:${TX};font-weight:500;">We are here to help.</strong> ${contact}</p>
         </td>
       </tr>
     </table>
@@ -477,7 +474,7 @@ function residentialTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Your Moving Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("We have prepared your personalized moving quote with three flat-rate packages. Choose the level of service that fits your needs &mdash; every option includes professional movers, a dedicated truck, and full protection.")}
+    ${bodyText("We have prepared three flat-rate service options tailored to your move. Every package includes professional movers, a dedicated truck, and full protection. Choose the level of care that suits you best.")}
     ${flatRateBadge()}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
@@ -506,7 +503,7 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Long Distance Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Your long distance moving quote is ready. We have calculated a flat rate based on your route and inventory &mdash; no surprises on arrival day.")}
+    ${bodyText("Your long distance quote is ready. We have prepared a single flat rate based on your route and inventory. Everything is included, with nothing left to chance on moving day.")}
     ${flatRateBadge()}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
@@ -531,7 +528,7 @@ function officeTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Relocation Proposal")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Thank you for considering Yugo for your office relocation. We have prepared a tailored proposal with flat-rate pricing, project management, and IT equipment handling included.")}
+    ${bodyText("Thank you for considering Yugo for your office relocation. We have prepared a tailored proposal that covers every detail, from project coordination to careful equipment handling.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     ${price ? priceCard("Project Estimate", price, "+ HST &middot; Flat-rate guarantee") : ""}
@@ -556,7 +553,7 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Your Delivery Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Your delivery quote is ready. We will handle your item with care from pickup to placement &mdash; fully insured, flat-rate, no surprises.")}
+    ${bodyText("Your delivery quote is ready. We will handle your item with the same care and attention we bring to every move, from pickup through final placement.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     ${price ? priceCard("Flat Price", price, "+ HST &middot; All-inclusive") : ""}
@@ -580,7 +577,7 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("White Glove Service Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Your white glove service quote is ready. Premium handling with custom crating, climate control, and enhanced insurance &mdash; your valuables deserve the best.")}
+    ${bodyText("Your white glove quote is ready. From custom crating to climate-controlled handling, every detail has been considered. Your most valued possessions deserve nothing less.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     ${price ? priceCard("Premium Service Rate", price, "+ HST &middot; Enhanced insurance included") : ""}
@@ -604,7 +601,7 @@ function specialtyTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Specialty Service Proposal")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Thank you for reaching out about your specialty project. We have put together a custom proposal with all specialized equipment and handling included.")}
+    ${bodyText("Thank you for entrusting us with your specialty project. We have prepared a custom proposal with all the specialized equipment and care your project requires.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     ${price ? priceCard("Custom Quote", price, "+ HST &middot; Includes all specialized equipment") : ""}
@@ -617,8 +614,8 @@ function specialtyTemplate(d: QuoteTemplateData): string {
 /* Event */
 function eventTemplate(d: QuoteTemplateData): string {
   const intro = d.eventName
-    ? `Here's your event logistics quote for <strong style="color:${TX}">${d.eventName}</strong>. We handle delivery, setup, and return &mdash; same crew every day so they know the layout.`
-    : "Here's your event logistics quote. We handle delivery, setup, and return &mdash; same crew every day so they know the layout.";
+    ? `Your event logistics quote for <strong style="color:${TX}">${d.eventName}</strong> is ready. We handle delivery, setup, and return, with the same crew each day so every detail is seamless.`
+    : "Your event logistics quote is ready. We handle delivery, setup, and return, with the same crew each day so every detail is taken care of.";
 
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
@@ -705,7 +702,7 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Your Service Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Your labour service quote is ready. Professional crew with all tools included \u2014 no truck needed.")}
+    ${bodyText("Your labour service quote is ready. A professional crew arrives fully equipped and ready to work. No truck required.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     <div style="background:${CARD};border:1px solid ${GOLD}33;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
@@ -735,14 +732,14 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Your Delivery Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Your commercial delivery quote is ready. Professional crew with full equipment \u2014 flat-rate, no hidden fees.")}
+    ${bodyText("Your commercial delivery quote is ready. A professional crew with everything required, at a single transparent flat rate.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     ${priceCard("Delivery All Inclusive", total, `+${formatCurrency(tax)} HST \u00b7 Full payment at booking`)}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Quote & Confirm Payment")}
     <p style="font-size:11px;color:${TX3};text-align:center;margin:0 0 20px;line-height:1.6">
-      Need regular deliveries? Ask about our <strong style="color:${TX}">Partner Program</strong> for volume pricing and a dedicated portal.
+      Planning regular deliveries? Our <strong style="color:${TX}">Partner Program</strong> offers priority scheduling, volume pricing, and a dedicated portal.
     </p>
     ${questionsFooter(d.coordinatorName, d.coordinatorPhone)}
   `);

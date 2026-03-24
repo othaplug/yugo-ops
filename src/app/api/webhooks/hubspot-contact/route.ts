@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     console.error("[hubspot-contact] HUBSPOT_CLIENT_SECRET not configured in production");
     return NextResponse.json({ error: "Webhook signing not configured" }, { status: 503 });
   } else {
-    console.warn("[hubspot-contact] HUBSPOT_CLIENT_SECRET not set — signature not verified");
+    console.warn("[hubspot-contact] HUBSPOT_CLIENT_SECRET not set, signature not verified");
   }
 
   // ── Extract contact properties ──
@@ -81,11 +81,11 @@ export async function POST(req: NextRequest) {
 
     // ── Validation: skip if missing email or phone ──
     if (!email) {
-      await logWebhook(supabase, "hubspot-contact", "skipped_no_email", event, `No email — objectId: ${objectId}`);
+      await logWebhook(supabase, "hubspot-contact", "skipped_no_email", event, `No email, objectId: ${objectId}`);
       continue;
     }
     if (!phone) {
-      await logWebhook(supabase, "hubspot-contact", "skipped_no_phone", event, `No phone — email: ${email}`);
+      await logWebhook(supabase, "hubspot-contact", "skipped_no_phone", event, `No phone, email: ${email}`);
       continue;
     }
 

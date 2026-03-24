@@ -92,10 +92,10 @@ export default function AgentDetailModal({
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[12px] font-semibold text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">
-                          {r.client_name || "—"}
+                          {r.client_name || "-"}
                         </span>
                         <span className="text-[10px] font-semibold text-[var(--gold)]">
-                          {r.commission ? formatCurrency(r.commission) : "—"}
+                          {r.commission ? formatCurrency(r.commission) : "-"}
                         </span>
                       </div>
                       <div className="text-[10px] text-[var(--tx3)] mt-0.5">
@@ -104,7 +104,7 @@ export default function AgentDetailModal({
                     </button>
                     {clientDetailId === r.id && (
                       <div className="mt-2 pt-2 border-t border-[var(--brd)] text-[11px] text-[var(--tx2)] space-y-1">
-                        <div><span className="text-[var(--tx3)]">Address:</span> {r.property || "—"}</div>
+                        <div><span className="text-[var(--tx3)]">Address:</span> {r.property || "-"}</div>
                         <div className="flex items-center gap-2">
                           <Badge status={r.status} />
                         </div>

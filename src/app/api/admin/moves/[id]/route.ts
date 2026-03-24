@@ -108,7 +108,7 @@ export async function PATCH(
       const REASON_LABELS: Record<string, string> = {
         wire_transfer: "Wire transfer received",
         cheque_deposited: "Cheque deposited",
-        other: `Other — ${reasonNote}`,
+        other: `Other, ${reasonNote}`,
       };
       const reasonLabel = REASON_LABELS[reason] ?? reason;
 
@@ -133,7 +133,7 @@ export async function PATCH(
         entity_type: "move",
         entity_id: id,
         event_type: "payment_received",
-        description: `Balance marked as paid (override) — ${reasonLabel} — by ${markedBy?.trim() || "admin"}`,
+        description: `Balance marked as paid (override), ${reasonLabel}, by ${markedBy?.trim() || "admin"}`,
         icon: "dollar",
       });
 
@@ -186,7 +186,7 @@ export async function PATCH(
           amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
           customerId: move.square_customer_id || undefined,
           referenceId: move.move_code || id,
-          note: `Balance payment — manual charge by admin`,
+          note: `Balance payment, manual charge by admin`,
           idempotencyKey: `bal-manual-${id}-${Date.now()}`,
           locationId,
         });
@@ -218,7 +218,7 @@ export async function PATCH(
           entity_type: "move",
           entity_id: id,
           event_type: "payment_received",
-          description: `Card charged manually — ${ccBalance.toFixed(2)} CAD by ${markedBy?.trim() || "admin"}`,
+          description: `Card charged manually, ${ccBalance.toFixed(2)} CAD by ${markedBy?.trim() || "admin"}`,
           icon: "dollar",
         });
 

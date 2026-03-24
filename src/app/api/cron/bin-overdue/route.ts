@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
         if (order.client_email) {
           await sendEmail({
             to: order.client_email,
-            subject: `Action required: Yugo bins overdue — ${order.order_number}`,
+            subject: `Action required: Yugo bins overdue, ${order.order_number}`,
             html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#0a0a0a;color:#e5e0d8">
               <h2 style="color:#ef4444">Your bins are overdue</h2>
               <p>Hi ${firstName}, your bin pickup for order <strong>${order.order_number}</strong> was scheduled for ${scheduledDateStr}.</p>
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
         if (adminEmail) {
           await sendEmail({
             to: adminEmail,
-            subject: `Overdue bin order: ${order.order_number} — ${daysOverdue} days late`,
+            subject: `Overdue bin order: ${order.order_number}, ${daysOverdue} days late`,
             html: `<p>Bin order <strong>${order.order_number}</strong> for ${order.client_name} is ${daysOverdue} days overdue.<br>Address: ${order.delivery_address}<br>Phone: ${order.client_phone}</p>`,
           }).catch(() => {});
         }
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
                 amountMoney: { amount: BigInt(feeCents), currency: "CAD" },
                 customerId: order.square_customer_id || undefined,
                 referenceId: order.order_number,
-                note: `Late bin return fee — ${daysOverdue} days overdue`,
+                note: `Late bin return fee, ${daysOverdue} days overdue`,
                 idempotencyKey: `bin-late-${order.id}-${todayStr}`,
                 locationId,
               });
@@ -179,7 +179,7 @@ export async function GET(req: NextRequest) {
               amountMoney: { amount: BigInt(replacementCents), currency: "CAD" },
               customerId: order.square_customer_id || undefined,
               referenceId: order.order_number,
-              note: `Bin replacement — 30+ days overdue, ${order.bin_count} bins × $${REPLACEMENT_FEE_PER_BIN}`,
+              note: `Bin replacement, 30+ days overdue, ${order.bin_count} bins × $${REPLACEMENT_FEE_PER_BIN}`,
               idempotencyKey: `bin-replace-${order.id}`,
               locationId,
             });

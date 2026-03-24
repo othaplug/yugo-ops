@@ -119,7 +119,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           >
             <p className="font-semibold mb-1" style={{ color: WINE }}>Storage between visits</p>
             <p>
-              Estimated {storageWeeks} week{storageWeeks !== 1 ? "s" : ""} at {fmtPrice(storageWeeklyRate)}/week —{" "}
+              Estimated {storageWeeks} week{storageWeeks !== 1 ? "s" : ""} at {fmtPrice(storageWeeklyRate)}/week -{" "}
               <span className="font-semibold">{fmtPrice(labourStorageFee)}</span> storage estimate (based on volume; coordinator may adjust).
             </p>
           </div>
@@ -156,15 +156,15 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           <div className="divide-y" style={{ borderColor: "#E2DDD5" }}>
             <div className="px-5 py-4 flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-bold" style={{ color: FOREST }}>Visit 1 — {fmtShort(quote.move_date)}</p>
+                <p className="text-[11px] font-bold" style={{ color: FOREST }}>Visit 1, {fmtShort(quote.move_date)}</p>
                 <p className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>{crewSize} movers × {hours}h</p>
               </div>
               <span className="text-[15px] font-bold tabular-nums" style={{ color: FOREST }}>{fmtPrice(visit1Price)}</span>
             </div>
             <div className="px-5 py-4 flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-bold" style={{ color: FOREST }}>Visit 2 — {fmtShort(visit2Date)}</p>
-                <p className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>Return visit — 15% return discount</p>
+                <p className="text-[11px] font-bold" style={{ color: FOREST }}>Visit 2, {fmtShort(visit2Date)}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: `${FOREST}60` }}>Return visit, 15% return discount</p>
               </div>
               <span className="text-[15px] font-bold tabular-nums" style={{ color: FOREST }}>{fmtPrice(visit2Price)}</span>
             </div>
@@ -223,7 +223,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
               {storageNeeded && labourStorageFee > 0 && (
                 <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
                   <td className="py-2" style={{ color: `${FOREST}80` }}>
-                    Storage estimate ({storageWeeks ?? "—"} wk × {fmtPrice(storageWeeklyRate)})
+                    Storage estimate ({storageWeeks ?? "-"} wk × {fmtPrice(storageWeeklyRate)})
                   </td>
                   <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(labourStorageFee)}</td>
                 </tr>

@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   await db.from("project_timeline").insert({
     project_id: projectId,
     event_type: "item_added",
-    event_description: `${body.item_name.trim()} added${body.vendor_name ? ` (${body.vendor_name})` : ""}${body.room_destination ? ` — ${body.room_destination}` : ""}`,
+    event_description: `${body.item_name.trim()} added${body.vendor_name ? ` (${body.vendor_name})` : ""}${body.room_destination ? `, ${body.room_destination}` : ""}`,
     phase_id: body.phase_id || null,
   });
 
@@ -172,7 +172,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await db.from("project_timeline").insert({
         project_id: projectId,
         event_type: eventType,
-        event_description: `${existing.item_name} — ${body.item_status.replace(/_/g, " ")}${body.status_notes ? `: ${body.status_notes}` : ""}`,
+        event_description: `${existing.item_name}, ${body.item_status.replace(/_/g, " ")}${body.status_notes ? `: ${body.status_notes}` : ""}`,
         phase_id: existing.phase_id,
       });
     }

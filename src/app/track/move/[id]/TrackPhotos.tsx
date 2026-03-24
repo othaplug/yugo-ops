@@ -129,7 +129,7 @@ export default function TrackPhotos({
         </div>
       </div>
 
-      {/* Upload area — before and during move only */}
+      {/* Upload area, before and during move only */}
       {canUpload && (
         <div className="px-5 pt-4">
           <input

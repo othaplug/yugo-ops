@@ -50,7 +50,7 @@ export default function TipsClient({
       label: "Client Name",
       accessor: (r) => r.client_name,
       render: (r) => (
-        <span className="font-bold text-[var(--tx)]">{r.client_name || "—"}</span>
+        <span className="font-bold text-[var(--tx)]">{r.client_name || "-"}</span>
       ),
       searchable: true,
     },
@@ -58,7 +58,7 @@ export default function TipsClient({
       id: "crew_name",
       label: "Crew",
       accessor: (r) => r.crew_name,
-      render: (r) => r.crew_name || "—",
+      render: (r) => r.crew_name || "-",
       searchable: true,
     },
     {
@@ -89,7 +89,7 @@ export default function TipsClient({
       render: (r) =>
         r.processing_fee != null && Number(r.processing_fee) > 0
           ? formatCurrency(Number(r.processing_fee))
-          : "—",
+          : "-",
       sortable: true,
       align: "right",
       exportAccessor: (r) =>

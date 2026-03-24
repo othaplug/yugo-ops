@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     }
     job = {
       displayId: formatJobId(m.move_code || m.id, "move"),
-      clientName: m.client_name || "—",
+      clientName: m.client_name || "-",
       fromAddress: m.from_address ?? undefined,
       toAddress: m.to_address ?? undefined,
       type: "move",
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
     const dRow = d as { customer_email?: string; customer_phone?: string; scheduled_date?: string; time_slot?: string };
     job = {
       displayId: formatJobId(d.delivery_number || d.id, "delivery"),
-      clientName: [d.customer_name, d.client_name].filter(Boolean).join(" — ") || "—",
+      clientName: [d.customer_name, d.client_name].filter(Boolean).join(", ") || "-",
       fromAddress: d.pickup_address ?? undefined,
       toAddress: d.delivery_address ?? undefined,
       type: "delivery",

@@ -343,7 +343,7 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
           </section>
           )}
 
-          {/* Internal notes — shown when section is notes only, or in full modal under optional */}
+          {/* Internal notes, shown when section is notes only, or in full modal under optional */}
           {showNotes && (
           <section className={showAddresses ? "pt-4 border-t border-[var(--brd)]/60" : ""}>
             {section === "notes" ? (

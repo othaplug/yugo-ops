@@ -216,7 +216,7 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
           </div>
         )}
 
-        {/* Seasonal pricing preview — shown once estimate is visible */}
+        {/* Seasonal pricing preview, shown once estimate is visible */}
         {estimate && (
           <SeasonalPricingPreview
             basePrice={Math.round((estimate.low + estimate.high) / 2)}

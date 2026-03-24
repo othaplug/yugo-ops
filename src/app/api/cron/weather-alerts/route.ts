@@ -123,7 +123,7 @@ function addDaysYmd(ymd: string, days: number): string {
 
 function buildClientSMS(firstName: string, alertText: string, dateLabel: string): string {
   if (alertText.includes("Snow")) {
-    return `Hi ${firstName}, snow is forecast for your move on ${dateLabel}. Don't worry — we've prepared additional protection for your belongings including tarps and waterproof covers. We've got you covered!`;
+    return `Hi ${firstName}, snow is forecast for your move on ${dateLabel}. Don't worry, we've prepared additional protection for your belongings including tarps and waterproof covers. We've got you covered!`;
   }
-  return `Hi ${firstName}, rain is forecast for your move on ${dateLabel}. Don't worry — we've prepared additional protection for your belongings including tarps and waterproof covers. See you then!`;
+  return `Hi ${firstName}, rain is forecast for your move on ${dateLabel}. Don't worry, we've prepared additional protection for your belongings including tarps and waterproof covers. See you then!`;
 }

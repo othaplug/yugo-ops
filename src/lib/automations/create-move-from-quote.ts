@@ -333,7 +333,7 @@ export async function createMoveFromQuote(
 
     const mkInternal = (phase: "delivery" | "return") =>
       [
-        `Event bundle${eventTitleForNotes ? ` — ${eventTitleForNotes}` : ""}: ${opts.legLabel} (${phase})`,
+        `Event bundle${eventTitleForNotes ? `, ${eventTitleForNotes}` : ""}: ${opts.legLabel} (${phase})`,
         `Quote ${input.quoteId}`,
       ].join("\n");
 

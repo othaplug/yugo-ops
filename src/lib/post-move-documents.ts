@@ -62,7 +62,7 @@ export async function generatePostMoveDocuments(moveId: string): Promise<void> {
     ? new Date(move.scheduled_date).toLocaleDateString("en-US", {
         year: "numeric", month: "long", day: "numeric",
       })
-    : "—";
+    : "-";
 
   const checkpoints = Array.isArray(trackingSession?.checkpoints) ? trackingSession.checkpoints : [];
 
@@ -131,13 +131,13 @@ export async function generatePostMoveDocuments(moveId: string): Promise<void> {
     })),
     changeRequests: changes.map((c) => ({
       type: c.change_type || c.type || "Change",
-      details: c.details || c.description || "—",
+      details: c.details || c.description || "-",
       status: c.status || "pending",
       feeCents: Number(c.fee_cents) || 0,
     })),
     incidents: (incidents ?? []).map((i) => ({
       type: i.type || i.incident_type || "Incident",
-      description: i.description || i.notes || "—",
+      description: i.description || i.notes || "-",
       severity: i.severity || undefined,
     })),
     signOff: signOff

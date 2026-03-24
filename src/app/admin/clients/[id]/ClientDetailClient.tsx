@@ -134,11 +134,11 @@ export default function ClientDetailClient({
               </span>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--tx2)]">
-              <span className="capitalize font-medium text-[var(--gold)]">{isClient ? "Move" : (client.type ?? "—")}</span>
+              <span className="capitalize font-medium text-[var(--gold)]">{isClient ? "Move" : (client.type ?? "-")}</span>
               <button type="button" onClick={() => setContactModalOpen(true)} className="text-[var(--gold)] hover:underline font-medium">
-                {client.contact_name || "—"}
+                {client.contact_name || "-"}
               </button>
-              <a href={`mailto:${client.email}`} className="text-[var(--tx2)] hover:text-[var(--gold)] truncate">{client.email || "—"}</a>
+              <a href={`mailto:${client.email}`} className="text-[var(--tx2)] hover:text-[var(--gold)] truncate">{client.email || "-"}</a>
               {client.address && <span className="text-[var(--tx3)] truncate">{client.address}</span>}
             </div>
           </div>
@@ -208,7 +208,7 @@ export default function ClientDetailClient({
             </button>
             <button
               onClick={() => setDeleteConfirmOpen(true)}
-              className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--red)] text-[var(--red)] hover:bg-[var(--rdim)] transition-all"
+              className="px-3 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
             >
               Delete
             </button>
@@ -217,10 +217,10 @@ export default function ClientDetailClient({
         </div>
       </div>
 
-      {/* Portal Access — partners only */}
+      {/* Portal Access, partners only */}
       {!isClient && isAdmin && <PortalAccessSection orgId={client.id} orgName={client.name || ""} />}
 
-      {/* Tab bar — partners only */}
+      {/* Tab bar, partners only */}
       {!isClient && isAdmin && (
         <div className="flex gap-0.5 border-b border-[var(--brd)] mb-0 -mx-0">
           {(["overview", "rate-card", "analytics", "portal"] as const).map((tab) => (
@@ -277,7 +277,7 @@ export default function ClientDetailClient({
         </div>
       )}
 
-      {/* Overview content — hidden when rate card tab active */}
+      {/* Overview content, hidden when rate card tab active */}
       {(isClient || !isAdmin || activeTab === "overview") && (
         <>
 
@@ -298,7 +298,7 @@ export default function ClientDetailClient({
           )}
           <div>
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Type" : "Partner type"}</div>
-            <div className="text-[13px] font-semibold text-[var(--tx)] capitalize">{isClient ? "Move" : (client.type ?? "—")}</div>
+            <div className="text-[13px] font-semibold text-[var(--tx)] capitalize">{isClient ? "Move" : (client.type ?? "-")}</div>
             {client.address && (
               <>
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mt-3 mb-1">Address</div>
@@ -319,7 +319,7 @@ export default function ClientDetailClient({
           </div>
           <div>
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">AVG DEL</div>
-            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "—"}</div>
+            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "-"}</div>
           </div>
           <div>
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total paid</div>
@@ -364,7 +364,7 @@ export default function ClientDetailClient({
               <ScheduleDeliveryButton
                 key={d.id}
                 onClick={() => setSummaryDelivery(d)}
-                timeSlot={d.time_slot || "—"}
+                timeSlot={d.time_slot || "-"}
                 pill={`${d.items?.length || 0} items`}
                 status={toTitleCase(d.status || "")}
                 title={d.customer_name}
@@ -391,7 +391,7 @@ export default function ClientDetailClient({
           <div className="divide-y divide-[var(--brd)]/30">
             {changeRequests.slice(0, 5).map((cr) => {
               const moveData = Array.isArray(cr.moves) ? cr.moves[0] : cr.moves;
-              const moveCode = moveData?.move_code ? formatJobId(moveData.move_code, "move") : "—";
+              const moveCode = moveData?.move_code ? formatJobId(moveData.move_code, "move") : "-";
               return (
                 <Link
                   key={cr.id}

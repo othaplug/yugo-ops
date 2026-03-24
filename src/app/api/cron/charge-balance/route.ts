@@ -63,14 +63,14 @@ export async function GET(req: NextRequest) {
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
         customerId: move.square_customer_id || undefined,
         referenceId: move.move_code || move.id,
-        note: "Balance + processing fee — auto-charge",
+        note: "Balance + processing fee, auto-charge",
         idempotencyKey: `bal-auto-${move.id}-${Date.now()}`,
         locationId,
       });
 
       const paymentId = paymentRes.payment?.id;
       if (!paymentId) {
-        throw new Error("Payment was not completed — no payment ID returned");
+        throw new Error("Payment was not completed, no payment ID returned");
       }
 
       const receiptUrl = (paymentRes.payment as { receipt_url?: string } | null)?.receipt_url ?? null;
@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
         entity_type: "move",
         entity_id: move.id,
         event_type: "payment_received",
-        description: `Auto-charged card — $${balanceAmount.toFixed(2)} CAD (48 hrs before move)`,
+        description: `Auto-charged card, $${balanceAmount.toFixed(2)} CAD (48 hrs before move)`,
         icon: "dollar",
       });
 
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
 
         await sendEmail({
           to: move.client_email,
-          subject: `Payment receipt ${formatCurrency(balanceAmount)} charged for ${move.move_code || "your move"}`,
+          subject: `Payment confirmed - ${formatCurrency(balanceAmount)} - ${move.move_code || "your move"}`,
           template: "balance-auto-charge-receipt",
           data: {
             clientName: move.client_name || "",
@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
       if (move.client_email) {
         await sendEmail({
           to: move.client_email,
-          subject: `Payment failed please call us about ${move.move_code || "your move"}`,
+          subject: `Action required - payment issue for ${move.move_code || "your move"}`,
           template: "balance-charge-failed-client",
           data: {
             clientName: move.client_name || "",

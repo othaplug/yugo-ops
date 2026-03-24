@@ -319,7 +319,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
             Your delivery operations,<br />all in one place
           </h2>
           <p style={{ fontSize: 13, color: "#666", lineHeight: 1.6, display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 6 }}>
-            Track deliveries, schedule pickups, share live updates with your clients, and manage invoices — powered by{" "}
+            Track deliveries, schedule pickups, share live updates with your clients, and manage invoices, powered by{" "}
             <YugoLogo size={16} variant="gold" />
           </p>
         </div>

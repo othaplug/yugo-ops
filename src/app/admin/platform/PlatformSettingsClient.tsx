@@ -194,7 +194,7 @@ const ACTION_OPTIONS: { value: string; label: string }[] = [
 ];
 
 function humanizeAction(action: string): string {
-  if (!action) return "—";
+  if (!action) return "-";
   const match = ACTION_OPTIONS.find((o) => o.value === action);
   if (match) return match.label;
   return action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -310,12 +310,12 @@ function AuditLogSection() {
                       <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 whitespace-nowrap">{formatAuditTime(log.created_at)}</td>
                       <td className="text-[11px] text-[var(--tx)] py-2.5 pr-4 max-w-[140px] truncate" title={log.user_email}>{log.user_email}</td>
                       <td className="py-2.5 pr-4">
-                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${roleCls}`}>{roleKey || "—"}</span>
+                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${roleCls}`}>{roleKey || "-"}</span>
                       </td>
                       <td className="py-2.5 pr-4">
                         <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${actionCls}`}>{humanizeAction(log.action)}</span>
                       </td>
-                      <td className="text-[11px] text-[var(--tx3)] py-2.5 pr-4 max-w-[120px] truncate" title={log.resource_id}>{log.resource_id || "—"}</td>
+                      <td className="text-[11px] text-[var(--tx3)] py-2.5 pr-4 max-w-[120px] truncate" title={log.resource_id}>{log.resource_id || "-"}</td>
                       <td className="text-[11px] text-[var(--tx3)] py-2.5">
                         {hasDetails ? (
                           <button
@@ -326,7 +326,7 @@ function AuditLogSection() {
                             {isExpanded ? "Hide" : "View"}
                           </button>
                         ) : (
-                          "—"
+                          "-"
                         )}
                         {isExpanded && hasDetails && (
                           <pre className="mt-2 p-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[10px] text-[var(--tx3)] whitespace-pre-wrap break-all max-w-[320px] overflow-auto max-h-[160px]">
@@ -1385,7 +1385,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       )}
       {activeTab === "rate-templates" && <div key="rate-templates" className="tab-content"><RateTemplatesPanel /></div>}
 
-      {/* Teams tab — reorganized: Staff Roster first, Teams second, Portal Access third */}
+      {/* Teams tab, reorganized: Staff Roster first, Teams second, Portal Access third */}
       {activeTab === "crews" && (
       <div key="crews" id="crews" className="space-y-0 tab-content">
         {/* ═══ SECTION 1: STAFF ROSTER ═══ */}
@@ -1719,7 +1719,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                       </ul>
                     )}
                   </div>
-                  {/* Tablet phone — linked to the crew's registered device */}
+                  {/* Tablet phone, linked to the crew's registered device */}
                   <div>
                     <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Tablet Phone (customer-facing)</div>
                     <p className="text-[10px] text-[var(--tx3)] mb-2">
@@ -1734,7 +1734,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                       </div>
                     ) : (
                       <div className="px-3 py-2 bg-[var(--bg)] border border-dashed border-[var(--brd)] rounded-lg text-[11px] text-[var(--tx3)]">
-                        No tablet phone set &mdash; customers will see &quot;Call Dispatch&quot; instead.
+                        No tablet phone set - customers will see &quot;Call Dispatch&quot; instead.
                       </div>
                     )}
                   </div>
@@ -1760,7 +1760,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                         }
                       }}
                       disabled={!!deletingTeamId}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#c53030] text-[#c53030] hover:bg-[#c53030]/10 transition-all disabled:opacity-50"
+                      className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
                     >
                       {deletingTeamId === team.id ? "Deleting…" : "Delete team"}
                     </button>
@@ -1799,14 +1799,14 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 {crewPortalMembers
                   .filter((m) => m.is_active)
                   .map((m) => {
-                    const teamLabel = teams.find((t) => t.id === m.team_id)?.label ?? "—";
+                    const teamLabel = teams.find((t) => t.id === m.team_id)?.label ?? "-";
                     return (
                       <li key={m.id} className="flex items-center justify-between gap-3 py-3 px-4 hover:bg-[var(--bg)]/30 transition-colors flex-wrap">
                         <div>
                           <span className="text-[13px] font-medium text-[var(--tx)]">{m.name}</span>
                           <span className="text-[10px] text-[var(--tx3)] ml-2">({teamLabel})</span>
                           <span className="text-[9px] font-semibold ml-1.5 px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--gold)]">{m.role === "lead" ? "Lead" : m.role}</span>
-                          <div className="text-[11px] text-[var(--tx3)] mt-0.5">{m.phone ? "••••" + m.phone.replace(/\D/g, "").slice(-4) : "—"}</div>
+                          <div className="text-[11px] text-[var(--tx3)] mt-0.5">{m.phone ? "••••" + m.phone.replace(/\D/g, "").slice(-4) : "-"}</div>
                         </div>
                         <div className="flex flex-nowrap items-center gap-2 shrink-0">
                           {m.role !== "lead" && (
@@ -1848,7 +1848,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                                 toast(d.error || "Failed", "x");
                               }
                             }}
-                            className="shrink-0 px-2.5 py-1 rounded text-[10px] font-semibold border border-[#c53030] text-[#c53030] hover:bg-[#c53030]/10"
+                            className="shrink-0 px-2.5 py-0.5 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
                           >
                             Revoke
                           </button>
@@ -2350,7 +2350,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               <button
                 type="button"
                 onClick={() => { setEditingStaff(null); handleDeactivateStaff(editingStaff); }}
-                className="w-full px-4 py-2 rounded-lg text-[11px] font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
+                className="w-full px-4 py-1.5 rounded text-[11px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
               >
                 Remove from Active Roster
               </button>

@@ -104,8 +104,8 @@ function ReEngageModal({ partner, onClose }: ReEngageModalProps) {
   const [smsSent, setSmsSent] = useState(false);
   const firstName = partner.contact_name?.split(" ")[0] || partner.name;
 
-  const subject = `Checking in — ${partner.name} × Yugo`;
-  const body = `Hi ${firstName},\n\nIt's been a few weeks since your last delivery with us. Just checking in to see if you have any upcoming needs.\n\nWe're here whenever you need us — just reach out!\n\nBest,\nThe Yugo Team`;
+  const subject = `Checking in, ${partner.name} × Yugo`;
+  const body = `Hi ${firstName},\n\nIt's been a few weeks since your last delivery with us. Just checking in to see if you have any upcoming needs.\n\nWe're here whenever you need us, just reach out!\n\nBest,\nThe Yugo Team`;
 
   const handleSendEmail = () => {
     window.open(
@@ -122,7 +122,7 @@ function ReEngageModal({ partner, onClose }: ReEngageModalProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: partner.phone,
-          message: `Hi ${firstName}, just checking in from Yugo! It's been a while since your last delivery. Do you have any upcoming needs we can help with? We're here anytime. — Yugo Team`,
+          message: `Hi ${firstName}, just checking in from Yugo! It's been a while since your last delivery. Do you have any upcoming needs we can help with? We're here anytime., Yugo Team`,
           type: "partner_reengagement",
           related_id: partner.id,
           related_type: "organization",
@@ -384,7 +384,7 @@ export default function PartnerHealthClient() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[13px] text-[var(--tx)]">
-                        {p.revenue_30d > 0 ? fmtCurrency(p.revenue_30d) : "—"}
+                        {p.revenue_30d > 0 ? fmtCurrency(p.revenue_30d) : "-"}
                       </span>
                     </td>
                     <td className="px-4 py-3">

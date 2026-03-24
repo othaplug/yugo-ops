@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
         entity_type: "delivery",
         entity_id: created.id,
         event_type: "created",
-        description: `Delivery created: ${customerName}${scheduledDate ? ` — ${scheduledDate}` : ""} (${created.delivery_number})`,
+        description: `Delivery created: ${customerName}${scheduledDate ? `, ${scheduledDate}` : ""} (${created.delivery_number})`,
         icon: "delivery",
       });
     }

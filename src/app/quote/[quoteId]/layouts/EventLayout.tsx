@@ -112,7 +112,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
             </h2>
             {isMulti && (
               <p className="text-[11px] mt-1.5 font-medium" style={{ color: `${FOREST}80` }}>
-                Multi-event quote — {eventLegs.length} delivery & return pairs bundled together
+                Multi-event quote, {eventLegs.length} delivery & return pairs bundled together
               </p>
             )}
           </div>
@@ -338,7 +338,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                       {(leg.delivery_charge ?? 0) > 0 && (
                         <tr className={idx > 0 ? "border-t" : undefined} style={idx > 0 ? { borderColor: "#E2DDD5" } : undefined}>
                           <td className="py-2" style={{ color: `${FOREST}80` }}>
-                            {leg.label || `Event ${idx + 1}`} — Delivery ({fmtShort(leg.delivery_date)})
+                            {leg.label || `Event ${idx + 1}`}, Delivery ({fmtShort(leg.delivery_date)})
                           </td>
                           <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(leg.delivery_charge ?? 0)}</td>
                         </tr>
@@ -346,7 +346,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                       {(leg.return_charge ?? 0) > 0 && (
                         <tr className="border-t" style={{ borderColor: "#E2DDD5" }}>
                           <td className="py-2" style={{ color: `${FOREST}80` }}>
-                            {leg.label || `Event ${idx + 1}`} — Return ({fmtShort(leg.return_date)})
+                            {leg.label || `Event ${idx + 1}`}, Return ({fmtShort(leg.return_date)})
                           </td>
                           <td className="py-2 text-right font-medium" style={{ color: FOREST }}>{fmtPrice(leg.return_charge ?? 0)}</td>
                         </tr>

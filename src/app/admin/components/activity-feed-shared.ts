@@ -35,7 +35,7 @@ export function formatActivityDescription(desc: string): string {
   const match = desc.match(/Notification sent to (.+?): Status is (.+)$/);
   if (match) return `${match[1]} · ${getStatusLabel(match[2] || null)}`;
   if (desc.toLowerCase().includes("payment")) {
-    const nameMatch = desc.match(/(.+?)\s*[·—]/);
+    const nameMatch = desc.match(/(.+?)\s*[·-]/);
     return nameMatch ? `${nameMatch[1].trim()} · Paid` : desc;
   }
   return desc.length > 72 ? desc.slice(0, 69) + "…" : desc;

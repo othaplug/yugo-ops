@@ -147,7 +147,7 @@ function EditOverrideModal({
             className="w-4 h-4 rounded border border-[var(--brd)] bg-[var(--bgsub)] accent-[var(--gold)]"
           />
           <span className="text-[11px] text-[var(--tx2)]">
-            Lock this rate — template updates won&apos;t affect it
+            Lock this rate, template updates won&apos;t affect it
           </span>
         </label>
 
@@ -224,7 +224,7 @@ function RateCardSettingsModal({
             onChange={(e) => setTemplateId(e.target.value)}
             className="w-full px-3 py-2 text-[12px] bg-[var(--bgsub)] border border-[var(--brd)] rounded-lg focus:outline-none focus:border-[var(--brd)] text-[var(--tx)]"
           >
-            <option value="">— No template —</option>
+            <option value="">- No template -</option>
             {templates.map((t) => (
               <option key={t.id} value={t.id}>{t.template_name}</option>
             ))}
@@ -456,7 +456,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                 </span>
               ) : (
                 <>
-                  <span><span className="text-[var(--tx3)]">Template:</span> <span className="font-semibold text-[var(--tx)]">{template?.template_name || "—"}</span></span>
+                  <span><span className="text-[var(--tx3)]">Template:</span> <span className="font-semibold text-[var(--tx)]">{template?.template_name || "-"}</span></span>
                   <span><span className="text-[var(--tx3)]">Tier:</span> <span className="font-semibold text-[var(--gold)]">{tierLabel}</span></span>
                   {discount > 0 && (
                     <span><span className="text-[var(--tx3)]">Global discount:</span> <span className="font-semibold text-[var(--grn)]">−{discount}%</span></span>
@@ -593,7 +593,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                     {pmx ? (
                       <RateCell value={pmx.value} source={pmx.source} override={pmx.override} onClick={() => openCell("delivery_rates", r.id, "price_max", `${DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} Z${r.zone} Max`, r.price_max!)} />
                     ) : (
-                      <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">—</td>
+                      <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">-</td>
                     )}
                     <td className="px-3 py-2.5">
                       <StatusBadge source={hasOverride ? "override" : pm.source} isLocked={[pm.override, pmx?.override].some((o) => o?.is_locked)} />
@@ -669,7 +669,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                     {pmx ? (
                       <RateCell value={pmx.value} source={pmx.source} override={pmx.override} onClick={() => openCell("services", r.id, "price_max", `${r.service_name} Max`, r.price_max!)} />
                     ) : (
-                      <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">—</td>
+                      <td className="px-3 py-2.5 text-right text-[11px] text-[var(--tx3)]">-</td>
                     )}
                     <td className="px-3 py-2.5">
                       <StatusBadge source={hasOverride ? "override" : (pm?.source ?? "template")} isLocked={[pm?.override, pmx?.override].some((o) => o?.is_locked)} />

@@ -680,7 +680,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
           <div className="mb-8"><DeliveryKPIs data={data} /></div>
         )}
 
-        {/* Tabs — horizontally scrollable, no wrapping, no vertical movement */}
+        {/* Tabs, horizontally scrollable, no wrapping, no vertical movement */}
         <div className="overflow-hidden mb-4">
           <div
             className="flex items-center justify-start sm:justify-center gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4"
@@ -875,7 +875,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
         orgType={orgType}
       />
 
-      {/* Mobile bottom navigation — hidden on sm+ */}
+      {/* Mobile bottom navigation, hidden on sm+ */}
       {!features.showReferrals && (
         <nav
           className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[var(--brd)] flex items-stretch bg-[var(--card)]/95 backdrop-blur-md safe-area-bottom"
@@ -969,7 +969,7 @@ function DeliveryKPIs({ data }: { data: DashboardData | null }) {
         </div>
         <div className="text-center">
           <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Satisfaction</div>
-          <div className="text-[26px] sm:text-[30px] font-bold text-[#C9A962] mt-1 font-hero">{data?.satisfactionScore ?? "—"}</div>
+          <div className="text-[26px] sm:text-[30px] font-bold text-[#C9A962] mt-1 font-hero">{data?.satisfactionScore ?? "-"}</div>
           {data?.satisfactionScore != null && (
             <div className="text-[11px] text-[var(--tx3)] mt-0.5">out of 5</div>
           )}

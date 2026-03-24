@@ -31,7 +31,7 @@ export async function GET(
 
     const items = (inventory || []).map((i) => {
       const qty = i.quantity > 1 ? ` (×${i.quantity})` : "";
-      const room = i.room ? ` — ${i.room}` : "";
+      const room = i.room ? `, ${i.room}` : "";
       return `${i.name}${qty}${room}`;
     });
 

@@ -125,7 +125,7 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
             </div>
             <div className="text-[11px] opacity-50 mt-0.5" style={{ color: FOREST }}>
               {uploadedCount === 0
-                ? "Help your crew prepare — optional"
+                ? "Help your crew prepare, optional"
                 : `${uploadedCount} of ${total} rooms captured`}
             </div>
           </div>

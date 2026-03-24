@@ -15,6 +15,16 @@ type Crew = { current_lat: number; current_lng: number; name?: string } | null;
 const YUGO_GOLD = "#C9A94E";
 const YUGO_GREEN = "#22C55E";
 
+function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLng = toRad(to.lng - from.lng);
+  const lat1 = toRad(from.lat);
+  const lat2 = toRad(to.lat);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
 /** Stages where crew is heading to pickup; otherwise heading to dropoff */
 const PICKUP_STAGES = [
   "en_route_to_pickup",
@@ -57,22 +67,20 @@ const dropoffIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
-function makeCrewIcon() {
+function makeCrewIcon(bearing: number | null = null) {
+  const rot = bearing != null ? bearing : 0;
   return L.divIcon({
     className: "crew-marker",
     html: `
-      <div style="
-        width: 18px;
-        height: 18px;
-        background: ${YUGO_GOLD};
-        border: 3px solid #fff;
-        border-radius: 50%;
-        box-shadow: 0 0 0 0 rgba(201,169,78,0.4);
-        animation: leaflet-crew-pulse 2s infinite;
-      "></div>
+      <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+        <span style="position:absolute;inset:4px;border-radius:50%;background:${YUGO_GOLD};opacity:0.18;animation:leaflet-crew-pulse 2s infinite"></span>
+        <svg width="44" height="44" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35))" aria-hidden="true">
+          <polygon points="22,5 34,36 22,29 10,36" fill="${YUGO_GOLD}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+        </svg>
+      </div>
     `,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
   });
 }
 
@@ -143,6 +151,19 @@ export function TrackLiveMapLeaflet({
 }) {
   const hasPosition = crew != null;
   const hasRoute = pickup && dropoff;
+
+  // Track bearing from consecutive GPS positions
+  const [bearing, setBearing] = useState<number | null>(null);
+  const prevCrewRef = useRef<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    if (!crew) return;
+    const curr = { lat: crew.current_lat, lng: crew.current_lng };
+    const prev = prevCrewRef.current;
+    if (prev && (prev.lat !== curr.lat || prev.lng !== curr.lng)) {
+      setBearing(calcBearing(prev, curr));
+    }
+    prevCrewRef.current = curr;
+  }, [crew?.current_lat, crew?.current_lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Tracking line: crew → current destination, or when no crew show planned route pickup → dropoff */
   const trackingLineStraight: [number, number][] = useMemo(() => {
@@ -251,7 +272,7 @@ export function TrackLiveMapLeaflet({
         </Marker>
       )}
       {hasPosition && crew && (
-        <Marker position={[crew.current_lat, crew.current_lng]} icon={makeCrewIcon()}>
+        <Marker position={[crew.current_lat, crew.current_lng]} icon={makeCrewIcon(bearing)}>
           <Popup>{(crew.name || "Crew").replace("Team ", "")}</Popup>
         </Marker>
       )}

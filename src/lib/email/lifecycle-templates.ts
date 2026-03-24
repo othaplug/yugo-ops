@@ -93,29 +93,29 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
   const fromAccessLabel = formatAccessForDisplay(d.fromAccess);
   const toAccessLabel = formatAccessForDisplay(d.toAccess);
   if (fromAccessLabel && toAccessLabel && fromAccessLabel !== "None" && toAccessLabel !== "None")
-    accessNotes.push(`<strong>Access:</strong> Pickup: ${fromAccessLabel}; Drop-off: ${toAccessLabel} &mdash; please reserve the elevator/loading dock.`);
+    accessNotes.push(`<strong>Access:</strong> Pickup: ${fromAccessLabel}; Drop-off: ${toAccessLabel} - please reserve the elevator/loading dock.`);
   else if (fromAccessLabel && fromAccessLabel !== "None")
-    accessNotes.push(`<strong>Access:</strong> ${fromAccessLabel} &mdash; please reserve the elevator/loading dock.`);
+    accessNotes.push(`<strong>Access:</strong> ${fromAccessLabel} - please reserve the elevator/loading dock.`);
   else if (toAccessLabel && toAccessLabel !== "None")
-    accessNotes.push(`<strong>Access:</strong> ${toAccessLabel} &mdash; please reserve the elevator/loading dock.`);
+    accessNotes.push(`<strong>Access:</strong> ${toAccessLabel} - please reserve the elevator/loading dock.`);
 
   return emailLayout(`
     <div style="${EQ_EYE}">Three days to go</div>
     <h1 style="${EQ_H1}">Your move is almost here${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="${EQ_LEAD}">
-      Your move is scheduled for <strong style="color:#E8E8E8">${dateDisplay(d.moveDate)}</strong>. Please review the checklist below so everything runs on schedule.
+      Your move is confirmed for <strong style="color:#E8E8E8">${dateDisplay(d.moveDate)}</strong>. A little preparation goes a long way. Here is a quick checklist to make the day as smooth as possible.
     </p>
 
     <div style="${EQ_PANEL}">
       <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:14px;font-family:${EQ_SANS}">Pre-move checklist</div>
       <div style="font-size:13px;color:${EQ_MUTED};line-height:2;font-family:${EQ_SANS}">
-        <div>&#9744; Book elevator/loading dock at both locations</div>
-        <div>&#9744; Reserve parking for our truck</div>
-        <div>&#9744; Finish packing boxes (if self-packing)</div>
-        <div>&#9744; Clear hallways and pathways</div>
-        <div>&#9744; Arrange care for pets and small children</div>
-        <div>&#9744; Keep valuables and documents with you</div>
-        <div>&#9744; Defrost freezer and empty fridge</div>
+        <div>&#9744; Book elevator or loading dock at both locations</div>
+        <div>&#9744; Reserve parking access for our truck</div>
+        <div>&#9744; Finish packing any remaining boxes</div>
+        <div>&#9744; Clear hallways and pathways throughout</div>
+        <div>&#9744; Arrange care for pets and young children on the day</div>
+        <div>&#9744; Keep valuables, medications, and important documents with you</div>
+        <div>&#9744; Defrost the freezer and empty the fridge</div>
       </div>
     </div>
 
@@ -139,7 +139,7 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
 
     ${ctaButton(d.trackingUrl, "Track your move")}
     <p style="font-size:11px;color:${EQ_MUTED};text-align:center;font-family:${EQ_SANS}">
-      Questions? Email ${getClientSupportEmail()} or call your coordinator.
+      We are here if you need anything. Email ${getClientSupportEmail()} or reach your coordinator directly.
     </p>
   `);
 }
@@ -166,7 +166,7 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
     <div style="${EQ_EYE}">Tomorrow&apos;s the day</div>
     <h1 style="${EQ_H1}">Your crew is confirmed${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="${EQ_LEAD}">
-      Everything is set for your move tomorrow. Your arrival window and crew details are below.
+      Everything is in place for your move tomorrow. Your arrival window and crew details are below.
     </p>
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:18px;font-family:${EQ_SANS}">
@@ -176,7 +176,7 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
       ${d.crewLeadName ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Crew lead</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${d.crewLeadName}</td></tr>` : ""}
       ${d.crewSize ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Crew size</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${d.crewSize} movers</td></tr>` : ""}
       ${d.truckInfo ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Truck</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${d.truckInfo}</td></tr>` : ""}
-      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Arrival</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.arrivalWindow ?? "Morning &mdash; we&apos;ll confirm exact time"}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Arrival</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.arrivalWindow ?? "Morning window - your coordinator will confirm the exact time"}</td></tr>
     </table>
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:20px;font-family:${EQ_SANS}">
@@ -192,13 +192,13 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
       <div style="background:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.22);border-radius:2px;padding:16px;margin-bottom:20px;font-family:${EQ_SANS}">
         <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Your coordinator</div>
         <div style="font-size:13px;color:${EQ_VALUE};margin-top:4px">${d.coordinatorName}${d.coordinatorPhone ? ` &middot; ${formatPhone(d.coordinatorPhone)}` : ""}</div>
-        <div style="font-size:11px;color:${EQ_MUTED};margin-top:4px">Reachable by phone or text for last-minute questions.</div>
+        <div style="font-size:11px;color:${EQ_MUTED};margin-top:4px">Available by phone or text if you need anything before tomorrow.</div>
       </div>
     ` : ""}
 
     ${ctaButton(d.trackingUrl, "Track your move live")}
     <p style="font-size:11px;color:${EQ_MUTED};text-align:center;font-family:${EQ_SANS}">
-      Our crew will call 30 minutes before arrival.
+      Your crew will call approximately 30 minutes before they arrive.
     </p>
   `);
 }
@@ -253,7 +253,7 @@ export function moveCompleteEmail(d: MoveCompleteData): string {
     <div style="${EQ_EYE};color:#2D9F5A">Move complete</div>
     <h1 style="${EQ_H1}">Congratulations${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="${EQ_LEAD}">
-      Your move has been completed. Documents and receipts are available in your tracking portal.
+      Your move is complete. It was a privilege to take care of your home and belongings today. Your documents and receipts are ready in your portal whenever you need them.
     </p>
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:24px;font-family:${EQ_SANS}">
@@ -269,16 +269,16 @@ export function moveCompleteEmail(d: MoveCompleteData): string {
     <div style="margin-bottom:22px;font-family:${EQ_SANS}">
       <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:10px">Your documents</div>
       <p style="font-size:13px;color:${EQ_MUTED};line-height:1.65;margin:0">
-        Download your move summary, invoice, and receipt from your portal. We do not attach PDFs to this email.
+        Your move summary, invoice, and receipt are available to download directly from your portal. We keep these secure and accessible at any time.
       </p>
     </div>
 
     <div style="margin-bottom:24px;font-family:${EQ_SANS}">
       <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:10px">What&apos;s next</div>
       <div style="font-size:13px;color:${EQ_MUTED};line-height:1.85">
-        <div>1. Download documents from your portal</div>
-        <div>2. Brief satisfaction survey (separate email)</div>
-        <div>3. Enjoy your new space</div>
+        <div>1. Download your documents from the portal</div>
+        <div>2. A brief follow-up will arrive by email shortly</div>
+        <div>3. Settle in and enjoy your new space</div>
       </div>
     </div>
 
@@ -298,17 +298,17 @@ export interface ReviewRequestData {
 
 export function reviewRequestEmail(d: ReviewRequestData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Move?</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Experience?</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your review helps other families find a mover they can trust. It only takes 30 seconds.
+      Your feedback means a great deal to us and to families looking for a mover they can trust. A brief review is the best way to share your experience.
     </p>
 
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
       <tr>
         <td align="center">
           <a href="${d.googleReviewUrl}" style="display:block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:uppercase;">
-            Leave a Google Review
+            Share Your Experience
           </a>
         </td>
       </tr>
@@ -318,11 +318,11 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
       <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px;">
         <tr>
           <td style="background-color:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.25);padding:22px;text-align:center;">
-            <div style="font-size:8px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Refer a Friend</div>
-            <div style="font-family:'Instrument Serif', Georgia, serif;font-size:24px;font-weight:400;color:#F5F5F3;margin-bottom:8px;">Give $50, Get $50</div>
-            <p style="font-size:12px;color:#B8B5B0;margin:0 0 16px;line-height:1.6;">Share your referral link and you both save on your next move.</p>
+            <div style="font-size:8px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Know Someone Moving?</div>
+            <div style="font-family:'Instrument Serif', Georgia, serif;font-size:24px;font-weight:400;color:#F5F5F3;margin-bottom:8px;">Give $50. Get $50.</div>
+            <p style="font-size:12px;color:#B8B5B0;margin:0 0 16px;line-height:1.6;">Share your referral link and you both receive $50 off a future move.</p>
             <a href="${d.referralUrl}" style="display:inline-block;background-color:transparent;color:#C9A962;padding:9px 22px;font-size:11px;font-weight:700;letter-spacing:1px;text-decoration:none;border:1px solid #C9A96280;text-transform:uppercase;">
-              Share Referral Link
+              Share Your Link
             </a>
           </td>
         </tr>
@@ -330,7 +330,7 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
     ` : ""}
 
     <p style="font-size:11px;color:#666;text-align:center">
-      Thank you for choosing Yugo. We can&apos;t wait to move you again!
+      Thank you for trusting Yugo with your home. The Yugo Team
     </p>
   `);
 }
@@ -353,17 +353,17 @@ export const reviewRequestEssentialsEmail = (d: ReviewRequestTierData): string =
 
 export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Yugo Move?</div>
-    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your Yugo move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Experience?</div>
+    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your move is complete, and we hope everything went smoothly.
+      It was a pleasure taking care of your move today. We hope you are already settling in comfortably.
     </p>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      If you have a moment, we&apos;d be grateful for a Google review. Your feedback helps other families find reliable movers and helps our crew know they&apos;re doing a great job.
+      If you have a moment, we would be truly grateful for a brief review. Your words help other families find the level of care they deserve, and they mean everything to our crew.
     </p>
     ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
-      Thank you for choosing Yugo. The Yugo Team
+      Thank you for trusting Yugo with your home. The Yugo Team
     </p>
   `);
 }
@@ -373,30 +373,30 @@ export const reviewRequestPremierEmail = (d: ReviewRequestTierData): string => r
 
 export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We&apos;d Love Your Feedback</div>
-    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Experience Matters</div>
+    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your move is complete, and we hope everything went smoothly.
+      It was truly a pleasure taking care of your move today. We hope you are already settling in and feeling at home.
     </p>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      If you have a moment, we&apos;d be grateful for a Google review. Your feedback helps other families find reliable movers and helps our crew know they&apos;re doing a great job.
+      If you have a moment, a brief review would mean the world to our team. Your words help other families find the care and confidence they deserve on moving day.
     </p>
     ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
-      Thank you for choosing Yugo. The Yugo Team
+      With gratitude, The Yugo Team
     </p>
   `);
 }
 
 export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Did We Do?</div>
-    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">${firstName(d.clientName) || "Dear Client"}, it was our privilege — how did we do?</h1>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">A Note of Gratitude</div>
+    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">${firstName(d.clientName) ? `${firstName(d.clientName)}, it was our privilege` : "It was our privilege"}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Thank you for choosing Yugo for your move. It was a privilege to take care of your home and belongings.
+      Thank you for entrusting Yugo with your home and belongings. Every detail of your move matters to us, and we hope today reflected that.
     </p>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      If your experience was as exceptional as we aimed for, we would be honoured by a brief review. It helps families like yours find the level of care they deserve.
+      If your experience was as exceptional as we intended, we would be honoured by a brief review. It helps other families find the quality of care they deserve, and it means everything to our team.
     </p>
     ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
@@ -414,14 +414,14 @@ export interface ReviewRequestReminderData {
 
 export function reviewRequestReminderEmail(d: ReviewRequestReminderData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Quick Reminder</div>
-    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Quick reminder your Yugo review</h1>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">A Gentle Reminder</div>
+    <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">A moment for your review${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      We know you&apos;re busy settling in. If you have 30 seconds, a quick review means the world to our team.
+      We know settling in keeps you busy. Whenever you have a moment, your review would mean the world to our team and to families searching for a mover they can trust.
     </p>
     ${starRatingLinks(d.reviewUrl, d.reviewRedirectUrl)}
     <p style="font-size:11px;color:#666;text-align:center">
-      Thank you for choosing Yugo.
+      Thank you for choosing Yugo. The Yugo Team
     </p>
   `);
 }
@@ -439,15 +439,15 @@ export interface LowSatisfactionData {
 
 export function lowSatisfactionEmail(d: LowSatisfactionData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We Want to Make It Right</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;re sorry${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}.</h1>
+    <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We Are Here For You</div>
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We hear you${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}.</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      We understand your recent move didn&apos;t meet expectations, and we sincerely apologize. Your satisfaction is our priority and we want to make this right.
+      We understand your experience fell short of what you deserved, and we sincerely apologize. This is not the standard we hold ourselves to, and we are committed to making it right.
     </p>
 
     <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
       <div style="font-size:13px;color:#B8B5B0;line-height:1.7">
-        <div>Your coordinator is standing by to resolve this personally:</div>
+        <div>Your dedicated coordinator is available to resolve this personally:</div>
         ${d.coordinatorName ? `<div style="color:#E8E5E0;font-weight:600;margin-top:8px">${d.coordinatorName}</div>` : ""}
         ${d.coordinatorPhone ? `<div style="color:#C9A962;margin-top:4px">${formatPhone(d.coordinatorPhone)}</div>` : ""}
         ${d.coordinatorEmail ? `<div style="color:#C9A962;margin-top:4px">${d.coordinatorEmail}</div>` : ""}
@@ -455,7 +455,7 @@ export function lowSatisfactionEmail(d: LowSatisfactionData): string {
     </div>
 
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Please email ${getClientSupportEmail()} or call us directly. We&apos;ll work with you until you&apos;re completely satisfied.
+      Please reach us at ${getClientSupportEmail()} or call us directly. We will not consider this resolved until you are fully satisfied.
     </p>
 
     ${ctaButton(d.trackingUrl, "View Your Move Details")}
@@ -476,7 +476,7 @@ export interface InternalLowSatAlertData {
 export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
   return legacyEmailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Low Satisfaction Alert</div>
-    <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${d.moveCode} &mdash; ${d.clientName}</h1>
+    <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${d.moveCode} - ${d.clientName}</h1>
 
     <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
       <div style="font-size:12px;color:#D14343;font-weight:600">NPS/Satisfaction Score: ${d.npsScore ?? "N/A"}/5</div>
@@ -487,8 +487,8 @@ export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="color:#666;padding:4px 0">Client:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Email:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientEmail}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientPhone ? formatPhone(d.clientPhone) : "—"}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Move Date:</td><td style="color:#E8E5E0;padding:4px 0">${d.moveDate ? dateDisplay(d.moveDate) : "—"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientPhone ? formatPhone(d.clientPhone) : "-"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Move Date:</td><td style="color:#E8E5E0;padding:4px 0">${d.moveDate ? dateDisplay(d.moveDate) : "-"}</td></tr>
       </table>
     </div>
 
@@ -510,7 +510,7 @@ export function referralOfferEmail(d: ReferralOfferData): string {
   const name = firstName(d.clientName);
   return equinoxPromoLayout(`
     <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Give $50. Get $50.</h1>
-    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, refer` : "Refer"} a friend to Yugo and you&apos;ll both receive <strong style="color:#FFFFFF;">$50 off</strong> a residential move. No forms, no hassle &mdash; credits apply automatically when they book.</p>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, refer` : "Refer"} a friend to Yugo and you will both receive <strong style="color:#FFFFFF;">$50 off</strong> a residential move. Credits apply automatically when they book.</p>
     ${equinoxPromoCta(d.referralUrl, "Share Your Link")}
     ${equinoxPromoFinePrint("Residential moves only. One referral bonus per new customer.")}
   `);
@@ -529,8 +529,8 @@ export interface QuoteFollowup1Data {
 export function quoteFollowup1Email(d: QuoteFollowup1Data): string {
   const name = firstName(d.clientName);
   return equinoxPromoLayout(`
-    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, your` : "Your"} Yugo quote is waiting.</h1>
-    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">We prepared a flat-rate ${d.serviceLabel.toLowerCase()} quote for you. No hourly billing, no surprises &mdash; just a guaranteed price.</p>
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, your` : "Your"} Yugo quote is ready.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">We have prepared a guaranteed flat-rate ${d.serviceLabel.toLowerCase()} quote for you. One transparent price, nothing added on the day.</p>
     ${equinoxPromoCta(d.quoteUrl, "View Your Quote")}
     ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
   `);
@@ -565,18 +565,18 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
   })();
 
   if (isWarm) {
-    heading = name ? `${name}, finish booking your move.` : "Finish booking your move.";
-    body = "You&apos;re close &mdash; your preferred package is still available. Lock in your price and date now before availability changes.";
+    heading = name ? `${name}, your booking is almost complete.` : "Your booking is almost complete.";
+    body = "Your preferred package is still available. Secure your date and rate whenever you are ready.";
     ctaLabel = "Complete My Booking";
   } else if (isCold) {
-    heading = name ? `Only a few days left, ${name}.` : "Only a few days left.";
-    body = "This is your last chance to review your Yugo quote at this price. Guaranteed flat rate &mdash; no hourly charges, no surprises.";
+    heading = name ? `A note for you, ${name}.` : "A note about your quote.";
+    body = "Your Yugo quote is still available for a few more days. One guaranteed flat rate, no hourly charges, nothing added at the end.";
     ctaLabel = "View Your Quote";
   } else {
-    heading = name ? `Only a few days left, ${name}.` : "Only a few days left.";
+    heading = name ? `A gentle reminder, ${name}.` : "A gentle reminder.";
     body = d.moveDate
-      ? `Availability for <strong style="color:#FFFFFF;">${dateDisplay(d.moveDate)}</strong> is limited. Your guaranteed price holds until your quote expires.`
-      : "Your guaranteed flat-rate price won&apos;t last. Secure your date before availability closes.";
+      ? `Availability for <strong style="color:#FFFFFF;">${dateDisplay(d.moveDate)}</strong> is limited. Your guaranteed rate is held until your quote expires.`
+      : "Your guaranteed flat-rate price is held until your quote expires. When you are ready, securing your date takes just a moment.";
     ctaLabel = "Secure My Date";
   }
 
@@ -648,7 +648,7 @@ export function cancellationConfirmEmail(d: CancellationConfirmData): string {
     `}
 
     <p style="${EQ_LEAD}">
-      We hope to serve you again. Email ${getClientSupportEmail()} or visit our site anytime to rebook.
+      We hope to have the opportunity to serve you again. Please email ${getClientSupportEmail()} or visit our site whenever you are ready to rebook.
     </p>
 
     ${ctaButton(d.trackingUrl, "View cancellation details")}
@@ -670,7 +670,7 @@ export function quoteUpdatedEmail(d: QuoteUpdatedData): string {
   const name = firstName(d.clientName);
   return equinoxPromoLayout(`
     <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, your` : "Your"} quote has been updated.</h1>
-    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0 0 18px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">We&apos;ve revised your ${d.serviceLabel.toLowerCase()} quote. Here&apos;s a summary of what changed:</p>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0 0 18px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">We have revised your ${d.serviceLabel.toLowerCase()} quote. A summary of the changes is below.</p>
     <p style="font-size:14px;color:#DDDDDD;line-height:1.65;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;border-left:2px solid #FFFFFF;padding-left:16px;">${d.changesSummary}</p>
     ${equinoxPromoCta(d.quoteUrl, "Review Updated Quote")}
     ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
@@ -824,7 +824,7 @@ export interface BalanceChargeFailedAdminData {
 export function balanceChargeFailedAdminEmail(d: BalanceChargeFailedAdminData): string {
   return emailLayout(`
     <div style="${EQ_EYE};color:#D14343">Urgent</div>
-    <h1 style="${EQ_H1}">${d.moveCode} &mdash; charge failed</h1>
+    <h1 style="${EQ_H1}">${d.moveCode} - charge failed</h1>
 
     <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.22);border-radius:2px;padding:16px;margin-bottom:20px;font-family:${EQ_SANS}">
       <div style="font-size:12px;color:#D14343;font-weight:600">Auto-charge ${formatCurrency(d.balanceAmount)} failed</div>
@@ -837,8 +837,8 @@ export function balanceChargeFailedAdminEmail(d: BalanceChargeFailedAdminData): 
       </tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Name</td><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.clientName}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Email</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.clientEmail}</td></tr>
-      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Phone</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.clientPhone ? formatPhone(d.clientPhone) : "&mdash;"}</td></tr>
-      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Move date</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.moveDate ? dateDisplay(d.moveDate) : "&mdash;"}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Phone</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.clientPhone ? formatPhone(d.clientPhone) : "-"}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Move date</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.moveDate ? dateDisplay(d.moveDate) : "-"}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Balance</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:#D14343;font-weight:700">${formatCurrency(d.balanceAmount)}</td></tr>
     </table>
 
@@ -854,17 +854,17 @@ export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
   const isHot = (d as QuoteFollowup3Data & { tier?: string }).tier === "hot";
   const expiryDisplay = d.expiresAt ? dateDisplay(d.expiresAt) : null;
   const heading = isHot
-    ? (name ? `${name}, ready to finish?` : "Ready to finish?")
-    : (name ? `${name}, your quote expires soon.` : "Your quote expires soon.");
+    ? (name ? `${name}, pick up where you left off.` : "Pick up where you left off.")
+    : (name ? `${name}, your quote is expiring soon.` : "Your quote is expiring soon.");
   const body = isHot
-    ? "It looks like you started checkout. Your quote is still active &mdash; pick up where you left off and secure your move today."
-    : `Your ${d.serviceLabel.toLowerCase()} quote ${expiryDisplay ? `expires <strong style="color:#FFFFFF;">${expiryDisplay}</strong>` : "is expiring soon"}. After that, pricing resets based on current availability.`;
+    ? "Your quote is still active. Complete your booking whenever you are ready and your date will be secured."
+    : `Your ${d.serviceLabel.toLowerCase()} quote ${expiryDisplay ? `expires <strong style="color:#FFFFFF;">${expiryDisplay}</strong>` : "is expiring soon"}. After that, we will need to refresh your rate based on availability.`;
 
   return equinoxPromoLayout(`
     <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${heading}</h1>
     <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${body}</p>
-    ${equinoxPromoCta(d.quoteUrl, isHot ? "Complete Booking" : "Book Before It Expires")}
-    ${equinoxPromoFinePrint(`Need more time? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a> and we can extend your quote.`)}
+    ${equinoxPromoCta(d.quoteUrl, isHot ? "Complete Booking" : "View Your Quote")}
+    ${equinoxPromoFinePrint(`Need more time? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a> and we will be happy to help.`)}
   `);
 }
 
@@ -893,7 +893,7 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
           "Special offer";
         return `
           <div style="border-top:1px solid rgba(255,255,255,0.1);padding:16px 0;">
-            <div style="font-size:13px;font-weight:600;color:#FFFFFF;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-bottom:4px;">${p.title} <span style="font-size:10px;color:#737373;font-weight:400;">&mdash; ${offerLabel}</span></div>
+            <div style="font-size:13px;font-weight:600;color:#FFFFFF;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-bottom:4px;">${p.title} <span style="font-size:10px;color:#737373;font-weight:400;">- ${offerLabel}</span></div>
             ${p.description ? `<div style="font-size:13px;color:#A3A3A3;margin-bottom:8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${p.description}</div>` : ""}
             ${p.redemption_code ? `<span style="font-family:monospace;font-size:12px;font-weight:700;color:#FFFFFF;letter-spacing:0.08em;">${p.redemption_code}</span>` : ""}
             ${p.redemption_url ? `<a href="${p.redemption_url}" style="font-size:12px;color:#FFFFFF;text-decoration:underline;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-left:${p.redemption_code ? "12px" : "0"};">Redeem</a>` : ""}
@@ -904,7 +904,7 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
 
   const referralBlock = d.referralCode
     ? `
-      <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:28px 0 8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Know someone who needs to move? Share your code and they get <strong style="color:#FFFFFF;">$${d.referredDiscount} off</strong>. You earn a <strong style="color:#FFFFFF;">$${d.referrerCredit} credit</strong>.</p>
+      <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:28px 0 8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Know someone planning a move? Share your code and they receive <strong style="color:#FFFFFF;">$${d.referredDiscount} off</strong>. You earn a <strong style="color:#FFFFFF;">$${d.referrerCredit} credit</strong> as our thank you.</p>
       <div style="border:1px solid rgba(255,255,255,0.2);padding:20px;text-align:center;margin-bottom:8px;">
         <div style="font-family:monospace;font-size:22px;font-weight:700;letter-spacing:0.2em;color:#FFFFFF;">${d.referralCode}</div>
         <div style="font-size:11px;color:#595959;margin-top:6px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your referral code</div>
@@ -913,8 +913,8 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
     : "";
 
   return equinoxPromoLayout(`
-    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, your` : "Your"} move is done.</h1>
-    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Thanks for choosing Yugo. Your exclusive post-move perks and referral code are below.</p>
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, your` : "Your"} move is complete.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Thank you for trusting Yugo with your home. Your exclusive post-move perks are waiting below.</p>
     ${perksHtml ? `<div style="margin-top:8px;">${perksHtml}</div>` : ""}
     ${referralBlock}
     ${equinoxPromoCta(d.trackingUrl, "View Move Summary")}
@@ -944,14 +944,14 @@ export function moveAnniversaryEmail(d: MoveAnniversaryEmailData): string {
 
   return equinoxPromoLayout(`
     <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">One year${name ? `, ${name}` : ""}.</h1>
-    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">We moved you${route} on <strong style="color:#FFFFFF;">${moveDateStr}</strong>. We hope you&apos;re settling in well.</p>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">We had the pleasure of moving you${route} on <strong style="color:#FFFFFF;">${moveDateStr}</strong>. We hope you have settled in beautifully.</p>
     ${d.referralCode ? `
-      <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:28px 0 8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Moving again or know someone who is? Your referral code gives them <strong style="color:#FFFFFF;">$${d.referredDiscount} off</strong>.</p>
+      <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:28px 0 8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Planning another move, or know someone who is? Your referral code gives them <strong style="color:#FFFFFF;">$${d.referredDiscount} off</strong>.</p>
       <div style="border:1px solid rgba(255,255,255,0.2);padding:20px;text-align:center;">
         <div style="font-family:monospace;font-size:22px;font-weight:700;letter-spacing:0.2em;color:#FFFFFF;">${d.referralCode}</div>
         <div style="font-size:11px;color:#595959;margin-top:6px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your referral code</div>
       </div>
     ` : ""}
-    ${equinoxPromoFinePrint(`Moving again? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
+    ${equinoxPromoFinePrint(`Planning your next move? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a> and we would be glad to help.`)}
   `);
 }

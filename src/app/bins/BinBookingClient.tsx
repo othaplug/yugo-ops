@@ -127,7 +127,7 @@ export default function BinBookingClient({
   const fmt = (d: Date | null) =>
     d
       ? d.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" })
-      : "—";
+      : "-";
 
   const fmtPrice = (n: number) =>
     n.toLocaleString("en-CA", { style: "currency", currency: "CAD" });
@@ -280,7 +280,7 @@ export default function BinBookingClient({
               <h2 className="text-[13px] font-bold tracking-widest uppercase text-[#9ca3af]">Your schedule</h2>
               <div className="grid gap-3">
                 <ScheduleRow icon={<Package size={18} color="#C9A962" weight="fill" />} label="Bins arrive" date={formatConfirmDate(confirmation.dropOffDate)} note="We'll deliver between 9 AM–5 PM" />
-                <ScheduleRow icon={<House size={18} color="#C9A962" weight="fill" />} label="Move date" date={formatConfirmDate(confirmation.moveDate)} note="Pack at your pace — bins are ready" />
+                <ScheduleRow icon={<House size={18} color="#C9A962" weight="fill" />} label="Move date" date={formatConfirmDate(confirmation.moveDate)} note="Pack at your pace, bins are ready" />
                 <ScheduleRow icon={<Truck size={18} color="#C9A962" weight="fill" />} label="Bins picked up" date={formatConfirmDate(confirmation.pickupDate)} note="Leave bins stacked by the door" />
               </div>
             </div>
@@ -310,7 +310,7 @@ export default function BinBookingClient({
 
             <div className="border border-[#C9A962]/30 rounded-xl p-5 bg-[#C9A962]/5 text-center space-y-2">
               <p className="text-[15px] font-semibold text-[#C9A962]">Need movers too?</p>
-              <p className="text-[13px] text-[#9ca3af]">Your bins are ready — get a full moving quote in 60 seconds.</p>
+              <p className="text-[13px] text-[#9ca3af]">Your bins are ready, get a full moving quote in 60 seconds.</p>
               <Link href="/widget/quote" className="inline-flex items-center gap-2 mt-2 px-5 py-2.5 rounded-lg bg-[#C9A962] text-[#0A0A0A] font-bold text-[14px] hover:bg-[#B8962E] transition-colors">
                 Get a Moving Quote <ArrowRight size={16} />
               </Link>
@@ -438,7 +438,7 @@ export default function BinBookingClient({
               <div>
                 <h2 className="text-[18px] font-bold text-[#E5E0D8]">Your details</h2>
                 <p className="text-[13px] text-[#9ca3af]">
-                  {BUNDLE_LABELS[selectedBundle!]} bundle — {binCount} bins — {fmtPrice(bundlePrice)}
+                  {BUNDLE_LABELS[selectedBundle!]} bundle, {binCount} bins, {fmtPrice(bundlePrice)}
                 </p>
               </div>
             </div>

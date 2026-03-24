@@ -464,7 +464,7 @@ export default async function AdminPage() {
   if (unassignedJobs.length > 0) {
     const todayUnassigned = unassignedJobs.filter((j) => j.date === today).length;
     if (todayUnassigned > 0) {
-      briefParts.push(`${todayUnassigned} unassigned today — needs crew`);
+      briefParts.push(`${todayUnassigned} unassigned today, needs crew`);
     } else {
       briefParts.push(`${unassignedJobs.length} upcoming job${unassignedJobs.length > 1 ? "s" : ""} still need crew assignment`);
     }
@@ -485,7 +485,7 @@ export default async function AdminPage() {
   }
 
   if (quotePipeline.expiringToday > 0) {
-    briefParts.push(`${quotePipeline.expiringToday} quote${quotePipeline.expiringToday > 1 ? "s" : ""} expiring today — follow up`);
+    briefParts.push(`${quotePipeline.expiringToday} quote${quotePipeline.expiringToday > 1 ? "s" : ""} expiring today, follow up`);
   }
 
   if (overdueAmount > 0) {

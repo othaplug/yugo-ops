@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
       if (partnerEmail) {
         await sendEmail({
           to: partnerEmail,
-          subject: `Statement ${stmt.statement_number} due — $${balanceOwing.toFixed(2)} CAD`,
+          subject: `Statement ${stmt.statement_number} - balance of $${balanceOwing.toFixed(2)} CAD`,
           template: "partner-statement-due",
           data: {
             partnerName: org?.name || "Partner",
@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
         amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
         customerId: org.square_customer_id || undefined,
         referenceId: stmt.statement_number,
-        note: `Yugo statement ${stmt.statement_number} — ${org.name}`,
+        note: `Yugo statement ${stmt.statement_number}, ${org.name}`,
         idempotencyKey: `stmt-auto-${stmt.id}-${Date.now()}`,
         locationId,
       });
@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
       if (partnerEmail) {
         await sendEmail({
           to: partnerEmail,
-          subject: `Payment confirmed — statement ${stmt.statement_number}`,
+          subject: `Payment confirmed, statement ${stmt.statement_number}`,
           template: "partner-statement-paid",
           data: {
             partnerName: org.name,
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
       if (adminEmail) {
         await sendEmail({
           to: adminEmail,
-          subject: `URGENT: Partner statement charge failed — ${org.name} ${stmt.statement_number}`,
+          subject: `URGENT: Partner statement charge failed, ${org.name} ${stmt.statement_number}`,
           template: "partner-statement-charge-failed",
           data: {
             partnerName: org.name,
@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
       if (partnerEmail) {
         await sendEmail({
           to: partnerEmail,
-          subject: `Payment failed — statement ${stmt.statement_number}`,
+          subject: `Payment failed, statement ${stmt.statement_number}`,
           template: "partner-statement-charge-failed-partner",
           data: {
             partnerName: org.name,

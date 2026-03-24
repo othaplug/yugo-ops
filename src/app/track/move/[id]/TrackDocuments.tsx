@@ -59,7 +59,7 @@ export default function TrackDocuments({
   ].filter(
     (doc) =>
       doc.type !== "invoice" &&
-      !doc.title?.includes("Invoice —") &&
+      !doc.title?.includes("Invoice -") &&
       !doc.title?.toLowerCase().includes("invoice ")
   );
 

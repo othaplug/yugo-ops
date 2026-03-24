@@ -392,7 +392,7 @@ export default function ReportsClient({
             <KpiCard
               label="Collected"
               value={formatCurrency(invoicePaid)}
-              sub={invoiceTotal > 0 ? `${Math.round((invoicePaid / invoiceTotal) * 100)}% collected` : "—"}
+              sub={invoiceTotal > 0 ? `${Math.round((invoicePaid / invoiceTotal) * 100)}% collected` : "-"}
               accent={invoicePaid > 0}
             />
           </div>
@@ -493,17 +493,17 @@ export default function ReportsClient({
             />
             <KpiCard
               label="Avg Duration"
-              value={avgDurationMinutes > 0 ? `${Math.floor(avgDurationMinutes / 60)}h ${avgDurationMinutes % 60}m` : "—"}
+              value={avgDurationMinutes > 0 ? `${Math.floor(avgDurationMinutes / 60)}h ${avgDurationMinutes % 60}m` : "-"}
               sub="per completed session"
             />
             <KpiCard
               label="Crew Utilization"
-              value={crewUtilization.avgPerCrew > 0 ? String(crewUtilization.avgPerCrew) : "—"}
+              value={crewUtilization.avgPerCrew > 0 ? String(crewUtilization.avgPerCrew) : "-"}
               sub={crewUtilization.crewCount > 0 ? `jobs/crew · ${crewUtilization.crewCount} crews` : "no data"}
             />
             <KpiCard
               label="On-Time Rate"
-              value={onTimeRate !== null ? `${onTimeRate}%` : "—"}
+              value={onTimeRate !== null ? `${onTimeRate}%` : "-"}
               sub="completed on scheduled day"
               accent={onTimeRate !== null && onTimeRate >= 90}
               warn={onTimeRate !== null && onTimeRate < 70}
@@ -626,7 +626,7 @@ export default function ReportsClient({
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completion Rate</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--tx)]">
-                  {trackingSessions.length > 0 ? `${Math.round((completedSessions.length / trackingSessions.length) * 100)}%` : "—"}
+                  {trackingSessions.length > 0 ? `${Math.round((completedSessions.length / trackingSessions.length) * 100)}%` : "-"}
                 </div>
               </div>
             </div>

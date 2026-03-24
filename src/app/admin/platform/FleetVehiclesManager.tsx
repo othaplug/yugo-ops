@@ -303,7 +303,7 @@ export default function FleetVehiclesManager() {
                         type="button"
                         onClick={() => handleRetire(v)}
                         disabled={saving}
-                        className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-red-500/50 hover:text-red-400 disabled:opacity-50"
+                        className="px-2.5 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
                       >
                         Retire Vehicle
                       </button>
@@ -320,7 +320,7 @@ export default function FleetVehiclesManager() {
                             <div className="flex items-center gap-2">
                               <span className="text-[var(--tx3)]">{log.maintenance_date}</span>
                               <span className="text-[var(--tx)] font-medium">{MAINT_LABELS[log.maintenance_type] || log.maintenance_type}</span>
-                              {log.notes && <span className="text-[var(--tx3)]">— {log.notes}</span>}
+                              {log.notes && <span className="text-[var(--tx3)]">- {log.notes}</span>}
                             </div>
                             {log.cost > 0 && <span className="text-[var(--gold)] font-semibold">${log.cost.toFixed(2)}</span>}
                           </div>

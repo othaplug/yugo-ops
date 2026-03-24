@@ -29,7 +29,7 @@ export default function InvoiceDetailModal({ open, onClose, invoice }: InvoiceDe
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Client</div>
-          <div className="text-[var(--tx)]">{invoice.client_name || "—"}</div>
+          <div className="text-[var(--tx)]">{invoice.client_name || "-"}</div>
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Amount</div>
@@ -37,7 +37,7 @@ export default function InvoiceDetailModal({ open, onClose, invoice }: InvoiceDe
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Due date</div>
-          <div className="text-[var(--tx)]">{invoice.due_date || "—"}</div>
+          <div className="text-[var(--tx)]">{invoice.due_date || "-"}</div>
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Status</div>

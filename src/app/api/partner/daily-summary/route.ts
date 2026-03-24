@@ -103,10 +103,10 @@ export async function POST() {
 
   const deliveryRows = deliveriesToday
     .map((d) => {
-      const label = STATUS_LABELS[d.status?.toLowerCase() ?? ""] ?? d.status ?? "—";
+      const label = STATUS_LABELS[d.status?.toLowerCase() ?? ""] ?? d.status ?? "-";
       const color = statusColor(d.status ?? "");
-      const recipient = d.customer_name || d.client_name || "—";
-      const address = d.delivery_address || "—";
+      const recipient = d.customer_name || d.client_name || "-";
+      const address = d.delivery_address || "-";
       const timeSlot = d.time_slot
         ? d.time_slot.replace(/morning/i, "Morning (8am–12pm)")
             .replace(/afternoon/i, "Afternoon (12pm–5pm)")
@@ -114,7 +114,7 @@ export async function POST() {
         : "Flexible";
       return `
         <tr>
-          <td style="padding:12px 16px;border-bottom:1px solid #2A2A2A;font-size:13px;color:#E5E5E5;">${d.delivery_number || "—"}</td>
+          <td style="padding:12px 16px;border-bottom:1px solid #2A2A2A;font-size:13px;color:#E5E5E5;">${d.delivery_number || "-"}</td>
           <td style="padding:12px 16px;border-bottom:1px solid #2A2A2A;font-size:13px;color:#E5E5E5;">${recipient}</td>
           <td style="padding:12px 16px;border-bottom:1px solid #2A2A2A;font-size:13px;color:#aaa;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${address}</td>
           <td style="padding:12px 16px;border-bottom:1px solid #2A2A2A;font-size:12px;white-space:nowrap;">
@@ -127,16 +127,16 @@ export async function POST() {
 
   const upcomingRows = upcoming
     .map((d) => {
-      const label = STATUS_LABELS[d.status?.toLowerCase() ?? ""] ?? d.status ?? "—";
+      const label = STATUS_LABELS[d.status?.toLowerCase() ?? ""] ?? d.status ?? "-";
       const color = statusColor(d.status ?? "");
-      const recipient = d.customer_name || d.client_name || "—";
+      const recipient = d.customer_name || d.client_name || "-";
       const dateStr = d.scheduled_date
         ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
-        : "—";
+        : "-";
       return `
         <tr>
           <td style="padding:10px 16px;border-bottom:1px solid #2A2A2A;font-size:13px;color:#E5E5E5;">${dateStr}</td>
-          <td style="padding:10px 16px;border-bottom:1px solid #2A2A2A;font-size:13px;color:#E5E5E5;">${d.delivery_number || "—"}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid #2A2A2A;font-size:13px;color:#E5E5E5;">${d.delivery_number || "-"}</td>
           <td style="padding:10px 16px;border-bottom:1px solid #2A2A2A;font-size:13px;color:#E5E5E5;">${recipient}</td>
           <td style="padding:10px 16px;border-bottom:1px solid #2A2A2A;font-size:12px;">
             <span style="display:inline-block;padding:3px 10px;border-radius:20px;background:${color}20;color:${color};font-weight:600;">${label}</span>

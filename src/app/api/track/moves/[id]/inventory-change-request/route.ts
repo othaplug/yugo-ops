@@ -208,7 +208,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await resend.emails.send({
         from: emailFrom,
         to,
-        subject: `Inventory change request — ${moveCode} — ${move.client_name || "Client"}`,
+        subject: `Inventory change request, ${moveCode}, ${move.client_name || "Client"}`,
         html,
       });
     } catch {

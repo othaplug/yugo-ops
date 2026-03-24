@@ -688,7 +688,7 @@ export default function DataTable<T>({
       {/* ── Toolbar ── */}
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex items-center gap-2 w-full min-w-0">
-          {/* Search — full width on mobile (no dead space on the right) */}
+          {/* Search, full width on mobile (no dead space on the right) */}
           {searchable && (
             <div className="relative flex-1 min-w-0 md:max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
@@ -992,7 +992,7 @@ export default function DataTable<T>({
                     >
                       {col.render
                         ? col.render(row)
-                        : <span className="capitalize text-[var(--tx)]">{String(col.accessor(row) ?? "—")}</span>}
+                        : <span className="capitalize text-[var(--tx)]">{String(col.accessor(row) ?? "-")}</span>}
                     </td>
                   ))}
                   {/* Spacer cell fills remaining width */}
@@ -1025,7 +1025,7 @@ export default function DataTable<T>({
                 return col.render ? (
                   col.render(row)
                 ) : (
-                  <span className="capitalize">{String(col.accessor(row) ?? "—")}</span>
+                  <span className="capitalize">{String(col.accessor(row) ?? "-")}</span>
                 );
               };
 
@@ -1121,7 +1121,7 @@ export default function DataTable<T>({
                     <div className="text-[15px] font-semibold text-[var(--tx)] leading-snug">
                       {primaryCol?.render
                         ? primaryCol.render(row)
-                        : <span>{String(primaryCol?.accessor(row) ?? "—")}</span>}
+                        : <span>{String(primaryCol?.accessor(row) ?? "-")}</span>}
                     </div>
                     {(statusCol || valueCol) && (
                       <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-1">
@@ -1221,7 +1221,7 @@ export default function DataTable<T>({
             >
               <ChevronRight className="w-4 h-4 md:w-3.5 md:h-3.5" />
             </button>
-            {/* Per page — desktop only */}
+            {/* Per page, desktop only */}
             <div className="hidden md:flex ml-2 items-center gap-1">
               <select
                 value={perPage}

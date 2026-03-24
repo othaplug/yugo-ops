@@ -72,25 +72,25 @@ export function buildRoadConditionsNote(b: {
   const parts: string[] = [];
 
   if (b.freezingRisk) {
-    parts.push("Icy or freezing conditions possible — drive slowly and secure cargo against slips.");
+    parts.push("Icy or freezing conditions possible, drive slowly and secure cargo against slips.");
   }
   if (b.snowDay) {
-    parts.push("Snow in the forecast — allow extra travel time between stops; check vehicle readiness.");
+    parts.push("Snow in the forecast, allow extra travel time between stops; check vehicle readiness.");
   }
   if (b.heavyRain || (b.rainDay && b.visibilityMinM != null && b.visibilityMinM < 8000)) {
-    parts.push("Wet roads and reduced grip — increase following distance and corner gently.");
+    parts.push("Wet roads and reduced grip, increase following distance and corner gently.");
   } else if (b.rainDay) {
-    parts.push("Rain possible — plan for covered loading when possible.");
+    parts.push("Rain possible, plan for covered loading when possible.");
   }
 
   if (b.visibilityMinM != null && b.visibilityMinM < 5000) {
-    parts.push("Low visibility — use headlights and extra caution on highways.");
+    parts.push("Low visibility, use headlights and extra caution on highways.");
   }
 
   if (b.windGustMaxKmh != null && b.windGustMaxKmh >= 50) {
-    parts.push("Strong gusts — secure doors, hand trucks, and loose items when outdoors.");
+    parts.push("Strong gusts, secure doors, hand trucks, and loose items when outdoors.");
   } else if (b.windMaxKmh != null && b.windMaxKmh >= 40) {
-    parts.push("Breezy conditions — watch for wind when carrying tall or light items.");
+    parts.push("Breezy conditions, watch for wind when carrying tall or light items.");
   }
 
   if (parts.length === 0) {

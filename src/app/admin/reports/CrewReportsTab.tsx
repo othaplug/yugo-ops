@@ -144,13 +144,13 @@ export default function CrewReportsTab({
         rows.push([
           r.report_date,
           crewName,
-          j.displayId ?? j.jobId?.slice(0, 8) ?? "—",
-          j.clientName ?? "—",
+          j.displayId ?? j.jobId?.slice(0, 8) ?? "-",
+          j.clientName ?? "-",
           j.type,
           String(j.duration ?? 0),
           j.signOff ? "Yes" : "No",
           j.hasDamage ? "Yes" : "No",
-          r.generated_at ? new Date(r.generated_at).toLocaleString() : "—",
+          r.generated_at ? new Date(r.generated_at).toLocaleString() : "-",
         ]);
       });
     });
@@ -181,8 +181,8 @@ export default function CrewReportsTab({
     }
     const crewNameFromReport = getCrewName(report.crews) || undefined;
     const fallbackJob = {
-      displayId: job?.displayId ?? job?.jobId?.slice(0, 8) ?? "—",
-      clientName: job?.clientName ?? "—",
+      displayId: job?.displayId ?? job?.jobId?.slice(0, 8) ?? "-",
+      clientName: job?.clientName ?? "-",
       type: job?.type ?? "move",
       notFound: true as const,
       crewName: crewNameFromReport,
@@ -397,7 +397,7 @@ export default function CrewReportsTab({
                   {getCrewName(r.crews)}
                 </h2>
                 <span className="text-[12px] text-[var(--tx3)]">
-                  {r.generated_at ? new Date(r.generated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "—"}
+                  {r.generated_at ? new Date(r.generated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "-"}
                 </span>
               </div>
               <div className="space-y-5">
@@ -427,7 +427,7 @@ export default function CrewReportsTab({
                     </div>
                     <div>
                       <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Avg rating</div>
-                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{typeof r.summary.averageSatisfaction === "number" || typeof r.summary.averageSatisfaction === "string" ? r.summary.averageSatisfaction : "—"}</div>
+                      <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{typeof r.summary.averageSatisfaction === "number" || typeof r.summary.averageSatisfaction === "string" ? r.summary.averageSatisfaction : "-"}</div>
                     </div>
                   </div>
                 )}
@@ -444,7 +444,7 @@ export default function CrewReportsTab({
                         >
                           <div className="flex justify-between items-start gap-2">
                             <div className="min-w-0">
-                              <div className="font-heading font-semibold text-[var(--tx)] text-[13px] truncate">{j.displayId ?? j.jobId?.slice(0, 8) ?? "—"}</div>
+                              <div className="font-heading font-semibold text-[var(--tx)] text-[13px] truncate">{j.displayId ?? j.jobId?.slice(0, 8) ?? "-"}</div>
                               <div className="text-[12px] text-[var(--tx2)] truncate mt-0.5">{j.clientName}</div>
                               <div className="text-[11px] text-[var(--tx3)] mt-1 capitalize">{j.type}</div>
                             </div>
@@ -499,21 +499,21 @@ export default function CrewReportsTab({
                     </div>
                   )}
                   <div>
-                    <div className="font-heading font-semibold text-[var(--tx)] text-[17px]">{detailData.job?.displayId ?? "—"}</div>
-                    <div className="text-[var(--text-base)] text-[var(--tx2)] mt-0.5 font-heading">{detailData.job?.clientName ?? "—"}</div>
-                    <p className="text-[11px] text-[var(--tx3)] mt-1">Crew: {detailData.job?.crewName || "—"}</p>
+                    <div className="font-heading font-semibold text-[var(--tx)] text-[17px]">{detailData.job?.displayId ?? "-"}</div>
+                    <div className="text-[var(--text-base)] text-[var(--tx2)] mt-0.5 font-heading">{detailData.job?.clientName ?? "-"}</div>
+                    <p className="text-[11px] text-[var(--tx3)] mt-1">Crew: {detailData.job?.crewName || "-"}</p>
                     <p className="text-[11px] text-[var(--tx3)] mt-1">
-                      {detailData.job?.scheduledDate ? new Date(detailData.job.scheduledDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "—"}
+                      {detailData.job?.scheduledDate ? new Date(detailData.job.scheduledDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "-"}
                       {detailData.job?.arrivalWindow ? ` · ${detailData.job.arrivalWindow}` : ""}
                     </p>
-                    <p className="text-[11px] text-[var(--tx3)] mt-2">From: {detailData.job?.fromAddress || "—"}</p>
-                    <p className="text-[11px] text-[var(--tx3)]">To: {detailData.job?.toAddress || "—"}</p>
+                    <p className="text-[11px] text-[var(--tx3)] mt-2">From: {detailData.job?.fromAddress || "-"}</p>
+                    <p className="text-[11px] text-[var(--tx3)]">To: {detailData.job?.toAddress || "-"}</p>
                   </div>
                   <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Trip</div>
                     <div className="grid grid-cols-2 gap-2 text-[12px]">
-                      <div><span className="text-[var(--tx3)]">KM travelled</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.kmTravelled != null ? `${detailData.kmTravelled.toFixed(1)} km` : "—"}</span></div>
-                      <div><span className="text-[var(--tx3)]">Stops</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.stopsMade ?? "—"}</span></div>
+                      <div><span className="text-[var(--tx3)]">KM travelled</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.kmTravelled != null ? `${detailData.kmTravelled.toFixed(1)} km` : "-"}</span></div>
+                      <div><span className="text-[var(--tx3)]">Stops</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.stopsMade ?? "-"}</span></div>
                     </div>
                   </div>
                   <div className={`rounded-xl border p-4 ${(detailData.incidents?.filter((i) => i.issue_type === "damage").length ?? 0) > 0 ? "border-[var(--org)]/60 bg-[var(--ordim)]/30" : "border-[var(--brd)] bg-[var(--bg)]"}`}>
@@ -539,7 +539,7 @@ export default function CrewReportsTab({
                         {detailData.session.completedAt && <span className="ml-3">Completed: {new Date(detailData.session.completedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
                       </p>
                     ) : (
-                      <p className="text-[12px] text-[var(--tx3)]">—</p>
+                      <p className="text-[12px] text-[var(--tx3)]">-</p>
                     )}
                   </div>
                   <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">

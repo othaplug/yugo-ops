@@ -47,7 +47,7 @@ export const PRE_MOVE_CHECKLIST: ChecklistItem[] = [
   {
     id: "valuables",
     label: "Valuables secured separately",
-    detail: "Jewelry, cash, medications, important documents — keep these with you",
+    detail: "Jewelry, cash, medications, and important documents. Keep these with you.",
     iconName: "vault",
   },
   {
@@ -223,7 +223,7 @@ export default function PreMoveChecklist({
         <div className="px-4 py-3 bg-[#22c55e]/5 border-t border-[#22c55e]/20 flex items-center gap-2">
           <CheckCircle size={14} color="#22c55e" weight="fill" />
           <span className="text-[12px] font-semibold text-[#22c55e]">
-            All set — your crew has been notified you&apos;re ready!
+            All set. Your crew has been notified you&apos;re ready!
           </span>
         </div>
       )}

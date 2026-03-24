@@ -96,14 +96,14 @@ function timeAgo(dateStr: string): string {
 
 function engagementSignal(events: EngagementEvent[]): { label: string; color: string } {
   const types = new Set(events.map((e) => e.event_type));
-  if (types.has("payment_started")) return { label: "Hot — started payment", color: "text-green-400" };
+  if (types.has("payment_started")) return { label: "Hot, started payment", color: "text-green-400" };
   if (types.has("contract_viewed") && types.has("tier_clicked"))
-    return { label: "Warm — reviewed contract", color: "text-emerald-400" };
-  if (types.has("tier_clicked")) return { label: "Engaged — exploring tiers", color: "text-blue-400" };
+    return { label: "Warm, reviewed contract", color: "text-emerald-400" };
+  if (types.has("tier_clicked")) return { label: "Engaged, exploring tiers", color: "text-blue-400" };
   if (types.has("page_view")) {
     const maxDur = Math.max(...events.map((e) => e.session_duration_seconds ?? 0));
-    if (maxDur < 30) return { label: "Cold — quick glance", color: "text-red-400" };
-    return { label: "Lukewarm — browsed briefly", color: "text-amber-400" };
+    if (maxDur < 30) return { label: "Cold, quick glance", color: "text-red-400" };
+    return { label: "Lukewarm, browsed briefly", color: "text-amber-400" };
   }
   return { label: "No engagement", color: "text-[var(--tx3)]" };
 }
@@ -214,7 +214,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
           {new Date(quote.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
         </p>
 
-        {/* Row 4: action buttons — wrap on mobile */}
+        {/* Row 4: action buttons, wrap on mobile */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
           <button
             type="button"
@@ -247,7 +247,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--red)] px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--red)]/40 transition-colors"
+              className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded bg-[var(--red)] text-white hover:opacity-90 transition-all"
             >
               <Trash2 className="w-3 h-3" /> Delete
             </button>
@@ -284,8 +284,8 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               {/* Client */}
               <div>
                 <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Client</p>
-                <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">{contact?.name ?? "—"}</p>
-                <p className="text-[12px] text-[var(--tx3)] mt-0.5">{contact?.email ?? "—"}</p>
+                <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">{contact?.name ?? "-"}</p>
+                <p className="text-[12px] text-[var(--tx3)] mt-0.5">{contact?.email ?? "-"}</p>
                 {contact?.phone && (
                   <p className="text-[12px] text-[var(--tx3)]">{formatPhone(contact.phone)}</p>
                 )}
@@ -490,7 +490,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
 
         {/* Right: Quick Stats */}
         <div className="space-y-0">
-          {/* Timeline — card treatment for prominence */}
+          {/* Timeline, card treatment for prominence */}
           <div className="rounded-xl border border-[var(--brd)]/50 bg-[var(--card)] p-4 mb-5">
             <h2 className="admin-section-h2 text-[var(--gold)] mb-3">
               Timeline
@@ -642,7 +642,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Device</span>
                   <span className="text-[var(--tx)] font-medium capitalize">
-                    {engagement.find((e) => e.device_type)?.device_type ?? "—"}
+                    {engagement.find((e) => e.device_type)?.device_type ?? "-"}
                   </span>
                 </div>
               </div>

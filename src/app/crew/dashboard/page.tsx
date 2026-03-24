@@ -194,7 +194,7 @@ export default function CrewDashboardPage() {
           </div>
         )}
 
-        {/* Weather & road hints (moves with postal — from nightly OpenWeather job) */}
+        {/* Weather & road hints (moves with postal, from nightly OpenWeather job) */}
         {totalCount > 0 && (
           <div className="pt-5 mt-5 border-t border-[var(--brd)]/30">
             <CrewWeatherRoads jobs={jobs} />
@@ -213,7 +213,7 @@ export default function CrewDashboardPage() {
                 <Calendar size={20} color="var(--gold)" />
               </div>
               <p className="text-[var(--text-base)] font-semibold text-[var(--tx)] mb-1">No jobs today</p>
-              <p className="text-[12px] text-[var(--tx3)]">Enjoy your day off — check back tomorrow.</p>
+              <p className="text-[12px] text-[var(--tx3)]">Enjoy your day off, check back tomorrow.</p>
             </div>
           ) : (
             jobs.map((job, index) => {

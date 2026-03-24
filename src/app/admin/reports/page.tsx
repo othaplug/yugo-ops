@@ -126,14 +126,14 @@ export default async function ReportsPage({
 
   const movesMap = new Map<string, { displayId: string; clientName: string }>();
   (movesRes.data || []).forEach((m) => {
-    const entry = { displayId: formatJobId(m.move_code || m.id, "move"), clientName: m.client_name || "—" };
+    const entry = { displayId: formatJobId(m.move_code || m.id, "move"), clientName: m.client_name || "-" };
     movesMap.set(m.id, entry);
     if (m.move_code) movesMap.set(String(m.move_code).trim().toUpperCase().replace(/^#/, ""), entry);
   });
 
   const deliveriesMap = new Map<string, { displayId: string; clientName: string }>();
   (deliveriesRes.data || []).forEach((d) => {
-    const entry = { displayId: formatJobId(d.delivery_number || d.id, "delivery"), clientName: [d.customer_name, d.client_name].filter(Boolean).join(" — ") || "—" };
+    const entry = { displayId: formatJobId(d.delivery_number || d.id, "delivery"), clientName: [d.customer_name, d.client_name].filter(Boolean).join(", ") || "-" };
     deliveriesMap.set(d.id, entry);
     if (d.delivery_number) deliveriesMap.set(String(d.delivery_number).trim(), entry);
   });
@@ -143,7 +143,7 @@ export default async function ReportsPage({
       const map = j.type === "move" ? movesMap : deliveriesMap;
       const meta = map.get(j.jobId) ?? map.get(j.jobId.toUpperCase().replace(/^#/, "").trim());
       const hasDamage = damageJobKeys.has(`${j.jobId}:${j.type}`);
-      return { ...j, displayId: meta?.displayId ?? formatJobId(j.jobId, j.type as "move" | "delivery"), clientName: meta?.clientName ?? "—", hasDamage };
+      return { ...j, displayId: meta?.displayId ?? formatJobId(j.jobId, j.type as "move" | "delivery"), clientName: meta?.clientName ?? "-", hasDamage };
     });
     return { ...r, jobs };
   });

@@ -793,7 +793,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             const hrs = (deliveriesByDate[key] || []).reduce((sum, d) => sum + (d.estimated_duration_hours || 1.5), 0);
             return (
               <div key={key} className="flex-1 border-l border-[#E8E4DF] dark:border-[var(--brd)] px-1 py-1 text-center">
-                <div className="text-[7px] text-[#888] dark:text-[var(--tx3)]">{count > 0 ? `${count} · ${Math.round(hrs * 10) / 10}h` : "—"}</div>
+                <div className="text-[7px] text-[#888] dark:text-[var(--tx3)]">{count > 0 ? `${count} · ${Math.round(hrs * 10) / 10}h` : "-"}</div>
               </div>
             );
           })}

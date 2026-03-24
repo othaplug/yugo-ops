@@ -88,11 +88,11 @@ export async function POST(req: Request) {
 
     // Feed notable client engagement events to the admin activity feed
     const activityMap: Record<string, { description: string; icon: "quote" | "pen" | "payment" | "mail" }> = {
-      quote_viewed:     { description: `Quote viewed by client — ${quote_id}`, icon: "quote" },
-      tier_selected:    { description: `Client selected a tier — ${quote_id}${metadata?.tier ? ` (${metadata.tier})` : ""}`, icon: "quote" },
-      contract_started: { description: `Client started contract — ${quote_id}`, icon: "pen" },
-      contract_signed:  { description: `Contract signed by client — ${quote_id}`, icon: "pen" },
-      payment_started:  { description: `Client started payment — ${quote_id}`, icon: "payment" },
+      quote_viewed:     { description: `Quote viewed by client, ${quote_id}`, icon: "quote" },
+      tier_selected:    { description: `Client selected a tier, ${quote_id}${metadata?.tier ? ` (${metadata.tier})` : ""}`, icon: "quote" },
+      contract_started: { description: `Client started contract, ${quote_id}`, icon: "pen" },
+      contract_signed:  { description: `Contract signed by client, ${quote_id}`, icon: "pen" },
+      payment_started:  { description: `Client started payment, ${quote_id}`, icon: "payment" },
     };
     const activityEntry = activityMap[event_type];
     if (activityEntry) {

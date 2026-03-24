@@ -166,7 +166,7 @@ export async function GET(req: NextRequest) {
 
         await sendEmail({
           to: billingEmail,
-          subject: `Yugo Statement ${statementNumber} — $${total.toFixed(2)} due today`,
+          subject: `Yugo Statement ${statementNumber}, $${total.toFixed(2)} due today`,
           html,
         });
 
@@ -205,7 +205,7 @@ export async function GET(req: NextRequest) {
       if (billingEmail) {
         await sendEmail({
           to: billingEmail,
-          subject: `Statement ${stmt.statement_number} is overdue — $${Number(stmt.total).toFixed(2)}`,
+          subject: `Statement ${stmt.statement_number} is overdue, $${Number(stmt.total).toFixed(2)}`,
           html: buildOverdueEmail({
             partnerName: org?.name || "Partner",
             statementNumber: stmt.statement_number,
@@ -241,8 +241,8 @@ function buildStatementEmail(opts: {
     year: "numeric",
   });
   const cycleMap: Record<string, string> = {
-    net_30: "Net 30 — monthly statement, due on statement date. The billing cycle is your payment window.",
-    net_15: "Net 15 — bi-monthly statement (1st & 16th), due on statement date. Max 15-day payment window.",
+    net_30: "Net 30, monthly statement, due on statement date. The billing cycle is your payment window.",
+    net_15: "Net 15, bi-monthly statement (1st & 16th), due on statement date. Max 15-day payment window.",
     due_on_receipt: "Due on Receipt",
     prepay: "Pre-paid",
   };
@@ -267,7 +267,7 @@ function buildStatementEmail(opts: {
         <tr><td style="padding:10px 0 0;font-size:14px;color:#1a1714;font-weight:700;">Total Due</td><td style="padding:10px 0 0;font-size:16px;color:#B8962E;text-align:right;font-weight:700;">$${opts.total.toFixed(2)}</td></tr>
       </table>
       <div style="margin-top:16px;padding:12px 16px;background:#fef3cd;border-radius:8px;font-size:12px;color:#856404;border:1px solid #fde68a;">
-        <strong>Payment due: ${dueDateLabel}</strong> &mdash; ${cycleLabel}
+        <strong>Payment due: ${dueDateLabel}</strong> - ${cycleLabel}
       </div>
       <div style="margin-top:20px;text-align:center;">
         <a href="${opts.statementUrl}" style="display:inline-block;background:#B8962E;color:#0d0b08;padding:12px 28px;font-size:11px;font-weight:700;text-decoration:none;letter-spacing:1.2px;text-transform:uppercase;border-radius:8px;">View Statement</a>

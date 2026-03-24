@@ -48,7 +48,7 @@ export interface DispatchJobForMap {
 }
 
 function formatRelative(iso: string | undefined | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   const sec = Math.floor((Date.now() - d.getTime()) / 1000);
   if (sec < 60) return "just now";

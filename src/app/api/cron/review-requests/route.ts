@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
       try {
         await sendEmail({
           to: rr.client_email,
-          subject: "Quick reminder your Yugo review",
+          subject: "A gentle reminder about your Yugo review",
           template: "review-request-reminder",
           data: {
             clientName: rr.client_name,

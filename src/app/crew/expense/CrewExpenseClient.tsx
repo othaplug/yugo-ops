@@ -191,7 +191,7 @@ export default function CrewExpenseClient() {
             onChange={(e) => setJobId(e.target.value)}
             className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]"
           >
-            <option value="">— None —</option>
+            <option value="">- None -</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>{j.jobId} · {j.clientName}</option>
             ))}

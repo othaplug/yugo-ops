@@ -96,18 +96,18 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
             <div className="text-[9px]">{c.contact_name}</div>
             <div className="text-[9px] text-[var(--tx3)]">{c.email}</div>
           </td>
-          <td className="hidden md:table-cell px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.move_date ? formatMoveDate(c.move_date) : "—"}</td>
+          <td className="hidden md:table-cell px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.move_date ? formatMoveDate(c.move_date) : "-"}</td>
           <td className="px-3 py-2 border-b border-[var(--brd)]">
             <span className={`inline-flex px-2 py-[2px] rounded text-[10px] font-bold ${
               c.move_status === "completed" ? "bg-[var(--grdim)] text-[var(--grn)]" :
               c.move_status === "cancelled" ? "bg-[var(--rdim)] text-[var(--red)]" :
               "bg-[var(--gdim)] text-[var(--gold)]"
             }`}>
-              {(c.move_status || "—").replace("_", " ")}
+              {(c.move_status || "-").replace("_", " ")}
             </span>
           </td>
           <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">
-            {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "—"}
+            {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "-"}
           </td>
           <td className="px-3 py-2 border-b border-[var(--brd)] w-10" onClick={(e) => e.stopPropagation()}>
             <div className="relative flex justify-end" ref={menuOpenId === c.id ? menuRef : undefined} data-menu>

@@ -216,7 +216,7 @@ export default function ClaimDetailClient({
         </span>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mb-4">
-        {claim.client_name} · {moveCode || "—"} · {VALUATION_LABELS[claim.valuation_tier] || claim.valuation_tier}
+        {claim.client_name} · {moveCode || "-"} · {VALUATION_LABELS[claim.valuation_tier] || claim.valuation_tier}
       </p>
 
       {/* Actions */}
@@ -246,7 +246,7 @@ export default function ClaimDetailClient({
               </div>
               <div>
                 <p className="text-[var(--tx3)] mb-0.5">Move</p>
-                <p className="text-[var(--tx)] font-medium">{moveCode || "—"}</p>
+                <p className="text-[var(--tx)] font-medium">{moveCode || "-"}</p>
                 {moveTier && <p className="text-[11px] text-[var(--tx3)] capitalize">{moveTier}</p>}
               </div>
               <div>
@@ -438,7 +438,7 @@ export default function ClaimDetailClient({
                 </div>
                 <div>
                   <p className="text-[var(--tx3)]">Approved Amount</p>
-                  <p className="font-bold text-[var(--grn)]">{claim.approved_amount != null ? formatCurrency(claim.approved_amount) : "—"}</p>
+                  <p className="font-bold text-[var(--grn)]">{claim.approved_amount != null ? formatCurrency(claim.approved_amount) : "-"}</p>
                 </div>
                 {claim.resolution_type && (
                   <div>

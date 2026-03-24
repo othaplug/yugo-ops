@@ -119,7 +119,7 @@ async function handleCardExpiring(
     if (adminEmail) {
       await sendEmail({
         to: adminEmail,
-        subject: `Card expiring — ${partner.name}`,
+        subject: `Card expiring, ${partner.name}`,
         template: "admin-card-expiring-notice",
         data: {
           entityType: "partner",
@@ -165,7 +165,7 @@ async function handleCardExpiring(
     const trackUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
     await sendEmail({
       to: move.client_email,
-      subject: "Your payment card expires soon — action needed",
+      subject: "Your payment card expires soon, action needed",
       template: "client-card-expiring",
       data: {
         clientName: move.client_name || "there",

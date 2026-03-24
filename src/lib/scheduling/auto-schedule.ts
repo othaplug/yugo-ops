@@ -231,8 +231,8 @@ export async function autoScheduleMove(
       await notifyAdmins("move_scheduled", {
         moveId,
         subject: `Auto-scheduled: ${moveCode}`,
-        body: `Move ${moveCode} auto-scheduled — ${move.move_date} ${window}. Crew: ${best.crew.name ?? "assigned"}.`,
-        description: `Move ${moveCode} auto-scheduled — ${move.move_date} ${window}. Crew: ${best.crew.name ?? "assigned"}.`,
+        body: `Move ${moveCode} auto-scheduled, ${move.move_date} ${window}. Crew: ${best.crew.name ?? "assigned"}.`,
+        description: `Move ${moveCode} auto-scheduled, ${move.move_date} ${window}. Crew: ${best.crew.name ?? "assigned"}.`,
       }).catch(() => {});
     } else {
       // No crew profiles yet — mark as scheduled (unassigned crew)
@@ -275,9 +275,9 @@ export async function autoScheduleMove(
 
     await notifyAdmins("no_availability", {
       moveId,
-      subject: `URGENT — no availability: ${moveCode}`,
-      body: `New booking ${moveCode} for ${move.move_date} — no crew or truck available. Needs immediate manual resolution.`,
-      description: `New booking ${moveCode} for ${move.move_date} — no crew or truck available. Needs immediate manual resolution.`,
+      subject: `URGENT, no availability: ${moveCode}`,
+      body: `New booking ${moveCode} for ${move.move_date}, no crew or truck available. Needs immediate manual resolution.`,
+      description: `New booking ${moveCode} for ${move.move_date}, no crew or truck available. Needs immediate manual resolution.`,
     }).catch(() => {});
   }
 }

@@ -82,7 +82,7 @@ function isJobInProgress(status: string, stage: string | null): boolean {
 
 function getStatusInfo(status: string) {
   const s = (status || "").toLowerCase().replace(/-/g, "_");
-  return STATUS_DOT[s] || { icon: Circle, color: "text-[var(--tx3)]", label: (status || "—").replace(/_/g, " ").toUpperCase() };
+  return STATUS_DOT[s] || { icon: Circle, color: "text-[var(--tx3)]", label: (status || "-").replace(/_/g, " ").toUpperCase() };
 }
 
 

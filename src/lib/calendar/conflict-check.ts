@@ -50,7 +50,7 @@ export async function checkCrewConflict(
           .select("client_name, move_size")
           .eq("id", c.reference_id)
           .single();
-        if (move) label = `${move.client_name || "Client"} — ${move.move_size || ""} Move`;
+        if (move) label = `${move.client_name || "Client"}, ${move.move_size || ""} Move`;
       } else if (c.reference_type === "delivery" && c.reference_id) {
         const { data: del } = await supabase
           .from("deliveries")
@@ -59,7 +59,7 @@ export async function checkCrewConflict(
           .single();
         if (del) {
           const name = del.client_name || del.customer_name || "Delivery";
-          label = `${name} — ${del.item_count || ""}pc Delivery`;
+          label = `${name}, ${del.item_count || ""}pc Delivery`;
         }
       }
       return {

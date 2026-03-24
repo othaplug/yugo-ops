@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     if (original.move_date !== newQuote.move_date)
       changes.push(`Date: ${original.move_date || "TBD"} → ${newQuote.move_date || "TBD"}`);
     if (original.move_size !== newQuote.move_size && newQuote.move_size)
-      changes.push(`Size: ${original.move_size || "—"} → ${newQuote.move_size}`);
+      changes.push(`Size: ${original.move_size || "-"} → ${newQuote.move_size}`);
     if (original.from_address !== newQuote.from_address)
       changes.push(`Origin updated`);
     if (original.to_address !== newQuote.to_address)

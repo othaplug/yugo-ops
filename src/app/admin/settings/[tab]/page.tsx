@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function generateMetadata({ params }: { params: Promise<{ tab: string }> }) {
   const { tab } = await params;
   const label = tab === "personal" ? "Personal" : tab === "security" ? "Security" : tab === "appearance" ? "Appearance" : tab === "notifications" ? "Notifications" : tab === "integrations" ? "Integrations" : "Settings";
-  return { title: `Settings — ${label}` };
+  return { title: `Settings, ${label}` };
 }
 
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -116,7 +116,7 @@ export default async function SettingsTabPage({
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Two-Factor Authentication</label>
               <div className="flex items-center justify-between py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
-                <span className="text-[12px] text-[var(--tx2)]">{platformUser?.two_factor_enabled ? "2FA is active — code sent to email on each login" : "2FA not enabled"}</span>
+                <span className="text-[12px] text-[var(--tx2)]">{platformUser?.two_factor_enabled ? "2FA is active, code sent to email on each login" : "2FA not enabled"}</span>
                 <Enable2FAButton enabled={platformUser?.two_factor_enabled} />
               </div>
             </div>
@@ -167,16 +167,16 @@ export default async function SettingsTabPage({
       // Payments
       { key: "square", label: "Square", desc: "Invoicing & payment processing", icon: "creditCard" as const, connected: !!process.env.SQUARE_ACCESS_TOKEN, details: process.env.SQUARE_ENVIRONMENT === "production" ? "Mode: Production" : "Mode: Sandbox", category: "Payments" },
       // Communications
-      { key: "resend", label: "Resend", desc: "Transactional email — quotes, invoices, confirmations", icon: "mail" as const, connected: !!process.env.RESEND_API_KEY, category: "Communications" },
+      { key: "resend", label: "Resend", desc: "Transactional email, quotes, invoices, confirmations", icon: "mail" as const, connected: !!process.env.RESEND_API_KEY, category: "Communications" },
       { key: "openphone", label: "OpenPhone", desc: "SMS notifications, dispatch alerts & client messaging", icon: "phone" as const, connected: !!process.env.OPENPHONE_API_KEY, category: "Communications" },
       // Mapping
       { key: "mapbox", label: "Mapbox", desc: "Maps, geocoding, live crew tracking & routing", icon: "mapPin" as const, connected: !!process.env.MAPBOX_TOKEN || !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN, category: "Mapping" },
       // CRM
-      { key: "hubspot", label: "HubSpot", desc: "CRM — sync contacts, deals & pipeline from quotes", icon: "link" as const, connected: !!process.env.HUBSPOT_ACCESS_TOKEN, category: "CRM" },
+      { key: "hubspot", label: "HubSpot", desc: "CRM, sync contacts, deals & pipeline from quotes", icon: "link" as const, connected: !!process.env.HUBSPOT_ACCESS_TOKEN, category: "CRM" },
       // Accounting
       { key: "quickbooks", label: "QuickBooks", desc: "Sync invoices and payments with your accounting software", icon: "creditCard" as const, connected: !!process.env.QUICKBOOKS_CLIENT_ID, category: "Accounting" },
       // Automation
-      { key: "zapier", label: "Zapier", desc: "Automate workflows — connect Yugo to 6,000+ apps", icon: "plug" as const, connected: !!process.env.ZAPIER_WEBHOOK_SECRET, category: "Automation" },
+      { key: "zapier", label: "Zapier", desc: "Automate workflows, connect Yugo to 6,000+ apps", icon: "plug" as const, connected: !!process.env.ZAPIER_WEBHOOK_SECRET, category: "Automation" },
       { key: "slack", label: "Slack", desc: "Team channel + webhooks for test pings and track alerts", icon: "messageSquare" as const, connected: !!(process.env.SLACK_WEBHOOK_URL || process.env.SLACK_BOT_TOKEN), category: "Automation" },
     ];
 

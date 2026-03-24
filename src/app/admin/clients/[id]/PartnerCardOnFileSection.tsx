@@ -168,7 +168,7 @@ export default function PartnerCardOnFileSection({
               type="button"
               onClick={handleRemoveCard}
               disabled={removing}
-              className="text-[10px] font-semibold px-3 py-1.5 rounded-md bg-[var(--red)]/10 text-[var(--red)] border border-[var(--red)]/30 hover:bg-[var(--red)]/20 transition-colors disabled:opacity-50"
+              className="text-[10px] font-semibold px-3 py-1 rounded bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
             >
               {removing ? "Removing…" : "Remove"}
             </button>
@@ -178,7 +178,7 @@ export default function PartnerCardOnFileSection({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Icon name="alertTriangle" className="w-4 h-4 text-[var(--tx3)]" />
-            <span className="text-[12px] text-[var(--tx3)]">No card on file — statements will be sent as invoices</span>
+            <span className="text-[12px] text-[var(--tx3)]">No card on file, statements will be sent as invoices</span>
           </div>
           {!showForm && (
             <button

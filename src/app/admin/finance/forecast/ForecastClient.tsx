@@ -341,7 +341,7 @@ export default function ForecastClient() {
         )}
         {hasLowDays && !hasFullDays && (
           <div className="mt-4 p-3 rounded-lg bg-[var(--gold)]/5 border border-[var(--gold)]/20 text-[11px] text-[var(--tx2)]">
-            Low utilization on some days — consider marketing push or partner outreach.
+            Low utilization on some days, consider marketing push or partner outreach.
           </div>
         )}
       </Section>
@@ -415,11 +415,11 @@ export default function ForecastClient() {
               />
               <MetricRow
                 label="Avg days from quote to book"
-                thisMonth={metrics.avgDaysToBook.thisMonth > 0 ? `${metrics.avgDaysToBook.thisMonth} days` : "—"}
+                thisMonth={metrics.avgDaysToBook.thisMonth > 0 ? `${metrics.avgDaysToBook.thisMonth} days` : "-"}
                 lastMonth={
                   metrics.avgDaysToBook.lastMonth != null && metrics.avgDaysToBook.lastMonth > 0
                     ? `${metrics.avgDaysToBook.lastMonth} days`
-                    : "—"
+                    : "-"
                 }
                 change={metrics.avgDaysToBook.change}
                 invertColor

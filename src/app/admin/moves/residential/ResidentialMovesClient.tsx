@@ -40,7 +40,7 @@ function truncateAddress(from?: string, to?: string, maxLen = 40): string {
   const f = (from || "").trim();
   const t = (to || "").trim();
   const arrow = " → ";
-  if (!f && !t) return "—";
+  if (!f && !t) return "-";
   const full = f ? (t ? `${f}${arrow}${t}` : f) : t;
   if (full.length <= maxLen) return full;
   if (!t) return f.slice(0, maxLen - 1) + "…";
@@ -275,7 +275,7 @@ export default function ResidentialMovesClient({ moves }: { moves: Move[] }) {
                   leftPrimary={String(idx + 1).padStart(2, "0")}
                   leftSecondary={formatMoveDate(m.scheduled_date)}
                   status={getStatusLabel(m.status ?? null)}
-                  title={m.client_name || "—"}
+                  title={m.client_name || "-"}
                   price={formatCurrency(m.estimate ?? 0)}
                   subtitle={truncateAddress(m.from_address, m.to_address)}
                 />

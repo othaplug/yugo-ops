@@ -32,10 +32,6 @@ export async function GET(req: NextRequest) {
 
     const move = moves[0];
 
-    if (!["completed", "delivered", "done"].includes(move.status?.toLowerCase() || "")) {
-      // Allow claims for any status, but flag if not completed
-    }
-
     return NextResponse.json({
       move: {
         id: move.id,
@@ -45,6 +41,7 @@ export async function GET(req: NextRequest) {
         client_phone: move.client_phone,
         valuation_tier: move.valuation_tier || "released",
         was_upgraded: false,
+        status: move.status || null,
       },
     });
   } catch {

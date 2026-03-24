@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const db = createAdminClient();
   const { data: org } = await db.from("organizations").select("name").eq("id", id).single();
-  const name = org?.name ? `Revenue — ${org.name}` : "Revenue";
+  const name = org?.name ? `Revenue, ${org.name}` : "Revenue";
   return { title: name };
 }
 
@@ -94,7 +94,7 @@ export default async function ClientRevenuePage({ params }: { params: Promise<{ 
               >
                 <div>
                   <div className="text-[12px] font-semibold text-[var(--tx)]">{inv.invoice_number}</div>
-                  <div className="text-[10px] text-[var(--tx3)]">Due {inv.due_date || "—"}</div>
+                  <div className="text-[10px] text-[var(--tx3)]">Due {inv.due_date || "-"}</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] font-bold text-[var(--tx)]">{formatCurrency(Number(inv.amount || 0))}</span>
@@ -103,7 +103,7 @@ export default async function ClientRevenuePage({ params }: { params: Promise<{ 
                       inv.status === "paid" ? "bg-[var(--grdim)] text-[var(--grn)]" : inv.status === "overdue" ? "bg-[var(--rdim)] text-[var(--red)]" : "bg-[var(--gdim)] text-[var(--gold)]"
                     }`}
                   >
-                    {inv.status || "—"}
+                    {inv.status || "-"}
                   </span>
                 </div>
               </Link>

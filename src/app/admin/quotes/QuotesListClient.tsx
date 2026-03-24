@@ -77,7 +77,7 @@ function quoteAmountRaw(q: Quote): number | null {
 
 function quoteAmount(q: Quote): string {
   const raw = quoteAmountRaw(q);
-  return raw != null ? formatCurrency(raw) : "—";
+  return raw != null ? formatCurrency(raw) : "-";
 }
 
 function relTime(iso: string | null): string {
@@ -220,7 +220,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         label: "Quote ID",
         accessor: (q) => q.quote_id,
         render: (q) => (
-          <span className="dt-text-id whitespace-nowrap">{q.quote_id || "—"}</span>
+          <span className="dt-text-id whitespace-nowrap">{q.quote_id || "-"}</span>
         ),
         searchable: true,
         exportAccessor: (q) => q.quote_id ?? "",
@@ -309,7 +309,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
                     type="button"
                     onClick={() => handleDelete(q.id)}
                     disabled={deleting === q.id}
-                    className="w-full min-h-[36px] px-3 rounded-full text-[10px] font-bold bg-[var(--red)]/15 text-[var(--red)] border border-[var(--red)]/25 hover:bg-[var(--red)]/25 transition-colors disabled:opacity-50"
+                    className="w-full px-3 py-1 rounded text-[10px] font-bold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
                   >
                     {deleting === q.id ? "…" : "Delete"}
                   </button>
@@ -410,7 +410,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
                   <ul className="text-[12px] space-y-1.5 font-mono text-[var(--tx2)]">
                     {followupPreview.map((row) => (
                       <li key={`${row.quote_id}-${row.stage}`}>
-                        {row.quote_id} — Stage {row.stage}
+                        {row.quote_id}, Stage {row.stage}
                       </li>
                     ))}
                   </ul>

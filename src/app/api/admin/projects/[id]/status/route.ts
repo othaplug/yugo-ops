@@ -114,7 +114,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await createPartnerNotification({
         orgId: proj.partner_id,
         title: `Item status updated: ${item.item_name}`,
-        body: `${item.item_name} is now "${statusLabel}" — ${projectRef}`,
+        body: `${item.item_name} is now "${statusLabel}", ${projectRef}`,
         icon: "package",
         link: `/partner/projects/${projectId}`,
       });
@@ -134,8 +134,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         await sendEmail({
           to: org.email,
           subject: isIssue
-            ? `Issue reported on ${item.item_name} — ${proj.project_name}`
-            : `${item.item_name} is now ${statusLabel} — ${proj.project_name}`,
+            ? `Issue reported on ${item.item_name}, ${proj.project_name}`
+            : `${item.item_name} is now ${statusLabel}, ${proj.project_name}`,
           html: projectItemStatusEmailHtml({
             partnerName: org.contact_name || org.name,
             projectName: proj.project_name,

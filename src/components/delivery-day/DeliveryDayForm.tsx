@@ -662,9 +662,9 @@ export default function DeliveryDayForm({
           <h3 className="text-[15px] font-bold text-[var(--tx)]">Review Your Delivery Day</h3>
           <div className="rounded-xl border border-[var(--brd)] p-4 space-y-2">
             {[
-              ["Date", scheduledDate || "—"],
+              ["Date", scheduledDate || "-"],
               ["Time", `${TIME_WINDOW_CHOICES.find((t) => t.value === timeWindow)?.label} (${TIME_WINDOW_CHOICES.find((t) => t.value === timeWindow)?.range})`],
-              ["Pickup", pickupAddress || "—"],
+              ["Pickup", pickupAddress || "-"],
               ["Vehicle", VEHICLE_OPTIONS.find((v) => v.value === selectedVehicle)?.label ?? selectedVehicle],
               ["Duration", selectedDayType === "full_day" ? "Full Day" : "Half Day"],
               ["Stops", String(stops.length)],
@@ -681,7 +681,7 @@ export default function DeliveryDayForm({
                 <span className="w-4 h-4 rounded-full bg-[var(--gold)] text-white text-[9px] font-bold flex items-center justify-center">{idx + 1}</span>
                 Stop {idx + 1}
               </h4>
-              <p className="text-[12px] text-[var(--tx2)] truncate">{stop.address || "—"}</p>
+              <p className="text-[12px] text-[var(--tx2)] truncate">{stop.address || "-"}</p>
               {stop.zone != null && <p className="text-[10px] text-[var(--tx3)]">Zone {stop.zone} · {stop.zoneName}</p>}
               {stop.customerName && <p className="text-[11px] text-[var(--tx2)]">{stop.customerName}{stop.customerPhone ? ` · ${formatPhone(stop.customerPhone)}` : ""}</p>}
               {stop.items.length > 0 && (

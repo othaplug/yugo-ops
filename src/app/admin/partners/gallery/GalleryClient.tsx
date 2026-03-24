@@ -17,12 +17,12 @@ interface GalleryPartner {
 }
 
 function formatDateShort(d: string | null): string {
-  if (!d) return "—";
+  if (!d) return "-";
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function formatDate(d: string | null): string {
-  if (!d) return "—";
+  if (!d) return "-";
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -169,7 +169,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                   p.gallery,
                   isExhibition ? p.location : (p.address || p.location),
                   dates,
-                ].filter(Boolean).join(" · ") || "—";
+                ].filter(Boolean).join(" · ") || "-";
 
                 return (
                   <div key={p.id}>
@@ -269,7 +269,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-semibold text-[var(--tx)]">{p.name}</div>
-                    <div className="text-[11px] text-[var(--tx3)]">{[p.contact_name, p.email].filter(Boolean).join(" · ") || "—"}</div>
+                    <div className="text-[11px] text-[var(--tx3)]">{[p.contact_name, p.email].filter(Boolean).join(" · ") || "-"}</div>
                   </div>
                   <CaretRight size={14} weight="regular" className="text-[var(--tx3)]" />
                 </Link>
@@ -295,19 +295,19 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Gallery</div>
-                <div className="text-[var(--tx)]">{projectDetail.gallery || "—"}</div>
+                <div className="text-[var(--tx)]">{projectDetail.gallery || "-"}</div>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Type</div>
-                <div className="text-[var(--tx)]">{toTitleCase(projectDetail.project_type || "—")}</div>
+                <div className="text-[var(--tx)]">{toTitleCase(projectDetail.project_type || "-")}</div>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Address</div>
-                <div className="text-[var(--tx)]">{projectDetail.address || "—"}</div>
+                <div className="text-[var(--tx)]">{projectDetail.address || "-"}</div>
               </div>
               <div>
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Location</div>
-                <div className="text-[var(--tx)]">{projectDetail.location || "—"}</div>
+                <div className="text-[var(--tx)]">{projectDetail.location || "-"}</div>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Dates</div>
@@ -315,7 +315,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Estimate</div>
-                <div className="text-[var(--gold)] font-semibold">{projectDetail.insurance_value || "—"}</div>
+                <div className="text-[var(--gold)] font-semibold">{projectDetail.insurance_value || "-"}</div>
               </div>
               <div>
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Status</div>
@@ -329,13 +329,13 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                       projectDetail.white_glove && "White-glove",
                       projectDetail.crating_required && "Crating",
                       projectDetail.climate_controlled && "Climate-controlled",
-                    ].filter(Boolean).join(" · ") || "—"}
+                    ].filter(Boolean).join(" · ") || "-"}
                   </div>
                 </div>
               )}
               <div>
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Details</div>
-                <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details || "—"}</p>
+                <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details || "-"}</p>
               </div>
             </div>
             <button

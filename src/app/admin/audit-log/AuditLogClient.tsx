@@ -81,7 +81,7 @@ function entityBadgeLabel(entityType: string): string {
 }
 
 function humanizeEventType(eventType: string): string {
-  if (!eventType) return "—";
+  if (!eventType) return "-";
   return eventType
     .split(/[_\s]+/)
     .filter(Boolean)
@@ -328,7 +328,7 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                               <ArrowSquareOut size={14} weight="bold" aria-hidden />
                             </Link>
                           ) : (
-                            <span className="text-[11px] text-[var(--tx3)]">—</span>
+                            <span className="text-[11px] text-[var(--tx3)]">-</span>
                           )}
                         </td>
                       </tr>
@@ -363,7 +363,7 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                             <ArrowSquareOut size={14} weight="bold" aria-hidden />
                           </span>
                         ) : (
-                          <span className="text-[11px] text-[var(--tx3)]">—</span>
+                          <span className="text-[11px] text-[var(--tx3)]">-</span>
                         )}
                       </div>
                     </div>

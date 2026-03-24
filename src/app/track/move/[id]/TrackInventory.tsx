@@ -149,7 +149,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
       byRoom[room].push({
         id: e.id,
         room,
-        item_name: (e.description ?? "—").trim(),
+        item_name: (e.description ?? "-").trim(),
         box_number: e.room || null,
         sort_order: 0,
         quantity: e.quantity ?? 1,

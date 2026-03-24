@@ -1,0 +1,11 @@
+-- ═══════════════════════════════════════════════════════════════
+-- Fix: drop undocumented deliveries_category_check constraint
+-- ═══════════════════════════════════════════════════════════════
+--
+-- The constraint was added directly to the database outside of
+-- migrations and does not allow "b2b_oneoff" as a category value.
+-- The deliveries.category column is defined as plain TEXT in the
+-- base schema, so no CHECK constraint is necessary — the allowed
+-- values are controlled at the application layer.
+--
+ALTER TABLE deliveries DROP CONSTRAINT IF EXISTS deliveries_category_check;

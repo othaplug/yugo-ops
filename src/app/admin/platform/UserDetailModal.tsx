@@ -240,7 +240,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="px-4 py-2.5 rounded-lg text-[12px] font-semibold border border-[var(--red)]/50 text-[var(--red)] hover:bg-[var(--red)]/10"
+                className="px-4 py-1.5 rounded text-[12px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
               >
                 Delete user
               </button>

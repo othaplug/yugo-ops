@@ -45,7 +45,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function ConditionDot({ rating }: { rating: ConditionRating | null }) {
-  if (!rating) return <span className="text-[10px] text-[var(--tx3)]">—</span>;
+  if (!rating) return <span className="text-[10px] text-[var(--tx3)]">-</span>;
   const opt = CONDITION_OPTIONS.find((o) => o.value === rating);
   return (
     <span

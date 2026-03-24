@@ -28,7 +28,7 @@ export default function ResendTrackingLinkButton({ move }: { move: any }) {
       }
       toast(`Tracking link sent to ${move.client_name || toEmail}`, "mail");
     } catch {
-      toast("Network error — try again", "alertTriangle");
+      toast("Network error, try again", "alertTriangle");
     } finally {
       setLoading(false);
     }

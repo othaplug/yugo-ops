@@ -194,7 +194,7 @@ export async function GET(req: NextRequest) {
   function stageLabel(status: string, stage: string | null, type: "move" | "delivery"): string {
     const s = (stage || status || "").toLowerCase().replace(/-/g, "_");
     const labels: Record<string, string> = {
-      confirmed: "Confirmed — crew notified",
+      confirmed: "Confirmed, crew notified",
       scheduled: "Scheduled",
       en_route: "Crew departed",
       en_route_to_pickup: "En route to pickup",
@@ -208,7 +208,7 @@ export async function GET(req: NextRequest) {
       delivered: "Completed",
       job_complete: "Completed",
     };
-    return labels[s] || status?.replace(/_/g, " ") || "—";
+    return labels[s] || status?.replace(/_/g, " ") || "-";
   }
 
   for (const m of moves || []) {
@@ -218,7 +218,7 @@ export async function GET(req: NextRequest) {
       id: m.id,
       type: "move",
       label: m.move_code || `MV${m.id.slice(0, 4).toUpperCase()}`,
-      client: m.client_name || "—",
+      client: m.client_name || "-",
       clientPhone: m.client_phone || null,
       clientEmail: m.client_email || null,
       tier: m.tier_selected || undefined,
@@ -249,7 +249,7 @@ export async function GET(req: NextRequest) {
       id: d.id,
       type: "delivery",
       label: d.delivery_number || `DLV-${d.id.slice(0, 4).toUpperCase()}`,
-      client: d.client_name || d.customer_name || "—",
+      client: d.client_name || d.customer_name || "-",
       clientPhone: null,
       clientEmail: null,
       partnerName: d.client_name || undefined,
@@ -326,10 +326,10 @@ export async function GET(req: NextRequest) {
     const href = moveForHref ? getMoveDetailPath(moveForHref) : deliveryForHref ? getDeliveryDetailPath(deliveryForHref) : undefined;
     const typeLabels: Record<string, string> = {
       crew_departed: "departed for",
-      eta_15_min: "ETA 15 min — SMS sent for",
+      eta_15_min: "ETA 15 min, SMS sent for",
       crew_arrived: "arrived at",
-      in_progress: "in progress —",
-      completed: "completed —",
+      in_progress: "in progress -",
+      completed: "completed -",
     };
     const desc = typeLabels[e.message_type] || e.message_type;
     const crewId = job && "crew_id" in job ? (job as { crew_id?: string }).crew_id : null;
@@ -337,7 +337,7 @@ export async function GET(req: NextRequest) {
       id: `eta-${e.id}`,
       type: "eta_sms",
       icon: "message",
-      description: `${desc} ${jobLabel} — ${e.recipient_name || "Client"}`,
+      description: `${desc} ${jobLabel}, ${e.recipient_name || "Client"}`,
       timestamp: e.sent_at,
       jobId: jobLabel,
       jobType: e.move_id ? "move" : "delivery",
@@ -348,7 +348,7 @@ export async function GET(req: NextRequest) {
 
   for (const t of tipsToday || []) {
     const move = t.move_id ? moveMap.get(t.move_id) : null;
-    const jobLabel = move?.move_code || (t.move_id ? t.move_id.slice(0, 8) : "—");
+    const jobLabel = move?.move_code || (t.move_id ? t.move_id.slice(0, 8) : "-");
     const crewId = move && "crew_id" in move ? (move as { crew_id?: string }).crew_id : null;
     events.push({
       id: `tip-${t.id}`,
@@ -367,7 +367,7 @@ export async function GET(req: NextRequest) {
     const job = p.move_id ? moveMap.get(p.move_id) : p.delivery_id ? deliveryMap.get(p.delivery_id) : null;
     const jobLabel = job
       ? ("move_code" in job ? (job as { move_code?: string }).move_code : (job as { delivery_number?: string }).delivery_number) || job.id.slice(0, 8)
-      : "—";
+      : "-";
     const crewId = job && "crew_id" in job ? (job as { crew_id?: string }).crew_id : null;
     events.push({
       id: `pod-${p.id}`,
@@ -384,7 +384,7 @@ export async function GET(req: NextRequest) {
 
   for (const r of reviewsToday || []) {
     const move = r.move_id ? moveMap.get(r.move_id) : null;
-    const jobLabel = move?.move_code || (r.move_id ? r.move_id.slice(0, 8) : "—");
+    const jobLabel = move?.move_code || (r.move_id ? r.move_id.slice(0, 8) : "-");
     const crewId = move && "crew_id" in move ? (move as { crew_id?: string }).crew_id : null;
     events.push({
       id: `review-${r.id}`,
@@ -412,7 +412,7 @@ export async function GET(req: NextRequest) {
       id: `se-${se.id}`,
       type: se.event_type,
       icon: se.icon === "truck" ? "status_change" : (se.icon || "status_change"),
-      description: se.description || `${label} — ${se.event_type}`,
+      description: se.description || `${label}, ${se.event_type}`,
       timestamp: se.created_at,
       jobId: label,
       jobType: se.entity_type as "move" | "delivery",

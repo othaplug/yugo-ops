@@ -79,7 +79,7 @@ export default function CrewEndOfDayPage() {
             <div><span className="text-[var(--tx3)]">Photos:</span> {preview.summary.photosCount ?? 0}</div>
             <div><span className="text-[var(--tx3)]">Expenses:</span> ${((preview.summary.expensesTotal ?? 0) / 100).toFixed(2)}</div>
             <div><span className="text-[var(--tx3)]">Client sign-offs:</span> {preview.summary.clientSignOffs ?? 0}</div>
-            <div><span className="text-[var(--tx3)]">Avg satisfaction:</span> {preview.summary.averageSatisfaction ?? "—"}</div>
+            <div><span className="text-[var(--tx3)]">Avg satisfaction:</span> {preview.summary.averageSatisfaction ?? "-"}</div>
           </div>
           {preview.jobs && preview.jobs.length > 0 && (
             <div className="mt-3 pt-3 border-t border-[var(--brd)]">

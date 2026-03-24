@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
 
       const result = await sendEmail({
         to: quote.client_email,
-        subject: `Your Yugo quote — still available for 48 hours`,
+        subject: `Your Yugo quote is available for 48 more hours`,
         html,
       });
 

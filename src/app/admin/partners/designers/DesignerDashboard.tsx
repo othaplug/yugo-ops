@@ -154,7 +154,7 @@ export default function DesignerDashboard({
                 </div>
               ) : allProjects.map((project) => {
                 const org = Array.isArray(project.organizations) ? project.organizations[0] : project.organizations;
-                const partnerName = org?.name || "—";
+                const partnerName = org?.name || "-";
                 const isActive = ACTIVE_STATUSES.includes(project.status || "");
                 const statusLabel = (project.status || "").replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
                 return (
@@ -200,7 +200,7 @@ export default function DesignerDashboard({
                   <div className="flex items-center gap-3">
                     <div>
                       <div className="text-[13px] font-semibold text-[var(--tx)]">{c.name}</div>
-                      <div className="text-[11px] text-[var(--tx3)]">{[c.contact_name, c.email].filter(Boolean).join(" · ") || "—"}</div>
+                      <div className="text-[11px] text-[var(--tx3)]">{[c.contact_name, c.email].filter(Boolean).join(" · ") || "-"}</div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">

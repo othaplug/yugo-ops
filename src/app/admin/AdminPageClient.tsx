@@ -717,7 +717,7 @@ export default function AdminPageClient({
                       )}
                     </div>
 
-                    {/* Arrow — always visible on mobile, hover-only on desktop */}
+                    {/* Arrow, always visible on mobile, hover-only on desktop */}
                     <CaretRight weight="regular" className="shrink-0 w-4 h-4 text-[var(--tx3)]/40 md:opacity-0 md:group-hover:opacity-100 transition-opacity mt-3" />
                   </Link>
                 );
@@ -1040,7 +1040,7 @@ export default function AdminPageClient({
             </div>
           </div>
 
-          {/* Overdue (conditional) — keep as alert banner */}
+          {/* Overdue (conditional), keep as alert banner */}
           {overdueAmount > 0 && (
             <div className="pt-6 border-t border-[var(--brd)]/30">
               <Link href="/admin/invoices" className="group flex items-center justify-between py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/10 hover:border-[var(--red)]/30 transition-all cursor-pointer">
@@ -1218,7 +1218,7 @@ export default function AdminPageClient({
             </div>
           )}
 
-          {/* Activity — live feed */}
+          {/* Activity, live feed */}
           <LiveActivityFeed initialEvents={activityEvents} />
         </div>
       </div>

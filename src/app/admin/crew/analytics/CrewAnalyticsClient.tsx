@@ -105,7 +105,7 @@ function fmtLabel(iso: string) {
 }
 
 function fmtDuration(mins: number | null) {
-  if (mins == null) return "—";
+  if (mins == null) return "-";
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   if (h === 0) return `${m}m`;
@@ -113,7 +113,7 @@ function fmtDuration(mins: number | null) {
 }
 
 function fmtTime(iso: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
@@ -219,7 +219,7 @@ export default function CrewAnalyticsClient({
   const totalJobs = sorted.reduce((s, a) => s + a.jobsCompleted, 0);
   const avgSatAll = (() => {
     const ratings = sorted.filter((a) => a.avgSatisfaction != null).map((a) => a.avgSatisfaction!);
-    return ratings.length > 0 ? (ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(1) : "—";
+    return ratings.length > 0 ? (ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(1) : "-";
   })();
   const avgSignOff =
     sorted.length > 0 ? Math.round(sorted.reduce((s, a) => s + a.signOffRate, 0) / sorted.length) : 0;
@@ -292,7 +292,7 @@ export default function CrewAnalyticsClient({
       </div>
       <p className="text-[12px] text-[var(--tx3)] mt-2 mb-5 font-medium">
         {totalJobs} jobs · {sorted.length} crew{sorted.length !== 1 ? "s" : ""}
-        {avgSatAll !== "—" ? ` · ${avgSatAll}/5 avg satisfaction` : ""}
+        {avgSatAll !== "-" ? ` · ${avgSatAll}/5 avg satisfaction` : ""}
         {" · "}{avgSignOff}% sign-off rate
       </p>
 
@@ -323,7 +323,7 @@ export default function CrewAnalyticsClient({
             }`}
           >
             <CalendarBlank size={12} weight="regular" className="text-current" />
-            {!currentPreset ? `${fmtLabel(from)} — ${fmtLabel(to)}` : "Custom"}
+            {!currentPreset ? `${fmtLabel(from)}, ${fmtLabel(to)}` : "Custom"}
           </button>
           {loading && (
             <div className="ml-auto flex items-center gap-1.5 text-[10px] text-[var(--tx3)]">
@@ -409,7 +409,7 @@ export default function CrewAnalyticsClient({
           <SummaryCell label="Total Jobs" value={String(totalJobs)} sub={`${sorted.length} crews`} />
           <SummaryCell label="Satisfaction" value={avgSatAll} sub="/5 avg" accent />
           <SummaryCell label="Sign-off Rate" value={`${avgSignOff}%`} />
-          <SummaryCell label="Top Performer" value={bestCrew?.name || "—"} sub={bestCrew ? `${bestCrew.jobsCompleted} jobs` : ""} accent />
+          <SummaryCell label="Top Performer" value={bestCrew?.name || "-"} sub={bestCrew ? `${bestCrew.jobsCompleted} jobs` : ""} accent />
         </div>
       </div>
 
@@ -495,20 +495,20 @@ export default function CrewAnalyticsClient({
                   <div className="hidden sm:flex items-center gap-6 text-right text-[12px]">
                     <span className="w-[80px] font-bold text-[var(--tx)] tabular-nums">{a.jobsCompleted}</span>
                     <span className="w-[80px] font-semibold tabular-nums" style={{ color: satColor }}>
-                      {a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : "—"}
+                      {a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : "-"}
                     </span>
                     <span className={`w-[80px] font-semibold tabular-nums ${a.signOffRate >= 80 ? "text-[var(--grn)]" : "text-[var(--tx2)]"}`}>
                       {a.signOffRate}%
                     </span>
                     <span className="w-[80px] text-[var(--tx3)] tabular-nums">
-                      {a.avgDuration > 0 ? `${a.avgDuration}m` : "—"}
+                      {a.avgDuration > 0 ? `${a.avgDuration}m` : "-"}
                     </span>
                   </div>
 
                   {/* Stats - mobile */}
                   <div className="sm:hidden flex flex-col items-end gap-0.5 text-right text-[11px]">
                     <span className="font-bold text-[var(--tx)]">{a.jobsCompleted} jobs</span>
-                    <span style={{ color: satColor }}>{a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : "—"}</span>
+                    <span style={{ color: satColor }}>{a.avgSatisfaction != null ? `${a.avgSatisfaction}/5` : "-"}</span>
                   </div>
 
                   <CaretRight weight="regular" className="shrink-0 w-4 h-4 text-[var(--tx3)] opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
@@ -595,7 +595,7 @@ function CrewDetailView({
                 </div>
               )}
               <p className="text-[11px] text-[var(--tx3)] mt-2">
-                {fmtLabel(from)} — {fmtLabel(to)}
+                {fmtLabel(from)}, {fmtLabel(to)}
               </p>
             </div>
           </div>
@@ -609,7 +609,7 @@ function CrewDetailView({
             />
             <KpiCard
               label="Avg Satisfaction"
-              value={detail.summary.avgRating != null ? `${detail.summary.avgRating}/5` : "—"}
+              value={detail.summary.avgRating != null ? `${detail.summary.avgRating}/5` : "-"}
               color={
                 detail.summary.avgRating != null
                   ? detail.summary.avgRating >= 4.5
@@ -622,7 +622,7 @@ function CrewDetailView({
             />
             <KpiCard
               label="On-Time Rate"
-              value={detail.summary.onTimeRate != null ? `${detail.summary.onTimeRate}%` : "—"}
+              value={detail.summary.onTimeRate != null ? `${detail.summary.onTimeRate}%` : "-"}
               color={
                 detail.summary.onTimeRate != null
                   ? detail.summary.onTimeRate >= 80
@@ -638,7 +638,7 @@ function CrewDetailView({
               value={
                 detail.summary.totalTips > 0
                   ? `$${detail.summary.totalTips.toLocaleString()}`
-                  : "—"
+                  : "-"
               }
               color="var(--grn)"
             />
@@ -704,7 +704,7 @@ function CrewDetailView({
                           boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
                         }}
                         labelStyle={{ color: "#E5E5E5", fontWeight: 600 }}
-                        formatter={(v) => [`${v != null ? `${v} min` : "—"}`, "Avg Duration"]}
+                        formatter={(v) => [`${v != null ? `${v} min` : "-"}`, "Avg Duration"]}
                       />
                       <Line
                         type="monotone"
@@ -729,7 +729,7 @@ function CrewDetailView({
                           boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
                         }}
                         labelStyle={{ color: "#E5E5E5", fontWeight: 600 }}
-                        formatter={(v) => [`${v != null ? `${v}/5` : "—"}`, "Avg Rating"]}
+                        formatter={(v) => [`${v != null ? `${v}/5` : "-"}`, "Avg Rating"]}
                       />
                       <Line
                         type="monotone"
@@ -749,7 +749,7 @@ function CrewDetailView({
           {/* Job History Table */}
           <div>
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
-              Job History — {detail.jobs.length} job{detail.jobs.length !== 1 ? "s" : ""}
+              Job History, {detail.jobs.length} job{detail.jobs.length !== 1 ? "s" : ""}
             </div>
 
             {detail.jobs.length === 0 ? (
@@ -799,7 +799,7 @@ function CrewDetailView({
                           <div className="md:hidden py-3.5 px-4 -mx-1 hover:bg-[var(--brd)]/5 rounded-xl transition-colors">
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-[11px] font-semibold text-[var(--tx3)]">
-                                {job.date ? new Date(job.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                                {job.date ? new Date(job.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-"}
                               </span>
                               <div className="flex items-center gap-2">
                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg)] text-[var(--tx3)] font-medium">
@@ -829,7 +829,7 @@ function CrewDetailView({
                                     month: "short",
                                     day: "numeric",
                                   })
-                                : "—"}
+                                : "-"}
                             </span>
                             <div className="min-w-0">
                               <p className="text-[13px] font-semibold text-[var(--tx)] truncate">{job.clientName}</p>
@@ -847,10 +847,10 @@ function CrewDetailView({
                               )}
                             </span>
                             <span className="text-center text-[13px] font-bold" style={{ color: onTimeColor }}>
-                              {job.onTime === true ? "✓" : job.onTime === false ? "✗" : "—"}
+                              {job.onTime === true ? "✓" : job.onTime === false ? "✗" : "-"}
                             </span>
                             <span className="text-center text-[12px] font-semibold" style={{ color: satColor }}>
-                              {job.rating != null ? `${job.rating}/5` : "—"}
+                              {job.rating != null ? `${job.rating}/5` : "-"}
                             </span>
                             <CaretRight weight="regular" className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-90" : ""}`} aria-hidden />
                           </div>

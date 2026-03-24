@@ -58,7 +58,7 @@ const projectColumns: ColumnDef<Project>[] = [
     searchable: true,
     render: (p) => (
       <div>
-        <div className="text-[12px] font-medium text-[var(--tx)]">{p.organizations?.name || "—"}</div>
+        <div className="text-[12px] font-medium text-[var(--tx)]">{p.organizations?.name || "-"}</div>
         <div className="text-[10px] text-[var(--tx3)] capitalize">{p.organizations?.type || ""}</div>
       </div>
     ),
@@ -89,7 +89,7 @@ const projectColumns: ColumnDef<Project>[] = [
     id: "phase",
     label: "Phase",
     accessor: (p) => p.active_phase || "",
-    render: (p) => <span className="text-[11px] text-[var(--tx2)] capitalize">{p.active_phase?.replace("_", " ") || "—"}</span>,
+    render: (p) => <span className="text-[11px] text-[var(--tx2)] capitalize">{p.active_phase?.replace("_", " ") || "-"}</span>,
   },
   {
     id: "budget",
@@ -98,7 +98,7 @@ const projectColumns: ColumnDef<Project>[] = [
     render: (p) => (
       <div>
         <div className="text-[12px] font-medium text-[var(--tx)]">
-          {p.estimated_budget ? formatCurrency(p.estimated_budget) : "—"}
+          {p.estimated_budget ? formatCurrency(p.estimated_budget) : "-"}
         </div>
         {p.actual_cost ? (
           <div className="text-[10px] text-[var(--tx3)]">Spent: {formatCurrency(p.actual_cost)}</div>
@@ -113,7 +113,7 @@ const projectColumns: ColumnDef<Project>[] = [
     accessor: (p) => p.start_date || "",
     render: (p) => (
       <span className="text-[11px] text-[var(--tx3)]">
-        {p.start_date ? new Date(p.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+        {p.start_date ? new Date(p.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-"}
         {p.target_end_date ? ` → ${new Date(p.target_end_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}
       </span>
     ),
@@ -149,7 +149,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
       <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
         <KpiCard label="Total Projects" value={String(projects.length)} sub={`${activeProjects} active`} />
         <KpiCard label="Active" value={String(activeProjects)} sub="in progress" accent={activeProjects > 0} />
-        <KpiCard label="Total Budget" value={totalBudget > 0 ? `$${(totalBudget / 1000).toFixed(0)}K` : "—"} sub="estimated" />
+        <KpiCard label="Total Budget" value={totalBudget > 0 ? `$${(totalBudget / 1000).toFixed(0)}K` : "-"} sub="estimated" />
       </div>
 
 

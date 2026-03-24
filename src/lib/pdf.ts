@@ -415,8 +415,8 @@ export function generateMoveInvoicePDF(data: MoveInvoiceData) {
   doc.text("TO", 115, y);
   y += 5;
   setBodyText(doc, 8);
-  const fromLines = doc.splitTextToSize(data.fromAddress || "—", 80);
-  const toLines = doc.splitTextToSize(data.toAddress || "—", 80);
+  const fromLines = doc.splitTextToSize(data.fromAddress || "-", 80);
+  const toLines = doc.splitTextToSize(data.toAddress || "-", 80);
   doc.text(fromLines, 20, y);
   doc.text(toLines, 115, y);
   y += Math.max(fromLines.length, toLines.length) * 4 + 8;
@@ -608,8 +608,8 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
 
   // Move details
   sectionHeader("MOVE DETAILS");
-  infoLine("From", data.fromAddress || "—");
-  infoLine("To", data.toAddress || "—");
+  infoLine("From", data.fromAddress || "-");
+  infoLine("To", data.toAddress || "-");
   infoLine("Scheduled", data.scheduledDate);
   infoLine("Completed", data.completedDate);
   if (data.serviceType) infoLine("Service", data.serviceType);
@@ -621,7 +621,7 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
 
   // Crew info
   sectionHeader("CREW");
-  infoLine("Team", data.crewName || "—");
+  infoLine("Team", data.crewName || "-");
   if (data.crewMembers && data.crewMembers.length > 0) {
     infoLine("Members", data.crewMembers.join(", "));
   }
@@ -665,7 +665,7 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
       e.description,
       String(e.quantity),
       e.status.charAt(0).toUpperCase() + e.status.slice(1),
-      e.feeCents ? formatCurrency(e.feeCents / 100) : "—",
+      e.feeCents ? formatCurrency(e.feeCents / 100) : "-",
     ]);
     const headStylesExtra = getTableHeadStyles(true);
     autoTable(doc, {
@@ -687,7 +687,7 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
       c.type,
       c.details,
       c.status.charAt(0).toUpperCase() + c.status.slice(1),
-      c.feeCents ? formatCurrency(c.feeCents / 100) : "—",
+      c.feeCents ? formatCurrency(c.feeCents / 100) : "-",
     ]);
     const headStylesChange = getTableHeadStyles(true);
     autoTable(doc, {
@@ -827,7 +827,7 @@ export function generatePoDPDF(data: PoDPDFData) {
   doc.setTextColor(...gray);
   doc.text(`Date: ${data.date}`, 20, y);
   y += 5;
-  doc.text(`Location: ${data.address || "—"}`, 20, y);
+  doc.text(`Location: ${data.address || "-"}`, 20, y);
   y += 5;
   if (data.gpsLat != null && data.gpsLng != null) {
     doc.text(`GPS: ${Number(data.gpsLat).toFixed(4)}, ${Number(data.gpsLng).toFixed(4)}`, 20, y);
@@ -986,7 +986,7 @@ export function generateEODReportPDF(reports: EODReportForPDF[]) {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...dark);
-    doc.text(`${crewName} — ${r.report_date}`, 20, y);
+    doc.text(`${crewName}, ${r.report_date}`, 20, y);
     y += 6;
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
@@ -998,8 +998,8 @@ export function generateEODReportPDF(reports: EODReportForPDF[]) {
     const jobs = r.jobs || [];
     if (jobs.length > 0) {
       const body = jobs.map((j) => [
-        j.displayId ?? j.jobId?.slice(0, 8) ?? "—",
-        j.clientName ?? "—",
+        j.displayId ?? j.jobId?.slice(0, 8) ?? "-",
+        j.clientName ?? "-",
         j.type,
         String(j.duration ?? 0),
         j.signOff ? "Yes" : "No",

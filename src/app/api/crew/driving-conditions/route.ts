@@ -10,7 +10,7 @@ function routablePair(from: string, to: string): boolean {
   const f = from?.trim();
   const t = to?.trim();
   if (!f || !t) return false;
-  if (f === "—" || t === "—") return false;
+  if (f === "-" || t === "-") return false;
   if (f.length < 4 || t.length < 4) return false;
   return true;
 }

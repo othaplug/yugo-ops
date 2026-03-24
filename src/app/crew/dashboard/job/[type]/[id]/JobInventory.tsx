@@ -236,8 +236,8 @@ export default function JobInventory({
                 <span className="text-[13px] text-[var(--tx)] flex-1">{room}</span>
                 {isCompleted && (
                   <span className="flex items-center gap-2 text-[10px] font-medium">
-                    <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Pickup {verifiedAtPickup ? "✓" : "—"}</span>
-                    <span className={verifiedAtDelivery ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Delivery {verifiedAtDelivery ? "✓" : "—"}</span>
+                    <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Pickup {verifiedAtPickup ? "✓" : "-"}</span>
+                    <span className={verifiedAtDelivery ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>Delivery {verifiedAtDelivery ? "✓" : "-"}</span>
                   </span>
                 )}
               </label>
@@ -316,10 +316,10 @@ export default function JobInventory({
                       {isCompleted && hasId && (
                         <span className="flex items-center gap-2 text-[10px] font-medium">
                           <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>
-                            Pickup {verifiedAtPickup ? "✓" : "—"}
+                            Pickup {verifiedAtPickup ? "✓" : "-"}
                           </span>
                           <span className={verifiedAtDelivery ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>
-                            Delivery {verifiedAtDelivery ? "✓" : "—"}
+                            Delivery {verifiedAtDelivery ? "✓" : "-"}
                           </span>
                         </span>
                       )}
@@ -337,7 +337,7 @@ export default function JobInventory({
           <div className="text-[12px] font-semibold text-[var(--gold)] mb-1.5">Added on-site</div>
           {extraItems.map((e) => (
             <div key={e.id} className="py-1.5 px-3 rounded-lg bg-[var(--gdim)]/30 border border-[var(--gold)]/20 text-[12px]">
-              {e.description ?? "—"} {(e.quantity ?? 1) > 1 && `×${e.quantity}`} {e.room && `(${e.room})`}
+              {e.description ?? "-"} {(e.quantity ?? 1) > 1 && `×${e.quantity}`} {e.room && `(${e.room})`}
             </div>
           ))}
         </div>

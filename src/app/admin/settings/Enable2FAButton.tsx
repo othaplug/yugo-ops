@@ -88,7 +88,7 @@ export default function Enable2FAButton({ enabled }: { enabled?: boolean }) {
               </button>
               <button
                 onClick={() => { setShowWarning(false); doToggle(false); }}
-                className="flex-1 py-2 rounded-lg text-[11px] font-semibold bg-[var(--red)]/10 text-[var(--red)] border border-[var(--red)]/30 hover:bg-[var(--red)]/20 transition-colors"
+                className="flex-1 py-1.5 rounded text-[11px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
               >
                 Disable 2FA
               </button>

@@ -72,10 +72,10 @@ const DELIVERY_STATUS_STYLE: Record<string, string> = {
 function deliveryDetailsLabel(d: Delivery): string {
   if (d.booking_type === "day_rate") {
     const parts = [d.vehicle_type || "", d.num_stops != null ? `${d.num_stops} stops` : ""].filter(Boolean);
-    return parts.length ? parts.join(" · ") : "—";
+    return parts.length ? parts.join(" · ") : "-";
   }
   const parts = [d.delivery_type ? toTitleCase(String(d.delivery_type).replace(/_/g, " ")) : "", d.zone != null ? `Z${d.zone}` : ""].filter(Boolean);
-  return parts.length ? parts.join(" · ") : "—";
+  return parts.length ? parts.join(" · ") : "-";
 }
 
 const deliveryColumns: ColumnDef<Delivery>[] = [
@@ -99,7 +99,7 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     accessor: (d) => d.client_name,
     sortable: true,
     searchable: true,
-    render: (d) => <span className="font-medium text-[var(--tx)]">{d.client_name || "—"}</span>,
+    render: (d) => <span className="font-medium text-[var(--tx)]">{d.client_name || "-"}</span>,
   },
   {
     id: "category",
@@ -121,7 +121,7 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     id: "price",
     label: "Price",
     accessor: (d) => d.total_price ?? 0,
-    render: (d) => (d.total_price != null && d.total_price > 0 ? formatCurrency(d.total_price) : "—"),
+    render: (d) => (d.total_price != null && d.total_price > 0 ? formatCurrency(d.total_price) : "-"),
     sortable: true,
   },
   {

@@ -64,7 +64,7 @@ export default function PartnerRealtorTab({
               <div>
                 <h3 className="text-[15px] font-bold text-[#1A1A1A]">{r.client_name || "Unnamed Client"}</h3>
                 <p className="text-[12px] text-[#888] mt-0.5">
-                  {r.property || "Property TBD"} — {tierLabel}
+                  {r.property || "Property TBD"}, {tierLabel}
                 </p>
               </div>
               <div className="flex items-center gap-2">

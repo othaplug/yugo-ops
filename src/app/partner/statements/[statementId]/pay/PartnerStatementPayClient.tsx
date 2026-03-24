@@ -440,7 +440,7 @@ export default function PartnerStatementPayClient({
                           className="px-4 py-2.5 text-[11px] font-mono"
                           style={{ color: GOLD }}
                         >
-                          {d.number || "—"}
+                          {d.number || "-"}
                         </td>
                         <td
                           className="px-4 py-2.5 text-[11px]"
@@ -451,13 +451,13 @@ export default function PartnerStatementPayClient({
                                 month: "short",
                                 day: "numeric",
                               })
-                            : "—"}
+                            : "-"}
                         </td>
                         <td
                           className="px-4 py-2.5 text-[11px] max-w-[140px] truncate"
                           style={{ color: `${FOREST}70` }}
                         >
-                          {d.description || "—"}
+                          {d.description || "-"}
                         </td>
                         <td
                           className="px-4 py-2.5 text-[12px] font-semibold text-right"

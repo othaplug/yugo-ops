@@ -149,7 +149,7 @@ export default function AdminInvoiceDetailModal({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/30">
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Client</div>
-                <div className="text-[var(--tx)] font-semibold">{String(inv.client_name ?? invoice.client_name ?? "—")}</div>
+                <div className="text-[var(--tx)] font-semibold">{String(inv.client_name ?? invoice.client_name ?? "-")}</div>
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Status</div>
@@ -162,7 +162,7 @@ export default function AdminInvoiceDetailModal({
               </div>
               <div>
                 <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Due Date</div>
-                <div className="text-[var(--tx)]">{String(inv.due_date ?? dueDate) || "—"}</div>
+                <div className="text-[var(--tx)]">{String(inv.due_date ?? dueDate) || "-"}</div>
               </div>
             </div>
 
@@ -218,7 +218,7 @@ export default function AdminInvoiceDetailModal({
                         const rowTotal = q * r;
                         return (
                           <tr key={i} className="border-b border-[var(--brd)]/20 last:border-0">
-                            <td className="py-2 px-3 text-[var(--tx)]">{item.d ?? item.description ?? "—"}</td>
+                            <td className="py-2 px-3 text-[var(--tx)]">{item.d ?? item.description ?? "-"}</td>
                             <td className="py-2 px-3 text-right text-[var(--tx2)]">{q}</td>
                             <td className="py-2 px-3 text-right text-[var(--tx2)]">{formatCurrency(r)}</td>
                             <td className="py-2 px-3 text-right font-semibold">{formatCurrency(rowTotal)}</td>

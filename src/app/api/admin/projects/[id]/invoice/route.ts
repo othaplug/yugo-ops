@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   await db.from("project_timeline").insert({
     project_id: id,
     event_type: "invoice_generated",
-    event_description: `Project invoice generated: ${project.project_number} — Total $${grandTotal?.toFixed(2) ?? "0.00"} (incl. HST)`,
+    event_description: `Project invoice generated: ${project.project_number}, Total $${grandTotal?.toFixed(2) ?? "0.00"} (incl. HST)`,
   });
 
   // Update project status to 'invoiced' if it was completed

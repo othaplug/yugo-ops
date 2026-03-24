@@ -650,12 +650,12 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             <div className="space-y-5">
               <div className="rounded-xl border border-[var(--brd)] p-4 space-y-2">
                 {[
-                  ["Date",     dayScheduledDate || "—"],
+                  ["Date",     dayScheduledDate || "-"],
                   ["Time",     DAY_TIME_WINDOWS.find((w) => w.value === dayTimeWindow)?.label ?? dayTimeWindow],
                   ["Vehicle",  VEHICLE_TYPES.find((v) => v.value === vehicleType)?.label ?? vehicleType],
                   ["Duration", dayType === "full_day" ? "Full Day" : "Half Day"],
                   ["Stops",    String(dayStops.length)],
-                  ["Pickup",   dayPickupAddress || "—"],
+                  ["Pickup",   dayPickupAddress || "-"],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between text-[13px]">
                     <span className="text-[var(--tx3)]">{k}</span>
@@ -776,7 +776,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                       {overage > 0 && (
                         <p className="text-[11px] text-amber-500 flex items-center gap-1.5 mt-1">
                           <span className="font-bold">+{overage} extra stop{overage > 1 ? "s" : ""}</span>
-                          <span className="text-[var(--tx3)]">beyond included — overage rates apply</span>
+                          <span className="text-[var(--tx3)]">beyond included, overage rates apply</span>
                         </p>
                       )}
                     </>
@@ -820,10 +820,10 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               <section className="space-y-2">
                 <SectionLabel>Zone</SectionLabel>
                 <select value={zone} onChange={(e) => setZone(Number(e.target.value))} className={fieldInput}>
-                  <option value={1}>Zone 1 — GTA (0–40 km) — Included</option>
-                  <option value={2}>Zone 2 — Outer GTA (40–70 km) — +$120–$145</option>
-                  <option value={3}>Zone 3 — Extended (70–100 km) — +$210–$245</option>
-                  <option value={4}>Zone 4 — Remote (100+ km) — Custom</option>
+                  <option value={1}>Zone 1, GTA (0–40 km), Included</option>
+                  <option value={2}>Zone 2, Outer GTA (40–70 km), +$120–$145</option>
+                  <option value={3}>Zone 3, Extended (70–100 km), +$210–$245</option>
+                  <option value={4}>Zone 4, Remote (100+ km), Custom</option>
                 </select>
               </section>
 
@@ -846,9 +846,9 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                 <SectionLabel>Item Weight</SectionLabel>
                 <select value={itemWeightCategory} onChange={(e) => setItemWeightCategory(e.target.value)} className={fieldInput}>
                   <option value="standard">Standard (under 100 lbs)</option>
-                  <option value="heavy">Heavy (100–250 lbs) — +$50</option>
-                  <option value="very_heavy">Very Heavy (250–500 lbs) — +$100</option>
-                  <option value="oversized_fragile">Oversized / Fragile (3+ crew) — +$175</option>
+                  <option value="heavy">Heavy (100–250 lbs), +$50</option>
+                  <option value="very_heavy">Very Heavy (250–500 lbs), +$100</option>
+                  <option value="oversized_fragile">Oversized / Fragile (3+ crew), +$175</option>
                 </select>
               </section>
 
@@ -1002,11 +1002,11 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                   <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Client</p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
                     <span className="text-[var(--tx3)]">Name</span>
-                    <span className="font-semibold text-[var(--tx)]">{form.customer_name || "—"}</span>
+                    <span className="font-semibold text-[var(--tx)]">{form.customer_name || "-"}</span>
                     <span className="text-[var(--tx3)]">Date</span>
-                    <span className="font-semibold text-[var(--tx)]">{form.scheduled_date || "—"}</span>
+                    <span className="font-semibold text-[var(--tx)]">{form.scheduled_date || "-"}</span>
                     <span className="text-[var(--tx3)]">Deliver to</span>
-                    <span className="font-semibold text-[var(--tx)] truncate">{form.delivery_address || "—"}</span>
+                    <span className="font-semibold text-[var(--tx)] truncate">{form.delivery_address || "-"}</span>
                   </div>
                 </div>
                 {inventory.length > 0 && (

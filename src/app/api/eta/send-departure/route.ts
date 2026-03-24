@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
           await admin.from("in_app_notifications").insert({
             user_id: move.dedicated_coordinator,
             event_slug: "crew_departed",
-            title: "Crew departed — send personal text",
+            title: "Crew departed, send personal text",
             body: `${move.client_name} · ETA ~${etaMinutes} min. Send them a personal update.`,
             icon: "🚚",
             link: `/admin/moves/${move.id}`,

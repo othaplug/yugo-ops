@@ -18,7 +18,7 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
 
   const byLabel = requestedBy === "crew" ? "Crew" : "Client";
   const qtyLabel = quantity > 1 ? ` (x${quantity})` : "";
-  const eventDescription = `${byLabel} requested extra item: "${description}"${qtyLabel} — pending approval`;
+  const eventDescription = `${byLabel} requested extra item: "${description}"${qtyLabel}, pending approval`;
 
   let entityCode = jobId;
   if (jobType === "move") {

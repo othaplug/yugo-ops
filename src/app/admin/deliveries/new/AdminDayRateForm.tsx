@@ -41,7 +41,7 @@ export default function AdminDayRateForm({ organizations }: { organizations: Org
   if (!organizationId || !selectedOrg) {
     return (
       <div className="space-y-4">
-        <h2 className="admin-section-h2">Day Rate — Select Partner</h2>
+        <h2 className="admin-section-h2">Day Rate, Select Partner</h2>
         <div className="relative" ref={dropdownRef}>
           <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Partner / Organization</label>
           <input
@@ -74,7 +74,7 @@ export default function AdminDayRateForm({ organizations }: { organizations: Org
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="admin-section-h2">Day Rate — {selectedOrg.name}</h2>
+        <h2 className="admin-section-h2">Day Rate, {selectedOrg.name}</h2>
         <button
           type="button"
           onClick={() => setOrganizationId("")}

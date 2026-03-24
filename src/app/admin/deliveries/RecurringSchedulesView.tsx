@@ -32,7 +32,7 @@ const FREQ_LABELS: Record<string, string> = { weekly: "Weekly", biweekly: "Bi-we
 const VEHICLE_LABELS: Record<string, string> = { sprinter: "Sprinter", "16ft": "16ft", "20ft": "20ft", "26ft": "26ft" };
 
 function formatNextDate(dateStr: string | null) {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
@@ -133,12 +133,12 @@ function AdminScheduleModal({
         <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
           {err && <div className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
 
-          {/* Partner — read-only on edit, searchable on create */}
+          {/* Partner, read-only on edit, searchable on create */}
           {isEdit ? (
             <div>
               <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Partner</label>
               <div className="w-full text-[13px] bg-[var(--bg)]/50 border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx2)]">
-                {existing.organizations?.name ?? "—"}
+                {existing.organizations?.name ?? "-"}
               </div>
             </div>
           ) : (
@@ -362,7 +362,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                 filtered.map((s) => (
                   <tr key={s.id} className="border-b border-[var(--brd)]/50 hover:bg-[var(--bg)]/50 transition-colors">
                     <td className="py-3 px-3 pl-4">
-                      <div className="font-semibold text-[var(--tx)]">{s.organizations?.name || "—"}</div>
+                      <div className="font-semibold text-[var(--tx)]">{s.organizations?.name || "-"}</div>
                       <div className="text-[10px] text-[var(--tx3)] capitalize">{s.organizations?.type || ""}</div>
                     </td>
                     <td className="py-3 px-3">
@@ -384,7 +384,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                     </td>
                     <td className="py-3 px-3">
                       {s.is_paused ? (
-                        <span className="text-[var(--tx3)]">—</span>
+                        <span className="text-[var(--tx3)]">-</span>
                       ) : (
                         <span className="font-medium text-[var(--gold)]">{formatNextDate(s.next_generation_date)}</span>
                       )}
@@ -397,7 +397,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                       )}
                     </td>
                     <td className="py-3 px-3 text-[var(--tx3)]">
-                      <span className="capitalize">{s.created_by_source?.replace("_", " ") || "—"}</span>
+                      <span className="capitalize">{s.created_by_source?.replace("_", " ") || "-"}</span>
                     </td>
                     <td className="py-3 px-3 pr-4">
                       <div className="flex items-center gap-0.5">
@@ -438,7 +438,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
         </div>
       </div>
 
-      {/* Modals — portalled to body so fixed overlay covers the full viewport */}
+      {/* Modals, portalled to body so fixed overlay covers the full viewport */}
       {(createOpen || editTarget) && typeof document !== "undefined" && createPortal(
         <AdminScheduleModal
           existing={editTarget}

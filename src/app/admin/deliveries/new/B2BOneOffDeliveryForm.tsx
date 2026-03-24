@@ -175,7 +175,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       </section>
 
       {/* Delivery Details */}
-      <section className="space-y-2">
+      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Delivery Details</h3>
         <Field label="Pickup Address *">
           <AddressAutocomplete value={pickupAddress} onRawChange={setPickupAddress} onChange={(r) => setPickupAddress(r.fullAddress)} placeholder="Business address" className={fieldInput} />
@@ -196,7 +196,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       </section>
 
       {/* Items */}
-      <section className="space-y-2">
+      <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Items</h3>
         {items.length > 0 && (
           <ul className="space-y-1.5 mb-2">

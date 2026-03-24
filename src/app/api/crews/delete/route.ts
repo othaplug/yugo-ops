@@ -12,17 +12,29 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
 
-    const { data: moves } = await supabase.from("moves").select("id").eq("crew_id", crewId).limit(1);
+    const TERMINAL_MOVE_STATUSES = ["completed", "cancelled"];
+    const { data: moves } = await supabase
+      .from("moves")
+      .select("id")
+      .eq("crew_id", crewId)
+      .not("status", "in", `(${TERMINAL_MOVE_STATUSES.map((s) => `"${s}"`).join(",")})`)
+      .limit(1);
     if (moves?.length) {
       return NextResponse.json(
-        { error: "Cannot delete: this team is assigned to one or more moves. Reassign or remove assignments first." },
+        { error: "Cannot delete: this team has active moves assigned. Reassign or complete them first." },
         { status: 400 }
       );
     }
-    const { data: deliveries } = await supabase.from("deliveries").select("id").eq("crew_id", crewId).limit(1);
+    const TERMINAL_DELIVERY_STATUSES = ["completed", "cancelled"];
+    const { data: deliveries } = await supabase
+      .from("deliveries")
+      .select("id")
+      .eq("crew_id", crewId)
+      .not("status", "in", `(${TERMINAL_DELIVERY_STATUSES.map((s) => `"${s}"`).join(",")})`)
+      .limit(1);
     if (deliveries?.length) {
       return NextResponse.json(
-        { error: "Cannot delete: this team is assigned to one or more deliveries. Reassign or remove assignments first." },
+        { error: "Cannot delete: this team has active deliveries assigned. Reassign or complete them first." },
         { status: 400 }
       );
     }

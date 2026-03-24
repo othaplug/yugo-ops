@@ -276,7 +276,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
             {d.booking_type === "day_rate"
               ? [d.vehicle_type ? `${d.vehicle_type}` : null, d.num_stops != null ? `${d.num_stops} stops` : null].filter(Boolean).join(" · ") || d.delivery_address || "Address TBD"
               : [d.delivery_type ? toTitleCase(String(d.delivery_type).replace(/_/g, " ")) : null, d.zone != null ? `Z${d.zone}` : null].filter(Boolean).join(" · ") || d.delivery_address || "Address TBD"}
-            {d.scheduled_date && ` — ${new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+            {d.scheduled_date && `, ${new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
             {d.time_slot && `, ${d.time_slot}`}
           </p>
         </div>
@@ -330,7 +330,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       {statusKey === "draft" && (
         <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
           <Info size={13} color="#999" />
-          <span className="text-[11px] text-[var(--tx3)] font-medium">Saved draft — complete the details and submit when ready.</span>
+          <span className="text-[11px] text-[var(--tx3)] font-medium">Saved draft, complete the details and submit when ready.</span>
           {onEditClick && (
             <button
               type="button"
@@ -347,7 +347,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       {statusKey === "pending_approval" && (
         <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
           <Info size={13} color="#D97706" />
-          <span className="text-[11px] text-amber-600 font-medium">Awaiting confirmation from Yugo — we&apos;ll update you shortly.</span>
+          <span className="text-[11px] text-amber-600 font-medium">Awaiting confirmation from Yugo, we&apos;ll update you shortly.</span>
         </div>
       )}
 

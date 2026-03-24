@@ -36,8 +36,8 @@ const TIER_FEATURES: Record<string, string> = {
   essential: "Professional crew, dedicated truck, protective wrapping for key furniture, floor & entryway protection.",
   curated: "Professional crew, dedicated truck, protective wrapping for key furniture, floor & entryway protection.",
   essentials: "Standard crew, truck, basic wrap & pad, local move support.",
-  signature: "Fully managed move — full furniture wrapping, room-of-choice placement, wardrobe box, debris removal.",
-  estate: "White glove service — dedicated coordinator, full wrapping & packing, precision placement, 30-day concierge.",
+  signature: "Fully managed move, full furniture wrapping, room-of-choice placement, wardrobe box, debris removal.",
+  estate: "White glove service, dedicated coordinator, full wrapping & packing, precision placement, 30-day concierge.",
   premium: "Premium crew, premium truck, white-glove handling, priority support.",
 };
 
@@ -90,7 +90,7 @@ function receiptNumber(m: MoveRow): string {
 }
 
 function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
 }
 
@@ -145,11 +145,11 @@ function generateMoveSummaryPDF(
   doc.text(`Date: ${formatDate(move.completed_at || move.scheduled_date)}`, pageWidth - margin - 6, y + 22, { align: "right" });
   doc.setTextColor(...DARK);
   doc.setFontSize(9);
-  doc.text(`Client: ${move.client_name || "—"}`, margin + 6, y + 32);
+  doc.text(`Client: ${move.client_name || "-"}`, margin + 6, y + 32);
   doc.setTextColor(...GRAY);
   doc.setFontSize(8);
-  doc.text(`From: ${(move.from_address || "—").slice(0, 50)}${(move.from_address?.length ?? 0) > 50 ? "…" : ""}`, margin + 6, y + 42);
-  doc.text(`To: ${(move.to_address || "—").slice(0, 50)}${(move.to_address?.length ?? 0) > 50 ? "…" : ""}`, margin + 6, y + 50);
+  doc.text(`From: ${(move.from_address || "-").slice(0, 50)}${(move.from_address?.length ?? 0) > 50 ? "…" : ""}`, margin + 6, y + 42);
+  doc.text(`To: ${(move.to_address || "-").slice(0, 50)}${(move.to_address?.length ?? 0) > 50 ? "…" : ""}`, margin + 6, y + 50);
   y += boxH + SECTION_GAP;
 
   // ─── Package & crew ───
@@ -161,15 +161,15 @@ function generateMoveSummaryPDF(
   y += 6;
   const crewNames = crew?.members && Array.isArray(crew.members)
     ? (crew.members as string[]).join(", ")
-    : crew?.name || "—";
+    : crew?.name || "-";
   const crewCount = Array.isArray(crew?.members) ? (crew.members as string[]).length : 0;
   doc.text(`Crew: ${crewNames} · ${crewCount || "N"} movers`, margin, y);
   y += 6;
-  const truck = move.truck_primary || move.truck_secondary || "—";
+  const truck = move.truck_primary || move.truck_secondary || "-";
   doc.text(`Truck: ${truck}`, margin, y);
   y += 6;
   const hours = move.actual_hours ?? move.est_hours;
-  doc.text(`Duration: ${hours != null ? `${hours} hours` : "—"}`, margin, y);
+  doc.text(`Duration: ${hours != null ? `${hours} hours` : "-"}`, margin, y);
   y += SECTION_GAP;
 
   // ─── Inventory ───
@@ -248,7 +248,7 @@ function generateInvoicePDF(
   doc.text("Bill to:", margin, y);
   y += 6;
   doc.setTextColor(...DARK);
-  doc.text(`${move.client_name || "—"}`, margin, y);
+  doc.text(`${move.client_name || "-"}`, margin, y);
   y += 5;
   doc.setFontSize(9);
   if (move.client_email) doc.text(move.client_email, margin, y), (y += 5);
@@ -338,10 +338,10 @@ function generateReceiptPDF(
   doc.text(`Date: ${formatDate(move.balance_paid_at || move.completed_at)}`, pageWidth - margin, y, { align: "right" });
   y += 8;
   doc.setTextColor(...DARK);
-  doc.text(`Client: ${move.client_name || "—"}`, margin, y);
+  doc.text(`Client: ${move.client_name || "-"}`, margin, y);
   y += 6;
   doc.setTextColor(...GRAY);
-  doc.text(`Move: ${move.from_address || "—"} → ${move.to_address || "—"}`, margin, y);
+  doc.text(`Move: ${move.from_address || "-"} → ${move.to_address || "-"}`, margin, y);
   y += 14;
 
   const totalPaid = depositPaid + balancePaid;

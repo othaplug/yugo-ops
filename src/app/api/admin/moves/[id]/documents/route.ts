@@ -64,13 +64,13 @@ export async function GET(
     ]);
     // Short app URLs (proxy to signed URL); client never sees Supabase URL
     if (summarySigned.data?.signedUrl) {
-      autoDocs.push({ id: "summary-pdf", type: "document", title: `Move Summary — ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/summary`, external_url: null, created_at: new Date().toISOString() });
+      autoDocs.push({ id: "summary-pdf", type: "document", title: `Move Summary, ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/summary`, external_url: null, created_at: new Date().toISOString() });
     }
     if (invoiceSigned.data?.signedUrl) {
-      autoDocs.push({ id: "invoice-pdf", type: "invoice", title: `Invoice — ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/invoice`, external_url: null, created_at: new Date().toISOString() });
+      autoDocs.push({ id: "invoice-pdf", type: "invoice", title: `Invoice, ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/invoice`, external_url: null, created_at: new Date().toISOString() });
     }
     if (receiptSigned.data?.signedUrl) {
-      autoDocs.push({ id: "receipt-pdf", type: "document", title: `Payment Receipt — ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/receipt`, external_url: null, created_at: new Date().toISOString() });
+      autoDocs.push({ id: "receipt-pdf", type: "document", title: `Payment Receipt, ${code}.pdf`, view_url: `/api/admin/moves/${moveId}/documents/receipt`, external_url: null, created_at: new Date().toISOString() });
     }
     const allDocuments = [...autoDocs, ...withUrls];
     const squareReceiptUrl = (move as { square_receipt_url?: string | null } | null)?.square_receipt_url ?? null;

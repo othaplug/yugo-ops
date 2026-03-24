@@ -290,7 +290,7 @@ export default function RealtorsTable({
                           {initials(r.agent_name)}
                         </div>
                         <div>
-                          <div className="text-[11px] font-semibold text-[var(--tx)] leading-tight">{r.agent_name || "—"}</div>
+                          <div className="text-[11px] font-semibold text-[var(--tx)] leading-tight">{r.agent_name || "-"}</div>
                           {r.brokerage && (
                             <div className="text-[9px] text-[var(--tx3)] mt-0.5 leading-tight">{r.brokerage}</div>
                           )}
@@ -300,12 +300,12 @@ export default function RealtorsTable({
 
                     {/* Client */}
                     <td className="px-4 py-3.5">
-                      <span className="text-[11px] text-[var(--tx2)]">{r.client_name || "—"}</span>
+                      <span className="text-[11px] text-[var(--tx2)]">{r.client_name || "-"}</span>
                     </td>
 
                     {/* Property */}
                     <td className="px-4 py-3.5">
-                      <span className="text-[11px] text-[var(--tx2)]">{r.property || "—"}</span>
+                      <span className="text-[11px] text-[var(--tx2)]">{r.property || "-"}</span>
                     </td>
 
                     {/* Tier */}
@@ -315,7 +315,7 @@ export default function RealtorsTable({
                           {r.tier}
                         </span>
                       ) : (
-                        <span className="text-[11px] text-[var(--tx3)]">—</span>
+                        <span className="text-[11px] text-[var(--tx3)]">-</span>
                       )}
                     </td>
 
@@ -336,7 +336,7 @@ export default function RealtorsTable({
                           {formatCurrency(r.commission)}
                         </span>
                       ) : (
-                        <span className="text-[11px] text-[var(--tx3)]">—</span>
+                        <span className="text-[11px] text-[var(--tx3)]">-</span>
                       )}
                     </td>
                   </tr>

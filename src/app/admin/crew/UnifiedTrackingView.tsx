@@ -297,9 +297,9 @@ const GodEyeMap = dynamic(
                       type="button"
                       onClick={() => onCrewClick(c.id)}
                       className={`relative cursor-pointer transition-transform ${isSelected ? "scale-125 z-10" : "hover:scale-110"}`}
-                      title={`${c.name} — ${getStatusLabel(status)}`}
+                      title={`${c.name}, ${getStatusLabel(status)}`}
                     >
-                      {/* Glass pill label — always horizontal above the van */}
+                      {/* Glass pill label, always horizontal above the van */}
                       <div
                         className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap pointer-events-none"
                         style={{
@@ -318,7 +318,7 @@ const GodEyeMap = dynamic(
                         </span>
                       </div>
 
-                      {/* Top-down van SVG — rotates with GPS heading */}
+                      {/* Top-down van SVG, rotates with GPS heading */}
                       <div style={{ transform: heading != null ? `rotate(${heading}deg)` : undefined }}>
                         <svg
                           width="22" height="40" viewBox="0 0 22 40" fill="none"
@@ -445,7 +445,7 @@ function CrewPopup({
       {(clientName || currentMove) && (
         <div className="pt-3 mt-3 border-t border-[var(--brd)]/30">
           <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Current Job</div>
-          <div className="text-[12px] font-semibold text-[var(--tx)]">{clientName || "—"}</div>
+          <div className="text-[12px] font-semibold text-[var(--tx)]">{clientName || "-"}</div>
           {fromAddr && toAddr && (
             <div className="text-[11px] text-[var(--tx2)] mt-1">{fromAddr} → {toAddr}</div>
           )}
@@ -456,12 +456,12 @@ function CrewPopup({
       <div className="grid grid-cols-3 gap-2 mb-3 pt-3 mt-3 border-t border-[var(--brd)]/30">
         <div className="text-center">
           <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Speed</div>
-          <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{speedKmh != null ? `${speedKmh}` : "—"}</div>
+          <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{speedKmh != null ? `${speedKmh}` : "-"}</div>
           <div className="text-[8px] text-[var(--tx3)]">km/h</div>
         </div>
         <div className="text-center">
           <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">ETA</div>
-          <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{etaMin != null ? `${etaMin}` : "—"}</div>
+          <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{etaMin != null ? `${etaMin}` : "-"}</div>
           <div className="text-[8px] text-[var(--tx3)]">min</div>
         </div>
         <div className="text-center">
@@ -743,7 +743,7 @@ export default function UnifiedTrackingView({
           {loading && <span className="text-[9px] text-[var(--tx3)] animate-pulse">Updating…</span>}
         </div>
 
-        {/* Bottom panel: Active Jobs + Teams — full-width bottom sheet on mobile, floating card on desktop */}
+        {/* Bottom panel: Active Jobs + Teams, full-width bottom sheet on mobile, floating card on desktop */}
         <div className="absolute bottom-0 left-0 right-0 sm:bottom-3 sm:left-3 sm:right-auto z-10 w-full sm:w-[360px] max-h-[46vh] sm:max-h-[55vh] bg-[var(--card)]/97 border-t sm:border border-[var(--brd)] sm:rounded-xl backdrop-blur-sm shadow-lg overflow-hidden flex flex-col rounded-t-2xl sm:rounded-xl">
           {/* Panel tabs */}
           <div className="flex border-b border-[var(--brd)]">
@@ -904,7 +904,7 @@ export default function UnifiedTrackingView({
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-[11px] font-semibold text-[var(--tx)] truncate">{m.client_name || m.move_code}</div>
-                            <div className="text-[9px] text-[var(--tx3)] truncate">{m.from_address ?? "—"} → {m.to_address ?? "—"}</div>
+                            <div className="text-[9px] text-[var(--tx3)] truncate">{m.from_address ?? "-"} → {m.to_address ?? "-"}</div>
                           </div>
                           {crew && <span className="text-[9px] font-medium text-[var(--gold)] shrink-0">{crew.name}</span>}
                         </Link>

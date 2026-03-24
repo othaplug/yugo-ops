@@ -61,7 +61,7 @@ export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
     <div className="space-y-6 py-5">
       {/* Period toggle */}
       <div className="flex items-center justify-between">
-        <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">{orgName} — Performance Analytics</h3>
+        <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">{orgName}, Performance Analytics</h3>
         <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--bg)]">
           {PERIOD_OPTIONS.map((opt) => (
             <button
@@ -97,7 +97,7 @@ export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Satisfaction</div>
-          <div className="text-[20px] font-bold text-[var(--gold)] mt-0.5">{d.satisfactionScore != null ? `${d.satisfactionScore}/5` : "—"}</div>
+          <div className="text-[20px] font-bold text-[var(--gold)] mt-0.5">{d.satisfactionScore != null ? `${d.satisfactionScore}/5` : "-"}</div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Damage</div>

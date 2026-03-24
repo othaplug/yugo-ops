@@ -315,7 +315,7 @@ export default function DispatchBoardClient({ today }: Props) {
               />
             </div>
 
-            {/* Today button — only shown when not on today */}
+            {/* Today button, only shown when not on today */}
             {!isToday && (
               <button
                 type="button"

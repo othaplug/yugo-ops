@@ -83,7 +83,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
 
   return (
     <div className="px-2 sm:px-4 pb-3">
-      {/* Horizontal scroll wrapper — all rows scroll together on mobile */}
+      {/* Horizontal scroll wrapper, all rows scroll together on mobile */}
       <div className="overflow-x-auto">
         {/* Day headers */}
         <div className="flex border-b border-[var(--brd)]">

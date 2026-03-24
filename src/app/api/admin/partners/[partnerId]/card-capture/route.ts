@@ -103,7 +103,7 @@ export async function POST(
     cardBrand     = cardRes.card?.cardBrand ?? "";
   } catch (e) {
     console.error("[Square] partner card store failed:", e);
-    return NextResponse.json({ error: "Failed to store card — please retry" }, { status: 502 });
+    return NextResponse.json({ error: "Failed to store card, please retry" }, { status: 502 });
   }
 
   // ── Persist to organizations ─────────────────────────────────────────────

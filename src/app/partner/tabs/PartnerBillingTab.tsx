@@ -240,7 +240,7 @@ export default function PartnerBillingTab({
 
   return (
     <div className="space-y-8">
-      {/* Statements — show when any exist */}
+      {/* Statements, show when any exist */}
       {statements.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -370,7 +370,7 @@ export default function PartnerBillingTab({
         </div>
       </div>
 
-      {/* Monthly Performance Table — sort, pagination, search, filter (same as admin tables) */}
+      {/* Monthly Performance Table, sort, pagination, search, filter (same as admin tables) */}
       <div>
         <h3 className="text-[20px] font-bold text-[var(--tx)] font-hero mb-3">Monthly Performance</h3>
         <FilterBar

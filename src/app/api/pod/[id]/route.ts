@@ -22,8 +22,8 @@ export async function GET(
 
     if (!pod) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    let deliveryNumber = "—";
-    let address = "—";
+    let deliveryNumber = "-";
+    let address = "-";
     let partnerName: string | null = null;
 
     if (pod.delivery_id) {
@@ -62,7 +62,7 @@ export async function GET(
       deliveryNumber,
       date: pod.completed_at ? new Date(pod.completed_at).toLocaleString("en-US", {
         month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
-      }) : "—",
+      }) : "-",
       address,
       gpsLat: pod.gps_lat,
       gpsLng: pod.gps_lng,
@@ -73,10 +73,10 @@ export async function GET(
         condition: ic.condition || "pristine",
         notes: ic.notes || "",
       })),
-      signerName: pod.signer_name || "—",
+      signerName: pod.signer_name || "-",
       signedAt: pod.signed_at ? new Date(pod.signed_at).toLocaleString("en-US", {
         month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
-      }) : "—",
+      }) : "-",
       satisfactionRating: pod.satisfaction_rating,
       satisfactionComment: pod.satisfaction_comment,
       signatureDataUrl: pod.signature_data,

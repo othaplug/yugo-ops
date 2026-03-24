@@ -160,7 +160,7 @@ function getDeliveryCopy(vertical: string | null): DeliveryCopy {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SKIP_REASONS = [
-  { value: "client_not_home", label: "Client not home — doing another route" },
+  { value: "client_not_home", label: "Client not home, doing another route" },
   { value: "client_refused", label: "Client refused to sign" },
   { value: "client_requested_delay", label: "Client requested delay" },
   { value: "emergency", label: "Emergency" },
@@ -737,7 +737,7 @@ export default function ClientSignOffPage({
             {hasNewDamage && (
               <div className="p-3.5 rounded-xl mb-4" style={{ backgroundColor: "#FEF2F2", border: "1px solid #FCA5A5" }}>
                 <p className="text-[11px] font-semibold text-red-700">
-                  New damage detected — this will be flagged for a potential claim.
+                  New damage detected, this will be flagged for a potential claim.
                 </p>
               </div>
             )}
@@ -934,7 +934,7 @@ export default function ClientSignOffPage({
                 Please confirm the following
               </p>
               <p className="text-[11px] mb-3" style={{ color: MUTED }}>
-                Uncheck any box or select &quot;No&quot; if something wasn&apos;t as expected — you&apos;ll be asked to describe below.
+                Uncheck any box or select &quot;No&quot; if something wasn&apos;t as expected, you&apos;ll be asked to describe below.
               </p>
               <div className="space-y-2.5">
                 <ToggleCard checked={noIssuesDuringMove} onChange={setNoIssuesDuringMove} label={copy?.noIssuesLabel ?? "No issues experienced during my move"} />
@@ -1047,7 +1047,7 @@ export default function ClientSignOffPage({
               />
             </div>
 
-            {/* Signature canvas — ink-on-paper look */}
+            {/* Signature canvas, ink-on-paper look */}
             <div className="mb-5">
               <div className="flex justify-between items-center mb-2">
                 <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>
@@ -1260,7 +1260,7 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* Skip link — visible in phases 1–4 */}
+        {/* Skip link, visible in phases 1–4 */}
         {phase >= 1 && phase <= 4 && (
           <p className="text-center mt-8">
             <button

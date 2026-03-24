@@ -109,7 +109,7 @@ export default function ResidentialLayout({
                 isSelected ? "shadow-lg" : isRecommended ? "shadow-md" : "shadow-sm"
               } ${isCollapsed ? "opacity-60" : ""}`}
             >
-              {/* Card body — no badge strip */}
+              {/* Card body, no badge strip */}
               <div
                 className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl"
                 style={

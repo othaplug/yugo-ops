@@ -798,7 +798,7 @@ function Step1BusinessDetails({
                       {[dedupResults.hubspot.first_name, dedupResults.hubspot.last_name]
                         .filter(Boolean)
                         .join(" ") || dedupResults.hubspot.email}
-                      {dedupResults.hubspot.company && ` — ${dedupResults.hubspot.company}`}
+                      {dedupResults.hubspot.company && `, ${dedupResults.hubspot.company}`}
                       {dedupResults.hubspot.deal_ids.length > 0 && (
                         <span className="text-[var(--tx3)]">
                           {" "}({dedupResults.hubspot.deal_ids.length} deal
@@ -811,7 +811,7 @@ function Step1BusinessDetails({
                     <p className="text-[12px] text-[var(--tx2)]">
                       <span className="font-semibold text-[var(--tx)]">Square:</span>{" "}
                       {dedupResults.square.card_on_file
-                        ? `Card on file — ${dedupResults.square.card_brand} ****${dedupResults.square.card_last_four}`
+                        ? `Card on file, ${dedupResults.square.card_brand} ****${dedupResults.square.card_last_four}`
                         : "No card on file"}
                     </p>
                   )}
@@ -897,7 +897,7 @@ function Step1BusinessDetails({
         )}
 
         <div className="col-span-2">
-          <label className={labelCls}>HubSpot Deal ID <span className="normal-case font-normal tracking-normal text-[var(--tx3)]">— optional</span></label>
+          <label className={labelCls}>HubSpot Deal ID <span className="normal-case font-normal tracking-normal text-[var(--tx3)]">- optional</span></label>
           <input
             type="text"
             value={state.hubspotDealId}
@@ -1194,14 +1194,14 @@ function Step3RateCardBilling({
         </div>
       </div>
 
-      {/* Card on file — captured after partner is saved; shown as a reminder */}
+      {/* Card on file, captured after partner is saved; shown as a reminder */}
       <div className="rounded-xl border border-[var(--brd)]/70 p-4 space-y-2 bg-[var(--bg2)]/40">
         <div className="flex items-start gap-3">
           <Icon name="creditCard" className="w-4 h-4 mt-0.5 shrink-0 text-[var(--gold)]" />
           <div>
             <p className="text-[12px] font-semibold text-[var(--tx)]">Payment Method</p>
             <p className="text-[11px] text-[var(--tx3)] mt-0.5">
-              A card on file will be requested after the partner is activated. Statements are auto-charged on the billing anchor date — no manual payments needed.
+              A card on file will be requested after the partner is activated. Statements are auto-charged on the billing anchor date, no manual payments needed.
             </p>
           </div>
         </div>
@@ -1333,10 +1333,10 @@ const BILLING_LABELS: Record<string, string> = {
   prepaid_credits: "Pre-paid credits",
 };
 const TERMS_LABELS: Record<string, string> = {
-  due_on_receipt: "Due on Receipt — per-delivery, due immediately",
-  net_15: "Net 15 — statements 1st & 16th, due on statement date",
-  net_30: "Net 30 — monthly statement, due on statement date",
-  prepay: "Pre-pay — credits pre-loaded",
+  due_on_receipt: "Due on Receipt, per-delivery, due immediately",
+  net_15: "Net 15, statements 1st & 16th, due on statement date",
+  net_30: "Net 30, monthly statement, due on statement date",
+  prepay: "Pre-pay, credits pre-loaded",
 };
 const DELIVERY_LABELS: Record<string, string> = Object.fromEntries(
   DELIVERY_TYPE_OPTIONS.map((o) => [o.id, o.label])
@@ -1369,7 +1369,7 @@ function Step5Summary({ state }: { state: WizardState }) {
       <SummarySection title="Business">
         <SummaryRow label="Name" value={state.name} />
         <SummaryRow label="Legal Name" value={state.legalName} />
-        <SummaryRow label="Contact" value={`${state.contactName}${state.contactTitle ? ` — ${state.contactTitle}` : ""}`} />
+        <SummaryRow label="Contact" value={`${state.contactName}${state.contactTitle ? `, ${state.contactTitle}` : ""}`} />
         <SummaryRow label="Email" value={state.email} />
         <SummaryRow label="Phone" value={state.phone} />
         <SummaryRow label="Address" value={state.address} />
@@ -1397,7 +1397,7 @@ function Step5Summary({ state }: { state: WizardState }) {
       </SummarySection>
 
       <SummarySection title="Portal Access">
-        <SummaryRow label="Portal Login" value={state.createPortalLogin ? "Yes — invitation will be sent" : "No"} />
+        <SummaryRow label="Portal Login" value={state.createPortalLogin ? "Yes. An invitation will be sent." : "No"} />
         {state.sendSetupSms && <SummaryRow label="Setup SMS" value={`Will be sent to ${state.phone}`} />}
       </SummarySection>
 

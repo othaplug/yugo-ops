@@ -33,15 +33,15 @@ export default function DeliverySummaryModal({ open, onClose, delivery }: Delive
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Customer</div>
-          <div className="text-[var(--tx)]">{delivery.customer_name || "—"}</div>
+          <div className="text-[var(--tx)]">{delivery.customer_name || "-"}</div>
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Delivery address</div>
-          <div className="text-[var(--tx2)]">{delivery.delivery_address || "—"}</div>
+          <div className="text-[var(--tx2)]">{delivery.delivery_address || "-"}</div>
         </div>
         <div>
           <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Date</div>
-          <div className="text-[var(--tx)]">{delivery.scheduled_date || "—"} {delivery.delivery_window && ` • ${delivery.delivery_window}`}</div>
+          <div className="text-[var(--tx)]">{delivery.scheduled_date || "-"} {delivery.delivery_window && ` • ${delivery.delivery_window}`}</div>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Status</span>

@@ -196,7 +196,7 @@ export function getMonthlyOverhead(config: Record<string, string>): number {
   try {
     const items: { amount: number }[] = JSON.parse(config.custom_overhead_items ?? "[]");
     custom = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-  } catch { /* invalid JSON — skip */ }
+  } catch { /* invalid JSON, skip */ }
 
   return standard + custom;
 }

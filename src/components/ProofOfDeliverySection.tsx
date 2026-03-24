@@ -95,7 +95,7 @@ export default function ProofOfDeliverySection({
               ? new Date(pod.completed_at).toLocaleDateString("en-US", {
                   month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
                 })
-              : "—"}
+              : "-"}
           </div>
         </div>
         <a
@@ -153,13 +153,13 @@ export default function ProofOfDeliverySection({
             <img src={pod.signature_data} alt="Signature" className="w-full h-full object-contain" />
           </div>
         )}
-        <div className="text-[12px] font-medium text-[var(--tx)]">{pod.signer_name || "—"}</div>
+        <div className="text-[12px] font-medium text-[var(--tx)]">{pod.signer_name || "-"}</div>
         <div className="text-[10px] text-[var(--tx3)]">
           {pod.signed_at
             ? new Date(pod.signed_at).toLocaleDateString("en-US", {
                 month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
               })
-            : "—"}
+            : "-"}
         </div>
       </div>
 

@@ -157,10 +157,10 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                       )}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[var(--tx3)] hidden sm:table-cell">
-                      {inv.created_at ? new Date(inv.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                      {inv.created_at ? new Date(inv.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "-"}
                     </td>
                     <td className="px-4 py-3 text-[12px] text-[var(--tx3)]">
-                      {inv.due_date ? new Date(inv.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                      {inv.due_date ? new Date(inv.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-"}
                     </td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-[var(--tx)] text-right">
                       {formatCurrency(inv.amount)}

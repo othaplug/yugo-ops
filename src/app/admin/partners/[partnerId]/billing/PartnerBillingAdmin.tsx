@@ -26,11 +26,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 };
 
 const TERMS_LABELS: Record<string, string> = {
-  net_30: "Net 30 — monthly statement, due on statement date",
-  net_15: "Net 15 — bi-monthly (1st & 16th), due on statement date",
-  due_on_delivery: "Due on Receipt — per-delivery, due immediately",
-  due_on_receipt:  "Due on Receipt — per-delivery, due immediately",
-  prepay: "Pre-paid — credit balance",
+  net_30: "Net 30, monthly statement, due on statement date",
+  net_15: "Net 15, bi-monthly (1st & 16th), due on statement date",
+  due_on_delivery: "Due on Receipt, per-delivery, due immediately",
+  due_on_receipt:  "Due on Receipt, per-delivery, due immediately",
+  prepay: "Pre-paid, credit balance",
 };
 
 interface Statement {

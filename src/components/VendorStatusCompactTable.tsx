@@ -59,7 +59,7 @@ export function VendorStatusCompactTable({ inventory }: { inventory: VendorStatu
               .filter(Boolean) as string[];
             const eta = etaDates.length > 0
               ? new Date(etaDates.sort().pop()!).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-              : "—";
+              : "-";
             return (
               <tr key={vendorName} className="border-b border-[var(--brd)]/30 hover:bg-[var(--bg)]/30 transition-colors">
                 <td className="py-2.5 pr-4 text-[13px] font-semibold text-[var(--tx)]">{vendorName}</td>

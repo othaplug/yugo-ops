@@ -6,10 +6,10 @@
 /** Result: start and end timestamps in ms for the window on the given date */
 export type ParsedWindow = { startMs: number; endMs: number } | null;
 
-const RE_RANGE = /(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\s*[-–—]\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i;
+const RE_RANGE = /(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\s*[-–-]\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i;
 const RE_SINGLE = /(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i;
 /** "Morning (7 AM – 12 PM)" style */
-const RE_NAMED = /\((\d{1,2})\s*(AM|PM)\s*[-–—]\s*(\d{1,2})\s*(AM|PM)\)/i;
+const RE_NAMED = /\((\d{1,2})\s*(AM|PM)\s*[-–-]\s*(\d{1,2})\s*(AM|PM)\)/i;
 
 function to24(h: number, ampm: string): number {
   const u = ampm.toUpperCase();

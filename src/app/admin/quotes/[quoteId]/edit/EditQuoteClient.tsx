@@ -438,7 +438,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <div className="text-[var(--tx3)] text-[11px]">Client</div>
-            <div className="text-[var(--tx)] font-medium">{contact?.name || "—"}</div>
+            <div className="text-[var(--tx)] font-medium">{contact?.name || "-"}</div>
           </div>
           <div>
             <div className="text-[var(--tx3)] text-[11px]">Current Price</div>
@@ -537,7 +537,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
               {livePreview.factors && typeof livePreview.factors.inventory_modifier === "number" && typeof livePreview.factors.inventory_max_modifier === "number" && livePreview.factors.inventory_modifier >= livePreview.factors.inventory_max_modifier && (
                 <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
                   <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ Inventory at volume ceiling (×{Number(livePreview.factors.inventory_max_modifier).toFixed(2)})</p>
-                  <p className="mt-0.5">Price is capped — consider manual adjustment.</p>
+                  <p className="mt-0.5">Price is capped, consider manual adjustment.</p>
                 </div>
               )}
               {livePreview.factors && typeof livePreview.factors.labour_component === "number" && typeof livePreview.factors.subtotal_before_labour === "number" && Number(livePreview.factors.subtotal_before_labour) > 0 && Number(livePreview.factors.labour_component) > 0.5 * Number(livePreview.factors.subtotal_before_labour) && (
@@ -883,7 +883,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                           className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
                         >
                           {addon.tiers.map((t, i) => (
-                            <option key={i} value={i}>{t.label} — {fmtPrice(t.price)}</option>
+                            <option key={i} value={i}>{t.label}, {fmtPrice(t.price)}</option>
                           ))}
                         </select>
                       </div>
@@ -951,7 +951,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                           className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
                         >
                           {addon.tiers.map((t, i) => (
-                            <option key={i} value={i}>{t.label} — {fmtPrice(t.price)}</option>
+                            <option key={i} value={i}>{t.label}, {fmtPrice(t.price)}</option>
                           ))}
                         </select>
                       </div>
@@ -995,7 +995,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
           <div className="flex items-center gap-6 mb-4 flex-wrap">
             <div>
               <div className="text-[11px] text-[var(--tx3)]">Quote ID</div>
-              <div className="text-sm font-bold text-[var(--gold)]">{newQuoteId ?? "—"}</div>
+              <div className="text-sm font-bold text-[var(--gold)]">{newQuoteId ?? "-"}</div>
             </div>
             {oldPrice != null && newPrice != null ? (
               <div>

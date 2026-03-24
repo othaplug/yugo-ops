@@ -15,6 +15,16 @@ type CrewPos = { current_lat: number; current_lng: number; name?: string } | nul
 const GOLD = "#C9A94E";
 const GREEN = "#22C55E";
 
+function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLng = toRad(to.lng - from.lng);
+  const lat1 = toRad(from.lat);
+  const lat2 = toRad(to.lat);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
 function lastKnownIcon() {
   return L.divIcon({
     className: "custom-marker",
@@ -45,16 +55,19 @@ const dropoffIcon = L.divIcon({
   iconAnchor: [9, 9],
 });
 
-/** Elegant animated crew marker: dot + expanding ring (no truck icon). */
-function crewIcon() {
+/** Directional arrow marker for delivery crew — rotated to heading. Bright on dark map. */
+function crewArrowIcon(bearing: number | null = null) {
+  const rot = bearing != null ? bearing : 0;
   return L.divIcon({
-    className: "crew-marker crew-marker-elegant",
-    html: `<div class="crew-marker-inner" style="position:relative;width:20px;height:20px">
-      <span style="position:absolute;inset:0;border-radius:50%;background:${GOLD};box-shadow:0 2px 8px rgba(0,0,0,.25);animation:crew-dot-glow 2s ease-in-out infinite"></span>
-      <span style="position:absolute;inset:-4px;border:2px solid ${GOLD};border-radius:50%;opacity:0.4;animation:crew-ring 2s ease-out infinite"></span>
+    className: "crew-marker crew-marker-arrow",
+    html: `<div style="position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center">
+      <span style="position:absolute;inset:6px;border-radius:50%;background:${GOLD};opacity:0.18;animation:crew-ring 2s ease-out infinite"></span>
+      <svg width="48" height="48" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6))" aria-hidden="true">
+        <polygon points="22,5 34,36 22,29 10,36" fill="${GOLD}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+      </svg>
     </div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    iconSize: [48, 48],
+    iconAnchor: [24, 24],
   });
 }
 
@@ -121,6 +134,19 @@ export default function DeliveryTrackMap({
   lastKnownPos?: Coord | null;
 }) {
   const animCrew = useAnimatedCrewPos(crew);
+
+  // Track bearing from consecutive raw GPS positions
+  const [bearing, setBearing] = useState<number | null>(null);
+  const prevCrewRef = useRef<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    if (!crew) return;
+    const curr = { lat: crew.current_lat, lng: crew.current_lng };
+    const prev = prevCrewRef.current;
+    if (prev && (prev.lat !== curr.lat || prev.lng !== curr.lng)) {
+      setBearing(calcBearing(prev, curr));
+    }
+    prevCrewRef.current = curr;
+  }, [crew?.current_lat, crew?.current_lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route", "on_route", "arrived", "arrived_on_site"];
   const isPrePickup = PICKUP_STAGES.includes(liveStage || "") || !(liveStage ?? "").trim();
@@ -230,7 +256,7 @@ export default function DeliveryTrackMap({
         </Marker>
       )}
       {animCrew && (
-        <Marker position={[animCrew.current_lat, animCrew.current_lng]} icon={crewIcon()}>
+        <Marker position={[animCrew.current_lat, animCrew.current_lng]} icon={crewArrowIcon(bearing)}>
           <Popup>{animCrew.name || "Crew"}</Popup>
         </Marker>
       )}

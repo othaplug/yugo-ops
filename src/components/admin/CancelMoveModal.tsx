@@ -49,7 +49,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
   const [success, setSuccess] = useState(false);
 
   const policyCheck = useMemo(() => {
-    if (!move.scheduled_date) return { eligible: true, message: "No date set — policy cannot be evaluated." };
+    if (!move.scheduled_date) return { eligible: true, message: "No date set, policy cannot be evaluated." };
     const moveDate = new Date(move.scheduled_date + "T09:00:00");
     const hoursUntil = (moveDate.getTime() - Date.now()) / (1000 * 60 * 60);
     const required = POLICY_HOURS[move.service_type ?? "local_move"] ?? 48;
@@ -59,7 +59,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
     return {
       eligible,
       message: eligible
-        ? `Move is ${daysUntil} day${daysUntil !== 1 ? "s" : ""} away — full refund eligible per ${required}hr policy.`
+        ? `Move is ${daysUntil} day${daysUntil !== 1 ? "s" : ""} away, full refund eligible per ${required}hr policy.`
         : `Move is within the ${required}hr cancellation window (${daysUntil}d away). Partial or no refund per policy.`,
     };
   }, [move.scheduled_date, move.service_type]);

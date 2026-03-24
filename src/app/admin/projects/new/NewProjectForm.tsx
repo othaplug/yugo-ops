@@ -322,7 +322,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-3">
             <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Summary</div>
 
-            <Row label="Partner" value={selectedPartner?.name || "—"} />
+            <Row label="Partner" value={selectedPartner?.name || "-"} />
             <Row label="Project Name" value={projectName} />
             {endClientName && <Row label="End Client" value={endClientName} />}
             {siteAddress && <Row label="Site Address" value={siteAddress} />}
@@ -341,7 +341,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
 
             <div className="border-t border-[var(--brd)] pt-3 mt-3">
               <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Initial Estimate</div>
-              <Row label="Logistics Cost" value={estimatedBudget ? formatCurrency(parseFloat(estimatedBudget)) : "—"} />
+              <Row label="Logistics Cost" value={estimatedBudget ? formatCurrency(parseFloat(estimatedBudget)) : "-"} />
               <Row label="Mgmt Fee" value={projectMgmtFee ? formatCurrency(parseFloat(projectMgmtFee)) : "$0"} />
               <Row label="HST (13%)" value={formatCurrency(hst)} />
               <div className="flex justify-between text-[13px] font-bold pt-2 border-t border-[var(--brd)] mt-2">

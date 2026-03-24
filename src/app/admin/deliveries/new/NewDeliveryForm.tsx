@@ -7,6 +7,7 @@ import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import { Plus, Trash as Trash2, Stack as Layers } from "@phosphor-icons/react";
 
 interface ProjectOption {
@@ -103,6 +104,8 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const customerPhoneInput = usePhoneInput(customerPhone, setCustomerPhone);
   const [pickupAddress, setPickupAddress] = useState(pickupFromUrl);
   const [deliveryAddress, setDeliveryAddress] = useState(deliveryFromUrl);
+  const [extraPickupStops, setExtraPickupStops] = useState<StopEntry[]>([]);
+  const [extraDeliveryStops, setExtraDeliveryStops] = useState<StopEntry[]>([]);
   const [scheduledDate, setScheduledDate] = useState(dateFromUrl);
   const [timeSlot, setTimeSlot] = useState("");
   const [deliveryWindow, setDeliveryWindow] = useState("");
@@ -319,6 +322,20 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
     if (res.ok && data.delivery) {
       const created = data.delivery;
+
+      // Persist additional stops to job_stops if any were added
+      const allExtraStops = [
+        ...extraPickupStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "pickup", sort_order: i + 1 })),
+        ...extraDeliveryStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "dropoff", sort_order: i + 1 })),
+      ];
+      if (allExtraStops.length > 0) {
+        fetch("/api/admin/job-stops", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ job_type: "delivery", job_id: created.id, stops: allExtraStops }),
+        }).catch(() => {});
+      }
+
       const path = created.delivery_number
         ? `/admin/deliveries/${encodeURIComponent(created.delivery_number)}`
         : `/admin/deliveries/${created.id}`;
@@ -465,12 +482,26 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         {/* Section: Addresses */}
         <section className="space-y-3">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Addresses</h3>
-          <Field label="Pickup Address">
-            <AddressAutocomplete value={pickupAddress} onRawChange={setPickupAddress} onChange={(r) => setPickupAddress(r.fullAddress)} placeholder="Warehouse, store, or pickup location" className={fieldInput} />
-          </Field>
-          <Field label="Delivery Address *">
-            <AddressAutocomplete value={deliveryAddress} onRawChange={setDeliveryAddress} onChange={(r) => setDeliveryAddress(r.fullAddress)} placeholder="Delivery destination" className={fieldInput} />
-          </Field>
+          <MultiStopAddressField
+            label="Pickup"
+            placeholder="Warehouse, store, or pickup location"
+            stops={[{ address: pickupAddress }, ...extraPickupStops]}
+            onChange={(stops) => {
+              setPickupAddress(stops[0]?.address ?? "");
+              setExtraPickupStops(stops.slice(1));
+            }}
+            inputClassName={fieldInput}
+          />
+          <MultiStopAddressField
+            label="Delivery"
+            placeholder="Delivery destination"
+            stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
+            onChange={(stops) => {
+              setDeliveryAddress(stops[0]?.address ?? "");
+              setExtraDeliveryStops(stops.slice(1));
+            }}
+            inputClassName={fieldInput}
+          />
         </section>
 
         {/* Section: Schedule */}

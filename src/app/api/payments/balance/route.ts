@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },
       customerId: move.square_customer_id || undefined,
       referenceId: move.move_code || moveId,
-      note: "Balance + processing fee — client payment",
+      note: "Balance + processing fee, client payment",
       idempotencyKey: `bal-pay-${moveId}-${Date.now()}`,
       locationId,
     });
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
       entity_type: "move",
       entity_id: moveId,
       event_type: "payment_received",
-      description: `Client paid balance via payment page — $${ccTotal.toFixed(2)} CAD`,
+      description: `Client paid balance via payment page, $${ccTotal.toFixed(2)} CAD`,
       icon: "dollar",
     });
 

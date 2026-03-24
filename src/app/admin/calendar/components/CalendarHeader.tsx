@@ -54,7 +54,7 @@ export default function CalendarHeader({
 
         <div className="hidden sm:block flex-1" />
 
-        {/* Filters — inline on sm+ */}
+        {/* Filters, inline on sm+ */}
         <div className="hidden sm:flex items-center gap-1">
           {[
             {

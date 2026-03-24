@@ -1528,7 +1528,7 @@ export default function PartnerB2BProjectsTab({
             )}
           </div>
 
-          {/* Vendor Status — compact summary */}
+          {/* Vendor Status, compact summary */}
           {inv.length > 0 && (
             <div className="mb-4 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
               <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Vendor Status</div>

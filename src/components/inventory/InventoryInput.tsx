@@ -20,7 +20,7 @@ export interface InventoryItemEntry {
   name: string;
   quantity: number;
   weight_score: number;
-  defaultWeight?: number;   // original DB weight — preserved when coordinator overrides
+  defaultWeight?: number;   // original DB weight, preserved when coordinator overrides
   weightNote?: string;      // free-text note, e.g. "400 lbs, baby grand"
   room?: string;
   isCustom?: boolean;
@@ -524,7 +524,7 @@ export default function InventoryInput({
                       {row.match ? (
                         <span className="text-[var(--tx)] font-medium">{row.match.item_name}</span>
                       ) : (
-                        <span className="text-amber-600 dark:text-amber-400">No match — add manually from search</span>
+                        <span className="text-amber-600 dark:text-amber-400">No match, add manually from search</span>
                       )}
                       <span className="text-[var(--tx3)] ml-auto">×{row.qty}</span>
                       <span className="text-[var(--tx3)] capitalize">({row.confidence})</span>
@@ -775,7 +775,7 @@ export default function InventoryInput({
                   </button>
                 </div>
 
-                {/* FIX 1: Quantity over max — yellow warning; coordinator can override */}
+                {/* FIX 1: Quantity over max, yellow warning; coordinator can override */}
                 {showQtyWarning && (
                   <div className="pl-4 flex items-center gap-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-[10px]">
                     <span className="text-amber-600 dark:text-amber-400">
@@ -837,7 +837,7 @@ export default function InventoryInput({
       {/* Empty state */}
       {!addOnlyMode && value.length === 0 && internalBoxCount === 0 && (
         <p className="text-[10px] text-[var(--tx3)] italic">
-          No inventory added — standard volume assumed for pricing.
+          No inventory added, standard volume assumed for pricing.
         </p>
       )}
       {!addOnlyMode && value.length === 0 && internalBoxCount > 0 && (

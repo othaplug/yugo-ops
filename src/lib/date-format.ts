@@ -38,9 +38,9 @@ function toLocalDate(value: string | Date): Date {
 }
 
 export function formatMoveDate(value: string | Date | null | undefined): string {
-  if (value == null || value === "") return "—";
+  if (value == null || value === "") return "-";
   const d = toLocalDate(value);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   const now = new Date();
   const sameYear = d.getFullYear() === now.getFullYear();
   return sameYear

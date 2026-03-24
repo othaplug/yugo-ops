@@ -4,6 +4,7 @@
  */
 import { getEmailFooterStandaloneFragment } from "@/lib/email/client-email-footer";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { EMAIL_LOGO_BLACK_H, EMAIL_LOGO_BLACK_W, getEmailLogoBlackUrl } from "@/lib/email-templates";
 
 const WINE = "#722F37";
 const GOLD = "#B8962E";
@@ -14,7 +15,7 @@ const TEXT_MUTED = "#555";
 const BORDER = "rgba(0,0,0,0.08)";
 const FOOTER_LINK = "#2563eb";
 
-/** Full document wrapper for admin notifications: light bg, Yugo+ wordmark header, white card. */
+/** Full document wrapper for admin notifications: light bg, white card with logo inside card. */
 export function adminNotificationLayout(innerHtml: string, title?: string): string {
   const heading = title
     ? `<h1 style="font-size:18px;font-weight:700;color:${TEXT};margin:0 0 16px;">${escapeHtml(title)}</h1>`
@@ -24,10 +25,10 @@ export function adminNotificationLayout(innerHtml: string, title?: string): stri
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:${PAGE_BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
-  <div style="text-align:center;margin-bottom:28px;">
-    <span style="font-size:20px;font-weight:700;color:${WINE};letter-spacing:1px;">Yugo+</span>
-  </div>
   <div style="background:${CARD_BG};border-radius:16px;padding:28px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid ${BORDER};">
+    <div style="text-align:center;margin-bottom:22px;">
+      <img src="${getEmailLogoBlackUrl()}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:inline-block;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;border:0;" />
+    </div>
     ${heading}
     <div style="font-size:14px;color:${TEXT};line-height:1.6;">
       ${innerHtml}

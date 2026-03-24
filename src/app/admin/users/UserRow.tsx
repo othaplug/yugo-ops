@@ -89,7 +89,7 @@ export default function UserRow({ user, roleLabel, onSelect, onDeleted, onResend
             {user.status === "activated" ? "Active" : user.status === "pending" ? "Pending" : "Inactive"}
           </span>
         </td>
-        <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : "—"}</td>
+        <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : "-"}</td>
         <td className="px-3 py-2 border-b border-[var(--brd)] w-10">
           <div className="relative" ref={menuRef} data-dots-menu>
             <button

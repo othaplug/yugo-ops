@@ -25,7 +25,7 @@ import {
    ─────────────────────────────────────────────────────────
    Orchestrates every action that should fire after a
    successful deposit payment. Each action runs independently
-   via Promise.allSettled — one failure never blocks others.
+   via Promise.allSettled, one failure never blocks others.
 
    Called fire-and-forget from POST /api/payments/process.
    ═══════════════════════════════════════════════════════════ */
@@ -208,7 +208,7 @@ export async function runPostPaymentActions(
   /* ═══════════════════════════════════════════════════════
      ACTION DEFINITIONS
      Each returns a Promise<void>. Failures are caught by
-     Promise.allSettled — they never block other actions.
+     Promise.allSettled, they never block other actions.
      ═══════════════════════════════════════════════════════ */
 
   const actionDefs: { name: string; critical: boolean; fn: () => Promise<void> }[] = [
@@ -316,15 +316,15 @@ export async function runPostPaymentActions(
           : input.moveCode;
 
         const subjects: Record<string, string> = {
-          essential: `Your Yugo move is confirmed — ${input.moveCode}`,
-          curated: `Your Yugo move is confirmed — ${input.moveCode}`,
-          signature: `Your Yugo Signature move is confirmed — ${input.moveCode}`,
-          estate: `Welcome to your Yugo Estate experience — ${estateDateLabel}`,
+          essential: `Your Yugo move is confirmed, ${input.moveCode}`,
+          curated: `Your Yugo move is confirmed, ${input.moveCode}`,
+          signature: `Your Yugo Signature move is confirmed, ${input.moveCode}`,
+          estate: `Welcome to your Yugo Estate experience, ${estateDateLabel}`,
           // legacy keys
-          essentials: `Your Yugo move is confirmed — ${input.moveCode}`,
-          premier: `Your Yugo Signature move is confirmed — ${input.moveCode}`,
+          essentials: `Your Yugo move is confirmed, ${input.moveCode}`,
+          premier: `Your Yugo Signature move is confirmed, ${input.moveCode}`,
         };
-        const subject = subjects[tier] ?? `Booking confirmed — ${input.moveCode}`;
+        const subject = subjects[tier] ?? `Booking confirmed, ${input.moveCode}`;
 
         const html = templateFn(confirmParams);
         const emailFrom = await getEmailFrom();
@@ -560,7 +560,7 @@ export async function runPostPaymentActions(
           await resend.emails.send({
             from: emailFrom,
             to: ref.referrer_email,
-            subject: `Your referral just booked — $${ref.referrer_credit} credit earned`,
+            subject: `Your referral just booked, $${ref.referrer_credit} credit earned`,
             html: referrerHtml,
             headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
           });

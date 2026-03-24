@@ -82,7 +82,7 @@ export async function PATCH(
       const pickupDate = new Date(order.pickup_date);
       sendSMS(
         order.client_phone,
-        `Your Yugo bins have been delivered! Start packing — we pick up on ` +
+        `Your Yugo bins have been delivered! Start packing. We pick up on ` +
         `${pickupDate.toLocaleDateString("en-CA", { month: "short", day: "numeric" })}. ` +
         `Questions? (647) 370-4525`,
       ).catch(() => {});
@@ -120,7 +120,7 @@ export async function PATCH(
             amountMoney: { amount: BigInt(Math.round(missingCharge * 100)), currency: "CAD" },
             customerId: order.square_customer_id || undefined,
             referenceId: order.order_number,
-            note: `Missing bins charge — ${binsMissing} bin(s) × $${MISSING_BIN_FEE}`,
+            note: `Missing bins charge: ${binsMissing} bin(s) x $${MISSING_BIN_FEE}`,
             idempotencyKey: `bin-missing-${id}-${Date.now()}`,
             locationId,
           });
@@ -132,16 +132,16 @@ export async function PATCH(
       if (order.client_phone) {
         sendSMS(
           order.client_phone,
-          `${binsMissing} bin(s) were not returned from order ${order.order_number}. ` +
-          `A charge of $${missingCharge.toFixed(2)} ($${MISSING_BIN_FEE}/bin) has been applied to your card on file. ` +
-          `Questions? Call (647) 370-4525`,
+          `A note on your Yugo order ${order.order_number}: ${binsMissing} bin(s) were not returned. ` +
+          `A charge of $${missingCharge.toFixed(2)} ($${MISSING_BIN_FEE} per bin) has been applied to the card on file. ` +
+          `Please reach us at (647) 370-4525 if you have any questions.`,
         ).catch(() => {});
       }
     } else if (order.client_phone) {
       sendSMS(
         order.client_phone,
-        `Your bins have been collected! Thanks for going green with Yugo. ` +
-        `Need movers? Get a quote at liveyugo.com`,
+        `Your bins have been collected. Thank you for choosing Yugo. ` +
+        `Planning your move? Get a quote any time at liveyugo.com.`,
       ).catch(() => {});
     }
 

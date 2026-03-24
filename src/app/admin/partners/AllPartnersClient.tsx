@@ -125,7 +125,7 @@ const columns: ColumnDef<Partner>[] = [
     label: "Contact Name",
     accessor: (p) => p.contact_name || "",
     render: (p) => (
-      <span className="text-[12px] text-[var(--tx2)]">{p.contact_name?.trim() || "—"}</span>
+      <span className="text-[12px] text-[var(--tx2)]">{p.contact_name?.trim() || "-"}</span>
     ),
   },
   {
@@ -140,13 +140,13 @@ const columns: ColumnDef<Partner>[] = [
     id: "email",
     label: "Email",
     accessor: (p) => p.email || "",
-    render: (p) => <span className="text-[12px] text-[var(--tx2)]">{p.email || "—"}</span>,
+    render: (p) => <span className="text-[12px] text-[var(--tx2)]">{p.email || "-"}</span>,
   },
   {
     id: "phone",
     label: "Phone",
     accessor: (p) => p.phone || "",
-    render: (p) => <span className="text-[12px] text-[var(--tx2)]">{p.phone || "—"}</span>,
+    render: (p) => <span className="text-[12px] text-[var(--tx2)]">{p.phone || "-"}</span>,
   },
   {
     id: "status",
@@ -189,7 +189,7 @@ const realtorColumns: ColumnDef<RealtorRow>[] = [
     id: "email",
     label: "Email",
     accessor: (r) => r.email || "",
-    render: (r) => <span className="text-[12px] text-[var(--tx2)]">{r.email || "—"}</span>,
+    render: (r) => <span className="text-[12px] text-[var(--tx2)]">{r.email || "-"}</span>,
   },
   {
     id: "referrals",

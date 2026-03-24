@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 
 export function useRelativeTime(dateStr: string | null | undefined): string {
-  const [relative, setRelative] = useState("—");
+  const [relative, setRelative] = useState("-");
 
   useEffect(() => {
     if (!dateStr) {
-      setRelative("—");
+      setRelative("-");
       return;
     }
     const update = () => {

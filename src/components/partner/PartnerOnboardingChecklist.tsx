@@ -102,7 +102,7 @@ export default function PartnerOnboardingChecklist({
       {
         id: "portal",
         label: "Portal explored",
-        description: "You’re ready — finish here when you’ve looked around",
+        description: "You’re ready, finish here when you’ve looked around",
         done: portalExplored,
       },
     ],

@@ -139,7 +139,7 @@ export async function runEtaCheck(): Promise<{ processed: number; results: unkno
           await admin.from("in_app_notifications").insert({
             user_id: move.dedicated_coordinator,
             event_slug: "eta_15_min",
-            title: "Crew is 15 min away — send personal text",
+            title: "Crew is 15 min away, send personal text",
             body: `${move.client_name} · ${etaMinutes} min ETA. Send them a personal update.`,
             icon: "📍",
             link: `/admin/moves/${move.id}`,

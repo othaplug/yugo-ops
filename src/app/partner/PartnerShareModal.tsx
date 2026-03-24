@@ -74,7 +74,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
 
           <div className="bg-[var(--bg2)] rounded-xl p-3 mb-4">
             <div className="text-[13px] font-semibold text-[var(--tx)]">{delivery.customer_name || delivery.delivery_number}</div>
-            <div className="text-[11px] text-[var(--tx3)] mt-0.5">{delivery.delivery_address || "—"}</div>
+            <div className="text-[11px] text-[var(--tx3)] mt-0.5">{delivery.delivery_address || "-"}</div>
           </div>
 
           {error && (

@@ -188,7 +188,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
             <div className="mb-3">
               <label className={labelCls}>Client / Partner</label>
               <select name="organization_id" className={selectCls} defaultValue={delivery.organization_id || ""}>
-                <option value="">— None —</option>
+                <option value="">- None -</option>
                 {organizations.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
               </select>
             </div>

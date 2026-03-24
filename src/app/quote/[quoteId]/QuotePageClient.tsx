@@ -127,7 +127,7 @@ const TIER_FEATURES: Record<string, TierFeature[]> = {
     { card: "Protective wrapping for key furniture", title: "Protective wrapping for key furniture", desc: "Key pieces wrapped in quilted moving blankets", iconName: "Armchair" },
     { card: "Basic disassembly & reassembly", title: "Basic disassembly & reassembly", desc: "We take it apart and put it back together", iconName: "Wrench" },
     { card: "Floor & entryway protection", title: "Floor & entryway protection", desc: "Runners, booties, and corner guards throughout", iconName: "Home" },
-    { card: "All standard equipment included", title: "All standard equipment included", desc: "Dollies, straps, tools — nothing extra to rent", iconName: "Toolbox" },
+    { card: "All standard equipment included", title: "All standard equipment included", desc: "Dollies, straps, tools, nothing extra to rent", iconName: "Toolbox" },
     { card: "Standard valuation coverage", title: "Standard valuation coverage", desc: "Basic protection for your belongings", iconName: "Shield" },
     { card: "Real-time GPS tracking", title: "Real-time GPS tracking", desc: "Follow your move live from any device", iconName: "MapPin" },
   ],
@@ -139,9 +139,9 @@ const TIER_FEATURES: Record<string, TierFeature[]> = {
     { card: "Floor & door frame protection", title: "Floor & door frame protection", desc: "Runners, booties, and corner guards throughout", iconName: "Home" },
     { card: "Mattress and TV protection included", title: "Mattress and TV protection", desc: "Dedicated covers for mattresses and screens", iconName: "Shield" },
     { card: "Room-of-choice placement throughout the home", title: "Room-of-choice placement", desc: "Every piece placed exactly where you want it", iconName: "Compass" },
-    { card: "Wardrobe box for immediate use", title: "Wardrobe box for immediate use", desc: "Hang your clothes directly — no folding needed", iconName: "Shirt" },
+    { card: "Wardrobe box for immediate use", title: "Wardrobe box for immediate use", desc: "Hang your clothes directly, no folding needed", iconName: "Shirt" },
     { card: "Debris and packing removal at completion", title: "Debris and packing removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
-    { card: "All equipment included", title: "All equipment included", desc: "Dollies, straps, tools — nothing extra to rent", iconName: "Toolbox" },
+    { card: "All equipment included", title: "All equipment included", desc: "Dollies, straps, tools, nothing extra to rent", iconName: "Toolbox" },
     { card: "Enhanced valuation coverage", title: "Enhanced valuation coverage", desc: "Up to $2,500 per item protection", iconName: "ShieldCheck" },
     { card: "Real-time GPS tracking", title: "Real-time GPS tracking", desc: "Follow your move live from any device", iconName: "MapPin" },
   ],
@@ -158,7 +158,7 @@ const TIER_FEATURES: Record<string, TierFeature[]> = {
     { card: "White glove handling for furniture, art, and high-value items", title: "White glove handling", desc: "Specialist-level care for your most valued possessions", iconName: "Star" },
     { card: "Precision placement in every room", title: "Precision placement in every room", desc: "Every piece placed exactly where you want it", iconName: "Compass" },
     { card: "Full replacement valuation coverage", title: "Full replacement valuation coverage", desc: "Maximum protection for your most valuable items", iconName: "ShieldCheck" },
-    { card: "Wardrobe box included", title: "Wardrobe box included", desc: "Hang your clothes directly — no folding needed", iconName: "Shirt" },
+    { card: "Wardrobe box included", title: "Wardrobe box included", desc: "Hang your clothes directly, no folding needed", iconName: "Shirt" },
     { card: "Debris and packaging removal", title: "Debris and packaging removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
     { card: "Pre-move inventory planning and oversight", title: "Pre-move inventory planning", desc: "Full inventory documented before and after your move", iconName: "FrameCorners" },
     { card: "Premium handling for art, antiques, and specialty items", title: "Premium art & antique handling", desc: "Art, antiques, and fragile items individually wrapped", iconName: "FrameCorners" },
@@ -256,7 +256,7 @@ export default function QuotePageClient({
         setReferralVerified(true);
         setReferralId(data.referral_id);
         setReferralDiscount(data.discount || 75);
-        setReferralMsg(`✓ Applied! $${data.discount || 75} off — referred by ${data.referrer_name}.`);
+        setReferralMsg(`✓ Applied! $${data.discount || 75} off, referred by ${data.referrer_name}.`);
         // Persist referral_id on the quote
         await fetch(`/api/quotes/${quote.quote_id}/referral`, {
           method: "PATCH",
@@ -539,7 +539,7 @@ export default function QuotePageClient({
       quote.service_type === "event" && fa?.event_mode === "multi" && Array.isArray(fa.event_legs);
     const fmtLeg = (d: string | null | undefined) =>
       !d
-        ? "—"
+        ? "-"
         : new Date(d + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" });
     const eventLegs =
       isEvMulti && fa
@@ -1173,7 +1173,7 @@ export default function QuotePageClient({
                 selectedAddons={selectedAddons}
               />
             )}
-            {/* Referral code — for residential, inside confirm; for non-residential, standalone */}
+            {/* Referral code, for residential, inside confirm; for non-residential, standalone */}
             {(!isResidential || currentStep >= 4) && (
               <div className="mb-6 rounded-xl p-5 border" style={{ borderColor: `${GOLD}40`, backgroundColor: "#FFFDF8" }}>
                 <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: FOREST }}>
@@ -1273,7 +1273,7 @@ export default function QuotePageClient({
             >
               <Zap className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
               <p className="text-[12px] font-medium" style={{ color: "#8B6914" }}>
-                High demand &mdash; only {slotsRemaining} slot{slotsRemaining > 1 ? "s" : ""} remaining for{" "}
+                High demand - only {slotsRemaining} slot{slotsRemaining > 1 ? "s" : ""} remaining for{" "}
                 {new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                   month: "long",
                   day: "numeric",
@@ -1346,7 +1346,7 @@ export default function QuotePageClient({
                         Payment terms
                       </p>
                       <ul className="list-disc pl-4 space-y-1">
-                        <li>Net 30 — balance due within 30 days of invoice date.</li>
+                        <li>Net 30, balance due within 30 days of invoice date.</li>
                         <li>Your delivery is confirmed; our coordinator may reach out with invoice details.</li>
                         <li>Taxes and quoted add-ons are included in your quote total unless noted otherwise.</li>
                       </ul>
@@ -1626,7 +1626,7 @@ const InclusionsShowcase = React.forwardRef<
 });
 
 /* ═══════════════════════════════════════════════════
-   Inventory Collapsible — Grouped by Room
+   Inventory Collapsible, Grouped by Room
    ═══════════════════════════════════════════════════ */
 
 const INV_SERVICE_TYPES = new Set(["local_move", "long_distance", "office_move"]);
@@ -2170,7 +2170,7 @@ function ValuationProtectionCard({
           )}
         </div>
 
-        {/* Coverage highlights — clean grid */}
+        {/* Coverage highlights, clean grid */}
         <div className="px-5 py-4">
           <div className="grid grid-cols-2 gap-3 mb-4">
             {hasRatePerPound ? (
@@ -2210,13 +2210,13 @@ function ValuationProtectionCard({
                 </div>
                 <div className="rounded-xl px-3.5 py-3 col-span-2" style={{ backgroundColor: `${GOLD}06` }}>
                   <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Deductible</div>
-                  <div className="text-[15px] font-bold" style={{ color: GOLD }}>$0 — Zero deductible</div>
+                  <div className="text-[15px] font-bold" style={{ color: GOLD }}>$0, Zero deductible</div>
                 </div>
               </>
             )}
           </div>
 
-          {/* How it works — one clear sentence */}
+          {/* How it works, one clear sentence */}
           <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}60` }}>
             {tierData.damage_process}
           </p>
@@ -2668,7 +2668,7 @@ function AddOnsSection({
                       >
                         {addon.tiers.map((t, i) => (
                           <option key={i} value={i}>
-                            {t.label} &mdash; {fmtPrice(t.price)}
+                            {t.label} - {fmtPrice(t.price)}
                           </option>
                         ))}
                       </select>
@@ -2761,7 +2761,7 @@ function AddOnsSection({
             className="text-[12px] font-medium transition-opacity hover:opacity-70"
             style={{ color: "#888" }}
           >
-            Skip — no add-ons needed
+            Skip, no add-ons needed
           </button>
         </div>
       )}

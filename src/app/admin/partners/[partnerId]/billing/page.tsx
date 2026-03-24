@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ partnerId
     .select("name")
     .eq("id", partnerId)
     .single();
-  return { title: `${org?.name ?? "Partner"} — Billing` };
+  return { title: `${org?.name ?? "Partner"}, Billing` };
 }
 
 export default async function PartnerBillingPage({

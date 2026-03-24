@@ -469,7 +469,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
         </ul>
       </div>
 
-      {/* Modals — portal to body so modal isn't clipped by ancestor overflow-hidden */}
+      {/* Modals, portal to body so modal isn't clipped by ancestor overflow-hidden */}
       {(createOpen || editTarget) &&
         typeof document !== "undefined" &&
         createPortal(

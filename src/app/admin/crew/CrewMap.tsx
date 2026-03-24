@@ -96,7 +96,7 @@ const STAGE_INSIGHTS: Record<string, string> = {
 const STATUS_TO_STAGE: Record<string, number> = { pending: 0, scheduled: 0, confirmed: 1, dispatched: 2, "in-transit": 2, delivered: 3 };
 
 function formatDate(dateStr: string | undefined) {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   const d = new Date(dateStr);
   const now = new Date();
   const diff = now.getTime() - d.getTime();

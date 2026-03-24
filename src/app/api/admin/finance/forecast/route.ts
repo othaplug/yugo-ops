@@ -245,7 +245,7 @@ export async function GET(req: Request) {
       pct,
       moveCount: bookedMoves,
       deliveryCount: bookedDlvs,
-      details: parts.length ? `${booked}/${totalCrews} crews — ${parts.join(" + ")}` : "No bookings",
+      details: parts.length ? `${booked}/${totalCrews} crews, ${parts.join(" + ")}` : "No bookings",
     });
   }
 

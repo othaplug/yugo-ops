@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       bookingType: delivery.booking_type,
       stopsCompleted: delivery.stops_completed || 0,
       totalStops: (stops || []).length,
-      clientName: delivery.customer_name || delivery.client_name || "—",
+      clientName: delivery.customer_name || delivery.client_name || "-",
       deliveryNumber: delivery.delivery_number,
     },
     stops: normalizedStops,

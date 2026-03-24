@@ -147,7 +147,7 @@ export const DELIVERY_STATUS_LINE_COLOR: Record<string, string> = {
 
 /** Map status to display label. Never show underscores or raw enum in UI. */
 export function getStatusLabel(status: string | null): string {
-  if (!status) return "—";
+  if (!status) return "-";
   const found = MOVE_STATUS_OPTIONS.find((o) => o.value === status);
   if (found) return found.label;
   const legacy: Record<string, string> = {

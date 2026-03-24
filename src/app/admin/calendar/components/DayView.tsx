@@ -249,7 +249,7 @@ export default function DayView({
 
   return (
     <div className={`px-2 sm:px-4 pb-3 ${draggingEvent ? "select-none" : ""}`}>
-      {/* Horizontal scroll wrapper — headers + unscheduled strip + timeline all scroll together */}
+      {/* Horizontal scroll wrapper, headers + unscheduled strip + timeline all scroll together */}
       <div className="overflow-x-auto">
         {/* Column headers */}
         <div className="flex border-b border-[var(--brd)]">
@@ -299,7 +299,7 @@ export default function DayView({
           </div>
         )}
 
-        {/* Timeline grid — vertical scroll only; horizontal handled by parent */}
+        {/* Timeline grid, vertical scroll only; horizontal handled by parent */}
         <div
           ref={containerRef}
           className="overflow-y-auto max-h-[calc(100vh-170px)] sm:max-h-[calc(100vh-200px)] relative"

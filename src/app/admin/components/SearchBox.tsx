@@ -121,7 +121,7 @@ export default function SearchBox() {
       if (s.includes(term)) {
         all.push({
           type: "Move",
-          name: `${m.move_code || "Move"} — ${m.client_name}`,
+          name: `${m.move_code || "Move"}, ${m.client_name}`,
           sub: m.from_address ? `${m.from_address?.split(",")[0]} → ${m.to_address?.split(",")[0]}` : undefined,
           href: getMoveDetailPath(m),
         });
@@ -134,7 +134,7 @@ export default function SearchBox() {
       if (s.includes(term)) {
         all.push({
           type: "Quote",
-          name: `${q.quote_id || "Quote"} — ${q.client_name}`,
+          name: `${q.quote_id || "Quote"}, ${q.client_name}`,
           sub: q.service_type?.replace(/_/g, " "),
           href: `/admin/quotes/${q.quote_id || q.id}`,
         });
@@ -147,7 +147,7 @@ export default function SearchBox() {
       if (s.includes(term)) {
         all.push({
           type: "Delivery",
-          name: `${d.delivery_number} — ${d.customer_name || d.client_name || "Delivery"}`,
+          name: `${d.delivery_number}, ${d.customer_name || d.client_name || "Delivery"}`,
           sub: d.client_name || undefined,
           href: getDeliveryDetailPath(d),
         });
@@ -160,7 +160,7 @@ export default function SearchBox() {
       if (s.includes(term)) {
         all.push({
           type: "Invoice",
-          name: `${i.invoice_number} — ${i.client_name}`,
+          name: `${i.invoice_number}, ${i.client_name}`,
           href: `/admin/invoices`,
         });
       }

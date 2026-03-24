@@ -1845,7 +1845,7 @@ function buildEventIncludesList(input: QuoteInput): string[] {
   if (input.event_is_luxury) {
     lines.push("Basic setup and placement (included with luxury rate)");
     if (input.event_complex_setup_required) {
-      lines.push("Complex on-site setup (staging, signage, assembly) — as quoted");
+      lines.push("Complex on-site setup (staging, signage, assembly), as quoted");
     }
   } else if (input.event_setup_required) {
     lines.push("On-site setup and arrangement");
@@ -2944,7 +2944,7 @@ export async function POST(req: NextRequest) {
       entity_type: "quote",
       entity_id: String(response.quote_id),
       event_type: "created",
-      description: `Quote created: ${svcLabel}${contactId ? "" : ""} — ${String(response.quote_id)}`,
+      description: `Quote created: ${svcLabel}${contactId ? "" : ""}, ${String(response.quote_id)}`,
       icon: "quote",
     });
   }

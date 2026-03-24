@@ -146,17 +146,17 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
     });
     (moves || []).forEach((m) => {
       if (`${m.move_code ?? ""} ${m.client_name ?? ""}`.toLowerCase().includes(term)) {
-        all.push({ type: "Move", name: `${m.move_code ?? "Move"} — ${m.client_name}`, sub: m.from_address ? `${m.from_address.split(",")[0]} → ${m.to_address?.split(",")[0]}` : undefined, href: getMoveDetailPath(m) });
+        all.push({ type: "Move", name: `${m.move_code ?? "Move"}, ${m.client_name}`, sub: m.from_address ? `${m.from_address.split(",")[0]} → ${m.to_address?.split(",")[0]}` : undefined, href: getMoveDetailPath(m) });
       }
     });
     (quotes || []).forEach((q) => {
       if (`${q.quote_id ?? ""} ${q.client_name ?? ""}`.toLowerCase().includes(term)) {
-        all.push({ type: "Quote", name: `${q.quote_id ?? "Quote"} — ${q.client_name}`, sub: q.service_type?.replace(/_/g, " "), href: `/admin/quotes/${q.quote_id ?? q.id}` });
+        all.push({ type: "Quote", name: `${q.quote_id ?? "Quote"}, ${q.client_name}`, sub: q.service_type?.replace(/_/g, " "), href: `/admin/quotes/${q.quote_id ?? q.id}` });
       }
     });
     (deliveries || []).forEach((d) => {
       if (`${d.delivery_number} ${d.customer_name ?? ""} ${d.client_name ?? ""}`.toLowerCase().includes(term)) {
-        all.push({ type: "Delivery", name: `${d.delivery_number} — ${d.customer_name ?? d.client_name ?? "Delivery"}`, href: getDeliveryDetailPath(d) });
+        all.push({ type: "Delivery", name: `${d.delivery_number}, ${d.customer_name ?? d.client_name ?? "Delivery"}`, href: getDeliveryDetailPath(d) });
       }
     });
 

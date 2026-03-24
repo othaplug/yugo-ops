@@ -81,7 +81,7 @@ export default function TipSection({
           </p>
         </div>
 
-        {/* Preset cards — $40, $80, $120 total */}
+        {/* Preset cards, $40, $80, $120 total */}
         <div className="grid grid-cols-3 gap-1.5 max-w-[180px] mx-auto">
           {TIP_PRESETS.map((total) => {
             const isSelected = selectedTotal === total;
@@ -111,7 +111,7 @@ export default function TipSection({
           })}
         </div>
 
-        {/* Custom amount — toggled by "Add custom tip" */}
+        {/* Custom amount, toggled by "Add custom tip" */}
         {!showCustomAmount ? (
           <div className="max-w-[180px] mx-auto text-center">
             <button
@@ -160,7 +160,7 @@ export default function TipSection({
           <p className="text-[11px] text-red-600 text-center">{error}</p>
         )}
 
-        {/* CTA — smaller */}
+        {/* CTA, smaller */}
         <button
           type="button"
           onClick={handleSubmit}

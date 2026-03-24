@@ -97,11 +97,11 @@ export default function ChangeRequestsClient({
         label: "Client",
         accessor: (r) => {
           const moveData = getMoveData(r);
-          return moveData?.client_name ?? "—";
+          return moveData?.client_name ?? "-";
         },
         render: (r) => {
           const moveData = getMoveData(r);
-          const clientName = moveData?.client_name ?? "—";
+          const clientName = moveData?.client_name ?? "-";
           return (
             <Link
               href={getMoveDetailPath(moveData ? { move_code: moveData.move_code, id: r.move_id } : { id: r.move_id })}
@@ -121,12 +121,12 @@ export default function ChangeRequestsClient({
         accessor: (r) => {
           const moveData = getMoveData(r);
           const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
-          return rawCode ? formatJobId(rawCode, "move") : "—";
+          return rawCode ? formatJobId(rawCode, "move") : "-";
         },
         render: (r) => {
           const moveData = getMoveData(r);
           const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
-          const moveCode = rawCode ? formatJobId(rawCode, "move") : "—";
+          const moveCode = rawCode ? formatJobId(rawCode, "move") : "-";
           return <span className="text-[11px] font-mono text-[var(--tx2)]">{moveCode}</span>;
         },
         sortable: true,
@@ -162,7 +162,7 @@ export default function ChangeRequestsClient({
               {toTitleCase(r.status)}
             </span>
           ) : (
-            "—"
+            "-"
           ),
         sortable: true,
         searchable: true,
@@ -220,7 +220,7 @@ export default function ChangeRequestsClient({
               </button>
             </div>
           ) : (
-            "—"
+            "-"
           ),
         sortable: false,
       },

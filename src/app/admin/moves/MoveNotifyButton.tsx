@@ -46,7 +46,7 @@ export default function MoveNotifyButton({ move }: { move: any }) {
       }
       toast(`Notification sent to ${move.client_name}`, "mail");
     } catch {
-      toast("Network error — try again", "alertTriangle");
+      toast("Network error, try again", "alertTriangle");
     }
     setLoading(false);
   };

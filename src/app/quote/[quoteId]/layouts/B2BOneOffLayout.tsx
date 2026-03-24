@@ -50,7 +50,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             <span>{fmtPrice(price + tax)}</span>
           </div>
           <p className="text-[11px] leading-snug pt-1" style={{ color: `${FOREST}72` }}>
-            <strong>Terms:</strong> Net 30 — payment due within 30 days of invoice date. No card payment on this quote.
+            <strong>Terms:</strong> Net 30, payment due within 30 days of invoice date. No card payment on this quote.
             Our team will follow up with a formal invoice and scheduling details after you confirm.
           </p>
         </div>
@@ -177,7 +177,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
         </button>
         <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
           {payInvoice
-            ? "Net 30 invoice — no card required. Confirm below after you sign the agreement."
+            ? "Net 30 invoice. No card required. Confirm below after you sign the agreement."
             : isFullPayment
               ? "Full payment at confirmation"
               : `${fmtPrice(deposit)} deposit \u00b7 Balance of ${fmtPrice(price + tax - deposit)} due on delivery`}

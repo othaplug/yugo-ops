@@ -4,7 +4,7 @@ import { getEmailBaseUrl } from "./email-base-url";
 import { formatCurrency } from "./format-currency";
 import { formatPhone } from "./phone";
 
-/* ═══ Client emails: Equinox-style transaction shell (white logo bar + bordered dark card). Table-based. ═══ */
+/* ═══ Client emails: Equinox-style transaction shell (bordered dark card, logo inside card). Table-based. ═══ */
 const EQ_PAGE_BG = "#121212";
 const EQ_CARD_BG = "#161616";
 const EQ_CARD_BORDER = "rgba(255,255,255,0.22)";
@@ -25,53 +25,63 @@ export function getEmailLogoUrl(): string {
   return `${base}/images/yugo-logo-gold.png`;
 }
 
-/** Dark logo on white header bar (Equinox-style transaction emails). */
+/** Dark logo for light email cards (Estate, admin notifications). */
 export function getEmailLogoBlackUrl(): string {
   const base = getEmailBaseUrl();
   return `${base}/images/yugo-logo-black.png`;
 }
 
 /** Logo dimensions in HTML emails (~3.67:1). Keep compact so the mark doesn’t dominate the message. */
-export const EMAIL_LOGO_BLACK_W = 102;
-export const EMAIL_LOGO_BLACK_H = 28;
-export const EMAIL_LOGO_GOLD_W = 78;
-export const EMAIL_LOGO_GOLD_H = 21;
+export const EMAIL_LOGO_BLACK_W = 80;
+export const EMAIL_LOGO_BLACK_H = 22;
+export const EMAIL_LOGO_GOLD_W = 62;
+export const EMAIL_LOGO_GOLD_H = 17;
 
 /** Company footer line for all emails (claim, admin, lifecycle). */
 export const EMAIL_FOOTER_COMPANY = "Yugo Inc. 507 King Street E. Toronto, ON.";
 
-function classicEmailLogoRow(): string {
+/** Gold wordmark centered — dark email cards (#161616, promo black, legacy black). */
+function emailCardLogoGold(): string {
   const logoUrl = getEmailLogoUrl();
   return `
-    <tr>
-      <td align="center" style="padding:28px 24px 0;">
-        <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;margin:0 auto;" />
-      </td>
-    </tr>
-    <tr>
-      <td align="center" style="padding:20px 40px 0;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD},transparent);font-size:0;line-height:0;">&nbsp;</td></tr></table>
-      </td>
-    </tr>
-    <tr><td style="height:24px;"></td></tr>
-  `;
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 22px;">
+  <tr>
+    <td align="center" style="padding:0;">
+      <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;margin:0 auto;" />
+    </td>
+  </tr>
+</table>`;
 }
 
-function equinoxEmailLogoRow(): string {
+/** Gold wordmark + hairline — legacy premium black shell. */
+function emailCardLogoGoldLegacy(): string {
+  const logoUrl = getEmailLogoUrl();
+  return `
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 24px;">
+  <tr>
+    <td align="center" style="padding:0 0 16px;">
+      <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;margin:0 auto;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="padding:0 16px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD},transparent);font-size:0;line-height:0;">&nbsp;</td></tr></table>
+    </td>
+  </tr>
+</table>`;
+}
+
+/** Black wordmark centered — light cards (Estate ivory, admin white). */
+function emailCardLogoBlack(): string {
   const logoUrl = getEmailLogoBlackUrl();
   return `
-    <tr>
-      <td align="center" style="padding:0;background-color:#FFFFFF;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
-          <tr>
-            <td align="center" style="padding:18px 20px 20px;background-color:#FFFFFF;">
-              <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  `;
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 20px;">
+  <tr>
+    <td align="center" style="padding:0;">
+      <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
+    </td>
+  </tr>
+</table>`;
 }
 
 /** Client contact email and phone for footer. */
@@ -89,18 +99,18 @@ function emailFooterRow(_loginUrl?: string): string {
 }
 
 /**
- * Equinox-style transaction wrapper: charcoal field, white logo bar, thin-bordered dark card, shared footer.
+ * Equinox-style transaction wrapper: charcoal field, thin-bordered dark card (logo inside card), shared footer.
  */
 export function emailLayout(innerHtml: string, footerLoginUrl?: string): string {
   void footerLoginUrl;
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EQ_PAGE_BG};">
-  ${equinoxEmailLogoRow()}
   <tr>
     <td align="center" style="padding:24px 16px 32px;">
       <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;border:1px solid ${EQ_CARD_BORDER};background-color:${EQ_CARD_BG};">
         <tr>
           <td style="padding:28px 24px 32px;font-family:${EQ_SANS};color:#FFFFFF;">
+            ${emailCardLogoGold()}
             ${innerHtml}
           </td>
         </tr>
@@ -115,18 +125,18 @@ export function emailLayout(innerHtml: string, footerLoginUrl?: string): string 
 const EQ_PROMO_PAGE = "#000000";
 
 /**
- * Full-black luxury promo shell: white logo bar, pure #000 body, left-aligned editorial copy.
+ * Full-black luxury promo shell: bordered card on #000 with logo inside card, left-aligned editorial copy.
  * Use for quote follow-ups, referral, re-engagement, and nurture emails.
  */
 export function equinoxPromoLayout(innerHtml: string): string {
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EQ_PROMO_PAGE};">
-  ${equinoxEmailLogoRow()}
   <tr>
-    <td align="center" style="padding:0;background-color:${EQ_PROMO_PAGE};">
-      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;" role="presentation">
+    <td align="center" style="padding:24px 16px 32px;background-color:${EQ_PROMO_PAGE};">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;border:1px solid ${EQ_CARD_BORDER};background-color:${EQ_CARD_BG};" role="presentation">
         <tr>
-          <td style="padding:44px 32px 52px;text-align:left;font-family:${EQ_SANS};color:#FFFFFF;background-color:${EQ_PROMO_PAGE};">
+          <td style="padding:36px 32px 44px;text-align:left;font-family:${EQ_SANS};color:#FFFFFF;">
+            ${emailCardLogoGold()}
             ${innerHtml}
           </td>
         </tr>
@@ -159,7 +169,7 @@ export function equinoxPromoFinePrint(text: string): string {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Estate (White Glove) confirmation — cream, wine + gold palette.
+   Estate (White Glove) confirmation, cream, wine + gold palette.
    Typography: Georgia headers, DM Sans body. Generous spacing.
    ══════════════════════════════════════════════════════════════════ */
 const ESTATE_CREAM_PAGE = "#F3EDE4";
@@ -182,30 +192,27 @@ function estateLabel(text: string): string {
 }
 
 /**
- * Estate luxury wrapper: warm cream page, logo on cream, wine/gold gradient hairline,
- * ivory card with wine-tint border. Completely distinct from the dark promo shell.
+ * Estate luxury wrapper: warm cream page, ivory card with wine-tint border (logo + hairline inside card).
+ * Completely distinct from the dark promo shell.
  */
 function estateLuxuryCreamLayout(innerHtml: string): string {
-  const logoUrl = getEmailLogoBlackUrl();
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${ESTATE_CREAM_PAGE};">
   <tr>
-    <td align="center" style="padding:36px 24px 16px;background-color:${ESTATE_CREAM_PAGE};">
-      <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" style="padding:0 24px 16px;background-color:${ESTATE_CREAM_PAGE};">
-      <table width="72" cellpadding="0" cellspacing="0" border="0" role="presentation" align="center">
-        <tr><td style="height:2px;background:linear-gradient(90deg,${ESTATE_WINE},${ESTATE_GOLD_DARK},${ESTATE_WINE});font-size:0;line-height:0;">&nbsp;</td></tr>
-      </table>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" style="padding:4px 20px 60px;background-color:${ESTATE_CREAM_PAGE};">
+    <td align="center" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};">
       <table width="580" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);">
         <tr>
           <td style="padding:52px 48px 56px;font-family:${ESTATE_DM_SANS};color:${ESTATE_BODY};font-size:15px;line-height:1.78;">
+            ${emailCardLogoBlack()}
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 28px;">
+              <tr>
+                <td align="center" style="padding:0;">
+                  <table width="72" cellpadding="0" cellspacing="0" border="0" role="presentation">
+                    <tr><td style="height:2px;background:linear-gradient(90deg,${ESTATE_WINE},${ESTATE_GOLD_DARK},${ESTATE_WINE});font-size:0;line-height:0;">&nbsp;</td></tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
             ${innerHtml}
           </td>
         </tr>
@@ -217,16 +224,16 @@ function estateLuxuryCreamLayout(innerHtml: string): string {
   `;
 }
 
-/** Previous Yugo look: gold logo on black, DM Sans — use for quote follow-ups, reviews, low-satisfaction. */
+/** Previous Yugo look: gold logo inside content card on black, DM Sans — quote follow-ups, reviews, low-satisfaction. */
 export function legacyEmailLayout(innerHtml: string, footerLoginUrl?: string): string {
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL_BG};font-family:'DM Sans',sans-serif;">
-  ${classicEmailLogoRow()}
   <tr>
-    <td align="center" style="padding:0 24px 32px;">
-      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;">
+    <td align="center" style="padding:24px 16px 32px;">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;border:1px solid ${EMAIL_BRD};">
         <tr>
-          <td style="color:#FFFFFF;">
+          <td style="padding:28px 24px 32px;color:#FFFFFF;">
+            ${emailCardLogoGoldLegacy()}
             ${innerHtml}
           </td>
         </tr>
@@ -261,12 +268,12 @@ export function statusUpdateEmailHtml(params: {
   const footerBlock = includeFooter ? emailFooterRow() : "";
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EQ_PAGE_BG};">
-  ${equinoxEmailLogoRow()}
   <tr>
     <td align="center" style="padding:24px 16px ${bottomPad};">
       <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;border:1px solid ${EQ_CARD_BORDER};background-color:${EQ_CARD_BG};">
         <tr>
           <td style="padding:28px 24px 32px;font-family:${EQ_SANS};">
+            ${emailCardLogoGold()}
             <table width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="font-size:18px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${EMAIL_TX};padding-bottom:14px;line-height:1.3;">${headline}</td>
@@ -333,7 +340,7 @@ export function deliveryNotificationEmail(delivery: {
   const inner = `
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr><td style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;padding-bottom:8px;">Project Update</td></tr>
-      <tr><td style="font-size:26px;font-weight:700;letter-spacing:0.3px;color:${EMAIL_TX};padding-bottom:20px;">${delivery.delivery_number} — ${delivery.customer_name}</td></tr>
+      <tr><td style="font-size:26px;font-weight:700;letter-spacing:0.3px;color:${EMAIL_TX};padding-bottom:20px;">${delivery.delivery_number}, ${delivery.customer_name}</td></tr>
       <tr>
         <td style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:20px;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -344,15 +351,15 @@ export function deliveryNotificationEmail(delivery: {
                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td width="50%" style="font-size:12px;color:${EMAIL_TX3};padding:4px 8px 4px 0;vertical-align:top;">Delivery to:</td>
-                    <td width="50%" style="font-size:12px;font-weight:600;color:#FFFFFF;padding:4px 0;vertical-align:top;">${delivery.delivery_address || "—"}</td>
+                    <td width="50%" style="font-size:12px;font-weight:600;color:#FFFFFF;padding:4px 0;vertical-align:top;">${delivery.delivery_address || "-"}</td>
                   </tr>
                   <tr>
                     <td style="font-size:12px;color:${EMAIL_TX3};padding:4px 8px 4px 0;vertical-align:top;">Pickup from:</td>
-                    <td style="font-size:12px;font-weight:600;color:#FFFFFF;padding:4px 0;vertical-align:top;">${delivery.pickup_address || "—"}</td>
+                    <td style="font-size:12px;font-weight:600;color:#FFFFFF;padding:4px 0;vertical-align:top;">${delivery.pickup_address || "-"}</td>
                   </tr>
                   <tr>
                     <td style="font-size:12px;color:${EMAIL_TX3};padding:4px 8px 4px 0;vertical-align:top;">Date &amp; window:</td>
-                    <td style="font-size:12px;font-weight:600;color:#FFFFFF;padding:4px 0;vertical-align:top;">${delivery.scheduled_date || "—"} &middot; ${delivery.delivery_window || "—"}</td>
+                    <td style="font-size:12px;font-weight:600;color:#FFFFFF;padding:4px 0;vertical-align:top;">${delivery.scheduled_date || "-"} &middot; ${delivery.delivery_window || "-"}</td>
                   </tr>
                   <tr>
                     <td style="font-size:12px;color:${EMAIL_TX3};padding:4px 8px 4px 0;vertical-align:top;">Items:</td>
@@ -583,7 +590,7 @@ export function inventoryChangeRequestAdminEmail(params: {
   const deltaStr = `${netDelta >= 0 ? "+" : ""}$${netDelta}`;
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Inventory Change Request</div>
-    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">New request — ${moveCode}</div>
+    <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">New request, ${moveCode}</div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:20px;">
       <p style="font-size:13px;color:#FFFFFF;line-height:1.5;margin:0 0 12px;"><strong>Client:</strong> ${clientName}</p>
       <p style="font-size:12px;color:${EMAIL_TX2};line-height:1.5;margin:0 0 8px;">Adding <strong>${addedCount}</strong> line(s), removing <strong>${removedCount}</strong> line(s).</p>
@@ -622,7 +629,7 @@ export function inventoryChangeRequestClientEmail(params: {
           ? `<p style="font-size:12px;color:${EMAIL_TX2};line-height:1.5;margin:0 0 12px;">Net price change: <strong>${netDelta >= 0 ? "+" : ""}$${netDelta}</strong></p>
              <p style="font-size:12px;color:#FFFFFF;line-height:1.5;margin:0 0 12px;">Updated move total: <strong>$${newTotal}</strong></p>
              ${adminNote ? `<p style="font-size:12px;color:${EMAIL_TX2};line-height:1.5;margin:0 0 12px;">Note from your coordinator: ${adminNote}</p>` : ""}
-             ${additionalDeposit && additionalDeposit > 0 ? `<p style="font-size:12px;color:#FFFFFF;line-height:1.5;margin:0;">Additional amount due: <strong>$${additionalDeposit}</strong> — you can pay from your move portal.</p>` : ""}`
+             ${additionalDeposit && additionalDeposit > 0 ? `<p style="font-size:12px;color:#FFFFFF;line-height:1.5;margin:0;">Additional amount due: <strong>$${additionalDeposit}</strong>, you can pay from your move portal.</p>` : ""}`
           : `<p style="font-size:12px;color:${EMAIL_TX2};line-height:1.5;margin:0 0 12px;">${declineReason || "Please review the details in your portal or contact your coordinator."}</p>`
       }
     </div>
@@ -666,7 +673,7 @@ export function inviteUserEmail(params: {
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">You&apos;re Invited</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to Yugo${name ? `, ${name}` : ""}</div>
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to join Yugo as a <strong style="color:${EMAIL_GOLD}">${roleLabel}</strong>. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to join Yugo as a <strong style="color:${EMAIL_GOLD}">${roleLabel}</strong>. Your account has been created, sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
       <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
@@ -713,7 +720,7 @@ export function invitePartnerEmail(params: {
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">You&apos;re Invited as a Partner</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to Yugo${contactName ? `, ${contactName}` : ""}</div>
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;"><strong style="color:${EMAIL_GOLD}">${companyName}</strong> has been invited as a <strong style="color:${EMAIL_GOLD}">${typeLabel}</strong> partner with Yugo. Your account has been created — sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;"><strong style="color:${EMAIL_GOLD}">${companyName}</strong> has been invited as a <strong style="color:${EMAIL_GOLD}">${typeLabel}</strong> partner with Yugo. Your account has been created, sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
       <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
@@ -857,7 +864,7 @@ export function referralReceivedEmail(params: { agentName: string; clientName: s
       <div style="display:flex;align-items:center;gap:10px">
         <div>
           <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:6px;">Status</div>
-          <div style="font-size:13px;color:#FFFFFF;font-weight:600;">In Pipeline &mdash; Your team is on it</div>
+          <div style="font-size:13px;color:#FFFFFF;font-weight:600;">In Pipeline - Your team is on it</div>
           <div style="font-size:12px;color:${EMAIL_TX2};margin-top:4px;line-height:1.5;">We&apos;ll be in touch as we process the lead and coordinate the move.</div>
         </div>
       </div>
@@ -945,7 +952,7 @@ export function bookingConfirmationEmail(params: {
         </tr>
         <tr>
           <td style="color:#595959;padding:8px 0;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">Service</td>
-          <td style="color:#FFFFFF;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">${serviceLabel}${tierLabel ? ` &mdash; ${tierLabel}` : ""}</td>
+          <td style="color:#FFFFFF;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">${serviceLabel}${tierLabel ? ` - ${tierLabel}` : ""}</td>
         </tr>
         <tr>
           <td style="color:#595959;padding:8px 0;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">Date</td>
@@ -1086,9 +1093,9 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   return emailLayout(`
     <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Booking Confirmed</div>
-    <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;margin:0 0 12px;color:#FFFFFF">Great choice${p.clientName ? `, ${p.clientName}` : ""} &mdash; your Yugo Signature move is confirmed.</h1>
+    <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;margin:0 0 12px;color:#FFFFFF">Great choice${p.clientName ? `, ${p.clientName}` : ""} - your Yugo Signature move is confirmed.</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Everything is set. No surprises &mdash; just a smooth, professional move.
+      Everything is set. No surprises - just a smooth, professional move.
     </p>
 
     <div style="background:#1E1E1E;border:1px solid #C9A96233;border-radius:10px;padding:20px;margin-bottom:20px">
@@ -1100,7 +1107,7 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
         <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">Signature</td></tr>
         <tr><td style="color:#666;padding:4px 0">Crew:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
         <tr><td style="color:#666;padding:4px 0">Vehicle:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed &mdash; no surprises)</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed - no surprises)</td></tr>
       </table>
     </div>
 
@@ -1116,7 +1123,7 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
       <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
         <div>&middot; You&apos;ll receive a reminder 48 hours before</div>
         <div>&middot; A day-before SMS with your crew details and ETA window</div>
-        <div>&middot; Our team will handle disassembly &mdash; just let us know which pieces need it</div>
+        <div>&middot; Our team will handle disassembly - just let us know which pieces need it</div>
       </div>
     </div>
 
@@ -1140,7 +1147,7 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
 
     <p style="font-size:12px;color:#B8B5B0;margin:0 0 16px;text-align:center">
       Looking forward to a smooth move.<br/>
-      <strong style="color:#FFFFFF">&mdash; The Yugo Team</strong>
+      <strong style="color:#FFFFFF">- The Yugo Team</strong>
     </p>
   `);
 }
@@ -1151,8 +1158,8 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
   const firstName = (p.clientName || "").split(" ")[0];
 
   const canonicalIncludes = [
-    `Dedicated crew of ${p.crewSize} &mdash; hand-selected for your move`,
-    `${p.truckDisplayName} &mdash; exclusively reserved for you`,
+    `Dedicated crew of ${p.crewSize} - hand-selected for your move`,
+    `${p.truckDisplayName} - exclusively reserved for you`,
     `Pre-move inventory walkthrough (${coordName} will call to schedule this within 24 hours)`,
     "Premium quilted blankets for every piece",
     "Complete floor, wall, and doorway protection",
@@ -1194,7 +1201,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
       </tr>
       <tr>
         <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Time</td>
-        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.timeWindow} &mdash; your crew will arrive promptly</td>
+        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.timeWindow} - your crew will arrive promptly</td>
       </tr>
       <tr>
         <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Origin</td>
@@ -1296,7 +1303,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0;font-family:${ESTATE_DM_SANS};">Yugo Estate Team</p>
     `}
 
-    <p style="font-family:${ESTATE_GEORGIA};font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${ESTATE_WINE};margin:32px 0 0;line-height:1.4;">Yugo &mdash; The Art of Moving</p>
+    <p style="font-family:${ESTATE_GEORGIA};font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${ESTATE_WINE};margin:32px 0 0;line-height:1.4;">Yugo - The Art of Moving</p>
   `);
 }
 
@@ -1339,14 +1346,14 @@ export function internalBookingAlertEmail(params: {
 
   return emailLayout(`
     <div style="font-size:10px;font-weight:700;color:#2D9F5A;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">New Booking</div>
-    <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#FFFFFF">${clientName} &mdash; ${serviceLabel}${tierLabel ? ` (${tierLabel})` : ""}</h1>
+    <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#FFFFFF">${clientName} - ${serviceLabel}${tierLabel ? ` (${tierLabel})` : ""}</h1>
 
     <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:16px">
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="color:#666;padding:4px 0;width:100px">Move:</td><td style="color:#C9A962;font-weight:600;padding:4px 0">${moveCode}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Client:</td><td style="color:#FFFFFF;padding:4px 0">${clientName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Email:</td><td style="color:#FFFFFF;padding:4px 0">${clientEmail}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#FFFFFF;padding:4px 0">${clientPhone ? formatPhone(clientPhone) : "—"}</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#FFFFFF;padding:4px 0">${clientPhone ? formatPhone(clientPhone) : "-"}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#FFFFFF;padding:4px 0">${dateDisplay}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Route:</td><td style="color:#FFFFFF;padding:4px 0">${fromAddress} &rarr; ${toAddress}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0">${formatCurrency(totalWithTax)}</td></tr>

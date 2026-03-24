@@ -149,7 +149,7 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
       {showOverride && balanceAmount > 0 && (
         <div className="mt-3 pt-3 border-t border-[var(--brd)]/50 space-y-3">
           <p className="text-[10px] text-[var(--tx3)]">
-            Use only for exceptional cases — wire transfer, cheque, or a legacy arrangement. All overrides are audit-logged.
+            Use only for exceptional cases, wire transfer, cheque, or a legacy arrangement. All overrides are audit-logged.
           </p>
           <div>
             <label className="block text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">Reason</label>

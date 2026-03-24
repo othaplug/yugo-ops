@@ -344,7 +344,7 @@ export default function MoveDetailClient({
                     <span className={`inline-flex px-2.5 py-1 rounded-md text-[12px] font-bold ${MOVE_STATUS_COLORS_ADMIN[move.status] || "bg-[var(--gdim)] text-[var(--gold)]"}`}>
                       {getStatusLabel(move.status)}
                     </span>
-                    <span className="p-1 rounded-md text-red-500" title="Move completed — status locked" aria-hidden="true">
+                    <span className="p-1 rounded-md text-red-500" title="Move completed. Status is locked." aria-hidden="true">
                       <Lock className="w-[11px] h-[11px]" />
                     </span>
                   </span>
@@ -497,8 +497,8 @@ export default function MoveDetailClient({
                 {etaSmsLog.map((row, i) => (
                   <tr key={i} className="border-b border-[var(--brd)]/50 last:border-0">
                     <td className="py-2 px-3 text-[var(--tx)]">{row.message_type.replace(/_/g, " ")}</td>
-                    <td className="py-2 px-3 text-[var(--tx2)]">{row.sent_at ? new Date(row.sent_at).toLocaleString() : "—"}</td>
-                    <td className="py-2 px-3 text-[var(--tx2)]">{row.eta_minutes != null ? `${row.eta_minutes} min` : "—"}</td>
+                    <td className="py-2 px-3 text-[var(--tx2)]">{row.sent_at ? new Date(row.sent_at).toLocaleString() : "-"}</td>
+                    <td className="py-2 px-3 text-[var(--tx2)]">{row.eta_minutes != null ? `${row.eta_minutes} min` : "-"}</td>
                     <td className="py-2 px-3 font-mono text-[10px] text-[var(--tx3)]">{row.twilio_sid || "Failed"}</td>
                   </tr>
                 ))}
@@ -579,7 +579,7 @@ export default function MoveDetailClient({
       {move.crew_id && (
         <CollapsibleSection title="Live Crew Tracking" defaultCollapsed subtitle={selectedCrew?.name || "Crew"}>
           {!isInProgress && (
-            <p className="text-[11px] text-[var(--tx3)] mb-2">Move completed — live tracking still shown for vehicle and asset security.</p>
+            <p className="text-[11px] text-[var(--tx3)] mb-2">Move completed. Live tracking remains visible for vehicle and asset security.</p>
           )}
           <LiveTrackingMap
             crewId={move.crew_id}
@@ -934,16 +934,16 @@ export default function MoveDetailClient({
               <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
-            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
             <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Date</span><div className="text-[13px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.arrival_window || "—"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "—"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Completed at</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.completed_at ? new Date(move.completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.arrival_window || "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Completed at</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.completed_at ? new Date(move.completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "-"}</div></div>
             <div>
               <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Days Left</span>
               <div className={`text-[13px] font-bold tabular-nums ${
@@ -956,7 +956,7 @@ export default function MoveDetailClient({
                   : "text-[var(--gold)]"
               }`}>
                 {daysUntil === null || daysUntil === undefined
-                  ? "—"
+                  ? "-"
                   : daysUntil < 0
                   ? `${Math.abs(daysUntil)}d overdue`
                   : daysUntil === 0
@@ -974,7 +974,7 @@ export default function MoveDetailClient({
               <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
-            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
@@ -982,12 +982,12 @@ export default function MoveDetailClient({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <div>
               <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">From</span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">{move.from_address || "—"}</div>
+              <div className="text-[13px] font-medium text-[var(--tx)]">{move.from_address || "-"}</div>
               {formatAccessForDisplay(move.from_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.from_access)}</div>}
             </div>
             <div>
               <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">To</span>
-              <div className="text-[13px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "—"}</div>
+              <div className="text-[13px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "-"}</div>
               {formatAccessForDisplay(move.to_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.to_access)}</div>}
             </div>
           </div>
@@ -1000,14 +1000,14 @@ export default function MoveDetailClient({
               <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
-            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{selectedCrew?.name || "—"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.coordinator_name || "—"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{selectedCrew?.name || "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.coordinator_name || "-"}</div></div>
             {isCompleted ? (
               <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
             ) : (
@@ -1023,14 +1023,14 @@ export default function MoveDetailClient({
               <Pencil weight="regular" className="w-[13px] h-[13px]" />
             </button>
           ) : (
-            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+            <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "—"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "—"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "-"}</div></div>
             {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
           </div>
         </div>
@@ -1184,7 +1184,7 @@ export default function MoveDetailClient({
               </div>
             )}
 
-            {/* Action row — only when action is needed */}
+            {/* Action row, only when action is needed */}
             {!fullyPaid && !balanceJustSettled && !isBalancePaid && (
               <div className="px-4 py-3 border-t border-[var(--brd)]/40 flex flex-wrap items-center gap-2">
                 {!isPaid && (
@@ -1251,7 +1251,7 @@ export default function MoveDetailClient({
         );
       })()}
 
-      {/* Profitability — Owner Only */}
+      {/* Profitability, Owner Only */}
       {userRole === "owner" && <MoveProfitCard move={move} />}
 
       {/* Distance & Logistics */}
@@ -1297,14 +1297,14 @@ export default function MoveDetailClient({
       {/* Reported Issues from crew */}
       <IncidentsSection jobId={move.id} jobType="move" />
 
-      {/* Internal Notes — seamless */}
+      {/* Internal Notes, seamless */}
       <div className="group/s relative border-t border-[var(--brd)]/30 py-4">
         {!isCompleted ? (
           <button type="button" className="absolute top-4 right-0 p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] transition-opacity opacity-50 hover:opacity-100" onClick={() => { setDetailsModalSection("notes"); setDetailsModalOpen(true); }} aria-label="Edit internal notes">
             <Pencil weight="regular" className="w-[13px] h-[13px]" />
           </button>
         ) : (
-          <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed — editing locked" aria-hidden="true">
+          <span className="absolute top-4 right-0 p-1 rounded-md text-red-500" title="Move completed. Editing is locked." aria-hidden="true">
             <Lock className="w-[11px] h-[11px]" />
           </span>
         )}

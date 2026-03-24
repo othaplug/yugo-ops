@@ -101,7 +101,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
         </div>
         {currentStop && (
           <p className="text-[10px] text-[var(--tx3)] mt-2">
-            Current: Stop {currentStop.stop_number} — {currentStop.address}
+            Current: Stop {currentStop.stop_number}, {currentStop.address}
           </p>
         )}
       </div>

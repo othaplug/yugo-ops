@@ -235,7 +235,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await resend.emails.send({
         from: emailFrom,
         to: move.client_email,
-        subject: "Your inventory change request — approved",
+        subject: "Your inventory change request, approved",
         html,
       });
     } catch {

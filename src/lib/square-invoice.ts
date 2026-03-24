@@ -149,7 +149,7 @@ export async function createAndPublishSquareInvoice(
         deliveryMethod: orgEmail ? "EMAIL" : "SHARE_MANUALLY",
         invoiceNumber: normalizeDeliveryNumber(deliveryNumber),
         title: "Delivery Service",
-        description: `Delivery for ${customerName} — ${deliveryAddress}`,
+        description: `Delivery for ${customerName}, ${deliveryAddress}`,
         acceptedPaymentMethods: {
           card: true,
           bankAccount: false,

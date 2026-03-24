@@ -205,13 +205,13 @@ function quoteAmountRaw(q: Quote): number | null {
 
 function quoteAmount(q: Quote): string {
   const raw = quoteAmountRaw(q);
-  return raw != null ? formatCurrency(raw) : "—";
+  return raw != null ? formatCurrency(raw) : "-";
 }
 
 function truncAddr(from?: string, to?: string, max = 50): string {
   const f = (from || "").trim();
   const t = (to || "").trim();
-  if (!f && !t) return "—";
+  if (!f && !t) return "-";
   const full = f && t ? `${f} → ${t}` : f || t;
   return full.length <= max ? full : full.slice(0, max - 1) + "…";
 }
@@ -228,7 +228,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       accessor: (m) => m.move_code || "",
       render: (m) => (
         <span className="dt-text-id whitespace-nowrap">
-          {m.move_code || "—"}
+          {m.move_code || "-"}
         </span>
       ),
       minWidth: "90px",
@@ -252,8 +252,8 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
         const isComplete = ["completed", "delivered"].includes((m.status || "").toLowerCase());
         return (
           <div className="flex items-center gap-2 min-w-0">
-            <span className="dt-text-strong truncate" title={m.client_name || "—"}>
-              {m.client_name || "—"}
+            <span className="dt-text-strong truncate" title={m.client_name || "-"}>
+              {m.client_name || "-"}
             </span>
             {!isComplete && (
               <span onClick={(e) => e.stopPropagation()}>
@@ -297,7 +297,7 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       label: "Crew",
       accessor: (m) => (m.crew_id ? crewMap[m.crew_id] || "" : ""),
       render: (m) => (
-        <span className="dt-text-muted">{m.crew_id ? crewMap[m.crew_id] || "—" : "—"}</span>
+        <span className="dt-text-muted">{m.crew_id ? crewMap[m.crew_id] || "-" : "-"}</span>
       ),
       defaultHidden: false,
     },
@@ -323,10 +323,10 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
       render: (m) => {
         const isCompleted = ["completed", "delivered", "paid"].includes((m.status || "").toLowerCase());
         const isQuote = ["quoted", "quote"].includes((m.status || "").toLowerCase());
-        if (isQuote) return <span className="block text-right dt-text-muted">—</span>;
+        if (isQuote) return <span className="block text-right dt-text-muted">-</span>;
 
         const pct = isCompleted ? m.margin_percent : m.est_margin_percent;
-        if (pct == null) return <span className="block text-right dt-text-muted">—</span>;
+        if (pct == null) return <span className="block text-right dt-text-muted">-</span>;
 
         const flag = m.margin_flag || (pct >= 35 ? "green" : pct >= 25 ? "yellow" : "red");
         const dotColor = flag === "green"
@@ -532,7 +532,7 @@ export default function AllMovesClient({
       </div>
 
       <div className="pt-6 mb-5">
-        {/* Type filter pills — horizontal scroll on mobile */}
+        {/* Type filter pills, horizontal scroll on mobile */}
         <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {TYPE_FILTERS.map((f) => {
             const isActive = activeType === f.value;
@@ -557,7 +557,7 @@ export default function AllMovesClient({
           })}
         </div>
 
-        {/* Status filter pills — horizontal scroll on mobile */}
+        {/* Status filter pills, horizontal scroll on mobile */}
         <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {STATUS_FILTERS.map((f) => {
             const isActive = activeStatus === f.value;
@@ -633,7 +633,7 @@ export default function AllMovesClient({
         />
       </div>
 
-      {/* Recent Quotes — horizontal scroll strip */}
+      {/* Recent Quotes, horizontal scroll strip */}
       {recentQuotes.length > 0 && (
         <div className="border-t border-[var(--brd)]/30 pt-6 mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -657,7 +657,7 @@ export default function AllMovesClient({
                     </span>
                   </div>
                   <div className="text-[13px] font-bold text-[var(--tx)] truncate">
-                    {q.client_name || "—"}
+                    {q.client_name || "-"}
                   </div>
                   <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
                     {serviceTypeLabel(q.service_type)} · {relativeTime(q.sent_at || q.created_at)}
@@ -681,7 +681,7 @@ export default function AllMovesClient({
         </div>
       )}
 
-      {/* Mobile FAB — Create Move */}
+      {/* Mobile FAB, Create Move */}
       <div className="sm:hidden fixed bottom-[calc(56px+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[50]">
         <Link
           href="/admin/moves/new"

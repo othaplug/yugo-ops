@@ -108,7 +108,7 @@ function typeLabel(t: string): string {
 const pct = (n: number) => `${n.toFixed(1)}%`;
 /** Format YYYY-MM-DD as DD/MM/YY */
 function formatTableDate(d: string | null | undefined): string {
-  if (!d || d.length < 10) return "—";
+  if (!d || d.length < 10) return "-";
   const [y, m, day] = d.slice(0, 10).split("-");
   return `${day}/${m}/${y?.slice(-2) ?? ""}`;
 }
@@ -1107,7 +1107,7 @@ export default function ProfitabilityClient() {
                         </td>
                         <td className="py-1.5 px-2 text-[var(--tx3)] overflow-hidden text-ellipsis whitespace-nowrap">{typeLabel(r.type)}</td>
                         <td className="py-1.5 px-2 font-medium text-[var(--tx)] overflow-hidden text-ellipsis whitespace-nowrap">{formatCurrency(r.revenue)}</td>
-                        <td className="py-1.5 px-2 text-[var(--tx3)] tabular-nums overflow-hidden text-ellipsis whitespace-nowrap">{r.actual_hours != null ? `${r.actual_hours}h` : "—"}</td>
+                        <td className="py-1.5 px-2 text-[var(--tx3)] tabular-nums overflow-hidden text-ellipsis whitespace-nowrap">{r.actual_hours != null ? `${r.actual_hours}h` : "-"}</td>
                         <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap"><EditableCostCell value={r.labour ?? 0} field="labour" row={r} onSaved={handleCostSaved} /></td>
                         <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap"><EditableCostCell value={r.fuel} field="fuel" row={r} onSaved={handleCostSaved} /></td>
                         <td className="py-1.5 px-2 text-red-400/80 overflow-hidden whitespace-nowrap"><EditableCostCell value={r.truck} field="truck" row={r} onSaved={handleCostSaved} /></td>

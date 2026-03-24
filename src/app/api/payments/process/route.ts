@@ -189,7 +189,7 @@ export async function POST(req: Request) {
       entity_type: "quote",
       entity_id: quoteId,
       event_type: "accepted",
-      description: `Quote accepted by ${clientName} — $${amount.toLocaleString()} deposit paid (${quoteId})`,
+      description: `Quote accepted by ${clientName}, $${amount.toLocaleString()} deposit paid (${quoteId})`,
       icon: "payment",
     });
 

@@ -74,7 +74,7 @@ const PERK_CARD_THEMES = [
 ];
 
 function shortAddress(addr: string | null | undefined): string {
-  if (!addr) return "—";
+  if (!addr) return "-";
   const parts = addr.split(",").map((s) => s.trim());
   // Keep street + city only: "507 King St E, Toronto, Ontario M5A 1M3, Canada" → "507 King St E, Toronto"
   return parts.slice(0, 2).join(", ");
@@ -590,7 +590,7 @@ export default function TrackMoveClient({
   return (
     <div className="h-screen flex flex-col overflow-hidden font-sans" data-theme="light" style={{ backgroundColor: "#FAF7F2", color: FOREST }}>
       <TrackingAgreementModal />
-      {/* Header — outside scroll container; always visible on mobile */}
+      {/* Header, outside scroll container; always visible on mobile */}
       <header className="shrink-0 z-50 border-b" style={{ backgroundColor: WINE, borderColor: `${WINE}80` }}>
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
           <div className="flex items-center gap-2">
@@ -679,20 +679,20 @@ export default function TrackMoveClient({
           <div className="mb-5 rounded-2xl border border-[#22C55E]/30 bg-[#22C55E]/6 px-4 py-3 flex items-start gap-2.5">
             <Check size={16} weight="bold" className="shrink-0 mt-0.5 text-[#22C55E]" />
             <div>
-              <p className="text-[12px] font-semibold" style={{ color: "#22C55E" }}>Approved — payment processed</p>
+              <p className="text-[12px] font-semibold" style={{ color: "#22C55E" }}>Approved, payment processed</p>
               <p className="text-[11px] opacity-70 mt-0.5" style={{ color: FOREST }}>Your crew has been notified to load the extra items.</p>
             </div>
           </div>
         )}
         {crewCrApprovalState === "approved_pending_payment" && (
           <div className="mb-5 rounded-2xl border border-amber-400/30 bg-amber-400/6 px-4 py-3">
-            <p className="text-[12px] font-semibold text-amber-600">Approved — pending payment</p>
+            <p className="text-[12px] font-semibold text-amber-600">Approved, pending payment</p>
             <p className="text-[11px] text-amber-700/70 mt-0.5">Add a card below to authorize the charge, or contact your coordinator.</p>
           </div>
         )}
         {crewCrApprovalState === "declined" && (
           <div className="mb-5 rounded-2xl border border-[var(--brd)]/40 bg-[var(--bg)]/60 px-4 py-3">
-            <p className="text-[12px] font-medium" style={{ color: FOREST, opacity: 0.6 }}>Extra items declined — your crew will proceed with the original list only.</p>
+            <p className="text-[12px] font-medium" style={{ color: FOREST, opacity: 0.6 }}>Extra items declined, your crew will proceed with the original list only.</p>
           </div>
         )}
 
@@ -738,7 +738,7 @@ export default function TrackMoveClient({
           </span>
         </div>
 
-        {/* Countdown / hero — hidden for completed moves; perks hub renders instead */}
+        {/* Countdown / hero, hidden for completed moves; perks hub renders instead */}
         {!isCompleted && (<div className="py-3 sm:py-5 mb-2">
           {isCompleted ? (
             <div className="text-center">
@@ -802,7 +802,7 @@ export default function TrackMoveClient({
           ) : (
             <div className="text-center">
               <div className="font-hero text-[56px] sm:text-[64px] leading-none font-semibold tracking-tight" style={{ color: GOLD }}>
-                {daysUntil ?? "—"}
+                {daysUntil ?? "-"}
               </div>
               <div className="mt-1 text-[11px] font-sans opacity-60" style={{ color: FOREST }}>days until move day</div>
             </div>
@@ -811,7 +811,7 @@ export default function TrackMoveClient({
 
         {/* ═══ COMPLETED: Permanent Perks Hub ═══════════════════════════════════════
             Shown instead of the countdown + tabs for all completed moves.
-            This page never expires — clients revisiting years later see their perks. */}
+            This page never expires, clients revisiting years later see their perks. */}
         {isCompleted && (
           <div className="space-y-5 mt-1">
 
@@ -1069,7 +1069,7 @@ export default function TrackMoveClient({
                           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                             {perk.redemption_code && (
                               <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
-                                Code: <SafeText fallback="—">{perk.redemption_code}</SafeText>
+                                Code: <SafeText fallback="-">{perk.redemption_code}</SafeText>
                               </span>
                             )}
                             {perk.valid_until && (
@@ -1157,7 +1157,7 @@ export default function TrackMoveClient({
                       <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}80` }}>
                         {serviceType === "office_move"
                           ? "Refer them to Yugo and earn a $200 credit on your next move."
-                          : "Share your code — your friend saves, you earn credit when they book."}
+                          : "Share your code, your friend saves, you earn credit when they book."}
                       </p>
                     </div>
                   </div>
@@ -1168,7 +1168,7 @@ export default function TrackMoveClient({
                       style={{ color: `${FOREST}60`, backgroundColor: `${FOREST}06`, border: `1px solid ${FOREST}12` }}
                     >
                       {isCompleted
-                        ? "Your referral code is being prepared — check back in a moment."
+                        ? "Your referral code is being prepared, check back in a moment."
                         : "Your referral code will appear here once your move is complete."}
                     </p>
                   ) : referral.status !== "active" ? (
@@ -1238,7 +1238,7 @@ export default function TrackMoveClient({
                           type="button"
                           aria-label="Share referral code"
                           onClick={() => {
-                            const msg = `I just moved with Yugo — they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
+                            const msg = `I just moved with Yugo, they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
                             if (navigator.share) { navigator.share({ text: msg }).catch(() => {}); }
                             else { navigator.clipboard.writeText(msg); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); }
                           }}
@@ -1288,7 +1288,7 @@ export default function TrackMoveClient({
                   tier === "essential"
                     ? [
                         { label: "Upgrade to Signature", sub: "Full protection, nothing left to chance", href: "https://yugoplus.co" },
-                        { label: "Single Item Delivery", sub: "Sofa, piano, art piece — we deliver one item too", href: "https://yugoplus.co" },
+                        { label: "Single Item Delivery", sub: "Sofa, piano, art piece, we deliver one item too", href: "https://yugoplus.co" },
                       ]
                     : tier === "signature"
                       ? [
@@ -1542,7 +1542,7 @@ export default function TrackMoveClient({
           </div>
         )}
 
-        {/* Tabs (hidden for completed moves — perks hub is the permanent view) */}
+        {/* Tabs (hidden for completed moves, perks hub is the permanent view) */}
         {!isCompleted && (
         <div className="relative mb-4">
           <div
@@ -1602,7 +1602,7 @@ export default function TrackMoveClient({
                     </div>
                     <div>
                       <div className="text-[12px] font-semibold" style={{ color: FOREST }}>
-                        Delivery — {move.event_phase === "delivery" ? (move.scheduled_date ? new Date(move.scheduled_date + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" }) : "TBD") : "Deliver to venue"}
+                        Delivery, {move.event_phase === "delivery" ? (move.scheduled_date ? new Date(move.scheduled_date + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" }) : "TBD") : "Deliver to venue"}
                       </div>
                       {move.event_phase !== "delivery" && (
                         <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Items transported to venue</div>
@@ -1631,7 +1631,7 @@ export default function TrackMoveClient({
                     </div>
                     <div>
                       <div className="text-[12px] font-semibold" style={{ color: FOREST }}>
-                        Return — {move.event_phase === "return" ? (move.scheduled_date ? new Date(move.scheduled_date + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" }) : "TBD") : "Teardown & return"}
+                        Return, {move.event_phase === "return" ? (move.scheduled_date ? new Date(move.scheduled_date + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" }) : "TBD") : "Teardown & return"}
                       </div>
                       {move.event_phase !== "return" && (
                         <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Items returned from venue</div>
@@ -1730,7 +1730,7 @@ export default function TrackMoveClient({
                     {totalBalance > 0 ? (
                       <div className="text-[10px] opacity-50" style={{ color: FOREST }}>+{formatCurrency(calcHST(totalBalance))} HST</div>
                     ) : (
-                      <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Fully paid — thank you!</div>
+                      <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Fully paid, thank you!</div>
                     )}
                   </div>
                 </div>
@@ -1990,7 +1990,7 @@ export default function TrackMoveClient({
                               <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                                 {perk.redemption_code && (
                                   <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
-                                    Code: <SafeText fallback="—">{perk.redemption_code}</SafeText>
+                                    Code: <SafeText fallback="-">{perk.redemption_code}</SafeText>
                                   </span>
                                 )}
                                 {perk.valid_until && (
@@ -2044,13 +2044,13 @@ export default function TrackMoveClient({
                   <p className="text-[11px] opacity-70 mb-3" style={{ color: FOREST }}>
                     {referral && referral.status === "active"
                       ? `Your friend saves, you earn $${referral.referrer_credit} credit when they book.`
-                      : "Share your code — your friend saves, you earn credit when they book."}
+                      : "Share your code, your friend saves, you earn credit when they book."}
                   </p>
                   {!referral ? (
                     <div className="rounded-2xl border p-4 text-center" style={{ borderColor: `${FOREST}15`, backgroundColor: `${FOREST}03` }}>
                       <p className="text-[12px] opacity-50 leading-relaxed" style={{ color: FOREST }}>
                         {isCompleted
-                          ? "Your referral code is being prepared — check back in a moment."
+                          ? "Your referral code is being prepared, check back in a moment."
                           : "Your referral code will appear here once your move is complete."}
                       </p>
                     </div>
@@ -2068,7 +2068,7 @@ export default function TrackMoveClient({
                       style={{ borderColor: `${FOREST}20`, backgroundColor: `${FOREST}04` }}
                     >
                       <p className="text-[12px] leading-relaxed mb-4" style={{ color: FOREST }}>
-                        Share your code — your friend gets{" "}
+                        Share your code, your friend gets{" "}
                         <span className="font-semibold" style={{ color: WINE }}>
                           ${referral.referred_discount} off
                         </span>{" "}
@@ -2106,7 +2106,7 @@ export default function TrackMoveClient({
                         <button
                           type="button"
                           onClick={() => {
-                            const msg = `I just moved with Yugo — they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
+                            const msg = `I just moved with Yugo, they were amazing! Use my code ${referral.referral_code} to get $${referral.referred_discount} off your move. Book at yugomoves.com`;
                             if (navigator.share) {
                               navigator.share({ text: msg }).catch(() => {});
                             } else {

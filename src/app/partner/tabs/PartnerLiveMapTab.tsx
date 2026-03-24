@@ -25,6 +25,7 @@ interface ActiveDelivery {
   dest_lat: number | null;
   dest_lng: number | null;
   live_stage: string | null;
+  is_job_active: boolean;
 }
 
 export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
@@ -51,13 +52,13 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [orgId]);
 
-  const activeWithCrew = deliveries.filter((d) => d.crew_lat != null && d.crew_lng != null);
   const hasAny = deliveries.length > 0;
-  const crewHasStarted = activeWithCrew.length > 0;
-
-  // One delivery on the map at a time: current = first with live GPS, else first in list (API sorts current first)
-  const currentDelivery =
-    deliveries.find((d) => d.crew_lat != null && d.crew_lng != null) ?? deliveries[0] ?? null;
+  // The "current" delivery is the one with an active tracking session (sorted first by API)
+  const currentDelivery = deliveries.find((d) => d.is_job_active) ?? deliveries[0] ?? null;
+  // A crew is considered live only if THIS delivery's job is active
+  const crewHasStarted = currentDelivery?.is_job_active ?? false;
+  // Does any delivery in the list have GPS data (crew is out working, even on a prior job)?
+  const crewIsOutWorking = deliveries.some((d) => d.crew_lat != null && d.crew_lng != null);
 
   // When the current delivery changes (e.g. after completing one), show its overlay; don’t re-open if user closed it
   const lastSyncedCurrentId = useRef<string | null>(null);
@@ -87,7 +88,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2D9F5A] opacity-75" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#2D9F5A]" />
               </span>
-              {activeWithCrew.length} active
+              {deliveries.filter((d) => d.is_job_active).length} active
             </span>
           )}
           <button
@@ -114,7 +115,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
           </button>
         )}
 
-        {/* Status overlay — only when crew has started (live signal on) */}
+        {/* Status overlay, live job */}
         {crewHasStarted && selected && (
           <div className="absolute top-4 left-4 z-10 bg-white dark:bg-[var(--card)] rounded-xl border border-[#E8E4DF] dark:border-[var(--brd)] p-4 shadow-lg max-w-[280px]">
             <div className="flex items-center gap-2 mb-2">
@@ -127,13 +128,32 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
               </span>
             </div>
             <div className="text-[12px] text-[#1A1A1A] dark:text-[var(--tx)] font-semibold">{selected.customer_name || selected.delivery_number}</div>
-            <div className="text-[11px] text-[#888] dark:text-[var(--tx3)] mt-0.5">{selected.delivery_address || "—"}</div>
+            <div className="text-[11px] text-[#888] dark:text-[var(--tx3)] mt-0.5">{selected.delivery_address || "-"}</div>
             {selected.crew_name && (
               <div className="text-[11px] text-[#888] dark:text-[var(--tx3)] mt-1">Crew: {selected.crew_name}</div>
             )}
             <button onClick={() => setSelected(null)} className="mt-2 text-[10px] text-[#C9A962] dark:text-[var(--gold)] font-semibold hover:underline">
               Close
             </button>
+          </div>
+        )}
+
+        {/* Contextual badge, crew is working on a prior job, partner's delivery is next */}
+        {!crewHasStarted && crewIsOutWorking && currentDelivery && (
+          <div className="absolute top-4 left-4 z-10 bg-white dark:bg-[var(--card)] rounded-xl border border-amber-200 dark:border-amber-500/30 p-3.5 shadow-lg max-w-[280px]">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
+              </span>
+              <span className="text-[12px] font-bold text-amber-700 dark:text-amber-400">Crew En Route</span>
+            </div>
+            <div className="text-[12px] text-[#1A1A1A] dark:text-[var(--tx)] font-semibold leading-snug">
+              Crew completing a prior delivery. Yours is next.
+            </div>
+            {currentDelivery.crew_name && (
+              <div className="text-[11px] text-[#888] dark:text-[var(--tx3)] mt-1">Team: {currentDelivery.crew_name}</div>
+            )}
           </div>
         )}
 
@@ -160,41 +180,40 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                 onSelect={setSelected}
               />
             )}
-            {/* Blur overlay when no crew has started — live signal off */}
-            {!crewHasStarted && (
+            {/* Blur overlay, no crew active and no GPS available */}
+            {!crewHasStarted && !crewIsOutWorking && (
               <div className="absolute inset-0 bg-white/70 dark:bg-[var(--card)]/70 backdrop-blur-md flex flex-col items-center justify-center z-10" aria-hidden="true">
                 <span className="text-[var(--text-base)] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">Live signal off</span>
-                <span className="text-[12px] text-[#666] dark:text-[var(--tx3)] mt-1">Map and tracking will appear when crew start their job</span>
+                <span className="text-[12px] text-[#666] dark:text-[var(--tx3)] mt-1">Map and tracking will appear when crew start your job</span>
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* Active deliveries list — current first, then Next, then Upcoming */}
+      {/* Active deliveries list, current first, then Next, then Upcoming */}
       {deliveries.length > 0 && (
         <div className="mt-4 space-y-2">
           {deliveries.map((d, index) => {
-            const hasGPS = d.crew_lat != null;
-            const slotLabel =
-              index === 0 ? "Current" : index === 1 ? "Next" : "Upcoming";
-            const isCurrent = index === 0;
+            const isActive = d.is_job_active;
+            const slotLabel = isActive ? "Active" : index === 0 ? "Next" : "Upcoming";
+            const isActiveDelivery = isActive;
             return (
               <div
                 key={d.id}
-                onClick={() => hasGPS ? setSelected(d) : undefined}
+                onClick={() => isActive ? setSelected(d) : undefined}
                 className={`bg-white dark:bg-[var(--card)] border rounded-xl p-4 flex items-center justify-between transition-colors ${
-                  isCurrent
+                  isActiveDelivery
                     ? "border-[#C9A962] dark:border-[var(--gold)] ring-1 ring-[#C9A962]/30 dark:ring-[var(--gold)]/30"
                     : "border-[#E8E4DF] dark:border-[var(--brd)]"
-                } ${hasGPS ? "cursor-pointer hover:border-[#C9A962]/40 dark:hover:border-[var(--gold)]/40" : ""}`}
+                } ${isActive ? "cursor-pointer hover:border-[#C9A962]/40 dark:hover:border-[var(--gold)]/40" : ""}`}
               >
                 <div className="flex items-start gap-3">
                   <span
                     className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${
-                      index === 0
+                      isActive
                         ? "bg-[#2D9F5A] text-white"
-                        : index === 1
+                        : index === 0
                           ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400"
                           : "bg-[#F5F3F0] dark:bg-[var(--bg)] text-[#888] dark:text-[var(--tx3)]"
                     }`}
@@ -205,25 +224,34 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                     <div className="text-[var(--text-base)] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">
                       {d.customer_name || d.delivery_number}
                     </div>
-                    {crewHasStarted ? (
+                    {isActive ? (
                       <div className="text-[12px] text-[#888] dark:text-[var(--tx3)] mt-0.5">
-                        {d.delivery_address || "—"}
+                        {d.delivery_address || "-"}
+                      </div>
+                    ) : crewIsOutWorking ? (
+                      <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                        Crew completing a prior delivery. Yours is next.
                       </div>
                     ) : (
                       <div className="text-[11px] text-[#999] dark:text-[var(--tx3)] mt-0.5">
-                        Live signal off, details when crew starts
+                        Tracking activates when crew start this job
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {crewHasStarted && d.crew_name && (
+                  {isActive && d.crew_name && (
                     <span className="text-[11px] text-[#888] dark:text-[var(--tx3)]">{d.crew_name}</span>
                   )}
-                  {hasGPS ? (
+                  {isActive ? (
                     <span className="flex items-center gap-1 text-[10px] text-[#2D9F5A] font-semibold">
                       <span className="w-2 h-2 rounded-full bg-[#2D9F5A]" />
                       Live
+                    </span>
+                  ) : crewIsOutWorking ? (
+                    <span className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                      <span className="w-2 h-2 rounded-full bg-amber-400" />
+                      En Route
                     </span>
                   ) : (
                     <span className="text-[10px] text-[#888] dark:text-[var(--tx3)]">Awaiting GPS</span>

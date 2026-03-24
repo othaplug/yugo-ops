@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
           email_invoice_ready: body.email_invoice_ready ?? true,
         })
         .eq("id", primaryOrgId);
-    } catch { /* column may not exist yet — preferences stored in client localStorage */ }
+    } catch { /* column may not exist yet, preferences stored in client localStorage */ }
   }
 
   return NextResponse.json({ ok: true });

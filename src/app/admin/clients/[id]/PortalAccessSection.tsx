@@ -166,7 +166,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
               >
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-semibold text-[var(--tx)] truncate">
-                    {u.name || u.email?.split("@")[0] || "—"}
+                    {u.name || u.email?.split("@")[0] || "-"}
                   </div>
                   <div className="text-[11px] text-[var(--tx3)] truncate">{u.email}</div>
                 </div>
@@ -188,7 +188,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
                   <button
                     onClick={() => handleRevoke(u.user_id)}
                     disabled={revoking === u.user_id}
-                    className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--red)]/40 text-[var(--red)] hover:bg-[var(--rdim)] transition-all disabled:opacity-50"
+                    className="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
                   >
                     {revoking === u.user_id ? "Revoking…" : "Revoke"}
                   </button>

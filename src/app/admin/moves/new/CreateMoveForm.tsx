@@ -562,7 +562,7 @@ export default function CreateMoveForm({
                   white_glove: { label: "White Glove", desc: "Premium handling, assembly, placement" },
                   specialty: { label: "Specialty", desc: "Piano, art, antiques, estate, trade show" },
                   b2b_oneoff: { label: "B2B One-Off", desc: "One-off delivery from a business source" },
-                  event: { label: "Event logistics", desc: "Venue delivery, setup, return — matches Event quotes" },
+                  event: { label: "Event logistics", desc: "Venue delivery, setup, return, matches Event quotes" },
                   labour_only: { label: "Labour only", desc: "Crew hours on-site; use same address if one location" },
                 };
                 const { label, desc } = META[val];
@@ -592,7 +592,7 @@ export default function CreateMoveForm({
                 );
               })}
             </div>
-            {/* B2B recurring warning — fades in when b2b_oneoff is selected */}
+            {/* B2B recurring warning, fades in when b2b_oneoff is selected */}
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${moveType === "b2b_oneoff" ? "max-h-12 opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"}`}>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--gold)]/8 border border-[var(--gold)]/20 text-[10px] text-[var(--tx3)]">
                 <Info className="w-3 h-3 shrink-0 text-[var(--gold)]" aria-hidden />
@@ -651,7 +651,7 @@ export default function CreateMoveForm({
                             className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
                           >
                             {o.contact_name || o.name}
-                            {o.email && <span className="text-[var(--tx3)] ml-1">— {o.email}</span>}
+                            {o.email && <span className="text-[var(--tx3)] ml-1">- {o.email}</span>}
                           </button>
                         ))}
                       </>
@@ -675,8 +675,8 @@ export default function CreateMoveForm({
                             className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
                           >
                             {c.name}
-                            {c.email && <span className="text-[var(--tx3)] ml-1">— {c.email}</span>}
-                            {c.phone && <span className="text-[var(--tx3)] ml-1">— {formatPhone(c.phone)}</span>}
+                            {c.email && <span className="text-[var(--tx3)] ml-1">- {c.email}</span>}
+                            {c.phone && <span className="text-[var(--tx3)] ml-1">- {formatPhone(c.phone)}</span>}
                           </button>
                         ))}
                       </>
@@ -830,7 +830,7 @@ export default function CreateMoveForm({
           {/* White Glove: item info */}
           <AnimatedSection show={moveType === "white_glove"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Item Info</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove, Item Info</h3>
               <Field label="Item Description *">
                 <input value={wgItemDescription} onChange={(e) => setWgItemDescription(e.target.value)} placeholder="Describe the item in detail" className={fieldInput} />
               </Field>
@@ -841,7 +841,7 @@ export default function CreateMoveForm({
                     value={wgDeclaredValue}
                     onChange={(e) => setWgDeclaredValue(e.target.value)}
                     onBlur={() => { const n = parseNumberInput(wgDeclaredValue); if (n > 0) setWgDeclaredValue(formatNumberInput(n)); }}
-                    placeholder="For insurance — required for items over $2,000"
+                    placeholder="For insurance, required for items over $2,000"
                     inputMode="decimal"
                     className={fieldInput}
                   />
@@ -854,7 +854,7 @@ export default function CreateMoveForm({
                 </Field>
               </div>
               <Field label="Source Company">
-                <input value={wgSourceCompany} onChange={(e) => setWgSourceCompany(e.target.value)} placeholder="If from a retailer — helps track B2B potential" className={fieldInput} />
+                <input value={wgSourceCompany} onChange={(e) => setWgSourceCompany(e.target.value)} placeholder="If from a retailer, helps track B2B potential" className={fieldInput} />
               </Field>
             </div>
           </AnimatedSection>
@@ -990,7 +990,7 @@ export default function CreateMoveForm({
           <div className="space-y-2">
             <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Addresses</h3>
             {moveType === "labour_only" && (
-              <p className="text-[10px] text-[var(--tx3)]">Work site or primary location — you can use the same address twice.</p>
+              <p className="text-[10px] text-[var(--tx3)]">Work site or primary location, you can use the same address twice.</p>
             )}
             <div className="space-y-1.5">
               <div className="flex flex-col sm:flex-row gap-2 items-start">
@@ -1284,7 +1284,7 @@ export default function CreateMoveForm({
           {/* White Glove: after-address fields */}
           <AnimatedSection show={moveType === "white_glove"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove — Service Details</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove, Service Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Assembly Required">
                   <select value={wgAssemblyRequired} onChange={(e) => setWgAssemblyRequired(e.target.value)} className={fieldInput}>
@@ -1318,7 +1318,7 @@ export default function CreateMoveForm({
                 <div className="flex items-center justify-between sm:col-span-2">
                   <div>
                     <span className="text-[11px] font-medium text-[var(--tx)]">Enhanced Insurance</span>
-                    <p className="text-[9px] text-[var(--tx3)]">Full replacement value — recommended for items &gt;$5K</p>
+                    <p className="text-[9px] text-[var(--tx3)]">Full replacement value, recommended for items &gt;$5K</p>
                   </div>
                   <button type="button" role="switch" aria-checked={wgEnhancedInsurance} onClick={() => setWgEnhancedInsurance(!wgEnhancedInsurance)} className={`relative w-9 h-5 rounded-full transition-colors ${wgEnhancedInsurance ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${wgEnhancedInsurance ? "translate-x-4" : ""}`} />
@@ -1331,7 +1331,7 @@ export default function CreateMoveForm({
           {/* Specialty: after-address fields */}
           <AnimatedSection show={moveType === "specialty"}>
             <div className="space-y-2">
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty — Logistics</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty, Logistics</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Timeline">
                   <select value={spTimeline} onChange={(e) => setSpTimeline(e.target.value)} className={fieldInput}>

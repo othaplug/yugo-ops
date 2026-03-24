@@ -387,7 +387,7 @@ export default function DeliveryDetailClient({
           <div className="flex-1 min-w-0">
             <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/60">Part of Project</span>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[12px] font-semibold text-[var(--tx)]">{linkedProject.project_number} — {linkedProject.project_name}</span>
+              <span className="text-[12px] font-semibold text-[var(--tx)]">{linkedProject.project_number}, {linkedProject.project_name}</span>
               {linkedProject.phase_name && (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gold)]/10 text-[var(--gold)]">{linkedProject.phase_name}</span>
               )}
@@ -403,7 +403,7 @@ export default function DeliveryDetailClient({
           <div className="flex items-center gap-2 mb-3">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
             <span className="text-[13px] font-bold text-amber-700 dark:text-amber-300">
-              Partner Request — Awaiting Your Approval
+              Partner Request, Awaiting Your Approval
             </span>
           </div>
 
@@ -482,7 +482,7 @@ export default function DeliveryDetailClient({
                 <button type="button" onClick={handleApprove} disabled={approveDeclineLoading} className="px-5 py-2.5 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
                   {approveDeclineLoading ? "…" : "Approve & Confirm"}
                 </button>
-                <button type="button" onClick={() => setShowRejectForm(true)} disabled={approveDeclineLoading} className="px-4 py-2.5 rounded-lg text-[11px] font-bold text-red-500 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-50 transition-colors">
+                <button type="button" onClick={() => setShowRejectForm(true)} disabled={approveDeclineLoading} className="px-4 py-1.5 rounded text-[11px] font-bold bg-[var(--red)] text-white hover:opacity-90 disabled:opacity-50 transition-all">
                   Decline
                 </button>
               </div>
@@ -540,7 +540,7 @@ export default function DeliveryDetailClient({
                 <Pencil weight="regular" className="w-3 h-3" /> Edit
               </button>
               <DownloadPDFButton delivery={delivery} />
-              <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-red-500 border border-red-500/30 hover:bg-red-500/10 transition-all">
+              <button type="button" onClick={() => setDeleteConfirmOpen(true)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all">
                 <Trash2 weight="regular" className="w-3 h-3" /> Delete
               </button>
             </div>
@@ -605,8 +605,8 @@ export default function DeliveryDetailClient({
                     {etaSmsLog.map((row, i) => (
                       <tr key={i} className="border-b border-[var(--brd)]/50 last:border-0">
                         <td className="py-2 px-3 text-[var(--tx)]">{row.message_type.replace(/_/g, " ")}</td>
-                        <td className="py-2 px-3 text-[var(--tx2)]">{row.sent_at ? new Date(row.sent_at).toLocaleString() : "—"}</td>
-                        <td className="py-2 px-3 text-[var(--tx2)]">{row.eta_minutes != null ? `${row.eta_minutes} min` : "—"}</td>
+                        <td className="py-2 px-3 text-[var(--tx2)]">{row.sent_at ? new Date(row.sent_at).toLocaleString() : "-"}</td>
+                        <td className="py-2 px-3 text-[var(--tx2)]">{row.eta_minutes != null ? `${row.eta_minutes} min` : "-"}</td>
                         <td className="py-2 px-3 font-mono text-[10px] text-[var(--tx3)]">{row.twilio_sid || "Failed"}</td>
                       </tr>
                     ))}
@@ -617,7 +617,7 @@ export default function DeliveryDetailClient({
             </div>
           )}
 
-          {/* Live Tracking / Completion Status — stays as card (hero) */}
+          {/* Live Tracking / Completion Status, stays as card (hero) */}
           {completed ? (
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 overflow-hidden">
               <div className="px-5 py-5 text-center">
@@ -738,7 +738,7 @@ export default function DeliveryDetailClient({
                               <span className="text-[9px] text-[#F59E0B] ml-auto">In Progress</span>
                             )}
                           </div>
-                          <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{stop.address || "—"}</div>
+                          <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{stop.address || "-"}</div>
                           {stop.customer_name && <div className="text-[11px] text-[var(--tx3)] mt-0.5">{stop.customer_name}</div>}
                           {stop.items_description && <div className="text-[10px] text-[var(--tx3)] mt-0.5">{stop.items_description}</div>}
                           {(stop.special_instructions || stop.notes) && <div className="text-[10px] text-[var(--tx3)] mt-0.5 italic">Note: {stop.special_instructions || stop.notes}</div>}
@@ -762,7 +762,7 @@ export default function DeliveryDetailClient({
               </div>
             </div>
 
-            {/* Items — seamless */}
+            {/* Items, seamless */}
             {itemsDisplay.length > 0 && (
               <div className="border-t border-[var(--brd)]/30 py-5">
                 <div className="flex items-center justify-between mb-3">
@@ -785,7 +785,7 @@ export default function DeliveryDetailClient({
               </div>
             )}
 
-            {/* Incidents — seamless */}
+            {/* Incidents, seamless */}
             <div className="border-t border-[var(--brd)]/30 pt-5">
               <IncidentsSection jobId={delivery.id} jobType="delivery" />
             </div>
@@ -804,7 +804,7 @@ export default function DeliveryDetailClient({
               </div>
             )}
 
-            {/* Instructions — seamless */}
+            {/* Instructions, seamless */}
             <div className="border-t border-[var(--brd)]/30 py-5">
               <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Instructions & Notes</div>
               <p className="text-[11px] text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">
@@ -814,9 +814,9 @@ export default function DeliveryDetailClient({
           </div>
         </div>
 
-        {/* RIGHT — single seamless panel + pricing card */}
+        {/* RIGHT, single seamless panel + pricing card */}
         <div>
-          {/* Info panel — seamless sections with dividers */}
+          {/* Info panel, seamless sections with dividers */}
           <div className="space-y-0">
 
             {/* Schedule */}
@@ -879,7 +879,7 @@ export default function DeliveryDetailClient({
                 <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Customer</span>
                 <button type="button" onClick={() => setContactModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">Details</button>
               </div>
-              <div className="text-[13px] font-semibold text-[var(--tx)]">{delivery.customer_name || "—"}</div>
+              <div className="text-[13px] font-semibold text-[var(--tx)]">{delivery.customer_name || "-"}</div>
               {delivery.customer_email && (
                 <div className="flex items-center gap-1.5 text-[11px] text-[var(--tx3)] mt-1">
                   <Mail className="w-3 h-3" />
@@ -895,7 +895,7 @@ export default function DeliveryDetailClient({
             </div>
           </div>
 
-          {/* Pricing — keeps card treatment (hero/actionable) */}
+          {/* Pricing, keeps card treatment (hero/actionable) */}
           <div className={`mt-5 rounded-xl p-4 ${price > 0 ? "bg-gradient-to-br from-[var(--gold)]/8 to-transparent border border-[var(--gold)]/20" : ""}`}>
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-1.5">
               {delivery.quoted_price ? "Quoted Price" : "Pricing"}

@@ -90,9 +90,9 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
             <div className="text-[9px]">{c.contact_name}</div>
             <div className="text-[9px] text-[var(--tx3)]">{c.email}</div>
           </td>
-          <td className="hidden md:table-cell px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.deliveries_per_month ?? "—"}</td>
+          <td className="hidden md:table-cell px-3 py-2 text-[10px] border-b border-[var(--brd)]">{c.deliveries_per_month ?? "-"}</td>
           <td className="px-3 py-2 text-[10px] border-b border-[var(--brd)]">
-            {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "—"}
+            {(c.outstanding_balance ?? 0) > 0 ? formatCurrency(c.outstanding_balance) : "-"}
           </td>
           <td className="px-3 py-2 border-b border-[var(--brd)] w-10" onClick={(e) => e.stopPropagation()}>
             <div className="relative flex justify-end" ref={menuOpenId === c.id ? menuRef : undefined} data-menu>

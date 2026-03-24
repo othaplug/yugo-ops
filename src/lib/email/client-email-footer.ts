@@ -19,25 +19,25 @@
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 
-const FOOTER_BLACK = "#000000";
-const FOOTER_WHITE = "#FFFFFF";
+const FOOTER_BG = "#FFFFFF";
+const FOOTER_TEXT = "#000000";
 const FOOTER_LEGAL_TEXT = "#555555";
 const FOOTER_LINK_BLUE = "#2563EB";
-const FOOTER_HR = "rgba(255,255,255,0.28)";
+const FOOTER_HR = "#E5E5E5";
 const FOOTER_NAV_FONT = "Helvetica Neue,Helvetica,Arial,sans-serif";
 const FOOTER_LEGAL_FONT = "Helvetica Neue,Helvetica,Arial,sans-serif";
 
-/** White icons (24px source, displayed 22px) — Icons8 Material Rounded. */
-const SOCIAL_ICON = {
-  instagram:
-    "https://img.icons8.com/material-rounded/24/ffffff/instagram-new--v1.png",
-  facebook:
-    "https://img.icons8.com/material-rounded/24/ffffff/facebook-new.png",
-  x: "https://img.icons8.com/material-rounded/24/ffffff/twitterx--v1.png",
-  youtube:
-    "https://img.icons8.com/material-rounded/24/ffffff/youtube-play.png",
-  tiktok: "https://img.icons8.com/material-rounded/24/ffffff/tiktok--v1.png",
-} as const;
+/** Black icons (self-hosted SVGs) — served from the app domain so they are never blocked. */
+function getSocialIconUrls(base: string): Record<"instagram" | "facebook" | "x" | "youtube" | "tiktok", string> {
+  const r = `${base}/email-icons`;
+  return {
+    instagram: `${r}/instagram.svg`,
+    facebook:  `${r}/facebook.svg`,
+    x:         `${r}/x.svg`,
+    youtube:   `${r}/youtube.svg`,
+    tiktok:    `${r}/tiktok.svg`,
+  };
+}
 
 /** Templates (Resend tag `template`) that show “REFER A FRIEND” in the footer. */
 export const TEMPLATE_NAMES_WITH_REFER_FRIEND = new Set<string>([
@@ -78,8 +78,10 @@ export function getReferFriendFooterUrl(): string {
   return `${getEmailBaseUrl()}/client`;
 }
 
-function envSocial(key: keyof typeof SOCIAL_ICON): string {
-  const envMap: Record<keyof typeof SOCIAL_ICON, string | undefined> = {
+type SocialKey = "instagram" | "facebook" | "x" | "youtube" | "tiktok";
+
+function envSocial(key: SocialKey): string {
+  const envMap: Record<SocialKey, string | undefined> = {
     instagram: process.env?.NEXT_PUBLIC_EMAIL_SOCIAL_INSTAGRAM,
     facebook: process.env?.NEXT_PUBLIC_EMAIL_SOCIAL_FACEBOOK,
     x: process.env?.NEXT_PUBLIC_EMAIL_SOCIAL_X,
@@ -90,7 +92,7 @@ function envSocial(key: keyof typeof SOCIAL_ICON): string {
 }
 
 /** Public profile URL, or site home if env not set (icons always visible). */
-function socialHref(key: keyof typeof SOCIAL_ICON): string {
+function socialHref(key: SocialKey): string {
   const v = envSocial(key);
   if (v) return v;
   return `${getEmailBaseUrl()}/`;
@@ -123,7 +125,7 @@ function hrRow(): string {
 }
 
 function navLink(href: string, label: string): string {
-  return `<a href="${href}" style="color:${FOOTER_WHITE};font-family:${FOOTER_NAV_FONT};font-size:11px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid ${FOOTER_WHITE};padding-bottom:2px;">${label}</a>`;
+  return `<a href="${href}" style="color:${FOOTER_TEXT};font-family:${FOOTER_NAV_FONT};font-size:11px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid ${FOOTER_TEXT};padding-bottom:2px;">${label}</a>`;
 }
 
 /** Full-width table rows: optional REFER A FRIEND band (no GET APP). */
@@ -134,11 +136,11 @@ function buildReferFriendTopRows(params: {
 }): string {
   const { includeReferFriend, referFriendUrl, showMarketingTopRow } = params;
   if (!showMarketingTopRow || !includeReferFriend) return "";
-  const link = `<a href="${escapeHtml(referFriendUrl)}" style="color:${FOOTER_WHITE};font-family:${FOOTER_NAV_FONT};font-size:12px;font-weight:400;letter-spacing:0.14em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid ${FOOTER_WHITE};padding-bottom:3px;">REFER A FRIEND</a>`;
+  const link = `<a href="${escapeHtml(referFriendUrl)}" style="color:${FOOTER_TEXT};font-family:${FOOTER_NAV_FONT};font-size:12px;font-weight:400;letter-spacing:0.14em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid ${FOOTER_TEXT};padding-bottom:3px;">REFER A FRIEND</a>`;
   return `
     ${hrRow()}
     <tr>
-      <td align="center" style="padding:0;font-family:${FOOTER_NAV_FONT};background-color:${FOOTER_BLACK};">
+      <td align="center" style="padding:0;font-family:${FOOTER_NAV_FONT};background-color:${FOOTER_BG};">
         <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:560px;margin:0 auto;">
           <tr><td align="center" style="padding:20px 12px;">${link}</td></tr>
         </table>
@@ -181,6 +183,8 @@ export function getClientEmailFooterTrs(): string {
   const yt = socialHref("youtube");
   const tt = socialHref("tiktok");
 
+  const SOCIAL_ICON = getSocialIconUrls(base);
+
   const socialRowInner = `<tr><td align="center" style="padding:16px 8px;">
     <table cellpadding="0" cellspacing="0" border="0" role="presentation" align="center"><tr>
       ${socialIconCell(ig, SOCIAL_ICON.instagram, "Instagram")}
@@ -198,11 +202,11 @@ export function getClientEmailFooterTrs(): string {
   return `
 __YUGO_FOOTER_TOP_PROMO__
     <tr>
-      <td align="center" style="padding:0;background-color:${FOOTER_BLACK};">
+      <td align="center" style="padding:0;background-color:${FOOTER_BG};">
         <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:560px;margin:0 auto;">
           ${hrRow()}
           <tr>
-            <td align="center" style="padding:18px 16px 20px;font-family:${FOOTER_NAV_FONT};">
+            <td align="center" style="padding:18px 16px 20px;font-family:${FOOTER_NAV_FONT};background-color:${FOOTER_BG};">
               ${navLink(mailtoContact, "CONTACT US")}
               <span style="color:${FOOTER_HR};margin:0 12px;font-size:11px;">|</span>
               ${navLink(privacyUrl, "PRIVACY POLICY")}
@@ -219,7 +223,7 @@ __YUGO_FOOTER_TOP_PROMO__
       </td>
     </tr>
     <tr>
-      <td align="center" style="padding:0;background-color:${FOOTER_WHITE};">
+      <td align="center" style="padding:0;background-color:${FOOTER_BG};">
         <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:560px;margin:0 auto;">
           <tr>
             <td style="padding:28px 24px 36px;font-family:${FOOTER_LEGAL_FONT};font-size:11px;line-height:1.65;color:${FOOTER_LEGAL_TEXT};text-align:center;">
@@ -227,14 +231,14 @@ __YUGO_FOOTER_TOP_PROMO__
                 This email was sent to <a href="mailto:__YUGO_FOOTER_RECIPIENT_MAILTO__" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">__YUGO_FOOTER_RECIPIENT__</a>.
               </p>
               <p style="margin:0 0 14px;">
-                Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book to ensure you receive our emails about offers, events, and move updates.
+                Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book to ensure you receive updates about your move, offers, and exclusive perks.
               </p>
               <p style="margin:0;">
                 <strong style="color:${FOOTER_LEGAL_TEXT};font-weight:600;">Yugo Inc.</strong>
                 <a href="${mapsUrl}" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;margin-left:6px;">${addrLine1} ${addrLine2}, ${addrLine3}, Canada</a>
               </p>
               <p style="margin:14px 0 0;font-size:10px;color:#888888;">
-                Need help? <a href="${mailtoContact}" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">Email us</a>
+                We are always here to help. <a href="${mailtoContact}" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">Email us</a>
                 <span style="color:#cccccc;"> &middot; </span>
                 <a href="${tel}" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">Call ${escapeHtml(contactPhone)}</a>
               </p>
@@ -286,7 +290,7 @@ export function applyEmailFooterTokens(html: string, ctx: EmailFooterTokenContex
 
 /** Full-width footer table for layouts outside the main client wrapper (e.g. admin). */
 export function getEmailFooterStandaloneFragment(): string {
-  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background-color:${FOOTER_BLACK};margin-top:24px;">
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background-color:${FOOTER_BG};margin-top:24px;">
 ${getClientEmailFooterTrs()}
 </table>`;
 }

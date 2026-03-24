@@ -28,6 +28,7 @@ export interface AddressAutocompleteProps {
   name?: string;
   /** ISO 3166-1 alpha-2 country code to bias results (e.g. "CA") */
   country?: string;
+  disabled?: boolean;
 }
 
 interface MapboxFeature {
@@ -134,6 +135,7 @@ export default function AddressAutocomplete({
   id,
   name,
   country: countryBias = "",
+  disabled,
 }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
@@ -321,6 +323,7 @@ export default function AddressAutocomplete({
         className={inputClass}
         id={id}
         name={name}
+        disabled={disabled}
         autoComplete="off"
         aria-autocomplete="list"
         aria-expanded={open}

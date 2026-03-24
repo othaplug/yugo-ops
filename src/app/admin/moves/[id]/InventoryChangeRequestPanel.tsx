@@ -55,7 +55,7 @@ export default function InventoryChangeRequestPanel({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Failed");
-      toast(body.action === "decline" ? "Request declined — client notified." : "Request approved — move and client updated.", "check");
+      toast(body.action === "decline" ? "Request declined, client notified." : "Request approved, move and client updated.", "check");
       router.refresh();
     } catch (e) {
       toast(e instanceof Error ? e.message : "Failed", "x");
@@ -119,10 +119,10 @@ export default function InventoryChangeRequestPanel({
       {truck && (
         <div className="text-[10px] text-[var(--tx3)] mb-3 space-y-0.5">
           <div>
-            Truck: {truck.current_truck} — score {truck.current_score ?? "—"} / cap {truck.truck_capacity ?? "—"}
+            Truck: {truck.current_truck}, score {truck.current_score ?? "-"} / cap {truck.truck_capacity ?? "-"}
           </div>
           <div>
-            After change: {truck.new_score ?? "—"} / {truck.truck_capacity ?? "—"}{" "}
+            After change: {truck.new_score ?? "-"} / {truck.truck_capacity ?? "-"}{" "}
             {truck.fits ? <span className="text-emerald-600 font-semibold">Fits</span> : <span className="text-amber-600 font-semibold">Over capacity</span>}
           </div>
           {truck.recommendation && <div className="text-amber-600/90">{truck.recommendation}</div>}
@@ -156,7 +156,7 @@ export default function InventoryChangeRequestPanel({
             type="button"
             disabled={busy !== null}
             onClick={() => run({ action: "decline", decline_reason: declineReason || "Unable to accommodate this change." })}
-            className="px-3 py-2 rounded-lg text-[11px] font-semibold border border-red-500/40 text-red-400 disabled:opacity-50"
+            className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all disabled:opacity-50"
           >
             Decline
           </button>
