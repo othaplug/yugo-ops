@@ -41,10 +41,48 @@ interface MapboxFeature {
   properties?: Record<string, unknown>;
 }
 
-/** For Canadian addresses, omit "Canada" / "CA" from the displayed address. */
-function formatAddressForDisplay(placeName: string, country: string): string {
+/**
+ * Replace the full state/province name in a Mapbox place_name string with its abbreviation.
+ * Searches right-to-left so "New York, New York 10036" correctly abbreviates the state segment.
+ * Mapbox short_code format: "CA-ON", "US-NY" — we extract just the trailing abbreviation.
+ */
+function abbreviateRegionInPlaceName(
+  placeName: string,
+  regionName: string,
+  regionShortCode: string
+): string {
+  const abbr = regionShortCode.includes("-")
+    ? regionShortCode.split("-").slice(1).join("-")
+    : regionShortCode;
+  if (!abbr || abbr === regionName) return placeName;
+
+  const parts = placeName.split(",");
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const trimmed = parts[i].trim();
+    if (trimmed === regionName || trimmed.startsWith(regionName + " ")) {
+      parts[i] = parts[i].replace(regionName, abbr);
+      break;
+    }
+  }
+  return parts.join(",");
+}
+
+/** Format a Mapbox place_name for display: abbreviate state/province and strip country for CA. */
+function formatAddressForDisplay(
+  placeName: string,
+  country: string,
+  regionName = "",
+  regionShortCode = ""
+): string {
   let out = (placeName || "").trim();
   if (!out) return out;
+
+  // Abbreviate state/province (e.g. "Ontario" → "ON", "New York" → "NY")
+  if (regionName && regionShortCode) {
+    out = abbreviateRegionInPlaceName(out, regionName, regionShortCode);
+  }
+
+  // For Canadian addresses, omit "Canada" suffix
   const c = country.trim();
   if (c !== "Canada" && c !== "CA") return out;
   out = out.replace(/,?\s*Canada\s*$/i, "").replace(/,?\s*CA\s*$/i, "").trim();
@@ -58,11 +96,13 @@ function mapboxFeatureToAddressResult(f: MapboxFeature): AddressResult {
   const getCtxShort = (prefix: string) => ctx.find((c) => c.id.startsWith(prefix))?.short_code ?? "";
 
   const country = getCtx("country.") || getCtxShort("country.") || "";
-  const province = getCtx("region.") || getCtxShort("region.") || "";
+  const regionName = getCtx("region.");
+  const regionShortCode = getCtxShort("region.");
+  const province = regionName || regionShortCode || "";
   const postalCode = getCtx("postcode.") || "";
   const city = getCtx("place.") || getCtx("locality.") || "";
   const rawPlaceName = f.place_name || f.text || "";
-  const fullAddress = formatAddressForDisplay(rawPlaceName, country);
+  const fullAddress = formatAddressForDisplay(rawPlaceName, country, regionName, regionShortCode);
 
   // Mapbox often has "address" type with text = street name; no separate street_number
   const streetName = f.place_type?.includes("address") ? (f.text || fullAddress) : fullAddress;
@@ -313,7 +353,9 @@ export default function AddressAutocomplete({
                 const getCtx = (prefix: string) => ctx.find((c: { id: string; text?: string; short_code?: string }) => c.id.startsWith(prefix))?.text ?? "";
                 const getCtxShort = (prefix: string) => ctx.find((c: { id: string; text?: string; short_code?: string }) => c.id.startsWith(prefix))?.short_code ?? "";
                 const country = getCtx("country.") || getCtxShort("country.") || "";
-                const displayText = formatAddressForDisplay(f.place_name || f.text || "", country);
+                const regionName = getCtx("region.");
+                const regionShortCode = getCtxShort("region.");
+                const displayText = formatAddressForDisplay(f.place_name || f.text || "", country, regionName, regionShortCode);
                 return (
                   <li
                     key={f.id}

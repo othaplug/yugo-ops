@@ -43,6 +43,14 @@
     {
       "path": "/api/cron/charge-partner-statements",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/bin-reminders",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/bin-overdue",
+      "schedule": "0 16 * * *"
     }
   ]
 }

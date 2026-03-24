@@ -224,6 +224,29 @@ interface PartnerB2BProjectsTabProps {
   onScheduleDelivery?: (suggestedItems?: string) => void;
 }
 
+function abbreviateSuggestionRegion(
+  placeName: string,
+  context?: { id: string; text?: string; short_code?: string }[]
+): string {
+  const ctx = context ?? [];
+  const regionName = ctx.find((c) => c.id.startsWith("region."))?.text ?? "";
+  const regionShortCode = ctx.find((c) => c.id.startsWith("region."))?.short_code ?? "";
+  if (!regionName || !regionShortCode) return placeName;
+  const abbr = regionShortCode.includes("-")
+    ? regionShortCode.split("-").slice(1).join("-")
+    : regionShortCode;
+  if (!abbr || abbr === regionName) return placeName;
+  const parts = placeName.split(",");
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const trimmed = parts[i].trim();
+    if (trimmed === regionName || trimmed.startsWith(regionName + " ")) {
+      parts[i] = parts[i].replace(regionName, abbr);
+      break;
+    }
+  }
+  return parts.join(",");
+}
+
 export default function PartnerB2BProjectsTab({
   initialProjectId,
   onScheduleDelivery,
@@ -245,7 +268,10 @@ export default function PartnerB2BProjectsTab({
   const [npEndDate, setNpEndDate] = useState("");
   const [npSaving, setNpSaving] = useState(false);
   const [npError, setNpError] = useState("");
-  const [addressSuggestions, setAddressSuggestions] = useState<{ place_name: string }[]>([]);
+  const [addressSuggestions, setAddressSuggestions] = useState<{
+    place_name: string;
+    context?: { id: string; text?: string; short_code?: string }[];
+  }[]>([]);
   const addressDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Add item form ─────────────────────────────────────────────────────────
@@ -663,7 +689,7 @@ export default function PartnerB2BProjectsTab({
                 {addressSuggestions.map((s, i) => (
                   <button key={i} type="button" onClick={() => { setNpAddress(s.place_name); setAddressSuggestions([]); }}
                     className="w-full text-left px-4 py-2.5 text-[12px] text-[#1A1A1A] hover:bg-[#F5F3F0] transition-colors border-b border-[#E8E4DF]/50 last:border-0">
-                    {s.place_name}
+                    {abbreviateSuggestionRegion(s.place_name, s.context)}
                   </button>
                 ))}
               </div>
@@ -729,7 +755,7 @@ export default function PartnerB2BProjectsTab({
                 {addressSuggestions.map((s, i) => (
                   <button key={i} type="button" onClick={() => { setEpAddress(s.place_name); setAddressSuggestions([]); }}
                     className="w-full text-left px-4 py-2.5 text-[12px] text-[#1A1A1A] hover:bg-[#F5F3F0] transition-colors border-b border-[#E8E4DF]/50 last:border-0">
-                    {s.place_name}
+                    {abbreviateSuggestionRegion(s.place_name, s.context)}
                   </button>
                 ))}
               </div>

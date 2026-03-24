@@ -68,6 +68,19 @@ import {
 } from "./quote-shared";
 
 import YugoLogo from "@/components/YugoLogo";
+
+/* ── Packing kit: move-size → tier index → contents ────────────────────── */
+const PACKING_KIT_TIER_IDX: Record<string, number> = {
+  studio: 0, "1br": 1, "2br": 2, "3br": 3, "4br": 4, "5br_plus": 5, partial: 0,
+};
+const PACKING_KIT_CONTENTS: Record<number, string> = {
+  0: "5 small, 5 medium, 5 large boxes · 2 wardrobe boxes (rental) · 4 tape rolls · 12.5 lbs packing paper",
+  1: "8 small, 15 medium, 7 large boxes · 3 wardrobe boxes (rental) · 6 tape rolls · 12.5 lbs packing paper",
+  2: "15 small, 25 medium, 10 large boxes · 4 wardrobe boxes (rental) · 6 tape rolls · 12.5 lbs packing paper",
+  3: "25 small, 40 medium, 15 large boxes · 6 wardrobe boxes (rental) · 6 tape rolls · 12.5 lbs packing paper",
+  4: "35 small, 55 medium, 20 large boxes · 8 wardrobe boxes (rental) · 8 tape rolls · 25 lbs packing paper",
+  5: "45 small, 70 medium, 25 large boxes · 10 wardrobe boxes (rental) · 10 tape rolls · 25 lbs packing paper",
+};
 import SquarePaymentForm from "@/components/payments/SquarePaymentForm";
 import ContractSign, {
   type ContractQuoteData,
@@ -1157,6 +1170,7 @@ export default function QuotePageClient({
                 onProceedToPayment={handleConfirmComplete}
                 isProgressive={isResidential}
                 currentStep={currentStep}
+                selectedAddons={selectedAddons}
               />
             )}
             {/* Referral code — for residential, inside confirm; for non-residential, standalone */}
@@ -1759,7 +1773,7 @@ function WalkthroughDetails({ quote }: { quote: Quote }) {
   );
 }
 
-function InventoryCollapsible({ quote, selectedTier }: { quote: Quote; selectedTier: string }) {
+function InventoryCollapsible({ quote, selectedTier, selectedAddons }: { quote: Quote; selectedTier: string; selectedAddons?: Map<string, AddonSelection> }) {
   const isEstate = selectedTier === "estate";
   if (!INV_SERVICE_TYPES.has(quote.service_type) || isEstate) return null;
 
@@ -1825,7 +1839,14 @@ function InventoryCollapsible({ quote, selectedTier }: { quote: Quote; selectedT
           </div>
           <div className="flex items-center justify-between py-0.5 pl-2 pb-1.5">
             <span className="text-[12px]" style={{ color: `${FOREST}70` }}>
-              Boxes packed & supplied by owner
+              {(() => {
+                const packingSelected = selectedAddons
+                  ? [...selectedAddons.values()].some((s) => s.slug === "packing_materials")
+                  : false;
+                return packingSelected
+                  ? "Boxes packed & supplied by Yugo"
+                  : "Boxes packed & supplied by owner";
+              })()}
             </span>
             <span className="text-[12px] font-semibold ml-4" style={{ color: `${FOREST}80` }}>
               {boxCount}
@@ -1877,6 +1898,7 @@ function ConfirmDetailsSection({
   referralDiscountAmt,
   valuationUpgradeSelected,
   includedValuation,
+  selectedAddons,
 }: {
   quote: Quote;
   selectedTier: string;
@@ -1894,6 +1916,7 @@ function ConfirmDetailsSection({
   onProceedToPayment: () => void;
   isProgressive: boolean;
   currentStep: number;
+  selectedAddons: Map<string, AddonSelection>;
 }) {
   const protectionKey = valuationUpgradeSelected
     ? selectedTier === "essential"
@@ -1936,7 +1959,7 @@ function ConfirmDetailsSection({
             <p><strong>From:</strong> {fromAbbr}</p>
             <p><strong>To:</strong> {toAbbr}</p>
           </div>
-          <InventoryCollapsible quote={quote} selectedTier={selectedTier} />
+          <InventoryCollapsible quote={quote} selectedTier={selectedTier} selectedAddons={selectedAddons} />
         </div>
 
         <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
@@ -2473,6 +2496,13 @@ function AddOnsSection({
   showContinueButton?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const [expandedContents, setExpandedContents] = useState<Set<string>>(new Set());
+  const toggleContents = (id: string) =>
+    setExpandedContents((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   const KEY_COUNT = 3;
   const keyAddons = addons.filter((a) => a.is_popular || selectedAddons.has(a.id)).slice(0, KEY_COUNT);
   const hasMore = addons.length > keyAddons.length;
@@ -2553,6 +2583,14 @@ function AddOnsSection({
                         Popular
                       </span>
                     )}
+                    {addon.slug === "packing_materials" && (
+                      <span
+                        className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border"
+                        style={{ color: "#2C7A4B", backgroundColor: "#F0FBF4", borderColor: "#A3D9B4" }}
+                      >
+                        Free Delivery
+                      </span>
+                    )}
                   </div>
                   {addon.description && (
                     <p
@@ -2563,6 +2601,28 @@ function AddOnsSection({
                     </p>
                   )}
 
+                  {/* Packing kit contents expand */}
+                  {addon.slug === "packing_materials" && moveSize && (
+                    <div className="mt-1.5">
+                      <button
+                        type="button"
+                        data-no-min-height
+                        onClick={() => toggleContents(addon.id)}
+                        className="text-[11px] font-medium transition-opacity hover:opacity-70 flex items-center gap-1"
+                        style={{ color: GOLD }}
+                      >
+                        {expandedContents.has(addon.id) ? "Hide contents ▲" : "What's included ▼"}
+                      </button>
+                      {expandedContents.has(addon.id) && (
+                        <p
+                          className="mt-1.5 text-[11px] leading-relaxed px-3 py-2 rounded-lg border"
+                          style={{ color: `${FOREST}80`, backgroundColor: "#FAFAF8", borderColor: "#E8E4DC" }}
+                        >
+                          {PACKING_KIT_CONTENTS[PACKING_KIT_TIER_IDX[moveSize] ?? 0]}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {isOn && addon.price_type === "per_unit" && (
                     <div className="flex items-center gap-2 mt-2">

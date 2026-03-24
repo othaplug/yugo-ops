@@ -37,6 +37,7 @@ import {
   Scroll,
   UsersThree,
   Envelope,
+  Package,
 } from "@phosphor-icons/react";
 
 const SIZE = 16;
@@ -84,4 +85,5 @@ export const Icons = {
   auditLog:       ic(Scroll),
   usersThree:     ic(UsersThree),
   envelope:       ic(Envelope),
+  package:        ic(Package),
 };

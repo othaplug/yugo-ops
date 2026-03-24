@@ -77,6 +77,12 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     ],
   },
   {
+    label: "Services",
+    items: [
+      { href: "/admin/bin-rentals", label: "Bin Rentals", Icon: Icons.package, minRole: "coordinator" },
+    ],
+  },
+  {
     label: "Finance",
     items: [
       { href: "/admin/invoices", label: "Invoices", Icon: Icons.fileText, minRole: "admin" },
