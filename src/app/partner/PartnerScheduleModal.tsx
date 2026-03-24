@@ -106,6 +106,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   const [pickupRaw, setPickupRaw] = useState("");
   const [deliveryRaw, setDeliveryRaw] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [error, setError] = useState("");
   const [isAfterHours, setIsAfterHours] = useState(false);
   const [isWeekend, setIsWeekend] = useState(false);
@@ -231,6 +232,68 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     }));
   };
 
+  const buildPayload = (overrides?: Record<string, unknown>) => {
+    const itemsList =
+      inventory.length > 0
+        ? inventory
+        : form.items ? form.items.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+    const svcList = Object.entries(selectedServices)
+      .filter(([, v]) => v.enabled)
+      .map(([slug, v]) => ({ slug, quantity: slug === "stair_carry" ? stairFlights : v.quantity }));
+    return {
+      customer_name: form.customer_name.trim(),
+      customer_email: form.customer_email.trim() || null,
+      customer_phone: form.customer_phone.trim() ? normalizePhone(form.customer_phone) : null,
+      pickup_address: form.pickup_address.trim() || null,
+      delivery_address: form.delivery_address.trim(),
+      scheduled_date: form.scheduled_date || null,
+      time_slot: null,
+      preferred_time: form.preferred_time.trim() || null,
+      delivery_window: form.delivery_window || null,
+      items: itemsList,
+      instructions: [form.instructions, form.access_notes, form.internal_notes].filter(Boolean).join("\n") || null,
+      special_handling: form.special_handling,
+      complexity_indicators: form.complexityIndicators.length ? form.complexityIndicators : null,
+      booking_type: bookingType,
+      vehicle_type: bookingType === "day_rate" ? vehicleType : null,
+      day_type: bookingType === "day_rate" ? dayType : null,
+      num_stops: bookingType === "day_rate" ? numStops : null,
+      delivery_type: bookingType === "per_delivery" ? deliveryType : null,
+      zone: bookingType === "per_delivery" ? zone : null,
+      delivery_access: bookingType === "per_delivery" ? deliveryAccess : null,
+      item_weight_category: bookingType === "per_delivery" ? itemWeightCategory : null,
+      base_price: pricing?.basePrice || 0,
+      overage_price: pricing?.overagePrice || 0,
+      services_price: pricing?.servicesPrice || 0,
+      zone_surcharge: pricing?.zoneSurcharge || 0,
+      after_hours_surcharge: pricing?.afterHoursSurcharge || 0,
+      total_price: pricing?.totalPrice || 0,
+      services_selected: svcList,
+      pricing_breakdown: pricing?.breakdown || null,
+      ...overrides,
+    };
+  };
+
+  const handleSaveDraft = async () => {
+    if (!form.customer_name.trim()) { setError("Customer name is required to save a draft"); return; }
+    setSavingDraft(true);
+    setError("");
+    try {
+      const res = await fetch("/api/partner/deliveries/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload({ status: "draft" })),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save draft");
+      onCreated();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!form.customer_name.trim()) { setError("Customer name is required"); return; }
     if (!form.delivery_address.trim()) { setError("Delivery address is required"); return; }
@@ -239,50 +302,11 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     setSubmitting(true);
     setError("");
 
-    const itemsList =
-      inventory.length > 0
-        ? inventory
-        : form.items ? form.items.split("\n").map((l) => l.trim()).filter(Boolean) : [];
-
-    const svcList = Object.entries(selectedServices)
-      .filter(([, v]) => v.enabled)
-      .map(([slug, v]) => ({ slug, quantity: slug === "stair_carry" ? stairFlights : v.quantity }));
-
     try {
       const res = await fetch("/api/partner/deliveries/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer_name: form.customer_name.trim(),
-          customer_email: form.customer_email.trim() || null,
-          customer_phone: form.customer_phone.trim() ? normalizePhone(form.customer_phone) : null,
-          pickup_address: form.pickup_address.trim() || null,
-          delivery_address: form.delivery_address.trim(),
-          scheduled_date: form.scheduled_date,
-          time_slot: null,
-          preferred_time: form.preferred_time.trim() || null,
-          delivery_window: form.delivery_window || null,
-          items: itemsList,
-          instructions: [form.instructions, form.access_notes, form.internal_notes].filter(Boolean).join("\n") || null,
-          special_handling: form.special_handling,
-          complexity_indicators: form.complexityIndicators.length ? form.complexityIndicators : null,
-          booking_type: bookingType,
-          vehicle_type: bookingType === "day_rate" ? vehicleType : null,
-          day_type: bookingType === "day_rate" ? dayType : null,
-          num_stops: bookingType === "day_rate" ? numStops : null,
-          delivery_type: bookingType === "per_delivery" ? deliveryType : null,
-          zone: bookingType === "per_delivery" ? zone : null,
-          delivery_access: bookingType === "per_delivery" ? deliveryAccess : null,
-          item_weight_category: bookingType === "per_delivery" ? itemWeightCategory : null,
-          base_price: pricing?.basePrice || 0,
-          overage_price: pricing?.overagePrice || 0,
-          services_price: pricing?.servicesPrice || 0,
-          zone_surcharge: pricing?.zoneSurcharge || 0,
-          after_hours_surcharge: pricing?.afterHoursSurcharge || 0,
-          total_price: pricing?.totalPrice || 0,
-          services_selected: svcList,
-          pricing_breakdown: pricing?.breakdown || null,
-        }),
+        body: JSON.stringify(buildPayload()),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create delivery");
@@ -689,14 +713,24 @@ Coffee Table" rows={3} className={`${fieldInput} resize-y text-[13px]`} />
               Back
             </button>
             {step === "review" ? (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex-1 py-3 rounded-xl text-[13px] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors disabled:opacity-50"
-              >
-                {submitting ? "Submitting…" : "Submit delivery request"}
-              </button>
+              <div className="flex flex-col gap-2 flex-1">
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={submitting || savingDraft}
+                  className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors disabled:opacity-50"
+                >
+                  {submitting ? "Submitting…" : "Submit delivery request"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveDraft}
+                  disabled={submitting || savingDraft}
+                  className="w-full py-2.5 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:bg-[var(--bg2)] transition-colors disabled:opacity-50"
+                >
+                  {savingDraft ? "Saving draft…" : "Save as draft"}
+                </button>
+              </div>
             ) : (
               <button
                 type="button"

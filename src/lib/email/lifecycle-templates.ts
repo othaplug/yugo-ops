@@ -1,4 +1,5 @@
-import { emailLayout } from "@/lib/email-templates";
+import { getClientSupportEmail } from "@/lib/email/client-support-email";
+import { emailLayout, legacyEmailLayout, equinoxPromoLayout, equinoxPromoCta, equinoxPromoFinePrint } from "@/lib/email-templates";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { formatPhone } from "@/lib/phone";
@@ -23,7 +24,19 @@ function dateDisplay(dateStr: string | null | undefined): string {
 }
 
 const GOLD_BTN = "#B8962E";
-/** Hero headlines in lifecycle / follow-up emails (matches quote brand typography). */
+const EQ_SANS = "Helvetica Neue,Helvetica,Arial,sans-serif";
+const EQ_H1 =
+  "font-size:20px;font-weight:700;margin:0 0 12px;color:#FFFFFF;letter-spacing:0.12em;text-transform:uppercase;line-height:1.35;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
+const EQ_LEAD =
+  "font-size:14px;color:#A3A3A3;line-height:1.65;margin:0 0 26px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
+const EQ_EYE =
+  "font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:10px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
+const EQ_PANEL =
+  "background:#1C1C1C;border:1px solid rgba(255,255,255,0.1);border-radius:2px;padding:20px;margin-bottom:20px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
+const EQ_MUTED = "#8A8A8A";
+const EQ_VALUE = "#F0F0F0";
+const EQ_CREME_HEAD = "#FAF9F6";
+/** Hero headlines in legacy emails (reviews, quote follow-ups). */
 const HERO_SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
 
 function ctaButton(url: string, label: string, sub?: string): string {
@@ -31,13 +44,13 @@ function ctaButton(url: string, label: string, sub?: string): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0 ${sub ? "6px" : "16px"};">
       <tr>
         <td align="center" style="text-align:center;">
-          <a href="${url}" style="display:inline-block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:uppercase;">
+          <a href="${url}" style="display:inline-block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:0.14em;text-transform:uppercase;font-family:${EQ_SANS};">
             ${label}
           </a>
         </td>
       </tr>
     </table>
-    ${sub ? `<p style="font-size:10px;color:#5E5A56;text-align:center;margin:0 0 16px;letter-spacing:0.3px;">${sub}</p>` : ""}
+    ${sub ? `<p style="font-size:10px;color:${EQ_MUTED};text-align:center;margin:0 0 16px;letter-spacing:0.04em;font-family:${EQ_SANS};">${sub}</p>` : ""}
   `;
 }
 
@@ -87,45 +100,46 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
     accessNotes.push(`<strong>Access:</strong> ${toAccessLabel} &mdash; please reserve the elevator/loading dock.`);
 
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">3 Days To Go</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your move is almost here${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your move is scheduled for <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>. Here&apos;s a quick checklist to make sure everything goes smoothly.
+    <div style="${EQ_EYE}">Three days to go</div>
+    <h1 style="${EQ_H1}">Your move is almost here${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Your move is scheduled for <strong style="color:#E8E8E8">${dateDisplay(d.moveDate)}</strong>. Please review the checklist below so everything runs on schedule.
     </p>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Pre-Move Checklist</div>
-      <div style="font-size:13px;color:#B8B5B0;line-height:2">
+    <div style="${EQ_PANEL}">
+      <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:14px;font-family:${EQ_SANS}">Pre-move checklist</div>
+      <div style="font-size:13px;color:${EQ_MUTED};line-height:2;font-family:${EQ_SANS}">
         <div>&#9744; Book elevator/loading dock at both locations</div>
-        <div>&#9744; Reserve parking spots for our truck</div>
+        <div>&#9744; Reserve parking for our truck</div>
         <div>&#9744; Finish packing boxes (if self-packing)</div>
         <div>&#9744; Clear hallways and pathways</div>
         <div>&#9744; Arrange care for pets and small children</div>
-        <div>&#9744; Separate valuables and personal documents to carry yourself</div>
+        <div>&#9744; Keep valuables and documents with you</div>
         <div>&#9744; Defrost freezer and empty fridge</div>
       </div>
     </div>
 
     ${accessNotes.length > 0 ? `
-      <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
-        <div style="font-size:11px;color:#C9A962;font-weight:600;margin-bottom:6px">Access Notes</div>
-        <div style="font-size:12px;color:#B8B5B0;line-height:1.6">
+      <div style="background:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.22);border-radius:2px;padding:16px;margin-bottom:20px;font-family:${EQ_SANS}">
+        <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Access notes</div>
+        <div style="font-size:12px;color:#A3A3A3;line-height:1.6">
           ${accessNotes.join("<br/>")}
         </div>
       </div>
     ` : ""}
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:16px;margin-bottom:20px">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:3px 0">Reference:</td><td style="color:#C9A962;font-weight:600;padding:3px 0;text-align:right">${d.moveCode}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">From:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.fromAddress}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">To:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.toAddress}</td></tr>
-      </table>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:22px;font-family:${EQ_SANS}">
+      <tr>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Move details</td>
+      </tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Reference</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.moveCode}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.fromAddress}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">To</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.toAddress}</td></tr>
+    </table>
 
-    ${ctaButton(d.trackingUrl, "Track Your Move")}
-    <p style="font-size:11px;color:#666;text-align:center">
-      Questions? Reply to this email or call your coordinator.
+    ${ctaButton(d.trackingUrl, "Track your move")}
+    <p style="font-size:11px;color:${EQ_MUTED};text-align:center;font-family:${EQ_SANS}">
+      Questions? Email ${getClientSupportEmail()} or call your coordinator.
     </p>
   `);
 }
@@ -149,42 +163,42 @@ export interface PreMove24hrData {
 
 export function preMove24hrEmail(d: PreMove24hrData): string {
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Tomorrow&apos;s the Day</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your crew is ready${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Everything is set for your move tomorrow. Here are the details.
+    <div style="${EQ_EYE}">Tomorrow&apos;s the day</div>
+    <h1 style="${EQ_H1}">Your crew is confirmed${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Everything is set for your move tomorrow. Your arrival window and crew details are below.
     </p>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Crew Details</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        ${d.crewLeadName ? `<tr><td style="color:#666;padding:4px 0">Crew Lead:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${d.crewLeadName}</td></tr>` : ""}
-        ${d.crewSize ? `<tr><td style="color:#666;padding:4px 0">Crew Size:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${d.crewSize} movers</td></tr>` : ""}
-        ${d.truckInfo ? `<tr><td style="color:#666;padding:4px 0">Truck:</td><td style="color:#E8E5E0;font-weight:600;padding:4px 0;text-align:right">${d.truckInfo}</td></tr>` : ""}
-        <tr><td style="color:#666;padding:4px 0">Arrival:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">${d.arrivalWindow ?? "Morning, we'll confirm exact time"}</td></tr>
-      </table>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:18px;font-family:${EQ_SANS}">
+      <tr>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Crew details</td>
+      </tr>
+      ${d.crewLeadName ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Crew lead</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${d.crewLeadName}</td></tr>` : ""}
+      ${d.crewSize ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Crew size</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${d.crewSize} movers</td></tr>` : ""}
+      ${d.truckInfo ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Truck</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${d.truckInfo}</td></tr>` : ""}
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Arrival</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.arrivalWindow ?? "Morning &mdash; we&apos;ll confirm exact time"}</td></tr>
+    </table>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Move Details</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:3px 0">Date:</td><td style="color:#E8E5E0;font-weight:600;padding:3px 0;text-align:right">${dateDisplay(d.moveDate)}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">From:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.fromAddress}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">To:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.toAddress}</td></tr>
-      </table>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:20px;font-family:${EQ_SANS}">
+      <tr>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Move details</td>
+      </tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Date</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${dateDisplay(d.moveDate)}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.fromAddress}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">To</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.toAddress}</td></tr>
+    </table>
 
     ${d.coordinatorName ? `
-      <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
-        <div style="font-size:11px;color:#C9A962;font-weight:600">Your Coordinator</div>
-        <div style="font-size:13px;color:#E8E5E0;margin-top:4px">${d.coordinatorName}${d.coordinatorPhone ? ` &middot; ${formatPhone(d.coordinatorPhone)}` : ""}</div>
-        <div style="font-size:11px;color:#999;margin-top:2px">Available by phone or text for any last-minute questions.</div>
+      <div style="background:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.22);border-radius:2px;padding:16px;margin-bottom:20px;font-family:${EQ_SANS}">
+        <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Your coordinator</div>
+        <div style="font-size:13px;color:${EQ_VALUE};margin-top:4px">${d.coordinatorName}${d.coordinatorPhone ? ` &middot; ${formatPhone(d.coordinatorPhone)}` : ""}</div>
+        <div style="font-size:11px;color:${EQ_MUTED};margin-top:4px">Reachable by phone or text for last-minute questions.</div>
       </div>
     ` : ""}
 
-    ${ctaButton(d.trackingUrl, "Track Your Move Live")}
-    <p style="font-size:11px;color:#666;text-align:center">
-      Our crew will call 30 minutes before arrival. See you tomorrow!
+    ${ctaButton(d.trackingUrl, "Track your move live")}
+    <p style="font-size:11px;color:${EQ_MUTED};text-align:center;font-family:${EQ_SANS}">
+      Our crew will call 30 minutes before arrival.
     </p>
   `);
 }
@@ -202,23 +216,23 @@ export interface BalanceReceiptData {
 
 export function balanceReceiptEmail(d: BalanceReceiptData): string {
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#2D9F5A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Payment Received</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Balance paid${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      We&apos;ve received your balance payment. Your account is now paid in full.
+    <div style="${EQ_EYE};color:#2D9F5A">Payment received</div>
+    <h1 style="${EQ_H1}">Thank you${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Your payment has been completed. Your account for this move is now paid in full.
     </p>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:4px 0">Reference:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">${d.moveCode}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Balance Paid:</td><td style="color:#2D9F5A;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(d.amount)}</td></tr>
-        ${d.paymentMethod ? `<tr><td style="color:#666;padding:4px 0">Method:</td><td style="color:#E8E5E0;padding:4px 0;text-align:right">${d.paymentMethod}</td></tr>` : ""}
-        <tr><td colspan="2" style="border-top:1px solid #2A2A2A;padding:0;height:8px"></td></tr>
-        <tr><td style="color:#666;padding:4px 0">Total Paid:</td><td style="color:#E8E5E0;font-weight:700;padding:4px 0;text-align:right">${formatCurrency(d.totalPaid)}</td></tr>
-      </table>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:24px;font-family:${EQ_SANS}">
+      <tr>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Payment summary</td>
+      </tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Reference</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.moveCode}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Balance paid</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:#2D9F5A;font-weight:700">${formatCurrency(d.amount)}</td></tr>
+      ${d.paymentMethod ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Payment method</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.paymentMethod}</td></tr>` : ""}
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.1);padding:14px 16px;font-size:12px;color:#B8962E;font-weight:700;text-transform:uppercase;letter-spacing:0.08em">Total paid</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.1);padding:14px 16px;font-size:14px;color:#B8962E;font-weight:700">${formatCurrency(d.totalPaid)}</td></tr>
+    </table>
 
-    ${ctaButton(d.trackingUrl, "View Move Details")}
+    ${ctaButton(d.trackingUrl, "View move details")}
   `);
 }
 
@@ -236,38 +250,39 @@ export interface MoveCompleteData {
 
 export function moveCompleteEmail(d: MoveCompleteData): string {
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#2D9F5A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Move Complete</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">You&apos;re all moved in${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your move has been completed. We hope everything went perfectly. All your move documents and receipts are available in your tracking portal.
+    <div style="${EQ_EYE};color:#2D9F5A">Move complete</div>
+    <h1 style="${EQ_H1}">Congratulations${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Your move has been completed. Documents and receipts are available in your tracking portal.
     </p>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:3px 0">Reference:</td><td style="color:#C9A962;font-weight:600;padding:3px 0;text-align:right">${d.moveCode}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">From:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.fromAddress}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">To:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.toAddress}</td></tr>
-        ${d.completedDate ? `<tr><td style="color:#666;padding:3px 0">Completed:</td><td style="color:#2D9F5A;font-weight:600;padding:3px 0;text-align:right">${dateDisplay(d.completedDate)}</td></tr>` : ""}
-      </table>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:24px;font-family:${EQ_SANS}">
+      <tr>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Move summary</td>
+      </tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Reference</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.moveCode}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.fromAddress}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">To</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.toAddress}</td></tr>
+      ${d.completedDate ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Completed</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:#2D9F5A;font-weight:700">${dateDisplay(d.completedDate)}</td></tr>` : ""}
+    </table>
 
-    <div style="margin-bottom:24px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">YOUR DOCUMENTS</div>
-      <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 14px">
-        View your move summary, invoice, and receipt in your move dashboard. We don&apos;t attach PDFs to this email, everything is available to download from your tracking page (link below).
+    <div style="margin-bottom:22px;font-family:${EQ_SANS}">
+      <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:10px">Your documents</div>
+      <p style="font-size:13px;color:${EQ_MUTED};line-height:1.65;margin:0">
+        Download your move summary, invoice, and receipt from your portal. We do not attach PDFs to this email.
       </p>
     </div>
 
-    <div style="margin-bottom:24px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">What&apos;s Next</div>
-      <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
-        <div>1. Download your documents from your portal</div>
-        <div>2. We&apos;ll send a brief satisfaction survey</div>
-        <div>3. Enjoy your new space!</div>
+    <div style="margin-bottom:24px;font-family:${EQ_SANS}">
+      <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:10px">What&apos;s next</div>
+      <div style="font-size:13px;color:${EQ_MUTED};line-height:1.85">
+        <div>1. Download documents from your portal</div>
+        <div>2. Brief satisfaction survey (separate email)</div>
+        <div>3. Enjoy your new space</div>
       </div>
     </div>
 
-    ${ctaButton(d.trackingUrl, "View Your Move Portal")}
+    ${ctaButton(d.trackingUrl, "View your move portal")}
   `);
 }
 
@@ -282,7 +297,7 @@ export interface ReviewRequestData {
 }
 
 export function reviewRequestEmail(d: ReviewRequestData): string {
-  return emailLayout(`
+  return legacyEmailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Move?</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}!</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
@@ -337,7 +352,7 @@ export interface ReviewRequestTierData {
 export const reviewRequestEssentialsEmail = (d: ReviewRequestTierData): string => reviewRequestCuratedEmail(d);
 
 export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
-  return emailLayout(`
+  return legacyEmailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Yugo Move?</div>
     <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your Yugo move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
@@ -357,7 +372,7 @@ export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
 export const reviewRequestPremierEmail = (d: ReviewRequestTierData): string => reviewRequestSignatureEmail(d);
 
 export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
-  return emailLayout(`
+  return legacyEmailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We&apos;d Love Your Feedback</div>
     <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;d love your feedback${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
@@ -374,7 +389,7 @@ export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
 }
 
 export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
-  return emailLayout(`
+  return legacyEmailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Did We Do?</div>
     <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">${firstName(d.clientName) || "Dear Client"}, it was our privilege — how did we do?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
@@ -398,7 +413,7 @@ export interface ReviewRequestReminderData {
 }
 
 export function reviewRequestReminderEmail(d: ReviewRequestReminderData): string {
-  return emailLayout(`
+  return legacyEmailLayout(`
     <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Quick Reminder</div>
     <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Quick reminder your Yugo review</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
@@ -423,7 +438,7 @@ export interface LowSatisfactionData {
 }
 
 export function lowSatisfactionEmail(d: LowSatisfactionData): string {
-  return emailLayout(`
+  return legacyEmailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We Want to Make It Right</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We&apos;re sorry${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}.</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
@@ -440,7 +455,7 @@ export function lowSatisfactionEmail(d: LowSatisfactionData): string {
     </div>
 
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Please reply to this email or call us directly. We&apos;ll work with you until you&apos;re completely satisfied.
+      Please email ${getClientSupportEmail()} or call us directly. We&apos;ll work with you until you&apos;re completely satisfied.
     </p>
 
     ${ctaButton(d.trackingUrl, "View Your Move Details")}
@@ -459,7 +474,7 @@ export interface InternalLowSatAlertData {
 }
 
 export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
-  return emailLayout(`
+  return legacyEmailLayout(`
     <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Low Satisfaction Alert</div>
     <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${d.moveCode} &mdash; ${d.clientName}</h1>
 
@@ -492,30 +507,12 @@ export interface ReferralOfferData {
 }
 
 export function referralOfferEmail(d: ReferralOfferData): string {
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Exclusive Offer</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Give $50, Get $50</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Hi${firstName(d.clientName) ? ` ${firstName(d.clientName)}` : ""}, thanks for moving with Yugo! As a thank you, here&apos;s an exclusive offer: refer a friend and you both get $50 off.
-    </p>
-
-    <div style="background:rgba(201,169,98,0.12);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:24px;text-align:center;margin-bottom:20px">
-      <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:32px;font-weight:700;color:#C9A962;margin-bottom:8px">$50</div>
-      <div style="font-size:13px;color:#B8B5B0">for you and your friend</div>
-    </div>
-
-    <div style="font-size:13px;color:#B8B5B0;line-height:1.8;margin-bottom:24px">
-      <div><strong style="color:#E8E5E0">How it works:</strong></div>
-      <div>1. Share your unique link with a friend</div>
-      <div>2. They book a residential move with Yugo</div>
-      <div>3. You both get $50 off &mdash; applied automatically</div>
-    </div>
-
-    ${ctaButton(d.referralUrl, "Share Your Referral Link")}
-
-    <p style="font-size:11px;color:#666;text-align:center">
-      Valid for residential moves only. One referral bonus per friend.
-    </p>
+  const name = firstName(d.clientName);
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Give $50. Get $50.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, refer` : "Refer"} a friend to Yugo and you&apos;ll both receive <strong style="color:#FFFFFF;">$50 off</strong> a residential move. No forms, no hassle &mdash; credits apply automatically when they book.</p>
+    ${equinoxPromoCta(d.referralUrl, "Share Your Link")}
+    ${equinoxPromoFinePrint("Residential moves only. One referral bonus per new customer.")}
   `);
 }
 
@@ -530,21 +527,12 @@ export interface QuoteFollowup1Data {
 }
 
 export function quoteFollowup1Email(d: QuoteFollowup1Data): string {
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Quote Is Ready</div>
-    <h1 style="font-family:${HERO_SERIF};font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Just checking in${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      We sent your ${d.serviceLabel.toLowerCase()} quote yesterday but noticed you haven&apos;t had a chance to review it yet.
-    </p>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your personalized quote is waiting for you &mdash; it includes flat-rate pricing with no hidden fees, multiple package options, and everything you need to book with confidence.
-    </p>
-
-    ${ctaButton(d.quoteUrl, "View Your Quote")}
-
-    <p style="font-size:11px;color:#666;text-align:center">
-      Have questions? Simply reply to this email and your coordinator will get back to you right away.
-    </p>
+  const name = firstName(d.clientName);
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, your` : "Your"} Yugo quote is waiting.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">We prepared a flat-rate ${d.serviceLabel.toLowerCase()} quote for you. No hourly billing, no surprises &mdash; just a guaranteed price.</p>
+    ${equinoxPromoCta(d.quoteUrl, "View Your Quote")}
+    ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
   `);
 }
 
@@ -554,47 +542,49 @@ export interface QuoteFollowup2Data {
   serviceLabel: string;
   moveDate: string | null;
   expiresAt: string | null;
+  /** variant hint: warm | essential | cold (default) */
+  tier?: string | null;
+  /** set from cold variant — show inline urgency line */
+  includeInlinePrices?: boolean;
+  addons?: string[];
 }
 
 export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
-  const moveDateStr = dateDisplay(d.moveDate);
-  let urgencyLine = "";
-  if (d.expiresAt) {
-    const daysLeft = Math.max(
-      0,
-      Math.ceil((new Date(d.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-    );
-    urgencyLine = daysLeft <= 1
-      ? "Your quote expires tomorrow."
-      : `Your quote expires in ${daysLeft} days.`;
+  const name = firstName(d.clientName);
+  const isCold = d.includeInlinePrices;
+  const isWarm = !isCold && d.tier;
+
+  let heading: string;
+  let body: string;
+  let ctaLabel: string;
+
+  const expiryText = (() => {
+    if (!d.expiresAt) return null;
+    const days = Math.max(0, Math.ceil((new Date(d.expiresAt).getTime() - Date.now()) / 86400000));
+    return days <= 1 ? "Offer ends today." : `Offer ends in ${days} days.`;
+  })();
+
+  if (isWarm) {
+    heading = name ? `${name}, finish booking your move.` : "Finish booking your move.";
+    body = "You&apos;re close &mdash; your preferred package is still available. Lock in your price and date now before availability changes.";
+    ctaLabel = "Complete My Booking";
+  } else if (isCold) {
+    heading = name ? `Only a few days left, ${name}.` : "Only a few days left.";
+    body = "This is your last chance to review your Yugo quote at this price. Guaranteed flat rate &mdash; no hourly charges, no surprises.";
+    ctaLabel = "View Your Quote";
+  } else {
+    heading = name ? `Only a few days left, ${name}.` : "Only a few days left.";
+    body = d.moveDate
+      ? `Availability for <strong style="color:#FFFFFF;">${dateDisplay(d.moveDate)}</strong> is limited. Your guaranteed price holds until your quote expires.`
+      : "Your guaranteed flat-rate price won&apos;t last. Secure your date before availability closes.";
+    ctaLabel = "Secure My Date";
   }
 
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Don&apos;t Miss Out</div>
-    <h1 style="font-family:${HERO_SERIF};font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your date is filling up${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      We noticed you reviewed your ${d.serviceLabel.toLowerCase()} quote but haven&apos;t booked yet. We wanted to let you know that availability for <strong style="color:#E8E5E0">${moveDateStr}</strong> is limited.
-    </p>
-
-    ${urgencyLine ? `
-      <div style="background:rgba(212,138,41,0.1);border:1px solid rgba(212,138,41,0.25);border-radius:0;padding:14px;margin-bottom:20px;text-align:center">
-        <div style="font-size:13px;color:#D48A29;font-weight:600">${urgencyLine}</div>
-      </div>
-    ` : ""}
-
-    <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">Why Book Now</div>
-    <div style="font-size:13px;color:#B8B5B0;line-height:1.8;margin-bottom:20px">
-      <div>&#10003; Lock in your flat-rate price &mdash; no surprises</div>
-      <div>&#10003; Secure your preferred date before it&apos;s taken</div>
-      <div>&#10003; Deposit to reserve &mdash; balance due later</div>
-      <div>&#10003; Full refund if you cancel within the policy window</div>
-    </div>
-
-    ${ctaButton(d.quoteUrl, "Secure Your Date")}
-
-    <p style="font-size:11px;color:#666;text-align:center">
-      Need to adjust anything? Reply to this email and we&apos;ll update your quote.
-    </p>
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${heading}</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${body}${expiryText ? `<br/><br/><span style="color:#FFFFFF;font-weight:600;">${expiryText}</span>` : ""}</p>
+    ${equinoxPromoCta(d.quoteUrl, ctaLabel)}
+    ${equinoxPromoFinePrint(`Need to adjust anything? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
   `);
 }
 
@@ -603,6 +593,8 @@ export interface QuoteFollowup3Data {
   quoteUrl: string;
   serviceLabel: string;
   expiresAt: string | null;
+  /** hot variant — payment was started */
+  tier?: string | null;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -622,44 +614,44 @@ export interface CancellationConfirmData {
 
 export function cancellationConfirmEmail(d: CancellationConfirmData): string {
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Cancellation Confirmed</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your move has been cancelled${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      We&apos;re sorry to see you go. Your move <strong style="color:#E8E5E0">${d.moveCode}</strong> has been cancelled.
+    <div style="${EQ_EYE};color:#D14343">Cancellation confirmed</div>
+    <h1 style="${EQ_H1}">Your booking is cancelled${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Move reference <strong style="color:#E8E8E8">${d.moveCode}</strong> has been cancelled. Details are below.
     </p>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Cancelled Move</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:3px 0">Reference:</td><td style="color:#C9A962;font-weight:600;padding:3px 0;text-align:right">${d.moveCode}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">From:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.fromAddress}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">To:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.toAddress}</td></tr>
-        ${d.moveDate ? `<tr><td style="color:#666;padding:3px 0">Date:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${dateDisplay(d.moveDate)}</td></tr>` : ""}
-        <tr><td style="color:#666;padding:3px 0">Reason:</td><td style="color:#E8E5E0;padding:3px 0;text-align:right">${d.cancellationReason}</td></tr>
-      </table>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:22px;font-family:${EQ_SANS}">
+      <tr>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Cancelled move</td>
+      </tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Reference</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.moveCode}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.fromAddress}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">To</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.toAddress}</td></tr>
+      ${d.moveDate ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Date</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${dateDisplay(d.moveDate)}</td></tr>` : ""}
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">Reason</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.cancellationReason}</td></tr>
+    </table>
 
     ${d.refundAmount && d.refundAmount > 0 ? `
-      <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.2);border-radius:10px;padding:20px;margin-bottom:20px">
-        <div style="font-size:9px;color:#2D9F5A;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">Refund Issued</div>
-        <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:24px;font-weight:700;color:#2D9F5A;margin-bottom:6px">${formatCurrency(d.refundAmount)}</div>
-        <div style="font-size:12px;color:#B8B5B0">
-          Your refund has been submitted and will appear on your statement within 3&ndash;5 business days. Depending on your bank, it may take up to 7 business days.
+      <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.22);border-radius:2px;padding:20px;margin-bottom:22px;font-family:${EQ_SANS}">
+        <div style="font-size:10px;color:#2D9F5A;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:8px">Refund issued</div>
+        <div style="font-size:26px;font-weight:700;color:#2D9F5A;margin-bottom:8px">${formatCurrency(d.refundAmount)}</div>
+        <div style="font-size:12px;color:${EQ_MUTED};line-height:1.6">
+          Refunds typically post within 3&ndash;5 business days; your bank may take up to 7 business days.
         </div>
       </div>
     ` : `
-      <div style="background:rgba(212,138,41,0.08);border:1px solid rgba(212,138,41,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
-        <div style="font-size:12px;color:#D48A29">
-          Based on our cancellation policy, no refund is applicable for this cancellation. If you have questions, please reply to this email.
+      <div style="background:rgba(212,138,41,0.08);border:1px solid rgba(212,138,41,0.22);border-radius:2px;padding:16px;margin-bottom:22px;font-family:${EQ_SANS}">
+        <div style="font-size:12px;color:#D48A29;line-height:1.6">
+          Per our cancellation policy, no refund applies. Email ${getClientSupportEmail()} with questions.
         </div>
       </div>
     `}
 
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      If you need to rebook in the future, we&apos;d love to help. Just reply to this email or visit our website anytime.
+    <p style="${EQ_LEAD}">
+      We hope to serve you again. Email ${getClientSupportEmail()} or visit our site anytime to rebook.
     </p>
 
-    ${ctaButton(d.trackingUrl, "View Cancellation Details")}
+    ${ctaButton(d.trackingUrl, "View cancellation details")}
   `);
 }
 
@@ -675,23 +667,13 @@ export interface QuoteUpdatedData {
 }
 
 export function quoteUpdatedEmail(d: QuoteUpdatedData): string {
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Quote Updated</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your updated quote is ready${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      We&apos;ve updated your ${d.serviceLabel.toLowerCase()} quote based on the changes discussed. Please review the updated pricing below.
-    </p>
-
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:10px">What Changed</div>
-      <div style="font-size:13px;color:#B8B5B0;line-height:1.7">${d.changesSummary}</div>
-    </div>
-
-    ${ctaButton(d.quoteUrl, "View Updated Quote")}
-
-    <p style="font-size:11px;color:#666;text-align:center">
-      This replaces your previous quote. The previous link will redirect here.
-    </p>
+  const name = firstName(d.clientName);
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, your` : "Your"} quote has been updated.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0 0 18px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">We&apos;ve revised your ${d.serviceLabel.toLowerCase()} quote. Here&apos;s a summary of what changed:</p>
+    <p style="font-size:14px;color:#DDDDDD;line-height:1.65;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;border-left:2px solid #FFFFFF;padding-left:16px;">${d.changesSummary}</p>
+    ${equinoxPromoCta(d.quoteUrl, "Review Updated Quote")}
+    ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
   `);
 }
 
@@ -709,27 +691,25 @@ export interface BalanceReminder72hrData {
 
 export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Balance Due</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your remaining balance is due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your remaining balance of <strong style="color:#C9A962">${formatCurrency(d.balanceAmount)}</strong> is due before your move on <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>.
+    <div style="${EQ_EYE}">Balance due</div>
+    <h1 style="${EQ_H1}">Remaining balance${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Amount <strong style="color:#B8962E">${formatCurrency(d.balanceAmount)}</strong> is due before your move on <strong style="color:#E8E8E8">${dateDisplay(d.moveDate)}</strong>.
     </p>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Balance Payment</div>
-
-      <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px">
-        <div style="font-size:13px;color:#C9A962;font-weight:700;margin-bottom:6px">Card on File — Charged 48 hours before your move</div>
-        <div style="font-size:12px;color:#B8B5B0;line-height:1.6">
-          Your card on file will be automatically charged <strong style="color:#E8E5E0">${formatCurrency(d.balanceAmount)}</strong> 48 hours before your move.<br/>
-          No action required.
+    <div style="${EQ_PANEL}">
+      <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:12px">Automatic payment</div>
+      <div style="background:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.2);border-radius:2px;padding:16px;font-family:${EQ_SANS}">
+        <div style="font-size:13px;color:#B8962E;font-weight:700;margin-bottom:8px">Card on file</div>
+        <div style="font-size:12px;color:${EQ_MUTED};line-height:1.65">
+          We will charge <strong style="color:#E8E8E8">${formatCurrency(d.balanceAmount)}</strong> approximately 48 hours before your move. No action required.
         </div>
       </div>
     </div>
 
-    ${ctaButton(d.trackingUrl, "View Move Details")}
-    <p style="font-size:11px;color:#666;text-align:center">
-      Questions? Reply to this email or call your coordinator.
+    ${ctaButton(d.trackingUrl, "View move details")}
+    <p style="font-size:11px;color:${EQ_MUTED};text-align:center;font-family:${EQ_SANS}">
+      Questions? Email ${getClientSupportEmail()} or call your coordinator.
     </p>
   `);
 }
@@ -747,25 +727,24 @@ export interface BalanceReminder48hrData {
 
 export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Balance Due</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Your balance of ${formatCurrency(d.balanceAmount)} is due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your remaining balance will be automatically charged to your card on file before your move on <strong style="color:#E8E5E0">${dateDisplay(d.moveDate)}</strong>.
+    <div style="${EQ_EYE};color:#D48A29">Balance due soon</div>
+    <h1 style="${EQ_H1}">${formatCurrency(d.balanceAmount)} due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Your remaining balance will be charged to the card on file before your move on <strong style="color:#E8E8E8">${dateDisplay(d.moveDate)}</strong>.
     </p>
 
-    <div style="margin-bottom:20px">
-      <div style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.3);border-radius:10px;padding:20px;text-align:center">
-        <div style="font-size:11px;color:#C9A962;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Card on File — Auto-Charged</div>
-        <div style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:24px;font-weight:700;color:#C9A962;margin-bottom:10px">${formatCurrency(d.balanceAmount)}</div>
-        <div style="font-size:12px;color:#B8B5B0;line-height:1.6">
-          Your card on file will be charged automatically on <strong style="color:#E8E5E0">${dateDisplay(d.autoChargeDate)}</strong>.<br/>
-          No action needed.
+    <div style="margin-bottom:22px;font-family:${EQ_SANS}">
+      <div style="background:rgba(184,150,46,0.1);border:1px solid rgba(184,150,46,0.28);border-radius:2px;padding:22px;text-align:center">
+        <div style="font-size:10px;color:#B8962E;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">Scheduled charge</div>
+        <div style="font-size:28px;font-weight:700;color:#B8962E;margin-bottom:10px;letter-spacing:0.02em">${formatCurrency(d.balanceAmount)}</div>
+        <div style="font-size:12px;color:${EQ_MUTED};line-height:1.65">
+          Charge date: <strong style="color:#E8E8E8">${dateDisplay(d.autoChargeDate)}</strong>. No action needed.
         </div>
       </div>
     </div>
 
-    <p style="font-size:11px;color:#666;text-align:center">
-      Questions? Reply to this email or call your coordinator.
+    <p style="font-size:11px;color:${EQ_MUTED};text-align:center;font-family:${EQ_SANS}">
+      Questions? Email ${getClientSupportEmail()} or call your coordinator.
     </p>
   `);
 }
@@ -782,28 +761,28 @@ export interface BalanceAutoChargeReceiptData {
 
 export function balanceAutoChargeReceiptEmail(d: BalanceAutoChargeReceiptData): string {
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#2D9F5A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Payment Charged</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Balance payment received${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your card on file has been charged for the remaining balance on move <strong style="color:#C9A962">${d.moveCode}</strong>.
+    <div style="${EQ_EYE};color:#2D9F5A">Payment charged</div>
+    <h1 style="${EQ_H1}">Payment received${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      Your card on file was charged for the remaining balance on move <strong style="color:#B8962E">${d.moveCode}</strong>.
     </p>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:9px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:14px">Payment Breakdown</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:4px 0">Base balance:</td><td style="color:#E8E5E0;padding:4px 0;text-align:right">${formatCurrency(d.baseBalance)}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Processing fee (3.3%):</td><td style="color:#E8E5E0;padding:4px 0;text-align:right">${formatCurrency(d.processingFee)}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Transaction fee:</td><td style="color:#E8E5E0;padding:4px 0;text-align:right">${formatCurrency(d.transactionFee)}</td></tr>
-        <tr><td colspan="2" style="border-top:1px solid #2A2A2A;padding:0;height:8px"></td></tr>
-        <tr><td style="color:#2D9F5A;font-weight:700;padding:4px 0">Total charged:</td><td style="color:#2D9F5A;font-weight:700;font-size:14px;padding:4px 0;text-align:right">${formatCurrency(d.totalCharged)}</td></tr>
-      </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:20px;font-family:${EQ_SANS}">
+      <tr>
+        <td style="background-color:${EQ_CREME_HEAD};padding:10px 14px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.12em;text-transform:uppercase;width:58%;">Description</td>
+        <td align="right" style="background-color:${EQ_CREME_HEAD};padding:10px 14px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.12em;text-transform:uppercase">Amount</td>
+      </tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:12px 14px;font-size:12px;color:${EQ_VALUE}">Base balance</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:12px 14px;font-size:12px;color:${EQ_VALUE}">${formatCurrency(d.baseBalance)}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:12px 14px;font-size:12px;color:${EQ_MUTED}">Processing fee (3.3%)</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:12px 14px;font-size:12px;color:${EQ_VALUE}">${formatCurrency(d.processingFee)}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:12px 14px;font-size:12px;color:${EQ_MUTED}">Transaction fee</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:12px 14px;font-size:12px;color:${EQ_VALUE}">${formatCurrency(d.transactionFee)}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.12);padding:14px 14px;font-size:12px;color:#B8962E;font-weight:700;text-transform:uppercase;letter-spacing:0.08em">Total</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.12);padding:14px 14px;font-size:15px;color:#B8962E;font-weight:700">${formatCurrency(d.totalCharged)}</td></tr>
+    </table>
+
+    <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.22);border-radius:2px;padding:16px;margin-bottom:22px;text-align:center;font-family:${EQ_SANS}">
+      <div style="font-size:13px;color:#2D9F5A;font-weight:600">Your account is paid in full.</div>
     </div>
 
-    <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.2);border-radius:8px;padding:14px;margin-bottom:20px;text-align:center">
-      <div style="font-size:13px;color:#2D9F5A;font-weight:600">Your account is now paid in full.</div>
-    </div>
-
-    ${ctaButton(d.trackingUrl, "View Move Details")}
+    ${ctaButton(d.trackingUrl, "View move details")}
   `);
 }
 
@@ -815,19 +794,19 @@ export interface BalanceChargeFailedClientData {
 
 export function balanceChargeFailedClientEmail(d: BalanceChargeFailedClientData): string {
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Payment Failed</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We couldn&apos;t process your payment${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      We attempted to charge your card on file for the remaining balance of <strong style="color:#D14343">${formatCurrency(d.balanceAmount)}</strong> on move <strong style="color:#C9A962">${d.moveCode}</strong>, but the payment was declined.
+    <div style="${EQ_EYE};color:#D14343">Payment failed</div>
+    <h1 style="${EQ_H1}">Action required${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <p style="${EQ_LEAD}">
+      We could not charge your card on file for <strong style="color:#D14343">${formatCurrency(d.balanceAmount)}</strong> (move <strong style="color:#B8962E">${d.moveCode}</strong>).
     </p>
 
-    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.2);border-radius:10px;padding:20px;margin-bottom:20px;text-align:center">
-      <div style="font-size:13px;color:#D14343;font-weight:600;margin-bottom:8px">Please call us to resolve this before your move.</div>
-      <div style="font-size:14px;color:#E8E5E0;font-weight:700;margin-top:8px">1-833-333-YUGO (9846)</div>
+    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.25);border-radius:2px;padding:22px;margin-bottom:22px;text-align:center;font-family:${EQ_SANS}">
+      <div style="font-size:13px;color:#D14343;font-weight:600;margin-bottom:10px">Please contact us before your move.</div>
+      <div style="font-size:15px;color:${EQ_VALUE};font-weight:700;letter-spacing:0.04em">1-833-333-YUGO (9846)</div>
     </div>
 
-    <p style="font-size:12px;color:#B8B5B0;line-height:1.6;text-align:center">
-      You can also reply to this email and your coordinator will follow up.
+    <p style="font-size:12px;color:${EQ_MUTED};line-height:1.65;text-align:center;font-family:${EQ_SANS}">
+      Or email ${getClientSupportEmail()}; your coordinator will follow up.
     </p>
   `);
 }
@@ -844,59 +823,48 @@ export interface BalanceChargeFailedAdminData {
 
 export function balanceChargeFailedAdminEmail(d: BalanceChargeFailedAdminData): string {
   return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">URGENT: Payment Failed</div>
-    <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${d.moveCode} &mdash; Balance charge failed</h1>
+    <div style="${EQ_EYE};color:#D14343">Urgent</div>
+    <h1 style="${EQ_H1}">${d.moveCode} &mdash; charge failed</h1>
 
-    <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
-      <div style="font-size:12px;color:#D14343;font-weight:600">Auto-charge for ${formatCurrency(d.balanceAmount)} failed</div>
-      <div style="font-size:11px;color:#B8B5B0;margin-top:4px">Error: ${d.errorMessage}</div>
+    <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.22);border-radius:2px;padding:16px;margin-bottom:20px;font-family:${EQ_SANS}">
+      <div style="font-size:12px;color:#D14343;font-weight:600">Auto-charge ${formatCurrency(d.balanceAmount)} failed</div>
+      <div style="font-size:11px;color:${EQ_MUTED};margin-top:6px">Error: ${d.errorMessage}</div>
     </div>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:4px 0">Client:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientName}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Email:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientEmail}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientPhone ? formatPhone(d.clientPhone) : "&mdash;"}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Move Date:</td><td style="color:#E8E5E0;padding:4px 0">${d.moveDate ? dateDisplay(d.moveDate) : "&mdash;"}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Balance:</td><td style="color:#D14343;font-weight:600;padding:4px 0">${formatCurrency(d.balanceAmount)}</td></tr>
-      </table>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:20px;font-family:${EQ_SANS}">
+      <tr>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Client</td>
+      </tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Name</td><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.clientName}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Email</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.clientEmail}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Phone</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.clientPhone ? formatPhone(d.clientPhone) : "&mdash;"}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Move date</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.moveDate ? dateDisplay(d.moveDate) : "&mdash;"}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Balance</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:#D14343;font-weight:700">${formatCurrency(d.balanceAmount)}</td></tr>
+    </table>
 
-    <div style="background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.2);border-radius:8px;padding:14px">
-      <div style="font-size:11px;color:#C9A962;font-weight:600">Action Required</div>
-      <div style="font-size:12px;color:#B8B5B0;margin-top:4px">Contact client immediately. Move is tomorrow and balance is unpaid.</div>
+    <div style="background:rgba(184,150,46,0.1);border:1px solid rgba(184,150,46,0.22);border-radius:2px;padding:16px;font-family:${EQ_SANS}">
+      <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Action required</div>
+      <div style="font-size:12px;color:${EQ_MUTED}">Contact the client immediately. Move is imminent and balance is unpaid.</div>
     </div>
   `);
 }
 
 export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
-  const expiryDate = d.expiresAt
-    ? new Date(d.expiresAt).toLocaleDateString("en-CA", { month: "long", day: "numeric" })
-    : "soon";
+  const name = firstName(d.clientName);
+  const isHot = (d as QuoteFollowup3Data & { tier?: string }).tier === "hot";
+  const expiryDisplay = d.expiresAt ? dateDisplay(d.expiresAt) : null;
+  const heading = isHot
+    ? (name ? `${name}, ready to finish?` : "Ready to finish?")
+    : (name ? `${name}, your quote expires soon.` : "Your quote expires soon.");
+  const body = isHot
+    ? "It looks like you started checkout. Your quote is still active &mdash; pick up where you left off and secure your move today."
+    : `Your ${d.serviceLabel.toLowerCase()} quote ${expiryDisplay ? `expires <strong style="color:#FFFFFF;">${expiryDisplay}</strong>` : "is expiring soon"}. After that, pricing resets based on current availability.`;
 
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Final Reminder</div>
-    <h1 style="font-family:${HERO_SERIF};font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">Last chance${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your ${d.serviceLabel.toLowerCase()} quote expires <strong style="color:#D14343">${expiryDate}</strong>. After that, we won&apos;t be able to guarantee the same pricing or availability.
-    </p>
-
-    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.2);border-radius:0;padding:20px;margin-bottom:20px;text-align:center">
-      <div style="font-size:11px;color:#D14343;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Quote Expiring</div>
-      <div style="font-size:14px;color:#B8B5B0">
-        Your flat-rate pricing and date availability will no longer be held after expiry.
-      </div>
-    </div>
-
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      If your plans have changed, no worries at all. But if you&apos;d still like to move forward, now is the time to lock it in.
-    </p>
-
-    ${ctaButton(d.quoteUrl, "Book Before It Expires")}
-
-    <p style="font-size:11px;color:#666;text-align:center">
-      Need more time? Reply and we can extend your quote or adjust the details.
-    </p>
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${heading}</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${body}</p>
+    ${equinoxPromoCta(d.quoteUrl, isHot ? "Complete Booking" : "Book Before It Expires")}
+    ${equinoxPromoFinePrint(`Need more time? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a> and we can extend your quote.`)}
   `);
 }
 
@@ -916,60 +884,40 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
   const name = firstName(d.clientName);
 
   const perksHtml = d.activePerks.length > 0
+    ? d.activePerks.map((p) => {
+        const offerLabel =
+          p.offer_type === "percentage_off" && p.discount_value ? `${p.discount_value}% off` :
+          p.offer_type === "dollar_off" && p.discount_value ? `$${p.discount_value} off` :
+          p.offer_type === "free_service" ? "Free service" :
+          p.offer_type === "consultation" ? "Free consultation" :
+          "Special offer";
+        return `
+          <div style="border-top:1px solid rgba(255,255,255,0.1);padding:16px 0;">
+            <div style="font-size:13px;font-weight:600;color:#FFFFFF;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-bottom:4px;">${p.title} <span style="font-size:10px;color:#737373;font-weight:400;">&mdash; ${offerLabel}</span></div>
+            ${p.description ? `<div style="font-size:13px;color:#A3A3A3;margin-bottom:8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${p.description}</div>` : ""}
+            ${p.redemption_code ? `<span style="font-family:monospace;font-size:12px;font-weight:700;color:#FFFFFF;letter-spacing:0.08em;">${p.redemption_code}</span>` : ""}
+            ${p.redemption_url ? `<a href="${p.redemption_url}" style="font-size:12px;color:#FFFFFF;text-decoration:underline;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-left:${p.redemption_code ? "12px" : "0"};">Redeem</a>` : ""}
+          </div>
+        `;
+      }).join("")
+    : "";
+
+  const referralBlock = d.referralCode
     ? `
-      <div style="margin-bottom:24px">
-        <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px">Your Yugo Perks</div>
-        ${d.activePerks.map((p) => {
-          const offerLabel =
-            p.offer_type === "percentage_off" && p.discount_value ? `${p.discount_value}% off` :
-            p.offer_type === "dollar_off" && p.discount_value ? `$${p.discount_value} off` :
-            p.offer_type === "free_service" ? "Free service" :
-            p.offer_type === "consultation" ? "Free consultation" :
-            "Special offer";
-          return `
-            <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:16px;margin-bottom:10px">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-                <span style="font-size:13px;font-weight:600;color:#F5F5F3">${p.title}</span>
-                <span style="font-size:9px;font-weight:700;color:#C9A962;background:rgba(201,169,98,0.12);padding:3px 8px;border-radius:999px;white-space:nowrap;margin-left:8px">${offerLabel}</span>
-              </div>
-              ${p.description ? `<p style="font-size:12px;color:#888;margin:0 0 8px;line-height:1.5">${p.description}</p>` : ""}
-              ${p.redemption_code ? `<span style="font-family:monospace;font-size:11px;font-weight:600;color:#C9A962;background:rgba(201,169,98,0.1);border:1px solid rgba(201,169,98,0.2);padding:4px 10px;border-radius:6px">${p.redemption_code}</span>` : ""}
-              ${p.redemption_url ? `<a href="${p.redemption_url}" style="font-size:11px;color:#C9A962;text-decoration:none;margin-left:${p.redemption_code ? "12px" : "0"}">Redeem</a>` : ""}
-            </div>
-          `;
-        }).join("")}
+      <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:28px 0 8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Know someone who needs to move? Share your code and they get <strong style="color:#FFFFFF;">$${d.referredDiscount} off</strong>. You earn a <strong style="color:#FFFFFF;">$${d.referrerCredit} credit</strong>.</p>
+      <div style="border:1px solid rgba(255,255,255,0.2);padding:20px;text-align:center;margin-bottom:8px;">
+        <div style="font-family:monospace;font-size:22px;font-weight:700;letter-spacing:0.2em;color:#FFFFFF;">${d.referralCode}</div>
+        <div style="font-size:11px;color:#595959;margin-top:6px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your referral code</div>
       </div>
     `
     : "";
 
-  const referralHtml = d.referralCode
-    ? `
-      <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
-        <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px">Refer a Friend</div>
-        <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 16px">
-          Know someone moving soon? Share your unique code and they&apos;ll get <strong style="color:#F5F5F3">$${d.referredDiscount} off</strong> their first Yugo move. When they book, you earn a <strong style="color:#F5F5F3">$${d.referrerCredit} credit</strong>.
-        </p>
-        <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.25);border-radius:8px;padding:14px;text-align:center">
-          <div style="font-family:monospace;font-size:20px;font-weight:700;letter-spacing:3px;color:#C9A962">${d.referralCode}</div>
-          <div style="font-size:10px;color:#666;margin-top:4px">Your personal referral code</div>
-        </div>
-      </div>
-    `
-    : "";
-
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Move Perks</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">
-      Thanks for moving with Yugo${name ? `, ${name}` : ""}!
-    </h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your move <strong style="color:#C9A962">${d.moveCode}</strong> is complete. Here are some exclusive perks and a way to share the Yugo experience with friends.
-    </p>
-
-    ${perksHtml}
-    ${referralHtml}
-
-    ${ctaButton(d.trackingUrl, "View Your Move")}
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, your` : "Your"} move is done.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Thanks for choosing Yugo. Your exclusive post-move perks and referral code are below.</p>
+    ${perksHtml ? `<div style="margin-top:8px;">${perksHtml}</div>` : ""}
+    ${referralBlock}
+    ${equinoxPromoCta(d.trackingUrl, "View Move Summary")}
   `);
 }
 
@@ -990,29 +938,20 @@ export function moveAnniversaryEmail(d: MoveAnniversaryEmailData): string {
   const moveDateStr = d.moveDate
     ? new Date(d.moveDate + "T00:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })
     : "last year";
+  const route = d.fromAddress && d.toAddress
+    ? ` from ${d.fromAddress.split(",")[0]} to ${d.toAddress.split(",")[0]}`
+    : "";
 
-  return emailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Move Anniversary</div>
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">
-      One year since your move${name ? `, ${name}` : ""}!
-    </h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      It&apos;s been a whole year since we helped you move on <strong style="color:#E8E5E0">${moveDateStr}</strong>
-      ${d.fromAddress && d.toAddress ? ` from ${d.fromAddress.split(",")[0]} to ${d.toAddress.split(",")[0]}` : ""}.
-      We hope you&apos;re loving your new home!
-    </p>
-
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">One year${name ? `, ${name}` : ""}.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">We moved you${route} on <strong style="color:#FFFFFF;">${moveDateStr}</strong>. We hope you&apos;re settling in well.</p>
     ${d.referralCode ? `
-    <div style="background:rgba(201,169,98,0.08);border:1px solid rgba(201,169,98,0.25);border-radius:10px;padding:20px;margin-bottom:24px;text-align:center">
-      <p style="font-size:13px;color:#B8B5B0;margin:0 0 12px;line-height:1.6">
-        Moving again or know someone who is? Share your code for <strong style="color:#F5F5F3">$${d.referredDiscount} off</strong>.
-      </p>
-      <div style="font-family:monospace;font-size:20px;font-weight:700;letter-spacing:3px;color:#C9A962">${d.referralCode}</div>
-    </div>
+      <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:28px 0 8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Moving again or know someone who is? Your referral code gives them <strong style="color:#FFFFFF;">$${d.referredDiscount} off</strong>.</p>
+      <div style="border:1px solid rgba(255,255,255,0.2);padding:20px;text-align:center;">
+        <div style="font-family:monospace;font-size:22px;font-weight:700;letter-spacing:0.2em;color:#FFFFFF;">${d.referralCode}</div>
+        <div style="font-size:11px;color:#595959;margin-top:6px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your referral code</div>
+      </div>
     ` : ""}
-
-    <p style="font-size:12px;color:#666;text-align:center;line-height:1.6">
-      Need to move again? We&apos;d love to help. Reply to this email or visit yugomoves.com.
-    </p>
+    ${equinoxPromoFinePrint(`Moving again? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
   `);
 }

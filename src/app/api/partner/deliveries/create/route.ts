@@ -23,9 +23,12 @@ export async function POST(req: NextRequest) {
     const deliveryAddress = (body.delivery_address || "").trim();
     const scheduledDate = (body.scheduled_date || "").trim();
 
+    const isDraft = body.status === "draft";
+
+    // For drafts: only customer name is required (everything else can be filled in later)
     if (!customerName) return NextResponse.json({ error: "Customer name is required" }, { status: 400 });
-    if (!deliveryAddress) return NextResponse.json({ error: "Delivery address is required" }, { status: 400 });
-    if (!scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
+    if (!isDraft && !deliveryAddress) return NextResponse.json({ error: "Delivery address is required" }, { status: 400 });
+    if (!isDraft && !scheduledDate) return NextResponse.json({ error: "Date is required" }, { status: 400 });
 
     const deliveryNumber = generateDeliveryNumber();
     const trackingCode = `${(org?.name || "YG").replace(/[^A-Z]/gi, "").slice(0, 2).toUpperCase()}-${deliveryNumber.split("-")[1]}`;
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
       items,
       instructions: (body.instructions || "").trim() || null,
       special_handling: !!body.special_handling,
-      status: "pending_approval",
+      status: isDraft ? "draft" : "pending_approval",
       category: org?.type || "retail",
       created_by_source: "partner_portal",
       created_by_user: userId || null,

@@ -31,53 +31,60 @@ function getClientIp(req: NextRequest): string {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ role: null });
-  }
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  const email = (user.email || "").trim().toLowerCase();
-  const admin = createAdminClient();
+    if (authError || !user) {
+      return NextResponse.json({ role: null });
+    }
 
-  // platform_users: role = access (client → client portal; admin/manager/dispatcher → admin)
-  const { data: platformUser } = await supabase
-    .from("platform_users")
-    .select("role")
-    .eq("user_id", user.id)
-    .single();
-  if (platformUser) {
-    const role = platformUser.role || "";
-    // Record login event for platform/admin users
-    void Promise.resolve(
-      admin.from("login_history").insert({
+    const email = (user.email || "").trim().toLowerCase();
+    const admin = createAdminClient();
+
+    // platform_users: role = access (client → client portal; admin/manager/dispatcher → admin)
+    const { data: platformUser } = await supabase
+      .from("platform_users")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (platformUser) {
+      const role = platformUser.role || "";
+      // Record login event fire-and-forget — never block the response
+      void Promise.resolve(admin.from("login_history").insert({
         user_id: user.id,
         device: parseDevice(req.headers.get("user-agent")),
         ip_address: getClientIp(req),
         status: "success",
-      })
-    ).catch(() => {});
+      })).catch(() => {});
 
-    if (role === "client") return NextResponse.json({ role: "client" });
-    if (["admin", "manager", "dispatcher", "coordinator", "viewer", "sales"].includes(role)) return NextResponse.json({ role: "admin" });
+      if (role === "client") return NextResponse.json({ role: "client" });
+      if (["admin", "manager", "dispatcher", "coordinator", "viewer", "sales"].includes(role)) {
+        return NextResponse.json({ role: "admin" });
+      }
+    }
+
+    // No staff role — check if partner
+    const { data: partnerRows } = await admin
+      .from("partner_users")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .limit(1);
+    if (partnerRows && partnerRows.length > 0) return NextResponse.json({ role: "partner" });
+
+    // Last resort — check if move client by email
+    const { data: move } = await supabase
+      .from("moves")
+      .select("id")
+      .ilike("client_email", email)
+      .limit(1)
+      .maybeSingle();
+    if (move) return NextResponse.json({ role: "client" });
+
+    return NextResponse.json({ role: null });
+  } catch {
+    // Never let an unexpected error surface as 404 — degrade gracefully
+    return NextResponse.json({ role: null });
   }
-
-  // No staff role: check if client (move client only)
-  const { data: move } = await supabase
-    .from("moves")
-    .select("id")
-    .ilike("client_email", email)
-    .limit(1)
-    .maybeSingle();
-  if (move) return NextResponse.json({ role: "client" });
-
-  // partner_users → partner: use admin client so RLS/cookies don't hide the row (e.g. first login after invite)
-  const { data: partnerRows } = await admin
-    .from("partner_users")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .limit(1);
-  if (partnerRows && partnerRows.length > 0) return NextResponse.json({ role: "partner" });
-
-  return NextResponse.json({ role: null });
 }

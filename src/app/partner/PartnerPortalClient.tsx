@@ -683,7 +683,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
         {/* Tabs — horizontally scrollable, no wrapping, no vertical movement */}
         <div className="overflow-hidden mb-4">
           <div
-            className="flex items-center gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4"
+            className="flex items-center justify-start sm:justify-center gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4"
             style={{ touchAction: "pan-x", overscrollBehaviorX: "contain", overscrollBehaviorY: "none" }}
           >
             {tabs.map((t) => {
@@ -957,25 +957,25 @@ function DeliveryKPIs({ data }: { data: DashboardData | null }) {
     <div className="border-t border-[var(--brd)]/30 pt-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">This Month</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">This Month</div>
           <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{data?.completedThisMonth ?? 0}</div>
           <div className="text-[11px] text-[#2D9F5A] mt-0.5 font-medium">
             {(data?.completedThisMonth ?? 0) > 0 ? `+${data?.completedThisMonth} vs last` : ""}
           </div>
         </div>
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">On-Time Rate</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">On-Time Rate</div>
           <div className="text-[26px] sm:text-[30px] font-bold text-[#22C55E] mt-1 font-hero">{data?.onTimeRate ?? 100}%</div>
         </div>
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Satisfaction</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Satisfaction</div>
           <div className="text-[26px] sm:text-[30px] font-bold text-[#C9A962] mt-1 font-hero">{data?.satisfactionScore ?? "—"}</div>
           {data?.satisfactionScore != null && (
             <div className="text-[11px] text-[var(--tx3)] mt-0.5">out of 5</div>
           )}
         </div>
         <div className="text-center">
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
           <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">{formatCurrency(data?.outstandingAmount ?? 0)}</div>
           {data?.outstandingDueDate && (
             <div className="text-[11px] text-[var(--tx3)] mt-0.5">Due {new Date(data.outstandingDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
@@ -990,7 +990,7 @@ function RealtorKPIs({ data }: { data: DashboardData | null }) {
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
       <div className="flex flex-col justify-center">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Earned</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Earned</div>
         <div className="text-[44px] font-bold text-[#2D9F5A] mt-2 font-hero">{formatCurrency(data?.totalEarned ?? 0)}</div>
         <div className="text-[12px] text-[#2D9F5A] mt-1 font-medium">
           {data?.completedReferrals ?? 0} completed move{(data?.completedReferrals ?? 0) !== 1 ? "s" : ""}
@@ -1029,7 +1029,7 @@ function ReferralForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Submit New Referral</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Submit New Referral</div>
       <div className="space-y-2">
         <input value={form.client_name} onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))} placeholder="Client full name" required className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
         <input value={form.client_email} onChange={(e) => setForm((f) => ({ ...f, client_email: e.target.value }))} placeholder="Client email" type="email" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
@@ -1149,7 +1149,7 @@ function MaterialsTab() {
 
   return (
     <div>
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Marketing Materials</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Marketing Materials</div>
       <div className="space-y-0">
         {materials.map((m, i) => (
           <div key={m.name} className={`flex items-center justify-between py-4 ${i > 0 ? "border-t border-[var(--brd)]/30" : ""}`}>

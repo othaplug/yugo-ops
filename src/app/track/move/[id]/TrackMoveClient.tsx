@@ -37,7 +37,6 @@ import {
   Check,
   Phone,
   ShareNetwork,
-  ChatCircle,
   CaretRight,
   Plus,
   HandHeart,
@@ -1250,18 +1249,6 @@ export default function TrackMoveClient({
                           Share
                         </button>
 
-                        {/* Divider */}
-                        <div className="w-px self-stretch" style={{ backgroundColor: `${GOLD}50` }} />
-
-                        {/* SMS */}
-                        <a
-                          href={`sms:?body=${encodeURIComponent(`Moving soon? Use my YUGO referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
-                          className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-[11px] font-semibold transition-all hover:opacity-80 active:scale-95"
-                          style={{ backgroundColor: "white", color: `${FOREST}90` }}
-                        >
-                          <ChatCircle size={13} weight="bold" aria-hidden />
-                          SMS
-                        </a>
                       </div>
 
                       <p className="text-[10px]" style={{ color: `${FOREST}55` }}>
@@ -2134,14 +2121,6 @@ export default function TrackMoveClient({
                           <ShareNetwork size={11} className="text-current" />
                           Share with a friend
                         </button>
-                        <a
-                          href={`sms:?body=${encodeURIComponent(`Moving soon? Use my YUGO referral code ${referral.referral_code} for $${referral.referred_discount} off. Book at yugomoves.com`)}`}
-                          className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
-                          style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
-                        >
-                          <ChatCircle size={11} className="text-current" />
-                          Send via SMS
-                        </a>
                       </div>
                     </div>
                   )}

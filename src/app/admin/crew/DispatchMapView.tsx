@@ -1,5 +1,6 @@
 "use client";
 
+import "mapbox-gl/dist/mapbox-gl.css";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -26,8 +27,43 @@ const MapboxMap = dynamic(
         >
           {markers.map((m) => (
             <Marker key={m.id} longitude={m.lng} latitude={m.lat} anchor="center">
-              <div className="cursor-pointer hover:scale-110 transition-transform truck-marker-animated" title={m.name}>
-                <img src="/crew-car.png" alt="" width={40} height={40} className="block drop-shadow-md" />
+              <div className="relative cursor-pointer hover:scale-110 transition-transform" title={m.name}>
+                {/* Glass pill label */}
+                <div
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap pointer-events-none"
+                  style={{
+                    background: "rgba(8,10,16,0.84)",
+                    backdropFilter: "blur(10px)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    boxShadow: "0 2px 14px rgba(0,0,0,0.55)",
+                  }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: "#C9A962", boxShadow: "0 0 6px #C9A962" }}
+                  />
+                  <span className="text-[11px] font-bold tracking-[0.04em] text-white">
+                    {m.name.replace("Team ", "")}
+                  </span>
+                </div>
+                {/* Top-down van SVG */}
+                <svg
+                  width="22" height="40" viewBox="0 0 22 40" fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ filter: "drop-shadow(0 0 8px rgba(201,169,98,0.75)) drop-shadow(0 2px 6px rgba(0,0,0,0.75))" }}
+                >
+                  <rect x="1.5" y="4" width="19" height="32" rx="4" fill="white" fillOpacity="0.96" />
+                  <rect x="3" y="5" width="16" height="8" rx="2.5" fill="#C9A962" fillOpacity="0.88" />
+                  <rect x="10" y="14" width="2" height="19" rx="1" fill="black" fillOpacity="0.07" />
+                  <ellipse cx="1.5" cy="12" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
+                  <ellipse cx="1.5" cy="28" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
+                  <ellipse cx="20.5" cy="12" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
+                  <ellipse cx="20.5" cy="28" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
+                  <rect x="3" y="4" width="5" height="2.5" rx="1" fill="rgba(255,255,200,0.9)" />
+                  <rect x="14" y="4" width="5" height="2.5" rx="1" fill="rgba(255,255,200,0.9)" />
+                  <rect x="3" y="34" width="5" height="2.5" rx="1" fill="rgba(255,70,70,0.75)" />
+                  <rect x="14" y="34" width="5" height="2.5" rx="1" fill="rgba(255,70,70,0.75)" />
+                </svg>
               </div>
             </Marker>
           ))}

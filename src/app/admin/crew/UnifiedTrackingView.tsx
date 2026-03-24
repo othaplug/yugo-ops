@@ -289,6 +289,8 @@ const GodEyeMap = dynamic(
 
                 const initials = (c.name || "?").replace("Team ", "").slice(0, 2).toUpperCase();
 
+                const vanWindowColor = isNearOffice && !isOnJob(status) ? "#6B7280" : ringColor;
+
                 return (
                   <Marker key={c.id} longitude={c.current_lng!} latitude={c.current_lat!} anchor="center">
                     <button
@@ -297,53 +299,67 @@ const GodEyeMap = dynamic(
                       className={`relative cursor-pointer transition-transform ${isSelected ? "scale-125 z-10" : "hover:scale-110"}`}
                       title={`${c.name} — ${getStatusLabel(status)}`}
                     >
-                      {/* Outer ring */}
+                      {/* Glass pill label — always horizontal above the van */}
                       <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center"
+                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap pointer-events-none"
                         style={{
-                          background: `linear-gradient(135deg, ${ringColor}40, ${ringColor}20)`,
-                          border: `3px solid ${ringColor}`,
-                          boxShadow: isOnJob(status) ? `0 0 12px ${ringColor}60` : undefined,
+                          background: "rgba(8,10,16,0.84)",
+                          backdropFilter: "blur(10px)",
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          boxShadow: "0 2px 14px rgba(0,0,0,0.55)",
                         }}
                       >
-                        {/* Inner gold circle with initials */}
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#C9A962] to-[#8B7332] flex items-center justify-center text-[11px] font-bold text-white shadow-inner">
-                          {isNearOffice && !isOnJob(status) ? (
-                            <House size={12} color="white" />
-                          ) : (
-                            initials
-                          )}
-                        </div>
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: ringColor, boxShadow: isOnJob(status) ? `0 0 6px ${ringColor}` : undefined }}
+                        />
+                        <span className="text-[11px] font-bold tracking-[0.04em] text-white">
+                          {(c.name || "Crew").replace("Team ", "")}
+                        </span>
                       </div>
 
-                      {/* Heading arrow */}
-                      {heading != null && isOnJob(status) && (
-                        <div
-                          className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0"
+                      {/* Top-down van SVG — rotates with GPS heading */}
+                      <div style={{ transform: heading != null ? `rotate(${heading}deg)` : undefined }}>
+                        <svg
+                          width="22" height="40" viewBox="0 0 22 40" fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
                           style={{
-                            borderLeft: "4px solid transparent",
-                            borderRight: "4px solid transparent",
-                            borderBottom: `6px solid ${ringColor}`,
-                            transform: `translateX(-50%) rotate(${heading}deg)`,
-                            transformOrigin: "center 18px",
+                            filter: `drop-shadow(0 0 8px ${ringColor}80) drop-shadow(0 2px 6px rgba(0,0,0,0.75))`,
                           }}
-                        />
-                      )}
+                        >
+                          {/* Body */}
+                          <rect x="1.5" y="4" width="19" height="32" rx="4" fill="white" fillOpacity={isSelected ? 1 : 0.96} />
+                          {/* Windshield / cab at top (front) */}
+                          <rect x="3" y="5" width="16" height="8" rx="2.5" fill={vanWindowColor} fillOpacity="0.88" />
+                          {/* Center divider */}
+                          <rect x="10" y="14" width="2" height="19" rx="1" fill="black" fillOpacity="0.07" />
+                          {/* Wheel wells */}
+                          <ellipse cx="1.5" cy="12" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
+                          <ellipse cx="1.5" cy="28" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
+                          <ellipse cx="20.5" cy="12" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
+                          <ellipse cx="20.5" cy="28" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
+                          {/* Headlights */}
+                          <rect x="3" y="4" width="5" height="2.5" rx="1" fill="rgba(255,255,200,0.9)" />
+                          <rect x="14" y="4" width="5" height="2.5" rx="1" fill="rgba(255,255,200,0.9)" />
+                          {/* Tail lights */}
+                          <rect x="3" y="34" width="5" height="2.5" rx="1" fill="rgba(255,70,70,0.75)" />
+                          <rect x="14" y="34" width="5" height="2.5" rx="1" fill="rgba(255,70,70,0.75)" />
+                          {/* Selected highlight ring */}
+                          {isSelected && (
+                            <rect x="1.5" y="4" width="19" height="32" rx="4" fill={ringColor} fillOpacity="0.15" />
+                          )}
+                        </svg>
+                      </div>
 
                       {/* Warning badge */}
                       {warningBadge && (
                         <div
-                          className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white"
+                          className="absolute top-3 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white z-10"
                           style={{ backgroundColor: warningBadge === "red" ? "#EF4444" : "#F59E0B" }}
                         >
                           !
                         </div>
                       )}
-
-                      {/* Name label */}
-                      <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[var(--tx)] whitespace-nowrap px-1.5 py-0.5 rounded bg-[var(--card)]/95 border border-[var(--brd)] shadow-sm">
-                        {(c.name || "Crew").replace("Team ", "")}
-                      </span>
                     </button>
                   </Marker>
                 );

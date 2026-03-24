@@ -11,17 +11,34 @@ export async function GET(
 
   const { partnerId: orgId } = await params;
   const period = Number(req.nextUrl.searchParams.get("period") || 90);
-  const since = new Date(Date.now() - period * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const sinceMs = Date.now() - period * 24 * 60 * 60 * 1000;
+  const sinceDate = new Date(sinceMs).toISOString().split("T")[0];
+  const sinceIso = new Date(sinceMs).toISOString();
   const admin = createAdminClient();
 
-  const { data: deliveries } = await admin
-    .from("deliveries")
-    .select("id, status, scheduled_date, time_slot, delivery_window, completed_at, total_price, zone, booking_type")
-    .eq("organization_id", orgId)
-    .in("status", ["delivered", "completed"])
-    .gte("scheduled_date", since);
+  const deliverySelect =
+    "id, status, scheduled_date, time_slot, delivery_window, completed_at, total_price, zone, booking_type";
 
-  const all = deliveries || [];
+  const [{ data: bySchedule }, { data: byCompletion }] = await Promise.all([
+    admin
+      .from("deliveries")
+      .select(deliverySelect)
+      .eq("organization_id", orgId)
+      .in("status", ["delivered", "completed"])
+      .gte("scheduled_date", sinceDate),
+    admin
+      .from("deliveries")
+      .select(deliverySelect)
+      .eq("organization_id", orgId)
+      .in("status", ["delivered", "completed"])
+      .gte("completed_at", sinceIso),
+  ]);
+
+  const byId = new Map<string, NonNullable<typeof bySchedule>[number]>();
+  for (const d of [...(bySchedule || []), ...(byCompletion || [])]) {
+    byId.set(d.id, d);
+  }
+  const all = Array.from(byId.values());
   const total = all.length;
   const revenue = all.reduce((s, d) => s + Number(d.total_price || 0), 0);
   const avgRevenuePerDelivery = total > 0 ? Math.round(revenue / total) : 0;
@@ -45,9 +62,14 @@ export async function GET(
       .select("satisfaction_rating")
       .in("delivery_id", ids)
       .not("satisfaction_rating", "is", null);
-    if (pods && pods.length >= 5) {
-      const sum = pods.reduce((s, p) => s + (p.satisfaction_rating || 0), 0);
-      satisfactionScore = Math.round((sum / pods.length) * 10) / 10;
+    if (pods && pods.length > 0) {
+      const ratings = pods
+        .map((p) => Number(p.satisfaction_rating))
+        .filter((r) => r >= 1 && r <= 5);
+      if (ratings.length > 0) {
+        const sum = ratings.reduce((s, r) => s + r, 0);
+        satisfactionScore = Math.round((sum / ratings.length) * 10) / 10;
+      }
     }
   }
 

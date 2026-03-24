@@ -122,7 +122,7 @@ function chooseFollowUpVariant(
 
     if (eng.maxSessionSeconds < 30 && eng.pageViews <= 1) {
       return {
-        subject: "Your Yugo quote quick summary",
+        subject: "Only a few days left on your Yugo quote",
         template: "quote-followup-2-cold",
         extraData: { includeInlinePrices: true },
       };

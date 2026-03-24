@@ -52,6 +52,7 @@ interface Delivery {
 }
 
 const STATUS_BADGE: Record<string, string> = {
+  draft: "bg-[var(--brd)] text-[var(--tx3)] border border-[var(--brd)]",
   pending_approval: "bg-amber-500/10 text-amber-600 border border-amber-500/20",
   scheduled: "bg-blue-500/10 text-blue-500",
   confirmed: "bg-green-500/10 text-green-600",
@@ -67,6 +68,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL_OVERRIDE: Record<string, string> = {
+  draft: "Draft",
   pending_approval: "Pending Acceptance",
   in_progress: "In Progress",
   "in-transit": "In Transit",
@@ -323,6 +325,23 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
           </button>
         </div>
       </div>
+
+      {/* Draft notice */}
+      {statusKey === "draft" && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
+          <Info size={13} color="#999" />
+          <span className="text-[11px] text-[var(--tx3)] font-medium">Saved draft — complete the details and submit when ready.</span>
+          {onEditClick && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEditClick(); }}
+              className="ml-auto shrink-0 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[var(--brd)] text-[var(--tx)] hover:bg-[var(--brd)]/80 transition-colors"
+            >
+              Edit & submit
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Pending acceptance notice */}
       {statusKey === "pending_approval" && (

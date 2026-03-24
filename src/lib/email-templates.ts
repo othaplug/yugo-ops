@@ -1,8 +1,16 @@
+import { getClientEmailFooterTrs } from "@/lib/email/client-email-footer";
+import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import { getEmailBaseUrl } from "./email-base-url";
 import { formatCurrency } from "./format-currency";
 import { formatPhone } from "./phone";
 
-/* ═══ Premium email design: full-width black, table-based, editorial Equinox-style. No flexbox/grid/CSS variables. ═══ */
+/* ═══ Client emails: Equinox-style transaction shell (white logo bar + bordered dark card). Table-based. ═══ */
+const EQ_PAGE_BG = "#121212";
+const EQ_CARD_BG = "#161616";
+const EQ_CARD_BORDER = "rgba(255,255,255,0.22)";
+export const EQ_SANS = "Helvetica Neue,Helvetica,Arial,sans-serif";
+
+/* ═══ Legacy premium: full-width black + gold logo (quote follow-ups, reviews, low-sat). ═══ */
 const EMAIL_BG = "#000000";
 const EMAIL_GOLD = "#B8962E";
 const EMAIL_WINE = "#5C1A33";
@@ -17,15 +25,27 @@ export function getEmailLogoUrl(): string {
   return `${base}/images/yugo-logo-gold.png`;
 }
 
+/** Dark logo on white header bar (Equinox-style transaction emails). */
+export function getEmailLogoBlackUrl(): string {
+  const base = getEmailBaseUrl();
+  return `${base}/images/yugo-logo-black.png`;
+}
+
+/** Logo dimensions in HTML emails (~3.67:1). Keep compact so the mark doesn’t dominate the message. */
+export const EMAIL_LOGO_BLACK_W = 102;
+export const EMAIL_LOGO_BLACK_H = 28;
+export const EMAIL_LOGO_GOLD_W = 78;
+export const EMAIL_LOGO_GOLD_H = 21;
+
 /** Company footer line for all emails (claim, admin, lifecycle). */
 export const EMAIL_FOOTER_COMPANY = "Yugo Inc. 507 King Street E. Toronto, ON.";
 
-function emailLogoRow(): string {
+function classicEmailLogoRow(): string {
   const logoUrl = getEmailLogoUrl();
   return `
     <tr>
-      <td align="center" style="padding:32px 24px 0;">
-        <img src="${logoUrl}" alt="Yugo" width="100" height="27" style="display:block;border:0;max-width:100px;height:auto;margin:0 auto;" />
+      <td align="center" style="padding:28px 24px 0;">
+        <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;margin:0 auto;" />
       </td>
     </tr>
     <tr>
@@ -37,12 +57,22 @@ function emailLogoRow(): string {
   `;
 }
 
-/** Link color in footer for visibility on dark background (blue, address lines). */
-const EMAIL_FOOTER_LINK = "#60A5FA";
-/** Inner footer panel on client dark emails. */
-const EMAIL_FOOTER_BOX = "#2C2C2C";
-/** Muted secondary text in footer. */
-const EMAIL_FOOTER_MUTED = "#A0A0A0";
+function equinoxEmailLogoRow(): string {
+  const logoUrl = getEmailLogoBlackUrl();
+  return `
+    <tr>
+      <td align="center" style="padding:0;background-color:#FFFFFF;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+          <tr>
+            <td align="center" style="padding:18px 20px 20px;background-color:#FFFFFF;">
+              <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  `;
+}
 
 /** Client contact email and phone for footer. */
 function getContactEmail(): string {
@@ -52,84 +82,146 @@ function getContactPhone(): string {
   return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) || "(647) 370-4525";
 }
 
-/**
- * Table rows: security note (on black), then grey card with legal/support block.
- * Table-based for email clients; matches Yugo dark brand emails.
- */
+/** Equinox-style footer rows (tokens replaced at send time). */
 function emailFooterRow(_loginUrl?: string): string {
   void _loginUrl;
-  const base = getEmailBaseUrl();
-  const year = new Date().getFullYear();
-  const privacyUrl = `${base}/privacy`;
-  const termsUrl = `${base}/legal/terms-of-use`;
-  const contactEmail = getContactEmail();
-  const contactPhone = getContactPhone();
-  const mailto = `mailto:${contactEmail}`;
-  const mailtoPrefs = `mailto:${contactEmail}?subject=${encodeURIComponent("Communication preferences")}`;
-  const tel = `tel:${contactPhone.replace(/\s/g, "").replace(/[()]/g, "")}`;
-  const addrLine1 = "507 King Street E";
-  const addrLine2 = "Toronto, Ontario";
-  const addrLine3 = "M5A 1M3";
-  const fullAddr = `${addrLine1}, ${addrLine2} ${addrLine3}, Canada`;
-  const mapsUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(fullAddr)}`;
+  return getClientEmailFooterTrs();
+}
 
+/**
+ * Equinox-style transaction wrapper: charcoal field, white logo bar, thin-bordered dark card, shared footer.
+ */
+export function emailLayout(innerHtml: string, footerLoginUrl?: string): string {
+  void footerLoginUrl;
   return `
-    <tr>
-      <td align="center" style="padding:28px 24px 14px;font-family:'DM Sans',sans-serif;">
-        <p style="margin:0;max-width:520px;font-size:11px;line-height:1.55;color:${EMAIL_TX};text-align:center;">
-          Do not share this email with others. It may contain links that provide access to your booking information.
-        </p>
-      </td>
-    </tr>
-    <tr>
-      <td align="center" style="padding:0 24px 40px;font-family:'DM Sans',sans-serif;">
-        <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;background-color:${EMAIL_FOOTER_BOX};border-radius:12px;">
-          <tr>
-            <td align="center" style="padding:28px 24px 32px;">
-              <p style="margin:0 0 18px;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
-                Please don&apos;t reply to this email &mdash; this address is not monitored and we won&apos;t receive your message.
-              </p>
-              <p style="margin:0 0 22px;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
-                Need help? <a href="${mailto}" style="color:${EMAIL_TX};text-decoration:underline;">Email us</a>
-                <span style="color:${EMAIL_FOOTER_MUTED};"> &middot; </span>
-                <a href="${tel}" style="color:${EMAIL_TX};text-decoration:underline;">Call ${contactPhone}</a>
-              </p>
-              <p style="margin:0 0 26px;font-size:12px;line-height:1.65;text-align:center;">
-                <a href="${mailtoPrefs}" style="color:${EMAIL_TX};text-decoration:underline;">Update communication preferences</a>
-              </p>
-              <p style="margin:0 0 22px;font-size:11px;line-height:1.5;color:${EMAIL_FOOTER_MUTED};text-align:center;">
-                &copy; ${year} Yugo Inc.
-              </p>
-              <p style="margin:0 0 6px;font-size:12px;line-height:1.5;text-align:center;">
-                <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine1}</a>
-              </p>
-              <p style="margin:0 0 6px;font-size:12px;line-height:1.5;text-align:center;">
-                <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine2}</a>
-              </p>
-              <p style="margin:0 0 22px;font-size:12px;line-height:1.5;text-align:center;">
-                <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine3}</a>
-              </p>
-              <p style="margin:0 0 18px;font-size:11px;line-height:1.5;color:${EMAIL_FOOTER_MUTED};text-align:center;">
-                Registered in Ontario, Canada
-              </p>
-              <p style="margin:0;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
-                <a href="${privacyUrl}" style="color:${EMAIL_TX};text-decoration:underline;">Privacy policy</a>
-                <span style="color:${EMAIL_FOOTER_MUTED};margin:0 10px;">|</span>
-                <a href="${termsUrl}" style="color:${EMAIL_TX};text-decoration:underline;">Terms of use</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EQ_PAGE_BG};">
+  ${equinoxEmailLogoRow()}
+  <tr>
+    <td align="center" style="padding:24px 16px 32px;">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;border:1px solid ${EQ_CARD_BORDER};background-color:${EQ_CARD_BG};">
+        <tr>
+          <td style="padding:28px 24px 32px;font-family:${EQ_SANS};color:#FFFFFF;">
+            ${innerHtml}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  ${emailFooterRow()}
+</table>
   `;
 }
 
-/** Table-based email wrapper: full-width dark background, logo, content (max 560px centered), footer. */
-export function emailLayout(innerHtml: string, footerLoginUrl?: string): string {
+const EQ_PROMO_PAGE = "#000000";
+
+/**
+ * Full-black luxury promo shell: white logo bar, pure #000 body, left-aligned editorial copy.
+ * Use for quote follow-ups, referral, re-engagement, and nurture emails.
+ */
+export function equinoxPromoLayout(innerHtml: string): string {
+  return `
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EQ_PROMO_PAGE};">
+  ${equinoxEmailLogoRow()}
+  <tr>
+    <td align="center" style="padding:0;background-color:${EQ_PROMO_PAGE};">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;" role="presentation">
+        <tr>
+          <td style="padding:44px 32px 52px;text-align:left;font-family:${EQ_SANS};color:#FFFFFF;background-color:${EQ_PROMO_PAGE};">
+            ${innerHtml}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  ${emailFooterRow()}
+</table>
+  `;
+}
+
+/** Sharp-corner white rectangle, black label — Equinox promo CTA. Preceded by a thin separator. */
+export function equinoxPromoCta(url: string, label: string): string {
+  return `
+<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:36px 0 0;">
+  <tr>
+    <td style="padding-bottom:28px;border-top:1px solid rgba(255,255,255,0.18);"></td>
+  </tr>
+  <tr>
+    <td>
+      <a href="${url}" style="display:inline-block;background-color:#FFFFFF;color:#000000;padding:16px 40px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;text-decoration:none;font-family:${EQ_SANS};border-radius:0;line-height:1;">${label}</a>
+    </td>
+  </tr>
+</table>`;
+}
+
+/** Muted fine-print line beneath the CTA. */
+export function equinoxPromoFinePrint(text: string): string {
+  return `<p style="font-size:11px;color:#595959;margin:20px 0 0;line-height:1.55;font-family:${EQ_SANS};text-align:left;">${text}</p>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Estate (White Glove) confirmation — cream, wine + gold palette.
+   Typography: Georgia headers, DM Sans body. Generous spacing.
+   ══════════════════════════════════════════════════════════════════ */
+const ESTATE_CREAM_PAGE = "#F3EDE4";
+const ESTATE_CREAM_CARD = "#FFFCF9";
+const ESTATE_WINE = "#5C1A33";
+const ESTATE_GOLD_DARK = "#A67C2A";
+const ESTATE_BODY = "#3A3532";
+const ESTATE_BODY_MUTED = "#6B635C";
+const ESTATE_DM_SANS = "'DM Sans',Helvetica Neue,Helvetica,Arial,sans-serif";
+const ESTATE_GEORGIA = "Georgia,'Times New Roman',Times,serif";
+
+/** Thin wine rule with generous breathing room — replaces ━━━━ dividers. */
+function estateDivider(): string {
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:36px 0 32px;border-top:1px solid rgba(92,26,51,0.14);font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
+}
+
+/** Georgia small-caps section eyebrow. */
+function estateLabel(text: string): string {
+  return `<p style="font-family:${ESTATE_GEORGIA};font-size:10px;font-weight:700;letter-spacing:0.24em;color:${ESTATE_WINE};text-transform:uppercase;margin:0 0 20px;line-height:1.4;">${text}</p>`;
+}
+
+/**
+ * Estate luxury wrapper: warm cream page, logo on cream, wine/gold gradient hairline,
+ * ivory card with wine-tint border. Completely distinct from the dark promo shell.
+ */
+function estateLuxuryCreamLayout(innerHtml: string): string {
+  const logoUrl = getEmailLogoBlackUrl();
+  return `
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${ESTATE_CREAM_PAGE};">
+  <tr>
+    <td align="center" style="padding:36px 24px 16px;background-color:${ESTATE_CREAM_PAGE};">
+      <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="padding:0 24px 16px;background-color:${ESTATE_CREAM_PAGE};">
+      <table width="72" cellpadding="0" cellspacing="0" border="0" role="presentation" align="center">
+        <tr><td style="height:2px;background:linear-gradient(90deg,${ESTATE_WINE},${ESTATE_GOLD_DARK},${ESTATE_WINE});font-size:0;line-height:0;">&nbsp;</td></tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="padding:4px 20px 60px;background-color:${ESTATE_CREAM_PAGE};">
+      <table width="580" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);">
+        <tr>
+          <td style="padding:52px 48px 56px;font-family:${ESTATE_DM_SANS};color:${ESTATE_BODY};font-size:15px;line-height:1.78;">
+            ${innerHtml}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  ${emailFooterRow()}
+</table>
+  `;
+}
+
+/** Previous Yugo look: gold logo on black, DM Sans — use for quote follow-ups, reviews, low-satisfaction. */
+export function legacyEmailLayout(innerHtml: string, footerLoginUrl?: string): string {
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL_BG};font-family:'DM Sans',sans-serif;">
-  ${emailLogoRow()}
+  ${classicEmailLogoRow()}
   <tr>
     <td align="center" style="padding:0 24px 32px;">
       <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;">
@@ -165,24 +257,31 @@ export function statusUpdateEmailHtml(params: {
     </tr>
   `
     : "";
-  const bottomPad = includeFooter ? "16px" : "40px";
+  const bottomPad = includeFooter ? "24px" : "40px";
+  const footerBlock = includeFooter ? emailFooterRow() : "";
   return `
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL_BG};font-family:'DM Sans',sans-serif;">
-  ${emailLogoRow()}
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EQ_PAGE_BG};">
+  ${equinoxEmailLogoRow()}
   <tr>
-    <td align="center" style="padding:0 24px ${bottomPad};">
-      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;">
+    <td align="center" style="padding:24px 16px ${bottomPad};">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;border:1px solid ${EQ_CARD_BORDER};background-color:${EQ_CARD_BG};">
         <tr>
-          <td style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;letter-spacing:-0.3px;color:${EMAIL_TX};padding-bottom:16px;line-height:1.25;">${headline}</td>
+          <td style="padding:28px 24px 32px;font-family:${EQ_SANS};">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-size:18px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${EMAIL_TX};padding-bottom:14px;line-height:1.3;">${headline}</td>
+              </tr>
+              <tr>
+                <td style="font-size:14px;color:#A3A3A3;line-height:1.6;">${body}</td>
+              </tr>
+              ${ctaHtml}
+            </table>
+          </td>
         </tr>
-        <tr>
-          <td style="font-size:14px;color:${EMAIL_TX2};line-height:1.5;">${body}</td>
-        </tr>
-        ${ctaHtml}
       </table>
     </td>
   </tr>
-  ${includeFooter ? emailFooterRow() : ""}
+  ${footerBlock}
 </table>
   `;
 }
@@ -192,65 +291,7 @@ function emailLogo() {
   const logoUrl = getEmailLogoUrl();
   return `
     <div style="text-align:center;margin-bottom:28px">
-      <img src="${logoUrl}" alt="Yugo" width="120" height="32" style="display:inline-block;max-width:120px;height:auto;border:0" />
-    </div>
-  `;
-}
-
-function emailFooter(_loginUrl?: string) {
-  void _loginUrl;
-  const base = getEmailBaseUrl();
-  const year = new Date().getFullYear();
-  const privacyUrl = `${base}/privacy`;
-  const termsUrl = `${base}/legal/terms-of-use`;
-  const contactEmail = getContactEmail();
-  const contactPhone = getContactPhone();
-  const mailto = `mailto:${contactEmail}`;
-  const mailtoPrefs = `mailto:${contactEmail}?subject=${encodeURIComponent("Communication preferences")}`;
-  const tel = `tel:${contactPhone.replace(/\s/g, "").replace(/[()]/g, "")}`;
-  const addrLine1 = "507 King Street E";
-  const addrLine2 = "Toronto, Ontario";
-  const addrLine3 = "M5A 1M3";
-  const fullAddr = `${addrLine1}, ${addrLine2} ${addrLine3}, Canada`;
-  const mapsUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(fullAddr)}`;
-  return `
-    <div style="font-family:'DM Sans',sans-serif;">
-      <p style="text-align:center;margin:28px auto 14px;font-size:11px;line-height:1.55;color:${EMAIL_TX};max-width:520px;">
-        Do not share this email with others. It may contain links that provide access to your booking information.
-      </p>
-      <div style="max-width:560px;margin:0 auto 40px;background-color:${EMAIL_FOOTER_BOX};border-radius:12px;padding:28px 24px 32px;">
-        <p style="margin:0 0 18px;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
-          Please don&apos;t reply to this email &mdash; this address is not monitored and we won&apos;t receive your message.
-        </p>
-        <p style="margin:0 0 22px;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
-          Need help? <a href="${mailto}" style="color:${EMAIL_TX};text-decoration:underline;">Email us</a>
-          <span style="color:${EMAIL_FOOTER_MUTED};"> &middot; </span>
-          <a href="${tel}" style="color:${EMAIL_TX};text-decoration:underline;">Call ${contactPhone}</a>
-        </p>
-        <p style="margin:0 0 26px;font-size:12px;line-height:1.65;text-align:center;">
-          <a href="${mailtoPrefs}" style="color:${EMAIL_TX};text-decoration:underline;">Update communication preferences</a>
-        </p>
-        <p style="margin:0 0 22px;font-size:11px;line-height:1.5;color:${EMAIL_FOOTER_MUTED};text-align:center;">
-          &copy; ${year} Yugo Inc.
-        </p>
-        <p style="margin:0 0 6px;font-size:12px;line-height:1.5;text-align:center;">
-          <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine1}</a>
-        </p>
-        <p style="margin:0 0 6px;font-size:12px;line-height:1.5;text-align:center;">
-          <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine2}</a>
-        </p>
-        <p style="margin:0 0 22px;font-size:12px;line-height:1.5;text-align:center;">
-          <a href="${mapsUrl}" style="color:${EMAIL_FOOTER_LINK};text-decoration:underline;">${addrLine3}</a>
-        </p>
-        <p style="margin:0 0 18px;font-size:11px;line-height:1.5;color:${EMAIL_FOOTER_MUTED};text-align:center;">
-          Registered in Ontario, Canada
-        </p>
-        <p style="margin:0;font-size:12px;line-height:1.65;color:${EMAIL_TX};text-align:center;">
-          <a href="${privacyUrl}" style="color:${EMAIL_TX};text-decoration:underline;">Privacy policy</a>
-          <span style="color:${EMAIL_FOOTER_MUTED};margin:0 10px;">|</span>
-          <a href="${termsUrl}" style="color:${EMAIL_TX};text-decoration:underline;">Terms of use</a>
-        </p>
-      </div>
+      <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:inline-block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0" />
     </div>
   `;
 }
@@ -880,19 +921,8 @@ export function bookingConfirmationEmail(params: {
   balanceRemaining: number;
   trackingUrl: string;
 }): string {
-  const {
-    clientName,
-    moveCode,
-    moveDate,
-    fromAddress,
-    toAddress,
-    tierLabel,
-    serviceLabel,
-    totalWithTax,
-    depositPaid,
-    balanceRemaining,
-    trackingUrl,
-  } = params;
+  const { clientName, moveCode, moveDate, fromAddress, toAddress, tierLabel, serviceLabel, totalWithTax, depositPaid, balanceRemaining, trackingUrl } = params;
+  const name = (clientName || "").split(" ")[0];
 
   const dateDisplay = moveDate
     ? new Date(moveDate + "T00:00:00").toLocaleDateString("en-CA", {
@@ -903,55 +933,51 @@ export function bookingConfirmationEmail(params: {
       })
     : "To be confirmed";
 
-  return emailLayout(`
-    <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Booking Confirmed</div>
-    <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;margin:0 0 12px;color:#FFFFFF">You&apos;re All Set${clientName ? `, ${clientName}` : ""}!</h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
-      Your deposit has been received and your ${serviceLabel.toLowerCase()} is confirmed.
-    </p>
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${name ? `${name}, you` : "You"}&apos;re all set.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0 0 28px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your deposit is in and your ${serviceLabel.toLowerCase()} is confirmed. Here are your details.</p>
 
-    <div style="text-align:center;margin-bottom:24px">
-      <span style="display:inline-block;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(201,169,98,0.15);color:#C9A962;border:1px solid rgba(201,169,98,0.3)">
-        ${moveCode}
-      </span>
-    </div>
-
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:10px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:14px">Move Details</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:3px 0">Service:</td><td style="color:#FFFFFF;font-weight:600;padding:3px 0;text-align:right">${serviceLabel}${tierLabel ? ` &mdash; ${tierLabel}` : ""}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">Date:</td><td style="color:#FFFFFF;font-weight:600;padding:3px 0;text-align:right">${dateDisplay}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">From:</td><td style="color:#FFFFFF;font-weight:600;padding:3px 0;text-align:right">${fromAddress}</td></tr>
-        <tr><td style="color:#666;padding:3px 0">To:</td><td style="color:#FFFFFF;font-weight:600;padding:3px 0;text-align:right">${toAddress}</td></tr>
+    <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:24px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px;border-collapse:collapse;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">
+        <tr>
+          <td style="color:#595959;padding:8px 0;vertical-align:top;">Booking</td>
+          <td style="color:#FFFFFF;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;letter-spacing:0.06em;">${moveCode}</td>
+        </tr>
+        <tr>
+          <td style="color:#595959;padding:8px 0;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">Service</td>
+          <td style="color:#FFFFFF;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">${serviceLabel}${tierLabel ? ` &mdash; ${tierLabel}` : ""}</td>
+        </tr>
+        <tr>
+          <td style="color:#595959;padding:8px 0;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">Date</td>
+          <td style="color:#FFFFFF;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">${dateDisplay}</td>
+        </tr>
+        <tr>
+          <td style="color:#595959;padding:8px 0;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">From</td>
+          <td style="color:#FFFFFF;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">${fromAddress}</td>
+        </tr>
+        <tr>
+          <td style="color:#595959;padding:8px 0;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">To</td>
+          <td style="color:#FFFFFF;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">${toAddress}</td>
+        </tr>
+        <tr>
+          <td style="color:#2D9F5A;font-weight:600;padding:8px 0;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">&#10003; Deposit paid</td>
+          <td style="color:#2D9F5A;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">${formatCurrency(depositPaid)}</td>
+        </tr>
+        <tr>
+          <td style="color:#595959;padding:8px 0;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">Balance remaining</td>
+          <td style="color:#FFFFFF;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">${formatCurrency(balanceRemaining)}</td>
+        </tr>
+        <tr>
+          <td style="color:#595959;padding:8px 0;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">Total (incl. HST)</td>
+          <td style="color:#FFFFFF;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(255,255,255,0.07);">${formatCurrency(totalWithTax)}</td>
+        </tr>
       </table>
     </div>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:24px">
-      <div style="font-size:10px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:14px">Payment Summary</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:3px 0">Total (incl. HST):</td><td style="color:#FFFFFF;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(totalWithTax)}</td></tr>
-        <tr><td style="color:#2D9F5A;font-weight:600;padding:3px 0">&#10003; Deposit paid:</td><td style="color:#2D9F5A;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(depositPaid)}</td></tr>
-        <tr><td colspan="2" style="border-top:1px solid #2A2A2A;padding:0;height:8px"></td></tr>
-        <tr><td style="color:#666;padding:3px 0">Balance remaining:</td><td style="color:#C9A962;font-weight:600;padding:3px 0;text-align:right">${formatCurrency(balanceRemaining)}</td></tr>
-      </table>
-    </div>
+    <p style="font-size:14px;color:#A3A3A3;line-height:1.65;margin:24px 0 0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your coordinator will reach out within 24 hours to confirm crew and timing. Track your move in real-time on move day.</p>
 
-    <div style="margin-bottom:24px">
-      <div style="font-size:10px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:10px">What Happens Next</div>
-      <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
-        <div>1. Your coordinator will reach out within 24 hours</div>
-        <div>2. We&apos;ll confirm your crew and timing details</div>
-        <div>3. Track your move anytime using the link below</div>
-      </div>
-    </div>
-
-    <a href="${trackingUrl}" style="display:block;background:#C9A962;color:#000000;padding:13px 32px;border-radius:0;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;margin-bottom:16px;text-align:center">
-      Track Your Move
-    </a>
-
-    <p style="font-size:11px;color:#666;margin-top:16px;text-align:center">
-      Questions? Reply to this email or call us anytime.
-    </p>
+    ${equinoxPromoCta(trackingUrl, "Track Your Move")}
+    ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
   `);
 }
 
@@ -1048,7 +1074,7 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
     </td></tr></table>
 
     <p style="font-size:11px;color:#666;margin:0 0 16px;text-align:center">
-      Questions? Reply to this email or call us anytime.
+      Questions? Email ${getClientSupportEmail()} or call us anytime.
     </p>
   `);
 }
@@ -1121,97 +1147,156 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
 
 export function estateConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
-  const coordName = p.coordinatorName || "Your coordinator";
-  const DIV = `<div style="width:100%;height:1px;background:linear-gradient(to right,transparent,#C9A96244,transparent);margin:24px 0"></div>`;
+  const coordName = p.coordinatorName || "your coordinator";
+  const firstName = (p.clientName || "").split(" ")[0];
 
-  return emailLayout(`
-    <div style="font-size:10px;font-weight:700;color:#5C1A33;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Estate Experience</div>
-    <h1 style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:400;margin:0 0 12px;color:#FFFFFF;line-height:1.3">
-      Welcome to your Yugo Estate experience${p.clientName ? `, ${p.clientName}` : ""}.
-    </h1>
-    <p style="font-size:14px;color:#B8B5B0;line-height:1.7;margin:0 0 28px">
+  const canonicalIncludes = [
+    `Dedicated crew of ${p.crewSize} &mdash; hand-selected for your move`,
+    `${p.truckDisplayName} &mdash; exclusively reserved for you`,
+    `Pre-move inventory walkthrough (${coordName} will call to schedule this within 24 hours)`,
+    "Premium quilted blankets for every piece",
+    "Complete floor, wall, and doorway protection",
+    "Full furniture disassembly and reassembly",
+    "White glove handling for fragile and high-value items",
+    "Professional cleaning of both properties",
+    "Full Replacement Value Protection ($10K/item, $100K total)",
+    "Dedicated move coordinator from start to finish",
+    "Real-time GPS tracking with personal status updates",
+    "Post-move quality inspection",
+  ];
+
+  const includesRows = [
+    ...canonicalIncludes,
+    ...(p.includes || []).filter(
+      (inc) => !canonicalIncludes.some((ci) => ci.toLowerCase().includes(inc.toLowerCase().slice(0, 20)))
+    ),
+  ]
+    .map((inc) => `<tr><td style="padding:7px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:7px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">${inc}</td></tr>`)
+    .join("");
+
+  return estateLuxuryCreamLayout(`
+    <p style="font-family:${ESTATE_DM_SANS};font-size:15px;color:${ESTATE_BODY_MUTED};margin:0 0 36px;line-height:1.6;">Dear ${firstName || p.clientName || ""},</p>
+
+    <h1 style="font-family:${ESTATE_GEORGIA};font-size:30px;font-weight:400;color:${ESTATE_WINE};margin:0 0 20px;line-height:1.35;letter-spacing:0.01em;">Welcome to your<br/>Yugo Estate experience.</h1>
+
+    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 0;line-height:1.78;">
       Thank you for entrusting Yugo with your move. Your Estate experience has been confirmed, and every detail is being prepared with care.
     </p>
 
-    ${DIV}
+    ${estateDivider()}
 
-    <div style="margin-bottom:4px">
-      <div style="font-size:10px;color:#5C1A33;text-transform:uppercase;font-weight:700;letter-spacing:3px;margin-bottom:14px">Your Estate Move</div>
-      <table style="width:100%;font-size:13px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:6px 0">Date:</td><td style="color:#FFFFFF;font-weight:600;padding:6px 0;text-align:right">${dateStr}</td></tr>
-        <tr><td style="color:#666;padding:6px 0">Time:</td><td style="color:#FFFFFF;font-weight:600;padding:6px 0;text-align:right">${p.timeWindow} &mdash; your crew will arrive promptly</td></tr>
-        <tr><td style="color:#666;padding:6px 0">Origin:</td><td style="color:#FFFFFF;font-weight:600;padding:6px 0;text-align:right">${p.fromAddress}</td></tr>
-        <tr><td style="color:#666;padding:6px 0">Destination:</td><td style="color:#FFFFFF;font-weight:600;padding:6px 0;text-align:right">${p.toAddress}</td></tr>
-        ${p.crewNames ? `<tr><td style="color:#666;padding:6px 0">Your Crew:</td><td style="color:#FFFFFF;font-weight:600;padding:6px 0;text-align:right">${p.crewNames}</td></tr>` : ""}
-        <tr><td style="color:#666;padding:6px 0">Your Vehicle:</td><td style="color:#FFFFFF;font-weight:600;padding:6px 0;text-align:right">${p.truckDisplayName}</td></tr>
-        <tr><td style="color:#666;padding:6px 0">Your Coordinator:</td><td style="color:#FFFFFF;font-weight:600;padding:6px 0;text-align:right">${coordName}</td></tr>
-      </table>
-    </div>
+    ${estateLabel("Your Estate Move")}
 
-    ${DIV}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;border-collapse:collapse;">
+      <tr>
+        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;width:38%;vertical-align:top;">Date</td>
+        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;">${dateStr}</td>
+      </tr>
+      <tr>
+        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Time</td>
+        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.timeWindow} &mdash; your crew will arrive promptly</td>
+      </tr>
+      <tr>
+        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Origin</td>
+        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.fromAddress}</td>
+      </tr>
+      <tr>
+        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Destination</td>
+        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.toAddress}</td>
+      </tr>
+      ${p.crewNames ? `
+      <tr>
+        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Your Crew</td>
+        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.crewNames}</td>
+      </tr>` : ""}
+      <tr>
+        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Your Vehicle</td>
+        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.truckDisplayName}</td>
+      </tr>
+      <tr>
+        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Your Coordinator</td>
+        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${coordName}</td>
+      </tr>
+    </table>
 
-    <div style="margin-bottom:4px">
-      <div style="font-size:10px;color:#5C1A33;text-transform:uppercase;font-weight:700;letter-spacing:3px;margin-bottom:14px">Your Estate Experience Includes</div>
-      <div style="font-size:12px;color:#B8B5B0;line-height:2.2">
-        ${(p.includes || []).map((inc) => `<div><span style="color:#C9A962">&#10022;</span> ${inc}</div>`).join("")}
-      </div>
-    </div>
+    ${estateDivider()}
 
-    ${DIV}
+    ${estateLabel("Your Estate Experience Includes")}
 
-    <div style="margin-bottom:4px">
-      <div style="font-size:10px;color:#5C1A33;text-transform:uppercase;font-weight:700;letter-spacing:3px;margin-bottom:14px">What Happens Next</div>
-      <p style="font-size:13px;color:#B8B5B0;line-height:1.7;margin:0 0 16px">
-        Within the next 24 hours, your coordinator ${coordName} will reach out personally to:
-      </p>
-      <div style="font-size:13px;color:#B8B5B0;line-height:2">
-        <div>&middot; Schedule your pre-move walkthrough (in-person or virtual)</div>
-        <div>&middot; Confirm any items requiring special handling</div>
-        <div>&middot; Review your timeline and any access requirements</div>
-        <div>&middot; Answer every question you have</div>
-      </div>
-      <p style="font-size:13px;color:#B8B5B0;line-height:1.7;margin:16px 0 0">
-        72 hours before your move, you&apos;ll receive a detailed itinerary with crew names, vehicle details, and your move-day timeline.
-      </p>
-      <p style="font-size:13px;color:#B8B5B0;line-height:1.7;margin:8px 0 0">
-        On move day, ${coordName} will be available by phone throughout the entire process.
-      </p>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+      ${includesRows}
+    </table>
 
-    ${DIV}
+    ${estateDivider()}
 
-    <div style="margin-bottom:4px">
-      <div style="font-size:10px;color:#5C1A33;text-transform:uppercase;font-weight:700;letter-spacing:3px;margin-bottom:14px">Your Move Tracker</div>
-      <p style="font-size:13px;color:#B8B5B0;line-height:1.6;margin:0 0 12px">Follow every step in real-time:</p>
-    </div>
+    ${estateLabel("What Happens Next")}
 
-    <a href="${p.trackingUrl}" style="display:block;background:#5C1A33;color:#FFFFFF;padding:13px 32px;border-radius:0;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;margin-bottom:20px;text-align:center">
-      Track Your Move
-    </a>
+    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 20px;line-height:1.78;">
+      Within the next 24 hours, ${p.coordinatorName ? `<strong>${p.coordinatorName}</strong>` : "your coordinator"} will reach out personally to:
+    </p>
 
-    ${DIV}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-bottom:28px;">
+      <tr><td style="padding:6px 0;vertical-align:top;width:18px;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Schedule your pre-move walkthrough (in-person or virtual)</td></tr>
+      <tr><td style="padding:6px 0;vertical-align:top;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Confirm any items requiring special handling</td></tr>
+      <tr><td style="padding:6px 0;vertical-align:top;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Review your timeline and any access requirements</td></tr>
+      <tr><td style="padding:6px 0;vertical-align:top;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Answer every question you have</td></tr>
+      <tr><td style="padding:6px 0;vertical-align:top;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Send your welcome package</td></tr>
+    </table>
 
-    <div style="text-align:center;margin-bottom:4px">
-      <div style="font-family:'Instrument Serif',serif;font-size:18px;color:#C9A962;margin-bottom:4px">Investment: ${formatCurrency(p.totalWithTax)}</div>
-      <div style="font-size:11px;color:#666">This is your guaranteed rate. No hourly charges. No surprises. No hidden fees.</div>
-      <div style="margin-top:8px;font-size:12px">
-        <span style="color:#2D9F5A;font-weight:600">&#10003; Deposit paid: ${formatCurrency(p.depositPaid)}</span>
-        <span style="color:#666;margin:0 8px">&middot;</span>
-        <span style="color:#C9A962;font-weight:600">Balance: ${formatCurrency(p.balanceRemaining)}</span>
-      </div>
-    </div>
+    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 16px;line-height:1.78;">
+      72 hours before your move, you&apos;ll receive a detailed itinerary with crew names, vehicle details, and your move-day timeline.
+    </p>
+    <p style="font-size:15px;color:${ESTATE_BODY};margin:0;line-height:1.78;">
+      On move day, ${p.coordinatorName ? `<strong>${p.coordinatorName}</strong>` : "your coordinator"} will be available by phone throughout the entire process.
+    </p>
 
-    ${DIV}
+    ${estateDivider()}
 
-    <div style="text-align:center;margin-bottom:8px">
-      <p style="font-size:14px;color:#B8B5B0;font-style:italic;margin:0 0 16px">It&apos;s our privilege to handle your move.</p>
-      ${p.coordinatorName ? `
-        <div style="font-size:13px;color:#FFFFFF;font-weight:600">${p.coordinatorName}</div>
-        <div style="font-size:11px;color:#666;margin-top:2px">Move Coordinator, Yugo</div>
-        ${p.coordinatorPhone ? `<div style="font-size:11px;color:#C9A962;margin-top:4px">${formatPhone(p.coordinatorPhone)}</div>` : ""}
-        ${p.coordinatorEmail ? `<div style="font-size:11px;color:#C9A962;margin-top:2px">${p.coordinatorEmail}</div>` : ""}
-      ` : ""}
-    </div>
+    ${estateLabel("Your Move Tracker")}
+
+    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 24px;line-height:1.78;">Follow every step in real-time:</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:16px;">
+      <tr>
+        <td>
+          <a href="${p.trackingUrl}" style="display:inline-block;background-color:${ESTATE_WINE};color:#FFFFFF;padding:16px 40px;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;text-decoration:none;font-family:${ESTATE_DM_SANS};border-radius:0;line-height:1;">Track Your Move</a>
+        </td>
+      </tr>
+    </table>
+
+    ${estateDivider()}
+
+    ${estateLabel("Investment")}
+
+    <p style="font-family:${ESTATE_GEORGIA};font-size:28px;color:${ESTATE_WINE};margin:0 0 10px;line-height:1.2;letter-spacing:0.01em;">${formatCurrency(p.totalWithTax)}</p>
+    <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0 0 20px;line-height:1.65;">This is your guaranteed rate. No hourly charges. No surprises. No hidden fees.</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px;border-collapse:collapse;">
+      <tr>
+        <td style="color:#2D7A4F;font-weight:600;padding:6px 0;">&#10003;&nbsp; Deposit paid</td>
+        <td style="color:#2D7A4F;font-weight:600;padding:6px 0;text-align:right;">${formatCurrency(p.depositPaid)}</td>
+      </tr>
+      <tr>
+        <td style="color:${ESTATE_BODY_MUTED};padding:6px 0;border-top:1px solid rgba(92,26,51,0.1);">Balance remaining</td>
+        <td style="color:${ESTATE_GOLD_DARK};font-weight:600;padding:6px 0;text-align:right;border-top:1px solid rgba(92,26,51,0.1);">${formatCurrency(p.balanceRemaining)}</td>
+      </tr>
+    </table>
+
+    ${estateDivider()}
+
+    <p style="font-family:${ESTATE_GEORGIA};font-size:16px;font-style:italic;color:${ESTATE_BODY_MUTED};margin:0 0 28px;line-height:1.6;">It&apos;s our privilege to handle your move.</p>
+
+    ${p.coordinatorName ? `
+    <p style="font-size:16px;font-weight:700;color:${ESTATE_BODY};margin:0 0 4px;font-family:${ESTATE_DM_SANS};">${p.coordinatorName}</p>
+    <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0 0 8px;font-family:${ESTATE_DM_SANS};">Move Coordinator, Yugo</p>
+    <p style="font-size:13px;color:${ESTATE_BODY};margin:0;font-family:${ESTATE_DM_SANS};">
+      ${p.coordinatorPhone ? `${formatPhone(p.coordinatorPhone)}` : ""}${p.coordinatorPhone && p.coordinatorEmail ? `&nbsp;&middot;&nbsp;` : ""}${p.coordinatorEmail ? `${p.coordinatorEmail}` : ""}
+    </p>
+    ` : `
+    <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0;font-family:${ESTATE_DM_SANS};">Yugo Estate Team</p>
+    `}
+
+    <p style="font-family:${ESTATE_GEORGIA};font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${ESTATE_WINE};margin:32px 0 0;line-height:1.4;">Yugo &mdash; The Art of Moving</p>
   `);
 }
 
@@ -1371,7 +1456,7 @@ export function claimStatusUpdateEmailHtml(claimNumber: string, clientName: stri
       <p style="font-size:14px;color:${EMAIL_TX2};margin:0;"><span style="text-decoration:line-through;color:${EMAIL_TX3};">${escapeHtml(fromLabel)}</span> &rarr; <strong style="color:${EMAIL_TX};">${escapeHtml(toLabel)}</strong></p>
     </div>
     ${notesBlock}
-    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0;">If you have any questions, reply to this email and our team will get back to you.</p>
+    <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0;">If you have any questions, email ${getClientSupportEmail()} and our team will get back to you.</p>
   `;
   return emailLayout(inner);
 }
@@ -1386,7 +1471,7 @@ export function claimDenialEmailHtml(claimNumber: string, clientName: string, re
       <p style="font-size:14px;color:#FCA5A5;line-height:1.6;margin:0;">Unfortunately, we were unable to approve this claim.</p>
     </div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;"><strong>Reason:</strong> ${escapeHtml(reason)}</p>
-    <p style="font-size:13px;color:${EMAIL_TX3};line-height:1.5;margin:0;">If you have additional information to support your claim, please reply to this email.</p>
+    <p style="font-size:13px;color:${EMAIL_TX3};line-height:1.5;margin:0;">If you have additional information to support your claim, please email ${getClientSupportEmail()}.</p>
   `;
   return emailLayout(inner);
 }

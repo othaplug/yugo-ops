@@ -437,15 +437,15 @@ export default function PartnerBillingTab({
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 border-t border-[var(--brd)]/30">
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Billed</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Billed</div>
             <div className="text-[24px] font-bold text-[var(--tx)] font-hero">{formatCurrency(totalRevenue)}</div>
           </div>
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Paid</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Paid</div>
             <div className="text-[24px] font-bold text-[#2D9F5A] font-hero">{formatCurrency(totalPaid)}</div>
           </div>
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
             <div className="text-[24px] font-bold text-[var(--red)] font-hero">{formatCurrency(data.outstandingAmount)}</div>
             {data.outstandingDueDate && (
               <div className="text-[11px] text-[var(--tx3)] mt-0.5">
@@ -462,7 +462,7 @@ export default function PartnerBillingTab({
 function SLACircle({ value, label, sublabel, accent }: { value: string; label: string; sublabel: string; accent?: boolean }) {
   return (
     <div>
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{label}</div>
       <div className={`text-[24px] font-bold font-hero ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
       <div className="text-[11px] text-[var(--tx3)] mt-0.5">{sublabel}</div>
     </div>
@@ -484,7 +484,7 @@ function ComparisonCard({
 }) {
   return (
     <div className="py-3 border-b border-[var(--brd)]/30 last:border-0">
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">{label}</div>
       <div className="flex items-baseline justify-between">
         <div>
           <span className={`text-[24px] font-bold font-hero ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{yugoValue}</span>

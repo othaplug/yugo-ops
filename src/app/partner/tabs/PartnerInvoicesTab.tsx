@@ -70,8 +70,8 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
   if (invoices.length === 0) {
     return (
       <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
-        <p className="text-[var(--text-base)] font-semibold text-[#FFFFF0]">No invoices yet</p>
-        <p className="text-[12px] text-[#888] mt-1">Invoices will appear here once they are generated.</p>
+        <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">No invoices yet</p>
+        <p className="text-[12px] text-[var(--tx3)] mt-1">Invoices will appear here once they are generated.</p>
       </div>
     );
   }
@@ -80,19 +80,19 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
     <div>
       {/* Summary stats */}
       <div className="border-t border-[var(--brd)]/30 pt-6 mb-6">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Summary</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Summary</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8">
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Invoices</div>
-            <div className="text-[20px] font-bold text-[#1A1A1A] mt-0.5">{invoices.length}</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Invoices</div>
+            <div className="text-[20px] font-bold text-[var(--tx)] mt-0.5">{invoices.length}</div>
           </div>
           <div>
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
-            <div className="text-[20px] font-bold text-[#D14343] mt-0.5">{formatCurrency(totalOutstanding)}</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
+            <div className="text-[20px] font-bold text-red-500 mt-0.5">{formatCurrency(totalOutstanding)}</div>
           </div>
           <div className="hidden sm:block">
-            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Paid</div>
-            <div className="text-[20px] font-bold text-[#2D9F5A] mt-0.5">{formatCurrency(totalPaid)}</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Paid</div>
+            <div className="text-[20px] font-bold text-emerald-500 mt-0.5">{formatCurrency(totalPaid)}</div>
           </div>
         </div>
       </div>
@@ -105,13 +105,13 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search invoices…"
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#E8E4DF] text-[12px] text-[#1A1A1A] placeholder-[#999] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder-[var(--tx3)] focus:border-[var(--gold)] focus:outline-none transition-colors bg-[var(--card)]"
           />
         </div>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[#E8E4DF] text-[12px] font-semibold text-[#1A1A1A] bg-white focus:border-[#C9A962] focus:outline-none transition-colors"
+          className="px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] bg-[var(--card)] focus:border-[var(--gold)] focus:outline-none transition-colors"
         >
           <option value="all">All</option>
           <option value="paid">Paid</option>
@@ -121,7 +121,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
         </select>
         <button
           onClick={downloadCSV}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-white border border-[#E8E4DF] text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] hover:border-[#C9A962] transition-colors"
         >
           <DownloadSimple size={14} />
           Download CSV
@@ -130,39 +130,39 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
 
       {/* Table */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Invoices</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Invoices</div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[var(--brd)]/30">
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888]">Invoice</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888] hidden sm:table-cell">Date</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[#888]">Due</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[#888]">Amount</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[#888]">Status</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[#888] hidden sm:table-cell"></th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Invoice</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] hidden sm:table-cell">Date</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Due</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Amount</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Status</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] hidden sm:table-cell"></th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((inv) => {
                 const badgeClass = STATUS_BADGE[(inv.status || "").toLowerCase()] || "bg-gray-50 text-gray-600";
                 return (
-                  <tr key={inv.id} className="border-b border-[var(--brd)]/30 last:border-0 hover:bg-[#FAF8F5]/50 transition-colors">
+                  <tr key={inv.id} className="border-b border-[var(--brd)]/30 last:border-0 hover:bg-[var(--bg)]/50 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="text-[13px] font-semibold text-[#1A1A1A]">
+                      <div className="text-[13px] font-semibold text-[var(--tx)]">
                         {inv.invoice_number || `INV-${inv.id.slice(0, 6)}`}
                       </div>
                       {inv.delivery_id && (
-                        <div className="text-[10px] text-[#888] mt-0.5">Delivery</div>
+                        <div className="text-[10px] text-[var(--tx3)] mt-0.5">Delivery</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[12px] text-[#888] hidden sm:table-cell">
+                    <td className="px-4 py-3 text-[12px] text-[var(--tx3)] hidden sm:table-cell">
                       {inv.created_at ? new Date(inv.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                     </td>
-                    <td className="px-4 py-3 text-[12px] text-[#888]">
+                    <td className="px-4 py-3 text-[12px] text-[var(--tx3)]">
                       {inv.due_date ? new Date(inv.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
                     </td>
-                    <td className="px-4 py-3 text-[13px] font-semibold text-[#1A1A1A] text-right">
+                    <td className="px-4 py-3 text-[13px] font-semibold text-[var(--tx)] text-right">
                       {formatCurrency(inv.amount)}
                     </td>
                     <td className="px-4 py-3 text-right">

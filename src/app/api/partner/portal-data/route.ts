@@ -141,12 +141,12 @@ export async function GET() {
     return dStr === todayStr;
   });
 
-  // Upcoming: pending_approval and pending always; approved/confirmed/accepted/scheduled always; others only if future date
+  // Upcoming: pending_approval, pending, and draft with no date always visible; approved/confirmed always visible; others only if future date
   const upcomingDeliveries = dels.filter((d) => {
     const s = normStatus(d.status);
     if (DONE_STATUSES.has(s)) return false;
-    if (s === "pending_approval" || s === "pending") return true;
-    if (APPROVED_STATUSES.has(s)) return true; // approved/confirmed/accepted/scheduled always show in Upcoming
+    if ((s === "pending_approval" || s === "pending" || s === "draft") && !d.scheduled_date) return true;
+    if (APPROVED_STATUSES.has(s)) return true;
     const dStr = dateOnly(d.scheduled_date);
     if (!dStr) return false;
     return dStr > todayStr;

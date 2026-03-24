@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
-import { getEmailLogoUrl } from "@/lib/email-templates";
+import { equinoxPromoLayout, equinoxPromoCta, equinoxPromoFinePrint } from "@/lib/email-templates";
 import { widgetLeadAdminEmailHtml } from "@/lib/email/admin-templates";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 
@@ -40,13 +40,6 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
   }
 }
 
-const EMAIL_BG = "#0F0F0F";
-const EMAIL_GOLD = "#B8962E";
-const EMAIL_WINE = "#5C1A33";
-const EMAIL_TX = "#F5F5F3";
-const EMAIL_TX2 = "#B0ADA8";
-const EMAIL_BRD = "#2A2A2A";
-
 function confirmationEmailHtml(data: {
   name: string;
   moveType: string;
@@ -61,50 +54,23 @@ function confirmationEmailHtml(data: {
   const typeLabel = MOVE_TYPE_LABELS[data.moveType] || data.moveType;
   const dateStr = data.moveDate
     ? new Date(data.moveDate + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })
-    : "Flexible";
+    : null;
   const timeStr = data.preferredTime ? data.preferredTime.toUpperCase() : "";
-  const logoUrl = getEmailLogoUrl();
   const learnMoreUrl = `${getEmailBaseUrl()}/about`;
-  return `
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${EMAIL_BG};font-family:'DM Sans',sans-serif;">
-  <tr>
-    <td align="center" style="padding:32px 24px 24px;">
-      <img src="${logoUrl}" alt="Yugo" width="140" height="38" style="display:block;border:0;max-width:140px;height:auto;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" style="padding:0 24px 32px;">
-      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;">
-        <tr>
-          <td style="font-size:24px;font-weight:700;color:${EMAIL_TX};padding-bottom:8px;">Thanks, ${data.name}</td>
-        </tr>
-        <tr>
-          <td style="font-size:14px;color:${EMAIL_TX2};line-height:1.5;padding-bottom:24px;">Your Yugo quote is being prepared. We&apos;ll send your exact guaranteed price within 2 hours.</td>
-        </tr>
-        <tr>
-          <td style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:24px;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr><td style="font-size:9px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:1.5px;text-transform:uppercase;padding-bottom:8px;">Your Estimated Price</td></tr>
-              <tr><td style="font-size:28px;font-weight:700;color:${EMAIL_GOLD};padding-bottom:8px;">$${data.selectedPrice.toLocaleString()}</td></tr>
-              <tr><td style="font-size:13px;color:${EMAIL_TX2};">${typeLabel} &middot; ${sizeLabel} &middot; ${data.fromPostal.toUpperCase()} &rarr; ${data.toPostal.toUpperCase()}</td></tr>
-              ${data.moveDate ? `<tr><td style="font-size:12px;color:#666;padding-top:4px;">${dateStr}${timeStr ? ` &middot; ${timeStr}` : ""}</td></tr>` : ""}
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="font-size:13px;color:${EMAIL_TX2};line-height:1.5;">A Yugo coordinator will review your details and send a detailed, guaranteed quote shortly. No surprises &mdash; that&apos;s the Yugo promise.</td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" style="padding:16px 24px 32px;font-size:10px;color:#666;border-top:1px solid ${EMAIL_BRD};">
-      <a href="${learnMoreUrl}" style="color:${EMAIL_WINE};text-decoration:none;">Learn more</a>
-      <span style="color:${EMAIL_BRD};margin:0 8px;">&middot;</span>
-      Powered by Yugo
-    </td>
-  </tr>
-</table>`;
+  const namePart = data.name ? data.name.split(" ")[0] : "";
+  const routeLine = `${data.fromPostal.toUpperCase()} &rarr; ${data.toPostal.toUpperCase()}`;
+  const detailLine = [typeLabel, sizeLabel, routeLine, dateStr ? `${dateStr}${timeStr ? ` &middot; ${timeStr}` : ""}` : null].filter(Boolean).join(" &middot; ");
+
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${namePart ? `${namePart}, we` : "We"}&apos;re on it.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0 0 28px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your quote is being prepared. We&apos;ll send your guaranteed flat-rate price within 2 hours.</p>
+    <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:24px;margin-bottom:8px;">
+      <div style="font-size:32px;font-weight:700;color:#FFFFFF;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;letter-spacing:-0.02em;margin-bottom:8px;">$${data.selectedPrice.toLocaleString()}</div>
+      <div style="font-size:12px;color:#595959;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;letter-spacing:0.04em;">${detailLine}</div>
+    </div>
+    ${equinoxPromoCta(learnMoreUrl, "About Yugo")}
+    ${equinoxPromoFinePrint("Flat-rate pricing. No hourly charges. No surprises.")}
+  `);
 }
 
 export async function POST(req: NextRequest) {

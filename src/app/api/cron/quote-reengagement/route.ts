@@ -4,6 +4,8 @@ import { sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
+import { equinoxPromoLayout, equinoxPromoCta, equinoxPromoFinePrint } from "@/lib/email-templates";
+import { getClientSupportEmail } from "@/lib/email/client-support-email";
 
 /**
  * Vercel Cron: runs daily.
@@ -108,37 +110,14 @@ function buildReengagementEmail(opts: {
     ? new Date(opts.moveDate + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })
     : null;
 
-  return `
-<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="background:#f5f4f2;margin:0;padding:0;font-family:'Inter',sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
-    <div style="background:#0d0b08;border-radius:12px;padding:28px;margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#C9A962;margin:0 0 4px;">YUGO MOVING</p>
-      <h1 style="font-size:22px;font-weight:700;color:#e8e0d0;font-family:'Instrument Serif',Georgia,serif;margin:0;">Your quote is still available</h1>
+  return equinoxPromoLayout(`
+    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${opts.firstName}, your quote is back.</h1>
+    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0 0 28px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your quote expired, but we&apos;re holding your original price for the next <strong style="color:#FFFFFF;">48 hours</strong>. After that, pricing resets.</p>
+    <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:24px;margin-bottom:8px;">
+      <div style="font-size:32px;font-weight:700;color:#FFFFFF;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;letter-spacing:-0.02em;margin-bottom:8px;">$${opts.price.toLocaleString()}</div>
+      ${moveDateLabel ? `<div style="font-size:12px;color:#595959;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Move date &middot; ${moveDateLabel}</div>` : ""}
     </div>
-    <div style="background:#fff;border-radius:12px;padding:28px;margin-bottom:16px;">
-      <p style="font-size:14px;color:#1a1714;margin:0 0 12px;">Hi ${opts.firstName},</p>
-      <p style="font-size:13px;color:#4a4540;line-height:1.6;margin:0 0 16px;">
-        Your Yugo moving quote has expired, but we'd love to help with your move.
-        We'll honour the original price for the next <strong>48 hours</strong>.
-      </p>
-      ${
-        moveDateLabel
-          ? `<div style="background:#faf9f7;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:12px;color:#6b6560;">
-          Planned move date: <strong style="color:#1a1714;">${moveDateLabel}</strong>
-        </div>`
-          : ""
-      }
-      <div style="background:#faf9f7;border-radius:8px;padding:14px 16px;margin-bottom:24px;">
-        <div style="font-size:11px;color:#9c9489;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Original quoted price</div>
-        <div style="font-size:28px;font-weight:700;color:#B8962E;">$${opts.price.toLocaleString()}</div>
-      </div>
-      <div style="text-align:center;">
-        <a href="${opts.quoteUrl}" style="display:inline-block;background:#B8962E;color:#0d0b08;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;letter-spacing:1.2px;text-transform:uppercase;border-radius:8px;">View &amp; Book Quote</a>
-      </div>
-      <p style="font-size:11px;color:#9c9489;text-align:center;margin:16px 0 0;">This offer expires in 48 hours.</p>
-    </div>
-    <p style="font-size:11px;color:#9c9489;text-align:center;">Questions? Call or text us anytime.</p>
-  </div>
-</body></html>`;
+    ${equinoxPromoCta(opts.quoteUrl, "Book at Original Price")}
+    ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
+  `);
 }

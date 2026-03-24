@@ -4,6 +4,8 @@ import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { signTrackToken } from "@/lib/track-token";
+import { getClientSupportEmail } from "@/lib/email/client-support-email";
+import { equinoxPromoLayout, equinoxPromoFinePrint } from "@/lib/email-templates";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { getCompanyDisplayName } from "@/lib/config";
@@ -304,11 +306,20 @@ export async function runPostPaymentActions(
         };
         const templateFn = templateFns[tier] ?? signatureConfirmationEmail;
 
+        const estateDateLabel = quote.move_date
+          ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })
+          : input.moveCode;
+
         const subjects: Record<string, string> = {
           essential: `Your Yugo move is confirmed — ${input.moveCode}`,
           curated: `Your Yugo move is confirmed — ${input.moveCode}`,
           signature: `Your Yugo Signature move is confirmed — ${input.moveCode}`,
-          estate: `Welcome to your Yugo Estate experience — ${input.moveCode}`,
+          estate: `Welcome to your Yugo Estate experience — ${estateDateLabel}`,
           // legacy keys
           essentials: `Your Yugo move is confirmed — ${input.moveCode}`,
           premier: `Your Yugo Signature move is confirmed — ${input.moveCode}`,
@@ -536,31 +547,21 @@ export async function runPostPaymentActions(
           const referrerFirstName = (ref.referrer_name || "").split(" ")[0] || "there";
           const referredFirstName = clientName.split(" ")[0] || "Your friend";
 
+          const referrerHtml = equinoxPromoLayout(`
+            <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${referrerFirstName}, your referral just booked.</h1>
+            <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0 0 28px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${referredFirstName} confirmed their move with Yugo. Your <strong style="color:#FFFFFF;">$${ref.referrer_credit} credit</strong> will be applied to your next booking.</p>
+            <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:24px;">
+              <div style="font-size:32px;font-weight:700;color:#FFFFFF;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;letter-spacing:-0.02em;">$${ref.referrer_credit}</div>
+              <div style="font-size:12px;color:#595959;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-top:6px;">Referral credit &middot; applied on next booking</div>
+            </div>
+            ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
+          `);
+
           await resend.emails.send({
             from: emailFrom,
             to: ref.referrer_email,
-            subject: `Great news your referral just booked with Yugo!`,
-            html: `
-              <div style="font-family:sans-serif;background:#0D0D0D;padding:32px;border-radius:12px;max-width:520px;margin:0 auto">
-                <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Referral Booked</div>
-                <h1 style="font-size:22px;font-weight:700;margin:0 0 12px;color:#F5F5F3">
-                  ${referredFirstName} just booked with Yugo, ${referrerFirstName}!
-                </h1>
-                <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 20px">
-                  Someone you referred has confirmed their move. Your
-                  <strong style="color:#C9A962"> $${ref.referrer_credit} credit</strong>
-                  will be applied to your next Yugo booking.
-                </p>
-                <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:16px;margin-bottom:20px">
-                  <div style="font-size:12px;color:#666;margin-bottom:4px">Your referral credit</div>
-                  <div style="font-size:24px;font-weight:700;color:#C9A962">$${ref.referrer_credit}</div>
-                  <div style="font-size:11px;color:#666;margin-top:4px">Applied to your next move booking</div>
-                </div>
-                <p style="font-size:11px;color:#666;text-align:center">
-                  Questions? Reply to this email. — The Yugo Team
-                </p>
-              </div>
-            `,
+            subject: `Your referral just booked — $${ref.referrer_credit} credit earned`,
+            html: referrerHtml,
             headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
           });
         }

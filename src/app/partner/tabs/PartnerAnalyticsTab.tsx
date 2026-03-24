@@ -43,7 +43,7 @@ const CHART_COLORS = ["#C9A962", "#2D6A4F", "#5C1A33", "#4A7CE5", "#D48A29"];
 function KPICard({ label, value, sublabel, accent }: { label: string; value: string; sublabel?: string; accent?: string }) {
   return (
     <div className="p-4 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-1">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-1">{label}</div>
       <div className="text-[24px] font-bold font-hero" style={{ color: accent || "var(--tx)" }}>{value}</div>
       {sublabel && <div className="text-[10px] text-[var(--tx3)] mt-0.5">{sublabel}</div>}
     </div>
@@ -222,7 +222,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
         <h3 className="text-[13px] font-bold text-[var(--tx)] mb-3">Delivery Performance</h3>
         <table className="w-full text-left text-[11px]">
           <thead>
-            <tr className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+            <tr className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">
               <th className="pb-2 pr-3">Date</th>
               <th className="pb-2 pr-3">Type</th>
               <th className="pb-2 pr-3">Zone</th>

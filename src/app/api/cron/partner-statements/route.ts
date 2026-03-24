@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
+import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 
 /**
@@ -272,7 +273,7 @@ function buildStatementEmail(opts: {
         <a href="${opts.statementUrl}" style="display:inline-block;background:#B8962E;color:#0d0b08;padding:12px 28px;font-size:11px;font-weight:700;text-decoration:none;letter-spacing:1.2px;text-transform:uppercase;border-radius:8px;">View Statement</a>
       </div>
     </div>
-    <p style="font-size:11px;color:#9c9489;text-align:center;">Questions? Reply to this email or contact your Yugo coordinator.</p>
+    <p style="font-size:11px;color:#9c9489;text-align:center;">Questions? Email ${getClientSupportEmail()} or contact your Yugo coordinator.</p>
   </div>
 </body></html>`;
 }

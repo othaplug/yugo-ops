@@ -2,6 +2,7 @@
  * Styled HTML templates for admin/coordinator notification emails.
  * All use light background and dark text for readability (no bare plain-text emails).
  */
+import { getEmailFooterStandaloneFragment } from "@/lib/email/client-email-footer";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 
 const WINE = "#722F37";
@@ -12,61 +13,6 @@ const TEXT = "#1a1a1a";
 const TEXT_MUTED = "#555";
 const BORDER = "rgba(0,0,0,0.08)";
 const FOOTER_LINK = "#2563eb";
-const ADMIN_FOOTER_PANEL = "#E8E8E8";
-const ADMIN_FOOTER_MUTED = "#666666";
-
-function adminFooterHtml(): string {
-  const base = getEmailBaseUrl();
-  const year = new Date().getFullYear();
-  const privacyUrl = `${base}/privacy`;
-  const termsUrl = `${base}/legal/terms-of-use`;
-  const contactEmail = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) || "hello@helloyugo.com";
-  const contactPhone = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) || "(647) 370-4525";
-  const mailto = `mailto:${contactEmail}`;
-  const tel = `tel:${contactPhone.replace(/\s/g, "").replace(/[()]/g, "")}`;
-  const addrLine1 = "507 King Street E";
-  const addrLine2 = "Toronto, Ontario";
-  const addrLine3 = "M5A 1M3";
-  const fullAddr = `${addrLine1}, ${addrLine2} ${addrLine3}, Canada`;
-  const mapsUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(fullAddr)}`;
-
-  return `
-  <div style="margin-top:28px;font-size:12px;color:${TEXT};line-height:1.65;">
-    <p style="text-align:center;margin:0 0 14px;font-size:11px;color:${TEXT_MUTED};max-width:520px;margin-left:auto;margin-right:auto;">
-      Do not forward this notification outside authorized channels. It may contain sensitive operational information.
-    </p>
-    <div style="background:${ADMIN_FOOTER_PANEL};border-radius:12px;padding:24px 20px 28px;border:1px solid ${BORDER};">
-      <p style="margin:0 0 16px;text-align:center;color:${TEXT};">
-        This is an automated message from <strong style="color:${WINE};">Yugo</strong>. Replies to this address are not monitored.
-      </p>
-      <p style="margin:0 0 18px;text-align:center;color:${TEXT};">
-        Need help? <a href="${mailto}" style="color:${TEXT};text-decoration:underline;">Email us</a>
-        <span style="color:${ADMIN_FOOTER_MUTED};"> &middot; </span>
-        <a href="${tel}" style="color:${TEXT};text-decoration:underline;">Call ${contactPhone}</a>
-      </p>
-      <p style="margin:0 0 20px;font-size:11px;line-height:1.5;color:${ADMIN_FOOTER_MUTED};text-align:center;">
-        &copy; ${year} Yugo Inc.
-      </p>
-      <p style="margin:0 0 4px;text-align:center;">
-        <a href="${mapsUrl}" style="color:${FOOTER_LINK};text-decoration:underline;font-size:12px;">${addrLine1}</a>
-      </p>
-      <p style="margin:0 0 4px;text-align:center;">
-        <a href="${mapsUrl}" style="color:${FOOTER_LINK};text-decoration:underline;font-size:12px;">${addrLine2}</a>
-      </p>
-      <p style="margin:0 0 16px;text-align:center;">
-        <a href="${mapsUrl}" style="color:${FOOTER_LINK};text-decoration:underline;font-size:12px;">${addrLine3}</a>
-      </p>
-      <p style="margin:0 0 14px;font-size:11px;color:${ADMIN_FOOTER_MUTED};text-align:center;">
-        Registered in Ontario, Canada
-      </p>
-      <p style="margin:0;text-align:center;font-size:12px;">
-        <a href="${privacyUrl}" style="color:${TEXT};text-decoration:underline;">Privacy policy</a>
-        <span style="color:${ADMIN_FOOTER_MUTED};margin:0 10px;">|</span>
-        <a href="${termsUrl}" style="color:${TEXT};text-decoration:underline;">Terms of use</a>
-      </p>
-    </div>
-  </div>`;
-}
 
 /** Full document wrapper for admin notifications: light bg, Yugo+ wordmark header, white card. */
 export function adminNotificationLayout(innerHtml: string, title?: string): string {
@@ -86,9 +32,12 @@ export function adminNotificationLayout(innerHtml: string, title?: string): stri
     <div style="font-size:14px;color:${TEXT};line-height:1.6;">
       ${innerHtml}
     </div>
-    ${adminFooterHtml()}
   </div>
+  <p style="margin:20px 0 0;font-size:11px;color:${TEXT_MUTED};text-align:center;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.5;">
+    Do not forward this notification outside authorized channels. It may contain sensitive operational information.
+  </p>
 </div>
+${getEmailFooterStandaloneFragment()}
 </body>
 </html>`;
 }

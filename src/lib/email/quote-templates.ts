@@ -1,6 +1,9 @@
+import { getClientEmailFooterTrs } from "@/lib/email/client-email-footer";
+import { getClientSupportEmail } from "@/lib/email/client-support-email";
+import { EMAIL_LOGO_GOLD_H, EMAIL_LOGO_GOLD_W } from "@/lib/email-templates";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { TIER_LABELS as DISPLAY_TIER_LABELS, displayLabel } from "@/lib/displayLabels";
 
 /* ─── Brand tokens ─── */
@@ -82,38 +85,29 @@ function quoteEmailLayout(innerHtml: string): string {
     @media only screen and (max-width:600px) {
       .eq-inner { padding: 24px 20px 28px !important; }
       .eq-hdr   { padding: 28px 20px 0 !important; }
-      .eq-ftr   { padding: 20px !important; }
     }
   </style>
 </head>
 <body style="margin:0;padding:0;background-color:${BG};">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG}" style="background-color:${BG};">
   <tr>
-    <td align="center" style="padding:32px 16px;">
+    <td align="center" style="padding:32px 16px 0;">
       <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:560px;width:100%;background-color:${BG};border:1px solid ${CARD_BORDER};">
-        <!-- Header -->
         <tr>
           <td class="eq-hdr" align="center" style="padding:36px 36px 0;background-color:${BG};">
-            <img src="${logoUrl}" alt="Yugo+" width="90" height="25" style="display:block;max-width:90px;height:auto;border:0;margin:0 auto;" />
+            <img src="${logoUrl}" alt="Yugo+" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0;margin:0 auto;" />
             <div style="width:40px;height:1px;background-color:${GOLD};margin:18px auto 0;line-height:0;font-size:0;">&nbsp;</div>
           </td>
         </tr>
-        <!-- Body -->
         <tr>
           <td class="eq-inner" style="padding:32px 36px 40px;background-color:${BG};color:${TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
             ${innerHtml}
           </td>
         </tr>
-        <!-- Footer -->
-        <tr>
-          <td class="eq-ftr" align="center" style="padding:24px 36px 28px;background-color:${BG};border-top:1px solid ${CARD_BORDER};">
-            <img src="${logoUrl}" alt="Yugo+" width="70" height="19" style="display:block;max-width:70px;height:auto;border:0;margin:0 auto 8px;" />
-            <div style="font-size:9px;color:${TX3};letter-spacing:2px;text-transform:uppercase;">The Art of Moving</div>
-          </td>
-        </tr>
       </table>
     </td>
   </tr>
+  ${getClientEmailFooterTrs()}
 </table>
 </body>
 </html>`;
@@ -243,8 +237,8 @@ function whyYugoBlock(): string {
   const items = [
     ["Flat-rate guarantee", "no hidden fees, no surprises"],
     ["Real-time tracking", "follow your crew live from your phone"],
-    ["Low deposit to book", "balance due on move day"],
-    ["Fully insured", "$2M commercial liability coverage"],
+    ["Dedicated coordinator", "a single expert guides your move from confirmation through completion"],
+    ["Fully Insured", "WSIB coverage, $2M General Liability & Comprehensive cargo insurance"],
   ];
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 0;border-top:1px solid ${CARD_BORDER};">
@@ -266,9 +260,10 @@ function whyYugoBlock(): string {
 }
 
 function questionsFooter(coordinatorName?: string | null, coordinatorPhone?: string | null): string {
+  const support = getClientSupportEmail();
   const contact = coordinatorName
-    ? `Reach out to ${coordinatorName}${coordinatorPhone ? ` at ${coordinatorPhone}` : ""} or simply reply to this email.`
-    : "Simply reply to this email &mdash; we typically respond within a few hours.";
+    ? `Reach out to ${coordinatorName}${coordinatorPhone ? ` at ${coordinatorPhone}` : ""} or email ${support}.`
+    : `Email ${support} &mdash; we typically respond within a few hours.`;
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:24px;border-top:1px solid ${CARD_BORDER};">
       <tr>

@@ -279,28 +279,21 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
         <div className="lg:col-span-2 space-y-0">
           {/* Quote Summary */}
           <div className="pb-6">
-            <h2 className="admin-section-h2 mb-4">
-              Quote Summary
-            </h2>
-            <div className="rounded-xl border border-[var(--brd)] overflow-hidden">
-            <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[var(--brd)]">
-              <div className="p-4">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
-                  Client
-                </span>
-                <p className="text-[13px] font-medium text-[var(--tx)]">
-                  {contact?.name ?? "—"}
-                </p>
-                <p className="text-[11px] text-[var(--tx3)]">{contact?.email ?? "—"}</p>
+            <h2 className="admin-section-h2 mb-5">Quote Summary</h2>
+            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
+              {/* Client */}
+              <div>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Client</p>
+                <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">{contact?.name ?? "—"}</p>
+                <p className="text-[12px] text-[var(--tx3)] mt-0.5">{contact?.email ?? "—"}</p>
                 {contact?.phone && (
-                  <p className="text-[11px] text-[var(--tx3)]">{formatPhone(contact.phone)}</p>
+                  <p className="text-[12px] text-[var(--tx3)]">{formatPhone(contact.phone)}</p>
                 )}
               </div>
-              <div className="p-4 border-t sm:border-t-0 border-[var(--brd)]">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
-                  Move Date
-                </span>
-                <p className="text-[13px] font-medium text-[var(--tx)] mt-0.5">
+              {/* Move Date */}
+              <div>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Move Date</p>
+                <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">
                   {quote.move_date
                     ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                         weekday: "short",
@@ -311,22 +304,18 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                     : "TBD"}
                 </p>
               </div>
-            </div>
-            <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[var(--brd)] border-t border-[var(--brd)]">
-              <div className="p-4">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
-                  Route
-                </span>
-                <p className="text-[11px] text-[var(--tx)] mt-0.5">{quote.from_address}</p>
-                <p className="text-[11px] text-[var(--tx3)]">→ {quote.to_address}</p>
+              {/* Route */}
+              <div>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Route</p>
+                <p className="text-[12px] font-medium text-[var(--tx)] leading-snug">{quote.from_address}</p>
+                <p className="text-[12px] text-[var(--tx3)] leading-snug">→ {quote.to_address}</p>
                 {quote.distance_km && (
-                  <p className="text-[10px] text-[var(--tx3)]/60 mt-0.5">{quote.distance_km} km</p>
+                  <p className="text-[10px] text-[var(--tx3)]/50 mt-1">{quote.distance_km} km</p>
                 )}
               </div>
-              <div className="p-4 border-t sm:border-t-0 border-[var(--brd)]">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
-                  Amount
-                </span>
+              {/* Amount */}
+              <div>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Amount</p>
                 {(() => {
                   const HST = 0.13;
                   if (quote.tiers) {
@@ -336,30 +325,30 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
                     const hi = Math.max(...prices);
                     return (
                       <>
-                        <p className="text-[20px] font-bold text-[var(--gold)] font-heading mt-0.5">
+                        <p className="text-[22px] font-bold text-[var(--gold)] font-heading leading-tight">
                           {fmtCurrency(lo)}–{fmtCurrency(hi)}
                         </p>
-                        <span className="text-[10px] text-[var(--tx3)]">
+                        <p className="text-[10px] text-[var(--tx3)]/60 mt-0.5">
                           +{fmtCurrency(Math.round(lo * HST))}–{fmtCurrency(Math.round(hi * HST))} HST (13%)
-                        </span>
+                        </p>
                       </>
                     );
                   }
                   const base = quote.custom_price ?? 0;
                   return (
                     <>
-                      <p className="text-[20px] font-bold text-[var(--gold)] font-heading mt-0.5">
+                      <p className="text-[22px] font-bold text-[var(--gold)] font-heading leading-tight">
                         {fmtCurrency(base)}
                       </p>
-                      <span className="text-[10px] text-[var(--tx3)]">
+                      <p className="text-[10px] text-[var(--tx3)]/60 mt-0.5">
                         +{fmtCurrency(Math.round(base * HST))} HST (13%)
-                      </span>
+                      </p>
                     </>
                   );
                 })()}
               </div>
             </div>
-            </div>
+            <div className="mt-5 h-px bg-[var(--brd)]/60" />
             {/* Truck + Crew */}
             {(quote.truck_primary || factors?.est_crew_size || quote.est_crew_size) && (
               <div className="mt-3 flex flex-wrap gap-4">

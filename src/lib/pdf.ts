@@ -912,8 +912,9 @@ export function generatePoDPDF(data: PoDPDFData) {
   doc.text(`Date: ${data.signedAt}`, 20, y);
   y += 8;
 
-  // Satisfaction
-  if (data.satisfactionRating != null) {
+  // Satisfaction (ASCII score line — Unicode stars often render blank in built-in PDF fonts)
+  const sat = Math.round(Number(data.satisfactionRating));
+  if (Number.isFinite(sat) && sat >= 1 && sat <= 5) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...gold);
@@ -921,8 +922,9 @@ export function generatePoDPDF(data: PoDPDFData) {
     y += 6;
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...dark);
-    const stars = "★".repeat(data.satisfactionRating) + "☆".repeat(5 - data.satisfactionRating);
-    doc.text(`${stars} (${data.satisfactionRating}/5)`, 20, y);
+    const filled = "*".repeat(sat);
+    const empty = "-".repeat(5 - sat);
+    doc.text(`Rating: ${filled}${empty} (${sat} of 5)`, 20, y);
     y += 5;
     if (data.satisfactionComment) {
       doc.setTextColor(...gray);

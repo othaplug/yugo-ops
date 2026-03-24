@@ -8,19 +8,40 @@ export async function GET(req: NextRequest) {
   if (!primaryOrgId) return NextResponse.json({ error: "No org" }, { status: 403 });
 
   const period = Number(req.nextUrl.searchParams.get("period") || 30);
-  const since = new Date(Date.now() - period * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const sinceMs = Date.now() - period * 24 * 60 * 60 * 1000;
+  const sinceDate = new Date(sinceMs).toISOString().split("T")[0];
+  const sinceIso = new Date(sinceMs).toISOString();
   const admin = createAdminClient();
 
-  // Completed deliveries in period
-  const { data: deliveries } = await admin
-    .from("deliveries")
-    .select("id, status, scheduled_date, time_slot, delivery_window, completed_at, delivery_type, zone, total_price, booking_type, created_at")
-    .eq("organization_id", primaryOrgId)
-    .in("status", ["delivered", "completed"])
-    .gte("scheduled_date", since)
-    .order("scheduled_date", { ascending: false });
+  const deliverySelect =
+    "id, status, scheduled_date, time_slot, delivery_window, completed_at, delivery_type, zone, total_price, booking_type, created_at";
 
-  const allDeliveries = deliveries || [];
+  // Include deliveries completed in the period even if scheduled_date is older (client ratings attach to completion).
+  const [{ data: bySchedule }, { data: byCompletion }] = await Promise.all([
+    admin
+      .from("deliveries")
+      .select(deliverySelect)
+      .eq("organization_id", primaryOrgId)
+      .in("status", ["delivered", "completed"])
+      .gte("scheduled_date", sinceDate)
+      .order("scheduled_date", { ascending: false }),
+    admin
+      .from("deliveries")
+      .select(deliverySelect)
+      .eq("organization_id", primaryOrgId)
+      .in("status", ["delivered", "completed"])
+      .gte("completed_at", sinceIso)
+      .order("completed_at", { ascending: false }),
+  ]);
+
+  const byId = new Map<string, NonNullable<typeof bySchedule>[number]>();
+  for (const d of [...(bySchedule || []), ...(byCompletion || [])]) {
+    byId.set(d.id, d);
+  }
+  const allDeliveries = Array.from(byId.values()).sort((a, b) => {
+    const ad = (a.scheduled_date || "").localeCompare(b.scheduled_date || "");
+    return -ad;
+  });
   const total = allDeliveries.length;
 
   // On-time calculation
@@ -38,57 +59,67 @@ export async function GET(req: NextRequest) {
   }
   const onTimeRate = total > 0 ? Math.round((onTimeCount / total) * 100) : 100;
 
-  // Satisfaction from proof_of_delivery
   const deliveryIds = allDeliveries.map((d) => d.id);
   let satisfactionScore: number | null = null;
   let satisfactionCount = 0;
   const ratingDist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   const recentComments: { name: string; date: string; rating: number; comment: string }[] = [];
+  const ratingByDelivery = new Map<string, number>();
+  const deliveriesWithDamage = new Set<string>();
 
   if (deliveryIds.length > 0) {
     const { data: pods } = await admin
       .from("proof_of_delivery")
-      .select("satisfaction_rating, satisfaction_comment, signer_name, completed_at, delivery_id")
+      .select(
+        "satisfaction_rating, satisfaction_comment, signer_name, completed_at, delivery_id, item_conditions, created_at"
+      )
       .in("delivery_id", deliveryIds)
-      .not("satisfaction_rating", "is", null);
+      .order("created_at", { ascending: false });
 
-    if (pods && pods.length > 0) {
-      let sum = 0;
-      for (const p of pods) {
-        const r = p.satisfaction_rating;
-        if (r >= 1 && r <= 5) {
-          sum += r;
-          satisfactionCount++;
-          ratingDist[r] = (ratingDist[r] || 0) + 1;
-          if (p.satisfaction_comment) {
-            recentComments.push({
-              name: p.signer_name || "Customer",
-              date: p.completed_at ? new Date(p.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—",
-              rating: r,
-              comment: p.satisfaction_comment,
-            });
-          }
-        }
-      }
-      satisfactionScore = satisfactionCount > 0 ? Math.round((sum / satisfactionCount) * 10) / 10 : null;
-    }
-  }
+    const latestCommentByDelivery = new Map<
+      string,
+      { satisfaction_comment: string; signer_name: string | null; completed_at: string | null; satisfaction_rating: number | null }
+    >();
 
-  // Damage rate from proof_of_delivery
-  let damageCount = 0;
-  if (deliveryIds.length > 0) {
-    const { data: damagePods } = await admin
-      .from("proof_of_delivery")
-      .select("item_conditions, delivery_id")
-      .in("delivery_id", deliveryIds);
+    for (const p of pods || []) {
+      const did = p.delivery_id as string | null;
+      if (!did) continue;
 
-    for (const p of damagePods || []) {
       const conditions = Array.isArray(p.item_conditions) ? p.item_conditions : [];
       if (conditions.some((ic: { condition: string }) => ic.condition === "new_damage")) {
-        damageCount++;
+        deliveriesWithDamage.add(did);
+      }
+
+      const r = Number(p.satisfaction_rating);
+      if (r >= 1 && r <= 5 && !ratingByDelivery.has(did)) {
+        ratingByDelivery.set(did, r);
+      }
+      if (p.satisfaction_comment && r >= 1 && r <= 5 && !latestCommentByDelivery.has(did)) {
+        latestCommentByDelivery.set(did, p);
       }
     }
+
+    let sum = 0;
+    for (const [, r] of ratingByDelivery) {
+      sum += r;
+      satisfactionCount++;
+      ratingDist[r] = (ratingDist[r] || 0) + 1;
+    }
+    satisfactionScore = satisfactionCount > 0 ? Math.round((sum / satisfactionCount) * 10) / 10 : null;
+
+    for (const p of latestCommentByDelivery.values()) {
+      const r = Number(p.satisfaction_rating);
+      if (r < 1 || r > 5 || !p.satisfaction_comment) continue;
+      recentComments.push({
+        name: p.signer_name || "Customer",
+        date: p.completed_at ? new Date(p.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—",
+        rating: r,
+        comment: p.satisfaction_comment,
+      });
+    }
   }
+
+  const damageCount = deliveriesWithDamage.size;
   const damageRate = total > 0 ? Math.round((damageCount / total) * 1000) / 10 : 0;
 
   // Avg delivery time (from tracking sessions)
@@ -159,7 +190,6 @@ export async function GET(req: NextRequest) {
     count: ratingDist[stars] || 0,
   }));
 
-  // Recent deliveries table
   const recentDeliveries = allDeliveries.slice(0, 20).map((d) => {
     const completed = d.completed_at ? new Date(d.completed_at) : null;
     const window = d.delivery_window || d.time_slot || "";
@@ -168,14 +198,15 @@ export async function GET(req: NextRequest) {
       window.includes("afternoon") ? completed.getHours() < 17 :
       completed.getHours() < 18
     );
+    const rowRating = ratingByDelivery.get(d.id) ?? null;
     return {
       date: d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—",
       type: d.booking_type === "day_rate" ? "Day Rate" : d.delivery_type || "delivery",
       zone: d.zone || 1,
       minutes: 0,
       onTime: isOnTime,
-      rating: null as number | null,
-      hasDamage: false,
+      rating: rowRating,
+      hasDamage: deliveriesWithDamage.has(d.id),
     };
   });
 
