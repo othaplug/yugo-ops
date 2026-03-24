@@ -11,6 +11,7 @@ import { toTitleCase } from "@/lib/format-text";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { CaretDown as ChevronDown, Check, PaperPlaneTilt as Send, Eye, CircleNotch as Loader2, CaretRight as ChevronRight, SidebarSimple as PanelRightOpen, Users, Clock, Truck, Plus, Trash as Trash2, Warning } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
+import { getMoveSizeTierIndex } from "@/lib/addon-move-size";
 
 const PanelRightClose = PanelRightOpen;
 
@@ -460,6 +461,23 @@ export default function QuoteFormClient({
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
+  // ── Client dedup / contact search state ──────────────────────────────────
+  const [clientSearching, setClientSearching] = useState(false);
+  const [clientDedupResult, setClientDedupResult] = useState<{
+    hubspot: { hubspot_id: string; first_name: string; last_name: string; email: string; phone: string; company: string; deal_ids: string[] } | null;
+    square: { square_id: string; card_on_file: boolean; card_last_four: string; card_brand: string; card_id: string } | null;
+    opsClient: { id: string; name: string; email: string } | null;
+    opsPrevMove: { move_number: string; move_date: string; move_size: string; from_address: string; to_address: string } | null;
+  } | null>(null);
+  const [clientBannerDismissed, setClientBannerDismissed] = useState(false);
+  const [clientSquareId, setClientSquareId] = useState("");
+  const [clientSquareCardId, setClientSquareCardId] = useState("");
+  const [clientHubspotId, setClientHubspotId] = useState("");
+  const [clientCardOnFile, setClientCardOnFile] = useState(false);
+  const [clientCardLastFour, setClientCardLastFour] = useState("");
+  const [clientCardBrand, setClientCardBrand] = useState("");
+
   const [fromAddress, setFromAddress] = useState("");
   const [toAddress, setToAddress] = useState("");
   const [fromAccess, setFromAccess] = useState("");
@@ -642,6 +660,82 @@ export default function QuoteFormClient({
   const [referralStatus, setReferralStatus] = useState<"idle" | "valid" | "invalid">("idle");
   const [referralMsg, setReferralMsg] = useState("");
   const [referralDiscount, setReferralDiscount] = useState(0);
+
+  const handleClientEmailBlur = async () => {
+    const trimmed = email.trim();
+    if (!trimmed || !trimmed.includes("@")) return;
+    setClientBannerDismissed(false);
+    setClientSearching(true);
+    setClientDedupResult(null);
+
+    try {
+      const [opsRes, hubspotRes, squareRes] = await Promise.allSettled([
+        fetch("/api/admin/clients/search-by-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: trimmed }),
+        }).then((r) => r.json()),
+        fetch("/api/hubspot/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: trimmed }),
+        }).then((r) => r.json()),
+        fetch("/api/square/search-customer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: trimmed }),
+        }).then((r) => r.json()),
+      ]);
+
+      const ops = opsRes.status === "fulfilled" ? opsRes.value : null;
+      const hubspot = hubspotRes.status === "fulfilled" ? hubspotRes.value?.contact ?? null : null;
+      const square = squareRes.status === "fulfilled" ? squareRes.value?.customer ?? null : null;
+
+      if (!ops?.client && !hubspot && !square) {
+        setClientSearching(false);
+        return;
+      }
+
+      setClientDedupResult({
+        hubspot,
+        square,
+        opsClient: ops?.client ?? null,
+        opsPrevMove: ops?.prev_move ?? null,
+      });
+    } catch {
+      // silently continue
+    } finally {
+      setClientSearching(false);
+    }
+  };
+
+  const handleClientAutoFill = () => {
+    if (!clientDedupResult) return;
+    const { hubspot, square, opsClient, opsPrevMove } = clientDedupResult;
+
+    if (hubspot) {
+      if (hubspot.first_name && !firstName) setFirstName(hubspot.first_name);
+      if (hubspot.last_name && !lastName) setLastName(hubspot.last_name);
+      if (hubspot.phone && !phone) {
+          setPhone(formatPhone(hubspot.phone));
+      }
+      setClientHubspotId(hubspot.hubspot_id);
+    }
+
+    if (square) {
+      setClientSquareId(square.square_id);
+      if (square.card_id) setClientSquareCardId(square.card_id);
+      setClientCardOnFile(square.card_on_file);
+      if (square.card_last_four) setClientCardLastFour(square.card_last_four);
+      if (square.card_brand) setClientCardBrand(square.card_brand);
+    }
+
+    if (opsClient && opsPrevMove?.from_address && !fromAddress) {
+      setFromAddress(opsPrevMove.from_address);
+    }
+
+    setClientBannerDismissed(true);
+  };
 
   const verifyReferral = async () => {
     if (!referralCode.trim()) return;
@@ -976,11 +1070,16 @@ export default function QuoteFormClient({
       if (next.has(addon.id)) {
         next.delete(addon.id);
       } else {
-        next.set(addon.id, { addon_id: addon.id, slug: addon.slug, quantity: 1, tier_index: 0 });
+        let tierIndex = 0;
+        if (addon.price_type === "tiered") {
+          const idx = getMoveSizeTierIndex(addon.slug, moveSize);
+          if (idx !== null) tierIndex = idx;
+        }
+        next.set(addon.id, { addon_id: addon.id, slug: addon.slug, quantity: 1, tier_index: tierIndex });
       }
       return next;
     });
-  }, []);
+  }, [moveSize]);
 
   const updateAddonQty = useCallback((id: string, qty: number) => {
     setSelectedAddons((prev) => {
@@ -999,6 +1098,23 @@ export default function QuoteFormClient({
       return next;
     });
   }, []);
+
+  // ── Sync move-size-tiered add-ons when move size changes ─────────────────────
+  useEffect(() => {
+    setSelectedAddons((prev) => {
+      let changed = false;
+      const next = new Map(prev);
+      for (const [id, sel] of prev) {
+        const addon = allAddons.find((a) => a.id === id);
+        if (!addon || addon.price_type !== "tiered") continue;
+        const newIdx = getMoveSizeTierIndex(addon.slug, moveSize);
+        if (newIdx === null || sel.tier_index === newIdx) continue;
+        next.set(id, { ...sel, tier_index: newIdx });
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [moveSize, allAddons]);
 
   // ── Auto-remove packing materials kit when Estate is recommended ─────────────
   useEffect(() => {
@@ -1495,12 +1611,113 @@ export default function QuoteFormClient({
                     <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className={fieldInput} />
                   </Field>
                   <Field label="Email">
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@email.com" className={fieldInput} />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setClientDedupResult(null);
+                        setClientBannerDismissed(false);
+                      }}
+                      onBlur={handleClientEmailBlur}
+                      placeholder="client@email.com"
+                      className={fieldInput}
+                    />
+                    {clientSearching && (
+                      <p className="mt-1 text-[10px] text-[var(--tx3)]">Checking for existing contacts…</p>
+                    )}
                   </Field>
                   <Field label="Phone">
                     <input ref={phoneInput.ref} type="tel" value={phone} onChange={phoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={fieldInput} />
                   </Field>
                 </div>
+
+                {/* ── Client dedup banner ── */}
+                {!clientBannerDismissed && clientDedupResult && (
+                  clientDedupResult.opsClient ? (
+                    /* Returning client — show history and offer auto-fill */
+                    <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3.5">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[var(--gold)] text-sm">🔍</span>
+                        <p className="text-[11px] font-bold tracking-wide uppercase text-[var(--gold)]">
+                          Returning Client
+                        </p>
+                      </div>
+                      <p className="text-[12px] text-[var(--tx2)] mb-0.5">
+                        <strong>{clientDedupResult.opsClient.name}</strong> has moved with Yugo before.
+                      </p>
+                      {clientDedupResult.opsPrevMove && (
+                        <p className="text-[11px] text-[var(--tx3)] mb-2">
+                          Previous move: {clientDedupResult.opsPrevMove.move_number}
+                          {clientDedupResult.opsPrevMove.move_date && `, ${clientDedupResult.opsPrevMove.move_date}`}
+                          {clientDedupResult.opsPrevMove.from_address && ` — ${clientDedupResult.opsPrevMove.from_address}`}
+                          {clientDedupResult.opsPrevMove.to_address && ` → ${clientDedupResult.opsPrevMove.to_address}`}
+                        </p>
+                      )}
+                      {clientDedupResult.square?.card_on_file && (
+                        <p className="text-[11px] text-[var(--tx3)] mb-2">
+                          Card on file: {clientDedupResult.square.card_brand} ****{clientDedupResult.square.card_last_four}
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleClientAutoFill}
+                          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+                        >
+                          Auto-fill
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setClientBannerDismissed(true)}
+                          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/40 transition-colors"
+                        >
+                          Ignore
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* External contact found (HubSpot/Square) */
+                    <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3.5">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[var(--gold)] text-sm">🔍</span>
+                        <p className="text-[11px] font-bold tracking-wide uppercase text-[var(--gold)]">
+                          Existing Contact Found
+                        </p>
+                      </div>
+                      {clientDedupResult.hubspot && (
+                        <p className="text-[12px] text-[var(--tx2)] mb-0.5">
+                          <span className="font-semibold">HubSpot:</span>{" "}
+                          {[clientDedupResult.hubspot.first_name, clientDedupResult.hubspot.last_name].filter(Boolean).join(" ") || clientDedupResult.hubspot.email}
+                          {clientDedupResult.hubspot.deal_ids.length > 0 && (
+                            <span className="text-[var(--tx3)]"> ({clientDedupResult.hubspot.deal_ids.length} deal{clientDedupResult.hubspot.deal_ids.length !== 1 ? "s" : ""})</span>
+                          )}
+                        </p>
+                      )}
+                      {clientDedupResult.square?.card_on_file && (
+                        <p className="text-[11px] text-[var(--tx3)] mb-2">
+                          Card on file: {clientDedupResult.square.card_brand} ****{clientDedupResult.square.card_last_four}
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleClientAutoFill}
+                          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+                        >
+                          Auto-fill from HubSpot
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setClientBannerDismissed(true)}
+                          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/40 transition-colors"
+                        >
+                          Ignore
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
               </div>
 
               {/* ── Referral Code ── */}
@@ -2998,8 +3215,14 @@ export default function QuoteFormClient({
                       let displayPrice = "";
                       if (addon.price_type === "flat") displayPrice = fmtPrice(addon.price);
                       else if (addon.price_type === "per_unit") displayPrice = `${fmtPrice(addon.price)} ${addon.unit_label ?? "each"}`;
-                      else if (addon.price_type === "tiered") displayPrice = "varies";
-                      else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                      else if (addon.price_type === "tiered") {
+                        const msIdx = getMoveSizeTierIndex(addon.slug, moveSize);
+                        if (msIdx !== null) {
+                          displayPrice = fmtPrice(addon.tiers?.[msIdx]?.price ?? addon.price);
+                        } else {
+                          displayPrice = "varies";
+                        }
+                      } else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
                       return (
                         <div key={addon.id} className="space-y-1">
                           <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -3036,7 +3259,7 @@ export default function QuoteFormClient({
                               <span className="text-[10px] text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
                             </div>
                           )}
-                          {isSelected && addon.price_type === "tiered" && addon.tiers && (
+                          {isSelected && addon.price_type === "tiered" && addon.tiers && getMoveSizeTierIndex(addon.slug, moveSize) === null && (
                             <div className="ml-6 flex items-center gap-2">
                               <select
                                 value={sel!.tier_index}
@@ -3068,8 +3291,14 @@ export default function QuoteFormClient({
                       let displayPrice = "";
                       if (addon.price_type === "flat") displayPrice = fmtPrice(addon.price);
                       else if (addon.price_type === "per_unit") displayPrice = `${fmtPrice(addon.price)} ${addon.unit_label ?? "each"}`;
-                      else if (addon.price_type === "tiered") displayPrice = "varies";
-                      else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                      else if (addon.price_type === "tiered") {
+                        const msIdx = getMoveSizeTierIndex(addon.slug, moveSize);
+                        if (msIdx !== null) {
+                          displayPrice = fmtPrice(addon.tiers?.[msIdx]?.price ?? addon.price);
+                        } else {
+                          displayPrice = "varies";
+                        }
+                      } else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
                       return (
                         <div key={addon.id} className="space-y-1">
                           <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -3106,7 +3335,7 @@ export default function QuoteFormClient({
                               <span className="text-[10px] text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
                             </div>
                           )}
-                          {isSelected && addon.price_type === "tiered" && addon.tiers && (
+                          {isSelected && addon.price_type === "tiered" && addon.tiers && getMoveSizeTierIndex(addon.slug, moveSize) === null && (
                             <div className="ml-6 flex items-center gap-2">
                               <select
                                 value={sel!.tier_index}

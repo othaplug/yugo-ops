@@ -168,6 +168,7 @@ export const MOVE_SIZE_LABELS: Record<string, string> = {
   partial: "Partial Move",
 };
 
+
 /** @deprecated Prefer getDisplayLabel(_, "service_type") for new code */
 export const SERVICE_LABEL: Record<string, string> = SERVICE_TYPE_LABELS;
 

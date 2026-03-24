@@ -106,6 +106,13 @@ interface WizardState {
   howFound: string;
   referralSource: string;
   hubspotDealId: string;
+  // External IDs (populated by dedup search on email blur)
+  hubspotContactId: string;
+  squareCustomerId: string;
+  squareCardId: string;
+  cardLastFour: string;
+  cardBrand: string;
+  cardOnFile: boolean;
   // Step 2
   deliveryTypes: string[];
   deliveryFrequency: string;
@@ -144,6 +151,12 @@ const DEFAULT_STATE: WizardState = {
   howFound: "",
   referralSource: "",
   hubspotDealId: "",
+  hubspotContactId: "",
+  squareCustomerId: "",
+  squareCardId: "",
+  cardLastFour: "",
+  cardBrand: "",
+  cardOnFile: false,
   deliveryTypes: [],
   deliveryFrequency: "",
   typicalItems: "",
@@ -261,6 +274,12 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
           how_found: state.howFound || undefined,
           referral_source: state.referralSource.trim() || undefined,
           hubspot_deal_id: state.hubspotDealId.trim() || undefined,
+          hubspot_contact_id: state.hubspotContactId || undefined,
+          square_customer_id: state.squareCustomerId || undefined,
+          square_card_id: state.squareCardId || undefined,
+          card_last_four: state.cardLastFour || undefined,
+          card_brand: state.cardBrand || undefined,
+          card_on_file: state.cardOnFile || undefined,
           delivery_types: state.deliveryTypes.length ? state.deliveryTypes : undefined,
           delivery_frequency: state.deliveryFrequency || undefined,
           typical_items: state.typicalItems.trim() || undefined,
@@ -479,6 +498,35 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
   );
 }
 
+/* ── Dedup search result types ── */
+interface HubSpotContactResult {
+  hubspot_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  company: string;
+  title: string;
+  lead_status: string;
+  deal_ids: string[];
+}
+interface SquareCustomerResult {
+  square_id: string;
+  company: string;
+  email: string;
+  phone: string;
+  card_on_file: boolean;
+  card_last_four: string;
+  card_brand: string;
+  card_id: string;
+}
+interface DedupResults {
+  hubspot: HubSpotContactResult | null;
+  square: SquareCustomerResult | null;
+  opsPartnerName: string | null;
+  opsPartnerId: string | null;
+}
+
 /* ── Step 1: Business Details ── */
 function Step1BusinessDetails({
   state,
@@ -491,6 +539,101 @@ function Step1BusinessDetails({
   activeSegments: typeof PARTNER_SEGMENT_GROUPS;
   phoneInput: ReturnType<typeof usePhoneInput>;
 }) {
+  const [searching, setSearching] = useState(false);
+  const [dedupResults, setDedupResults] = useState<DedupResults | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [autoFilled, setAutoFilled] = useState(false);
+
+  const handleEmailBlur = async () => {
+    const email = state.email.trim();
+    if (!email || !email.includes("@")) return;
+    setBannerDismissed(false);
+    setAutoFilled(false);
+    setSearching(true);
+    setDedupResults(null);
+    // Clear any previously stored IDs when email changes
+    update("hubspotContactId", "");
+    update("squareCustomerId", "");
+    update("squareCardId", "");
+    update("cardLastFour", "");
+    update("cardBrand", "");
+    update("cardOnFile", false);
+
+    try {
+      const [opsRes, hubspotRes, squareRes] = await Promise.allSettled([
+        fetch("/api/admin/partners/search-by-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }).then((r) => r.json()),
+        fetch("/api/hubspot/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, phone: state.phone }),
+        }).then((r) => r.json()),
+        fetch("/api/square/search-customer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }).then((r) => r.json()),
+      ]);
+
+      const ops = opsRes.status === "fulfilled" ? opsRes.value : null;
+      const hubspot = hubspotRes.status === "fulfilled" ? hubspotRes.value?.contact ?? null : null;
+      const square = squareRes.status === "fulfilled" ? squareRes.value?.customer ?? null : null;
+
+      const hasAny = !!ops?.partner || !!hubspot || !!square;
+      if (!hasAny) {
+        setDedupResults(null);
+        setSearching(false);
+        return;
+      }
+
+      setDedupResults({
+        hubspot,
+        square,
+        opsPartnerName: ops?.partner?.name ?? null,
+        opsPartnerId: ops?.partner?.id ?? null,
+      });
+    } catch {
+      // silently continue
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleAutoFill = () => {
+    if (!dedupResults) return;
+    const { hubspot, square } = dedupResults;
+
+    if (hubspot) {
+      const fullName = [hubspot.first_name, hubspot.last_name].filter(Boolean).join(" ");
+      if (fullName && !state.contactName) update("contactName", fullName);
+      if (hubspot.phone && !state.phone) update("phone", hubspot.phone);
+      if (hubspot.company && !state.name) update("name", hubspot.company);
+      if (hubspot.title && !state.contactTitle) update("contactTitle", hubspot.title);
+      update("hubspotContactId", hubspot.hubspot_id);
+    }
+
+    if (square) {
+      update("squareCustomerId", square.square_id);
+      if (square.card_id) update("squareCardId", square.card_id);
+      if (square.card_last_four) update("cardLastFour", square.card_last_four);
+      if (square.card_brand) update("cardBrand", square.card_brand);
+      update("cardOnFile", square.card_on_file);
+    }
+
+    setAutoFilled(true);
+  };
+
+  const showBanner =
+    !bannerDismissed &&
+    !autoFilled &&
+    dedupResults !== null &&
+    (dedupResults.hubspot !== null ||
+      dedupResults.square !== null ||
+      dedupResults.opsPartnerId !== null);
+
   return (
     <div className="space-y-6">
       {/* Profile type */}
@@ -589,10 +732,18 @@ function Step1BusinessDetails({
           <input
             type="email"
             value={state.email}
-            onChange={(e) => update("email", e.target.value)}
+            onChange={(e) => {
+              update("email", e.target.value);
+              setDedupResults(null);
+              setAutoFilled(false);
+            }}
+            onBlur={handleEmailBlur}
             placeholder="contact@company.com"
             className={inputCls}
           />
+          {searching && (
+            <p className="mt-1.5 text-[11px] text-[var(--tx3)]">Checking for existing contacts…</p>
+          )}
         </div>
         <div>
           <label className={labelCls}>Phone</label>
@@ -605,6 +756,97 @@ function Step1BusinessDetails({
             className={inputCls}
           />
         </div>
+
+        {/* ── Dedup / auto-fill banner ── */}
+        {showBanner && (
+          <div className="col-span-2">
+            {dedupResults.opsPartnerId ? (
+              /* Existing OPS+ partner — block creation */
+              <div className="rounded-xl border border-red-400/40 bg-red-500/5 p-4 flex items-start gap-3">
+                <span className="text-red-400 shrink-0 mt-0.5 text-base">⚠</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-red-400">
+                    Partner already exists in OPS+
+                  </p>
+                  <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+                    <strong>{dedupResults.opsPartnerName}</strong> is already registered with this
+                    email.
+                  </p>
+                  <a
+                    href={`/admin/platform/partners/${dedupResults.opsPartnerId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block mt-2 text-[11px] font-semibold text-red-400 underline underline-offset-2"
+                  >
+                    View Partner →
+                  </a>
+                </div>
+              </div>
+            ) : (
+              /* External contact found — offer auto-fill */
+              <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[var(--gold)] text-sm">🔍</span>
+                  <p className="text-[12px] font-bold tracking-wide uppercase text-[var(--gold)]">
+                    Existing Contact Found
+                  </p>
+                </div>
+                <div className="space-y-0.5 mb-3">
+                  {dedupResults.hubspot && (
+                    <p className="text-[12px] text-[var(--tx2)]">
+                      <span className="font-semibold text-[var(--tx)]">HubSpot:</span>{" "}
+                      {[dedupResults.hubspot.first_name, dedupResults.hubspot.last_name]
+                        .filter(Boolean)
+                        .join(" ") || dedupResults.hubspot.email}
+                      {dedupResults.hubspot.company && ` — ${dedupResults.hubspot.company}`}
+                      {dedupResults.hubspot.deal_ids.length > 0 && (
+                        <span className="text-[var(--tx3)]">
+                          {" "}({dedupResults.hubspot.deal_ids.length} deal
+                          {dedupResults.hubspot.deal_ids.length !== 1 ? "s" : ""})
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  {dedupResults.square && (
+                    <p className="text-[12px] text-[var(--tx2)]">
+                      <span className="font-semibold text-[var(--tx)]">Square:</span>{" "}
+                      {dedupResults.square.card_on_file
+                        ? `Card on file — ${dedupResults.square.card_brand} ****${dedupResults.square.card_last_four}`
+                        : "No card on file"}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAutoFill}
+                    className="px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors"
+                  >
+                    Auto-fill from HubSpot
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBannerDismissed(true)}
+                    className="px-3.5 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]/40 transition-colors"
+                  >
+                    Ignore
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Confirmation after auto-fill */}
+        {autoFilled && (
+          <div className="col-span-2 rounded-xl border border-[var(--grn)]/30 bg-[var(--grn)]/5 px-4 py-3 flex items-center gap-2">
+            <span className="text-[var(--grn)]">✓</span>
+            <p className="text-[12px] text-[var(--tx2)]">
+              Fields pre-filled from HubSpot
+              {dedupResults?.square?.card_on_file && " · Card on file linked from Square"}.
+            </p>
+          </div>
+        )}
 
         <div className="col-span-2">
           <label className={labelCls}>Business Address</label>

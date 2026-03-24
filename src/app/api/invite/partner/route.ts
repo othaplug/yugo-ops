@@ -5,6 +5,7 @@ import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-template
 import { requireAdmin } from "@/lib/api-auth";
 import { VERTICAL_LABELS } from "@/lib/partner-type";
 import { getEmailFrom } from "@/lib/email/send";
+import { squareClient } from "@/lib/square";
 
 async function resolveTemplateId(admin: ReturnType<typeof createAdminClient>, templateSlug: string | null): Promise<string | null> {
   if (!templateSlug) return null;
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest) {
       special_requirements, preferred_windows, pickup_locations,
       billing_method, payment_terms, tax_id, insurance_cert_required,
       create_portal_login, activation_mode, send_setup_sms,
+      // External IDs from dedup search
+      hubspot_contact_id, square_customer_id, square_card_id,
+      card_last_four, card_brand, card_on_file,
     } = body;
 
     if (!email || typeof email !== "string" || !name || typeof name !== "string") {
@@ -49,6 +53,23 @@ export async function POST(req: NextRequest) {
     const typeLabel = VERTICAL_LABELS[String(typeVal)] || typeVal;
 
     const admin = createAdminClient();
+
+    // ── Duplicate guard: block if phone already in use by a different org ──
+    if (phoneTrimmed) {
+      const { data: phoneMatch } = await admin
+        .from("organizations")
+        .select("id, name, email")
+        .neq("email", emailTrimmed)
+        .eq("phone", phoneTrimmed)
+        .limit(1)
+        .maybeSingle();
+      if (phoneMatch) {
+        return NextResponse.json(
+          { error: `A partner with this phone number already exists: "${phoneMatch.name}" (${phoneMatch.email})` },
+          { status: 400 },
+        );
+      }
+    }
 
     const templateId = await resolveTemplateId(admin, template_slug || null);
 
@@ -98,6 +119,13 @@ export async function POST(req: NextRequest) {
       ...(insurance_cert_required ? { insurance_cert_required: true } : {}),
       onboarding_status: isActivating ? "active" : "draft",
       ...(isActivating ? { activated_at: new Date().toISOString() } : {}),
+      // External IDs from dedup search (pre-linked)
+      ...(hubspot_contact_id ? { hubspot_contact_id: String(hubspot_contact_id) } : {}),
+      ...(square_customer_id ? { square_customer_id: String(square_customer_id) } : {}),
+      ...(square_card_id ? { square_card_id: String(square_card_id) } : {}),
+      ...(card_last_four ? { card_last_four: String(card_last_four) } : {}),
+      ...(card_brand ? { card_brand: String(card_brand) } : {}),
+      ...(card_on_file ? { card_on_file: true } : {}),
     };
 
     if (!wantsPortalLogin) {
@@ -119,6 +147,17 @@ export async function POST(req: NextRequest) {
         const { syncDealStage } = await import("@/lib/hubspot/sync-deal-stage");
         syncDealStage(String(hubspot_deal_id), "partner_signed").catch(() => {});
       }
+      syncPartnerToExternal({
+        orgId,
+        email: emailTrimmed,
+        name: nameTrimmed,
+        contactName: contactNameTrimmed,
+        phone: phoneTrimmed,
+        businessType: typeVal,
+        existingHubspotContactId: hubspot_contact_id || null,
+        existingSquareCustomerId: square_customer_id || null,
+        admin,
+      }).catch(() => {});
       return NextResponse.json({ ok: true, message: "Partner saved as draft" });
     }
 
@@ -175,6 +214,19 @@ export async function POST(req: NextRequest) {
       await admin.from("partner_users").insert({ user_id: userId, org_id: orgId });
     }
 
+    // ── Sync to HubSpot / Square if not already linked ─────────────────────
+    syncPartnerToExternal({
+      orgId,
+      email: emailTrimmed,
+      name: nameTrimmed,
+      contactName: contactNameTrimmed,
+      phone: phoneTrimmed,
+      businessType: typeVal,
+      existingHubspotContactId: hubspot_contact_id || null,
+      existingSquareCustomerId: square_customer_id || null,
+      admin,
+    }).catch(() => {});
+
     const { getEmailBaseUrl } = await import("@/lib/email-base-url");
     const loginUrl = `${getEmailBaseUrl()}/partner/login?welcome=1`;
 
@@ -223,5 +275,90 @@ export async function POST(req: NextRequest) {
       { error: err instanceof Error ? err.message : "Failed to send invitation" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Fire-and-forget: create the partner as a HubSpot contact and Square customer
+ * if they don't already have IDs linked.  Updates the organizations row with
+ * the newly created external IDs.
+ */
+async function syncPartnerToExternal({
+  orgId,
+  email,
+  name,
+  contactName,
+  phone,
+  businessType,
+  existingHubspotContactId,
+  existingSquareCustomerId,
+  admin,
+}: {
+  orgId: string;
+  email: string;
+  name: string;
+  contactName: string;
+  phone: string;
+  businessType: string;
+  existingHubspotContactId: string | null;
+  existingSquareCustomerId: string | null;
+  admin: ReturnType<typeof createAdminClient>;
+}): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  const token = process.env.HUBSPOT_ACCESS_TOKEN;
+
+  // ── HubSpot ──────────────────────────────────────────────────────────────
+  if (!existingHubspotContactId && token) {
+    try {
+      const nameParts = contactName.trim().split(/\s+/);
+      const firstname = nameParts[0] ?? "";
+      const lastname = nameParts.slice(1).join(" ") || undefined;
+
+      const hsRes = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          properties: {
+            email,
+            firstname,
+            ...(lastname ? { lastname } : {}),
+            company: name,
+            phone,
+            yugo_partner_status: "active",
+            yugo_partner_type: businessType,
+          },
+        }),
+      });
+
+      if (hsRes.ok) {
+        const hsContact = await hsRes.json();
+        if (hsContact.id) updates.hubspot_contact_id = hsContact.id;
+      }
+    } catch {
+      // non-critical
+    }
+  }
+
+  // ── Square ───────────────────────────────────────────────────────────────
+  if (!existingSquareCustomerId) {
+    try {
+      const createRes = await squareClient.customers.create({
+        companyName: name,
+        emailAddress: email || undefined,
+        phoneNumber: phone || undefined,
+        referenceId: orgId,
+      });
+      const sqId = createRes.customer?.id;
+      if (sqId) updates.square_customer_id = sqId;
+    } catch {
+      // non-critical
+    }
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await admin.from("organizations").update(updates).eq("id", orgId);
   }
 }
