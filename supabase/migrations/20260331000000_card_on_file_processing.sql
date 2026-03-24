@@ -8,6 +8,9 @@ ALTER TABLE organizations ADD COLUMN IF NOT EXISTS card_last_four TEXT;
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS card_brand TEXT;
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS card_on_file BOOLEAN NOT NULL DEFAULT FALSE;
 
+-- ── platform_config: add section column if not already present ────────────
+ALTER TABLE platform_config ADD COLUMN IF NOT EXISTS section TEXT;
+
 -- ── platform_config seed rows ─────────────────────────────────────────────
 INSERT INTO platform_config (key, value, description, section)
 VALUES

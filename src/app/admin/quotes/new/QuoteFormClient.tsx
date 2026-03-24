@@ -11,7 +11,6 @@ import { toTitleCase } from "@/lib/format-text";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { CaretDown as ChevronDown, Check, PaperPlaneTilt as Send, Eye, CircleNotch as Loader2, CaretRight as ChevronRight, SidebarSimple as PanelRightOpen, Users, Clock, Truck, Plus, Trash as Trash2, Warning } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
-import { getMoveSizeTierIndex } from "@/lib/addon-move-size";
 
 const PanelRightClose = PanelRightOpen;
 
@@ -1070,12 +1069,7 @@ export default function QuoteFormClient({
       if (next.has(addon.id)) {
         next.delete(addon.id);
       } else {
-        let tierIndex = 0;
-        if (addon.price_type === "tiered") {
-          const idx = getMoveSizeTierIndex(addon.slug, moveSize);
-          if (idx !== null) tierIndex = idx;
-        }
-        next.set(addon.id, { addon_id: addon.id, slug: addon.slug, quantity: 1, tier_index: tierIndex });
+        next.set(addon.id, { addon_id: addon.id, slug: addon.slug, quantity: 1, tier_index: 0 });
       }
       return next;
     });
@@ -1099,22 +1093,6 @@ export default function QuoteFormClient({
     });
   }, []);
 
-  // ── Sync move-size-tiered add-ons when move size changes ─────────────────────
-  useEffect(() => {
-    setSelectedAddons((prev) => {
-      let changed = false;
-      const next = new Map(prev);
-      for (const [id, sel] of prev) {
-        const addon = allAddons.find((a) => a.id === id);
-        if (!addon || addon.price_type !== "tiered") continue;
-        const newIdx = getMoveSizeTierIndex(addon.slug, moveSize);
-        if (newIdx === null || sel.tier_index === newIdx) continue;
-        next.set(id, { ...sel, tier_index: newIdx });
-        changed = true;
-      }
-      return changed ? next : prev;
-    });
-  }, [moveSize, allAddons]);
 
   // ── Auto-remove packing materials kit when Estate is recommended ─────────────
   useEffect(() => {
@@ -3215,14 +3193,8 @@ export default function QuoteFormClient({
                       let displayPrice = "";
                       if (addon.price_type === "flat") displayPrice = fmtPrice(addon.price);
                       else if (addon.price_type === "per_unit") displayPrice = `${fmtPrice(addon.price)} ${addon.unit_label ?? "each"}`;
-                      else if (addon.price_type === "tiered") {
-                        const msIdx = getMoveSizeTierIndex(addon.slug, moveSize);
-                        if (msIdx !== null) {
-                          displayPrice = fmtPrice(addon.tiers?.[msIdx]?.price ?? addon.price);
-                        } else {
-                          displayPrice = "varies";
-                        }
-                      } else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                      else if (addon.price_type === "tiered") displayPrice = "varies";
+                      else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
                       return (
                         <div key={addon.id} className="space-y-1">
                           <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -3259,7 +3231,7 @@ export default function QuoteFormClient({
                               <span className="text-[10px] text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
                             </div>
                           )}
-                          {isSelected && addon.price_type === "tiered" && addon.tiers && getMoveSizeTierIndex(addon.slug, moveSize) === null && (
+                          {isSelected && addon.price_type === "tiered" && addon.tiers && (
                             <div className="ml-6 flex items-center gap-2">
                               <select
                                 value={sel!.tier_index}
@@ -3291,14 +3263,8 @@ export default function QuoteFormClient({
                       let displayPrice = "";
                       if (addon.price_type === "flat") displayPrice = fmtPrice(addon.price);
                       else if (addon.price_type === "per_unit") displayPrice = `${fmtPrice(addon.price)} ${addon.unit_label ?? "each"}`;
-                      else if (addon.price_type === "tiered") {
-                        const msIdx = getMoveSizeTierIndex(addon.slug, moveSize);
-                        if (msIdx !== null) {
-                          displayPrice = fmtPrice(addon.tiers?.[msIdx]?.price ?? addon.price);
-                        } else {
-                          displayPrice = "varies";
-                        }
-                      } else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
+                      else if (addon.price_type === "tiered") displayPrice = "varies";
+                      else if (addon.price_type === "percent") displayPrice = `${((addon.percent_value ?? 0) * 100).toFixed(0)}%`;
                       return (
                         <div key={addon.id} className="space-y-1">
                           <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -3335,7 +3301,7 @@ export default function QuoteFormClient({
                               <span className="text-[10px] text-[var(--tx3)]">= {fmtPrice(addon.price * (sel!.quantity || 1))}</span>
                             </div>
                           )}
-                          {isSelected && addon.price_type === "tiered" && addon.tiers && getMoveSizeTierIndex(addon.slug, moveSize) === null && (
+                          {isSelected && addon.price_type === "tiered" && addon.tiers && (
                             <div className="ml-6 flex items-center gap-2">
                               <select
                                 value={sel!.tier_index}

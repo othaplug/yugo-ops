@@ -67,7 +67,6 @@ import {
   calculateTieredDeposit,
 } from "./quote-shared";
 
-import { getMoveSizeTierIndex, PACKING_KIT_CONTENTS, MOVE_SIZE_TIERED_ADDONS } from "@/lib/addon-move-size";
 import YugoLogo from "@/components/YugoLogo";
 import SquarePaymentForm from "@/components/payments/SquarePaymentForm";
 import ContractSign, {
@@ -405,11 +404,7 @@ export default function QuotePageClient({
         if (toggled) {
           next.delete(addon.id);
         } else {
-          let tierIndex = 0;
-          if (addon.price_type === "tiered") {
-            const idx = getMoveSizeTierIndex(addon.slug, quote.move_size);
-            if (idx !== null) tierIndex = idx;
-          }
+          const tierIndex = 0;
           next.set(addon.id, { addon_id: addon.id, slug: addon.slug, quantity: 1, tier_index: tierIndex });
         }
         trackEvent("addon_toggled", { addon: addon.slug, enabled: !toggled });
@@ -2478,13 +2473,6 @@ function AddOnsSection({
   showContinueButton?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
-  const [expandedContents, setExpandedContents] = useState<Set<string>>(new Set());
-  const toggleContents = (id: string) =>
-    setExpandedContents((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
   const KEY_COUNT = 3;
   const keyAddons = addons.filter((a) => a.is_popular || selectedAddons.has(a.id)).slice(0, KEY_COUNT);
   const hasMore = addons.length > keyAddons.length;
@@ -2517,18 +2505,10 @@ function AddOnsSection({
               priceLabel = `${fmtPrice(addon.price)} ${addon.unit_label ?? "each"}`;
               computedCost = addon.price * (sel?.quantity ?? 1);
               break;
-            case "tiered": {
-              const moveSizeIdx = getMoveSizeTierIndex(addon.slug, moveSize);
-              if (moveSizeIdx !== null && addon.tiers) {
-                const tierPrice = (addon.tiers as { label: string; price: number }[])[moveSizeIdx]?.price ?? addon.price;
-                priceLabel = fmtPrice(tierPrice);
-                computedCost = tierPrice;
-              } else {
-                priceLabel = "from " + fmtPrice(addon.tiers?.[0]?.price ?? 0);
-                computedCost = addon.tiers?.[sel?.tier_index ?? 0]?.price ?? 0;
-              }
+            case "tiered":
+              priceLabel = "varies";
+              computedCost = addon.tiers?.[sel?.tier_index ?? 0]?.price ?? 0;
               break;
-            }
             case "percent":
               computedCost = Math.round(basePrice * (addon.percent_value ?? 0));
               priceLabel = `${((addon.percent_value ?? 0) * 100).toFixed(0)}% (${fmtPrice(computedCost)})`;
@@ -2573,14 +2553,6 @@ function AddOnsSection({
                         Popular
                       </span>
                     )}
-                    {addon.slug === "packing_materials" && (
-                      <span
-                        className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border"
-                        style={{ color: "#2C7A4B", backgroundColor: "#F0FBF4", borderColor: "#A3D9B4" }}
-                      >
-                        Free Delivery
-                      </span>
-                    )}
                   </div>
                   {addon.description && (
                     <p
@@ -2591,28 +2563,6 @@ function AddOnsSection({
                     </p>
                   )}
 
-                  {/* Packing kit contents expand */}
-                  {addon.slug === "packing_materials" && moveSize && (
-                    <div className="mt-1.5">
-                      <button
-                        type="button"
-                        data-no-min-height
-                        onClick={() => toggleContents(addon.id)}
-                        className="text-[11px] font-medium transition-opacity hover:opacity-70 flex items-center gap-1"
-                        style={{ color: GOLD }}
-                      >
-                        {expandedContents.has(addon.id) ? "Hide contents ▲" : "What's included ▼"}
-                      </button>
-                      {expandedContents.has(addon.id) && (
-                        <p
-                          className="mt-1.5 text-[11px] leading-relaxed px-3 py-2 rounded-lg border"
-                          style={{ color: `${FOREST}80`, backgroundColor: "#FAFAF8", borderColor: "#E8E4DC" }}
-                        >
-                          {PACKING_KIT_CONTENTS[MOVE_SIZE_TIERED_ADDONS.packing_materials[moveSize] ?? 0]}
-                        </p>
-                      )}
-                    </div>
-                  )}
 
                   {isOn && addon.price_type === "per_unit" && (
                     <div className="flex items-center gap-2 mt-2">
@@ -2644,7 +2594,7 @@ function AddOnsSection({
                     </div>
                   )}
 
-                  {isOn && addon.price_type === "tiered" && addon.tiers && getMoveSizeTierIndex(addon.slug, moveSize) === null && (
+                  {isOn && addon.price_type === "tiered" && addon.tiers && (
                     <div className="mt-2">
                       <select
                         value={sel?.tier_index ?? 0}
