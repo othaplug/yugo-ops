@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const { data: tips } = await supabase
     .from("tips")
     .select("id, move_id, client_name, amount, processing_fee, net_amount, charged_at")
-    .eq("crew_id", crewMember.crewMemberId)
+    .eq("crew_id", crewMember.teamId)
     .order("charged_at", { ascending: false })
     .limit(50);
 

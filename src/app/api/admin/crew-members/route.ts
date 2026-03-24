@@ -6,6 +6,7 @@ import { hashCrewPin } from "@/lib/crew-token";
 import { getResend } from "@/lib/resend";
 import { crewPortalInviteEmail, crewPortalInviteEmailText } from "@/lib/email-templates";
 import { getEmailFrom } from "@/lib/email/send";
+import { clearLockout } from "@/lib/crew-lockout";
 
 const CREW_MEMBERS_SELECT = "id, name, phone, email, role, team_id, is_active, avatar_initials, created_at";
 const CREW_MEMBERS_SELECT_NO_EMAIL = "id, name, phone, role, team_id, is_active, avatar_initials, created_at";
@@ -69,12 +70,124 @@ export async function POST(req: NextRequest) {
     const admin = createAdminClient();
 
     const DUPLICATE_PHONE_MSG =
-      "A portal access entry with this phone number already exists. Use a different number or reset the existing member's PIN.";
+      "A portal access entry with this phone number already exists. Use a different number or update the existing member below.";
 
-    const { data: existing } = await admin.from("crew_members").select("id").eq("phone", normalizedPhone).limit(1).maybeSingle();
-    if (existing) {
-      console.error("[crew-members] 400: duplicate phone", { normalizedPhone });
-      return NextResponse.json({ error: DUPLICATE_PHONE_MSG }, { status: 400 });
+    const existingMemberId =
+      typeof body.existing_member_id === "string" ? body.existing_member_id.trim() : "";
+
+    /** When admin confirms, update this row instead of inserting (same phone). */
+    if (existingMemberId) {
+      const { data: target } = await admin
+        .from("crew_members")
+        .select("id, phone, name")
+        .eq("id", existingMemberId)
+        .maybeSingle();
+      if (!target) {
+        return NextResponse.json({ error: "Member not found" }, { status: 404 });
+      }
+      if (normalizePhone(String(target.phone)) !== normalizedPhone) {
+        return NextResponse.json(
+          { error: "Phone number does not match that crew member. Use the number already on file or choose another." },
+          { status: 400 }
+        );
+      }
+
+      const baseUpdate: Record<string, unknown> = {
+        name: name.trim(),
+        phone: normalizedPhone,
+        pin_hash: hashCrewPin(pin),
+        team_id,
+        is_active: true,
+        avatar_initials: initials || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (emailTrimmed) baseUpdate.email = emailTrimmed;
+
+      let updateResult = await admin.from("crew_members").update(baseUpdate).eq("id", existingMemberId).select().single();
+      if (updateResult.error && updateResult.error.code === "PGRST204" && String(updateResult.error.message).includes("email")) {
+        delete baseUpdate.email;
+        updateResult = await admin.from("crew_members").update(baseUpdate).eq("id", existingMemberId).select().single();
+      }
+      const { data: updated, error: updateErr } = updateResult;
+      if (updateErr) {
+        console.error("[crew-members] update existing error:", updateErr);
+        return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      }
+
+      if (role === "lead") {
+        const { data: teammates } = await admin
+          .from("crew_members")
+          .select("id")
+          .eq("team_id", team_id)
+          .eq("is_active", true);
+        for (const t of teammates || []) {
+          const newRole = t.id === existingMemberId ? "lead" : "specialist";
+          await admin
+            .from("crew_members")
+            .update({ role: newRole, updated_at: new Date().toISOString() })
+            .eq("id", t.id);
+        }
+      } else if (role === "specialist" || role === "driver") {
+        await admin
+          .from("crew_members")
+          .update({ role, updated_at: new Date().toISOString() })
+          .eq("id", existingMemberId);
+      }
+
+      const { data: finalRow } = await admin.from("crew_members").select().eq("id", existingMemberId).single();
+      await clearLockout(normalizedPhone);
+
+      const row = finalRow ?? updated;
+      if (emailTrimmed && row) {
+        try {
+          const requestUrl = new URL(req.url);
+          const origin = requestUrl.origin || (await import("@/lib/email-base-url")).getEmailBaseUrl();
+          const loginUrl = `${origin.replace(/\/$/, "")}/crew/login`;
+          const resend = getResend();
+          const emailFrom = await getEmailFrom();
+          await resend.emails.send({
+            from: emailFrom,
+            to: emailTrimmed,
+            subject: "You're invited to the Yugo+ Crew Portal",
+            html: crewPortalInviteEmail({
+              name: row.name,
+              email: emailTrimmed,
+              loginUrl,
+              phone: normalizedPhone,
+              pin,
+            }),
+            text: crewPortalInviteEmailText({
+              name: row.name,
+              email: emailTrimmed,
+              loginUrl,
+              phone: normalizedPhone,
+              pin,
+            }),
+          });
+        } catch (err) {
+          console.error("[crew-members] invite email send failed (update):", err);
+        }
+      }
+
+      return NextResponse.json(row);
+    }
+
+    const { data: duplicate } = await admin
+      .from("crew_members")
+      .select("id, name")
+      .eq("phone", normalizedPhone)
+      .limit(1)
+      .maybeSingle();
+    if (duplicate) {
+      console.error("[crew-members] 409: duplicate phone", { normalizedPhone });
+      return NextResponse.json(
+        {
+          error: DUPLICATE_PHONE_MSG,
+          code: "DUPLICATE_PHONE",
+          existingMember: { id: duplicate.id, name: duplicate.name },
+        },
+        { status: 409 }
+      );
     }
 
     const payload: Record<string, unknown> = {
@@ -95,6 +208,14 @@ export async function POST(req: NextRequest) {
     }
 
     const { data, error } = result;
+    if (!error && data && (role as string) === "lead" && team_id) {
+      await admin
+        .from("crew_members")
+        .update({ role: "specialist", updated_at: new Date().toISOString() })
+        .eq("team_id", team_id)
+        .eq("role", "lead")
+        .neq("id", data.id);
+    }
     if (error) {
       console.error("[crew-members] insert error:", error);
       const isDuplicatePhone =
@@ -102,7 +223,19 @@ export async function POST(req: NextRequest) {
         (error as { code?: string | number }).code === 23505 ||
         /duplicate key|unique constraint|already exists/i.test(String(error.message));
       if (isDuplicatePhone) {
-        return NextResponse.json({ error: DUPLICATE_PHONE_MSG }, { status: 400 });
+        const { data: dup } = await admin
+          .from("crew_members")
+          .select("id, name")
+          .eq("phone", normalizedPhone)
+          .maybeSingle();
+        return NextResponse.json(
+          {
+            error: DUPLICATE_PHONE_MSG,
+            code: "DUPLICATE_PHONE",
+            existingMember: dup ? { id: dup.id, name: dup.name } : undefined,
+          },
+          { status: 409 }
+        );
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -1,9 +1,19 @@
 export default function CrewLoading() {
   return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
-        <span className="text-[12px] text-[var(--tx3)] font-medium">Loading tracking...</span>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="skeleton h-8 w-44" />
+        <div className="skeleton h-8 w-28 rounded-lg" />
+      </div>
+
+      {/* Map placeholder */}
+      <div className="skeleton rounded-xl" style={{ height: 400 }} />
+
+      {/* Crew card row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="skeleton h-24 rounded-xl" style={{ animationDelay: `${i * 80}ms` }} />
+        ))}
       </div>
     </div>
   );

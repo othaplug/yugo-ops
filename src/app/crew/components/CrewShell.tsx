@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { X, SignOut, List } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -11,8 +11,9 @@ import YugoLogo from "@/components/YugoLogo";
 import CrewSettingsDropdown from "./CrewSettingsDropdown";
 import OfflineBanner from "@/components/ui/OfflineBanner";
 
-const NAV_ITEMS = [
+const NAV_CORE = [
   { href: "/crew/dashboard", label: "Dashboard", icon: "target" as const },
+  { href: "/crew/stats", label: "Stats", icon: "barChart" as const },
   { href: "/crew/expense", label: "Expenses", icon: "dollarSign" as const },
   { href: "/crew/end-of-day", label: "End of Day", icon: "fileText" as const },
 ];
@@ -24,8 +25,22 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [crewMember, setCrewMember] = useState<{ name: string; teamName?: string } | null>(null);
+  const [hasActiveBinTasks, setHasActiveBinTasks] = useState(false);
 
-  const isActive = (href: string) => href === "/crew/dashboard" ? pathname === "/crew/dashboard" || pathname.startsWith("/crew/dashboard/job/") : pathname.startsWith(href);
+  const navItems = useMemo(() => {
+    if (!hasActiveBinTasks) return NAV_CORE;
+    const bin = { href: "/crew/bin-orders", label: "Bin Tasks", icon: "package" as const };
+    return [NAV_CORE[0], bin, ...NAV_CORE.slice(1)];
+  }, [hasActiveBinTasks]);
+
+  const isActive = (href: string) => {
+    if (href === "/crew/dashboard") {
+      return pathname === "/crew/dashboard" || pathname.startsWith("/crew/dashboard/job/");
+    }
+    if (href === "/crew/stats") return pathname.startsWith("/crew/stats");
+    if (href === "/crew/bin-orders") return pathname.startsWith("/crew/bin-orders");
+    return pathname.startsWith(href);
+  };
   const isJobPage = pathname.startsWith("/crew/dashboard/job/");
 
   useEffect(() => {
@@ -39,9 +54,10 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
       })
       .then((d) => {
         if (d?.crewMember) setCrewMember({ name: d.crewMember.name, teamName: d.crewMember.teamName });
+        if (typeof d?.hasActiveBinTasks === "boolean") setHasActiveBinTasks(d.hasActiveBinTasks);
       })
       .catch(() => {});
-  }, [router]);
+  }, [router, pathname]);
 
   const initials = (crewMember?.name || "C")
     .split(/\s+/)
@@ -96,7 +112,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
             {/* Navigation */}
             <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] overscroll-contain scrollbar-hide">
               <div className="px-3 space-y-1">
-                {NAV_ITEMS.map((item) => {
+                {navItems.map((item) => {
                   const active = isActive(item.href);
                   const IconComp = Icons[item.icon];
                   return (
@@ -186,7 +202,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
             className="md:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[var(--brd)]/60 flex items-stretch bg-[var(--card)]/95 backdrop-blur-md safe-area-bottom"
             aria-label="Main navigation"
           >
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const active = isActive(item.href);
               const IconComp = Icons[item.icon];
               return (

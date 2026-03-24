@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { signCrewToken, hashCrewPin, CREW_COOKIE_NAME, CREW_PIN_LENGTH } from "@/lib/crew-token";
 import { checkLockout, recordFailedAttempt, clearLockout, normalizePhoneForLockout } from "@/lib/crew-lockout";
+import { resolveRegisteredDeviceTeamId } from "@/lib/crew-device-team";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 20;
@@ -32,12 +33,16 @@ export async function POST(req: NextRequest) {
     const phone = (body.phone || "").toString().trim();
     const pin = (body.pin || "").toString().trim();
     const crewMemberId = (body.crewMemberId || "").toString().trim();
+    const deviceId = (body.deviceId || "").toString().trim();
 
     const isDeviceFlow = !!crewMemberId;
 
     if (isDeviceFlow) {
       if (!pin || pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
         return NextResponse.json({ error: "PIN must be 4–6 digits" }, { status: 400 });
+      }
+      if (!deviceId) {
+        return NextResponse.json({ error: "Device identification required. Refresh the page or re-register this tablet." }, { status: 400 });
       }
     } else {
       if (!phone || !pin) {
@@ -68,6 +73,20 @@ export async function POST(req: NextRequest) {
         .eq("is_active", true)
         .maybeSingle();
       if (!error && m) member = m;
+
+      if (member) {
+        const resolved = await resolveRegisteredDeviceTeamId(deviceId);
+        const deviceTeamId = resolved?.teamId;
+        if (!deviceTeamId || member.team_id !== deviceTeamId) {
+          return NextResponse.json(
+            {
+              error:
+                "This crew member is not assigned to this tablet’s team today. Use the device registered for your crew, or log in with phone and PIN.",
+            },
+            { status: 403 }
+          );
+        }
+      }
     } else {
       const normalized = normalizePhone(phone);
       const lockout = await checkLockout(phone);

@@ -16,6 +16,7 @@ import { Icons } from "./SidebarIcons";
 import YugoLogo, { BetaBadge } from "@/components/YugoLogo";
 import CommandPalette from "./CommandPalette";
 import { createClient } from "@/lib/supabase/client";
+import NextTopLoader from "nextjs-toploader";
 import {
   CaretDown,
   CaretLeft,
@@ -318,6 +319,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
       <NotificationProvider>
         <PendingChangeRequestsProvider>
           <ToastProvider>
+            <NextTopLoader color="#C9A962" height={2} showSpinner={false} easing="ease" speed={300} shadow="0 0 8px rgba(201,169,98,0.5)" />
             <RealtimeListener />
             <SessionTimeout />
             <OfflineBanner />

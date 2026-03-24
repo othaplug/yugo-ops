@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
@@ -48,6 +48,8 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
   const [teamId, setTeamId] = useState("");
   const [role, setRole] = useState<"lead" | "specialist" | "driver">("specialist");
   const [saving, setSaving] = useState(false);
+  /** Server said phone exists but client list did not include it — offer update flow */
+  const [staleDuplicate, setStaleDuplicate] = useState<{ id: string; name: string } | null>(null);
   const [createdMember, setCreatedMember] = useState<{ name: string; phone: string; email?: string } | null>(null);
   const [smsSending, setSmsSending] = useState(false);
   const [smsSent, setSmsSent] = useState(false);
@@ -62,10 +64,20 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
     setPin("");
     setTeamId("");
     setRole("specialist");
+    setStaleDuplicate(null);
     setCreatedMember(null);
     setSmsSent(false);
     onClose();
   };
+
+  /** Same 10-digit key as API — if this phone already has portal access, we update instead of insert */
+  const phoneOwner = useMemo(() => {
+    const np = normalizePhone(phone);
+    if (np.length < 10) return null;
+    return crewPortalMembers.find((m) => normalizePhone(m.phone) === np) ?? null;
+  }, [phone, crewPortalMembers]);
+
+  const existingMemberId = phoneOwner?.id ?? staleDuplicate?.id;
 
   const handleSendSetupSms = async () => {
     if (!createdMember?.phone) return;
@@ -113,23 +125,37 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
     }
     setSaving(true);
     try {
+      const body: Record<string, unknown> = {
+        name: trimmedName,
+        phone: trimmedPhone ? "+1" + trimmedPhone : "",
+        pin,
+        role,
+        team_id: teamId,
+      };
+      if (existingMemberId) {
+        body.existing_member_id = existingMemberId;
+      }
       const r = await fetch("/api/admin/crew-members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: trimmedName,
-          phone: trimmedPhone ? "+1" + trimmedPhone : "",
-          pin,
-          role,
-          team_id: teamId,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await r.json().catch(() => ({}));
+      if (r.status === 409 && data?.code === "DUPLICATE_PHONE" && data?.existingMember?.id) {
+        setStaleDuplicate({ id: data.existingMember.id, name: data.existingMember.name });
+        toast("This phone already has portal access — confirm update below.", "x");
+        return;
+      }
       if (!r.ok) {
         toast(data.error || "Failed to add portal access", "x");
         return;
       }
-      toast("Portal access added. They can log in with this phone and PIN.", "check");
+      setStaleDuplicate(null);
+      if (existingMemberId) {
+        toast("Portal access updated. They can log in with this phone and PIN.", "check");
+      } else {
+        toast("Portal access added. They can log in with this phone and PIN.", "check");
+      }
       onAdded();
       // Store created member for SMS option before closing
       const normalizedPhone = trimmedPhone ? "+1" + trimmedPhone : "";
@@ -220,10 +246,28 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
             ref={phoneInput.ref}
             type="tel"
             value={phone}
-            onChange={phoneInput.onChange}
+            onChange={(ev) => {
+              phoneInput.onChange(ev);
+              setStaleDuplicate(null);
+            }}
             placeholder={PHONE_PLACEHOLDER}
             className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
           />
+          {(phoneOwner || staleDuplicate) && (
+            <p className="text-[11px] text-[var(--tx2)] mt-2 p-3 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/25">
+              {phoneOwner ? (
+                <>
+                  This number is already linked to <span className="font-semibold text-[var(--tx)]">{phoneOwner.name}</span> for the crew portal.
+                  Submitting will update their PIN, team, and role with what you entered above — not create a second login.
+                </>
+              ) : (
+                <>
+                  This number is already registered to <span className="font-semibold text-[var(--tx)]">{staleDuplicate?.name}</span>.
+                  Submit again to update their PIN and team with the values above.
+                </>
+              )}
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">PIN (6 digits)</label>
@@ -267,7 +311,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
             Cancel
           </button>
           <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50">
-            {saving ? "Adding…" : "Add access"}
+            {saving ? (existingMemberId ? "Updating…" : "Adding…") : existingMemberId ? "Update portal access" : "Add access"}
           </button>
         </div>
       </form>

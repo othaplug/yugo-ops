@@ -1,22 +1,11 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
-import CrewShell from "../components/CrewShell";
+import CrewAuthenticatedShell from "../components/CrewAuthenticatedShell";
 
 export const metadata = { title: "Crew Dashboard" };
 
-export default async function CrewDashboardLayout({
+export default function CrewDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(CREW_COOKIE_NAME)?.value;
-  const payload = token ? verifyCrewToken(token) : null;
-
-  if (!payload) {
-    redirect("/crew/login");
-  }
-
-  return <CrewShell>{children}</CrewShell>;
+  return <CrewAuthenticatedShell>{children}</CrewAuthenticatedShell>;
 }

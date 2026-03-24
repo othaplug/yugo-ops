@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
+import { isDispatchJobInProgress } from "@/lib/dispatch-job-in-progress";
 
 /** PATCH: Assign crew to a move or delivery. Staff only. */
 export async function PATCH(req: NextRequest) {
@@ -35,24 +36,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    const IN_PROGRESS = [
-      "en_route",
-      "en_route_to_pickup",
-      "arrived_at_pickup",
-      "loading",
-      "en_route_to_destination",
-      "arrived_at_destination",
-      "unloading",
-      "in_progress",
-      "dispatched",
-      "in_transit",
-    ];
-    const norm = (s: string | null) => (s || "").toLowerCase().replace(/-/g, "_");
-    const statusNorm = norm(existing.status);
-    const stageNorm = norm(existing.stage);
-    const isInProgress = IN_PROGRESS.includes(statusNorm) || IN_PROGRESS.includes(stageNorm);
-
-    if (isInProgress) {
+    if (isDispatchJobInProgress(existing.status, existing.stage)) {
       return NextResponse.json(
         { error: "Cannot reassign: job is in progress. Reassignment is only allowed before the crew has started." },
         { status: 400 }

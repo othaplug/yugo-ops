@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Clock, Calendar, Check, Lock, ChartBar, Package } from "@phosphor-icons/react";
+import { X, Clock, Calendar, Check, Lock, Package } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { getDisplayLabel } from "@/lib/displayLabels";
 import Link from "next/link";
@@ -38,6 +38,7 @@ interface DashboardData {
   readinessRequired?: boolean;
   isCrewLead?: boolean;
   endOfDaySubmitted?: boolean;
+  hasActiveBinTasks?: boolean;
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
@@ -396,23 +397,15 @@ export default function CrewDashboardPage() {
           </Link>
         )}
 
-        {/* Bin Tasks link */}
-        <Link
-          href="/crew/bin-orders"
-          className="mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors border border-[var(--brd)]/50 hover:border-[var(--gold)]/30"
-        >
-          <Package size={14} />
-          Bin Tasks (Drop-offs &amp; Pickups)
-        </Link>
-
-        {/* My Stats link */}
-        <Link
-          href="/crew/stats"
-          className="mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors"
-        >
-          <ChartBar size={14} />
-          My Stats &amp; Leaderboard
-        </Link>
+        {data.hasActiveBinTasks && (
+          <Link
+            href="/crew/bin-orders"
+            className="mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors border border-[var(--brd)]/50 hover:border-[var(--gold)]/30"
+          >
+            <Package size={14} />
+            Bin Tasks (Drop-offs &amp; Pickups)
+          </Link>
+        )}
       </section>
     </PageContent>
   );

@@ -12,7 +12,6 @@ import {
   Camera,
   Warning,
 } from "@phosphor-icons/react";
-import Link from "next/link";
 
 const STATUS_LABELS: Record<string, string> = {
   confirmed: "Confirmed",
@@ -158,14 +157,9 @@ export default function CrewBinOrdersPage() {
 
   return (
     <div className="min-h-screen bg-[#0F1117] text-white">
-      <div className="px-4 pt-6 pb-2 flex items-center gap-3">
-        <Link href="/crew/dashboard" className="text-gray-400 hover:text-white transition-colors">
-          <ArrowLeft size={20} />
-        </Link>
-        <div>
-          <h1 className="text-[18px] font-bold">Bin Tasks</h1>
-          <p className="text-[12px] text-gray-400">Today&apos;s drop-offs and pickups</p>
-        </div>
+      <div className="px-4 pt-6 pb-2">
+        <h1 className="text-[18px] font-bold">Bin Tasks</h1>
+        <p className="text-[12px] text-gray-400">Today&apos;s drop-offs and pickups</p>
       </div>
 
       <div className="px-4 pb-8">

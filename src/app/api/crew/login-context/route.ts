@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getTodayString, getLocalDateDisplay } from "@/lib/business-timezone";
+import { getLocalDateDisplay } from "@/lib/business-timezone";
+import { resolveRegisteredDeviceTeamId } from "@/lib/crew-device-team";
 
 /** GET: Returns crew lead + team members for device-based login. Query: ?deviceId=xxx. Rate limited per deviceId. */
 export async function GET(req: NextRequest) {
@@ -16,31 +17,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ hasDevice: false }, { status: 429 });
     }
 
-    const admin = createAdminClient();
-    const today = new Date().toISOString().split("T")[0];
-
-    const { data: device, error: devErr } = await admin
-      .from("registered_devices")
-      .select("id, truck_id, default_team_id, device_name")
-      .eq("device_id", deviceId)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (devErr || !device) {
+    const resolved = await resolveRegisteredDeviceTeamId(deviceId);
+    if (!resolved) {
       return NextResponse.json({ hasDevice: false });
     }
 
-    let teamId = device.default_team_id;
-
-    if (device.truck_id) {
-      const { data: assignment } = await admin
-        .from("truck_assignments")
-        .select("team_id")
-        .eq("truck_id", device.truck_id)
-        .eq("date", today)
-        .maybeSingle();
-      if (assignment?.team_id) teamId = assignment.team_id;
-    }
+    const { device, teamId } = resolved;
+    const admin = createAdminClient();
 
     if (!teamId) {
       return NextResponse.json({

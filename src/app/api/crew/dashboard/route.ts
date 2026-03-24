@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { crewMemberMatchesSessionToken } from "@/lib/crew-session-validate";
 import { getTodayString, getLocalDateDisplay, getAppTimezone } from "@/lib/business-timezone";
+import { countActiveBinTasks } from "@/lib/bin-orders-active-tasks";
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
 export async function GET(req: NextRequest) {
@@ -14,32 +16,78 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const sessionOk = await crewMemberMatchesSessionToken(payload);
+  if (!sessionOk) {
+    return NextResponse.json(
+      { error: "Session no longer valid. Please log in again.", code: "CREW_SESSION_STALE" },
+      { status: 401 }
+    );
+  }
+
   const today = getTodayString();
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split("T")[0];
   const supabase = createAdminClient();
 
-  const [movesRes, deliveriesRes] = await Promise.all([
+  const moveSelect =
+    "id, move_code, client_name, from_address, to_address, from_postal_code, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert";
+  const deliverySelect =
+    "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, recurring_schedule_id, booking_type";
+
+  const [movesRes, carryMovesRes, deliveriesRes, carryDeliveriesRes] = await Promise.all([
     supabase
       .from("moves")
-      .select(
-        "id, move_code, client_name, from_address, to_address, from_postal_code, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert",
-      )
+      .select(moveSelect)
       .eq("crew_id", payload.teamId)
       .gte("scheduled_date", today)
       .lte("scheduled_date", today)
       .order("scheduled_date")
       .order("scheduled_time"),
     supabase
+      .from("moves")
+      .select(moveSelect)
+      .eq("crew_id", payload.teamId)
+      .lt("scheduled_date", today)
+      .order("scheduled_date")
+      .order("scheduled_time"),
+    supabase
       .from("deliveries")
-      .select("id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, recurring_schedule_id, booking_type")
+      .select(deliverySelect)
       .eq("crew_id", payload.teamId)
       .gte("scheduled_date", today)
       .lte("scheduled_date", today)
       .order("scheduled_date")
       .order("time_slot"),
+    supabase
+      .from("deliveries")
+      .select(deliverySelect)
+      .eq("crew_id", payload.teamId)
+      .lt("scheduled_date", today)
+      .order("scheduled_date")
+      .order("time_slot"),
   ]);
 
-  const moves = movesRes.data || [];
-  const deliveries = deliveriesRes.data || [];
+  const movesToday = movesRes.data || [];
+  const movesCarryover = (carryMovesRes.data || []).filter((m) => !isTerminalMoveStatus(m.status));
+  const deliveriesToday = deliveriesRes.data || [];
+  const deliveriesCarryover = (carryDeliveriesRes.data || []).filter((d) => !isTerminalDeliveryStatus(d.status));
+
+  const seenMove = new Set<string>();
+  const moves: typeof movesToday = [];
+  for (const m of [...movesCarryover, ...movesToday]) {
+    if (seenMove.has(m.id)) continue;
+    seenMove.add(m.id);
+    moves.push(m);
+  }
+
+  const seenDel = new Set<string>();
+  const deliveries: typeof deliveriesToday = [];
+  for (const d of [...deliveriesCarryover, ...deliveriesToday]) {
+    if (seenDel.has(d.id)) continue;
+    seenDel.add(d.id);
+    deliveries.push(d);
+  }
 
   type Job = {
     id: string;
@@ -94,7 +142,7 @@ export async function GET(req: NextRequest) {
   }
 
   for (const d of deliveries) {
-    const items = Array.isArray(d.items) ? d.items : [];
+    const items = normalizeDeliveryItemsList(d.items);
     const time = d.time_slot || "2:00 PM";
     const isRec = !!(d.recurring_schedule_id);
     const bType = (d.booking_type as string | null) || null;
@@ -124,10 +172,18 @@ export async function GET(req: NextRequest) {
     return tA - tB;
   });
 
-  const [{ data: readinessCheck }, { data: crewRow }, { data: endOfDayReport }] = await Promise.all([
+  const [{ data: readinessCheck }, { data: crewRow }, { data: endOfDayReport }, { data: binOrdersRaw }] = await Promise.all([
     supabase.from("readiness_checks").select("id").eq("team_id", payload.teamId).eq("check_date", today).maybeSingle(),
     supabase.from("crews").select("name").eq("id", payload.teamId).single(),
     supabase.from("end_of_day_reports").select("id").eq("team_id", payload.teamId).eq("report_date", today).maybeSingle(),
+    supabase
+      .from("bin_orders")
+      .select("id, drop_off_date, pickup_date, status, drop_off_completed_at, pickup_completed_at")
+      .neq("status", "cancelled")
+      .neq("status", "completed")
+      .or(
+        `drop_off_date.eq.${today},drop_off_date.eq.${tomorrowStr},pickup_date.eq.${today},pickup_date.eq.${tomorrowStr},status.eq.overdue`,
+      ),
   ]);
 
   const readinessCompleted = !!readinessCheck?.id;
@@ -137,6 +193,8 @@ export async function GET(req: NextRequest) {
   const teamName = crewRow?.name || "Team";
 
   const dateStr = getLocalDateDisplay(new Date(), getAppTimezone());
+  const activeBinTaskCount = countActiveBinTasks(binOrdersRaw || [], today, tomorrowStr);
+  const hasActiveBinTasks = activeBinTaskCount > 0;
 
   return NextResponse.json({
     crewMember: { ...payload, teamName, dateStr },
@@ -145,6 +203,7 @@ export async function GET(req: NextRequest) {
     readinessRequired,
     isCrewLead,
     endOfDaySubmitted,
+    hasActiveBinTasks,
   });
 }
 
@@ -157,4 +216,24 @@ function parseTime(s: string): number {
   if (ampm === "pm" && h < 12) h += 12;
   if (ampm === "am" && h === 12) h = 0;
   return h * 60 + min;
+}
+
+function isTerminalMoveStatus(status: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase();
+  return s === "completed" || s === "cancelled";
+}
+
+function isTerminalDeliveryStatus(status: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase();
+  return s === "delivered" || s === "cancelled";
+}
+
+/** Count list items for labels; tolerate JSONB shapes that are not a plain array. */
+function normalizeDeliveryItemsList(raw: unknown): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const o = raw as Record<string, unknown>;
+    if (Array.isArray(o.items)) return o.items;
+  }
+  return [];
 }

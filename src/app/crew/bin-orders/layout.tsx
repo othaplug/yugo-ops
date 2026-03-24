@@ -1,7 +1,7 @@
 import CrewAuthenticatedShell from "../components/CrewAuthenticatedShell";
 
-export const metadata = { title: "End of Day" };
+export const metadata = { title: "Bin Tasks" };
 
-export default function EndOfDayLayout({ children }: { children: React.ReactNode }) {
+export default function CrewBinOrdersLayout({ children }: { children: React.ReactNode }) {
   return <CrewAuthenticatedShell>{children}</CrewAuthenticatedShell>;
 }

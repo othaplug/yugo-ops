@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
-import { getPlatformToggles } from "@/lib/platform-settings";
-
 /** Fallback position when a live session has no GPS yet — so "LIVE" panel and "teams on map" stay in sync. */
 const FALLBACK_LAT = 43.66027;
 const FALLBACK_LNG = -79.35365;
@@ -17,15 +15,10 @@ function isSessionActiveForPanel(s: { status?: string | null; updated_at?: strin
   return true;
 }
 
-/** GET all crews with live positions for unified tracking map. Staff only; requires crew tracking enabled. */
+/** GET all crews with live positions for unified tracking map. Staff only. */
 export async function GET(req: NextRequest) {
   const { error: authErr } = await requireStaff();
   if (authErr) return authErr;
-
-  const toggles = await getPlatformToggles();
-  if (!toggles.crew_tracking) {
-    return NextResponse.json({ crews: [], activeSessions: [] }, { headers: { "Cache-Control": "no-store, max-age=0" } });
-  }
 
   const admin = createAdminClient();
 

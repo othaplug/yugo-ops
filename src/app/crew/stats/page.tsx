@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   Trophy,
   Star,
@@ -14,7 +13,6 @@ import {
   CurrencyDollar,
   Users,
   TrendUp,
-  ArrowLeft,
   Coins,
 } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
@@ -113,14 +111,9 @@ export default function CrewStatsPage() {
     <PageContent>
       <div className="max-w-[520px] mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Link href="/crew/dashboard" className="w-8 h-8 rounded-xl border border-[var(--brd)]/40 flex items-center justify-center text-[var(--tx3)] hover:text-[var(--gold)] transition-colors">
-            <ArrowLeft size={16} />
-          </Link>
-          <div>
-            <p className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]">My Performance</p>
-            <h1 className="font-hero text-[22px] font-bold text-[var(--tx)]">{monthLabel}</h1>
-          </div>
+        <div className="mb-6">
+          <p className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]">Stats &amp; Leaderboard</p>
+          <h1 className="font-hero text-[22px] font-bold text-[var(--tx)]">{monthLabel}</h1>
         </div>
 
         {/* This month KPIs */}

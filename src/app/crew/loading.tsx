@@ -1,9 +1,20 @@
 export default function CrewLoading() {
   return (
-    <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
-        <span className="text-[12px] text-[var(--tx3)] font-medium">Loading...</span>
+    <div className="min-h-screen bg-[var(--bg)]">
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="skeleton h-7 w-36 rounded" />
+          <div className="skeleton h-8 w-8 rounded-full" />
+        </div>
+
+        {/* Today's job card */}
+        <div className="skeleton h-36 rounded-2xl" />
+
+        {/* Job list */}
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="skeleton h-24 rounded-2xl" style={{ animationDelay: `${i * 80}ms` }} />
+        ))}
       </div>
     </div>
   );

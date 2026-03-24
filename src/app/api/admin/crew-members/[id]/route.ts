@@ -8,7 +8,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { user, error: authError } = await requireStaff();
+  const { error: authError } = await requireStaff();
   if (authError) return authError;
 
   const { id } = await params;
@@ -32,18 +32,32 @@ export async function PATCH(
   if (role === "lead" || role === "specialist" || role === "driver") {
     const { data: member } = await admin.from("crew_members").select("team_id").eq("id", id).single();
     if (!member?.team_id) return NextResponse.json({ error: "Member not found" }, { status: 404 });
-    const { data: teammates } = await admin
-      .from("crew_members")
-      .select("id")
-      .eq("team_id", member.team_id)
-      .eq("is_active", true);
-    const updates: Promise<unknown>[] = [];
-    for (const t of teammates || []) {
-      const newRole = t.id === id ? "lead" : "specialist";
-      const q = admin.from("crew_members").update({ role: newRole, updated_at: new Date().toISOString() }).eq("id", t.id).select().single();
-      updates.push(Promise.resolve(q));
+
+    if (role === "lead") {
+      const { data: teammates } = await admin
+        .from("crew_members")
+        .select("id, role")
+        .eq("team_id", member.team_id)
+        .eq("is_active", true);
+      for (const t of teammates || []) {
+        let newRole = t.role;
+        if (t.id === id) newRole = "lead";
+        else if ((t.role || "").toLowerCase() === "lead") newRole = "specialist";
+        if (newRole === t.role) continue;
+        const { error: upErr } = await admin
+          .from("crew_members")
+          .update({ role: newRole, updated_at: new Date().toISOString() })
+          .eq("id", t.id);
+        if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true });
     }
-    await Promise.all(updates);
+
+    const { error: singleErr } = await admin
+      .from("crew_members")
+      .update({ role, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (singleErr) return NextResponse.json({ error: singleErr.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 

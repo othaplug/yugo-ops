@@ -1,16 +1,22 @@
 export default function InvoicesLoading() {
   return (
-    <div className="space-y-6 animate-pulse">
-      <div className="h-8 w-44 bg-[var(--brd)]/30 rounded-lg" />
-      <div className="flex flex-wrap gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-16 flex-1 min-w-[140px] max-w-[200px] bg-[var(--brd)]/20 rounded-xl" />
+    <div className="space-y-5">
+      <div className="skeleton h-8 w-36" />
+
+      <div className="flex flex-wrap gap-3">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="skeleton h-16 flex-1 min-w-[140px] max-w-[200px] rounded-xl" style={{ animationDelay: `${i * 60}ms` }} />
         ))}
       </div>
+
       <div className="border border-[var(--brd)]/30 rounded-xl overflow-hidden">
-        <div className="h-10 bg-[var(--bg2)]" />
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="h-14 border-t border-[var(--brd)]/20" />
+        <div className="skeleton h-11 rounded-none" />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="border-t border-[var(--brd)]/20 px-4 py-3 flex items-center gap-3">
+            <div className="skeleton h-4 flex-1 rounded" style={{ animationDelay: `${i * 55}ms` }} />
+            <div className="skeleton h-4 w-20 rounded hidden sm:block" style={{ animationDelay: `${i * 55 + 20}ms` }} />
+            <div className="skeleton h-5 w-16 rounded-full hidden md:block" style={{ animationDelay: `${i * 55 + 35}ms` }} />
+          </div>
         ))}
       </div>
     </div>

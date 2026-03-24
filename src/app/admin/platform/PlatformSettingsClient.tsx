@@ -354,6 +354,29 @@ interface Team {
   phone?: string;
 }
 
+interface BlockingTeamJobMove {
+  id: string;
+  move_code: string | null;
+  summary: string;
+  status_label: string;
+  can_reassign: boolean;
+}
+
+interface BlockingTeamJobDelivery {
+  id: string;
+  delivery_number: string | null;
+  summary: string;
+  status_label: string;
+  can_reassign: boolean;
+}
+
+interface TeamDeleteBlockedState {
+  teamId: string;
+  teamLabel: string;
+  moves: BlockingTeamJobMove[];
+  deliveries: BlockingTeamJobDelivery[];
+}
+
 interface CrewPortalMember {
   id: string;
   name: string;
@@ -989,6 +1012,9 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   const [resetPinSaving, setResetPinSaving] = useState(false);
   const [addPortalOpen, setAddPortalOpen] = useState(false);
   const [deletingTeamId, setDeletingTeamId] = useState<string | null>(null);
+  const [teamDeleteBlocked, setTeamDeleteBlocked] = useState<TeamDeleteBlockedState | null>(null);
+  const [reassignPick, setReassignPick] = useState<Record<string, string>>({});
+  const [reassignSubmitting, setReassignSubmitting] = useState<string | null>(null);
   const [confirmPartnerPortalOff, setConfirmPartnerPortalOff] = useState(false);
   const [confirmCrewTrackingOff, setConfirmCrewTrackingOff] = useState(false);
   const [staffRoster, setStaffRoster] = useState<StaffMember[]>([]);
@@ -1746,13 +1772,30 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                         setDeletingTeamId(team.id);
                         try {
                           const r = await fetch("/api/crews/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ crewId: team.id }) });
-                          const data = await r.json().catch(() => ({}));
+                          const data = (await r.json().catch(() => ({}))) as {
+                            error?: string;
+                            blocking_moves?: BlockingTeamJobMove[];
+                            blocking_deliveries?: BlockingTeamJobDelivery[];
+                          };
                           if (!r.ok) {
-                            toast(data.error || "Failed to delete", "x");
+                            const bm = data.blocking_moves;
+                            const bd = data.blocking_deliveries;
+                            if (Array.isArray(bm) || Array.isArray(bd)) {
+                              setTeamDeleteBlocked({
+                                teamId: team.id,
+                                teamLabel: team.label,
+                                moves: Array.isArray(bm) ? bm : [],
+                                deliveries: Array.isArray(bd) ? bd : [],
+                              });
+                              setReassignPick({});
+                              return;
+                            }
+                            toast(typeof data.error === "string" ? data.error : "Failed to delete", "x");
                             return;
                           }
                           setTeams((prev) => prev.filter((t) => t.id !== team.id));
                           setEditingTeam(null);
+                          setTeamDeleteBlocked(null);
                           toast("Team deleted", "check");
                           router.refresh();
                         } finally {
@@ -2461,6 +2504,244 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               </button>
             </div>
           </form>
+        )}
+      </ModalOverlay>
+
+      <ModalOverlay
+        open={!!teamDeleteBlocked}
+        onClose={() => {
+          setTeamDeleteBlocked(null);
+          setReassignPick({});
+        }}
+        title="Team still has active jobs"
+        maxWidth="xl"
+      >
+        {teamDeleteBlocked && (
+          <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+            <p className="text-[12px] text-[var(--tx2)]">
+              This team is assigned to the jobs below. Reassign each one to another team, or open the job in admin to complete or cancel it. Jobs that are already in progress cannot be reassigned until the crew has finished.
+            </p>
+            {teamDeleteBlocked.moves.length > 0 && (
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Moves</div>
+                <ul className="space-y-3">
+                  {teamDeleteBlocked.moves.map((job) => {
+                    const key = `m-${job.id}`;
+                    const otherTeams = teams.filter((t) => t.id !== teamDeleteBlocked.teamId);
+                    const pick = reassignPick[key] ?? otherTeams[0]?.id ?? "";
+                    return (
+                      <li key={job.id} className="rounded-lg border border-[var(--brd)] bg-[var(--card)] p-3 space-y-2">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-medium text-[var(--tx)]">{job.summary}</p>
+                            <p className="text-[10px] text-[var(--tx3)] mt-0.5">{job.status_label}</p>
+                          </div>
+                          <Link
+                            href={`/admin/moves/${job.id}`}
+                            className="shrink-0 text-[11px] font-semibold text-[var(--gold)] hover:underline"
+                          >
+                            Open move
+                          </Link>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          {job.can_reassign && otherTeams.length > 0 ? (
+                            <>
+                              <span className="text-[10px] text-[var(--tx3)]">Reassign to</span>
+                              <select
+                                value={pick}
+                                onChange={(e) => setReassignPick((p) => ({ ...p, [key]: e.target.value }))}
+                                className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] min-w-[140px]"
+                              >
+                                {otherTeams.map((t) => (
+                                  <option key={t.id} value={t.id}>{t.label}</option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                disabled={!pick || reassignSubmitting === key}
+                                onClick={async () => {
+                                  setReassignSubmitting(key);
+                                  try {
+                                    const r = await fetch("/api/dispatch/assign", {
+                                      method: "PATCH",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ jobId: job.id, jobType: "move", crewId: pick }),
+                                    });
+                                    const d = await r.json().catch(() => ({}));
+                                    if (!r.ok) {
+                                      toast(typeof d.error === "string" ? d.error : "Failed to reassign", "x");
+                                      return;
+                                    }
+                                    toast("Move reassigned", "check");
+                                    router.refresh();
+                                    setTeamDeleteBlocked((prev) => {
+                                      if (!prev) return prev;
+                                      const moves = prev.moves.filter((m) => m.id !== job.id);
+                                      if (moves.length === 0 && prev.deliveries.length === 0) return null;
+                                      return { ...prev, moves };
+                                    });
+                                  } finally {
+                                    setReassignSubmitting(null);
+                                  }
+                                }}
+                                className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+                              >
+                                {reassignSubmitting === key ? "Reassigning…" : "Reassign"}
+                              </button>
+                            </>
+                          ) : !job.can_reassign ? (
+                            <p className="text-[11px] text-[var(--tx3)]">In progress — open the move to finish or wait until the crew is done before reassigning.</p>
+                          ) : (
+                            <p className="text-[11px] text-[var(--tx3)]">Create another team first, then you can reassign.</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+            {teamDeleteBlocked.deliveries.length > 0 && (
+              <div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Deliveries</div>
+                <ul className="space-y-3">
+                  {teamDeleteBlocked.deliveries.map((job) => {
+                    const key = `d-${job.id}`;
+                    const otherTeams = teams.filter((t) => t.id !== teamDeleteBlocked.teamId);
+                    const pick = reassignPick[key] ?? otherTeams[0]?.id ?? "";
+                    return (
+                      <li key={job.id} className="rounded-lg border border-[var(--brd)] bg-[var(--card)] p-3 space-y-2">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-medium text-[var(--tx)]">{job.summary}</p>
+                            <p className="text-[10px] text-[var(--tx3)] mt-0.5">{job.status_label}</p>
+                          </div>
+                          <Link
+                            href={`/admin/deliveries/${job.id}`}
+                            className="shrink-0 text-[11px] font-semibold text-[var(--gold)] hover:underline"
+                          >
+                            Open delivery
+                          </Link>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          {job.can_reassign && otherTeams.length > 0 ? (
+                            <>
+                              <span className="text-[10px] text-[var(--tx3)]">Reassign to</span>
+                              <select
+                                value={pick}
+                                onChange={(e) => setReassignPick((p) => ({ ...p, [key]: e.target.value }))}
+                                className="text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-1.5 text-[var(--tx)] min-w-[140px]"
+                              >
+                                {otherTeams.map((t) => (
+                                  <option key={t.id} value={t.id}>{t.label}</option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                disabled={!pick || reassignSubmitting === key}
+                                onClick={async () => {
+                                  setReassignSubmitting(key);
+                                  try {
+                                    const r = await fetch("/api/dispatch/assign", {
+                                      method: "PATCH",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ jobId: job.id, jobType: "delivery", crewId: pick }),
+                                    });
+                                    const d = await r.json().catch(() => ({}));
+                                    if (!r.ok) {
+                                      toast(typeof d.error === "string" ? d.error : "Failed to reassign", "x");
+                                      return;
+                                    }
+                                    toast("Delivery reassigned", "check");
+                                    router.refresh();
+                                    setTeamDeleteBlocked((prev) => {
+                                      if (!prev) return prev;
+                                      const deliveries = prev.deliveries.filter((x) => x.id !== job.id);
+                                      if (prev.moves.length === 0 && deliveries.length === 0) return null;
+                                      return { ...prev, deliveries };
+                                    });
+                                  } finally {
+                                    setReassignSubmitting(null);
+                                  }
+                                }}
+                                className="px-3 py-1 rounded text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+                              >
+                                {reassignSubmitting === key ? "Reassigning…" : "Reassign"}
+                              </button>
+                            </>
+                          ) : !job.can_reassign ? (
+                            <p className="text-[11px] text-[var(--tx3)]">In progress — open the delivery to finish or wait until the crew is done before reassigning.</p>
+                          ) : (
+                            <p className="text-[11px] text-[var(--tx3)]">Create another team first, then you can reassign.</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2 pt-3 border-t border-[var(--brd)]">
+              <button
+                type="button"
+                onClick={() => {
+                  setTeamDeleteBlocked(null);
+                  setReassignPick({});
+                }}
+                className="px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!teamDeleteBlocked) return;
+                  if (!window.confirm(`Delete “${teamDeleteBlocked.teamLabel}”? Crew members with portal access on this team will lose access. This cannot be undone.`)) return;
+                  setDeletingTeamId(teamDeleteBlocked.teamId);
+                  try {
+                    const rx = await fetch("/api/crews/delete", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ crewId: teamDeleteBlocked.teamId }),
+                    });
+                    const d = (await rx.json().catch(() => ({}))) as {
+                      error?: string;
+                      blocking_moves?: BlockingTeamJobMove[];
+                      blocking_deliveries?: BlockingTeamJobDelivery[];
+                    };
+                    if (!rx.ok) {
+                      const bm = d.blocking_moves;
+                      const bd = d.blocking_deliveries;
+                      if (Array.isArray(bm) || Array.isArray(bd)) {
+                        setTeamDeleteBlocked({
+                          teamId: teamDeleteBlocked.teamId,
+                          teamLabel: teamDeleteBlocked.teamLabel,
+                          moves: Array.isArray(bm) ? bm : [],
+                          deliveries: Array.isArray(bd) ? bd : [],
+                        });
+                        setReassignPick({});
+                        return;
+                      }
+                      toast(typeof d.error === "string" ? d.error : "Failed to delete", "x");
+                      return;
+                    }
+                    setTeams((prev) => prev.filter((t) => t.id !== teamDeleteBlocked.teamId));
+                    setEditingTeam(null);
+                    setTeamDeleteBlocked(null);
+                    setReassignPick({});
+                    toast("Team deleted", "check");
+                    router.refresh();
+                  } finally {
+                    setDeletingTeamId(null);
+                  }
+                }}
+                disabled={!!deletingTeamId}
+                className="px-4 py-2.5 rounded-lg text-[11px] font-semibold bg-[var(--red)] text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {deletingTeamId === teamDeleteBlocked.teamId ? "Deleting…" : "Delete team"}
+              </button>
+            </div>
+          </div>
         )}
       </ModalOverlay>
       </div>{/* end content panel */}

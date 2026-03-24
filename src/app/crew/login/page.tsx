@@ -91,7 +91,11 @@ export default function CrewLoginPage() {
       const res = await fetch("/api/crew/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ crewMemberId: selectedMember.id, pin }),
+        body: JSON.stringify({
+          crewMemberId: selectedMember.id,
+          pin,
+          ...(deviceId ? { deviceId } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
