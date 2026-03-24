@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
@@ -8,7 +8,9 @@ import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import { useFormDraft } from "@/hooks/useFormDraft";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import DraftBanner from "@/components/ui/DraftBanner";
 import { Info, Plus, Trash as Trash2, FileText } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
@@ -241,6 +243,36 @@ export default function CreateMoveForm({
 
   // Labour only
   const [labourDescription, setLabourDescription] = useState("");
+
+  // Draft auto-save (track core fields only — type-specific fields are less critical)
+  const draftState = useMemo(() => ({
+    moveType, clientName, clientEmail, clientPhone,
+    fromAddress, toAddress, estimate, scheduledDate, scheduledTime,
+    arrivalWindow, accessNotes, internalNotes, crewId,
+    estCrewSize, estHours, moveSize, companyName,
+  }), [moveType, clientName, clientEmail, clientPhone, fromAddress, toAddress, estimate, scheduledDate, scheduledTime, arrivalWindow, accessNotes, internalNotes, crewId, estCrewSize, estHours, moveSize, companyName]);
+
+  const draftTitleFn = useCallback((s: typeof draftState) => s.clientName || s.companyName || "Move", []);
+  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("move", draftState, draftTitleFn);
+
+  const handleRestoreDraft = useCallback(() => {
+    const d = restoreDraft();
+    if (!d) return;
+    type K = keyof typeof d;
+    const setters: Record<string, (v: string) => void> = {
+      moveType: (v) => setMoveType(v as typeof moveType),
+      clientName: setClientName, clientEmail: setClientEmail, clientPhone: setClientPhone,
+      fromAddress: setFromAddress, toAddress: setToAddress, estimate: setEstimate,
+      scheduledDate: setScheduledDate, scheduledTime: setScheduledTime,
+      arrivalWindow: setArrivalWindow, accessNotes: setAccessNotes, internalNotes: setInternalNotes,
+      crewId: setCrewId, estCrewSize: setEstCrewSize, estHours: setEstHours,
+      moveSize: setMoveSize, companyName: setCompanyName,
+    };
+    for (const [key, setter] of Object.entries(setters)) {
+      const val = d[key as K];
+      if (val && typeof val === "string") setter(val);
+    }
+  }, [restoreDraft]);
 
   const filteredOrgs = organizations.filter((o) => {
     const term = contactSearch.toLowerCase();
@@ -509,6 +541,7 @@ export default function CreateMoveForm({
         toast(data.error || `Failed to create move (${res.status})`, "x");
         return;
       }
+      clearDraft();
       if (data.emailSent) {
         toast("Move created. Client notified by email.", "mail");
       } else if (data.emailError) {
@@ -539,6 +572,7 @@ export default function CreateMoveForm({
           </p>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-0">
+          {hasDraft && <div className="mb-4"><DraftBanner onRestore={handleRestoreDraft} onDismiss={dismissDraft} /></div>}
           {/* Move type selector */}
           <div>
             <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>

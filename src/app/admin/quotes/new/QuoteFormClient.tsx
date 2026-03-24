@@ -8,6 +8,8 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import { useFormDraft } from "@/hooks/useFormDraft";
+import DraftBanner from "@/components/ui/DraftBanner";
 import { toTitleCase } from "@/lib/format-text";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { CaretDown as ChevronDown, Check, PaperPlaneTilt as Send, Eye, CircleNotch as Loader2, CaretRight as ChevronRight, SidebarSimple as PanelRightOpen, Users, Clock, Truck, Plus, Trash as Trash2, Warning } from "@phosphor-icons/react";
@@ -662,6 +664,45 @@ export default function QuoteFormClient({
   const [referralStatus, setReferralStatus] = useState<"idle" | "valid" | "invalid">("idle");
   const [referralMsg, setReferralMsg] = useState("");
   const [referralDiscount, setReferralDiscount] = useState(0);
+
+  // Draft auto-save
+  const quoteDraftState = useMemo(() => ({
+    serviceType, firstName, lastName, email, phone,
+    fromAddress, toAddress, fromAccess, toAccess,
+    moveDate, preferredTime, arrivalWindow, moveSize,
+    b2bBusinessName, eventName, labourDescription,
+    itemDescription, specialtyType, declaredValue,
+  }), [serviceType, firstName, lastName, email, phone, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, moveSize, b2bBusinessName, eventName, labourDescription, itemDescription, specialtyType, declaredValue]);
+
+  const quoteDraftTitleFn = useCallback((s: typeof quoteDraftState) => {
+    const name = [s.firstName, s.lastName].filter(Boolean).join(" ");
+    return name || s.b2bBusinessName || s.eventName || "Quote";
+  }, []);
+  const { hasDraft: quoteHasDraft, restoreDraft: quoteRestoreDraft, dismissDraft: quoteDismissDraft, clearDraft: quoteClearDraft } = useFormDraft("quote", quoteDraftState, quoteDraftTitleFn);
+
+  const handleRestoreQuoteDraft = useCallback(() => {
+    const d = quoteRestoreDraft();
+    if (!d) return;
+    if (d.serviceType) setServiceType(d.serviceType as string);
+    if (d.firstName) setFirstName(d.firstName as string);
+    if (d.lastName) setLastName(d.lastName as string);
+    if (d.email) setEmail(d.email as string);
+    if (d.phone) setPhone(d.phone as string);
+    if (d.fromAddress) setFromAddress(d.fromAddress as string);
+    if (d.toAddress) setToAddress(d.toAddress as string);
+    if (d.fromAccess) setFromAccess(d.fromAccess as string);
+    if (d.toAccess) setToAccess(d.toAccess as string);
+    if (d.moveDate) setMoveDate(d.moveDate as string);
+    if (d.preferredTime) setPreferredTime(d.preferredTime as string);
+    if (d.arrivalWindow) setArrivalWindow(d.arrivalWindow as string);
+    if (d.moveSize) setMoveSize(d.moveSize as string);
+    if (d.b2bBusinessName) setB2bBusinessName(d.b2bBusinessName as string);
+    if (d.eventName) setEventName(d.eventName as string);
+    if (d.labourDescription) setLabourDescription(d.labourDescription as string);
+    if (d.itemDescription) setItemDescription(d.itemDescription as string);
+    if (d.specialtyType) setSpecialtyType(d.specialtyType as string);
+    if (d.declaredValue) setDeclaredValue(d.declaredValue as string);
+  }, [quoteRestoreDraft]);
 
   const handleClientEmailBlur = async () => {
     const trimmed = email.trim();
@@ -1390,6 +1431,7 @@ export default function QuoteFormClient({
       if (!id) throw new Error("Generate did not return a quote_id");
       setQuoteResult(data);
       setQuoteId(id);
+      quoteClearDraft();
       toast(`Quote ${id} generated`, "check");
 
       // Persist additional stops if any were added
@@ -1490,6 +1532,8 @@ export default function QuoteFormClient({
       <div className="mb-4">
         <BackButton label="Back" />
       </div>
+
+      {quoteHasDraft && <div className="mb-4"><DraftBanner onRestore={handleRestoreQuoteDraft} onDismiss={quoteDismissDraft} /></div>}
 
       {hubspotBanner && (
         <div className="mb-4 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[12px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-2">

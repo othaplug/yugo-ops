@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import { useFormDraft } from "@/hooks/useFormDraft";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
+import DraftBanner from "@/components/ui/DraftBanner";
 import { Plus, Trash as Trash2, Stack as Layers } from "@phosphor-icons/react";
 
 interface ProjectOption {
@@ -126,6 +128,40 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [itemsFallback, setItemsFallback] = useState("");
+
+  // Draft auto-save
+  const draftState = useMemo(() => ({
+    projectType, organizationId, customerName, customerEmail, customerPhone,
+    pickupAddress, deliveryAddress, scheduledDate, timeSlot, deliveryWindow,
+    instructions, accessNotes, internalNotes, quotedPrice, crewId,
+    deliveryAccess, itemWeightCategory, itemsFallback,
+  }), [projectType, organizationId, customerName, customerEmail, customerPhone, pickupAddress, deliveryAddress, scheduledDate, timeSlot, deliveryWindow, instructions, accessNotes, internalNotes, quotedPrice, crewId, deliveryAccess, itemWeightCategory, itemsFallback]);
+
+  const draftTitleFn = useCallback((s: typeof draftState) => s.customerName || "Delivery", []);
+  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("delivery", draftState, draftTitleFn);
+
+  const handleRestoreDraft = useCallback(() => {
+    const d = restoreDraft();
+    if (!d) return;
+    if (d.projectType) setProjectType(d.projectType as string);
+    if (d.organizationId) setOrganizationId(d.organizationId as string);
+    if (d.customerName) setCustomerName(d.customerName as string);
+    if (d.customerEmail) setCustomerEmail(d.customerEmail as string);
+    if (d.customerPhone) setCustomerPhone(d.customerPhone as string);
+    if (d.pickupAddress) setPickupAddress(d.pickupAddress as string);
+    if (d.deliveryAddress) setDeliveryAddress(d.deliveryAddress as string);
+    if (d.scheduledDate) setScheduledDate(d.scheduledDate as string);
+    if (d.timeSlot) setTimeSlot(d.timeSlot as string);
+    if (d.deliveryWindow) setDeliveryWindow(d.deliveryWindow as string);
+    if (d.instructions) setInstructions(d.instructions as string);
+    if (d.accessNotes) setAccessNotes(d.accessNotes as string);
+    if (d.internalNotes) setInternalNotes(d.internalNotes as string);
+    if (d.quotedPrice) setQuotedPrice(d.quotedPrice as string);
+    if (d.crewId) setCrewId(d.crewId as string);
+    if (d.deliveryAccess) setDeliveryAccess(d.deliveryAccess as string);
+    if (d.itemWeightCategory) setItemWeightCategory(d.itemWeightCategory as string);
+    if (d.itemsFallback) setItemsFallback(d.itemsFallback as string);
+  }, [restoreDraft]);
 
   const filteredOrgs = organizations.filter((o) => {
     if (!contactSearch) return true;
@@ -336,6 +372,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         }).catch(() => {});
       }
 
+      clearDraft();
       const path = created.delivery_number
         ? `/admin/deliveries/${encodeURIComponent(created.delivery_number)}`
         : `/admin/deliveries/${created.id}`;
@@ -349,6 +386,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {hasDraft && <DraftBanner onRestore={handleRestoreDraft} onDismiss={dismissDraft} />}
         {error && (
           <div className="px-3 py-2.5 rounded-lg bg-[rgba(209,67,67,0.1)] border border-[rgba(209,67,67,0.3)] text-[12px] text-[var(--red)]">{error}</div>
         )}

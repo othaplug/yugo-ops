@@ -5,6 +5,14 @@ import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { logActivity } from "@/lib/activity";
 
+const VALID_CATEGORIES = new Set(["retail", "b2b", "b2c", "designer", "hospitality", "realtor", "stager", "other"]);
+function normalizeCategory(raw: string): string {
+  const lower = raw.toLowerCase().trim();
+  if (VALID_CATEGORIES.has(lower)) return lower;
+  if (lower.startsWith("b2b")) return "b2b";
+  return "retail";
+}
+
 /** POST /api/admin/deliveries/create — Create delivery as admin (e.g. day rate with skip-approval). */
 export async function POST(req: NextRequest) {
   const { error: authErr } = await requireRole("coordinator");
@@ -65,7 +73,7 @@ export async function POST(req: NextRequest) {
       instructions: (body.instructions || "").trim() || null,
       special_handling: !!body.special_handling,
       status: "scheduled",
-      category: (body.category || org?.type || "retail").trim() || "retail",
+      category: normalizeCategory((body.category || org?.type || "retail").trim() || "retail"),
       created_by_source: "admin",
       created_by_user: null,
       booking_type: isB2BOneOff ? "one_off" : (body.booking_type || null),

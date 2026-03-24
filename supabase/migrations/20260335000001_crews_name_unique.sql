@@ -5,11 +5,14 @@
 -- First, deduplicate any existing rows with identical names by
 -- appending a numeric suffix to the later-created duplicates.
 --
+-- Add created_at if it is missing (may have been dropped by a prior schema change).
+ALTER TABLE crews ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+
 WITH dupes AS (
   SELECT
     id,
     name,
-    ROW_NUMBER() OVER (PARTITION BY name ORDER BY created_at ASC) AS rn
+    ROW_NUMBER() OVER (PARTITION BY name ORDER BY id ASC) AS rn
   FROM crews
 )
 UPDATE crews c

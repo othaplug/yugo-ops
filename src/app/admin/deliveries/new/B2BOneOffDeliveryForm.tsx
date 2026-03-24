@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import { useFormDraft } from "@/hooks/useFormDraft";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
-import { CalendarBlank, Plus, Trash as Trash2 } from "@phosphor-icons/react";
+import DraftBanner from "@/components/ui/DraftBanner";
+import { CalendarBlank, Plus, Trash as Trash2, SpinnerGap, CheckCircle, Warning } from "@phosphor-icons/react";
 
 interface Crew {
   id: string;
@@ -47,6 +49,16 @@ const ACCESS_OPTIONS = [
 
 const TIME_WINDOW_OPTIONS = ["Morning (7 AM – 12 PM)", "Afternoon (12 PM – 5 PM)", "Full Day (7 AM – 5 PM)"];
 
+interface HubSpotContact {
+  hubspot_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  company: string;
+  deal_ids: string[];
+}
+
 export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -57,6 +69,69 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const contactPhoneInput = usePhoneInput(contactPhone, setContactPhone);
+
+  // HubSpot lookup state
+  const [hsLookupState, setHsLookupState] = useState<"idle" | "loading" | "found" | "not_found">("idle");
+  const [hsContact, setHsContact] = useState<HubSpotContact | null>(null);
+  const [hsDuplicate, setHsDuplicate] = useState<{ type: "contact" | "company"; label: string } | null>(null);
+  const [hsAutofilled, setHsAutofilled] = useState<string[]>([]);
+  const hsContactIdRef = useRef<string | null>(null);
+
+  const runHubSpotLookup = useCallback(async (email: string) => {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes("@")) return;
+
+    setHsLookupState("loading");
+    setHsDuplicate(null);
+    setHsAutofilled([]);
+
+    try {
+      const res = await fetch("/api/hubspot/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json();
+      const contact: HubSpotContact | null = data.contact ?? null;
+
+      if (!contact) {
+        setHsLookupState("not_found");
+        setHsContact(null);
+        return;
+      }
+
+      setHsLookupState("found");
+      setHsContact(contact);
+      hsContactIdRef.current = contact.hubspot_id;
+
+      const filled: string[] = [];
+      const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
+
+      setBusinessName((prev) => {
+        if (!prev.trim() && contact.company) { filled.push("Business Name"); return contact.company; }
+        return prev;
+      });
+      setContactName((prev) => {
+        if (!prev.trim() && fullName) { filled.push("Contact Name"); return fullName; }
+        return prev;
+      });
+      setContactPhone((prev) => {
+        if (!prev.trim() && contact.phone) { filled.push("Contact Phone"); return formatPhone(contact.phone); }
+        return prev;
+      });
+
+      setHsAutofilled(filled);
+
+      if (contact.deal_ids.length > 0) {
+        setHsDuplicate({
+          type: "contact",
+          label: `${fullName || trimmed} already has ${contact.deal_ids.length} deal${contact.deal_ids.length > 1 ? "s" : ""} in HubSpot — review before creating a new booking.`,
+        });
+      }
+    } catch {
+      setHsLookupState("idle");
+    }
+  }, []);
 
   const [pickupAddress, setPickupAddress] = useState("");
   const [pickupAccess, setPickupAccess] = useState("loading_dock");
@@ -73,6 +148,37 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [quotedPrice, setQuotedPrice] = useState("");
   const [crewId, setCrewId] = useState("");
+
+  // Draft auto-save
+  const formState = useMemo(() => ({
+    businessName, contactName, contactPhone, contactEmail,
+    pickupAddress, pickupAccess, deliveryAddress, deliveryAccess,
+    items, weightCategory, scheduledDate, timeWindow,
+    specialInstructions, quotedPrice, crewId,
+  }), [businessName, contactName, contactPhone, contactEmail, pickupAddress, pickupAccess, deliveryAddress, deliveryAccess, items, weightCategory, scheduledDate, timeWindow, specialInstructions, quotedPrice, crewId]);
+
+  const titleFn = useCallback((s: typeof formState) => s.businessName || s.contactName || "B2B Delivery", []);
+  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("delivery_b2b", formState, titleFn);
+
+  const handleRestoreDraft = useCallback(() => {
+    const data = restoreDraft();
+    if (!data) return;
+    if (data.businessName) setBusinessName(data.businessName as string);
+    if (data.contactName) setContactName(data.contactName as string);
+    if (data.contactPhone) setContactPhone(data.contactPhone as string);
+    if (data.contactEmail) setContactEmail(data.contactEmail as string);
+    if (data.pickupAddress) setPickupAddress(data.pickupAddress as string);
+    if (data.pickupAccess) setPickupAccess(data.pickupAccess as string);
+    if (data.deliveryAddress) setDeliveryAddress(data.deliveryAddress as string);
+    if (data.deliveryAccess) setDeliveryAccess(data.deliveryAccess as string);
+    if (Array.isArray(data.items)) setItems(data.items as { name: string; qty: number }[]);
+    if (data.weightCategory) setWeightCategory(data.weightCategory as string);
+    if (data.scheduledDate) setScheduledDate(data.scheduledDate as string);
+    if (data.timeWindow) setTimeWindow(data.timeWindow as string);
+    if (data.specialInstructions) setSpecialInstructions(data.specialInstructions as string);
+    if (data.quotedPrice) setQuotedPrice(data.quotedPrice as string);
+    if (data.crewId) setCrewId(data.crewId as string);
+  }, [restoreDraft]);
 
   const addItem = () => {
     if (!newItemName.trim()) return;
@@ -121,7 +227,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       instructions: specialInstructions.trim() || null,
       quoted_price: parseNumberInput(quotedPrice) || null,
       crew_id: crewId || null,
-      category: "b2b_oneoff",
+      category: "b2b",
     };
 
     const res = await fetch("/api/admin/deliveries/create", {
@@ -134,6 +240,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
     const data = await res.json();
 
     if (res.ok && data.delivery) {
+      clearDraft();
       const created = data.delivery;
       const path = created.delivery_number
         ? `/admin/deliveries/${encodeURIComponent(created.delivery_number)}`
@@ -147,6 +254,8 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {hasDraft && <DraftBanner onRestore={handleRestoreDraft} onDismiss={dismissDraft} />}
+
       {error && (
         <div className="px-3 py-2.5 rounded-lg bg-[rgba(209,67,67,0.1)] border border-[rgba(209,67,67,0.3)] text-[12px] text-[var(--red)]">{error}</div>
       )}
@@ -157,19 +266,71 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
 
       {/* Business Details */}
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Business Details</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Business Details</h3>
+          {hsLookupState === "loading" && (
+            <span className="flex items-center gap-1 text-[10px] text-[var(--tx3)]">
+              <SpinnerGap size={12} className="animate-spin" />
+              Checking HubSpot…
+            </span>
+          )}
+          {hsLookupState === "found" && hsAutofilled.length > 0 && (
+            <span className="flex items-center gap-1 text-[10px] text-[#2D9F5A] font-medium">
+              <CheckCircle size={12} weight="fill" />
+              Autofilled from HubSpot
+            </span>
+          )}
+          {hsLookupState === "found" && hsAutofilled.length === 0 && (
+            <span className="flex items-center gap-1 text-[10px] text-[var(--tx3)]">
+              <CheckCircle size={12} weight="fill" />
+              Found in HubSpot
+            </span>
+          )}
+        </div>
+
+        {hsDuplicate && (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-700 dark:text-amber-400">
+            <Warning size={14} weight="fill" className="shrink-0 mt-0.5" />
+            <span>{hsDuplicate.label}</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label="Business Name *">
-            <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Crate & Barrel Yorkdale" className={fieldInput} />
+            <input
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              placeholder="e.g. Crate & Barrel Yorkdale"
+              className={fieldInput}
+            />
           </Field>
           <Field label="Contact Name *">
-            <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="e.g. Sarah" className={fieldInput} />
+            <input
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              placeholder="e.g. Sarah"
+              className={fieldInput}
+            />
           </Field>
           <Field label="Contact Phone *">
-            <input ref={contactPhoneInput.ref} type="tel" value={contactPhone} onChange={contactPhoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={fieldInput} />
+            <input
+              ref={contactPhoneInput.ref}
+              type="tel"
+              value={contactPhone}
+              onChange={contactPhoneInput.onChange}
+              placeholder={PHONE_PLACEHOLDER}
+              className={fieldInput}
+            />
           </Field>
           <Field label="Contact Email">
-            <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="sarah@company.com" className={fieldInput} />
+            <input
+              type="email"
+              value={contactEmail}
+              onChange={(e) => { setContactEmail(e.target.value); setHsLookupState("idle"); setHsDuplicate(null); setHsAutofilled([]); }}
+              onBlur={(e) => runHubSpotLookup(e.target.value)}
+              placeholder="sarah@company.com"
+              className={fieldInput}
+            />
           </Field>
         </div>
       </section>
