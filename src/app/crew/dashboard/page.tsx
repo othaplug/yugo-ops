@@ -7,8 +7,9 @@ import { getDisplayLabel } from "@/lib/displayLabels";
 import Link from "next/link";
 import PageContent from "@/app/admin/components/PageContent";
 import ReadinessCheck from "./components/ReadinessCheck";
-import { formatDate } from "@/lib/client-timezone";
+import { formatDate, formatDateYmd } from "@/lib/client-timezone";
 import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
+import CrewAreaWeather from "@/components/crew/CrewAreaWeather";
 import CrewWeatherRoads from "@/components/crew/CrewWeatherRoads";
 import type { MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
@@ -35,6 +36,11 @@ interface Job {
 interface DashboardData {
   crewMember: { name: string; role: string; teamName?: string; dateStr?: string };
   jobs: Job[];
+  /** YYYY-MM-DD used to load jobs (server business calendar). */
+  scheduleDateYmd?: string;
+  scheduleTimezone?: string;
+  scheduleTimezoneShort?: string;
+  businessLocalHour?: number;
   readinessCompleted?: boolean;
   readinessRequired?: boolean;
   isCrewLead?: boolean;
@@ -61,13 +67,19 @@ export default function CrewDashboardPage() {
     try {
       const r = await fetch("/api/crew/dashboard");
       if (r.status === 401) { router.replace("/crew/login"); return; }
-      const d = await r.json();
+      const d = await r.json().catch(() => null);
       if (!r.ok && d?.error) {
         if (isInitial) setError(typeof d.error === "string" ? d.error : "Failed to load jobs");
         return;
       }
-      if (d && Array.isArray(d.jobs)) setData(d);
-      else if (isInitial) setError("Session expired");
+      if (d && typeof d === "object" && d.crewMember != null) {
+        setData({
+          ...d,
+          jobs: Array.isArray(d.jobs) ? d.jobs : [],
+        } as DashboardData);
+      } else if (isInitial) {
+        setError("Session expired");
+      }
     } catch {
       if (isInitial) setError("Failed to load jobs");
     } finally {
@@ -85,7 +97,9 @@ export default function CrewDashboardPage() {
   const isCompleted = (j: Job) => completedStatuses.includes((j.status || "").toLowerCase());
   const isInProgress = (j: Job) => (j.status || "").toLowerCase() === "in_progress";
 
-  const firstIncompleteIndex = data?.jobs?.findIndex((j) => !isCompleted(j)) ?? -1;
+  // Always derive a real array: `data?.jobs.findIndex` throws when `jobs` is missing (optional chain only guards `data`).
+  const jobsForOrdering = Array.isArray(data?.jobs) ? data.jobs : [];
+  const firstIncompleteIndex = jobsForOrdering.findIndex((j) => !isCompleted(j));
   const canStartJob = (index: number) => index === firstIncompleteIndex;
 
   if (loading) {
@@ -117,7 +131,8 @@ export default function CrewDashboardPage() {
     );
   }
 
-  const { jobs, readinessRequired, readinessCompleted, isCrewLead, endOfDaySubmitted } = data;
+  const { readinessRequired, readinessCompleted, isCrewLead, endOfDaySubmitted } = data;
+  const jobs = Array.isArray(data.jobs) ? data.jobs : [];
 
   if (readinessRequired && !readinessCompleted) {
     if (isCrewLead) {
@@ -152,8 +167,19 @@ export default function CrewDashboardPage() {
   const totalCount = jobs.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const now = new Date();
-  const hour = getLocalHourInAppTimezone(now);
+  const hour =
+    typeof data.businessLocalHour === "number" && data.businessLocalHour >= 0 && data.businessLocalHour <= 23
+      ? data.businessLocalHour
+      : getLocalHourInAppTimezone(now);
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const scheduleFootnote =
+    data.scheduleDateYmd && data.scheduleTimezone
+      ? `${formatDateYmd(
+          data.scheduleDateYmd,
+          { weekday: "long", month: "short", day: "numeric" },
+          data.scheduleTimezone,
+        )} · ${data.scheduleTimezoneShort || data.scheduleTimezone}`
+      : null;
 
   return (
     <PageContent>
@@ -168,6 +194,11 @@ export default function CrewDashboardPage() {
             <p className="text-[13px] text-[var(--tx3)] mt-1">
               {data.crewMember?.dateStr || formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" })}
             </p>
+            {scheduleFootnote && (
+              <p className="text-[11px] text-[var(--tx3)]/80 mt-1.5 leading-snug">
+                Job list for {scheduleFootnote}. If a job is missing, confirm it is assigned to your team and dated for this day in dispatch.
+              </p>
+            )}
           </div>
           <div
             className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0 shadow-md"
@@ -201,12 +232,10 @@ export default function CrewDashboardPage() {
           </div>
         )}
 
-        {/* Weather & road hints (moves with postal, from nightly OpenWeather job) */}
-        {totalCount > 0 && (
-          <div className="pt-5 mt-5 border-t border-[var(--brd)]/30">
-            <CrewWeatherRoads jobs={jobs} />
-          </div>
-        )}
+        {/* Weather: per-job when scheduled; service-area outlook when no jobs today */}
+        <div className="pt-5 mt-5 border-t border-[var(--brd)]/30">
+          {totalCount > 0 ? <CrewWeatherRoads jobs={jobs} /> : <CrewAreaWeather />}
+        </div>
 
         {/* Jobs list */}
         <h2 className="admin-section-h2 pt-6 mt-6 border-t border-[var(--brd)]/30 mb-4">

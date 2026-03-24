@@ -12,7 +12,7 @@ export default async function HospitalityPage() {
   const db = createAdminClient();
   const [{ data: orgs }, { data: deliveries }, { data: invoices }] = await Promise.all([
     db.from("organizations").select("*, created_at").eq("type", "hospitality").order("name"),
-    db.from("deliveries").select("*").eq("category", "hospitality").order("scheduled_date", { ascending: false }),
+    db.from("deliveries").select("*").eq("category", "hospitality").order("created_at", { ascending: false }),
     db.from("invoices").select("client_name, amount, status, created_at"),
   ]);
 

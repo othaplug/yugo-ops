@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import { formatAdminCreatedAt } from "@/lib/date-format";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 import { Icon } from "@/components/AppIcons";
@@ -163,13 +164,15 @@ const columns: ColumnDef<Partner>[] = [
   },
   {
     id: "created_at",
-    label: "Joined",
+    label: "Create date",
     accessor: (p) => p.created_at,
+    sortable: true,
     render: (p) => (
-      <span className="text-[11px] text-[var(--tx3)]">
-        {new Date(p.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+      <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
+        {formatAdminCreatedAt(p.created_at)}
       </span>
     ),
+    exportAccessor: (p) => formatAdminCreatedAt(p.created_at),
   },
 ];
 
@@ -199,13 +202,15 @@ const realtorColumns: ColumnDef<RealtorRow>[] = [
   },
   {
     id: "joined",
-    label: "Added",
+    label: "Create date",
     accessor: (r) => r.created_at,
+    sortable: true,
     render: (r) => (
-      <span className="text-[11px] text-[var(--tx3)]">
-        {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+      <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
+        {formatAdminCreatedAt(r.created_at)}
       </span>
     ),
+    exportAccessor: (r) => formatAdminCreatedAt(r.created_at),
   },
 ];
 
@@ -387,6 +392,8 @@ export default function AllPartnersClient() {
           searchPlaceholder="Search agents, brokerages, email…"
           exportFilename="realtors"
           tableId="all-partners-realtors"
+          defaultSortCol="joined"
+          defaultSortDir="desc"
           onRowClick={() => router.push("/admin/partners/realtors")}
           emptyMessage="No realtors in the database yet"
           emptySubtext="Add agents under Partners → Referral Partners."
@@ -399,6 +406,8 @@ export default function AllPartnersClient() {
           searchPlaceholder="Search by company, contact, email..."
           exportFilename="partners"
           tableId="all-partners-v3"
+          defaultSortCol="created_at"
+          defaultSortDir="desc"
           onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
           emptyMessage="No partners found"
           emptySubtext={activeTab !== "all" ? `No ${getTypeLabel(activeTab)} partners yet` : undefined}

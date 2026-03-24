@@ -52,3 +52,19 @@ export function formatMoveDate(value: string | Date | null | undefined): string 
     ? d.toLocaleDateString("en-US", { timeZone: tz, month: "short", day: "numeric" })
     : d.toLocaleDateString("en-US", { timeZone: tz, month: "short", day: "numeric", year: "numeric" });
 }
+
+/** Admin tables: created/modified timestamps in app timezone (date + time). */
+export function formatAdminCreatedAt(value: string | null | undefined): string {
+  if (value == null || value === "") return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  const tz = getAppTimezone();
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(d);
+}

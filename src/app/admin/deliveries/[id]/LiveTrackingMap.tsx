@@ -8,6 +8,7 @@ import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { useTheme } from "@/app/admin/components/ThemeContext";
 import { toTitleCase } from "@/lib/format-text";
 import { Clock, CornersIn, CornersOut } from "@phosphor-icons/react";
+import { TrackingFreshness } from "@/components/tracking/TrackingFreshness";
 
 const LiveTrackingMapLeaflet = dynamic(
   () => import("./LiveTrackingMapLeaflet").then((mod) => mod.LiveTrackingMapLeaflet),
@@ -115,6 +116,7 @@ interface Crew {
   name: string;
   current_lat: number | null;
   current_lng: number | null;
+  updated_at?: string | null;
 }
 
 /** Stages where crew is heading to pickup (or at pickup); otherwise route shows to dropoff.
@@ -222,7 +224,7 @@ export default function LiveTrackingMap({
     const load = async () => {
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name, current_lat, current_lng")
+        .select("id, name, current_lat, current_lng, updated_at")
         .eq("id", crewId)
         .single();
 
@@ -393,6 +395,11 @@ export default function LiveTrackingMap({
             <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
             <p className="text-[11px] text-[var(--tx3)] mb-3">
               {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
+              {crew?.updated_at ? (
+                <span className="block mt-1 text-[10px]">
+                  <TrackingFreshness lastUpdate={crew.updated_at} />
+                </span>
+              ) : null}
             </p>
           </>
         )}
@@ -464,6 +471,11 @@ export default function LiveTrackingMap({
           <h3 className="font-heading text-[13px] font-bold text-[var(--tx)] mb-2">Live Crew Tracking</h3>
           <p className="text-[11px] text-[var(--tx3)] mb-3">
             {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
+            {crew?.updated_at ? (
+              <span className="block mt-1 text-[10px]">
+                <TrackingFreshness lastUpdate={crew.updated_at} />
+              </span>
+            ) : null}
           </p>
         </>
       )}

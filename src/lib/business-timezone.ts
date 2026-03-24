@@ -9,6 +9,12 @@
 export const DEFAULT_APP_TIMEZONE = "America/Toronto";
 
 export function getAppTimezone(): string {
+  // Browser bundles only embed NEXT_PUBLIC_* — prefer that on the client so labels match build-time public config.
+  if (typeof window !== "undefined" && typeof process !== "undefined" && process.env) {
+    const pub = process.env.NEXT_PUBLIC_APP_TIMEZONE;
+    if (pub && String(pub).trim()) return String(pub).trim();
+    return DEFAULT_APP_TIMEZONE;
+  }
   if (typeof process !== "undefined" && process.env) {
     const e = process.env;
     const from =
@@ -34,7 +40,8 @@ export function getLocalHourInAppTimezone(date: Date = new Date(), timeZone?: st
   return Math.min(23, Math.max(0, parseInt(h ?? "0", 10)));
 }
 
-function ymdPartsInTimeZone(tMs: number, timeZone: string): string {
+/** YYYY-MM-DD for the calendar day of `tMs` in `timeZone` (canonical; use for DB filters and "today"). */
+export function ymdPartsInTimeZone(tMs: number, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -102,16 +109,17 @@ export function getMonthStartString(date: Date = new Date(), timeZone?: string):
 /** Format a date as YYYY-MM-DD in the given timezone. */
 export function getLocalDateString(date: Date, timeZone?: string): string {
   const tz = timeZone ?? getAppTimezone();
+  return ymdPartsInTimeZone(date.getTime(), tz);
+}
+
+/** Short zone label for UI, e.g. "EST" / "EDT" (depends on `at` for DST). */
+export function getTimeZoneShortLabel(at: Date = new Date(), timeZone?: string): string {
+  const tz = timeZone ?? getAppTimezone();
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const y = parts.find((p) => p.type === "year")?.value ?? "";
-  const m = parts.find((p) => p.type === "month")?.value ?? "";
-  const d = parts.find((p) => p.type === "day")?.value ?? "";
-  return `${y}-${m}-${d}`;
+    timeZoneName: "short",
+  }).formatToParts(at);
+  return parts.find((p) => p.type === "timeZoneName")?.value ?? tz;
 }
 
 /** Human-readable date in the app timezone (e.g. "Sunday, Mar 2"). */

@@ -34,9 +34,13 @@ export function formatDateTime(
   return d.toLocaleString("en-US", { timeZone: tz, ...options });
 }
 
-/** Format a calendar YYYY-MM-DD (business date) in the app timezone — not browser local. */
-export function formatDateYmd(ymd: string, options?: Intl.DateTimeFormatOptions): string {
-  const tz = getAppTimezone();
+/** Format a calendar YYYY-MM-DD in the given IANA zone (defaults to app timezone) — not browser local. */
+export function formatDateYmd(
+  ymd: string,
+  options?: Intl.DateTimeFormatOptions,
+  timeZone?: string,
+): string {
+  const tz = timeZone?.trim() || getAppTimezone();
   const inst = utcInstantForCalendarDateInTz(ymd, tz);
   if (Number.isNaN(inst.getTime())) return ymd;
   return inst.toLocaleDateString("en-US", { timeZone: tz, ...options });

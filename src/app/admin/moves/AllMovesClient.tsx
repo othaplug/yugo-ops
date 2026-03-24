@@ -8,7 +8,7 @@ import CreateMovesDropdown from "../components/CreateMovesDropdown";
 import MoveNotifyButton from "./MoveNotifyButton";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import { useToast } from "../components/Toast";
-import { formatMoveDate } from "@/lib/date-format";
+import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
 import { getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
@@ -243,6 +243,19 @@ function moveColumns(crewMap: Record<string, string>): ColumnDef<MoveWithType>[]
         </span>
       ),
       minWidth: "70px",
+    },
+    {
+      id: "created_at",
+      label: "Create date",
+      accessor: (m) => m.created_at || "",
+      sortable: true,
+      render: (m) => (
+        <span className="dt-text-date whitespace-nowrap tabular-nums">
+          {m.created_at ? formatAdminCreatedAt(m.created_at) : "—"}
+        </span>
+      ),
+      minWidth: "120px",
+      exportAccessor: (m) => (m.created_at ? formatAdminCreatedAt(m.created_at) : ""),
     },
     {
       id: "client",
@@ -612,6 +625,8 @@ export default function AllMovesClient({
           data={filtered}
           keyField="id"
           tableId="all-moves"
+          defaultSortCol="created_at"
+          defaultSortDir="desc"
           searchable
           searchPlaceholder="Search by client, address, code…"
           pagination
@@ -625,7 +640,7 @@ export default function AllMovesClient({
             primaryColumnId: "client",
             subtitleColumnId: "move_code",
             amountColumnId: "estimate",
-            metaColumnIds: ["date", "status", "type", "crew"],
+            metaColumnIds: ["date", "created_at", "status", "type", "crew"],
           }}
           emptyMessage="No moves match the current filters"
           onRowClick={(m) => router.push(getMoveDetailPath(m))}

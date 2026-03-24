@@ -44,6 +44,10 @@ function mapSessionStatus(status: string | null, isActive: boolean): string {
     unloading: "unloading",
     completed: "idle",
     not_started: "idle",
+    // Delivery short statuses — must map here or crew_locations shows "idle" while session is active
+    en_route: "en_route_pickup",
+    arrived: "at_pickup",
+    delivering: "at_delivery",
   };
   return map[status] || "idle";
 }
@@ -62,7 +66,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { sessionId, lat, lng, accuracy, speed, heading, timestamp } = body;
+  const { sessionId, lat, lng, accuracy, speed, heading, timestamp, source } = body;
   if (lat == null || lng == null) {
     return NextResponse.json({ error: "lat, lng required" }, { status: 400 });
   }
@@ -195,6 +199,8 @@ export async function POST(req: NextRequest) {
       moveClientName = move.client_name;
       moveFrom = move.from_address;
       moveTo = move.to_address;
+
+      await admin.from("moves").update({ gps_alert_sent: false }).eq("id", move.id);
 
       // Geofencing: auto-detect arrival at pickup or delivery
       const transition = sessionStatus ? GEOFENCE_TRANSITIONS[sessionStatus] : undefined;
@@ -351,6 +357,7 @@ export async function POST(req: NextRequest) {
     speed: speed != null ? Number(speed) : null,
     heading: heading != null ? Number(heading) : null,
     timestamp: ts,
+    source: typeof source === "string" ? source : null,
   });
 
   if (!autoAdvanced) {

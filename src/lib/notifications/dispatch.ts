@@ -205,6 +205,7 @@ export function buildNotificationTitle(
     low_margin_alert: "Low margin alert",
     high_value_move: "High-value move flag",
     system_error: "System error",
+    crew_gps_offline: "Crew GPS offline",
   };
   return titles[slug] || "Notification";
 }
@@ -231,6 +232,9 @@ export function buildNotificationBody(
   if (slug === "tip_received") {
     const amt = data.amount ? `$${Number(data.amount).toLocaleString()}` : "Tip";
     return data.clientName ? `${amt} from ${data.clientName}` : amt;
+  }
+  if (slug === "crew_gps_offline") {
+    return (data.body as string) || (data.description as string) || "";
   }
   return (data.description as string) || "";
 }
@@ -259,6 +263,7 @@ export function getNotificationIcon(slug: string): string {
     low_margin_alert: "alertTriangle",
     high_value_move: "dollar",
     system_error: "alertTriangle",
+    crew_gps_offline: "mapPin",
   };
   return icons[slug] || "bell";
 }
@@ -275,7 +280,8 @@ export function buildNotificationLink(
     (slug.startsWith("move_") ||
       slug === "crew_checkin" ||
       slug === "crew_no_checkin" ||
-      slug === "checklist_incomplete") &&
+      slug === "checklist_incomplete" ||
+      slug === "crew_gps_offline") &&
     data.moveId
   )
     return `/admin/moves/${data.moveId}`;
@@ -293,7 +299,8 @@ export function getSourceType(slug: string): string {
     slug.startsWith("move_") ||
     slug === "crew_checkin" ||
     slug === "crew_no_checkin" ||
-    slug === "checklist_incomplete"
+    slug === "checklist_incomplete" ||
+    slug === "crew_gps_offline"
   )
     return "move";
   if (

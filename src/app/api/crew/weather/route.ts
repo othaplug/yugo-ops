@@ -4,10 +4,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { getTodayString } from "@/lib/business-timezone";
 import { rateLimit } from "@/lib/rate-limit";
-import { fetchMoveDayWeatherBriefForAddress } from "@/lib/weather/openweather-move-brief";
+import {
+  fetchMoveDayWeatherBrief,
+  fetchMoveDayWeatherBriefForAddress,
+} from "@/lib/weather/openweather-move-brief";
 import { buildPrecipAlertText, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
 type WeatherResult = { brief: MoveWeatherBrief; alert: string | null };
+type AreaWeatherResult = WeatherResult & { label: string };
 
 /**
  * GET — today's weather briefs for the crew team's jobs.
@@ -28,7 +32,10 @@ export async function GET() {
 
   const apiKey = process.env.OPENWEATHER_API_KEY?.trim();
   if (!apiKey) {
-    return NextResponse.json({ weather: {} as Record<string, WeatherResult> });
+    return NextResponse.json({
+      weather: {} as Record<string, WeatherResult>,
+      areaWeather: null as AreaWeatherResult | null,
+    });
   }
 
   const today = getTodayString();
@@ -77,5 +84,30 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ weather });
+  /** When there are no job rows today, still return a service-area forecast for the dashboard. */
+  let areaWeather: AreaWeatherResult | null = null;
+  if (rows.length === 0) {
+    const addr = process.env.CREW_PORTAL_WEATHER_ADDRESS?.trim();
+    const label =
+      process.env.CREW_PORTAL_WEATHER_LABEL?.trim() ||
+      (addr ? "Service area" : "Local forecast");
+    const postal = process.env.CREW_PORTAL_WEATHER_POSTAL?.trim() || "M5H2N2";
+
+    let brief: MoveWeatherBrief | null = null;
+    if (addr && addr.length >= 4) {
+      brief = await fetchMoveDayWeatherBriefForAddress(addr, today, apiKey);
+    }
+    if (!brief) {
+      brief = await fetchMoveDayWeatherBrief(postal, today, apiKey);
+    }
+    if (brief) {
+      areaWeather = {
+        brief,
+        alert: buildPrecipAlertText(brief),
+        label,
+      };
+    }
+  }
+
+  return NextResponse.json({ weather, areaWeather });
 }

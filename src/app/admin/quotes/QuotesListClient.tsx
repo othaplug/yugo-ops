@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatAdminCreatedAt } from "@/lib/date-format";
 import { toTitleCase } from "@/lib/format-text";
 import { Plus, PaperPlaneTilt, Trash as Trash2 } from "@phosphor-icons/react";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
@@ -224,6 +225,18 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         ),
         searchable: true,
         exportAccessor: (q) => q.quote_id ?? "",
+      },
+      {
+        id: "created_at",
+        label: "Create date",
+        accessor: (q) => q.created_at,
+        sortable: true,
+        render: (q) => (
+          <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
+            {formatAdminCreatedAt(q.created_at)}
+          </span>
+        ),
+        exportAccessor: (q) => formatAdminCreatedAt(q.created_at),
       },
       {
         id: "client",
@@ -473,6 +486,8 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
           columns={columns}
           keyField="id"
           tableId="quotes-list"
+          defaultSortCol="created_at"
+          defaultSortDir="desc"
           searchable
           pagination
           exportable
@@ -484,7 +499,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
             primaryColumnId: "client",
             subtitleColumnId: "quote_id",
             amountColumnId: "amount",
-            metaColumnIds: ["service", "status", "sent_created"],
+            metaColumnIds: ["created_at", "service", "status", "sent_created"],
           }}
           onRowClick={(q) => router.push(`/admin/quotes/${q.quote_id || q.id}`)}
           emptyMessage="No quotes yet"

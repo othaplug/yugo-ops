@@ -17,8 +17,10 @@ const STATUS_FILTERS = [
 ] as const;
 
 const SORT_OPTIONS = [
-  { col: "due_date", dir: "desc" as const, label: "Date: Newest" },
-  { col: "due_date", dir: "asc" as const, label: "Date: Oldest" },
+  { col: "created_at", dir: "desc" as const, label: "Create date: Newest" },
+  { col: "created_at", dir: "asc" as const, label: "Create date: Oldest" },
+  { col: "due_date", dir: "desc" as const, label: "Due date: Newest" },
+  { col: "due_date", dir: "asc" as const, label: "Due date: Oldest" },
   { col: "client_name", dir: "asc" as const, label: "Customer name: A–Z" },
   { col: "client_name", dir: "desc" as const, label: "Customer name: Z–A" },
   { col: "amount", dir: "desc" as const, label: "Amount: High to low" },
@@ -33,7 +35,7 @@ export default function InvoicesPageClient({ invoices }: InvoicesPageClientProps
   const router = useRouter();
   const [detailInvoice, setDetailInvoice] = useState<typeof invoices[0] | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortCol, setSortCol] = useState<string>("due_date");
+  const [sortCol, setSortCol] = useState<string>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);

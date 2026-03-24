@@ -391,6 +391,8 @@ export default function PartnerBillingTab({
           columns={monthlyPerformanceColumns}
           keyField="yearMonth"
           tableId="partner-monthly-performance"
+          defaultSortCol="yearMonth"
+          defaultSortDir="desc"
           searchable
           searchPlaceholder="Search by month…"
           pagination

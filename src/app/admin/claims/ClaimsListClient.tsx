@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
+import { formatAdminCreatedAt } from "@/lib/date-format";
 import { useToast } from "../components/Toast";
 import CreateButton from "../components/CreateButton";
 import KpiCard from "@/components/ui/KpiCard";
@@ -75,9 +76,22 @@ const claimColumns: ColumnDef<Claim>[] = [
     ),
   },
   {
+    id: "created_at",
+    label: "Create date",
+    accessor: (c) => c.created_at,
+    sortable: true,
+    render: (c) => (
+      <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
+        {formatAdminCreatedAt(c.created_at)}
+      </span>
+    ),
+    exportAccessor: (c) => formatAdminCreatedAt(c.created_at),
+  },
+  {
     id: "date",
-    label: "Date",
+    label: "Submitted",
     accessor: (c) => c.submitted_at || c.created_at,
+    sortable: true,
     render: (c) => new Date(c.submitted_at || c.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" }),
   },
   {
@@ -244,6 +258,8 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
         columns={claimColumns}
         keyField="id"
         tableId="claims-list"
+        defaultSortCol="created_at"
+        defaultSortDir="desc"
         searchable
         searchPlaceholder="Search by claim #, client, email…"
         pagination
@@ -256,7 +272,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
           primaryColumnId: "client",
           subtitleColumnId: "claim_number",
           amountColumnId: "claimed",
-          metaColumnIds: ["date", "status", "items", "approved", "crew"],
+          metaColumnIds: ["created_at", "date", "status", "items", "approved", "crew"],
         }}
         onRowClick={(c) => router.push(`/admin/claims/${c.id}`)}
         emptyMessage={claims.length === 0 ? "No claims yet" : "No claims match your filters"}

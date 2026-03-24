@@ -5,6 +5,7 @@ import Link from "next/link";
 import Badge from "../components/Badge";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
+import { formatAdminCreatedAt } from "@/lib/date-format";
 import { useToast } from "../components/Toast";
 import { ArrowSquareOut } from "@phosphor-icons/react";
 
@@ -112,6 +113,18 @@ export default function InvoicesTable({
       sortable: true,
       align: "right",
       exportAccessor: (r) => formatCurrency(r.amount),
+    },
+    {
+      id: "created_at",
+      label: "Create date",
+      accessor: (r) => r.created_at || "",
+      sortable: true,
+      render: (r) => (
+        <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
+          {r.created_at ? formatAdminCreatedAt(r.created_at) : "—"}
+        </span>
+      ),
+      exportAccessor: (r) => (r.created_at ? formatAdminCreatedAt(r.created_at) : ""),
     },
     {
       id: "due_date",

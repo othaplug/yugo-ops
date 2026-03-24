@@ -3,6 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { getPlatformToggles } from "@/lib/platform-settings";
+import {
+  isDeliveryRowLiveForMap,
+  isMoveRowLiveForMap,
+  sessionStatusAllowsJobCode,
+} from "@/lib/tracking-live-job-display";
 
 const POLL_MS = 3000;
 
@@ -59,33 +64,59 @@ export async function GET(req: NextRequest) {
 
           const moveIds = (sessions || []).filter((s) => s.job_type === "move").map((s) => s.job_id);
           const deliveryIds = (sessions || []).filter((s) => s.job_type === "delivery").map((s) => s.job_id);
-          const { data: moves } = moveIds.length ? await admin.from("moves").select("id, client_name, move_code").in("id", moveIds) : { data: [] };
-          const { data: deliveries } = deliveryIds.length ? await admin.from("deliveries").select("id, customer_name, client_name, delivery_number").in("id", deliveryIds) : { data: [] };
+          const { data: moves } = moveIds.length ? await admin.from("moves").select("id, client_name, move_code, status").in("id", moveIds) : { data: [] };
+          const { data: deliveries } = deliveryIds.length
+            ? await admin.from("deliveries").select("id, customer_name, client_name, delivery_number, status").in("id", deliveryIds)
+            : { data: [] };
           const moveMap = new Map((moves || []).map((m) => [m.id, m]));
           const deliveryMap = new Map((deliveries || []).map((d) => [d.id, d]));
 
           const completedStatuses = ["completed", "delivered", "done"];
-          const activeOnly = (sessions || []).filter((s) => !completedStatuses.includes((s.status || "").toLowerCase()));
-          const sessionsWithDetails = activeOnly.map((s) => {
-            const job = s.job_type === "move" ? moveMap.get(s.job_id) : deliveryMap.get(s.job_id);
-            const jobName = job ? (s.job_type === "move" ? (job as any).client_name : `${(job as any).customer_name} (${(job as any).client_name})`) : "-";
-            const jobId = job ? (s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number) : s.job_id;
-            const detailHref = s.job_type === "move" ? `/admin/moves/${jobId}` : `/admin/deliveries/${jobId}`;
-            const teamName = teamNameMap.get(s.team_id) || membersByTeam.get(s.team_id)?.[0] || `Team ${(s.team_id || "").slice(0, 8)}`;
-            return {
-              id: s.id,
-              job_id: s.job_id,
-              job_type: s.job_type,
-              jobId,
-              jobName,
-              status: s.status,
-              lastLocation: s.last_location,
-              updatedAt: s.updated_at,
-              team_id: s.team_id,
-              teamName,
-              detailHref,
-            };
+          const activeOnly = (sessions || []).filter((s) => {
+            const st = (s.status || "").toLowerCase();
+            if (completedStatuses.includes(st)) return false;
+            return sessionStatusAllowsJobCode(s.status);
           });
+          const sessionsWithDetails = activeOnly
+            .map((s) => {
+              const job = s.job_type === "move" ? moveMap.get(s.job_id) : deliveryMap.get(s.job_id);
+              if (!job) return null;
+              if (s.job_type === "move") {
+                if (!isMoveRowLiveForMap((job as { status?: string | null }).status)) return null;
+              } else {
+                if (!isDeliveryRowLiveForMap((job as { status?: string | null }).status)) return null;
+              }
+              const jobName = s.job_type === "move" ? (job as any).client_name : `${(job as any).customer_name} (${(job as any).client_name})`;
+              const jobId = s.job_type === "move" ? (job as any).move_code : (job as any).delivery_number;
+              const detailHref = s.job_type === "move" ? `/admin/moves/${jobId}` : `/admin/deliveries/${jobId}`;
+              const teamName = teamNameMap.get(s.team_id) || membersByTeam.get(s.team_id)?.[0] || `Team ${(s.team_id || "").slice(0, 8)}`;
+              return {
+                id: s.id,
+                job_id: s.job_id,
+                job_type: s.job_type,
+                jobId,
+                jobName,
+                status: s.status,
+                lastLocation: s.last_location,
+                updatedAt: s.updated_at,
+                team_id: s.team_id,
+                teamName,
+                detailHref,
+              };
+            })
+            .filter(Boolean) as {
+              id: string;
+              job_id: string;
+              job_type: string;
+              jobId: string;
+              jobName: string;
+              status: string | null;
+              lastLocation: unknown;
+              updatedAt: string | null;
+              team_id: string;
+              teamName: string;
+              detailHref: string;
+            }[];
 
           const dataStr = JSON.stringify(sessionsWithDetails);
           if (dataStr !== lastData) {

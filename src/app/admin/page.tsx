@@ -25,8 +25,8 @@ export default async function AdminPage() {
     { data: quotesExpanded },
     { data: reviewRequests },
   ] = await Promise.all([
-    admin.from("deliveries").select("*").order("scheduled_date"),
-    admin.from("moves").select("*"),
+    admin.from("deliveries").select("*").order("created_at", { ascending: false }),
+    admin.from("moves").select("*").order("created_at", { ascending: false }),
     admin.from("invoices").select("id, status, amount, updated_at, created_at"),
     (async () => {
       try {

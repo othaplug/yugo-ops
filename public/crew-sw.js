@@ -222,6 +222,21 @@ async function replayQueue() {
   }
 }
 
+// Expose for sw-tracking.js sync handler (importScripts shares global scope)
+self.replayQueue = replayQueue;
+
+try {
+  importScripts("/sw-tracking.js");
+} catch (e) {
+  console.warn("[crew-sw] sw-tracking import failed", e);
+}
+
+self.addEventListener("sync", (event) => {
+  if (event.tag === "tracking-sync") {
+    event.waitUntil(replayQueue());
+  }
+});
+
 self.addEventListener("message", (event) => {
   if (event.data === "replay-queue") {
     event.waitUntil(replayQueue());

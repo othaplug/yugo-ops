@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import { House, X, Warning } from "@phosphor-icons/react";
+import { TrackingFreshness } from "@/components/tracking/TrackingFreshness";
 
 const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
@@ -300,21 +301,26 @@ const GodEyeMap = dynamic(
                       title={`${c.name}, ${getStatusLabel(status)}`}
                     >
                       {/* Glass pill label, always horizontal above the van */}
-                      <div
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap pointer-events-none"
-                        style={{
-                          background: "rgba(8,10,16,0.84)",
-                          backdropFilter: "blur(10px)",
-                          border: "1px solid rgba(255,255,255,0.10)",
-                          boxShadow: "0 2px 14px rgba(0,0,0,0.55)",
-                        }}
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ background: ringColor, boxShadow: isOnJob(status) ? `0 0 6px ${ringColor}` : undefined }}
-                        />
-                        <span className="text-[11px] font-bold tracking-[0.04em] text-white">
-                          {(c.name || "Crew").replace("Team ", "")}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex flex-col items-center gap-0.5 pointer-events-none max-w-[min(200px,70vw)]">
+                        <div
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap"
+                          style={{
+                            background: "rgba(8,10,16,0.84)",
+                            backdropFilter: "blur(10px)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            boxShadow: "0 2px 14px rgba(0,0,0,0.55)",
+                          }}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: ringColor, boxShadow: isOnJob(status) ? `0 0 6px ${ringColor}` : undefined }}
+                          />
+                          <span className="text-[11px] font-bold tracking-[0.04em] text-white">
+                            {(c.name || "Crew").replace("Team ", "")}
+                          </span>
+                        </div>
+                        <span className="text-[8px] font-medium text-center text-white/70 px-1 leading-tight">
+                          <TrackingFreshness lastUpdate={loc?.updated_at || c.updated_at} />
                         </span>
                       </div>
 
@@ -466,7 +472,9 @@ function CrewPopup({
         </div>
         <div className="text-center">
           <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Last GPS</div>
-          <div className="text-[12px] font-semibold text-[var(--tx)] mt-0.5">{formatRelative(crewLocation?.updated_at || crew.updated_at || new Date().toISOString())}</div>
+          <div className="text-[11px] font-semibold text-[var(--tx)] mt-0.5">
+            <TrackingFreshness lastUpdate={crewLocation?.updated_at || crew.updated_at} />
+          </div>
         </div>
       </div>
 

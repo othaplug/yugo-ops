@@ -20,7 +20,7 @@ export default async function DeliveriesPage({
     { data: projects },
     { data: partners },
   ] = await Promise.all([
-    db.from("deliveries").select("*").order("completed_at", { ascending: false, nullsFirst: false }).order("updated_at", { ascending: false }),
+    db.from("deliveries").select("*").order("created_at", { ascending: false }),
     db.from("projects").select("*, organizations:partner_id(name, type)").order("created_at", { ascending: false }),
     db.from("organizations").select("id, name, type").not("type", "eq", "b2c").order("name"),
   ]);

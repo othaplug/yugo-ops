@@ -5,19 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import { formatAdminCreatedAt } from "@/lib/date-format";
 import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
-
-function formatRelative(iso: string): string {
-  const d = new Date(iso);
-  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (sec < 60) return "just now";
-  if (sec < 120) return "1 min ago";
-  if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
-  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
-  if (sec < 172800) return "yesterday";
-  return `${Math.floor(sec / 86400)} days ago`;
-}
 
 function isToday(iso: string): boolean {
   const d = new Date(iso);
@@ -184,12 +174,12 @@ export default function ChangeRequestsClient({
         searchable: true,
       },
       {
-        id: "time",
-        label: "Time",
+        id: "created_at",
+        label: "Create date",
         accessor: (r) => r.created_at,
         render: (r) => (
-          <span className="text-[10px] text-[var(--tx3)]">
-            {r.status === "pending" ? formatRelative(r.created_at) : new Date(r.created_at).toLocaleString()}
+          <span className="text-[10px] text-[var(--tx3)] tabular-nums whitespace-nowrap">
+            {formatAdminCreatedAt(r.created_at)}
           </span>
         ),
         sortable: true,
@@ -289,6 +279,8 @@ export default function ChangeRequestsClient({
           columns={columns}
           keyField="id"
           tableId="change-requests"
+          defaultSortCol="created_at"
+          defaultSortDir="desc"
           searchable
           pagination
           exportable

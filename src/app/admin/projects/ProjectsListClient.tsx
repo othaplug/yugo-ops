@@ -6,6 +6,7 @@ import Link from "next/link";
 import CreateButton from "../components/CreateButton";
 import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import { formatAdminCreatedAt } from "@/lib/date-format";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 
@@ -50,6 +51,19 @@ const projectColumns: ColumnDef<Project>[] = [
     accessor: (p) => p.project_number,
     searchable: true,
     render: (p) => <span className="text-[12px] font-semibold text-[var(--gold)]">{p.project_number}</span>,
+  },
+  {
+    id: "created_at",
+    label: "Create date",
+    accessor: (p) => p.created_at,
+    sortable: true,
+    searchable: true,
+    render: (p) => (
+      <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
+        {formatAdminCreatedAt(p.created_at)}
+      </span>
+    ),
+    exportAccessor: (p) => formatAdminCreatedAt(p.created_at),
   },
   {
     id: "partner",
@@ -188,6 +202,8 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
         columns={projectColumns}
         keyField="id"
         tableId="projects-list"
+        defaultSortCol="created_at"
+        defaultSortDir="desc"
         searchable
         searchPlaceholder="Search by project #, name, partner…"
         pagination

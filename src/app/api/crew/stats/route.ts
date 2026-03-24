@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
     .limit(10);
 
   const currentMonth = now.toISOString().slice(0, 7);
-  const leaderboard = (allProfiles ?? [])
+  const leaderboardRaw = (allProfiles ?? [])
     .map((p) => {
       const mJobs = (p.monthly_jobs as Record<string, number>)?.[currentMonth] || 0;
       const mRating = (p.monthly_ratings as Record<string, number>)?.[currentMonth] || p.avg_satisfaction || 0;
@@ -82,6 +82,10 @@ export async function GET(req: NextRequest) {
     })
     .filter((p) => p.monthJobs > 0 || p.avgRating > 0)
     .sort((a, b) => b.avgRating - a.avgRating);
+
+  const myRankIndex = leaderboardRaw.findIndex((e) => e.name === crewMember.name);
+  const yourRankThisMonth = myRankIndex >= 0 ? myRankIndex + 1 : null;
+  const leaderboard = leaderboardRaw.slice(0, 15);
 
   // Compute badges
   const earnedBadgeIds: string[] = profile
@@ -105,6 +109,8 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     teamName: crewRow?.name ?? "Team",
+    crewMemberName: crewMember.name,
+    yourRankThisMonth,
     profile: {
       totalJobs: profile?.total_jobs || 0,
       avgRating: profile?.avg_satisfaction || 0,

@@ -13,7 +13,7 @@ export default async function DesignersPage() {
   const db = createAdminClient();
   const [{ data: orgs }, { data: deliveries }, { data: invoices }] = await Promise.all([
     db.from("organizations").select("*, created_at").in("type", DESIGNER_ORG_TYPES).order("name"),
-    db.from("deliveries").select("*").eq("category", "designer").order("scheduled_date"),
+    db.from("deliveries").select("*").eq("category", "designer").order("created_at", { ascending: false }),
     db.from("invoices").select("client_name, amount, status, created_at"),
   ]);
 

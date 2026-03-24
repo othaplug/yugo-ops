@@ -13,7 +13,7 @@ export default async function RetailPage() {
 
   const [{ data: orgs }, { data: deliveries }, { data: invoices }] = await Promise.all([
     db.from("organizations").select("*, created_at").eq("type", "retail").order("name"),
-    db.from("deliveries").select("*").eq("category", "retail").order("scheduled_date", { ascending: false }),
+    db.from("deliveries").select("*").eq("category", "retail").order("created_at", { ascending: false }),
     db.from("invoices").select("client_name, amount, status, created_at"),
   ]);
 

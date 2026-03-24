@@ -12,8 +12,8 @@ export default async function CrewPage() {
   const today = getTodayString();
   const [{ data: crews }, { data: deliveries }, { data: moves }, office] = await Promise.all([
     db.from("crews").select("id, name, members, current_lat, current_lng, status, updated_at, delay_minutes").order("name"),
-    db.from("deliveries").select("id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address").order("scheduled_date"),
-    db.from("moves").select("id, move_code, crew_id, client_name, scheduled_date, status, from_address, to_address").order("scheduled_date"),
+    db.from("deliveries").select("id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address").order("created_at", { ascending: false }),
+    db.from("moves").select("id, move_code, crew_id, client_name, scheduled_date, status, from_address, to_address").order("created_at", { ascending: false }),
     getOfficeLocation(),
   ]);
 

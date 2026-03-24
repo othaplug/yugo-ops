@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import MoveDateFilter, { getDateRangeFromPreset } from "../components/MoveDateFilter";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import { useToast } from "../components/Toast";
-import { formatMoveDate } from "@/lib/date-format";
+import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
 import { getDeliveryDetailPath, formatJobId } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
 import { formatCurrency } from "@/lib/format-currency";
@@ -54,6 +54,7 @@ interface Delivery {
   zone?: number | null;
   completed_at?: string | null;
   updated_at?: string | null;
+  created_at?: string | null;
 }
 
 const DELIVERY_STATUS_STYLE: Record<string, string> = {
@@ -92,6 +93,19 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     sortable: true,
     searchable: true,
     exportAccessor: (d) => `${formatMoveDate(d.scheduled_date)} ${d.time_slot || ""}`,
+  },
+  {
+    id: "created_at",
+    label: "Create date",
+    accessor: (d) => d.created_at || "",
+    render: (d) => (
+      <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
+        {d.created_at ? formatAdminCreatedAt(d.created_at) : "—"}
+      </span>
+    ),
+    sortable: true,
+    searchable: true,
+    exportAccessor: (d) => (d.created_at ? formatAdminCreatedAt(d.created_at) : ""),
   },
   {
     id: "partner",
@@ -411,6 +425,8 @@ export default function AllDeliveriesView({
           columns={deliveryColumns}
           keyField="id"
           tableId="all-deliveries"
+          defaultSortCol="created_at"
+          defaultSortDir="desc"
           searchable
           pagination
           exportable
@@ -421,7 +437,7 @@ export default function AllDeliveriesView({
             primaryColumnId: "partner",
             subtitleColumnId: "delivery_id",
             amountColumnId: "price",
-            metaColumnIds: ["date", "category", "status"],
+            metaColumnIds: ["date", "created_at", "category", "status"],
           }}
           onRowClick={(d) => router.push(getDeliveryDetailPath(d))}
           emptyMessage={statusFilter ? `No deliveries with status "${statusFilter}"` : "No deliveries found"}

@@ -7,7 +7,7 @@ import BackButton from "../components/BackButton";
 import FilterBar from "../components/FilterBar";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatCurrency } from "@/lib/format-currency";
-import { formatMoveDate } from "@/lib/date-format";
+import { formatMoveDate, formatAdminCreatedAt } from "@/lib/date-format";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 
@@ -18,6 +18,7 @@ type Client = {
   contact_name: string | null;
   email: string | null;
   outstanding_balance?: number | null;
+  created_at?: string | null;
 };
 
 const MOVE_STATUS_OPTIONS = [
@@ -70,6 +71,17 @@ export default function ClientsPageClient({
   }, [initialClients, moveClientData, statusFilter, balanceFilter]);
 
   const columns: ColumnDef<MoveClientRow>[] = [
+    {
+      id: "created_at",
+      label: "Create date",
+      accessor: (c) => c.created_at || "",
+      sortable: true,
+      render: (c) => (
+        <span className="text-[11px] text-[var(--tx2)] tabular-nums whitespace-nowrap">
+          {c.created_at ? formatAdminCreatedAt(c.created_at) : "—"}
+        </span>
+      ),
+    },
     {
       id: "name", label: "Client",
       accessor: (c) => c.name || "",
@@ -178,6 +190,8 @@ export default function ClientsPageClient({
         columns={columns}
         keyField="id"
         tableId="clients-move"
+        defaultSortCol="created_at"
+        defaultSortDir="desc"
         searchable
         searchPlaceholder="Search clients…"
         pagination

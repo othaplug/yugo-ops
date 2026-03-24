@@ -19,6 +19,11 @@ import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
 import DayRateStopFlow from "./DayRateStopFlow";
 import WalkthroughModal from "./WalkthroughModal";
+import {
+  useCrewPersistentTracking,
+  checkLocationPermissions,
+  type GeoPermissionState,
+} from "@/lib/crew/useCrewPersistentTracking";
 
 const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 
@@ -111,7 +116,7 @@ export default function CrewJobPage({
   const [error, setError] = useState("");
   const [advancing, setAdvancing] = useState(false);
   const [note, setNote] = useState("");
-  const [gpsStatus, setGpsStatus] = useState<"off" | "on" | "unavailable">("on");
+  const [locationPermission, setLocationPermission] = useState<GeoPermissionState>("unknown");
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportType, setReportType] = useState("damage");
   const [reportDesc, setReportDesc] = useState("");
@@ -214,7 +219,22 @@ export default function CrewJobPage({
     return () => clearInterval(id);
   }, [session?.startedAt, session?.isActive]);
 
+  const { recheckPermission } = useCrewPersistentTracking({
+    sessionId: session?.id,
+    isActive: !!session?.isActive,
+    onAutoAdvanced: fetchSession,
+    onPermissionChange: setLocationPermission,
+  });
+
+  const blockedByLocation =
+    locationPermission === "denied" || locationPermission === "unsupported";
+
   const startJob = async () => {
+    const perm = await checkLocationPermissions();
+    if (perm.status === "denied" || perm.status === "unsupported") {
+      setError(perm.message || "Location is required to start this job.");
+      return;
+    }
     setAdvancing(true);
     try {
       const r = await fetch("/api/tracking/start", {
@@ -236,6 +256,10 @@ export default function CrewJobPage({
     if (!session || !nextStatus) return;
     if (nextStatus === "completed") {
       router.push(`/crew/dashboard/job/${jobType}/${id}/signoff`);
+      return;
+    }
+    if (blockedByLocation) {
+      setError("Turn on location access to update status.");
       return;
     }
     if ("geolocation" in navigator) {
@@ -268,10 +292,6 @@ export default function CrewJobPage({
       if (!r.ok) throw new Error(d.error || "Failed");
       setNote("");
       await fetchSession();
-      if (status === "completed") {
-        stopGpsTracking();
-        setGpsStatus("off");
-      }
       if (status === "arrived_at_pickup") {
         setWalkthroughModalOpen(true);
         setWalkthroughDone(false);
@@ -283,59 +303,6 @@ export default function CrewJobPage({
       setAdvancing(false);
     }
   };
-
-  const watchIdRef = useRef<number | null>(null);
-  const lastSentRef = useRef(0);
-  const ACTIVE_INTERVAL = 5000;
-  const IDLE_INTERVAL = 30000;
-
-  const stopGpsTracking = useCallback(() => {
-    if (watchIdRef.current != null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!("geolocation" in navigator)) {
-      setGpsStatus("unavailable");
-      return;
-    }
-    setGpsStatus("on");
-    const activeSessionId = session?.isActive && session?.id ? session.id : undefined;
-    const interval = activeSessionId ? ACTIVE_INTERVAL : IDLE_INTERVAL;
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        const now = Date.now();
-        if (now - lastSentRef.current < interval) return;
-        lastSentRef.current = now;
-        const body: Record<string, unknown> = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          speed: pos.coords.speed,
-          heading: pos.coords.heading,
-          timestamp: new Date().toISOString(),
-        };
-        if (activeSessionId) body.sessionId = activeSessionId;
-        fetch("/api/tracking/location", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        })
-          .then(async (res) => {
-            if (!res.ok) return;
-            const data = await res.json().catch(() => null);
-            if (data?.autoAdvanced) fetchSession();
-          })
-          .catch(() => {});
-      },
-      () => setGpsStatus("unavailable"),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 },
-    );
-    return () => stopGpsTracking();
-  }, [session?.id, session?.isActive, fetchSession, stopGpsTracking]);
 
   useEffect(() => {
     let lock: WakeLockSentinel | null = null;
@@ -414,6 +381,7 @@ export default function CrewJobPage({
   // Walkthrough must be done (or skipped) before loading can start
   const blockedByWalkthrough = currentStatus === "arrived_at_pickup" && !walkthroughDone && !walkthroughSkipped;
   const showAdvanceButton = session?.isActive && nextStatus && !showStartButton;
+  const canUseLocationActions = !blockedByLocation;
 
   const itemsLabel = itemsTotal > 0 ? `Items (${itemsVerified}/${itemsTotal})` : `Items (${totalItems})`;
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
@@ -447,10 +415,22 @@ export default function CrewJobPage({
             </div>
           )}
           {session && !isCompleted && (
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${gpsStatus === "on" ? "bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/25" : "bg-[var(--bg)] text-[var(--tx3)] border border-[var(--brd)]"}`}>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                locationPermission === "denied" || locationPermission === "unsupported"
+                  ? "bg-red-500/10 text-red-400 border border-red-500/25"
+                  : "bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/25"
+              }`}
+            >
               <span className="relative flex h-1.5 w-1.5">
-                {gpsStatus === "on" && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />}
-                <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${gpsStatus === "on" ? "bg-[#22C55E]" : "bg-[var(--tx3)]"}`} />
+                {locationPermission !== "denied" && locationPermission !== "unsupported" && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
+                    locationPermission === "denied" || locationPermission === "unsupported" ? "bg-red-400" : "bg-[#22C55E]"
+                  }`}
+                />
               </span>
               GPS
             </span>
@@ -537,6 +517,52 @@ export default function CrewJobPage({
       {activeTab === "status" && (
         <div className="space-y-3">
 
+          {/* Location + charging note */}
+          <div className="px-2 space-y-2">
+            <div className="flex items-start justify-between gap-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] px-3 py-2.5">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]/70 mb-0.5">Location</p>
+                <p className="text-[12px] font-semibold text-[var(--tx)]">
+                  {locationPermission === "granted" && "Enabled"}
+                  {(locationPermission === "prompt" || locationPermission === "unknown") && "Tap Allow when prompted"}
+                  {locationPermission === "denied" && "Disabled — required for live tracking"}
+                  {locationPermission === "unsupported" && "Not available on this device"}
+                </p>
+                {locationPermission === "prompt" && (
+                  <p className="text-[11px] text-[var(--tx3)] mt-1">
+                    We use your location so dispatch and the client can see live progress.
+                  </p>
+                )}
+              </div>
+              {(locationPermission === "denied" || locationPermission === "unsupported") && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    recheckPermission().then((r) => {
+                      setLocationPermission(r.status);
+                    })
+                  }
+                  className="shrink-0 text-[11px] font-semibold text-[var(--gold)] underline-offset-2 hover:underline"
+                >
+                  Check again
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-[var(--tx3)]/80 text-center leading-snug">
+              Keep your device charged during moves for uninterrupted tracking.
+            </p>
+          </div>
+
+          {blockedByLocation && (
+            <div className="rounded-2xl border border-red-500/35 bg-red-500/5 p-4 space-y-2">
+              <p className="text-[12px] font-bold text-red-300">Location required</p>
+              <p className="text-[11px] text-[var(--tx2)] leading-relaxed">
+                Live tracking must be enabled before you can update this job. Open Settings → Privacy → Location Services →
+                your browser → Allow while using.
+              </p>
+            </div>
+          )}
+
           {/* Progress */}
           <div className="px-2">
             <StageProgressBar
@@ -599,7 +625,7 @@ export default function CrewJobPage({
             </div>
           )}
 
-          {/* Advance status / Client Sign-Off button */}
+          {/* Advance status / Client Sign-Off button (sign-off allowed even if GPS was denied) */}
           {showAdvanceButton && !blockedByPhotos && !blockedByWalkthrough && (
             nextStatus === "completed" ? (
               <Link
@@ -610,7 +636,7 @@ export default function CrewJobPage({
                 <CheckCircle size={14} />
                 Client Sign-Off
               </Link>
-            ) : (
+            ) : canUseLocationActions ? (
               <button
                 type="button"
                 onClick={advanceStatus}
@@ -620,9 +646,9 @@ export default function CrewJobPage({
               >
                 {advancing ? "Updating…" : getStatusLabel(nextStatus!)}
               </button>
-            )
+            ) : null
           )}
-          {showAdvanceButton && blockedByPhotos && (
+          {showAdvanceButton && canUseLocationActions && blockedByPhotos && (
             <p className="text-center text-[11px] text-[var(--tx3)] py-2">
               Take photos in the Photos tab to advance
             </p>

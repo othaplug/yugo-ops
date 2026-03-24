@@ -3,7 +3,14 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { crewMemberMatchesSessionToken } from "@/lib/crew-session-validate";
-import { getTodayString, getLocalDateDisplay, getAppTimezone, addCalendarDaysYmd } from "@/lib/business-timezone";
+import {
+  getTodayString,
+  getLocalDateDisplay,
+  getAppTimezone,
+  addCalendarDaysYmd,
+  getLocalHourInAppTimezone,
+  getTimeZoneShortLabel,
+} from "@/lib/business-timezone";
 import { countActiveBinTasks } from "@/lib/bin-orders-active-tasks";
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
@@ -24,8 +31,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const today = getTodayString();
-  const tomorrowStr = addCalendarDaysYmd(today, 1, getAppTimezone());
+  const tz = getAppTimezone();
+  if (process.env.NODE_ENV === "production") {
+    const a = (process.env.APP_TIMEZONE || "").trim();
+    const pub = (process.env.NEXT_PUBLIC_APP_TIMEZONE || "").trim();
+    if (a && pub && a !== pub) {
+      console.warn(
+        "[crew/dashboard] APP_TIMEZONE and NEXT_PUBLIC_APP_TIMEZONE differ; set both to the same IANA zone (e.g. America/Toronto).",
+      );
+    }
+  }
+  const today = getTodayString(tz);
+  const tomorrowStr = addCalendarDaysYmd(today, 1, tz);
   const supabase = createAdminClient();
 
   const moveSelect =
@@ -199,13 +216,22 @@ export async function GET(req: NextRequest) {
   const readinessRequired = !readinessCompleted && (isCrewLead || jobs.length > 0);
   const teamName = crewRow?.name || "Team";
 
-  const dateStr = getLocalDateDisplay(new Date(), getAppTimezone());
+  const now = new Date();
+  const dateStr = getLocalDateDisplay(now, tz);
   const activeBinTaskCount = countActiveBinTasks(binOrdersRaw || [], today, tomorrowStr);
   const hasActiveBinTasks = activeBinTaskCount > 0;
 
   return NextResponse.json({
     crewMember: { ...payload, teamName, dateStr },
     jobs,
+    /** Calendar date used for job queries (YYYY-MM-DD in business TZ). */
+    scheduleDateYmd: today,
+    /** IANA zone used for `scheduleDateYmd` and readiness/bin date filters — must match admin booking dates. */
+    scheduleTimezone: tz,
+    /** Short label, e.g. EST, for crew UI copy. */
+    scheduleTimezoneShort: getTimeZoneShortLabel(now, tz),
+    /** Hour 0–23 in business TZ (for greetings; avoids client/server TZ env skew). */
+    businessLocalHour: getLocalHourInAppTimezone(now, tz),
     readinessCompleted,
     readinessRequired,
     isCrewLead,

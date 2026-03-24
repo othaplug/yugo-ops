@@ -1,18 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
+import {
+  isDeliveryRowLiveForMap,
+  isMoveRowLiveForMap,
+  sessionStatusAllowsJobCode,
+} from "@/lib/tracking-live-job-display";
 /** Fallback position when a live session has no GPS yet — so "LIVE" panel and "teams on map" stay in sync. */
 const FALLBACK_LAT = 43.66027;
 const FALLBACK_LNG = -79.35365;
 
 const STALE_MS = 12 * 60 * 60 * 1000;
-const PANEL_EXCLUDE_STATUSES = ["not_started", "cancelled"];
+const PANEL_EXCLUDE_STATUSES = ["not_started", "cancelled", "idle"];
 
 function isSessionActiveForPanel(s: { status?: string | null; updated_at?: string | null }): boolean {
   const status = (s.status || "").toLowerCase();
   if (PANEL_EXCLUDE_STATUSES.includes(status)) return false;
   if (!s.updated_at || Date.now() - new Date(s.updated_at).getTime() > STALE_MS) return false;
   return true;
+}
+
+/**
+ * Show a job code only when tracking was explicitly started and the job is still in progress
+ * (not stale assignment / completed work / idle short-status mismatch).
+ */
+function jobCodeFromStartedSession(
+  session: { job_id: string; job_type: string; status?: string | null; started_at?: string | null } | undefined,
+  deliveries: { id: string; delivery_number?: string | null; status?: string | null }[],
+  moves: { id: string; move_code?: string | null; status?: string | null }[],
+): string | null {
+  if (!session) return null;
+  if (!session.started_at) return null;
+  if (!sessionStatusAllowsJobCode(session.status)) return null;
+  if (session.job_type === "move") {
+    const m = moves.find((row) => row.id === session.job_id);
+    if (!m) return null;
+    const ms = (m.status || "").toLowerCase();
+    if (["completed", "cancelled"].includes(ms)) return null;
+    if (!isMoveRowLiveForMap(m.status)) return null;
+    return m.move_code ?? null;
+  }
+  const d = deliveries.find((row) => row.id === session.job_id);
+  if (!d) return null;
+  const ds = (d.status || "").toLowerCase();
+  if (["delivered", "completed", "cancelled"].includes(ds)) return null;
+  if (!isDeliveryRowLiveForMap(d.status)) return null;
+  return d.delivery_number ?? null;
 }
 
 /** GET all crews with live positions for unified tracking map. Staff only. */
@@ -31,10 +64,10 @@ export async function GET(req: NextRequest) {
     { data: locations },
   ] = await Promise.all([
     admin.from("crews").select("id, name, members, current_lat, current_lng, status, updated_at, delay_minutes").order("name"),
-    admin.from("tracking_sessions").select("id, team_id, job_id, job_type, status, last_location, updated_at").eq("is_active", true),
+    admin.from("tracking_sessions").select("id, team_id, job_id, job_type, status, last_location, updated_at, started_at").eq("is_active", true),
     admin.from("crew_members").select("id, name, team_id").eq("is_active", true),
-    admin.from("deliveries").select("id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address").order("scheduled_date"),
-    admin.from("moves").select("id, move_code, crew_id, stage"),
+    admin.from("deliveries").select("id, delivery_number, crew_id, scheduled_date, status, delivery_address, pickup_address"),
+    admin.from("moves").select("id, move_code, crew_id, stage, status"),
     admin.from("crew_locations").select("crew_id, lat, lng, status, updated_at, current_move_id, current_client_name, current_from_address, current_to_address"),
   ]);
 
@@ -52,26 +85,6 @@ export async function GET(req: NextRequest) {
     const list = membersByTeam.get(m.team_id) || [];
     list.push(m.name);
     membersByTeam.set(m.team_id, list);
-  }
-
-  type DeliveryRow = NonNullable<typeof deliveries>[number];
-  const deliveryByCrew = new Map<string, DeliveryRow[]>();
-  for (const d of deliveries || []) {
-    if (d.crew_id) {
-      const list = deliveryByCrew.get(d.crew_id) || [];
-      list.push(d);
-      deliveryByCrew.set(d.crew_id, list);
-    }
-  }
-
-  type MoveRow = NonNullable<typeof moves>[number];
-  const moveByCrew = new Map<string, MoveRow[]>();
-  for (const m of moves || []) {
-    if (m.crew_id) {
-      const list = moveByCrew.get(m.crew_id) || [];
-      list.push(m);
-      moveByCrew.set(m.crew_id, list);
-    }
   }
 
   const locationByCrew = new Map<string, { lat: number; lng: number; status?: string; updated_at?: string }>();
@@ -102,11 +115,7 @@ export async function GET(req: NextRequest) {
       lng = lng ?? FALLBACK_LNG;
     }
 
-    const pendingDeliveries = (deliveryByCrew.get(c.id) || []).filter((d) => !["delivered", "cancelled"].includes(d.status || ""));
-    const pendingMoves = (moveByCrew.get(c.id) || []).filter((m) => !["completed", "cancelled"].includes(m.stage || ""));
-    const currentDelivery = pendingDeliveries[0];
-    const currentMove = pendingMoves[0];
-    const currentJob = currentDelivery?.delivery_number || currentMove?.move_code || null;
+    const currentJob = jobCodeFromStartedSession(session, deliveries || [], moves || []);
 
     const effectiveStatus =
       c.status === "en-route" ? "en-route" :
@@ -148,9 +157,7 @@ export async function GET(req: NextRequest) {
     if (lat == null || lng == null) continue; // no position and not active, skip
     const members = membersByTeam.get(teamId) || [];
     const displayName = members[0] || `Team ${teamId.slice(0, 8)}`;
-    const pendingDeliveries = (deliveryByCrew.get(teamId) || []).filter((d) => !["delivered", "cancelled"].includes(d.status || ""));
-    const pendingMoves = (moveByCrew.get(teamId) || []).filter((m) => !["completed", "cancelled"].includes(m.stage || ""));
-    const currentJob = pendingDeliveries[0]?.delivery_number || pendingMoves[0]?.move_code || null;
+    const currentJob = jobCodeFromStartedSession(session, deliveries || [], moves || []);
     const sessionStatus = (session.status || "").toLowerCase();
     const doneStatuses = ["completed", "delivered", "done", "not_started", "cancelled"];
     crewsOut.push({
@@ -182,10 +189,16 @@ export async function GET(req: NextRequest) {
   const activeSessions = (sessions || [])
     .filter((s) => isSessionActiveForPanel(s))
     .map((s) => {
+      if (!sessionStatusAllowsJobCode(s.status)) return null;
       const job = s.job_type === "move"
         ? (moves || []).find((m) => m.id === s.job_id)
         : (deliveries || []).find((d) => d.id === s.job_id);
       if (!job) return null;
+      if (s.job_type === "move") {
+        if (!isMoveRowLiveForMap((job as { status?: string | null }).status)) return null;
+      } else {
+        if (!isDeliveryRowLiveForMap((job as { status?: string | null }).status)) return null;
+      }
       const jobId = s.job_type === "move" ? (job as any).move_code || s.job_id : (job as any).delivery_number || s.job_id;
       const jobName = s.job_type === "move" ? (job as any).client_name : ((job as any).customer_name || (job as any).client_name || "Delivery");
       const crew = crews?.find((c) => c.id === s.team_id);

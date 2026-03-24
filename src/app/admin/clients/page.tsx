@@ -11,7 +11,7 @@ export default async function ClientsPage() {
     .from("organizations")
     .select("*")
     .eq("type", "b2c")
-    .order("name");
+    .order("created_at", { ascending: false });
 
   const b2cIds = (clients ?? []).map((c) => c.id);
   const { data: moves } = b2cIds.length > 0
@@ -19,7 +19,7 @@ export default async function ClientsPage() {
         .from("moves")
         .select("id, organization_id, move_type, scheduled_date, status, estimate")
         .in("organization_id", b2cIds)
-        .order("scheduled_date", { ascending: false })
+        .order("created_at", { ascending: false })
     : { data: [] };
 
   const latestByOrg = new Map<string, { move_type: string; scheduled_date: string | null; status: string; estimate: number }>();

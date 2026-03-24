@@ -89,6 +89,9 @@ interface DataTableProps<T> {
   sortCol?: string | null;
   sortDir?: "asc" | "desc";
   onSortChange?: (col: string, dir: "asc" | "desc") => void;
+  /** Initial sort when no saved view exists (localStorage). Latest-first: e.g. created_at + desc */
+  defaultSortCol?: string | null;
+  defaultSortDir?: "asc" | "desc";
 }
 
 /* ════════════ Types ─ View Snapshot ════════════ */
@@ -241,14 +244,16 @@ export default function DataTable<T>({
   sortCol: sortColProp,
   sortDir: sortDirProp,
   onSortChange,
+  defaultSortCol = null,
+  defaultSortDir = "asc",
 }: DataTableProps<T>) {
   /* ── State ── */
   const [search, setSearch] = useState("");
   const [sortColInternal, setSortColInternal] = useState<string | null>(
-    () => loadViewSnapshot(tableId)?.sortCol ?? null,
+    () => loadViewSnapshot(tableId)?.sortCol ?? defaultSortCol ?? null,
   );
   const [sortDirInternal, setSortDirInternal] = useState<"asc" | "desc">(
-    () => loadViewSnapshot(tableId)?.sortDir ?? "asc",
+    () => loadViewSnapshot(tableId)?.sortDir ?? defaultSortDir,
   );
   const sortCol = sortColProp ?? sortColInternal;
   const sortDir = sortDirProp ?? sortDirInternal;
@@ -499,7 +504,14 @@ export default function DataTable<T>({
       if (typeof av === "number" && typeof bv === "number") {
         cmp = av - bv;
       } else {
-        cmp = String(av).localeCompare(String(bv));
+        const as = String(av);
+        const bs = String(bv);
+        const isoPrefix = /^\d{4}-\d{2}-\d{2}/;
+        if (isoPrefix.test(as) && isoPrefix.test(bs)) {
+          cmp = new Date(as).getTime() - new Date(bs).getTime();
+        } else {
+          cmp = as.localeCompare(bs);
+        }
       }
       return sortDir === "asc" ? cmp : -cmp;
     });

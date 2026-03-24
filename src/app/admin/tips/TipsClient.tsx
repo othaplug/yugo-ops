@@ -2,6 +2,7 @@
 
 import { formatCurrency } from "@/lib/format-currency";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
+import { formatAdminCreatedAt } from "@/lib/date-format";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 
@@ -24,11 +25,6 @@ interface CrewAllocation {
   count: number;
   avg: number;
   highest: number;
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function TipsClient({
@@ -63,11 +59,11 @@ export default function TipsClient({
     },
     {
       id: "charged_at",
-      label: "Date",
+      label: "Create date",
       accessor: (r) => r.charged_at,
-      render: (r) => formatDate(r.charged_at),
+      render: (r) => formatAdminCreatedAt(r.charged_at),
       sortable: true,
-      exportAccessor: (r) => formatDate(r.charged_at),
+      exportAccessor: (r) => formatAdminCreatedAt(r.charged_at),
     },
     {
       id: "amount",
@@ -172,6 +168,8 @@ export default function TipsClient({
         columns={columns}
         keyField="id"
         tableId="tips"
+        defaultSortCol="charged_at"
+        defaultSortDir="desc"
         searchable
         searchPlaceholder="Search by client or crew…"
         pagination
