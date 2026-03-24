@@ -19,7 +19,7 @@ import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
-import { formatJobId, getMoveDetailPath } from "@/lib/move-code";
+import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import { ScheduleDeliveryButton, ScheduleMoveItem } from "../../components/ScheduleItem";
@@ -354,7 +354,7 @@ export default function ClientDetailClient({
                 leftSecondary={formatMoveDate(m.scheduled_date || (m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : null))}
                 status={getStatusLabel(m.status ?? null)}
                 title={m.client_name || m.move_number || "Move"}
-                subtitle={m.move_number ?? String(m.id).slice(0, 8)}
+                subtitle={m.move_number ?? getMoveCode(m as { move_code?: string | null; id?: string | null })}
               />
             ))
           )

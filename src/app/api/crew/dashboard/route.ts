@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { crewMemberMatchesSessionToken } from "@/lib/crew-session-validate";
-import { getTodayString, getLocalDateDisplay, getAppTimezone } from "@/lib/business-timezone";
+import { getTodayString, getLocalDateDisplay, getAppTimezone, addCalendarDaysYmd } from "@/lib/business-timezone";
 import { countActiveBinTasks } from "@/lib/bin-orders-active-tasks";
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
@@ -25,9 +25,7 @@ export async function GET(req: NextRequest) {
   }
 
   const today = getTodayString();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+  const tomorrowStr = addCalendarDaysYmd(today, 1, getAppTimezone());
   const supabase = createAdminClient();
 
   const moveSelect =
@@ -40,8 +38,7 @@ export async function GET(req: NextRequest) {
       .from("moves")
       .select(moveSelect)
       .eq("crew_id", payload.teamId)
-      .gte("scheduled_date", today)
-      .lte("scheduled_date", today)
+      .eq("scheduled_date", today)
       .order("scheduled_date")
       .order("scheduled_time"),
     supabase
@@ -55,8 +52,7 @@ export async function GET(req: NextRequest) {
       .from("deliveries")
       .select(deliverySelect)
       .eq("crew_id", payload.teamId)
-      .gte("scheduled_date", today)
-      .lte("scheduled_date", today)
+      .eq("scheduled_date", today)
       .order("scheduled_date")
       .order("time_slot"),
     supabase
@@ -67,6 +63,17 @@ export async function GET(req: NextRequest) {
       .order("scheduled_date")
       .order("time_slot"),
   ]);
+
+  const queryErrors = [movesRes.error, carryMovesRes.error, deliveriesRes.error, carryDeliveriesRes.error].filter(
+    Boolean,
+  );
+  if (queryErrors.length > 0) {
+    console.error("[crew/dashboard] Supabase job queries failed:", queryErrors);
+    return NextResponse.json(
+      { error: "Could not load jobs. Try again or contact dispatch.", code: "CREW_DASHBOARD_QUERY" },
+      { status: 500 },
+    );
+  }
 
   const movesToday = movesRes.data || [];
   const movesCarryover = (carryMovesRes.data || []).filter((m) => !isTerminalMoveStatus(m.status));

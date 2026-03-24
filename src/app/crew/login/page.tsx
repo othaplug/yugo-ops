@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
+import { formatDate } from "@/lib/client-timezone";
 
 const DEVICE_STORAGE_KEY = "yugo-crew-device-id";
 const CONSENT_KEY = "yugo-crew-consent-accepted";
@@ -293,10 +294,8 @@ export default function CrewLoginPage() {
   }
 
   const pinLength = selectedMember?.pinLength ?? 4;
-  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const d = new Date();
-  const dateStr = context.dateStr || `${dayNames[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+  const dateStr =
+    context.dateStr || formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" });
 
   return (
     <main

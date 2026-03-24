@@ -301,7 +301,7 @@ function CrewListAndModal({
                   <div>
                     <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current project</div>
                     <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] space-y-1.5">
-                      <div className="text-[12px] font-semibold text-[var(--tx)]">{activeProject.delivery_number || `#${activeProject.id.slice(0, 8)}`}</div>
+                      <div className="text-[12px] font-semibold text-[var(--tx)]">{activeProject.delivery_number || "Delivery"}</div>
                       {(activeProject.pickup_address || activeProject.delivery_address) && (
                         <div className="text-[11px] text-[var(--tx2)] space-y-0.5">
                           {activeProject.pickup_address && (
@@ -335,7 +335,7 @@ function CrewListAndModal({
                   <div>
                     <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Up next</div>
                     <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)]/60 border border-[var(--brd)]/80">
-                      <div className="text-[12px] font-semibold text-[var(--tx)]">{nextProject.delivery_number || `#${nextProject.id.slice(0, 8)}`}</div>
+                      <div className="text-[12px] font-semibold text-[var(--tx)]">{nextProject.delivery_number || "Delivery"}</div>
                       {nextProject.delivery_address && <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">{nextProject.delivery_address}</div>}
                       {nextProject.scheduled_date && (
                         <div className="text-[10px] text-[var(--tx3)] mt-0.5">

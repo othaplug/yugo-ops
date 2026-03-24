@@ -197,7 +197,7 @@ export default function EditProjectModal({ open, onClose, project, galleryPartne
           <select value={galleryOrgId} onChange={(e) => setGalleryOrgId(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
             <option value="">Select gallery…</option>
             {galleryPartners.map((p) => (
-              <option key={p.id} value={p.id}>{p.name || p.email || p.id}</option>
+              <option key={p.id} value={p.id}>{p.name || p.email || "Partner"}</option>
             ))}
           </select>
         </div>

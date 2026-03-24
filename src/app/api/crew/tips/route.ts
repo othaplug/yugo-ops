@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { crewMemberMatchesSessionToken } from "@/lib/crew-session-validate";
 
 export async function GET(req: NextRequest) {
   const token =
@@ -11,6 +12,14 @@ export async function GET(req: NextRequest) {
   const crewMember = verifyCrewToken(token);
   if (!crewMember) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const sessionOk = await crewMemberMatchesSessionToken(crewMember);
+  if (!sessionOk) {
+    return NextResponse.json(
+      { error: "Session no longer valid. Please log in again.", code: "CREW_SESSION_STALE" },
+      { status: 401 }
+    );
   }
 
   const supabase = createAdminClient();

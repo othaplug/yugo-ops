@@ -85,6 +85,20 @@ function getStatusInfo(status: string) {
   return STATUS_DOT[s] || { icon: Circle, color: "text-[var(--tx3)]", label: (status || "-").replace(/_/g, " ").toUpperCase() };
 }
 
+function firstLine(addr: string) {
+  const t = (addr || "").trim();
+  return t ? t.split(",")[0].trim() : "";
+}
+
+function routeSummary(fromAddr: string, toAddr: string): string {
+  const from = firstLine(fromAddr);
+  const to = firstLine(toAddr);
+  if (from && to) return `${from} → ${to}`;
+  if (to) return to;
+  if (from) return from;
+  return "Route TBD";
+}
+
 
 interface JobCardProps {
   job: DispatchJob;
@@ -145,11 +159,11 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
         )}
       </div>
 
-      {/* Move / Job ID */}
-      <div className="flex items-center gap-2">
-        <MapPin className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0" />
-        <span className="text-[11px] font-mono text-[var(--tx3)]">
-          {job.id}
+      {/* Route */}
+      <div className="flex items-start gap-2 min-w-0">
+        <MapPin className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0 mt-0.5" />
+        <span className="text-[11px] text-[var(--tx3)] leading-snug break-words">
+          {routeSummary(job.fromAddress, job.toAddress)}
         </span>
       </div>
 

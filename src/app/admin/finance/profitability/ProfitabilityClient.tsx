@@ -1092,7 +1092,7 @@ export default function ProfitabilityClient() {
                     return (
                       <tr key={r.id} onClick={() => router.push(href)}
                         className={`border-t border-[var(--brd)]/40 cursor-pointer hover:bg-[var(--bg)] transition-colors ${r.grossMargin < 25 ? "border-l-2 border-l-red-500/50" : r.grossMargin > 60 ? "border-l-2 border-l-emerald-500/50" : ""}`}>
-                        <td className="py-1.5 px-2 font-mono text-[10px] text-[var(--tx2)] overflow-hidden text-ellipsis whitespace-nowrap">{r.move_code || r.id.slice(0, 8)}</td>
+                        <td className="py-1.5 px-2 font-mono text-[10px] text-[var(--tx2)] overflow-hidden text-ellipsis whitespace-nowrap">{r.move_code || "—"}</td>
                         <td className="py-1.5 px-2 text-[var(--tx3)] overflow-hidden text-ellipsis whitespace-nowrap">{formatTableDate(r.date)}</td>
                         <td className="py-1.5 px-2 overflow-hidden whitespace-nowrap">
                           <span className="font-medium text-[var(--tx)] truncate">{r.client}</span>

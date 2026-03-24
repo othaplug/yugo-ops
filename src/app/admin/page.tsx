@@ -4,6 +4,7 @@ export const revalidate = 0;
 export const metadata = { title: "Command Center" };
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getMoveCode } from "@/lib/move-code";
 import { getTodayString } from "@/lib/business-timezone";
 import { formatCompactCurrency } from "@/lib/format-currency";
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
@@ -164,7 +165,7 @@ export default async function AdminPage() {
 
   const mapMove = (m: Record<string, unknown>): Job => {
     const codeRaw = m.move_code ? String(m.move_code).replace(/^#/, "").trim() : "";
-    const subtitle = codeRaw ? codeRaw.toUpperCase() : `Move ${String(m.id).slice(0, 8)}`;
+    const subtitle = codeRaw ? codeRaw.toUpperCase() : getMoveCode(m as { move_code?: string | null; id?: string | null });
     const alert = m.weather_alert != null && String(m.weather_alert).trim() !== "" ? String(m.weather_alert) : null;
     const wb = m.weather_brief;
     const weatherBrief = isMoveWeatherBrief(wb) ? wb : null;
@@ -316,7 +317,7 @@ export default async function AdminPage() {
   for (const d of activeDeliveries) {
     const sd = String(d.scheduled_date || "");
     if (!d.crew_id && sd >= today && sd <= cutoff72h) {
-      const code = d.delivery_number ? String(d.delivery_number) : String(d.id).slice(0, 8);
+      const code = d.delivery_number ? String(d.delivery_number) : "Delivery";
       unassignedJobs.push({
         id: String(d.id),
         name: String(d.customer_name || d.client_name || "Delivery"),

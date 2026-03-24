@@ -1,12 +1,14 @@
+import { getAppTimezone } from "@/lib/business-timezone";
+
 /**
- * Format dates consistently across the app.
+ * Format dates consistently across the app (business timezone, default America/Toronto).
  * - Short month + day: "Feb 20", "Mar 15"
  * - If different year, append: "Feb 20, 2027"
  * - Never show ISO or raw values in the UI.
  *
- * Date-only strings (YYYY-MM-DD) are parsed as local dates to avoid timezone shift:
- * "2026-02-23" → Feb 23 local, not Feb 22 (which happens when parsed as UTC midnight).
+ * Date-only strings (YYYY-MM-DD) are parsed as calendar local dates, then formatted in app TZ.
  */
+
 const MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 export function parseDateOnly(value: string | null | undefined): Date | null {
@@ -41,9 +43,12 @@ export function formatMoveDate(value: string | Date | null | undefined): string 
   if (value == null || value === "") return "-";
   const d = toLocalDate(value);
   if (Number.isNaN(d.getTime())) return "-";
+  const tz = getAppTimezone();
   const now = new Date();
-  const sameYear = d.getFullYear() === now.getFullYear();
+  const yNow = new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric" }).format(now);
+  const yD = new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric" }).format(d);
+  const sameYear = yNow === yD;
   return sameYear
-    ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-    : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    ? d.toLocaleDateString("en-US", { timeZone: tz, month: "short", day: "numeric" })
+    : d.toLocaleDateString("en-US", { timeZone: tz, month: "short", day: "numeric", year: "numeric" });
 }

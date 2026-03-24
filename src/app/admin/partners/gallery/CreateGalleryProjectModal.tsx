@@ -162,7 +162,7 @@ export default function CreateGalleryProjectModal({
           >
             <option value="">Select gallery…</option>
             {galleryPartners.map((p) => (
-              <option key={p.id} value={p.id}>{p.name || p.email || p.id}</option>
+              <option key={p.id} value={p.id}>{p.name || p.email || "Partner"}</option>
             ))}
           </select>
         </div>

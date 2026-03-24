@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { verifyCrewToken } from "@/lib/crew-token";
+import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { crewMemberMatchesSessionToken } from "@/lib/crew-session-validate";
 import { BADGES, computeBadges } from "@/lib/crew/badges";
 
 export async function GET(req: NextRequest) {
-  const token = req.headers.get("x-crew-token") || req.nextUrl.searchParams.get("token");
+  const token =
+    req.headers.get("x-crew-token") ||
+    req.cookies.get(CREW_COOKIE_NAME)?.value ||
+    req.nextUrl.searchParams.get("token") ||
+    "";
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const crewMember = verifyCrewToken(token);
   if (!crewMember) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const sessionOk = await crewMemberMatchesSessionToken(crewMember);
+  if (!sessionOk) {
+    return NextResponse.json(
+      { error: "Session no longer valid. Please log in again.", code: "CREW_SESSION_STALE" },
+      { status: 401 }
+    );
+  }
 
   const supabase = createAdminClient();
   const now = new Date();
@@ -88,7 +101,10 @@ export async function GET(req: NextRequest) {
 
   const earnedBadges = BADGES.filter((b) => earnedBadgeIds.includes(b.id));
 
+  const { data: crewRow } = await supabase.from("crews").select("name").eq("id", crewMember.teamId).maybeSingle();
+
   return NextResponse.json({
+    teamName: crewRow?.name ?? "Team",
     profile: {
       totalJobs: profile?.total_jobs || 0,
       avgRating: profile?.avg_satisfaction || 0,

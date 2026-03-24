@@ -16,7 +16,8 @@ import {
   CheckCircle as CheckCircle2,
   Crosshair,
 } from "@phosphor-icons/react";
-import { getLocalDateString } from "@/lib/business-timezone";
+import { addCalendarDaysYmd } from "@/lib/business-timezone";
+import { formatDateYmd } from "@/lib/client-timezone";
 import DispatchSchedule from "@/components/dispatch/DispatchSchedule";
 import ActivityFeed from "@/components/dispatch/ActivityFeed";
 import AlertBar from "@/components/dispatch/AlertBar";
@@ -158,16 +159,10 @@ export default function DispatchBoardClient({ today }: Props) {
     setContactJob(job);
   }, []);
 
-  const tz = process.env.NEXT_PUBLIC_APP_TIMEZONE || "America/Toronto";
-  const displayDate = new Date(date + "T12:00:00");
-  const prevDate = getLocalDateString(new Date(displayDate.getTime() - 86400000), tz);
-  const nextDate = getLocalDateString(new Date(displayDate.getTime() + 86400000), tz);
+  const prevDate = addCalendarDaysYmd(date, -1);
+  const nextDate = addCalendarDaysYmd(date, 1);
   const isToday = date === today;
-  const shortDate = displayDate.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  const shortDate = formatDateYmd(date, { weekday: "short", month: "short", day: "numeric" });
 
   const filteredJobs = useMemo(() => {
     if (!data?.jobs) return [];
@@ -303,7 +298,7 @@ export default function DispatchBoardClient({ today }: Props) {
               >
                 <CalendarDays weight="regular" className="w-3 h-3 shrink-0 opacity-70" />
                 <span className="hidden sm:inline">{shortDate}</span>
-                <span className="sm:hidden">{displayDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                <span className="sm:hidden">{formatDateYmd(date, { month: "short", day: "numeric" })}</span>
               </button>
               <input
                 ref={dateInputRef}

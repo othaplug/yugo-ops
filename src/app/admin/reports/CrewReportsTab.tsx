@@ -144,7 +144,7 @@ export default function CrewReportsTab({
         rows.push([
           r.report_date,
           crewName,
-          j.displayId ?? j.jobId?.slice(0, 8) ?? "-",
+          j.displayId ?? "Job",
           j.clientName ?? "-",
           j.type,
           String(j.duration ?? 0),
@@ -181,7 +181,7 @@ export default function CrewReportsTab({
     }
     const crewNameFromReport = getCrewName(report.crews) || undefined;
     const fallbackJob = {
-      displayId: job?.displayId ?? job?.jobId?.slice(0, 8) ?? "-",
+      displayId: job?.displayId ?? "Job",
       clientName: job?.clientName ?? "-",
       type: job?.type ?? "move",
       notFound: true as const,
@@ -351,7 +351,7 @@ export default function CrewReportsTab({
                       >
                         <option value="all">All crews</option>
                         {reports.map((r) => (
-                          <option key={r.team_id} value={r.team_id}>{teamNames.get(r.team_id) || r.team_id.slice(0, 8)}</option>
+                          <option key={r.team_id} value={r.team_id}>{teamNames.get(r.team_id) || "Team"}</option>
                         ))}
                       </select>
                     </div>
@@ -444,7 +444,7 @@ export default function CrewReportsTab({
                         >
                           <div className="flex justify-between items-start gap-2">
                             <div className="min-w-0">
-                              <div className="font-heading font-semibold text-[var(--tx)] text-[13px] truncate">{j.displayId ?? j.jobId?.slice(0, 8) ?? "-"}</div>
+                              <div className="font-heading font-semibold text-[var(--tx)] text-[13px] truncate">{j.displayId ?? "Job"}</div>
                               <div className="text-[12px] text-[var(--tx2)] truncate mt-0.5">{j.clientName}</div>
                               <div className="text-[11px] text-[var(--tx3)] mt-1 capitalize">{j.type}</div>
                             </div>

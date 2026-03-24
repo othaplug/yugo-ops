@@ -33,6 +33,8 @@ import {
 } from "@phosphor-icons/react";
 import RevenueForecastWidget from "@/components/admin/RevenueForecastWidget";
 import { buildPrecipAlertText, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
+import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
+import { formatDate, formatTime } from "@/lib/client-timezone";
 import type { DrivingTrafficBrief } from "@/lib/mapbox/driving-traffic-brief";
 
 /* ── Types ── */
@@ -173,7 +175,7 @@ function formatActivityTime(createdAt: string): string {
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return formatTime(d, { hour: "numeric", minute: "2-digit" });
 }
 
 function getActivityHref(e: ActivityEvent): string {
@@ -352,9 +354,10 @@ export default function AdminPageClient({
     };
   }, [moveTrafficKey]);
 
-  const hour = new Date().getHours();
+  const now = new Date();
+  const hour = getLocalHourInAppTimezone(now);
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  const dateStr = formatDate(now, { weekday: "long", month: "short", day: "numeric" });
 
   const summaryParts: string[] = [];
   if (actionTasks.length > 0) summaryParts.push(`${actionTasks.length} task${actionTasks.length > 1 ? "s" : ""}`);

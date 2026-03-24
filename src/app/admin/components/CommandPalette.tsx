@@ -5,8 +5,8 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Icons } from "./SidebarIcons";
-import { getDeliveryDetailPath, getMoveDetailPath } from "@/lib/move-code";
-import { MagnifyingGlass, User, Truck, FileText, CaretRight } from "@phosphor-icons/react";
+import { MagnifyingGlass, User, Truck, FileText, CaretRight, Folder } from "@phosphor-icons/react";
+import { runAdminEntitySearch } from "@/lib/admin-search";
 
 const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () => ReactElement }[] }[] = [
   {
@@ -127,38 +127,10 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
       }
     }
 
-    const [
-      { data: clients },
-      { data: moves },
-      { data: quotes },
-      { data: deliveries },
-    ] = await Promise.all([
-      supabase.from("organizations").select("id, name, contact_name, email").limit(30),
-      supabase.from("moves").select("id, move_code, client_name, from_address, to_address, status").limit(30),
-      supabase.from("quotes").select("id, quote_id, client_name, service_type, from_address, to_address").limit(30),
-      supabase.from("deliveries").select("id, delivery_number, customer_name, client_name, pickup_address, dropoff_address").limit(30),
-    ]);
-
-    (clients || []).forEach((c) => {
-      if (`${c.name} ${c.contact_name ?? ""} ${c.email ?? ""}`.toLowerCase().includes(term)) {
-        all.push({ type: "Client", name: c.name, sub: c.contact_name || c.email || undefined, href: `/admin/clients/${c.id}` });
-      }
-    });
-    (moves || []).forEach((m) => {
-      if (`${m.move_code ?? ""} ${m.client_name ?? ""}`.toLowerCase().includes(term)) {
-        all.push({ type: "Move", name: `${m.move_code ?? "Move"}, ${m.client_name}`, sub: m.from_address ? `${m.from_address.split(",")[0]} → ${m.to_address?.split(",")[0]}` : undefined, href: getMoveDetailPath(m) });
-      }
-    });
-    (quotes || []).forEach((q) => {
-      if (`${q.quote_id ?? ""} ${q.client_name ?? ""}`.toLowerCase().includes(term)) {
-        all.push({ type: "Quote", name: `${q.quote_id ?? "Quote"}, ${q.client_name}`, sub: q.service_type?.replace(/_/g, " "), href: `/admin/quotes/${q.quote_id ?? q.id}` });
-      }
-    });
-    (deliveries || []).forEach((d) => {
-      if (`${d.delivery_number} ${d.customer_name ?? ""} ${d.client_name ?? ""}`.toLowerCase().includes(term)) {
-        all.push({ type: "Delivery", name: `${d.delivery_number}, ${d.customer_name ?? d.client_name ?? "Delivery"}`, href: getDeliveryDetailPath(d) });
-      }
-    });
+    const entityResults = await runAdminEntitySearch(supabase, q, 20);
+    for (const r of entityResults) {
+      all.push({ type: r.type, name: r.name, sub: r.sub, href: r.href });
+    }
 
     setResults(all.slice(0, 12));
     setSelectedIdx(0);
@@ -226,7 +198,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search pages, moves, partners, clients…"
+            placeholder="Search DLV-0255, PRJ-0001, moves, clients…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -253,6 +225,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                     style={{ background: `${TYPE_COLORS[r.type] ?? "var(--tx3)"}18`, color: TYPE_COLORS[r.type] ?? "var(--tx3)" }}
                   >
                     {r.type === "Client" ? <User weight="regular" className="w-3 h-3 text-current" /> :
+                      r.type === "Project" ? <Folder weight="regular" className="w-3 h-3 text-current" /> :
                       r.type === "Move" || r.type === "Delivery" ? <Truck weight="regular" className="w-3 h-3 text-current" /> :
                       r.type === "Quote" || r.type === "Invoice" ? <FileText weight="regular" className="w-3 h-3 text-current" /> :
                       <MagnifyingGlass weight="regular" className="w-3 h-3 text-current" />}

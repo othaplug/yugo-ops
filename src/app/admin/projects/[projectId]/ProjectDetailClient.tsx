@@ -11,6 +11,7 @@ import ModalOverlay from "../../components/ModalOverlay";
 import { formatCurrency } from "@/lib/format-currency";
 import { Plus, Truck, Clock, CheckCircle as CheckCircle2, WarningCircle as AlertCircle, Camera, FileText, PaperPlaneTilt as Send, Pulse as Activity, Trash as Trash2, Lock, MapPin, Warning as AlertTriangle, CaretDown as ChevronDown, CaretRight as ChevronRight, PencilSimple as Pencil, ArrowSquareOut } from "@phosphor-icons/react";
 import { getTrackingUrl } from "@/lib/tracking-url";
+import { getDeliveryDetailPath } from "@/lib/move-code";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import {
@@ -1845,10 +1846,10 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
           <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gold)]">Yugo Job</span>
           {linkedDelivery ? (
             <Link
-              href={`/admin/deliveries/${linkedDelivery.id}`}
+              href={getDeliveryDetailPath(linkedDelivery)}
               className="text-[10px] font-mono text-[var(--gold)] hover:underline flex items-center gap-1"
             >
-              {linkedDelivery.delivery_number || linkedDelivery.id.slice(0, 8).toUpperCase()}
+              {linkedDelivery.delivery_number || "Delivery"}
               <ChevronRight size={9} />
             </Link>
           ) : (

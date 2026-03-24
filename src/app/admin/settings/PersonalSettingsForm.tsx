@@ -1,23 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "../components/Toast";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
-
-const TIMEZONES = [
-  { value: "America/New_York", label: "Eastern Time (ET)" },
-  { value: "America/Chicago", label: "Central Time (CT)" },
-  { value: "America/Denver", label: "Mountain Time (MT)" },
-  { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
-  { value: "America/Anchorage", label: "Alaska Time (AKT)" },
-  { value: "Pacific/Honolulu", label: "Hawaii Time (HT)" },
-  { value: "Europe/London", label: "London (GMT/BST)" },
-  { value: "Europe/Paris", label: "Central European (CET)" },
-  { value: "Asia/Dubai", label: "Dubai (GST)" },
-  { value: "Asia/Singapore", label: "Singapore (SGT)" },
-  { value: "Australia/Sydney", label: "Sydney (AEST)" },
-];
 
 const JOB_TITLES = [
   "Owner / CEO",
@@ -47,21 +33,8 @@ export default function PersonalSettingsForm({
   const [phone, setPhone] = useState(initialPhone ? formatPhone(initialPhone) : "");
   const phoneInput = usePhoneInput(phone, setPhone);
   const [jobTitle, setJobTitle] = useState(() => localStorage.getItem("pref_job_title") ?? "");
-  const [timezone, setTimezone] = useState(() => {
-    const saved = localStorage.getItem("pref_timezone");
-    if (saved) return saved;
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
-  });
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
-
-  // Detect browser timezone on mount
-  useEffect(() => {
-    if (!localStorage.getItem("pref_timezone")) {
-      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (detected) setTimezone(detected);
-    }
-  }, []);
 
   const handleSave = async () => {
     setLoading(true);
@@ -75,7 +48,11 @@ export default function PersonalSettingsForm({
       if (!res.ok) throw new Error(data.error || "Failed to save");
 
       localStorage.setItem("pref_job_title", jobTitle);
-      localStorage.setItem("pref_timezone", timezone);
+      try {
+        localStorage.removeItem("pref_timezone");
+      } catch {
+        /* ignore */
+      }
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -144,19 +121,15 @@ export default function PersonalSettingsForm({
         </div>
       </div>
 
-      {/* Timezone */}
+      {/* Business timezone (fixed; matches crew and partner portal) */}
       <div>
-        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1">Time Zone</label>
-        <select
-          value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          className={fieldClass}
-        >
-          {TIMEZONES.map((tz) => (
-            <option key={tz.value} value={tz.value}>{tz.label}</option>
-          ))}
-        </select>
-        <p className="text-[9px] text-[var(--tx3)] mt-1">Used for displaying dates and times in the dashboard</p>
+        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1">Time zone</label>
+        <div className={`${fieldClass} opacity-90 cursor-default`}>
+          Eastern Time (Toronto) — all schedules and times use this zone
+        </div>
+        <p className="text-[9px] text-[var(--tx3)] mt-1">
+          Set APP_TIMEZONE / NEXT_PUBLIC_APP_TIMEZONE to America/Toronto in deployment if you ever need to change the business region.
+        </p>
       </div>
 
       {/* Role (read-only) */}

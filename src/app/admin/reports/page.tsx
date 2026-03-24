@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getTodayString } from "@/lib/business-timezone";
 import BackButton from "../components/BackButton";
 import ReportsClient from "./ReportsClient";
-import { formatJobId } from "@/lib/move-code";
+import { formatJobId, getMoveCode } from "@/lib/move-code";
 
 function sixMonthsAgo(): string {
   const d = new Date();
@@ -126,7 +126,7 @@ export default async function ReportsPage({
 
   const movesMap = new Map<string, { displayId: string; clientName: string }>();
   (movesRes.data || []).forEach((m) => {
-    const entry = { displayId: formatJobId(m.move_code || m.id, "move"), clientName: m.client_name || "-" };
+    const entry = { displayId: formatJobId(m.move_code || getMoveCode(m), "move"), clientName: m.client_name || "-" };
     movesMap.set(m.id, entry);
     if (m.move_code) movesMap.set(String(m.move_code).trim().toUpperCase().replace(/^#/, ""), entry);
   });

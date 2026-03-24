@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Icon } from "@/components/AppIcons";
 import { X } from "@phosphor-icons/react";
-import { getDeliveryDetailPath, getMoveDetailPath } from "@/lib/move-code";
+import { runAdminEntitySearch } from "@/lib/admin-search";
 
 const TYPE_ICONS: Record<string, string> = {
   Move: "mapPin",
   Quote: "fileText",
   Delivery: "package",
+  Project: "projects",
   Client: "users",
   Invoice: "dollarSign",
   Contact: "users",
@@ -21,6 +22,7 @@ const TYPE_COLORS: Record<string, string> = {
   Move: "var(--blue)",
   Quote: "var(--grn)",
   Delivery: "var(--gold)",
+  Project: "#C026D3",
   Client: "var(--pur)",
   Invoice: "var(--grn)",
   Contact: "var(--org)",
@@ -88,83 +90,10 @@ export default function SearchBox() {
       }
     }
 
-    const [
-      { data: deliveries },
-      { data: clients },
-      { data: invoices },
-      { data: moves },
-      { data: quotes },
-    ] = await Promise.all([
-      supabase.from("deliveries").select("id, delivery_number, customer_name, client_name, pickup_address, dropoff_address"),
-      supabase.from("organizations").select("id, name, contact_name, email, address, phone"),
-      supabase.from("invoices").select("id, invoice_number, client_name, amount"),
-      supabase.from("moves").select("id, move_code, client_name, from_address, to_address, status"),
-      supabase.from("quotes").select("id, quote_id, client_name, status, service_type, from_address, to_address"),
-    ]);
-
-    // Clients / organizations (highest priority - show first)
-    (clients || []).forEach((c) => {
-      const s = `${c.name} ${c.contact_name || ""} ${c.email || ""} ${c.address || ""} ${c.phone || ""}`.toLowerCase();
-      if (s.includes(term)) {
-        all.push({
-          type: "Client",
-          name: c.name,
-          sub: c.contact_name || c.email || undefined,
-          href: `/admin/clients/${c.id}`,
-        });
-      }
-    });
-
-    // Moves
-    (moves || []).forEach((m) => {
-      const s = `${m.move_code || ""} ${m.client_name || ""} ${m.from_address || ""} ${m.to_address || ""}`.toLowerCase();
-      if (s.includes(term)) {
-        all.push({
-          type: "Move",
-          name: `${m.move_code || "Move"}, ${m.client_name}`,
-          sub: m.from_address ? `${m.from_address?.split(",")[0]} → ${m.to_address?.split(",")[0]}` : undefined,
-          href: getMoveDetailPath(m),
-        });
-      }
-    });
-
-    // Quotes
-    (quotes || []).forEach((q) => {
-      const s = `${q.quote_id || ""} ${q.client_name || ""} ${q.from_address || ""} ${q.to_address || ""}`.toLowerCase();
-      if (s.includes(term)) {
-        all.push({
-          type: "Quote",
-          name: `${q.quote_id || "Quote"}, ${q.client_name}`,
-          sub: q.service_type?.replace(/_/g, " "),
-          href: `/admin/quotes/${q.quote_id || q.id}`,
-        });
-      }
-    });
-
-    // Deliveries
-    (deliveries || []).forEach((d) => {
-      const s = `${d.delivery_number} ${d.customer_name || ""} ${d.client_name || ""} ${d.pickup_address || ""} ${d.dropoff_address || ""}`.toLowerCase();
-      if (s.includes(term)) {
-        all.push({
-          type: "Delivery",
-          name: `${d.delivery_number}, ${d.customer_name || d.client_name || "Delivery"}`,
-          sub: d.client_name || undefined,
-          href: getDeliveryDetailPath(d),
-        });
-      }
-    });
-
-    // Invoices
-    (invoices || []).forEach((i) => {
-      const s = `${i.invoice_number} ${i.client_name}`.toLowerCase();
-      if (s.includes(term)) {
-        all.push({
-          type: "Invoice",
-          name: `${i.invoice_number}, ${i.client_name}`,
-          href: `/admin/invoices`,
-        });
-      }
-    });
+    const entityResults = await runAdminEntitySearch(supabase, q, 20);
+    for (const r of entityResults) {
+      all.push({ type: r.type, name: r.name, sub: r.sub, href: r.href });
+    }
 
     setResults(all.slice(0, 12));
     setOpen(all.length > 0);
@@ -187,7 +116,7 @@ export default function SearchBox() {
         <span className="text-[var(--tx3)] shrink-0"><Icon name="search" className="w-[14px] h-[14px]" /></span>
         <input
           type="text"
-          placeholder="Search moves, quotes, clients…"
+          placeholder="Search DLV-0255, PRJ-0001, moves, clients…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}

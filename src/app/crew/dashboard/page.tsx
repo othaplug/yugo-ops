@@ -8,6 +8,7 @@ import Link from "next/link";
 import PageContent from "@/app/admin/components/PageContent";
 import ReadinessCheck from "./components/ReadinessCheck";
 import { formatDate } from "@/lib/client-timezone";
+import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
 import CrewWeatherRoads from "@/components/crew/CrewWeatherRoads";
 import type { MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
@@ -61,7 +62,11 @@ export default function CrewDashboardPage() {
       const r = await fetch("/api/crew/dashboard");
       if (r.status === 401) { router.replace("/crew/login"); return; }
       const d = await r.json();
-      if (d) setData(d);
+      if (!r.ok && d?.error) {
+        if (isInitial) setError(typeof d.error === "string" ? d.error : "Failed to load jobs");
+        return;
+      }
+      if (d && Array.isArray(d.jobs)) setData(d);
       else if (isInitial) setError("Session expired");
     } catch {
       if (isInitial) setError("Failed to load jobs");
@@ -147,7 +152,8 @@ export default function CrewDashboardPage() {
   const totalCount = jobs.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const now = new Date();
-  const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening";
+  const hour = getLocalHourInAppTimezone(now);
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
     <PageContent>

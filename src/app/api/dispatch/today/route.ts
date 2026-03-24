@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
-import { getLocalDateString } from "@/lib/business-timezone";
-import { getMoveDetailPath, getDeliveryDetailPath } from "@/lib/move-code";
+import { getLocalDateString, getAppTimezone, addCalendarDaysYmd } from "@/lib/business-timezone";
+import { getMoveDetailPath, getDeliveryDetailPath, getMoveCode } from "@/lib/move-code";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   const params = req.nextUrl.searchParams;
   const dateParam = params.get("date");
-  const tz = process.env.APP_TIMEZONE || "America/Toronto";
+  const tz = getAppTimezone();
   // Use date param directly when valid YYYY-MM-DD (avoids UTC parsing shifting to wrong day)
   const targetDate =
     dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
@@ -23,9 +23,7 @@ export async function GET(req: NextRequest) {
 
   const admin = createAdminClient();
 
-  const nextDate = new Date(targetDate + "T12:00:00");
-  nextDate.setDate(nextDate.getDate() + 1);
-  const nextDateStr = nextDate.toISOString().slice(0, 10);
+  const nextDateStr = addCalendarDaysYmd(targetDate, 1, tz);
 
   const results = await Promise.allSettled([
     admin
@@ -217,7 +215,7 @@ export async function GET(req: NextRequest) {
     jobs.push({
       id: m.id,
       type: "move",
-      label: m.move_code || `MV${m.id.slice(0, 4).toUpperCase()}`,
+      label: m.move_code || getMoveCode(m),
       client: m.client_name || "-",
       clientPhone: m.client_phone || null,
       clientEmail: m.client_email || null,
@@ -248,7 +246,7 @@ export async function GET(req: NextRequest) {
     jobs.push({
       id: d.id,
       type: "delivery",
-      label: d.delivery_number || `DLV-${d.id.slice(0, 4).toUpperCase()}`,
+      label: d.delivery_number || "Delivery",
       client: d.client_name || d.customer_name || "-",
       clientPhone: null,
       clientEmail: null,
@@ -285,7 +283,7 @@ export async function GET(req: NextRequest) {
     const members = (c.members as string[] | null) || membersByTeam.get(c.id) || [];
     return {
       id: c.id,
-      name: c.name || members[0] || `Team ${c.id.slice(0, 8)}`,
+      name: c.name || members[0] || "Team",
       members,
       status: loc?.status || session?.status || c.status || "idle",
       lat: lat != null ? Number(lat) : null,
@@ -319,7 +317,9 @@ export async function GET(req: NextRequest) {
   for (const e of etaLogs || []) {
     const job = e.move_id ? moveMap.get(e.move_id) : e.delivery_id ? deliveryMap.get(e.delivery_id) : null;
     const jobLabel = job
-      ? ("move_code" in job ? (job as { move_code?: string }).move_code : (job as { delivery_number?: string }).delivery_number) || job.id.slice(0, 8)
+      ? ("move_code" in job
+          ? (job as { move_code?: string; id?: string }).move_code || getMoveCode(job as { move_code?: string; id?: string })
+          : (job as { delivery_number?: string }).delivery_number || "Delivery")
       : "Job";
     const moveForHref = e.move_id ? moveMap.get(e.move_id) : null;
     const deliveryForHref = e.delivery_id ? deliveryMap.get(e.delivery_id) : null;
@@ -348,7 +348,7 @@ export async function GET(req: NextRequest) {
 
   for (const t of tipsToday || []) {
     const move = t.move_id ? moveMap.get(t.move_id) : null;
-    const jobLabel = move?.move_code || (t.move_id ? t.move_id.slice(0, 8) : "-");
+    const jobLabel = move?.move_code || (move ? getMoveCode(move) : "Move");
     const crewId = move && "crew_id" in move ? (move as { crew_id?: string }).crew_id : null;
     events.push({
       id: `tip-${t.id}`,
@@ -366,8 +366,10 @@ export async function GET(req: NextRequest) {
   for (const p of podsToday || []) {
     const job = p.move_id ? moveMap.get(p.move_id) : p.delivery_id ? deliveryMap.get(p.delivery_id) : null;
     const jobLabel = job
-      ? ("move_code" in job ? (job as { move_code?: string }).move_code : (job as { delivery_number?: string }).delivery_number) || job.id.slice(0, 8)
-      : "-";
+      ? ("move_code" in job
+          ? (job as { move_code?: string; id?: string }).move_code || getMoveCode(job as { move_code?: string; id?: string })
+          : (job as { delivery_number?: string }).delivery_number || "Delivery")
+      : "Job";
     const crewId = job && "crew_id" in job ? (job as { crew_id?: string }).crew_id : null;
     events.push({
       id: `pod-${p.id}`,
@@ -384,7 +386,7 @@ export async function GET(req: NextRequest) {
 
   for (const r of reviewsToday || []) {
     const move = r.move_id ? moveMap.get(r.move_id) : null;
-    const jobLabel = move?.move_code || (r.move_id ? r.move_id.slice(0, 8) : "-");
+    const jobLabel = move?.move_code || (move ? getMoveCode(move) : "Move");
     const crewId = move && "crew_id" in move ? (move as { crew_id?: string }).crew_id : null;
     events.push({
       id: `review-${r.id}`,

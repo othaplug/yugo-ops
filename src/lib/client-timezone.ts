@@ -1,19 +1,19 @@
 /**
- * Client-side timezone helpers.
- * All date/time display should use APP_TZ so crew, admin, and partner
- * dashboards show consistent times regardless of browser locale.
+ * Client-side date/time display aligned with the business timezone (default America/Toronto).
+ * Set NEXT_PUBLIC_APP_TIMEZONE to match APP_TIMEZONE on the server.
  */
 
-const APP_TZ =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_APP_TIMEZONE) ||
-  "America/Toronto";
+import { getAppTimezone, utcInstantForCalendarDateInTz } from "@/lib/business-timezone";
+
+export { getAppTimezone };
 
 export function formatDate(
   date: Date | string,
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", { timeZone: APP_TZ, ...options });
+  const tz = getAppTimezone();
+  return d.toLocaleDateString("en-US", { timeZone: tz, ...options });
 }
 
 export function formatTime(
@@ -21,7 +21,8 @@ export function formatTime(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleTimeString("en-US", { timeZone: APP_TZ, ...options });
+  const tz = getAppTimezone();
+  return d.toLocaleTimeString("en-US", { timeZone: tz, ...options });
 }
 
 export function formatDateTime(
@@ -29,7 +30,14 @@ export function formatDateTime(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleString("en-US", { timeZone: APP_TZ, ...options });
+  const tz = getAppTimezone();
+  return d.toLocaleString("en-US", { timeZone: tz, ...options });
 }
 
-export { APP_TZ };
+/** Format a calendar YYYY-MM-DD (business date) in the app timezone — not browser local. */
+export function formatDateYmd(ymd: string, options?: Intl.DateTimeFormatOptions): string {
+  const tz = getAppTimezone();
+  const inst = utcInstantForCalendarDateInTz(ymd, tz);
+  if (Number.isNaN(inst.getTime())) return ymd;
+  return inst.toLocaleDateString("en-US", { timeZone: tz, ...options });
+}

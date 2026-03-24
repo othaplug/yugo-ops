@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
 import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
-import { formatJobId, getMoveDetailPath } from "@/lib/move-code";
+import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
 
 function formatRelative(iso: string): string {
@@ -120,12 +120,12 @@ export default function ChangeRequestsClient({
         label: "Move Code",
         accessor: (r) => {
           const moveData = getMoveData(r);
-          const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
+          const rawCode = moveData?.move_code || (moveData ? getMoveCode(moveData as { move_code?: string | null; id?: string | null }) : "");
           return rawCode ? formatJobId(rawCode, "move") : "-";
         },
         render: (r) => {
           const moveData = getMoveData(r);
-          const rawCode = moveData?.move_code || moveData?.id?.slice(0, 8) || "";
+          const rawCode = moveData?.move_code || (moveData ? getMoveCode(moveData as { move_code?: string | null; id?: string | null }) : "");
           const moveCode = rawCode ? formatJobId(rawCode, "move") : "-";
           return <span className="text-[11px] font-mono text-[var(--tx2)]">{moveCode}</span>;
         },

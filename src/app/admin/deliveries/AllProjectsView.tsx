@@ -112,8 +112,12 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
   {
     id: "delivery_id",
     label: "Delivery ID",
-    accessor: (d) => d.delivery_number || d.id,
-    render: (d) => <span className="font-mono text-[var(--tx2)]">{formatJobId(d.delivery_number || d.id, "delivery")}</span>,
+    accessor: (d) => d.delivery_number || "",
+    render: (d) => (
+      <span className="font-mono text-[var(--tx2)]">
+        {d.delivery_number ? formatJobId(d.delivery_number, "delivery") : "—"}
+      </span>
+    ),
     sortable: true,
     searchable: true,
   },
