@@ -100,12 +100,12 @@ const MapboxMap = dynamic(
             <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">
               <div
                 className="relative flex items-center justify-center"
-                style={{ width: 48, height: 48 }}
+                style={{ width: 40, height: 40 }}
                 title={crewName || crew.name || "Crew"}
               >
                 <svg
-                  width="44"
-                  height="44"
+                  width="36"
+                  height="36"
                   viewBox="0 0 44 44"
                   style={{
                     transform: crewBearing != null ? `rotate(${crewBearing}deg)` : "none",

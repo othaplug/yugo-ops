@@ -319,11 +319,11 @@ const GodEyeMap = dynamic(
                       </div>
 
                       {/* Directional arrow (same geometry as client/partner tracking maps), rotates with GPS heading */}
-                      <div className="relative flex h-[52px] w-[52px] items-center justify-center">
+                      <div className="relative flex h-11 w-11 items-center justify-center">
                         <span
                           className="absolute rounded-full animate-ping"
                           style={{
-                            inset: 6,
+                            inset: 5,
                             background: ringColor,
                             opacity: isOnJob(status) ? 0.2 : 0.12,
                             animationDuration: "2s",
@@ -331,8 +331,8 @@ const GodEyeMap = dynamic(
                           aria-hidden
                         />
                         <svg
-                          width="44"
-                          height="44"
+                          width="36"
+                          height="36"
                           viewBox="0 0 44 44"
                           style={{
                             transform: heading != null ? `rotate(${heading}deg)` : "none",

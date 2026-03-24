@@ -47,7 +47,9 @@ export default function DraftsClient() {
   if (!mounted) {
     return (
       <div className="p-6">
-        <h1 className="text-[28px] font-bold text-[var(--tx)] font-hero">Drafts</h1>
+        <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+          Drafts
+        </h1>
         <p className="text-[13px] text-[var(--tx3)] mt-1">Loading…</p>
       </div>
     );
@@ -57,7 +59,9 @@ export default function DraftsClient() {
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[28px] font-bold text-[var(--tx)] font-hero">Drafts</h1>
+          <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+            Drafts
+          </h1>
           <p className="text-[13px] text-[var(--tx3)] mt-0.5">
             Forms auto-save as you type. Resume any unfinished work below.
           </p>

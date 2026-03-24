@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X, Lock } from "@phosphor-icons/react";
 import { getDisplayLabel } from "@/lib/displayLabels";
+import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 
 interface Delivery {
   id: string;
@@ -30,7 +31,10 @@ interface Props {
 
 export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved }: Props) {
   const existingItems = Array.isArray(d.items)
-    ? d.items.map((i: unknown) => (typeof i === "string" ? i : (i as { name?: string })?.name || "")).filter(Boolean).join("\n")
+    ? normalizeDeliveryItemsForDisplay(d.items)
+        .map((row) => (row.qty > 1 ? `${row.name} ×${row.qty}` : row.name))
+        .filter(Boolean)
+        .join("\n")
     : "";
 
   const [form, setForm] = useState({

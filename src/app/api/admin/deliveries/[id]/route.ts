@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { createPartnerNotification } from "@/lib/notifications";
+import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 
 const STATUS_NOTIFICATIONS: Record<string, { title: (label: string) => string; icon: string }> = {
   confirmed: { title: (l) => `Delivery confirmed: ${l}`, icon: "check" },
@@ -70,6 +71,24 @@ export async function PATCH(
   const updates: Record<string, unknown> = {};
   for (const key of allowedFields) {
     if (key in body) updates[key] = body[key];
+  }
+
+  if ("crew_id" in body) {
+    const raw = body.crew_id;
+    const cid =
+      raw === null || raw === undefined || (typeof raw === "string" && !raw.trim())
+        ? null
+        : String(raw).trim();
+    if (cid) {
+      const snap = await fetchCrewAssignmentSnapshot(admin, cid);
+      updates.crew_id = cid;
+      updates.assigned_members = snap.assigned_members;
+      updates.assigned_crew_name = snap.assigned_crew_name;
+    } else {
+      updates.crew_id = null;
+      updates.assigned_members = [];
+      updates.assigned_crew_name = null;
+    }
   }
 
   if (Object.keys(updates).length === 0) {

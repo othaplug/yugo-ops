@@ -9,6 +9,7 @@ import ProofOfDeliverySection from "@/components/ProofOfDeliverySection";
 import DeliveryScoreCard from "@/components/partner/DeliveryScoreCard";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
+import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 
 const DeliveryTrackMap = dynamic(
   () => import("@/app/track/delivery/[id]/DeliveryTrackMap").then((m) => m.default),
@@ -230,7 +231,9 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
   const showProgressBar = (isInProgress || isCompleted) && (stageIdx >= 0 || normalizedStage === "completed" || isCompleted);
 
   const items = Array.isArray(d.items) ? d.items : [];
-  const itemsDisplay = items.map((i: unknown) => typeof i === "string" ? i : (i as { name?: string })?.name || "").filter(Boolean);
+  const itemsDisplay = normalizeDeliveryItemsForDisplay(items)
+    .map((row) => (row.qty > 1 ? `${row.name} ×${row.qty}` : row.name))
+    .filter(Boolean);
 
   const isDelivered = ["delivered", "completed"].includes((d.status || "").toLowerCase());
 

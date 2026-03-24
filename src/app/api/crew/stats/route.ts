@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const monthStartIso = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const monthEndIso = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
 
   // Get crew profile
   const { data: profile } = await supabase
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
   // Get this month's jobs
   const { data: monthMoves } = await supabase
     .from("moves")
-    .select("id, status, tip_amount, satisfaction_rating")
+    .select("id, status, satisfaction_rating")
     .contains("assigned_members", [crewMember.name])
     .eq("status", "completed")
     .gte("completed_at", monthStart);
@@ -50,7 +52,23 @@ export async function GET(req: NextRequest) {
     .gte("completed_at", monthStart);
 
   const monthJobs = (monthMoves?.length ?? 0) + (monthDeliveries?.length ?? 0);
-  const monthTips = (monthMoves ?? []).reduce((s, m) => s + (Number(m.tip_amount) || 0), 0);
+
+  // Tips: use `tips` rows for this crew this month (same source as /api/crew/tips). Summing only
+  // moves.tip_amount for jobs where assigned_members contains this name misses team tips when the
+  // roster snapshot omits a member or is out of sync, which showed $0 on the grid while My Tips showed $5.
+  const { data: monthTipRows } = await supabase
+    .from("tips")
+    .select("amount, net_amount")
+    .eq("crew_id", crewMember.teamId)
+    .gte("charged_at", monthStartIso)
+    .lt("charged_at", monthEndIso);
+
+  const monthTips = (monthTipRows ?? []).reduce(
+    (s, t) => s + Number(t.net_amount ?? t.amount ?? 0),
+    0
+  );
+  const monthTipCount = monthTipRows?.length ?? 0;
+
   const monthRatings = (monthMoves ?? [])
     .filter((m) => m.satisfaction_rating)
     .map((m) => Number(m.satisfaction_rating));
@@ -121,7 +139,12 @@ export async function GET(req: NextRequest) {
       jobs: monthJobs,
       tips: monthTips,
       avgRating: monthAvgRating,
-      avgTipPerJob: monthJobs > 0 ? Math.round(monthTips / monthJobs) : 0,
+      avgTipPerJob:
+        monthJobs > 0
+          ? Math.round(monthTips / monthJobs)
+          : monthTipCount > 0
+            ? Math.round(monthTips / monthTipCount)
+            : 0,
     },
     badges: earnedBadges,
     leaderboard,

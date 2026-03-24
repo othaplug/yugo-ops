@@ -68,6 +68,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       { href: "/admin/partners/health", label: "Partner Health", Icon: Icons.barChart, minRole: "coordinator" },
       { href: "/admin/partners/realtors", label: "Referral Partners", Icon: Icons.handshake, minRole: "coordinator" },
       { href: "/admin/deliveries", label: "Jobs", Icon: Icons.briefcase, minRole: "coordinator" },
+      { href: "/admin/inbound-shipments", label: "Inbound Shipments", Icon: Icons.package, minRole: "coordinator" },
     ],
   },
   {
@@ -323,7 +324,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
             <RealtimeListener />
             <SessionTimeout />
             <OfflineBanner />
-          <div className="flex min-h-screen bg-[var(--bg)]">
+          <div className="admin-app flex min-h-screen bg-[var(--bg)]">
             {/* Skip to main content for keyboard users */}
             <a
               href="#admin-main"

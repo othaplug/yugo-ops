@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { getTodayString } from "@/lib/business-timezone";
+import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 
 /**
  * App table is `recurring_delivery_schedules` (not `recurring_schedules`).
@@ -173,6 +174,12 @@ export async function GET(req: NextRequest) {
         crew_id: schedule.crew_id || null,
         services_selected: servicesSelected,
       };
+
+      if (schedule.crew_id) {
+        const snap = await fetchCrewAssignmentSnapshot(supabase, schedule.crew_id);
+        insertPayload.assigned_members = snap.assigned_members;
+        insertPayload.assigned_crew_name = snap.assigned_crew_name;
+      }
 
       const { error: insErr } = await supabase.from("deliveries").insert(insertPayload as never);
       if (insErr) throw new Error(insErr.message);

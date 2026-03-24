@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
+import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 
 export async function POST(
   req: NextRequest,
@@ -17,10 +18,16 @@ export async function POST(
   }
 
   const admin = createAdminClient();
+  const snap = await fetchCrewAssignmentSnapshot(admin, body.crew_id);
 
   const { error } = await admin
     .from("moves")
-    .update({ crew_id: body.crew_id, status: "scheduled" })
+    .update({
+      crew_id: body.crew_id,
+      status: "scheduled",
+      assigned_members: snap.assigned_members,
+      assigned_crew_name: snap.assigned_crew_name,
+    })
     .eq("id", moveId);
 
   if (error) {

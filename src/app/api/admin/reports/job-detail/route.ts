@@ -45,17 +45,32 @@ export async function GET(req: NextRequest) {
     scheduledDate?: string;
     arrivalWindow?: string;
     crewName?: string;
+    crewMembers?: string[];
   };
   if (jobType === "move") {
     const { data: m } = isUuid
-      ? await admin.from("moves").select("id, move_code, client_name, from_address, to_address, client_email, client_phone, scheduled_date, arrival_window").eq("id", jobId).single()
-      : await admin.from("moves").select("id, move_code, client_name, from_address, to_address, client_email, client_phone, scheduled_date, arrival_window").ilike("move_code", jobId.replace(/^#/, "").toUpperCase()).single();
+      ? await admin
+          .from("moves")
+          .select(
+            "id, move_code, client_name, from_address, to_address, client_email, client_phone, scheduled_date, arrival_window, crew_id, assigned_crew_name, assigned_members",
+          )
+          .eq("id", jobId)
+          .single()
+      : await admin
+          .from("moves")
+          .select(
+            "id, move_code, client_name, from_address, to_address, client_email, client_phone, scheduled_date, arrival_window, crew_id, assigned_crew_name, assigned_members",
+          )
+          .ilike("move_code", jobId.replace(/^#/, "").toUpperCase())
+          .single();
     if (!m) return NextResponse.json({ error: "Move not found" }, { status: 404 });
     entityId = m.id;
-    const { data: crew } = await admin.from("moves").select("crew_id").eq("id", m.id).single();
-    let crewName: string | undefined;
-    if (crew?.crew_id) {
-      const { data: c } = await admin.from("crews").select("name").eq("id", crew.crew_id).single();
+    let crewName: string | undefined = (m as { assigned_crew_name?: string }).assigned_crew_name?.trim() || undefined;
+    const snapMem = Array.isArray((m as { assigned_members?: unknown }).assigned_members)
+      ? ((m as { assigned_members: string[] }).assigned_members || []).filter((x) => typeof x === "string" && x.trim())
+      : [];
+    if (!crewName && (m as { crew_id?: string }).crew_id) {
+      const { data: c } = await admin.from("crews").select("name").eq("id", (m as { crew_id: string }).crew_id).single();
       crewName = c?.name ?? undefined;
     }
     job = {
@@ -69,17 +84,32 @@ export async function GET(req: NextRequest) {
       scheduledDate: m.scheduled_date ?? undefined,
       arrivalWindow: m.arrival_window ?? undefined,
       crewName,
+      crewMembers: snapMem.length > 0 ? snapMem : undefined,
     };
   } else {
     const { data: d } = isUuid
-      ? await admin.from("deliveries").select("id, delivery_number, customer_name, client_name, pickup_address, delivery_address, customer_email, customer_phone, scheduled_date, time_slot").eq("id", jobId).single()
-      : await admin.from("deliveries").select("id, delivery_number, customer_name, client_name, pickup_address, delivery_address, customer_email, customer_phone, scheduled_date, time_slot").ilike("delivery_number", jobId).single();
+      ? await admin
+          .from("deliveries")
+          .select(
+            "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, customer_email, customer_phone, scheduled_date, time_slot, crew_id, assigned_crew_name, assigned_members",
+          )
+          .eq("id", jobId)
+          .single()
+      : await admin
+          .from("deliveries")
+          .select(
+            "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, customer_email, customer_phone, scheduled_date, time_slot, crew_id, assigned_crew_name, assigned_members",
+          )
+          .ilike("delivery_number", jobId)
+          .single();
     if (!d) return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
     entityId = d.id;
-    const { data: crew } = await admin.from("deliveries").select("crew_id").eq("id", d.id).single();
-    let crewName: string | undefined;
-    if (crew?.crew_id) {
-      const { data: c } = await admin.from("crews").select("name").eq("id", crew.crew_id).single();
+    let crewName: string | undefined = (d as { assigned_crew_name?: string }).assigned_crew_name?.trim() || undefined;
+    const snapMem = Array.isArray((d as { assigned_members?: unknown }).assigned_members)
+      ? ((d as { assigned_members: string[] }).assigned_members || []).filter((x) => typeof x === "string" && x.trim())
+      : [];
+    if (!crewName && (d as { crew_id?: string }).crew_id) {
+      const { data: c } = await admin.from("crews").select("name").eq("id", (d as { crew_id: string }).crew_id).single();
       crewName = c?.name ?? undefined;
     }
     const dRow = d as { customer_email?: string; customer_phone?: string; scheduled_date?: string; time_slot?: string };
@@ -94,6 +124,7 @@ export async function GET(req: NextRequest) {
       scheduledDate: dRow.scheduled_date ?? undefined,
       arrivalWindow: dRow.time_slot ?? undefined,
       crewName,
+      crewMembers: snapMem.length > 0 ? snapMem : undefined,
     };
   }
 

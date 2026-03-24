@@ -22,6 +22,7 @@ import {
   drawSectionHeading,
   MARGIN,
 } from "./pdf-brand";
+import { normalizeDeliveryItemsForDisplay } from "./delivery-items";
 
 export function generateInvoicePDF(invoice: {
   invoice_number: string;
@@ -142,13 +143,9 @@ export function generateDeliveryPDF(delivery: {
   doc.text(delivLines, MARGIN, y); y += delivLines.length * 4 + 8;
 
   // Items table
-  const items = delivery.items || [];
+  const items = normalizeDeliveryItemsForDisplay(delivery.items || []);
   if (items.length > 0) {
-    const itemRows = items.map((item, i) => {
-      const name = typeof item === "string" ? item : (item as { name: string; qty?: number })?.name || "";
-      const qty = typeof item === "object" && (item as { qty?: number })?.qty != null ? (item as { qty: number }).qty : 1;
-      return [i + 1, name, String(qty)];
-    });
+    const itemRows = items.map((row, i) => [i + 1, row.name, String(row.qty)]);
     const headStyles = getTableHeadStyles(true);
     autoTable(doc, {
       startY: y,

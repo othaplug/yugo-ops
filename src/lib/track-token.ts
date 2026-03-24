@@ -15,14 +15,14 @@ function getTrackSecret(): string {
   return secret?.trim() || DEV_SECRET;
 }
 
-export function signTrackToken(entityType: "move" | "delivery", id: string): string {
+export function signTrackToken(entityType: "move" | "delivery" | "inbound_shipment", id: string): string {
   const payload = `${entityType}:${id}`;
   const sig = createHmac("sha256", getTrackSecret()).update(payload).digest("base64url");
   return sig;
 }
 
 export function verifyTrackToken(
-  entityType: "move" | "delivery",
+  entityType: "move" | "delivery" | "inbound_shipment",
   id: string,
   token: string
 ): boolean {

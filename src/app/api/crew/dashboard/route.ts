@@ -45,10 +45,11 @@ export async function GET(req: NextRequest) {
   const tomorrowStr = addCalendarDaysYmd(today, 1, tz);
   const supabase = createAdminClient();
 
+  /** Avoid columns missing on some prod DBs (`from_postal_code`, `recurring_schedule_id`, `notes`). */
   const moveSelect =
-    "id, move_code, client_name, from_address, to_address, from_postal_code, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert";
+    "id, move_code, client_name, from_address, to_address, scheduled_date, scheduled_time, status, move_type, crew_id, event_group_id, event_phase, event_name, weather_brief, weather_alert";
   const deliverySelect =
-    "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, recurring_schedule_id, booking_type";
+    "id, delivery_number, customer_name, client_name, pickup_address, delivery_address, scheduled_date, time_slot, status, items, crew_id, booking_type, created_by_source";
 
   const [movesRes, carryMovesRes, deliveriesRes, carryDeliveriesRes] = await Promise.all([
     supabase
@@ -168,7 +169,8 @@ export async function GET(req: NextRequest) {
   for (const d of deliveries) {
     const items = normalizeDeliveryItemsList(d.items);
     const time = d.time_slot || "2:00 PM";
-    const isRec = !!(d.recurring_schedule_id);
+    const createdSrc = String((d as { created_by_source?: string | null }).created_by_source || "").toLowerCase();
+    const isRec = createdSrc === "recurring_schedule";
     const bType = (d.booking_type as string | null) || null;
     const typeLabel = bType === "day_rate" ? "Day Rate" : "Delivery";
     jobs.push({
@@ -178,7 +180,7 @@ export async function GET(req: NextRequest) {
       clientName: `${d.customer_name || "-"}${d.client_name ? ` (${d.client_name})` : ""}`,
       fromAddress: d.pickup_address || "Warehouse",
       toAddress: d.delivery_address || "-",
-      jobTypeLabel: `${typeLabel}${items.length > 0 ? ` · ${items.length} items` : ""}`,
+      jobTypeLabel: typeLabel,
       itemCount: items.length,
       scheduledTime: time,
       status: d.status || "scheduled",

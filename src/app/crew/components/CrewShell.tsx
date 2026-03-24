@@ -119,8 +119,6 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                     <Link
                       key={item.href}
                       href={item.href}
-                      // @ts-expect-error -- viewTransition is experimental and not yet typed
-                      viewTransition
                       onClick={() => setSidebarOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[12px] font-medium transition-all ${
                         active
@@ -209,8 +207,6 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  // @ts-expect-error -- viewTransition is experimental
-                  viewTransition
                   className={`flex-1 flex flex-col items-center justify-end gap-1 pb-3 pt-2 min-h-[56px] text-[10px] font-semibold transition-colors touch-manipulation ${
                     active ? "text-[var(--gold)]" : "text-[var(--tx3)]"
                   }`}

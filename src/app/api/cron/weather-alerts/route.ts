@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   const { data: moves } = await supabase
     .from("moves")
-    .select("id, move_code, client_name, client_email, client_phone, scheduled_date, from_postal_code, from_address")
+    .select("id, move_code, client_name, client_email, client_phone, scheduled_date, from_address")
     .in("status", [
       "confirmed",
       "scheduled",
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
   for (const move of moves ?? []) {
     try {
       results.checked++;
-      const postal = move.from_postal_code || extractCanadianPostal(move.from_address || "");
+      const postal = extractCanadianPostal(move.from_address || "");
       if (!postal) continue;
 
       const brief = await fetchMoveDayWeatherBrief(postal, move.scheduled_date, apiKey);

@@ -60,14 +60,14 @@ function crewArrowIcon(bearing: number | null = null) {
   const rot = bearing != null ? bearing : 0;
   return L.divIcon({
     className: "crew-marker crew-marker-arrow",
-    html: `<div style="position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center">
-      <span style="position:absolute;inset:6px;border-radius:50%;background:${GOLD};opacity:0.18;animation:crew-ring 2s ease-out infinite"></span>
-      <svg width="48" height="48" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6))" aria-hidden="true">
+    html: `<div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center">
+      <span style="position:absolute;inset:5px;border-radius:50%;background:${GOLD};opacity:0.18;animation:crew-ring 2s ease-out infinite"></span>
+      <svg width="36" height="36" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6))" aria-hidden="true">
         <polygon points="22,5 34,36 22,29 10,36" fill="${GOLD}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
       </svg>
     </div>`,
-    iconSize: [48, 48],
-    iconAnchor: [24, 24],
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
   });
 }
 

@@ -6,6 +6,7 @@ import RescheduleDeliveryModal from "@/components/partner/RescheduleDeliveryModa
 import { getDeliveryTimelineIndex, DELIVERY_TIMELINE_STEPS } from "@/lib/partner-type";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
 import { toTitleCase } from "@/lib/format-text";
+import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 
 /** Full 5 stages for admin/partner (two-leg delivery) */
 const DELIVERY_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route_to_destination", "arrived_at_destination", "completed"];
@@ -229,9 +230,13 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
 
   const timelineIdx = getDeliveryTimelineIndex(liveStage === "completed" ? "delivered" : d.status);
   const items = Array.isArray(d.items) ? d.items : [];
-  const itemsDisplay = items.length > 0
-    ? items.map((i: unknown) => typeof i === "string" ? i : (i as { name?: string })?.name || "").filter(Boolean).join(", ")
-    : null;
+  const itemsDisplay =
+    items.length > 0
+      ? normalizeDeliveryItemsForDisplay(items)
+          .map((row) => (row.qty > 1 ? `${row.name} ×${row.qty}` : row.name))
+          .filter(Boolean)
+          .join(", ")
+      : null;
 
   const statusKey = (d.status || "").toLowerCase().replace(/ /g, "_");
   const statusLabel = STATUS_LABEL_OVERRIDE[statusKey] || toTitleCase(d.status || "");

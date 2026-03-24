@@ -169,6 +169,15 @@ export default function MoveDetailClient({
   const [reviewReminderLoading, setReviewReminderLoading] = useState(false);
   const selectedCrew = crews.find((c) => c.id === move.crew_id);
   const crewMembers = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
+  const snapshotRoster = Array.isArray(move.assigned_members)
+    ? move.assigned_members.filter((x: unknown) => typeof x === "string" && String(x).trim())
+    : [];
+  const displayCrewName =
+    (typeof move.assigned_crew_name === "string" && move.assigned_crew_name.trim()
+      ? move.assigned_crew_name.trim()
+      : "") ||
+    selectedCrew?.name ||
+    "";
   const [assignedMembers, setAssignedMembers] = useState<Set<string>>(() => {
     const assigned = Array.isArray(move.assigned_members) ? move.assigned_members : [];
     return assigned.length > 0 ? new Set(assigned) : new Set(crewMembers);
@@ -577,13 +586,13 @@ export default function MoveDetailClient({
       )}
 
       {move.crew_id && (
-        <CollapsibleSection title="Live Crew Tracking" defaultCollapsed subtitle={selectedCrew?.name || "Crew"}>
+        <CollapsibleSection title="Live Crew Tracking" defaultCollapsed subtitle={displayCrewName || "Crew"}>
           {!isInProgress && (
             <p className="text-[11px] text-[var(--tx3)] mb-2">Move completed. Live tracking remains visible for vehicle and asset security.</p>
           )}
           <LiveTrackingMap
             crewId={move.crew_id}
-            crewName={selectedCrew?.name}
+            crewName={displayCrewName || undefined}
             destination={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
             pickup={move.from_lat != null && move.from_lng != null ? { lat: move.from_lat, lng: move.from_lng } : undefined}
             dropoff={move.to_lat != null && move.to_lng != null ? { lat: move.to_lat, lng: move.to_lng } : undefined}
@@ -698,7 +707,12 @@ export default function MoveDetailClient({
           {selectedCrew && crewMembers.length === 0 && (
             <p className="text-[11px] text-[var(--tx3)]">No members in this crew. Add members in Platform Settings → Teams.</p>
           )}
-          {!selectedCrew && (
+          {!selectedCrew && snapshotRoster.length > 0 && (
+            <p className="text-[11px] text-[var(--tx3)]">
+              Recorded crew (job snapshot): {snapshotRoster.join(", ")}
+            </p>
+          )}
+          {!selectedCrew && snapshotRoster.length === 0 && (
             <p className="text-[11px] text-[var(--tx3)]">Select a crew above to assign members to this move.</p>
           )}
         </div>
@@ -1006,7 +1020,7 @@ export default function MoveDetailClient({
           )}
           <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{selectedCrew?.name || "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{displayCrewName || "-"}</div></div>
             <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.coordinator_name || "-"}</div></div>
             {isCompleted ? (
               <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>

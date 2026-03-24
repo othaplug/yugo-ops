@@ -60,15 +60,15 @@ function makeCrewArrowIcon(bearing: number | null = null) {
   const rot = bearing != null ? bearing : 0;
   return new L.DivIcon({
     className: "",
-    html: `<div style="position:relative;width:52px;height:52px;display:flex;align-items:center;justify-content:center">
-      <span style="position:absolute;inset:6px;border-radius:50%;background:${YUGO_GOLD};opacity:0.18;animation:pulse 2s ease-out infinite"></span>
-      <svg width="48" height="48" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.35))" aria-hidden="true">
+    html: `<div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+      <span style="position:absolute;inset:5px;border-radius:50%;background:${YUGO_GOLD};opacity:0.18;animation:pulse 2s ease-out infinite"></span>
+      <svg width="36" height="36" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.35))" aria-hidden="true">
         <polygon points="22,5 34,36 22,29 10,36" fill="${YUGO_GOLD}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
       </svg>
     </div>`,
-    iconSize: [52, 52],
-    iconAnchor: [26, 26],
-    popupAnchor: [0, -26],
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -22],
   });
 }
 

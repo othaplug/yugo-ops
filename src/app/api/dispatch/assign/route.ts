@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { isDispatchJobInProgress } from "@/lib/dispatch-job-in-progress";
+import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 
 /** PATCH: Assign crew to a move or delivery. Staff only. */
 export async function PATCH(req: NextRequest) {
@@ -43,16 +44,19 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    const trimmedCrew = crewId && String(crewId).trim() ? String(crewId).trim() : null;
     const update: Record<string, unknown> = {
-      crew_id: crewId && crewId.trim() ? crewId.trim() : null,
+      crew_id: trimmedCrew,
       updated_at: new Date().toISOString(),
     };
 
-    if (jobType === "move" && crewId) {
-      const { data: crew } = await admin.from("crews").select("members").eq("id", crewId).single();
-      if (crew?.members && Array.isArray(crew.members)) {
-        update.assigned_members = crew.members;
-      }
+    if (trimmedCrew) {
+      const snap = await fetchCrewAssignmentSnapshot(admin, trimmedCrew);
+      update.assigned_members = snap.assigned_members;
+      update.assigned_crew_name = snap.assigned_crew_name;
+    } else {
+      update.assigned_members = [];
+      update.assigned_crew_name = null;
     }
 
     const { data: updated, error } = await admin

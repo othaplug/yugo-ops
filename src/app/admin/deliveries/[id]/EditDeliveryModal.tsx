@@ -13,6 +13,7 @@ import {
   MapPin, Calendar, Users, Money as DollarSign, ListBullets as LayoutList,
   FileText, Clock, Shield, Buildings as Building,
 } from "@phosphor-icons/react";
+import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 
 /* ═══════════════════════════════════════════════════
    Time helpers
@@ -353,14 +354,9 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           <textarea
             name="items"
             rows={4}
-            defaultValue={(delivery.items || []).map((i: any) => {
-              if (typeof i === "object" && i != null) {
-                const name = i.name || i;
-                const qty = i.qty ?? 1;
-                return qty > 1 ? `${name} x${qty}` : name;
-              }
-              return i;
-            }).join("\n")}
+            defaultValue={normalizeDeliveryItemsForDisplay(delivery.items || [])
+              .map((row) => (row.qty > 1 ? `${row.name} x${row.qty}` : row.name))
+              .join("\n")}
             className={`${inputCls} resize-y font-mono`}
             placeholder="Leather Sofa&#10;Glass Dining Table&#10;King Mattress x2"
           />

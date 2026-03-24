@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/check-role";
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 import { generateDeliveryNumber } from "@/lib/delivery-number";
 import { logActivity } from "@/lib/activity";
+import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 
 const VALID_CATEGORIES = new Set(["retail", "b2b", "b2c", "designer", "hospitality", "realtor", "stager", "other"]);
 function normalizeCategory(raw: string): string {
@@ -106,6 +107,13 @@ export async function POST(req: NextRequest) {
       project_id: (body.project_id || "").trim() || null,
       phase_id: (body.phase_id || "").trim() || null,
     };
+
+    const crewIdForSnap = insertPayload.crew_id as string | null;
+    if (crewIdForSnap) {
+      const snap = await fetchCrewAssignmentSnapshot(admin, crewIdForSnap);
+      insertPayload.assigned_members = snap.assigned_members;
+      insertPayload.assigned_crew_name = snap.assigned_crew_name;
+    }
 
     const { data: created, error: dbError } = await admin
       .from("deliveries")

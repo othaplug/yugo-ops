@@ -23,6 +23,7 @@ import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
+import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 
 /* ═══════════════════════════════════════════════════
    Constants
@@ -251,7 +252,22 @@ export default function DeliveryDetailClient({
     }
   }, [delivery?.id, delivery?.pickup_lat, delivery?.pickup_lng, delivery?.pickup_address, delivery?.delivery_lat, delivery?.delivery_lng, delivery?.delivery_address]);
 
-  const selectedCrew = crews.find((c) => c.id === delivery.crew_id);
+  const linkedCrew = crews.find((c) => c.id === delivery.crew_id);
+  const snapMembers = Array.isArray(delivery.assigned_members)
+    ? delivery.assigned_members.filter((m: unknown) => typeof m === "string" && String(m).trim())
+    : [];
+  const snapName =
+    typeof delivery.assigned_crew_name === "string" && delivery.assigned_crew_name.trim()
+      ? delivery.assigned_crew_name.trim()
+      : "";
+  const hasSnapshot = snapName.length > 0 || snapMembers.length > 0;
+  const displayCrew =
+    linkedCrew || hasSnapshot
+      ? {
+          name: (snapName || linkedCrew?.name || "Crew (archived)").trim() || "Crew",
+          members: snapMembers.length > 0 ? snapMembers : linkedCrew?.members || [],
+        }
+      : null;
   const completed = isDone(delivery.status);
   const deliveryInProgress = isDeliveryInProgress(delivery.status, delivery.stage);
   const cat = CATEGORY_BADGE[delivery.category] || CATEGORY_BADGE.retail;
@@ -362,10 +378,7 @@ export default function DeliveryDetailClient({
   };
 
   const items = Array.isArray(delivery.items) ? delivery.items : [];
-  const itemsDisplay = items.map((i: any) => {
-    if (typeof i === "string") return { name: i, qty: 1 };
-    return { name: i?.name || String(i), qty: i?.qty ?? 1 };
-  });
+  const itemsDisplay = normalizeDeliveryItemsForDisplay(items);
   const totalItems = itemsDisplay.reduce((sum: number, i: any) => sum + (i.qty || 1), 0);
   const isPartnerRequest = delivery.created_by_source === "partner_portal";
   const needsApproval = (delivery.status === "pending_approval" || delivery.status === "pending") && isPartnerRequest;
@@ -628,7 +641,7 @@ export default function DeliveryDetailClient({
                   </span>
                 </div>
                 <p className="text-[11px] text-[var(--tx3)]">
-                  {selectedCrew ? `Completed by ${selectedCrew.name}` : ""}
+                  {displayCrew ? `Completed by ${displayCrew.name}` : ""}
                   {delivery.updated_at ? ` · ${new Date(delivery.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at ${new Date(delivery.updated_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}
                 </p>
               </div>
@@ -642,7 +655,7 @@ export default function DeliveryDetailClient({
                 </div>
                 {delivery.crew_id ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-[var(--tx3)]">{selectedCrew?.name || "Crew assigned"}</span>
+                    <span className="text-[10px] text-[var(--tx3)]">{displayCrew?.name || "Crew assigned"}</span>
                     {!deliveryInProgress && (
                       <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
                         Change
@@ -660,7 +673,7 @@ export default function DeliveryDetailClient({
               {delivery.crew_id ? (
                 <LiveTrackingMap
                   crewId={delivery.crew_id}
-                  crewName={selectedCrew?.name}
+                  crewName={displayCrew?.name}
                   deliveryId={delivery.id}
                   pickup={mapPickup ?? undefined}
                   dropoff={mapDropoff ?? undefined}
@@ -848,21 +861,21 @@ export default function DeliveryDetailClient({
                 <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew</span>
                 {!deliveryInProgress && (
                   <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">
-                    {selectedCrew ? "Change" : "Assign"}
+                    {delivery.crew_id ? "Change" : "Assign"}
                   </button>
                 )}
               </div>
-              {selectedCrew ? (
+              {displayCrew ? (
                 <div>
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-full bg-[var(--gold)]/10 flex items-center justify-center text-[11px] font-bold text-[var(--gold)]">
-                      {selectedCrew.name.charAt(0).toUpperCase()}
+                      {displayCrew.name.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-[13px] font-semibold text-[var(--tx)]">{selectedCrew.name}</span>
+                    <span className="text-[13px] font-semibold text-[var(--tx)]">{displayCrew.name}</span>
                   </div>
-                  {selectedCrew.members && selectedCrew.members.length > 0 && (
+                  {displayCrew.members && displayCrew.members.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2 pl-9">
-                      {selectedCrew.members.map((m) => (
+                      {displayCrew.members.map((m: string) => (
                         <span key={m} className="text-[10px] text-[var(--tx3)]">{m}</span>
                       ))}
                     </div>

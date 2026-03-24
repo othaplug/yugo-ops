@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import YugoLogo from "@/components/YugoLogo";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
 import { toTitleCase } from "@/lib/format-text";
+import { normalizeDeliveryItem } from "@/lib/delivery-items";
 import {
   CalendarBlank,
   CaretDown,
@@ -614,12 +615,12 @@ export default function TrackDeliveryClient({
         {/* ── Item List ── */}
         {itemsCount > 0 && (() => {
           const grouped: Record<string, string[]> = {};
-          (delivery.items as string[]).forEach((raw: string) => {
-            const colonIdx = raw.indexOf(":");
-            const room = colonIdx > -1 ? raw.slice(0, colonIdx).trim() : "Items";
-            const name = colonIdx > -1 ? raw.slice(colonIdx + 1).trim() : raw.trim();
+          const rawList = Array.isArray(delivery.items) ? delivery.items : [];
+          rawList.forEach((raw: unknown) => {
+            const { room, name, qty } = normalizeDeliveryItem(raw);
+            const label = qty > 1 ? `${name} ×${qty}` : name;
             if (!grouped[room]) grouped[room] = [];
-            grouped[room].push(name);
+            grouped[room].push(label);
           });
           const rooms = Object.keys(grouped);
 

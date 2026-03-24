@@ -10,7 +10,9 @@ import ReadinessCheck from "./components/ReadinessCheck";
 import { formatDate, formatDateYmd } from "@/lib/client-timezone";
 import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
 import CrewAreaWeather from "@/components/crew/CrewAreaWeather";
-import CrewWeatherRoads from "@/components/crew/CrewWeatherRoads";
+import JobConditionsInline from "@/components/crew/JobConditionsInline";
+import WineFadeRule from "@/components/crew/WineFadeRule";
+import { useCrewJobConditions } from "@/components/crew/useCrewJobConditions";
 import type { MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 
 interface Job {
@@ -93,6 +95,9 @@ export default function CrewDashboardPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchData]);
 
+  const jobsForConditions = data != null && Array.isArray(data.jobs) ? data.jobs : [];
+  const { weatherByJobId, trafficByJobId, trafficLoading } = useCrewJobConditions(jobsForConditions);
+
   const completedStatuses = ["delivered", "completed", "done", "cancelled"];
   const isCompleted = (j: Job) => completedStatuses.includes((j.status || "").toLowerCase());
   const isInProgress = (j: Job) => (j.status || "").toLowerCase() === "in_progress";
@@ -147,6 +152,13 @@ export default function CrewDashboardPage() {
           </div>
           <h2 className="font-hero text-[26px] font-bold text-[var(--tx)] mb-2">Waiting for Crew Lead</h2>
           <p className="text-[13px] text-[var(--tx3)]">The crew lead must complete the pre-trip readiness check before jobs are available.</p>
+          {jobs.length > 0 && (
+            <p className="text-[13px] text-[var(--tx2)] mt-4 font-medium">
+              {jobs.length === 1
+                ? "1 job is scheduled for your team today — it will show here after the check."
+                : `${jobs.length} jobs are scheduled for your team today — they will show here after the check.`}
+            </p>
+          )}
         </div>
       </PageContent>
     );
@@ -181,72 +193,69 @@ export default function CrewDashboardPage() {
   return (
     <PageContent>
       <section className="max-w-[520px] mx-auto">
-        {/* Hero greeting */}
-        <div className="flex items-start justify-between gap-4 mb-2">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--gold)] mb-1">
+        {/* Header + progress */}
+        <div className="flex items-start justify-between gap-4 pb-5 mb-6 border-b border-[var(--brd)]/25">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--gold)]/95 mb-1">
               {data.crewMember?.teamName || "Team"}
             </p>
-            <h1 className="font-hero text-[30px] font-bold text-[var(--tx)] leading-tight">{greeting}, {firstName}</h1>
-            <p className="text-[13px] text-[var(--tx3)] mt-1">
-              {data.crewMember?.dateStr || formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" })}
+            <h1 className="font-hero text-[26px] sm:text-[28px] font-bold text-[var(--tx)] leading-[1.15] tracking-tight">
+              {greeting}, {firstName}
+            </h1>
+            <p className="text-[13px] text-[var(--tx2)] mt-1.5">
+              {scheduleFootnote ||
+                data.crewMember?.dateStr ||
+                formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" })}
             </p>
-            {scheduleFootnote && (
-              <p className="text-[11px] text-[var(--tx3)]/80 mt-1.5 leading-snug">
-                Job list for {scheduleFootnote}. If a job is missing, confirm it is assigned to your team and dated for this day in dispatch.
-              </p>
+            <p className="text-[10px] text-[var(--tx3)]/75 mt-2 leading-relaxed max-w-[340px]">
+              Missing a job? Confirm your team and schedule date in dispatch.
+            </p>
+
+            {totalCount > 0 && (
+              <div className="mt-5">
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/45">Day progress</span>
+                  <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">{completedCount}/{totalCount}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-[var(--brd)]/45 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700 ease-out"
+                    style={{
+                      width: `${progressPercent}%`,
+                      background: progressPercent === 100
+                        ? "linear-gradient(90deg, #22C55E, #16A34A)"
+                        : "linear-gradient(90deg, #C9A962, #D4B56C)",
+                    }}
+                  />
+                </div>
+                {progressPercent === 100 && (
+                  <p className="text-[10px] text-[#22C55E] font-semibold mt-2">All jobs complete — great work.</p>
+                )}
+              </div>
             )}
           </div>
           <div
-            className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0 shadow-md"
-            style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+            className="w-12 h-12 rounded-full flex items-center justify-center text-[14px] font-bold text-white shrink-0 shadow-lg ring-2 ring-[var(--gold)]/15"
+            style={{ background: "linear-gradient(145deg, #D4B56C, #8B7332)" }}
           >
             {initials}
           </div>
         </div>
 
-        {/* Day progress */}
-        {totalCount > 0 && (
-          <div className="pt-6 mt-6 border-t border-[var(--brd)]/30">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Day Progress</span>
-              <span className="text-[12px] font-bold text-[var(--tx)]">{completedCount}/{totalCount}</span>
-            </div>
-            <div className="h-2 rounded-full bg-[var(--brd)]/50 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-700 ease-out"
-                style={{
-                  width: `${progressPercent}%`,
-                  background: progressPercent === 100
-                    ? "linear-gradient(90deg, #22C55E, #16A34A)"
-                    : "linear-gradient(90deg, #C9A962, #D4B56C)",
-                }}
-              />
-            </div>
-            {progressPercent === 100 && (
-              <p className="text-[11px] text-[#22C55E] font-semibold mt-2">All jobs complete, great work today!</p>
-            )}
+        {jobs.length === 0 && (
+          <div className="mb-6">
+            <CrewAreaWeather />
           </div>
         )}
 
-        {/* Weather: per-job when scheduled; service-area outlook when no jobs today */}
-        <div className="pt-5 mt-5 border-t border-[var(--brd)]/30">
-          {totalCount > 0 ? <CrewWeatherRoads jobs={jobs} /> : <CrewAreaWeather />}
-        </div>
-
-        {/* Jobs list */}
-        <h2 className="admin-section-h2 pt-6 mt-6 border-t border-[var(--brd)]/30 mb-4">
-          Today&apos;s Jobs
-        </h2>
-
-        <div className="space-y-0">
+        <div>
           {jobs.length === 0 ? (
-            <div className="pt-8 pb-8 text-center">
+            <div className="pt-4 pb-10 text-center rounded-2xl bg-[var(--bg)]/15 px-4">
               <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
                 <Calendar size={20} color="var(--gold)" />
               </div>
-              <p className="text-[var(--text-base)] font-semibold text-[var(--tx)] mb-1">No jobs today</p>
-              <p className="text-[12px] text-[var(--tx3)]">Enjoy your day off, check back tomorrow.</p>
+              <p className="text-[15px] font-semibold text-[var(--tx)] mb-1">No jobs on the schedule</p>
+              <p className="text-[12px] text-[var(--tx3)]">Check back tomorrow or contact dispatch if this looks wrong.</p>
             </div>
           ) : (
             jobs.map((job, index) => {
@@ -256,63 +265,59 @@ export default function CrewDashboardPage() {
               const statusInfo = STATUS_MAP[(job.status || "").toLowerCase()];
 
               return (
-                <div
-                  key={job.id}
-                  className={`pt-6 pb-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0 transition-all ${
-                    completed
-                      ? ""
-                      : inProgress
-                        ? ""
-                        : canStart
-                          ? ""
-                          : "opacity-75"
-                  }`}
-                >
-                  <div>
-                    {/* Header row */}
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0"
-                          style={{
-                            background: completed ? "rgba(34,197,94,0.15)" : inProgress ? "rgba(245,158,11,0.15)" : "var(--gdim)",
-                            color: completed ? "#22C55E" : inProgress ? "#F59E0B" : "var(--gold)",
-                          }}
-                        >
-                          {completed ? (
-                            <Check size={14} weight="bold" />
-                          ) : (
-                            index + 1
-                          )}
+                <div key={job.id}>
+                  {index > 0 && <WineFadeRule className="my-7 sm:my-8" />}
+                  <article
+                    className={`py-5 sm:py-6${!completed && !inProgress && !canStart ? " opacity-[0.72]" : ""}`}
+                  >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex gap-3 min-w-0 flex-1">
+                      <span
+                        className="w-8 h-8 rounded-xl flex items-center justify-center text-[12px] font-bold shrink-0"
+                        style={{
+                          background: completed ? "rgba(34,197,94,0.14)" : inProgress ? "rgba(245,158,11,0.14)" : "var(--gdim)",
+                          color: completed ? "#22C55E" : inProgress ? "#F59E0B" : "var(--gold)",
+                        }}
+                      >
+                        {completed ? (
+                          <Check size={16} weight="bold" />
+                        ) : (
+                          index + 1
+                        )}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[15px] font-semibold text-[var(--tx)] truncate block leading-snug">
+                          {job.clientName}
                         </span>
-                        <div className="min-w-0">
-                          <span className="text-[var(--text-base)] font-semibold text-[var(--tx)] truncate block leading-tight">
-                            {job.clientName}
-                          </span>
-                          <span className="text-[10px] text-[var(--tx3)] font-mono">{job.jobId}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {statusInfo ? (
-                          <span
-                            className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
-                            style={{ background: statusInfo.bg, color: statusInfo.color }}
-                          >
-                            {statusInfo.label}
-                          </span>
-                        ) : job.status ? (
-                          <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[var(--gdim)] text-[var(--gold)]">
-                            {getDisplayLabel(job.status, "status")}
-                          </span>
-                        ) : null}
-                        <span className="text-[11px] font-medium text-[var(--tx3)]">
-                          {job.scheduledTime}
-                        </span>
+                        <span className="text-[10px] text-[var(--tx3)] font-mono tracking-tight block mt-0.5">{job.jobId}</span>
+                        <JobConditionsInline
+                          job={job}
+                          weatherByJobId={weatherByJobId}
+                          trafficByJobId={trafficByJobId}
+                          trafficLoading={trafficLoading}
+                          className="mt-2.5"
+                        />
                       </div>
                     </div>
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      {statusInfo ? (
+                        <span
+                          className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
+                          style={{ background: statusInfo.bg, color: statusInfo.color }}
+                        >
+                          {statusInfo.label}
+                        </span>
+                      ) : job.status ? (
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[var(--gdim)] text-[var(--gold)]">
+                          {getDisplayLabel(job.status, "status")}
+                        </span>
+                      ) : null}
+                      <span className="text-[11px] font-medium text-[var(--tx3)] tabular-nums">{job.scheduledTime}</span>
+                    </div>
+                  </div>
 
-                    {/* Addresses */}
-                    <div className="ml-[38px] flex gap-2">
+                  {/* Addresses */}
+                  <div className="ml-[44px] flex gap-2.5">
                       {/* Dot + connector column */}
                       <div className="flex flex-col items-center shrink-0 pt-0.5">
                         <div className="w-4 h-4 rounded-full border-2 border-[var(--gold)]/50 flex items-center justify-center shrink-0">
@@ -331,7 +336,7 @@ export default function CrewDashboardPage() {
                     </div>
 
                     {/* Type + items */}
-                    <div className="ml-[38px] mt-2 flex flex-wrap items-center gap-2 text-[10px] text-[var(--tx3)]">
+                    <div className="ml-[44px] mt-3 flex flex-wrap items-center gap-2 text-[10px] text-[var(--tx3)]">
                       <span className="px-2 py-0.5 rounded-md bg-[var(--bg)] font-medium">{job.jobTypeLabel}</span>
                       {job.eventPhase && (
                         <span
@@ -355,11 +360,11 @@ export default function CrewDashboardPage() {
                     </div>
 
                     {/* Action area */}
-                    <div className="mt-3 ml-[38px]">
+                    <div className="mt-3 ml-[44px]">
                       {completed ? (
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}
-                          className="inline-flex items-center justify-center py-2 px-5 rounded-xl font-semibold text-[12px] border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+                          className="inline-flex items-center justify-center py-2 px-5 rounded-xl font-semibold text-[12px] bg-[var(--bg)]/35 text-[var(--tx2)] hover:bg-[var(--gold)]/10 hover:text-[var(--gold)] transition-all"
                         >
                           View Summary
                         </Link>
@@ -392,7 +397,7 @@ export default function CrewDashboardPage() {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </article>
                 </div>
               );
             })
@@ -404,7 +409,7 @@ export default function CrewDashboardPage() {
           endOfDaySubmitted ? (
             <Link
               href="/crew/end-of-day"
-              className="mt-6 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-[12px] transition-all border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--grn)] hover:text-[var(--grn)]"
+              className="mt-6 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-[12px] transition-all bg-[var(--bg)]/35 text-[var(--tx2)] hover:bg-[#22C55E]/10 hover:text-[var(--grn)]"
             >
               <Check size={14} weight="bold" />
               End of day submitted, Update report
@@ -423,7 +428,7 @@ export default function CrewDashboardPage() {
         {jobs.length > 0 && completedCount < totalCount && (
           <Link
             href="/crew/end-of-day"
-            className="mt-6 flex items-center justify-center py-3 rounded-xl font-medium text-[12px] text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--gold)]/50 transition-colors"
+            className="mt-6 flex items-center justify-center py-3 rounded-xl font-medium text-[12px] text-[var(--tx3)] bg-[var(--bg)]/25 hover:bg-[var(--gold)]/8 hover:text-[var(--tx2)] transition-colors"
           >
             End Day Report
           </Link>
@@ -432,7 +437,7 @@ export default function CrewDashboardPage() {
         {data.hasActiveBinTasks && (
           <Link
             href="/crew/bin-orders"
-            className="mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] transition-colors border border-[var(--brd)]/50 hover:border-[var(--gold)]/30"
+            className="mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-[12px] text-[var(--tx3)] bg-[var(--bg)]/20 hover:bg-[var(--gold)]/8 hover:text-[var(--gold)] transition-colors"
           >
             <Package size={14} />
             Bin Tasks (Drop-offs &amp; Pickups)

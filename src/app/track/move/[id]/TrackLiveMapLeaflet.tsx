@@ -72,15 +72,15 @@ function makeCrewIcon(bearing: number | null = null) {
   return L.divIcon({
     className: "crew-marker",
     html: `
-      <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
-        <span style="position:absolute;inset:4px;border-radius:50%;background:${YUGO_GOLD};opacity:0.18;animation:leaflet-crew-pulse 2s infinite"></span>
-        <svg width="44" height="44" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35))" aria-hidden="true">
+      <div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center">
+        <span style="position:absolute;inset:3px;border-radius:50%;background:${YUGO_GOLD};opacity:0.18;animation:leaflet-crew-pulse 2s infinite"></span>
+        <svg width="36" height="36" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35))" aria-hidden="true">
           <polygon points="22,5 34,36 22,29 10,36" fill="${YUGO_GOLD}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
         </svg>
       </div>
     `,
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
   });
 }
 

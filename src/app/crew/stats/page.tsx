@@ -208,7 +208,7 @@ export default function CrewStatsPage() {
 
         {/* Badges */}
         <div className="mb-6">
-          <h2 className="admin-section-h2 text-[var(--tx2)] mb-3">Your badges</h2>
+          <h2 className="admin-section-h2 text-[var(--tx2)] mb-5 sm:mb-6 py-[10px]">Your badges</h2>
           {stats.badges.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
               {stats.badges.map((badge) => (
@@ -242,7 +242,7 @@ export default function CrewStatsPage() {
 
         {/* Leaderboard */}
         <div>
-          <h2 className="admin-section-h2 text-[var(--tx2)] mb-3">Leaderboard · {monthLabel}</h2>
+          <h2 className="admin-section-h2 text-[var(--tx2)] mb-5 sm:mb-6 py-[10px]">Leaderboard · {monthLabel}</h2>
           {stats.leaderboard.length > 0 ? (
             <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl overflow-hidden shadow-sm">
               {stats.leaderboard.map((entry, i) => {
@@ -299,7 +299,7 @@ export default function CrewStatsPage() {
         {/* Tip History */}
         {tipData && tipData.summary.count > 0 && (
           <div className="mt-6">
-            <h2 className="admin-section-h2 text-[var(--tx2)] mb-3">
+            <h2 className="admin-section-h2 text-[var(--tx2)] mb-5 sm:mb-6 py-[10px]">
               My Tips
             </h2>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CloudSun, Drop, Thermometer, Wind, CloudRain } from "@phosphor-icons/react";
 import type { MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
+import WineFadeRule from "./WineFadeRule";
 
 type AreaPayload = { brief: MoveWeatherBrief; alert: string | null; label: string };
 
@@ -34,7 +35,7 @@ export default function CrewAreaWeather() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-[var(--brd)]/40 bg-[var(--bg)]/40 px-4 py-3 animate-pulse">
+      <div className="rounded-2xl bg-[var(--bg)]/30 px-4 py-3 animate-pulse">
         <div className="h-3 w-28 rounded bg-[var(--brd)]/50 mb-3" />
         <div className="h-4 w-full rounded bg-[var(--brd)]/30" />
       </div>
@@ -43,7 +44,7 @@ export default function CrewAreaWeather() {
 
   if (!data) {
     return (
-      <div className="rounded-2xl border border-[var(--brd)]/40 bg-[var(--bg)]/40 px-4 py-3">
+      <div className="rounded-2xl bg-[var(--bg)]/30 px-4 py-3">
         <div className="flex items-center gap-2 mb-1">
           <CloudSun size={18} className="text-[var(--gold)]" weight="duotone" aria-hidden />
           <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/70">Today&apos;s outlook</p>
@@ -58,8 +59,8 @@ export default function CrewAreaWeather() {
   const { brief, alert, label } = data;
 
   return (
-    <div className="rounded-2xl border border-[var(--brd)]/40 bg-[var(--bg)]/40 overflow-hidden">
-      <div className="px-4 py-3 border-b border-[var(--brd)]/30 flex items-center justify-between gap-2">
+    <div className="rounded-2xl bg-[var(--bg)]/30 overflow-hidden">
+      <div className="px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <CloudSun size={18} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
           <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/70 truncate">Today&apos;s outlook</p>
@@ -68,9 +69,12 @@ export default function CrewAreaWeather() {
           {label}
         </span>
       </div>
-      <div className="px-4 py-3">
+      <div className="px-4 pb-1">
+        <WineFadeRule />
+      </div>
+      <div className="px-4 py-3 pt-2">
         {alert && (
-          <div className="mb-3 flex gap-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-2.5 py-1.5">
+          <div className="mb-3 flex gap-2 rounded-lg bg-sky-500/10 px-2.5 py-1.5">
             <CloudRain size={14} className="text-sky-400 shrink-0 mt-0.5" weight="duotone" aria-hidden />
             <p className="text-[10px] text-[var(--tx2)] leading-snug">{alert}</p>
           </div>
@@ -101,7 +105,10 @@ export default function CrewAreaWeather() {
           )}
         </div>
         {brief.roadConditionsNote && (
-          <p className="mt-3 pt-3 border-t border-[var(--brd)]/20 text-[10px] leading-snug text-[var(--tx2)]">{brief.roadConditionsNote}</p>
+          <div className="mt-3 pt-3 space-y-2">
+            <WineFadeRule />
+            <p className="text-[10px] leading-snug text-[var(--tx2)]">{brief.roadConditionsNote}</p>
+          </div>
         )}
       </div>
     </div>

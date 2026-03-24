@@ -516,9 +516,13 @@ input, select, textarea {
   animation: client-completed-dot 2s ease-in-out infinite;
 }
 
-/* Instrument Sans for headings */
+/* Instrument Sans for headings; `.admin-app` overrides to body stack (DM Sans) */
 .font-heading {
   font-family: var(--font-heading);
+}
+
+.admin-app {
+  --font-heading: var(--font-body);
 }
 
 /* Instrument Serif for hero text - Yugo logo, Welcome back, etc. Normal weight for lighter look. */

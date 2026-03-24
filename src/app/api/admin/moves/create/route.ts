@@ -12,6 +12,7 @@ import { getDistance } from "@/lib/maps/distance";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
 import { calcEstimatedCost, calcEstimatedMarginPct, getMarginFlag } from "@/lib/pricing/engine";
+import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 
 /** DB `service_type` CHECK — align with `move_type` from Create Move. */
 const MOVE_TYPE_TO_SERVICE_TYPE: Record<string, string> = {
@@ -260,6 +261,15 @@ export async function POST(req: NextRequest) {
       setupReqRaw === "1" ||
       setupReqRaw === "on";
 
+    const moveCrewId = (body.crew_id as string)?.trim() || null;
+    let moveAssignedMembers = Array.isArray(body.assigned_members) ? body.assigned_members : [];
+    let moveAssignedCrewName: string | null = null;
+    if (moveCrewId) {
+      const snap = await fetchCrewAssignmentSnapshot(db, moveCrewId);
+      if (moveAssignedMembers.length === 0) moveAssignedMembers = snap.assigned_members;
+      moveAssignedCrewName = snap.assigned_crew_name;
+    }
+
     const { data: move, error: insertError } = await db
       .from("moves")
       .insert({
@@ -286,9 +296,10 @@ export async function POST(req: NextRequest) {
         access_notes: accessNotesWithAccess,
         internal_notes: internalNotesMerged,
         preferred_contact: (body.preferred_contact as string)?.trim() || null,
-        crew_id: (body.crew_id as string)?.trim() || null,
+        crew_id: moveCrewId,
         coordinator_name: (body.coordinator_name as string)?.trim() || null,
-        assigned_members: Array.isArray(body.assigned_members) ? body.assigned_members : [],
+        assigned_members: moveAssignedMembers,
+        assigned_crew_name: moveAssignedCrewName,
         complexity_indicators: Array.isArray(body.complexity_indicators) ? body.complexity_indicators : [],
         items: Array.isArray(body.items) ? body.items : [],
         inventory_score: typeof body.inventory_score === "number" ? body.inventory_score : null,

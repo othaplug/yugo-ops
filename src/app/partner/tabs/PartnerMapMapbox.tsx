@@ -179,18 +179,18 @@ export default function PartnerMapMapbox({
         >
           <div
             className="cursor-pointer relative flex items-center justify-center"
-            style={{ width: 52, height: 52 }}
+            style={{ width: 44, height: 44 }}
             title={currentDelivery.crew_name || "Crew"}
           >
             {/* Pulse ring */}
             <span
               className="absolute rounded-full animate-ping"
-              style={{ inset: 6, background: YUGO_GOLD, opacity: 0.22, animationDuration: "2s" }}
+              style={{ inset: 5, background: YUGO_GOLD, opacity: 0.22, animationDuration: "2s" }}
             />
             {/* Directional arrow */}
             <svg
-              width="48"
-              height="48"
+              width="36"
+              height="36"
               viewBox="0 0 44 44"
               style={{
                 transform: bearing != null ? `rotate(${bearing}deg)` : "none",

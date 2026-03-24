@@ -389,13 +389,13 @@ export function TrackLiveMapMapbox({
       {/* Crew, directional arrow rotated to heading */}
       {hasPosition && animatedCrew && (
         <Marker longitude={animatedCrew.lng} latitude={animatedCrew.lat} anchor="center">
-          <div className="relative flex items-center justify-center" style={{ width: 52, height: 52 }}>
+          <div className="relative flex items-center justify-center" style={{ width: 44, height: 44 }}>
             {/* Pulse ring */}
             {!isLocationStale && (
               <span
                 className="absolute rounded-full animate-ping"
                 style={{
-                  inset: 4,
+                  inset: 3,
                   background: isLocationStale ? YUGO_GOLD : CREW_RED,
                   opacity: 0.22,
                   animationDuration: "2s",
@@ -404,8 +404,8 @@ export function TrackLiveMapMapbox({
             )}
             {/* Arrow SVG, rotates to heading */}
             <svg
-              width="44"
-              height="44"
+              width="36"
+              height="36"
               viewBox="0 0 44 44"
               style={{
                 transform: bearing != null ? `rotate(${bearing}deg)` : "none",

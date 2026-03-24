@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { parseItemNameAndQty } from "@/lib/inventory-parse";
+import { normalizeDeliveryItem } from "@/lib/delivery-items";
 
 /** GET job detail for crew portal. */
 export async function GET(
@@ -34,13 +35,17 @@ export async function GET(
     }
 
     const rawItems = Array.isArray(d.items) ? d.items : [];
-    const items = rawItems.map((name: string, i: number) => {
-      const { baseName, qty } = parseItemNameAndQty(name);
-      return { id: `noid-${i}`, item_name: baseName || name, quantity: qty };
+    const items = rawItems.map((raw: unknown, i: number) => {
+      const { name, qty } = normalizeDeliveryItem(raw);
+      return { id: `noid-${i}`, item_name: name, quantity: qty };
     });
     const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", d.id).eq("status", "approved").order("added_at");
     const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", d.crew_id).single();
-    const members = (crewRow?.members as string[] | null) || [];
+    const snapMembers = Array.isArray((d as { assigned_members?: unknown }).assigned_members)
+      ? ((d as { assigned_members: string[] }).assigned_members || []).filter((n) => typeof n === "string" && n.trim())
+      : [];
+    const membersFromCrew = (crewRow?.members as string[] | null) || [];
+    const members = snapMembers.length > 0 ? snapMembers : membersFromCrew;
     const crewWithRoles = members.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
     const fromAccess = (d as any).pickup_access || (d as any).from_access || null;
     const toAccess = (d as any).delivery_access || (d as any).to_access || null;
@@ -113,10 +118,12 @@ export async function GET(
 
   const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", m.crew_id).single();
   const members = (crewRow?.members as string[] | null) || [];
-  const assigned = Array.isArray(m.assigned_members) ? m.assigned_members : members;
-  const crewWithRoles = assigned.length > 0
-    ? assigned.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }))
-    : members.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
+  const assignedRaw = Array.isArray(m.assigned_members) ? m.assigned_members : [];
+  const assigned =
+    assignedRaw.length > 0
+      ? assignedRaw.filter((name: unknown): name is string => typeof name === "string" && name.trim().length > 0)
+      : members;
+  const crewWithRoles = assigned.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
 
   const { data: inv } = await admin.from("move_inventory").select("id, room, item_name").eq("move_id", m.id).order("room");
   const byRoom: Record<string, { id: string; item_name: string; quantity: number }[]> = {};

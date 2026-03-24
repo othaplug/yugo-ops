@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { normalizeDeliveryItem } from "@/lib/delivery-items";
 
 export async function GET(
   req: NextRequest,
@@ -56,14 +57,10 @@ export async function GET(
   const items: string[] = [];
 
   if (Array.isArray(delivery.items)) {
-    for (const item of delivery.items) {
-      if (typeof item === "string") {
-        items.push(item);
-      } else if (item && typeof item === "object") {
-        const name = (item as Record<string, unknown>).name || (item as Record<string, unknown>).description || "Item";
-        const qty = (item as Record<string, unknown>).quantity;
-        items.push(qty && Number(qty) > 1 ? `${name} (×${qty})` : String(name));
-      }
+    for (const raw of delivery.items) {
+      const { name, qty } = normalizeDeliveryItem(raw);
+      if (!name) continue;
+      items.push(qty > 1 ? `${name} (×${qty})` : name);
     }
   }
 

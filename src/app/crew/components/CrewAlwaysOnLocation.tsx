@@ -83,7 +83,7 @@ export default function CrewAlwaysOnLocation() {
   return (
     <div className="fixed bottom-4 left-4 z-40 md:left-[232px]">
       {status === "live" ? (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--card)] border border-[var(--brd)] shadow-lg text-[11px] font-medium text-[var(--tx2)]">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.08] shadow-lg text-[11px] font-medium text-[var(--tx2)]">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]" />
@@ -100,7 +100,7 @@ export default function CrewAlwaysOnLocation() {
               startTracking();
             }
           }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--card)] border border-[#F59E0B]/40 shadow-lg text-[11px] font-medium hover:border-[#F59E0B] transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F59E0B]/12 shadow-lg text-[11px] font-medium text-[var(--tx2)] hover:bg-[#F59E0B]/18 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F59E0B]/40 transition-colors"
         >
           <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
           <span className="text-[#F59E0B] font-semibold">

@@ -6,6 +6,7 @@ import type { CalendarEvent, ViewMode, YearHeatData } from "@/lib/calendar/types
 import { formatTime12, timeToMinutes, minutesToTime, STATUS_DOT_COLORS, JOB_COLORS } from "@/lib/calendar/types";
 import { CALENDAR_PILL_TEXT } from "@/lib/calendar/calendar-job-styles";
 import PartnerDeliveriesTab from "./PartnerDeliveriesTab";
+import { normalizeDeliveryItem } from "@/lib/delivery-items";
 
 const DELIVERY_STATUS_LABELS: Record<string, string> = {
   scheduled: "Scheduled",
@@ -637,7 +638,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                   <div className="p-3 h-full flex flex-col">
                     <div className="text-[12px] font-bold text-[#1A1A1A]">
                       {Array.isArray(d.items) && d.items.length > 0
-                        ? `${d.items.length}pc ${typeof d.items[0] === "string" ? d.items[0] : (d.items[0] as { name?: string })?.name || ""}`
+                        ? `${d.items.length}pc ${normalizeDeliveryItem(d.items[0]).name}`
                         : d.customer_name || d.delivery_number}
                     </div>
                     {d.delivery_address && (

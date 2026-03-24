@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createScheduleBlock, checkCrewConflict } from "@/lib/calendar/conflict-check";
 import { requireStaff } from "@/lib/api-auth";
+import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 
 export const dynamic = "force-dynamic";
 
@@ -130,6 +131,7 @@ export async function PATCH(req: NextRequest) {
         }
       }
 
+      const snap = await fetchCrewAssignmentSnapshot(db, crew_id);
       const { error: refError } = await db
         .from(table)
         .update({
@@ -138,6 +140,8 @@ export async function PATCH(req: NextRequest) {
           scheduled_start: start,
           scheduled_end: end,
           calendar_status: "scheduled",
+          assigned_members: snap.assigned_members,
+          assigned_crew_name: snap.assigned_crew_name,
         })
         .eq("id", event_id);
 
@@ -222,13 +226,19 @@ export async function POST(req: NextRequest) {
     if (reference_id) {
       const table = job_type === "move" ? "moves" : job_type === "delivery" ? "deliveries" : null;
       if (table) {
-        await db.from(table).update({
-          crew_id,
-          scheduled_start: start,
-          scheduled_end: end,
-          assigned_truck_id: truck_id || null,
-          calendar_status: "scheduled",
-        }).eq("id", reference_id);
+        const snap = await fetchCrewAssignmentSnapshot(db, crew_id);
+        await db
+          .from(table)
+          .update({
+            crew_id,
+            scheduled_start: start,
+            scheduled_end: end,
+            assigned_truck_id: truck_id || null,
+            calendar_status: "scheduled",
+            assigned_members: snap.assigned_members,
+            assigned_crew_name: snap.assigned_crew_name,
+          })
+          .eq("id", reference_id);
       }
     }
 

@@ -20,6 +20,7 @@ import PartnerProjectsTab from "./tabs/PartnerProjectsTab";
 import PartnerB2BProjectsTab from "./tabs/PartnerB2BProjectsTab";
 import PartnerRecurringTab from "./tabs/PartnerRecurringTab";
 import PartnerAnalyticsTab from "./tabs/PartnerAnalyticsTab";
+import PartnerInboundShipmentsTab from "./tabs/PartnerInboundShipmentsTab";
 import PartnerScheduleModal from "./PartnerScheduleModal";
 import PartnerShareModal from "./PartnerShareModal";
 import PartnerDeliveryDetailModal from "./PartnerDeliveryDetailModal";
@@ -31,6 +32,7 @@ import { usePartnerOrgDisplayName } from "./PartnerOrgContext";
 import { ToastProvider, useToast } from "@/app/admin/components/Toast";
 import YugoLogo from "@/components/YugoLogo";
 import Link from "next/link";
+import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 
 interface PortalFeatures {
   projects?: boolean;
@@ -295,6 +297,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
         { key: "history", label: `History (${data?.allDeliveries?.filter((d) => ["completed", "delivered"].includes((d.status || "").toLowerCase())).length ?? 0})` },
         { key: "calendar", label: "Calendar" },
         { key: "tracking", label: "Live Map" },
+        { key: "inbound", label: "Inbound" },
         ...(showProjects ? [{ key: "b2b-projects", label: "Projects" }] : []),
         // Old gallery projects tab: only for art_gallery org type, not designers
         ...(!isDesignerOrg && features.showProjects ? [{ key: "projects", label: `Gallery (${data?.projects?.length ?? 0})` }] : []),
@@ -727,7 +730,12 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                 );
                 const vendorList = projectDeliveries.map((d) => ({
                   vendor: d.client_name || d.delivery_number,
-                  items: Array.isArray(d.items) ? d.items.map((i: unknown) => typeof i === "string" ? i : (i as {name?: string})?.name || "").join(", ") : "",
+                  items: Array.isArray(d.items)
+                    ? normalizeDeliveryItemsForDisplay(d.items)
+                        .map((row) => (row.qty > 1 ? `${row.name} ×${row.qty}` : row.name))
+                        .filter(Boolean)
+                        .join(", ")
+                    : "",
                   status: (d.status || "").toLowerCase() === "delivered" ? "done"
                     : (d.status || "").toLowerCase() === "in-transit" || (d.status || "").toLowerCase() === "in_transit" ? "transit"
                     : (d.status || "").toLowerCase() === "cancelled" ? "late"
@@ -790,6 +798,9 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
           )}
           {activeTab === "tracking" && (
             <PartnerLiveMapTab orgId={orgId} />
+          )}
+          {activeTab === "inbound" && (
+            <PartnerInboundShipmentsTab />
           )}
           {activeTab === "invoices" && data && (
             <PartnerInvoicesTab invoices={data.invoices} />
