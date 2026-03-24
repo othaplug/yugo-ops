@@ -97,11 +97,6 @@ export default function CrewDashboardPage() {
   const isCompleted = (j: Job) => completedStatuses.includes((j.status || "").toLowerCase());
   const isInProgress = (j: Job) => (j.status || "").toLowerCase() === "in_progress";
 
-  // Always derive a real array: `data?.jobs.findIndex` throws when `jobs` is missing (optional chain only guards `data`).
-  const jobsForOrdering = Array.isArray(data?.jobs) ? data.jobs : [];
-  const firstIncompleteIndex = jobsForOrdering.findIndex((j) => !isCompleted(j));
-  const canStartJob = (index: number) => index === firstIncompleteIndex;
-
   if (loading) {
     return (
       <PageContent>
@@ -133,6 +128,8 @@ export default function CrewDashboardPage() {
 
   const { readinessRequired, readinessCompleted, isCrewLead, endOfDaySubmitted } = data;
   const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+  const firstIncompleteIndex = jobs.findIndex((j) => !isCompleted(j));
+  const canStartJob = (index: number) => index === firstIncompleteIndex;
 
   if (readinessRequired && !readinessCompleted) {
     if (isCrewLead) {

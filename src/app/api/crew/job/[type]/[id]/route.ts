@@ -23,75 +23,81 @@ export async function GET(
 
   if (jobType === "delivery") {
     const { data: d } = isUuid
-      ? await admin.from("deliveries").select("*").eq("id", jobId).single()
-      : await admin.from("deliveries").select("*").ilike("delivery_number", jobId).single();
-    if (d && d.crew_id === payload.teamId) {
-      const rawItems = Array.isArray(d.items) ? d.items : [];
-      const items = rawItems.map((name: string, i: number) => {
-        const { baseName, qty } = parseItemNameAndQty(name);
-        return { id: `noid-${i}`, item_name: baseName || name, quantity: qty };
-      });
-      const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", d.id).eq("status", "approved").order("added_at");
-      const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", d.crew_id).single();
-      const members = (crewRow?.members as string[] | null) || [];
-      const crewWithRoles = members.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
-      const fromAccess = (d as any).pickup_access || (d as any).from_access || null;
-      const toAccess = (d as any).delivery_access || (d as any).to_access || null;
-      const accessParts = [fromAccess, toAccess].filter(Boolean);
-      const access = accessParts.length ? accessParts.join(" -> ") : null;
+      ? await admin.from("deliveries").select("*").eq("id", jobId).maybeSingle()
+      : await admin.from("deliveries").select("*").ilike("delivery_number", jobId).maybeSingle();
 
-      // Fetch project context if linked
-      let projectContext: { projectName: string; projectNumber: string; phaseName: string | null } | null = null;
-      if ((d as any).project_id) {
-        const { data: proj } = await admin.from("projects").select("project_number, project_name").eq("id", (d as any).project_id).maybeSingle();
-        let phaseName: string | null = null;
-        if ((d as any).phase_id) {
-          const { data: ph } = await admin.from("project_phases").select("phase_name").eq("id", (d as any).phase_id).maybeSingle();
-          phaseName = ph?.phase_name ?? null;
-        }
-        if (proj) projectContext = { projectNumber: proj.project_number, projectName: proj.project_name, phaseName };
-      }
-
-      // Fetch delivery stops for day_rate bookings
-      const bookingType = (d as any).booking_type as string | null;
-      const { data: stops } = await admin
-        .from("delivery_stops")
-        .select("id, stop_number, address, customer_name, customer_phone, client_phone, items_description, special_instructions, notes, status, stop_status, stop_type, arrived_at, completed_at")
-        .eq("delivery_id", d.id)
-        .order("stop_number");
-
-      return NextResponse.json({
-        id: d.id,
-        jobId: d.delivery_number || d.id,
-        jobType: "delivery",
-        bookingType,
-        status: d.status || "scheduled",
-        stopsCompleted: (d as any).stops_completed || 0,
-        clientName: `${d.customer_name || ""}${d.client_name ? ` (${d.client_name})` : ""}`.trim() || "-",
-        fromAddress: d.pickup_address || "Warehouse",
-        toAddress: d.delivery_address || "-",
-        fromAccess,
-        toAccess,
-        accessNotes: (d as any).access_notes || (d as any).instructions || null,
-        arrivalWindow: (d as any).delivery_window || (d as any).time_slot || null,
-        scheduledDate: (d as any).scheduled_date || null,
-        access,
-        crewMembers: crewWithRoles,
-        jobTypeLabel: bookingType === "day_rate" ? `Day Rate · ${(stops || []).length} stops` : `Delivery · ${rawItems.length} items`,
-        itemCount: rawItems.length,
-        stops: (stops || []).map((s) => ({
-          ...s,
-          stop_status: s.stop_status || s.status || "pending",
-          stop_type: s.stop_type || "delivery",
-        })),
-        inventory: [{ room: "Items", items: rawItems, itemsWithId: items }],
-        extraItems: extra || [],
-        internalNotes: d.instructions || d.next_action || null,
-        scheduledTime: d.time_slot || null,
-        crewId: d.crew_id,
-        projectContext,
-      });
+    if (!d) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
+    if (d.crew_id !== payload.teamId) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+
+    const rawItems = Array.isArray(d.items) ? d.items : [];
+    const items = rawItems.map((name: string, i: number) => {
+      const { baseName, qty } = parseItemNameAndQty(name);
+      return { id: `noid-${i}`, item_name: baseName || name, quantity: qty };
+    });
+    const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", d.id).eq("status", "approved").order("added_at");
+    const { data: crewRow } = await admin.from("crews").select("id, name, members").eq("id", d.crew_id).single();
+    const members = (crewRow?.members as string[] | null) || [];
+    const crewWithRoles = members.map((name: string, i: number) => ({ name, role: i === 0 ? "Lead" : "Specialist" }));
+    const fromAccess = (d as any).pickup_access || (d as any).from_access || null;
+    const toAccess = (d as any).delivery_access || (d as any).to_access || null;
+    const accessParts = [fromAccess, toAccess].filter(Boolean);
+    const access = accessParts.length ? accessParts.join(" -> ") : null;
+
+    // Fetch project context if linked
+    let projectContext: { projectName: string; projectNumber: string; phaseName: string | null } | null = null;
+    if ((d as any).project_id) {
+      const { data: proj } = await admin.from("projects").select("project_number, project_name").eq("id", (d as any).project_id).maybeSingle();
+      let phaseName: string | null = null;
+      if ((d as any).phase_id) {
+        const { data: ph } = await admin.from("project_phases").select("phase_name").eq("id", (d as any).phase_id).maybeSingle();
+        phaseName = ph?.phase_name ?? null;
+      }
+      if (proj) projectContext = { projectNumber: proj.project_number, projectName: proj.project_name, phaseName };
+    }
+
+    // Fetch delivery stops for day_rate bookings
+    const bookingType = (d as any).booking_type as string | null;
+    const { data: stops } = await admin
+      .from("delivery_stops")
+      .select("id, stop_number, address, customer_name, customer_phone, client_phone, items_description, special_instructions, notes, status, stop_status, stop_type, arrived_at, completed_at")
+      .eq("delivery_id", d.id)
+      .order("stop_number");
+
+    return NextResponse.json({
+      id: d.id,
+      jobId: d.delivery_number || d.id,
+      jobType: "delivery",
+      bookingType,
+      status: d.status || "scheduled",
+      stopsCompleted: (d as any).stops_completed || 0,
+      clientName: `${d.customer_name || ""}${d.client_name ? ` (${d.client_name})` : ""}`.trim() || "-",
+      fromAddress: d.pickup_address || "Warehouse",
+      toAddress: d.delivery_address || "-",
+      fromAccess,
+      toAccess,
+      accessNotes: (d as any).access_notes || (d as any).instructions || null,
+      arrivalWindow: (d as any).delivery_window || (d as any).time_slot || null,
+      scheduledDate: (d as any).scheduled_date || null,
+      access,
+      crewMembers: crewWithRoles,
+      jobTypeLabel: bookingType === "day_rate" ? `Day Rate · ${(stops || []).length} stops` : `Delivery · ${rawItems.length} items`,
+      itemCount: rawItems.length,
+      stops: (stops || []).map((s) => ({
+        ...s,
+        stop_status: s.stop_status || s.status || "pending",
+        stop_type: s.stop_type || "delivery",
+      })),
+      inventory: [{ room: "Items", items: rawItems, itemsWithId: items }],
+      extraItems: extra || [],
+      internalNotes: d.instructions || d.next_action || null,
+      scheduledTime: d.time_slot || null,
+      crewId: d.crew_id,
+      projectContext,
+    });
   }
 
   const { data: m } = isUuid

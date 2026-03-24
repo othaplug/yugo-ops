@@ -5,13 +5,18 @@ import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from "react-l
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-/** Crew car icon for map markers */
-function makeCrewIcon() {
+const GOLD = "#C9A962";
+
+function makeCrewArrowIcon() {
   return L.divIcon({
-    className: "crew-marker truck-marker truck-marker-animated",
-    html: `<div style="position:relative;width:36px;height:36px;"><img src="/crew-car.png" alt="" width="36" height="36" style="display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));" /></div>`,
-    iconSize: [40, 44],
-    iconAnchor: [20, 40],
+    className: "crew-marker crew-marker-arrow",
+    html: `<div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center">
+      <svg width="44" height="44" viewBox="0 0 44 44" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.45))" aria-hidden="true">
+        <polygon points="22,5 34,36 22,29 10,36" fill="${GOLD}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+      </svg>
+    </div>`,
+    iconSize: [48, 48],
+    iconAnchor: [24, 24],
   });
 }
 
@@ -68,13 +73,13 @@ export function CrewMapLeaflet({
         <Marker
           key={c.id}
           position={[c.current_lat, c.current_lng]}
-          icon={makeCrewIcon()}
+          icon={makeCrewArrowIcon()}
           eventHandlers={{
             click: () => onCrewClick?.(c.id),
           }}
         >
           <Popup>{(c.name || "Crew").replace("Team ", "")}</Popup>
-          <Tooltip permanent direction="top" offset={[0, -36]} className="crew-label-tooltip">
+          <Tooltip permanent direction="top" offset={[0, -44]} className="crew-label-tooltip">
             {(c.name || "Crew").replace("Team ", "")}
           </Tooltip>
         </Marker>

@@ -19,7 +19,6 @@ import {
   Ranking,
 } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
-import YugoLogo from "@/components/YugoLogo";
 
 const BADGE_ICONS: Record<string, React.ReactNode> = {
   Trophy: <Trophy size={16} weight="fill" />,
@@ -123,27 +122,20 @@ export default function CrewStatsPage() {
   return (
     <PageContent>
       <div className="max-w-[520px] mx-auto">
-        {/* Yugo+ branded hero */}
         <section className="relative overflow-hidden rounded-2xl border border-[var(--brd)]/50 bg-gradient-to-br from-[var(--card)] via-[var(--bg)] to-[var(--card)] p-6 sm:p-7 mb-8 shadow-sm">
           <div
             className="pointer-events-none absolute -top-12 right-0 h-40 w-40 rounded-full bg-[var(--gold)]/[0.07] blur-3xl"
             aria-hidden
           />
-          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[var(--gold)]/30 bg-[var(--gold)]/10">
-              <YugoLogo size={34} variant="gold" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--gold)]">Yugo+ Crew</p>
-              <h1 className="font-hero text-[26px] font-bold leading-tight text-[var(--tx)] sm:text-[28px]">
-                Stats &amp; Leaderboard
-              </h1>
-              <p className="mt-2 text-[13px] text-[var(--tx3)]">
-                <span className="font-semibold text-[var(--tx2)]">{stats.teamName ?? "Team"}</span>
-                <span className="text-[var(--tx3)]/80"> · </span>
-                {monthLabel}
-              </p>
-            </div>
+          <div className="relative min-w-0">
+            <h1 className="font-hero text-[26px] font-bold leading-tight text-[var(--tx)] sm:text-[28px]">
+              Stats &amp; Leaderboard
+            </h1>
+            <p className="mt-2 text-[13px] text-[var(--tx3)]">
+              <span className="font-semibold text-[var(--tx2)]">{stats.teamName ?? "Team"}</span>
+              <span className="text-[var(--tx3)]/80"> · </span>
+              {monthLabel}
+            </p>
           </div>
           <div
             className="relative mt-6 h-px w-full bg-gradient-to-r from-transparent via-[var(--gold)]/45 to-transparent"

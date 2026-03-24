@@ -38,8 +38,16 @@ const MapboxMap = dynamic(
           >
             {crews.map((c) => (
               <Marker key={c.id} longitude={c.current_lng} latitude={c.current_lat} anchor="center">
-                <div className="cursor-pointer hover:scale-110 transition-transform truck-marker-animated" title={c.name}>
-                  <img src="/crew-car.png" alt="" width={40} height={40} className="block drop-shadow-md" />
+                <div className="cursor-pointer hover:scale-110 transition-transform flex items-center justify-center w-12 h-12" title={c.name}>
+                  <svg width="44" height="44" viewBox="0 0 44 44" className="drop-shadow-md" aria-hidden>
+                    <polygon
+                      points="22,5 34,36 22,29 10,36"
+                      fill="#C9A962"
+                      stroke="white"
+                      strokeWidth="2.5"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </div>
               </Marker>
             ))}

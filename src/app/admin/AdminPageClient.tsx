@@ -30,6 +30,7 @@ import {
   Eye,
   CheckCircle,
   Clock,
+  CloudSun,
 } from "@phosphor-icons/react";
 import RevenueForecastWidget from "@/components/admin/RevenueForecastWidget";
 import { buildPrecipAlertText, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
@@ -202,6 +203,15 @@ function formatRelative(iso: string): string {
   return `${Math.floor(sec / 3600)}h ago`;
 }
 
+function formatAdminHeaderWeather(brief: MoveWeatherBrief): string {
+  const raw = brief.conditionsSummary.trim();
+  const cap = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : "Forecast";
+  if (brief.tempLowC === brief.tempHighC) {
+    return `${cap} · ${brief.tempHighC}°C`;
+  }
+  return `${cap} · ${brief.tempLowC}°–${brief.tempHighC}°C`;
+}
+
 const TAG_COLORS: Record<string, string> = {
   retail: "text-[var(--gold)]/80",
   Retail: "text-[var(--gold)]/80",
@@ -253,6 +263,8 @@ export default function AdminPageClient({
   const [trafficLoading, setTrafficLoading] = useState(false);
   const [weatherByMoveId, setWeatherByMoveId] = useState<Record<string, { brief: MoveWeatherBrief; alert: string | null }>>({});
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [hqWeather, setHqWeather] = useState<{ brief: MoveWeatherBrief; alert: string | null } | null>(null);
+  const [hqWeatherLoading, setHqWeatherLoading] = useState(true);
   const [briefOpen, setBriefOpen] = useState(true);
 
   const refresh = useCallback(async () => { router.refresh(); }, [router]);
@@ -276,6 +288,27 @@ export default function AdminPageClient({
     load();
     const id = setInterval(load, 15_000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHqWeatherLoading(true);
+    fetch("/api/admin/hq-weather")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("hq-weather"))))
+      .then((d: { brief?: MoveWeatherBrief | null; alert?: string | null }) => {
+        if (cancelled) return;
+        if (d.brief) setHqWeather({ brief: d.brief, alert: d.alert ?? null });
+        else setHqWeather(null);
+      })
+      .catch(() => {
+        if (!cancelled) setHqWeather(null);
+      })
+      .finally(() => {
+        if (!cancelled) setHqWeatherLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ── Client-side weather fetch (moves + deliveries) ──
@@ -363,7 +396,6 @@ export default function AdminPageClient({
   if (actionTasks.length > 0) summaryParts.push(`${actionTasks.length} task${actionTasks.length > 1 ? "s" : ""}`);
   if (todayJobCount > 0) summaryParts.push(`${todayJobCount} job${todayJobCount > 1 ? "s" : ""} today`);
   if (liveSessions.length > 0) summaryParts.push(`${liveSessions.length} crew${liveSessions.length > 1 ? "s" : ""} active`);
-  if (currentMonthRevenue > 0) summaryParts.push(`${formatCompactCurrency(currentMonthRevenue)} this month`);
   if (activeQuotesCount > 0) summaryParts.push(`${activeQuotesCount} open quote${activeQuotesCount > 1 ? "s" : ""}`);
 
   const hasJobs = todayJobs.length > 0 || upcomingJobs.length > 0;
@@ -445,7 +477,26 @@ export default function AdminPageClient({
             <h1 className="font-heading text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
               {greeting}
             </h1>
-            <p className="text-[12px] text-[var(--tx3)] font-medium mt-1">{dateStr}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--tx3)] font-medium">
+              <span>{dateStr}</span>
+              {hqWeatherLoading && (
+                <span
+                  className="inline-block h-3 w-[9.5rem] max-w-[55vw] rounded bg-[var(--brd)]/45 animate-pulse"
+                  aria-hidden
+                />
+              )}
+              {!hqWeatherLoading && hqWeather?.brief && (
+                <>
+                  <span className="text-[var(--brd)] select-none" aria-hidden>
+                    ·
+                  </span>
+                  <span className="inline-flex items-center gap-1 min-w-0" title={hqWeather.alert ?? undefined}>
+                    <CloudSun size={14} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
+                    <span className="truncate">{formatAdminHeaderWeather(hqWeather.brief)}</span>
+                  </span>
+                </>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {/* Quick Actions button */}

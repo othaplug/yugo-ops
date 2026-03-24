@@ -5,14 +5,20 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-/** Regular tracker marker (circle, no car). Purple everywhere to match route. */
-function makeCrewIcon(_mapTheme: "light" | "dark" = "light") {
-  const fill = "#8B5CF6";
+const CREW_GOLD = "#C9A962";
+
+/** Directional arrow for crew position — same geometry as client tracking maps. */
+function makeCrewArrowIcon(bearingDeg: number | null) {
+  const rot = bearingDeg != null ? bearingDeg : 0;
   return L.divIcon({
-    className: "crew-marker-tracker",
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:${fill};border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    className: "crew-marker crew-marker-arrow",
+    html: `<div style="position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center">
+      <svg width="44" height="44" viewBox="0 0 44 44" style="transform:rotate(${rot}deg);transition:transform 0.8s ease-out;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.55))" aria-hidden="true">
+        <polygon points="22,5 34,36 22,29 10,36" fill="${CREW_GOLD}" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+      </svg>
+    </div>`,
+    iconSize: [48, 48],
+    iconAnchor: [24, 24],
   });
 }
 
@@ -63,6 +69,7 @@ export function LiveTrackingMapLeaflet({
   center,
   crew,
   crewName,
+  crewBearing = null,
   pickup,
   dropoff,
   destination,
@@ -72,6 +79,7 @@ export function LiveTrackingMapLeaflet({
   center: { longitude: number; latitude: number };
   crew: { current_lat: number; current_lng: number; name?: string } | null;
   crewName?: string;
+  crewBearing?: number | null;
   /** Pickup coords — green marker */
   pickup?: { lat: number; lng: number };
   /** Dropoff coords — gold marker */
@@ -140,7 +148,7 @@ export function LiveTrackingMapLeaflet({
       {hasPosition && crew && (
         <Marker
           position={[crew.current_lat, crew.current_lng]}
-          icon={makeCrewIcon(mapTheme)}
+          icon={makeCrewArrowIcon(crewBearing ?? null)}
         >
           <Popup>{(crewName || crew.name || "Crew").replace("Team ", "")}</Popup>
         </Marker>

@@ -160,9 +160,11 @@ export default function CrewJobPage({
 
   const fetchJob = useCallback(async () => {
     const r = await fetch(`/api/crew/job/${jobType}/${id}`);
-    if (!r.ok) throw new Error("Job not found");
-    const d = await r.json();
-    setJob(d);
+    const d = (await r.json().catch(() => ({}))) as { error?: string } & Partial<JobDetail>;
+    if (!r.ok) {
+      throw new Error(typeof d.error === "string" && d.error.trim() ? d.error : "Job not found");
+    }
+    setJob(d as JobDetail);
   }, [jobType, id]);
 
   const fetchSession = useCallback(async () => {

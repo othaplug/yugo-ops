@@ -22,6 +22,16 @@ type RouteGeoJson = {
   geometry: { type: "LineString"; coordinates: [number, number][] };
 } | null;
 
+function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLng = toRad(to.lng - from.lng);
+  const lat1 = toRad(from.lat);
+  const lat2 = toRad(to.lat);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
 const MapboxMap = dynamic(
   () => import("react-map-gl/mapbox").then((mod) => {
     const M = mod.default;
@@ -34,6 +44,7 @@ const MapboxMap = dynamic(
       hasPosition,
       crew,
       crewName,
+      crewBearing,
       token,
       mapStyle,
       pickup,
@@ -45,6 +56,7 @@ const MapboxMap = dynamic(
       hasPosition: boolean;
       crew: { current_lat: number; current_lng: number; name?: string } | null;
       crewName?: string;
+      crewBearing: number | null;
       token: string;
       mapStyle: string;
       pickup?: { lat: number; lng: number };
@@ -87,10 +99,30 @@ const MapboxMap = dynamic(
           {hasPosition && crew && (
             <Marker longitude={crew.current_lng} latitude={crew.current_lat} anchor="center">
               <div
-                className="w-4 h-4 rounded-full border-2 border-white shadow-md"
-                style={{ backgroundColor: routeLineColor ?? "#C9A962" }}
+                className="relative flex items-center justify-center"
+                style={{ width: 48, height: 48 }}
                 title={crewName || crew.name || "Crew"}
-              />
+              >
+                <svg
+                  width="44"
+                  height="44"
+                  viewBox="0 0 44 44"
+                  style={{
+                    transform: crewBearing != null ? `rotate(${crewBearing}deg)` : "none",
+                    transition: "transform 0.8s ease-out",
+                    filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.55))",
+                  }}
+                  aria-hidden
+                >
+                  <polygon
+                    points="22,5 34,36 22,29 10,36"
+                    fill={routeLineColor ?? "#C9A962"}
+                    stroke="white"
+                    strokeWidth="2.5"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
             </Marker>
           )}
           <Nav position="bottom-right" showCompass showZoom />
@@ -162,6 +194,8 @@ export default function LiveTrackingMap({
   const [routePositions, setRoutePositions] = useState<[number, number][]>([]);
   const [resolvedPickup, setResolvedPickup] = useState<{ lat: number; lng: number } | null>(null);
   const [resolvedDropoff, setResolvedDropoff] = useState<{ lat: number; lng: number } | null>(null);
+  const [crewBearing, setCrewBearing] = useState<number | null>(null);
+  const prevCrewPosRef = useRef<{ lat: number; lng: number } | null>(null);
   const supabase = createClient();
   const { theme } = useTheme();
   const mapStyle = theme === "light"
@@ -250,6 +284,19 @@ export default function LiveTrackingMap({
       supabase.removeChannel(channel);
     };
   }, [crewId]);
+
+  useEffect(() => {
+    if (!crew || crew.current_lat == null || crew.current_lng == null) {
+      prevCrewPosRef.current = null;
+      return;
+    }
+    const curr = { lat: crew.current_lat, lng: crew.current_lng };
+    const prev = prevCrewPosRef.current;
+    if (prev && (prev.lat !== curr.lat || prev.lng !== curr.lng)) {
+      setCrewBearing(calcBearing(prev, curr));
+    }
+    prevCrewPosRef.current = curr;
+  }, [crew?.current_lat, crew?.current_lng]);
 
   // Fetch and subscribe to live stage when moveId OR deliveryId provided
   const sessionChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -452,6 +499,7 @@ export default function LiveTrackingMap({
                 ? { current_lat: crew.current_lat, current_lng: crew.current_lng, name: crew.name }
                 : null}
               crewName={crewName}
+              crewBearing={crewBearing}
               pickup={effectivePickup ?? undefined}
               dropoff={effectiveDropoff ?? undefined}
               destination={effectiveDestination ?? undefined}
@@ -530,6 +578,7 @@ export default function LiveTrackingMap({
               ? { current_lat: crew.current_lat, current_lng: crew.current_lng, name: crew.name }
               : null}
             crewName={crewName}
+            crewBearing={crewBearing}
             mapStyle={mapStyle}
             pickup={effectivePickup ?? undefined}
             dropoff={effectiveDropoff ?? undefined}

@@ -277,9 +277,7 @@ const GodEyeMap = dynamic(
                 const status = loc?.status || (hasJobSession && c.status === "en-route" ? "en_route_pickup" : "idle");
                 const ringColor = teamColor(c.id);
                 const offMin = getOfflineMinutes(loc?.updated_at || c.updated_at);
-                const isNearOffice = haversineM(c.current_lat!, c.current_lng!, office.lat, office.lng) < office.radiusM;
                 const isSelected = selectedCrew === c.id;
-                const speedKmh = loc?.speed != null ? Math.round(Number(loc.speed) * 3.6) : null;
                 const heading = loc?.heading != null ? Number(loc.heading) : null;
 
                 let warningBadge: "yellow" | "red" | null = null;
@@ -287,10 +285,6 @@ const GodEyeMap = dynamic(
                   if (offMin >= 15) warningBadge = "red";
                   else if (offMin >= 5) warningBadge = "yellow";
                 }
-
-                const initials = (c.name || "?").replace("Team ", "").slice(0, 2).toUpperCase();
-
-                const vanWindowColor = isNearOffice && !isOnJob(status) ? "#6B7280" : ringColor;
 
                 return (
                   <Marker key={c.id} longitude={c.current_lng!} latitude={c.current_lat!} anchor="center">
@@ -300,7 +294,7 @@ const GodEyeMap = dynamic(
                       className={`relative cursor-pointer transition-transform ${isSelected ? "scale-125 z-10" : "hover:scale-110"}`}
                       title={`${c.name}, ${getStatusLabel(status)}`}
                     >
-                      {/* Glass pill label, always horizontal above the van */}
+                      {/* Glass pill label, always horizontal above the marker */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex flex-col items-center gap-0.5 pointer-events-none max-w-[min(200px,70vw)]">
                         <div
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap"
@@ -324,36 +318,36 @@ const GodEyeMap = dynamic(
                         </span>
                       </div>
 
-                      {/* Top-down van SVG, rotates with GPS heading */}
-                      <div style={{ transform: heading != null ? `rotate(${heading}deg)` : undefined }}>
-                        <svg
-                          width="22" height="40" viewBox="0 0 22 40" fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
+                      {/* Directional arrow (same geometry as client/partner tracking maps), rotates with GPS heading */}
+                      <div className="relative flex h-[52px] w-[52px] items-center justify-center">
+                        <span
+                          className="absolute rounded-full animate-ping"
                           style={{
-                            filter: `drop-shadow(0 0 8px ${ringColor}80) drop-shadow(0 2px 6px rgba(0,0,0,0.75))`,
+                            inset: 6,
+                            background: ringColor,
+                            opacity: isOnJob(status) ? 0.2 : 0.12,
+                            animationDuration: "2s",
                           }}
+                          aria-hidden
+                        />
+                        <svg
+                          width="44"
+                          height="44"
+                          viewBox="0 0 44 44"
+                          style={{
+                            transform: heading != null ? `rotate(${heading}deg)` : "none",
+                            transition: "transform 0.8s ease-out",
+                            filter: `drop-shadow(0 2px 6px rgba(0,0,0,0.6)) drop-shadow(0 0 10px ${ringColor}66)`,
+                          }}
+                          aria-hidden
                         >
-                          {/* Body */}
-                          <rect x="1.5" y="4" width="19" height="32" rx="4" fill="white" fillOpacity={isSelected ? 1 : 0.96} />
-                          {/* Windshield / cab at top (front) */}
-                          <rect x="3" y="5" width="16" height="8" rx="2.5" fill={vanWindowColor} fillOpacity="0.88" />
-                          {/* Center divider */}
-                          <rect x="10" y="14" width="2" height="19" rx="1" fill="black" fillOpacity="0.07" />
-                          {/* Wheel wells */}
-                          <ellipse cx="1.5" cy="12" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
-                          <ellipse cx="1.5" cy="28" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
-                          <ellipse cx="20.5" cy="12" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
-                          <ellipse cx="20.5" cy="28" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
-                          {/* Headlights */}
-                          <rect x="3" y="4" width="5" height="2.5" rx="1" fill="rgba(255,255,200,0.9)" />
-                          <rect x="14" y="4" width="5" height="2.5" rx="1" fill="rgba(255,255,200,0.9)" />
-                          {/* Tail lights */}
-                          <rect x="3" y="34" width="5" height="2.5" rx="1" fill="rgba(255,70,70,0.75)" />
-                          <rect x="14" y="34" width="5" height="2.5" rx="1" fill="rgba(255,70,70,0.75)" />
-                          {/* Selected highlight ring */}
-                          {isSelected && (
-                            <rect x="1.5" y="4" width="19" height="32" rx="4" fill={ringColor} fillOpacity="0.15" />
-                          )}
+                          <polygon
+                            points="22,5 34,36 22,29 10,36"
+                            fill={ringColor}
+                            stroke="white"
+                            strokeWidth="2.5"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </div>
 
