@@ -1440,7 +1440,7 @@ function InventoryVolumeSection() {
           value={itemSearch}
           onChange={(e) => setItemSearch(e.target.value)}
           placeholder="Search items…"
-          className="w-full mb-3 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none"
+          className="field-input-compact w-full mb-3"
         />
 
         {iw.loading ? (

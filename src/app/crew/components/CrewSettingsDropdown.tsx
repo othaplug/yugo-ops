@@ -106,7 +106,7 @@ export default function CrewSettingsDropdown() {
                   role="switch"
                   aria-checked={settings.reduceMotion}
                   onClick={() => updateSetting("reduceMotion", !settings.reduceMotion)}
-                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${settings.reduceMotion ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                  className={`crew-keep-round relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${settings.reduceMotion ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
                 >
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${settings.reduceMotion ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
@@ -118,7 +118,7 @@ export default function CrewSettingsDropdown() {
                   role="switch"
                   aria-checked={settings.lowDataMode}
                   onClick={() => updateSetting("lowDataMode", !settings.lowDataMode)}
-                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${settings.lowDataMode ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
+                  className={`crew-keep-round relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${settings.lowDataMode ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}
                 >
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${settings.lowDataMode ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
@@ -130,7 +130,7 @@ export default function CrewSettingsDropdown() {
             <form action="/api/crew/logout" method="POST">
               <button
                 type="submit"
-                className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[11px] font-medium text-[var(--red)] hover:bg-[var(--rdim)] transition-colors"
+                className="flex items-center gap-2.5 w-full px-4 py-2 text-[11px] font-medium text-[var(--red)] hover:bg-[var(--rdim)] transition-colors"
               >
                 <SignOut size={14} />
                 Sign out

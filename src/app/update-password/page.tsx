@@ -74,7 +74,6 @@ export default function UpdatePasswordPage() {
   const cardBorder = isLight ? "#E0DDD8" : "#2A2A2A";
   const text = isLight ? "#1A1A1A" : "#F5F5F3";
   const muted = isLight ? "#555" : "#666";
-  const inputBg = isLight ? "#FFF" : "#0D0D0D";
 
   if (checking) {
     return (
@@ -92,7 +91,7 @@ export default function UpdatePasswordPage() {
       <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", position: "relative", zIndex: 1, animation: "loginFadeIn 0.6s ease" }}>
         <style>{`
           @keyframes loginFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-          .li:focus { border-color: #C9A962 !important; }
+          .li:focus { border-bottom-color: rgba(201,169,98,0.65) !important; box-shadow: none !important; }
           .li::placeholder { color: #444; }
           .lb:hover:not(:disabled) { background: #D4B56C !important; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(201,169,98,0.25); }
         `}</style>
@@ -156,10 +155,22 @@ export default function UpdatePasswordPage() {
                       required
                       minLength={8}
                       autoFocus
-                      style={{ width: "100%", padding: "12px 36px 12px 16px", background: inputBg, border: `1px solid ${cardBorder}`, borderRadius: 10, color: text, fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: "none", transition: "border-color 0.2s" }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 36px 12px 0",
+                        background: "transparent",
+                        border: "none",
+                        borderBottom: `1px solid ${isLight ? "#C5C2BC" : "#3A3A3E"}`,
+                        borderRadius: 0,
+                        color: text,
+                        fontSize: 14,
+                        fontFamily: "'DM Sans', sans-serif",
+                        outline: "none",
+                        transition: "border-color 0.2s",
+                      }}
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide" : "Show"}
-                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#666", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#666", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {showPassword ? (
                         <Eye size={14} weight="regular" className="text-current" />
                       ) : (
@@ -180,7 +191,19 @@ export default function UpdatePasswordPage() {
                     onChange={(e) => setConfirm(e.target.value)}
                     required
                     minLength={8}
-                    style={{ width: "100%", padding: "12px 16px", background: inputBg, border: `1px solid ${cardBorder}`, borderRadius: 10, color: text, fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: "none", transition: "border-color 0.2s" }}
+                    style={{
+                      width: "100%",
+                      padding: "12px 0",
+                      background: "transparent",
+                      border: "none",
+                      borderBottom: `1px solid ${isLight ? "#C5C2BC" : "#3A3A3E"}`,
+                      borderRadius: 0,
+                      color: text,
+                      fontSize: 14,
+                      fontFamily: "'DM Sans', sans-serif",
+                      outline: "none",
+                      transition: "border-color 0.2s",
+                    }}
                   />
                 </div>
 

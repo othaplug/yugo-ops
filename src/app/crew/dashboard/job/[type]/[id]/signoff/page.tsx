@@ -543,7 +543,7 @@ export default function ClientSignOffPage({
           <p className="text-[var(--text-base)] mb-6" style={{ color: MUTED }}>This job has already been signed off.</p>
           <Link
             href={`/crew/dashboard/job/${jobType}/${id}`}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-[13px] transition-opacity hover:opacity-85"
+            className="inline-flex items-center gap-2 px-4 py-2 font-semibold text-[13px] transition-opacity hover:opacity-85"
             style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
           >
             <ChevronLeft size={14} /> Back to Job
@@ -745,7 +745,7 @@ export default function ClientSignOffPage({
             <button
               onClick={() => setPhase(2)}
               disabled={!phase1Valid}
-              className="w-full py-3.5 rounded-full font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
+              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
               Continue to Confirmation
@@ -841,7 +841,7 @@ export default function ClientSignOffPage({
             <button
               onClick={() => setPhase(3)}
               disabled={!phase2Valid}
-              className="w-full py-3.5 rounded-full font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
+              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
               Continue to Rating
@@ -1010,7 +1010,7 @@ export default function ClientSignOffPage({
             <button
               onClick={() => setPhase(4)}
               disabled={!phase3Valid}
-              className="w-full py-3.5 rounded-full font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
+              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
               Continue to Sign
@@ -1120,7 +1120,7 @@ export default function ClientSignOffPage({
             <button
               onClick={handleSubmit}
               disabled={submitting || !clientName.trim()}
-              className="w-full py-3.5 rounded-full font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
+              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
               {submitting ? "Submitting…" : "Confirm & Sign Off"}
@@ -1176,7 +1176,7 @@ export default function ClientSignOffPage({
             )}
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}`}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-[var(--text-base)] transition-opacity hover:opacity-85"
+              className="inline-flex items-center gap-2 px-4 py-2 font-semibold text-[var(--text-base)] transition-opacity hover:opacity-85"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
               <ChevronLeft size={14} /> Back to Job
@@ -1244,7 +1244,7 @@ export default function ClientSignOffPage({
             <button
               onClick={handleSkipSubmit}
               disabled={skipSubmitting || !skipReason || (skipReason === "other" && !skipNote.trim())}
-              className="w-full py-3.5 rounded-full font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 bg-red-500 text-white mb-3"
+              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 bg-red-500 text-white mb-3"
             >
               {skipSubmitting ? "Submitting…" : "Confirm Skip"}
             </button>
@@ -1252,7 +1252,7 @@ export default function ClientSignOffPage({
             <button
               type="button"
               onClick={() => setPhase(1)}
-              className="w-full py-3 rounded-full font-medium text-[13px] border transition-colors"
+              className="w-full py-2 font-medium text-[13px] border transition-colors"
               style={{ color: MUTED, borderColor: BORDER }}
             >
               Go back

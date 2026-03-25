@@ -417,7 +417,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   };
 
   const fieldInput =
-    "w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
+    "field-input-compact w-full";
   const fmtCurrency = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   const isLastStep =

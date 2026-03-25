@@ -16,8 +16,7 @@ interface Crew {
   members?: string[];
 }
 
-const fieldInput =
-  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors";
+const fieldInput = "field-input-compact w-full";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -372,7 +371,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
           </ul>
         )}
         <div className="flex gap-2 items-center">
-          <input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="e.g. Sectional sofa" className="flex-1 min-w-0 text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none transition-colors" onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addItem())} />
+          <input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} placeholder="e.g. Sectional sofa" className={`flex-1 min-w-0 ${fieldInput}`} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addItem())} />
           <input type="number" min={1} value={newItemQty} onChange={(e) => setNewItemQty(Number(e.target.value) || 1)} className="w-12 text-center text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none transition-colors" />
           <button type="button" onClick={addItem} disabled={!newItemName.trim()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 shrink-0">
             <Plus className="w-[14px] h-[14px]" /> Add

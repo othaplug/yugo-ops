@@ -62,7 +62,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const fieldInput =
-    "w-full text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors";
+    "field-input-compact w-full";
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

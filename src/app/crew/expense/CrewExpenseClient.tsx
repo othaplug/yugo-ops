@@ -156,7 +156,7 @@ export default function CrewExpenseClient() {
                 key={c.id}
                 type="button"
                 onClick={() => setCategory(c.id)}
-                className={`px-4 py-2.5 rounded-xl text-[12px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/40 ${
+                className={`px-3 py-2 text-[12px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/40 ${
                   category === c.id
                     ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm"
                     : "bg-white/[0.06] text-[var(--tx2)] hover:bg-white/[0.1] active:bg-white/[0.12]"
@@ -220,7 +220,7 @@ export default function CrewExpenseClient() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingReceipt}
-              className="px-4 py-2.5 rounded-xl text-[13px] font-medium text-[var(--tx)] bg-white/[0.06] hover:bg-[var(--gold)]/12 hover:text-[var(--gold)] disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/35"
+              className="px-3 py-2 text-[13px] font-medium text-[var(--tx)] bg-white/[0.06] hover:bg-[var(--gold)]/12 hover:text-[var(--gold)] disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/35"
             >
               {uploadingReceipt ? "Uploading…" : receiptStoragePath ? "Change receipt" : "Add receipt"}
             </button>
@@ -241,7 +241,7 @@ export default function CrewExpenseClient() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-4 rounded-xl font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
+            className="w-full py-2.5 font-semibold text-[15px] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[#D4B56C] disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
           >
             {submitting ? "Submitting…" : "Submit expense"}
           </button>

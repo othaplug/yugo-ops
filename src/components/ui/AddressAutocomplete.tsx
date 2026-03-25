@@ -301,9 +301,9 @@ export default function AddressAutocomplete({
     }
   };
 
-  const inputClass =
-    "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all " +
-    (className || "");
+  const boxedFallback =
+    "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
+  const inputClass = className.trim() ? className.trim() : boxedFallback;
 
   return (
     <div ref={containerRef} className="w-full relative">

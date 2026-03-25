@@ -74,11 +74,11 @@ export default function AdminLoginPage() {
           background-size: 48px 48px;
         }
         .adm-input {
-          width: 100%; padding: 12px 14px; background: #08080A; border: 1px solid #1E1E22;
-          border-radius: 10px; color: #E8E5E0; font-size: 14px; font-family: 'DM Sans', sans-serif;
-          outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+          width: 100%; padding: 12px 0; background: transparent; border: none; border-bottom: 1px solid #3A3A3E;
+          border-radius: 0; color: #E8E5E0; font-size: 14px; font-family: 'DM Sans', sans-serif;
+          outline: none; transition: border-color 0.2s;
         }
-        .adm-input:focus { border-color: rgba(201,169,98,0.55); box-shadow: 0 0 0 3px rgba(201,169,98,0.1); }
+        .adm-input:focus { border-bottom-color: rgba(201,169,98,0.65); box-shadow: none; }
         .adm-input::placeholder { color: #3A3A3E; }
         .adm-btn {
           width: 100%; padding: 13px; background: linear-gradient(135deg, #C9A962 0%, #B89A52 100%);
@@ -129,7 +129,7 @@ export default function AdminLoginPage() {
                   <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 7 }}>Password</label>
                   <div style={{ position: "relative" }}>
                     <input className="adm-input" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required
-                      style={{ paddingRight: 36 }} />
+                      style={{ paddingRight: 32 }} />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Toggle"
                       style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#4A4A4E" }}>
                       {showPassword ? (

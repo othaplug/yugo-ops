@@ -278,33 +278,32 @@ export default function CrewDashboardPage() {
                     className={`py-5 sm:py-6${!completed && !inProgress && !canStart ? " opacity-[0.72]" : ""}`}
                   >
                   <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex gap-3 min-w-0 flex-1">
-                      <span
-                        className="w-8 h-8 rounded-xl flex items-center justify-center text-[12px] font-bold shrink-0"
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className="mb-1 flex items-center tabular-nums"
                         style={{
-                          background: completed ? "rgba(34,197,94,0.14)" : inProgress ? "rgba(245,158,11,0.14)" : "var(--gdim)",
                           color: completed ? "#22C55E" : inProgress ? "#F59E0B" : "var(--gold)",
                         }}
                       >
                         {completed ? (
-                          <Check size={16} weight="bold" />
+                          <Check size={26} weight="bold" aria-hidden />
                         ) : (
-                          index + 1
+                          <span className="text-[26px] sm:text-[28px] font-bold leading-none tracking-tight">
+                            {index + 1}
+                          </span>
                         )}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[15px] font-semibold text-[var(--tx)] truncate block leading-snug">
-                          {job.clientName}
-                        </span>
-                        <span className="text-[10px] text-[var(--tx3)] font-mono tracking-tight block mt-0.5">{job.jobId}</span>
-                        <JobConditionsInline
-                          job={job}
-                          weatherByJobId={weatherByJobId}
-                          trafficByJobId={trafficByJobId}
-                          trafficLoading={trafficLoading}
-                          className="mt-2.5"
-                        />
                       </div>
+                      <span className="text-[15px] font-semibold text-[var(--tx)] truncate block leading-snug">
+                        {job.clientName}
+                      </span>
+                      <span className="text-[10px] text-[var(--tx3)] font-mono tracking-tight block mt-0.5">{job.jobId}</span>
+                      <JobConditionsInline
+                        job={job}
+                        weatherByJobId={weatherByJobId}
+                        trafficByJobId={trafficByJobId}
+                        trafficLoading={trafficLoading}
+                        className="mt-2.5"
+                      />
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       {statusInfo ? (
@@ -324,7 +323,7 @@ export default function CrewDashboardPage() {
                   </div>
 
                   {/* Addresses */}
-                  <div className="ml-[44px] flex gap-2.5">
+                  <div className="flex gap-2.5">
                       {/* Dot + connector column */}
                       <div className="flex flex-col items-center shrink-0 pt-0.5">
                         <div className="w-4 h-4 rounded-full border-2 border-[var(--gold)]/50 flex items-center justify-center shrink-0">
@@ -343,7 +342,7 @@ export default function CrewDashboardPage() {
                     </div>
 
                     {/* Type + items */}
-                    <div className="ml-[44px] mt-3 flex flex-wrap items-center gap-2 text-[10px] text-[var(--tx3)]">
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-[var(--tx3)]">
                       <span className="px-2 py-0.5 rounded-md bg-[var(--bg)] font-medium">{job.jobTypeLabel}</span>
                       {job.eventPhase && (
                         <span
@@ -367,7 +366,7 @@ export default function CrewDashboardPage() {
                     </div>
 
                     {/* Action area */}
-                    <div className="mt-3 ml-[44px]">
+                    <div className="mt-3">
                       {completed ? (
                         <Link
                           href={`/crew/dashboard/job/${job.jobType}/${job.id}`}

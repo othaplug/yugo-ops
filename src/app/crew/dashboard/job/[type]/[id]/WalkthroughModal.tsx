@@ -368,6 +368,7 @@ export default function WalkthroughModal({
     <div
       className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99995] animate-fade-in p-4 sm:p-5"
       data-modal-root
+      data-crew-portal
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
     >
       <div
@@ -388,7 +389,7 @@ export default function WalkthroughModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
+            className="p-1.5 text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
           >
             <X size={16} />
           </button>
@@ -420,14 +421,14 @@ export default function WalkthroughModal({
               <div className="flex flex-col gap-2 pt-2">
                 <button
                   onClick={() => setStep("checklist")}
-                  className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white"
+                  className="w-full py-2 font-bold text-[var(--text-base)] text-white"
                   style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                 >
                   Start Inventory Check
                 </button>
                 <button
                   onClick={() => setStep("skip")}
-                  className="w-full py-2.5 rounded-xl text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--tx2)] transition-colors"
+                  className="w-full py-2 text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--tx2)] transition-colors"
                 >
                   Skip (with reason)
                 </button>
@@ -502,7 +503,7 @@ export default function WalkthroughModal({
                           {item.status !== "here" && (
                             <button
                               onClick={() => setItemStatus(item.id, "here")}
-                              className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#22C55E]/10 text-[#22C55E] hover:bg-[#22C55E]/20 transition-colors active:scale-95"
+                              className="shrink-0 px-2 py-1 text-[11px] font-semibold bg-[#22C55E]/10 text-[#22C55E] hover:bg-[#22C55E]/20 transition-colors active:scale-95"
                             >
                               Here
                             </button>
@@ -510,7 +511,7 @@ export default function WalkthroughModal({
                           {item.status !== "missing" && (
                             <button
                               onClick={() => setItemStatus(item.id, "missing")}
-                              className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors active:scale-95"
+                              className="shrink-0 px-2 py-1 text-[11px] font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors active:scale-95"
                             >
                               Missing
                             </button>
@@ -668,14 +669,14 @@ export default function WalkthroughModal({
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => setExtraQty((q) => Math.max(1, q - 1))}
-                          className="w-9 h-9 rounded-lg border border-[var(--brd)] flex items-center justify-center text-[var(--tx)] hover:bg-[var(--bg)] text-lg font-medium"
+                          className="w-8 h-8 border border-[var(--brd)] flex items-center justify-center text-[var(--tx)] hover:bg-[var(--bg)] text-lg font-medium"
                         >
                           −
                         </button>
                         <span className="text-[16px] font-bold text-[var(--tx)] w-8 text-center">{extraQty}</span>
                         <button
                           onClick={() => setExtraQty((q) => q + 1)}
-                          className="w-9 h-9 rounded-lg border border-[var(--brd)] flex items-center justify-center text-[var(--tx)] hover:bg-[var(--bg)] text-lg font-medium"
+                          className="w-8 h-8 border border-[var(--brd)] flex items-center justify-center text-[var(--tx)] hover:bg-[var(--bg)] text-lg font-medium"
                         >
                           +
                         </button>
@@ -686,14 +687,14 @@ export default function WalkthroughModal({
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={() => { setAddExtraOpen(false); setSelectedItem(null); setCustomItemName(""); setSearchQuery(""); setExtraQty(1); }}
-                      className="flex-1 py-2.5 rounded-xl border border-[var(--brd)] text-[var(--tx2)] text-[13px] font-medium"
+                      className="flex-1 py-2 border border-[var(--brd)] text-[var(--tx2)] text-[13px] font-medium"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={addExtraItem}
                       disabled={!selectedItem && !customItemName.trim()}
-                      className="flex-1 py-2.5 rounded-xl bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold text-[13px] disabled:opacity-40"
+                      className="flex-1 py-2 bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold text-[13px] disabled:opacity-40"
                     >
                       Add
                     </button>
@@ -702,7 +703,7 @@ export default function WalkthroughModal({
               ) : (
                 <button
                   onClick={() => setAddExtraOpen(true)}
-                  className="w-full py-2.5 rounded-xl border border-dashed border-[var(--gold)]/50 text-[13px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/5 flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-2 border border-dashed border-[var(--gold)]/50 text-[13px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/5 flex items-center justify-center gap-2 transition-colors"
                 >
                   <Plus size={14} /> Add Extra Item
                 </button>
@@ -714,16 +715,16 @@ export default function WalkthroughModal({
           {step === "summary" && (
             <div className="space-y-4">
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/5 px-3 py-3 text-center">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
                   <p className="text-[20px] font-bold text-[#22C55E]">{matched}</p>
                   <p className="text-[10px] text-[#22C55E]/70 uppercase tracking-wider mt-0.5">Matched</p>
                 </div>
-                <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-3 text-center">
+                <div>
                   <p className="text-[20px] font-bold text-red-400">{missing}</p>
                   <p className="text-[10px] text-red-400/70 uppercase tracking-wider mt-0.5">Missing</p>
                 </div>
-                <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 px-3 py-3 text-center">
+                <div>
                   <p className="text-[20px] font-bold text-[var(--gold)]">{extraItems.length}</p>
                   <p className="text-[10px] text-[var(--gold)]/70 uppercase tracking-wider mt-0.5">Extra</p>
                 </div>
@@ -804,9 +805,7 @@ export default function WalkthroughModal({
 
               {/* No-change hint */}
               {!hasDiscrepancyForSubmit && (
-                <div className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/5 px-4 py-3 text-center">
-                  <p className="text-[13px] text-[#22C55E] font-medium">Everything matches, no changes needed.</p>
-                </div>
+                <p className="text-center text-[13px] text-[#22C55E] font-medium">Everything matches, no changes needed.</p>
               )}
 
               {submitError && (
@@ -826,14 +825,14 @@ export default function WalkthroughModal({
             <>
               <button
                 onClick={() => onSkip(skipReason)}
-                className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white"
+                className="w-full py-2 font-bold text-[var(--text-base)] text-white"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 Skip Walkthrough
               </button>
               <button
                 onClick={() => setStep("intro")}
-                className="w-full py-2.5 rounded-xl text-[12px] font-medium text-[var(--tx3)]"
+                className="w-full py-2 text-[12px] font-medium text-[var(--tx3)]"
               >
                 Go back
               </button>
@@ -844,7 +843,7 @@ export default function WalkthroughModal({
             <>
               <button
                 onClick={() => setStep("extras")}
-                className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
+                className="w-full py-2 font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 Continue <CaretRight size={14} />
@@ -859,14 +858,14 @@ export default function WalkthroughModal({
             <>
               <button
                 onClick={() => setStep("summary")}
-                className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
+                className="w-full py-2 font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 Review Summary <CaretRight size={14} />
               </button>
               <button
                 onClick={() => setStep("checklist")}
-                className="w-full py-2.5 rounded-xl text-[12px] font-medium text-[var(--tx3)]"
+                className="w-full py-2 text-[12px] font-medium text-[var(--tx3)]"
               >
                 Back to checklist
               </button>
@@ -880,7 +879,7 @@ export default function WalkthroughModal({
                   <button
                     onClick={submitChangeRequest}
                     disabled={submitting}
-                    className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white disabled:opacity-60 flex items-center justify-center gap-2"
+                    className="w-full py-2 font-bold text-[var(--text-base)] text-white disabled:opacity-60 flex items-center justify-center gap-2"
                     style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                   >
                     {submitting ? (
@@ -896,7 +895,7 @@ export default function WalkthroughModal({
                   <button
                     onClick={() => setStep("extras")}
                     disabled={submitting}
-                    className="w-full py-2.5 rounded-xl text-[12px] font-medium text-[var(--tx3)] disabled:opacity-40"
+                    className="w-full py-2 text-[12px] font-medium text-[var(--tx3)] disabled:opacity-40"
                   >
                     Edit items
                   </button>
@@ -904,7 +903,7 @@ export default function WalkthroughModal({
               ) : (
                 <button
                   onClick={submitNoChanges}
-                  className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white"
+                  className="w-full py-2 font-bold text-[var(--text-base)] text-white"
                   style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                 >
                   No Changes, Inventory Matches

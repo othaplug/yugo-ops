@@ -108,7 +108,7 @@ function ManeuverGlyph({ type, modifier, className }: { type?: string; modifier?
 }
 
 const NAV_BTN_RING =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-500/70 bg-zinc-800/95 text-white shadow-lg backdrop-blur-sm active:scale-95 transition-transform";
+  "flex h-10 w-10 shrink-0 items-center justify-center border border-zinc-500/70 bg-zinc-800/95 text-white shadow-lg backdrop-blur-sm active:scale-95 transition-transform";
 
 /**
  * Ops-style stack: compass (north-up), my location + follow, next-turn preview, zoom.
@@ -191,7 +191,7 @@ function CrewNavOpsFloatingControls({
 
       <button
         type="button"
-        className={`${NAV_BTN_RING} h-12 w-12`}
+        className={`${NAV_BTN_RING} h-11 w-11`}
         disabled={!userPos}
         aria-label="Center on my location and follow navigation"
         title="My location & navigation view"
@@ -223,7 +223,7 @@ function CrewNavOpsFloatingControls({
 
       <button
         type="button"
-        className="rounded-2xl bg-[#5EEAD4] p-2.5 shadow-xl ring-2 ring-teal-200/40 active:scale-95 transition-transform disabled:opacity-40"
+        className="bg-[#5EEAD4] p-2 shadow-xl ring-2 ring-teal-200/40 active:scale-95 transition-transform disabled:opacity-40"
         disabled={!mapRef?.getMap?.() || steps.length < 2}
         aria-label="Show next turn on map"
         title="Next turn on map"
@@ -803,6 +803,7 @@ export function CrewNavigation({
     const missingToken = (
       <div
         data-modal-root
+        data-crew-portal
         className={`${CREW_NAV_OVERLAY_CLASS} items-center justify-center bg-[var(--bg)] p-6 text-center`}
         role="alertdialog"
         aria-modal="true"
@@ -813,7 +814,7 @@ export function CrewNavigation({
         <button
           type="button"
           onClick={onExit}
-          className="px-4 py-2 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold text-sm"
+          className="px-3 py-1.5 bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold text-sm"
         >
           Close
         </button>
@@ -825,6 +826,7 @@ export function CrewNavigation({
   const navUi = (
     <div
       data-modal-root
+      data-crew-portal
       className={CREW_NAV_OVERLAY_CLASS}
       role="dialog"
       aria-modal="true"
@@ -941,7 +943,7 @@ export function CrewNavigation({
         <button
           type="button"
           onClick={onExit}
-          className="shrink-0 bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 text-sm font-semibold"
+          className="shrink-0 bg-white/20 hover:bg-white/30 px-3 py-1.5 text-sm font-semibold"
         >
           Exit Nav
         </button>

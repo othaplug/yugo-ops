@@ -144,7 +144,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => setSidebarCollapsed(false)}
-                  className="p-2.5 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
+                  className="p-2 hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
                   title="Expand sidebar"
                   aria-label="Expand sidebar"
                 >
@@ -165,7 +165,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   <button
                     type="button"
                     onClick={() => setSidebarCollapsed(true)}
-                    className="hidden md:flex p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
+                    className="hidden md:flex p-2 hover:bg-[var(--card)]/50 transition-colors text-[var(--tx3)] hover:text-[var(--tx2)]"
                     aria-label="Collapse sidebar"
                     title="Collapse sidebar"
                   >
@@ -174,7 +174,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   <button
                     type="button"
                     onClick={() => setSidebarOpen(false)}
-                    className="md:hidden p-2 rounded-lg hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
+                    className="md:hidden p-2 hover:bg-[var(--card)]/50 transition-colors text-[var(--tx2)]"
                     aria-label="Close menu"
                   >
                     <X size={15} weight="regular" className="text-current" aria-hidden />
@@ -293,7 +293,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(true)}
-                  className="md:hidden size-10 flex items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5"
+                  className="md:hidden size-9 flex items-center justify-center hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5"
                   aria-label="Open menu"
                 >
                   <List size={20} weight="regular" className="text-current" aria-hidden />

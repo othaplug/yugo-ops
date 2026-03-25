@@ -75,7 +75,7 @@ export default function CrewSetupPage() {
       >
         <style>{`
           @keyframes setupFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-          .crew-setup-input:focus { border-color: #C9A962 !important; outline: none; }
+          .crew-setup-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
           .crew-setup-btn:hover:not(:disabled) { background: #D4B56C !important; transform: translateY(-1px); }
         `}</style>
 
@@ -162,10 +162,11 @@ export default function CrewSetupPage() {
                 autoFocus
                 style={{
                   width: "100%",
-                  padding: "12px 16px",
-                  background: "#0D0D0D",
-                  border: "1px solid #2A2A2A",
-                  borderRadius: 10,
+                  padding: "12px 0",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: "1px solid #3A3A3E",
+                  borderRadius: 0,
                   color: "#F5F5F3",
                   fontSize: 16,
                   fontFamily: "'DM Sans', sans-serif",
@@ -198,10 +199,11 @@ export default function CrewSetupPage() {
                 onChange={(e) => setDeviceName(e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "12px 16px",
-                  background: "#0D0D0D",
-                  border: "1px solid #2A2A2A",
-                  borderRadius: 10,
+                  padding: "12px 0",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: "1px solid #3A3A3E",
+                  borderRadius: 0,
                   color: "#F5F5F3",
                   fontSize: 14,
                   fontFamily: "'DM Sans', sans-serif",
@@ -217,11 +219,11 @@ export default function CrewSetupPage() {
               disabled={loading}
               style={{
                 width: "100%",
-                padding: 13,
+                padding: "10px 14px",
                 background: "#C9A962",
                 color: "#0D0D0D",
                 border: "none",
-                borderRadius: 10,
+                borderRadius: 0,
                 fontSize: 14,
                 fontWeight: 600,
                 fontFamily: "'DM Sans', sans-serif",

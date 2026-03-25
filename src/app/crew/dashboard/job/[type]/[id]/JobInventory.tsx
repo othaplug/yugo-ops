@@ -250,7 +250,7 @@ export default function JobInventory({
                 const r = window.prompt("Add room name");
                 if (r?.trim() && !customRooms.includes(r.trim())) setCustomRooms((prev) => [...prev, r.trim()]);
               }}
-              className="w-full py-2 rounded-lg border border-dashed border-[var(--brd)] text-[12px] text-[var(--tx3)] hover:border-[var(--gold)]"
+              className="w-full py-1.5 border border-dashed border-[var(--brd)] text-[12px] text-[var(--tx3)] hover:border-[var(--gold)]"
             >
               + Add room
             </button>
@@ -345,7 +345,7 @@ export default function JobInventory({
       {!isRoomBasedVerification && !readOnly && (
       <button
         onClick={() => setAddExtraOpen(true)}
-        className="w-full py-2.5 rounded-lg border border-dashed border-[var(--gold)]/50 text-[12px] font-medium text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+        className="w-full py-2 border border-dashed border-[var(--gold)]/50 text-[12px] font-medium text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
       >
         + Add Extra Item
       </button>
@@ -391,14 +391,14 @@ export default function JobInventory({
                 <button
                   type="button"
                   onClick={() => setAddExtraOpen(false)}
-                  className="flex-1 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx)] text-[13px]"
+                  className="flex-1 py-2 border border-[var(--brd)] text-[var(--tx)] text-[13px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || !extraDesc.trim()}
-                  className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold disabled:opacity-50"
+                  className="flex-1 py-2 bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold disabled:opacity-50"
                 >
                   {submitting ? "Submitting…" : "Submit for approval"}
                 </button>

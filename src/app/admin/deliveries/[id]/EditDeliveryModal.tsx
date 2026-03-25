@@ -36,7 +36,7 @@ const TIME_OPTIONS = (() => {
    Styled sub-components
    ═══════════════════════════════════════════════════ */
 
-const inputCls = "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)]/40 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/20 outline-none transition-all";
+const inputCls = "field-input-compact w-full";
 const IN_PROGRESS_STATUSES = [
   "en_route", "en_route_to_pickup", "arrived_at_pickup", "loading",
   "en_route_to_destination", "arrived_at_destination", "unloading",

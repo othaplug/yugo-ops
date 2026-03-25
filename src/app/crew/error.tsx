@@ -15,7 +15,7 @@ export default function CrewError({ error, reset }: { error: Error & { digest?: 
         <h1 className="text-[18px] font-bold text-white">Something went wrong</h1>
         <p className="text-[13px] text-gray-400">{error.message || "An unexpected error occurred."}</p>
         <div className="flex gap-3 justify-center">
-          <button onClick={reset} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-[#C9A962] text-black">Try again</button>
+          <button onClick={reset} className="px-3 py-1.5 text-[12px] font-semibold bg-[#C9A962] text-black">Try again</button>
           <a href="/crew/dashboard" className="px-4 py-2 rounded-lg text-[12px] font-semibold border border-gray-700 text-white">Dashboard</a>
         </div>
       </div>

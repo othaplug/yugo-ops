@@ -199,7 +199,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           type="button"
                           onClick={() => advanceStop(stop.id, "arrived")}
                           disabled={advancing === stop.id}
-                          className="px-4 py-2 rounded-xl text-[11px] font-semibold bg-[#3B82F6] text-white disabled:opacity-50"
+                          className="px-3 py-1.5 text-[11px] font-semibold bg-[#3B82F6] text-white disabled:opacity-50"
                         >
                           {advancing === stop.id ? "…" : "Arrived"}
                         </button>
@@ -209,7 +209,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           type="button"
                           onClick={() => advanceStop(stop.id, "in_progress")}
                           disabled={advancing === stop.id}
-                          className="px-4 py-2 rounded-xl text-[11px] font-semibold bg-[#F59E0B] text-white disabled:opacity-50"
+                          className="px-3 py-1.5 text-[11px] font-semibold bg-[#F59E0B] text-white disabled:opacity-50"
                         >
                           {advancing === stop.id ? "…" : stop.stop_type === "pickup" ? "Loading" : "Unloading"}
                         </button>
@@ -219,7 +219,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           type="button"
                           onClick={() => advanceStop(stop.id, "completed")}
                           disabled={advancing === stop.id}
-                          className="px-4 py-2 rounded-xl text-[11px] font-semibold text-white disabled:opacity-50"
+                          className="px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
                           style={{ background: "linear-gradient(135deg,#22C55E,#16A34A)" }}
                         >
                           {advancing === stop.id ? "…" : "Complete stop →"}
@@ -234,7 +234,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                       type="button"
                       onClick={() => advanceStop(stop.id, "current")}
                       disabled={advancing === stop.id}
-                      className="px-4 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                      className="px-3 py-1.5 text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
                     >
                       {advancing === stop.id ? "…" : "Start This Stop"}
                     </button>

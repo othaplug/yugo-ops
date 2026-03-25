@@ -183,7 +183,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className={`w-full flex items-center justify-center gap-2 py-5 rounded-xl border border-dashed transition-all disabled:opacity-40 active:scale-[0.98] ${
+          className={`w-full flex items-center justify-center gap-2 py-3 border border-dashed transition-all disabled:opacity-40 active:scale-[0.98] ${
             needsPhoto
               ? "border-[var(--gold)]/50 text-[var(--gold)] hover:bg-[var(--gold)]/5"
               : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/30 hover:text-[var(--tx2)]"

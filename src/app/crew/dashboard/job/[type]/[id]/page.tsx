@@ -663,7 +663,7 @@ export default function CrewJobPage({
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`relative flex-1 px-3 py-3.5 text-[11px] font-bold tracking-[0.10em] uppercase transition-colors duration-150 whitespace-nowrap touch-manipulation ${
+            className={`relative flex-1 px-3 py-2.5 text-[11px] font-bold tracking-[0.10em] uppercase transition-colors duration-150 whitespace-nowrap touch-manipulation ${
               activeTab === t.id
                 ? "text-[var(--gold)]"
                 : "text-[var(--tx3)]/45 hover:text-[var(--tx3)]"
@@ -712,7 +712,7 @@ export default function CrewJobPage({
                 type="button"
                 onClick={() => void startJob()}
                 disabled={advancing || blockedByLocation}
-                className="w-full py-3 rounded-xl font-bold text-[14px] text-white disabled:opacity-50 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
+                className="w-full py-2 font-bold text-[14px] text-white disabled:opacity-50 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 {advancing ? "Starting…" : "Start job"}
@@ -789,7 +789,7 @@ export default function CrewJobPage({
               <button
                 type="button"
                 onClick={() => setWalkthroughModalOpen(true)}
-                className="inline-flex items-center justify-center px-4 py-2 font-bold text-[12px] text-white"
+                className="inline-flex items-center justify-center px-3 py-1.5 font-bold text-[12px] text-white"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 Start Inventory Check
@@ -825,7 +825,7 @@ export default function CrewJobPage({
             nextStatus === "completed" ? (
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-[13px] text-white transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
+                className="w-full flex items-center justify-center gap-2 py-2 font-semibold text-[13px] text-white transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 <CheckCircle size={14} />
@@ -836,7 +836,7 @@ export default function CrewJobPage({
                 type="button"
                 onClick={advanceStatus}
                 disabled={advancing}
-                className="w-full py-2.5 rounded-xl font-semibold text-[13px] text-white disabled:opacity-60 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
+                className="w-full py-2 font-semibold text-[13px] text-white disabled:opacity-60 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 {advancing ? "Updating…" : getStatusLabel(nextStatus!)}
@@ -1010,7 +1010,7 @@ export default function CrewJobPage({
                       el.focus();
                     }
                   }}
-                  className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
+                  className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
                 >
                   <PencilSimple size={14} />
                   Note
@@ -1018,14 +1018,14 @@ export default function CrewJobPage({
               )}
               <button
                 onClick={() => setReportModalOpen(true)}
-                className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[#F59E0B] bg-[#F59E0B]/8 hover:bg-[#F59E0B]/15 active:scale-95 transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-[#F59E0B] bg-[#F59E0B]/8 hover:bg-[#F59E0B]/15 active:scale-95 transition-all"
               >
                 <Warning size={14} />
                 Report Issue
               </button>
               <a
                 href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-                className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
               >
                 <Phone size={14} />
                 Dispatch
@@ -1185,6 +1185,7 @@ export default function CrewJobPage({
         <div
           className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99990] animate-fade-in p-4 sm:p-5"
           data-modal-root
+          data-crew-portal
           style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
         >
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] overflow-y-auto shadow-2xl" style={{ maxHeight: "min(90dvh, 90vh)" }}>
@@ -1223,7 +1224,7 @@ export default function CrewJobPage({
                   setPickupModalOpen(false);
                 }}
                 disabled={pickupPhotosCount < 1 && totalItems > 0}
-                className="w-full py-4 rounded-2xl font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
+                className="w-full py-2.5 font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 {pickupPhotosCount < 1 && totalItems > 0
@@ -1233,7 +1234,7 @@ export default function CrewJobPage({
               <button
                 type="button"
                 onClick={() => setPickupModalOpen(false)}
-                className="w-full py-2.5 rounded-xl text-[13px] font-medium text-[var(--tx3)] hover:text-[var(--tx2)] transition-colors"
+                className="w-full py-2 text-[13px] font-medium text-[var(--tx3)] hover:text-[var(--tx2)] transition-colors"
               >
                 Minimize
               </button>
@@ -1248,6 +1249,7 @@ export default function CrewJobPage({
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99990]"
           data-modal-root
+          data-crew-portal
           style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
           role="presentation"
         >
@@ -1266,7 +1268,7 @@ export default function CrewJobPage({
                 <p className="text-[13px] text-[#22C55E] text-center mb-4">Issue reported. Dispatch notified.</p>
                 <button
                   onClick={() => { setReportModalOpen(false); setReportSubmitted(false); setReportDesc(""); }}
-                  className="w-full py-2.5 rounded-xl text-white font-semibold"
+                  className="w-full py-2 text-white font-semibold"
                   style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                 >
                   Done
@@ -1301,7 +1303,7 @@ export default function CrewJobPage({
                 <div className="flex gap-3">
                   <button
                     onClick={() => setReportModalOpen(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-[var(--brd)] text-[var(--tx2)] text-[13px] font-medium hover:bg-[var(--bg)] transition-colors"
+                    className="flex-1 py-2 border border-[var(--brd)] text-[var(--tx2)] text-[13px] font-medium hover:bg-[var(--bg)] transition-colors"
                   >
                     Cancel
                   </button>
@@ -1327,7 +1329,7 @@ export default function CrewJobPage({
                       }
                     }}
                     disabled={reportSubmitting}
-                    className="flex-1 py-2.5 rounded-xl bg-[#F59E0B] text-white font-semibold disabled:opacity-50 transition-colors"
+                    className="flex-1 py-2 bg-[#F59E0B] text-white font-semibold disabled:opacity-50 transition-colors"
                   >
                     {reportSubmitting ? "Sending..." : "Submit"}
                   </button>

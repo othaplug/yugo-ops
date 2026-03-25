@@ -153,7 +153,7 @@ export default function CrewEndOfDayPage() {
         <button
           type="submit"
           disabled={submitting}
-          className={`w-full py-3.5 rounded-xl font-semibold text-[14px] sm:text-[15px] disabled:opacity-50 ${
+          className={`w-full py-2 font-semibold text-[14px] sm:text-[15px] disabled:opacity-50 ${
             preview?.alreadySubmitted
               ? "bg-transparent border-2 border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
               : "bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[#D4B56C]"

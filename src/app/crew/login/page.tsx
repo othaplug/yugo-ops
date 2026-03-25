@@ -252,7 +252,7 @@ export default function CrewLoginPage() {
       >
         <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", textAlign: "center" }}>
           <style>{`
-            .crew-login-input:focus { border-color: #C9A962 !important; outline: none; }
+            .crew-login-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
             .crew-login-link:hover { color: #D4B56C !important; text-decoration: underline; }
           `}</style>
           {usePhoneLogin ? (
@@ -392,7 +392,7 @@ export default function CrewLoginPage() {
       >
         <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", textAlign: "center" }}>
           <style>{`
-            .crew-login-input:focus { border-color: #C9A962 !important; outline: none; }
+            .crew-login-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
             .crew-login-link:hover { color: #D4B56C !important; text-decoration: underline; }
           `}</style>
           {usePhoneLogin ? (
@@ -532,7 +532,7 @@ export default function CrewLoginPage() {
       >
         <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", textAlign: "center" }}>
           <style>{`
-            .crew-login-input:focus { border-color: #C9A962 !important; outline: none; }
+            .crew-login-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
             .crew-login-link:hover { color: #D4B56C !important; text-decoration: underline; }
           `}</style>
           {usePhoneLogin ? (
@@ -677,7 +677,7 @@ export default function CrewLoginPage() {
       >
         <style>{`
           @keyframes loginFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-          .crew-login-input:focus { border-color: #C9A962 !important; outline: none; }
+          .crew-login-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
           .crew-login-link:hover { color: #D4B56C !important; text-decoration: underline; }
         `}</style>
 
@@ -784,6 +784,7 @@ export default function CrewLoginPage() {
                       <button
                         key={m.id}
                         type="button"
+                        className="crew-keep-round"
                         onClick={() => {
                           setSelectedMember(m);
                           setShowMemberPicker(false);
@@ -1053,10 +1054,11 @@ function CrewPhoneLoginFields({
         className="crew-login-input"
         style={{
           width: "100%",
-          padding: "12px 14px",
-          borderRadius: 10,
-          border: "2px solid #2A2A2A",
-          background: "#0D0D0D",
+          padding: "12px 0",
+          borderRadius: 0,
+          border: "none",
+          borderBottom: "1px solid #3A3A3E",
+          background: "transparent",
           color: "#F5F5F3",
           fontSize: 16,
           marginBottom: 20,

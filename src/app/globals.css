@@ -538,27 +538,67 @@ input, select, textarea {
   font-family: var(--font-hero);
 }
 
-.field-input {
+/* Single-line text fields: bottom rule only (no box border) */
+.field-input,
+.field-input-compact {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--brd);
-  border-radius: 8px;
-  background: var(--bg);
-  font-size: 16px; /* 16px prevents iOS zoom on focus */
+  box-sizing: border-box;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid var(--brd);
+  border-radius: 0;
+  background: transparent;
+  font-size: 16px; /* 16px on small screens prevents iOS zoom on focus */
+  line-height: 1.45;
   color: var(--tx);
   font-family: inherit;
   outline: none;
-  transition: border var(--transition-fast) var(--ease-smooth), box-shadow var(--transition-fast) var(--ease-smooth);
+  transition: border-color var(--transition-fast) var(--ease-smooth);
 }
 @media (min-width: 640px) {
   .field-input {
     font-size: 13px;
+    padding: 8px 0;
+  }
+  .field-input-compact {
+    font-size: 12px;
+    padding: 8px 0;
+  }
+}
+.field-input:focus,
+.field-input-compact:focus {
+  border-bottom-color: rgba(201, 169, 98, 0.65);
+  box-shadow: none;
+}
+.field-input::placeholder,
+.field-input-compact::placeholder {
+  color: var(--tx3);
+}
+
+/* Multiline: keep a full border (underline is for single-line) */
+textarea.field-input,
+textarea.field-input-compact {
+  border: 1px solid var(--brd);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--bg);
+  min-height: 5rem;
+  resize: vertical;
+}
+@media (min-width: 640px) {
+  textarea.field-input {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  textarea.field-input-compact {
+    font-size: 12px;
     padding: 8px 10px;
   }
 }
-.field-input:focus {
-  border-color: rgba(201,169,98,0.55);
-  box-shadow: 0 0 0 3px rgba(201,169,98,0.1);
+textarea.field-input:focus,
+textarea.field-input-compact:focus {
+  border-color: rgba(201, 169, 98, 0.55);
+  box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.1);
 }
 
 /* Partner portal (light theme) form inputs */
@@ -1860,5 +1900,18 @@ select:focus-visible {
   bottom: 1rem;
   right: 1rem;
   z-index: var(--z-toast);
+}
+
+/* ═══════════════════════════════════════════════════════
+   CREW PORTAL — rectangular buttons (body portals: data-crew-portal)
+   Use .crew-keep-round on rare controls that must stay circular.
+   ═══════════════════════════════════════════════════════ */
+.crew-app button:not(.crew-keep-round),
+[data-crew-portal] button:not(.crew-keep-round) {
+  border-radius: 0 !important;
+}
+.crew-app button.crew-keep-round,
+[data-crew-portal] button.crew-keep-round {
+  border-radius: 9999px !important;
 }
 

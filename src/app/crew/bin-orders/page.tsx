@@ -263,7 +263,7 @@ export default function CrewBinOrdersPage() {
             {!completing ? (
               <button
                 onClick={() => setCompleting(true)}
-                className={`w-full py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${activeTask.taskType === "dropoff" ? "bg-[#7C9FD4] text-white" : "bg-[#22c55e] text-white"}`}
+                className={`w-full py-2.5 font-bold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${activeTask.taskType === "dropoff" ? "bg-[#7C9FD4] text-white" : "bg-[#22c55e] text-white"}`}
               >
                 {activeTask.taskType === "dropoff" ? <><Truck size={18} /> Mark Bins Delivered</> : <><CheckCircle size={18} /> Mark Pickup Complete</>}
               </button>
@@ -315,14 +315,14 @@ export default function CrewBinOrdersPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setCompleting(false)}
-                    className="flex-1 py-3 rounded-xl border border-[#3a3d4a] text-[14px] text-gray-400 hover:text-white transition-colors"
+                    className="flex-1 py-2 border border-[#3a3d4a] text-[14px] text-gray-400 hover:text-white transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={submitCompletion}
                     disabled={submitting}
-                    className={`flex-1 py-3 rounded-xl font-bold text-[14px] text-white transition-all disabled:opacity-50 ${activeTask.taskType === "dropoff" ? "bg-[#7C9FD4]" : "bg-[#22c55e]"}`}
+                    className={`flex-1 py-2 font-bold text-[14px] text-white transition-all disabled:opacity-50 ${activeTask.taskType === "dropoff" ? "bg-[#7C9FD4]" : "bg-[#22c55e]"}`}
                   >
                     {submitting ? "Submitting…" : "Confirm"}
                   </button>
@@ -344,7 +344,7 @@ export default function CrewBinOrdersPage() {
             </div>
             <button
               onClick={() => { setActiveTask(null); setDone(null); }}
-              className="px-6 py-3 rounded-xl bg-[#1a1d27] border border-[#2a2d3a] text-[14px] font-medium hover:border-[#C9A962]/40 transition-colors"
+              className="px-4 py-2 bg-[#1a1d27] border border-[#2a2d3a] text-[14px] font-medium hover:border-[#C9A962]/40 transition-colors"
             >
               Back to tasks
             </button>

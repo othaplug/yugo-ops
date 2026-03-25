@@ -42,8 +42,7 @@ interface DeliveryDayFormProps {
   onBackToConfig: () => void;
 }
 
-const fieldInput =
-  "w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-1.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]/30 outline-none transition-colors";
+const fieldInput = "field-input-compact w-full";
 
 const DEFAULT_SERVICES: ServiceOption[] = [
   { slug: "assembly", service_name: "Standard Assembly", price_min: 60, price_max: 125, price_unit: "flat" },
