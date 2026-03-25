@@ -372,7 +372,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
       <div className="mt-4 mb-6">
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-2">B2B Operations · Project</p>
         <div className="flex flex-wrap items-center gap-3 mb-2">
-          <h1 className="font-heading text-[20px] font-bold text-[var(--tx)]">
+          <h1 className="font-hero text-[20px] font-bold text-[var(--tx)]">
             {data.project_number} · {data.project_name}
           </h1>
           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold capitalize ${STATUS_COLORS[data.status] || ""}`}>

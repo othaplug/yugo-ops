@@ -24,7 +24,7 @@ export default function QuoteExpired({
         <div className="w-16 h-px bg-[#B8962E] mx-auto mb-6" />
         {reason === "expired" ? (
           <>
-            <h1 className="font-heading text-[20px] font-bold text-[#2C3E2D] mb-3">This Quote Has Expired</h1>
+            <h1 className="font-hero text-[20px] font-bold text-[#2C3E2D] mb-3">This Quote Has Expired</h1>
             <p className="text-[var(--text-base)] text-[#2C3E2D]/70 leading-relaxed mb-2">
               Your quote{expiryDate ? ` was valid until ${expiryDate}` : " is no longer available"}.
               Prices and availability may have changed since then.
@@ -33,7 +33,7 @@ export default function QuoteExpired({
           </>
         ) : (
           <>
-            <h1 className="font-heading text-[20px] font-bold text-[#2C3E2D] mb-3">Quote Not Found</h1>
+            <h1 className="font-hero text-[20px] font-bold text-[#2C3E2D] mb-3">Quote Not Found</h1>
             <p className="text-[var(--text-base)] text-[#2C3E2D]/70 leading-relaxed mb-6">
               We couldn&apos;t find a quote with ID <span className="font-mono font-semibold">{quoteId}</span>.
               Please check the link from your email.

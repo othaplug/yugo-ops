@@ -265,7 +265,7 @@ export default function DispatchBoardClient({ today }: Props) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 leading-none mb-1.5">Operations</p>
-            <h1 className="font-heading text-[26px] font-bold text-[var(--tx)] leading-none tracking-tight">Dispatch</h1>
+            <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] leading-none tracking-tight">Dispatch</h1>
           </div>
           <Link
             href="/admin/crew"

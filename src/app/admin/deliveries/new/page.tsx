@@ -19,7 +19,7 @@ export default async function NewDeliveryPage({
 
   return (
     <div className="max-w-[900px] mx-auto px-5 md:px-6 py-5 animate-fade-up w-full">
-      <h1 className="font-heading text-[22px] md:text-[24px] font-bold text-[var(--tx)] mb-4">
+      <h1 className="font-hero text-[22px] md:text-[24px] font-bold text-[var(--tx)] mb-4">
         {choice === "day_rate" ? "Day Rate" : choice === "b2b_oneoff" ? "B2B One-Off Delivery" : "Create Delivery"}
       </h1>
       <NewDeliveryChoiceClient organizations={orgs || []} crews={crews || []} initialChoice={choice} />

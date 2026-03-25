@@ -26,7 +26,7 @@ export default function BookDayRateClient({ orgId, orgType, defaultPickupAddress
           Back
         </button>
       </div>
-      <h1 className="font-heading text-[22px] sm:text-[24px] font-bold text-[var(--tx)] mb-1">
+      <h1 className="font-hero text-[22px] sm:text-[24px] font-bold text-[var(--tx)] mb-1">
         Book Day Rate
       </h1>
       <p className="text-[13px] text-[var(--tx3)] mb-6">

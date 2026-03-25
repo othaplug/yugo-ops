@@ -76,7 +76,7 @@ export default function ActivityPageClient({ initialEvents }: { initialEvents: A
       <div className="flex items-center gap-3 mb-6">
         <BackButton href="/admin" />
         <div className="flex items-center gap-2 min-w-0">
-          <h1 className="font-heading text-[22px] sm:text-[26px] font-bold text-[var(--tx)] tracking-tight truncate">Activity</h1>
+          <h1 className="font-hero text-[22px] sm:text-[26px] font-bold text-[var(--tx)] tracking-tight truncate">Activity</h1>
           <span className="relative flex h-2 w-2 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-60" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />

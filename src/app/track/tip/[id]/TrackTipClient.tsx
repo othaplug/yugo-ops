@@ -159,7 +159,7 @@ export default function TrackTipClient({
       >
         <Check size={28} color={FOREST} weight="bold" />
       </div>
-      <h1 className="font-heading text-2xl font-bold mb-2" style={{ color: FOREST }}>
+      <h1 className="font-hero text-2xl font-bold mb-2" style={{ color: FOREST }}>
         Thank you!
       </h1>
       <p className="text-[13px] mb-6" style={{ color: `${FOREST}80` }}>
@@ -205,7 +205,7 @@ export default function TrackTipClient({
 
   const formContent = (
     <>
-      <h1 className="font-heading text-xl font-bold mb-1" style={{ color: FOREST }}>
+      <h1 className="font-hero text-xl font-bold mb-1" style={{ color: FOREST }}>
         Tip your crew
       </h1>
       <p className="text-[13px] mb-6" style={{ color: `${FOREST}70` }}>100% goes to your crew.</p>

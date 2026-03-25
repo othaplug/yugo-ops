@@ -18,7 +18,7 @@ export default async function NewClientPage({
       <Link href="/admin/clients" className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--tx)] mb-3">
         ← Back
       </Link>
-      <h1 className="font-heading text-[18px] font-bold text-[var(--tx)] mb-4">{pageTitle}</h1>
+      <h1 className="font-hero text-[18px] font-bold text-[var(--tx)] mb-4">{pageTitle}</h1>
       <NewClientForm defaultPersona={isPartner ? "partner" : "client"} defaultPartnerType={partnerType} />
     </div>
   );

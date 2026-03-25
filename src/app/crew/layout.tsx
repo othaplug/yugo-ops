@@ -15,8 +15,10 @@ export const viewport: Viewport = {
 export default function CrewLayout({ children }: { children: ReactNode }) {
   return (
     <CrewThemeProvider>
-      <CrewAlwaysOnLocation />
-      {children}
+      <div className="crew-app min-h-dvh">
+        <CrewAlwaysOnLocation />
+        {children}
+      </div>
     </CrewThemeProvider>
   );
 }

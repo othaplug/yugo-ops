@@ -566,7 +566,7 @@ export default function CreateMoveForm({
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-4 py-4 border-b border-[var(--brd)]">
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
-          <h1 className="font-heading text-[22px] font-bold text-[var(--tx)] tracking-tight leading-none">Create New Move</h1>
+          <h1 className="font-hero text-[22px] font-bold text-[var(--tx)] tracking-tight leading-none">Create New Move</h1>
           <p className="text-[10px] text-[var(--tx3)] mt-1.5">
             Choose a service type, then fill in the details. Select a client to auto-fill, or enter details to create a new one.
           </p>

@@ -26,7 +26,7 @@ export default function CalendarHeader({
       {/* Single row: title · nav · spacer · filters · view toggle · CTA */}
       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
         {/* Title */}
-        <h1 className="font-heading text-[15px] sm:text-[17px] font-bold text-[var(--tx)] leading-none whitespace-nowrap shrink-0">
+        <h1 className="font-hero text-[15px] sm:text-[17px] font-bold text-[var(--tx)] leading-none whitespace-nowrap shrink-0">
           {headerLabel}
         </h1>
 

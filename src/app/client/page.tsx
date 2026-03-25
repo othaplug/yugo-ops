@@ -9,7 +9,7 @@ export default function ClientPage() {
     <div className="min-h-screen font-sans flex items-center justify-center px-5" style={{ backgroundColor: CREAM }}>
       <div className="max-w-md text-center">
         <YugoLogo size={22} variant="gold" className="mb-6 inline-block" />
-        <h1 className="font-heading text-xl md:text-2xl font-bold mb-3" style={{ color: WINE }}>
+        <h1 className="font-hero text-xl md:text-2xl font-bold mb-3" style={{ color: WINE }}>
           Track Your Move
         </h1>
         <p className="text-[13px] leading-relaxed mb-6" style={{ color: FOREST }}>

@@ -3,7 +3,7 @@
 import { use, useState, useEffect, useCallback, useRef, useMemo, Suspense, type Dispatch, type SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
-import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check, Clipboard } from "@phosphor-icons/react";
+import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { formatTime, formatDate } from "@/lib/client-timezone";
@@ -769,7 +769,7 @@ export default function CrewJobPage({
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="e.g. Delayed at gate, client at side entrance…"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)]/40 outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--card)] border-0 text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] outline-none focus:ring-2 focus:ring-[var(--gold)]/35 focus:ring-offset-0"
                 autoComplete="off"
               />
             </div>
@@ -777,15 +777,10 @@ export default function CrewJobPage({
 
           {/* Walkthrough gate, shown when at pickup and walkthrough not done */}
           {currentStatus === "arrived_at_pickup" && blockedByWalkthrough && (
-            <div className="rounded-2xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-4 space-y-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center shrink-0">
-                  <Clipboard size={16} color="var(--gold)" />
-                </div>
-                <div>
-                  <p className="text-[12px] font-bold text-[var(--tx)]">Inventory Walkthrough Required</p>
-                  <p className="text-[11px] text-[var(--tx3)]">Complete before loading starts</p>
-                </div>
+            <div className="bg-[var(--gold)]/5 p-4 space-y-3">
+              <div>
+                <p className="text-[12px] font-bold text-[var(--tx)]">Inventory Walkthrough Required</p>
+                <p className="text-[11px] text-[var(--tx3)]">Complete before loading starts</p>
               </div>
               <p className="text-[12px] text-[var(--tx2)] leading-relaxed">
                 Walk through with the client and verify the inventory matches the quote.
@@ -794,7 +789,7 @@ export default function CrewJobPage({
               <button
                 type="button"
                 onClick={() => setWalkthroughModalOpen(true)}
-                className="w-full py-3 rounded-xl font-bold text-[13px] text-white"
+                className="inline-flex items-center justify-center px-4 py-2 font-bold text-[12px] text-white"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
               >
                 Start Inventory Check

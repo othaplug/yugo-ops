@@ -152,9 +152,11 @@ body {
 /**
  * Global section heading for <h2> — use instead of 9px uppercase micro-labels.
  * Pair with utilities: flex items-center gap-2.5, mb-4, border-t, etc.
+ * Padding-bottom keeps body copy from crowding the heading; adjust here for all uses.
  */
 .admin-section-h2 {
   margin: 0;
+  padding-bottom: 10px;
   font-size: 15px;
   font-weight: 600;
   color: var(--tx);

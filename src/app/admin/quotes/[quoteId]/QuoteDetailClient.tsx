@@ -200,7 +200,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
 
         {/* Row 2: title + status badge */}
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="font-heading text-[26px] sm:text-[30px] font-bold text-[var(--tx)] tracking-tight leading-none">
+          <h1 className="font-hero text-[26px] sm:text-[30px] font-bold text-[var(--tx)] tracking-tight leading-none">
             {quote.quote_id}
           </h1>
           <span className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full shrink-0 ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}>

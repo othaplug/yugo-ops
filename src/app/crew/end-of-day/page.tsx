@@ -47,51 +47,86 @@ export default function CrewEndOfDayPage() {
     setSubmitting(false);
   };
 
+  const totalMin = preview?.summary?.totalJobTime ?? 0;
+  const summaryStats: { label: string; value: string }[] = preview?.summary
+    ? [
+        { label: "Jobs completed", value: String(preview.summary.jobsCompleted ?? 0) },
+        {
+          label: "Total job time",
+          value: `${Math.floor(totalMin / 60)}h ${totalMin % 60}m`,
+        },
+        { label: "Photos", value: String(preview.summary.photosCount ?? 0) },
+        { label: "Expenses", value: `$${((preview.summary.expensesTotal ?? 0) / 100).toFixed(2)}` },
+        { label: "Client sign-offs", value: String(preview.summary.clientSignOffs ?? 0) },
+        {
+          label: "Avg satisfaction",
+          value:
+            preview.summary.averageSatisfaction != null
+              ? String(preview.summary.averageSatisfaction)
+              : "—",
+        },
+      ]
+    : [];
+
   return (
-    <PageContent>
-      <Link href="/crew/dashboard" className="inline-flex gap-1.5 py-2 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)]">
+    <PageContent className="pb-28 md:pb-6">
+      <Link
+        href="/crew/dashboard"
+        className="inline-flex gap-1.5 py-2 text-[13px] text-[var(--tx3)] hover:text-[var(--gold)]"
+      >
         ← Back to Dashboard
       </Link>
-      <div className="mt-2">
-        <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-0.5">Crew</p>
-        <h1 className="font-hero text-[26px] font-bold text-[var(--tx)]">End of Day Report</h1>
+      <div className="mt-1">
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1">Crew</p>
+        <h1 className="font-heading text-[22px] sm:text-[26px] font-bold text-[var(--tx)] tracking-tight leading-none">
+          End of day report
+        </h1>
       </div>
       {preview?.alreadySubmitted ? (
-        <div className="mt-3 flex items-center gap-2 py-3 px-4 rounded-xl bg-[var(--grn)]/10 border border-[var(--grn)]/30">
-          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[var(--grn)] text-white text-[var(--text-base)]">✓</span>
-          <div>
+        <div className="mt-4 flex items-center gap-3 py-3 px-4 rounded-xl bg-[var(--grn)]/10 border border-[var(--grn)]/30">
+          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--grn)] text-white text-[13px] shrink-0">
+            ✓
+          </span>
+          <div className="min-w-0">
             <p className="text-[13px] font-semibold text-[var(--grn)]">End of day submitted</p>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Need to add something? You can update your report below.</p>
+            <p className="text-[13px] text-[var(--tx3)] mt-1 leading-snug">
+              Need to add something? You can update your report below.
+            </p>
           </div>
         </div>
       ) : (
-        <p className="text-[12px] text-[var(--tx3)] mt-1">
+        <p className="text-[13px] text-[var(--tx3)] mt-2 leading-relaxed max-w-prose">
           Submit your daily report. Data is auto-compiled from today&apos;s activity.
         </p>
       )}
 
       {preview?.summary && (
-        <div className="mt-4 p-4 rounded-xl bg-[var(--bg)]">
-          <h2 className="admin-section-h2 text-[var(--tx2)] mb-3">Today&apos;s summary</h2>
-          <div className="grid grid-cols-2 gap-2 text-[12px]">
-            <div><span className="text-[var(--tx3)]">Jobs completed:</span> {preview.summary.jobsCompleted ?? 0}</div>
-            <div><span className="text-[var(--tx3)]">Total job time:</span> {Math.floor((preview.summary.totalJobTime ?? 0) / 60)}h {((preview.summary.totalJobTime ?? 0) % 60)}m</div>
-            <div><span className="text-[var(--tx3)]">Photos:</span> {preview.summary.photosCount ?? 0}</div>
-            <div><span className="text-[var(--tx3)]">Expenses:</span> ${((preview.summary.expensesTotal ?? 0) / 100).toFixed(2)}</div>
-            <div><span className="text-[var(--tx3)]">Client sign-offs:</span> {preview.summary.clientSignOffs ?? 0}</div>
-            <div><span className="text-[var(--tx3)]">Avg satisfaction:</span> {preview.summary.averageSatisfaction ?? "-"}</div>
-          </div>
+        <div className="mt-5 p-4 sm:p-5 rounded-xl bg-[var(--bg)] border border-[var(--brd)]/40">
+          <h2 className="admin-section-h2 text-[var(--tx2)] mb-4">Today&apos;s summary</h2>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-[13px] leading-snug">
+            {summaryStats.map(({ label, value }) => (
+              <div key={label} className="flex items-baseline justify-between gap-4 min-w-0">
+                <dt className="text-[var(--tx3)] shrink-0">{label}</dt>
+                <dd className="font-semibold text-[var(--tx)] tabular-nums text-right min-w-0">{value}</dd>
+              </div>
+            ))}
+          </dl>
           {preview.jobs && preview.jobs.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-[var(--brd)]">
-              <p className="text-[10px] font-semibold text-[var(--tx3)] mb-2">Jobs</p>
+            <div className="mt-5 pt-5 border-t border-[var(--brd)]">
+              <h3 className="text-[15px] sm:text-[16px] font-semibold font-heading text-[var(--tx2)] tracking-tight mb-3">
+                Jobs
+              </h3>
               {preview.jobs.map((j, i) => (
-                <div key={i} className="mb-3 last:mb-0">
-                  <p className="text-[11px] text-[var(--tx2)] font-medium">{j.displayId ?? j.jobId} · {j.duration}m</p>
+                <div key={i} className="mb-4 last:mb-0">
+                  <p className="text-[13px] font-medium text-[var(--tx)]">
+                    {j.displayId ?? j.jobId}
+                    <span className="text-[var(--tx3)] font-normal"> · {j.duration} min</span>
+                  </p>
                   <textarea
                     value={jobNotes[j.jobId] ?? ""}
                     onChange={(e) => setJobNotes((prev) => ({ ...prev, [j.jobId]: e.target.value }))}
                     placeholder="Note for this job (optional)"
-                    className="mt-1 w-full px-3 py-2 rounded-lg text-[11px] bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] min-h-[60px]"
+                    className="mt-2 w-full px-3 py-2.5 rounded-xl text-[13px] leading-relaxed bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)]/75 min-h-[88px] resize-y"
                   />
                 </div>
               ))}
@@ -102,19 +137,23 @@ export default function CrewEndOfDayPage() {
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
-          <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-2 uppercase">Anything else to note? (optional)</label>
+          <label htmlFor="crew-eod-note" className="block text-[13px] font-semibold text-[var(--tx2)] mb-2">
+            Anything else to note?{" "}
+            <span className="font-normal text-[var(--tx3)]">(optional)</span>
+          </label>
           <textarea
+            id="crew-eod-note"
             value={crewNote}
             onChange={(e) => setCrewNote(e.target.value)}
             placeholder="e.g. Good day. Patels had more items than expected but we managed."
-            className="w-full px-4 py-3 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] min-h-[100px]"
+            className="w-full px-3 py-2.5 rounded-xl text-[13px] leading-relaxed bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)]/75 min-h-[120px] resize-y"
           />
         </div>
-        {error && <p className="text-[12px] text-[var(--red)]">{error}</p>}
+        {error && <p className="text-[13px] text-[var(--red)]">{error}</p>}
         <button
           type="submit"
           disabled={submitting}
-          className={`w-full py-4 rounded-xl font-semibold text-[15px] disabled:opacity-50 ${
+          className={`w-full py-3.5 rounded-xl font-semibold text-[14px] sm:text-[15px] disabled:opacity-50 ${
             preview?.alreadySubmitted
               ? "bg-transparent border-2 border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
               : "bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[#D4B56C]"

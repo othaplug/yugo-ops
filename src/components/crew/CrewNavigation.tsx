@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Map, { Layer, Marker, Source, useMap } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import {
@@ -47,6 +48,10 @@ const FIRST_PERSON_PITCH = 62;
 const NAV_FOLLOW_ZOOM = 17;
 
 const EMPTY_TRAFFIC_ROUTE: TrafficRouteFeatureCollection = { type: "FeatureCollection", features: [] };
+
+/** Viewport-sized shell; portaled to document.body so fixed positioning is not clipped by PageContent / tab-content transforms. */
+const CREW_NAV_OVERLAY_CLASS =
+  "fixed top-0 left-0 right-0 z-[var(--z-modal)] flex min-h-0 w-full flex-col overflow-hidden overscroll-contain bg-black h-dvh max-h-[100dvh]";
 
 export type CrewNavDestination = { lat: number; lng: number; address: string };
 
@@ -150,8 +155,10 @@ function CrewNavOpsFloatingControls({
 
   return (
     <div
-      className="absolute bottom-28 right-3 z-10 flex flex-col items-center gap-2"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="absolute right-3 z-10 flex flex-col items-center gap-2"
+      style={{
+        bottom: "calc(7rem + env(safe-area-inset-bottom, 0px))",
+      }}
     >
       <button
         type="button"
@@ -294,14 +301,15 @@ function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): num
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function distancePointToSegmentMeters(
+/** Planar projection distance from P to closest point on segment AB; `t` is 0 at A, 1 at B (clamped). */
+function distancePointToSegmentMetersWithT(
   latP: number,
   lngP: number,
   latA: number,
   lngA: number,
   latB: number,
   lngB: number
-): number {
+): { dist: number; t: number } {
   const R = 6371000;
   const xA = ((lngA - lngP) * Math.PI) / 180;
   const xB = ((lngB - lngP) * Math.PI) / 180;
@@ -317,13 +325,67 @@ function distancePointToSegmentMeters(
   const wx = -xa;
   const wy = -ya;
   const c1 = vx * wx + vy * wy;
-  if (c1 <= 0) return Math.hypot(xa, ya);
+  if (c1 <= 0) return { dist: Math.hypot(xa, ya), t: 0 };
   const c2 = vx * vx + vy * vy;
-  if (c2 <= c1) return Math.hypot(xb - xa, yb - ya);
+  if (c2 <= c1) return { dist: Math.hypot(xb - xa, yb - ya), t: 1 };
   const t = c1 / c2;
   const px = xa + t * vx;
   const py = ya + t * vy;
-  return Math.hypot(px, py);
+  return { dist: Math.hypot(px, py), t };
+}
+
+function distancePointToSegmentMeters(
+  latP: number,
+  lngP: number,
+  latA: number,
+  lngA: number,
+  latB: number,
+  lngB: number
+): number {
+  return distancePointToSegmentMetersWithT(latP, lngP, latA, lngA, latB, lngB).dist;
+}
+
+/** Driving distance remaining along the route polyline (not straight-line to destination). */
+function remainingDistanceAlongPolylineM(
+  lat: number,
+  lng: number,
+  coords: [number, number][]
+): number | null {
+  if (coords.length < 2) return null;
+  let bestI = 0;
+  let bestT = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const [lngA, latA] = coords[i];
+    const [lngB, latB] = coords[i + 1];
+    const { dist, t } = distancePointToSegmentMetersWithT(lat, lng, latA, lngA, latB, lngB);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestI = i;
+      bestT = t;
+    }
+  }
+  const [lngA0, latA0] = coords[bestI];
+  const [lngB0, latB0] = coords[bestI + 1];
+  const segLen = haversineM(latA0, lngA0, latB0, lngB0);
+  let remaining = (1 - bestT) * segLen;
+  for (let j = bestI + 1; j < coords.length - 1; j++) {
+    const [lngS, latS] = coords[j];
+    const [lngE, latE] = coords[j + 1];
+    remaining += haversineM(latS, lngS, latE, lngE);
+  }
+  return Math.max(0, remaining);
+}
+
+function totalPolylineLengthM(coords: [number, number][]): number {
+  if (coords.length < 2) return 0;
+  let s = 0;
+  for (let j = 0; j < coords.length - 1; j++) {
+    const [lngS, latS] = coords[j];
+    const [lngE, latE] = coords[j + 1];
+    s += haversineM(latS, lngS, latE, lngE);
+  }
+  return s;
 }
 
 function minDistanceToRouteM(lat: number, lng: number, coords: [number, number][]): number {
@@ -454,6 +516,14 @@ export function CrewNavigation({
   }, []);
 
   const mapStyle = isNight ? "mapbox://styles/mapbox/dark-v11" : "mapbox://styles/mapbox/light-v11";
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
 
   const fetchRoute = useCallback(async (origin: { lat: number; lng: number }) => {
     if (!HAS_MAPBOX || fetchRouteInFlight.current) return;
@@ -602,11 +672,22 @@ export function CrewNavigation({
         const distToDestM = haversineM(latitude, longitude, dest.lat, dest.lng);
         setDistRemainLabel(formatDistanceM(distToDestM));
 
+        const rcForEta = routeCoordsRef.current;
+        const remainAlongM =
+          rcForEta && rcForEta.length >= 2
+            ? remainingDistanceAlongPolylineM(latitude, longitude, rcForEta)
+            : null;
+        const polyTotalM =
+          rcForEta && rcForEta.length >= 2 ? totalPolylineLengthM(rcForEta) : null;
         const rd = routeDurationRef.current;
         const rdist = routeDistanceRef.current;
         let etaSec: number | null = null;
         if (rd != null && rdist != null && rdist > 1) {
-          etaSec = rd * (distToDestM / rdist);
+          if (remainAlongM != null && polyTotalM != null && polyTotalM > 1) {
+            etaSec = rd * (remainAlongM / polyTotalM);
+          } else {
+            etaSec = rd * (distToDestM / rdist);
+          }
           setEtaLabel(formatEta(etaSec));
         } else if (speed != null && !Number.isNaN(speed) && speed > 0.5) {
           etaSec = distToDestM / speed;
@@ -719,8 +800,14 @@ export function CrewNavigation({
   }, [userPos?.lat, userPos?.lng, destination.lat, destination.lng]);
 
   if (!HAS_MAPBOX) {
-    return (
-      <div className="fixed inset-0 z-[var(--z-modal)] flex flex-col items-center justify-center bg-[var(--bg)] p-6 text-center">
+    const missingToken = (
+      <div
+        data-modal-root
+        className={`${CREW_NAV_OVERLAY_CLASS} items-center justify-center bg-[var(--bg)] p-6 text-center`}
+        role="alertdialog"
+        aria-modal="true"
+        aria-label="Navigation unavailable"
+      >
         <p className="text-[var(--tx)] font-semibold mb-2">Mapbox is not configured</p>
         <p className="text-[13px] text-[var(--tx3)] mb-4">Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for in-app navigation.</p>
         <button
@@ -732,11 +819,18 @@ export function CrewNavigation({
         </button>
       </div>
     );
+    return typeof document !== "undefined" ? createPortal(missingToken, document.body) : null;
   }
 
-  return (
-    <div className="fixed inset-0 z-[var(--z-modal)] flex flex-col bg-black">
-      <div className="shrink-0 text-white p-4 flex items-start gap-3 border-b border-white/10 bg-[#1a3d2e]">
+  const navUi = (
+    <div
+      data-modal-root
+      className={CREW_NAV_OVERLAY_CLASS}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Turn-by-turn navigation"
+    >
+      <div className="shrink-0 text-white px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] flex items-start gap-3 border-b border-white/10 bg-[#1a3d2e]">
         <ManeuverIcon type={maneuverMeta.type} modifier={maneuverMeta.modifier} />
         <div className="min-w-0 flex-1">
           <p className="text-[17px] font-bold leading-snug">{nextInstruction}</p>
@@ -835,7 +929,7 @@ export function CrewNavigation({
 
       </div>
 
-      <div className="shrink-0 text-white p-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#4a1528]">
+      <div className="shrink-0 text-white px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#4a1528]">
         <div>
           <p className="text-2xl font-bold leading-none">{etaLabel}</p>
           <p className="text-[11px] opacity-80 mt-1 uppercase tracking-wide">ETA</p>
@@ -854,4 +948,6 @@ export function CrewNavigation({
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(navUi, document.body) : null;
 }
