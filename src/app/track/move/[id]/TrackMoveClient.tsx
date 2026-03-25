@@ -47,10 +47,17 @@ import {
   Receipt,
   UsersThree,
   ArrowsCounterClockwise,
+  Recycle,
+  ArrowRight,
 } from "@phosphor-icons/react";
 import PreMoveChecklist from "@/components/tracking/PreMoveChecklist";
 import LiveMoveTimeline from "@/components/tracking/LiveMoveTimeline";
 import ClientRoomPhotoCapture from "@/components/tracking/ClientRoomPhotoCapture";
+import {
+  BIN_RENTAL_BUNDLE_SPECS,
+  wardrobeBoxesForBundle,
+  type BinBundleKey,
+} from "@/lib/pricing/bin-rental";
 
 function formatPerkOffer(offerType: string, discountValue: number | null): string {
   if (offerType === "percentage_off" && discountValue) return `${discountValue}% off`;
@@ -116,6 +123,226 @@ function getStatusIdx(status: string | null): number {
   return legacy[status] ?? 0;
 }
 
+type BinOrderTrackRow = {
+  order_number: string;
+  status: string;
+  bin_count: number;
+  bundle_type: string;
+  drop_off_date: string;
+  move_date: string;
+  pickup_date: string;
+  delivery_address: string;
+  pickup_address?: string | null;
+  includes_paper?: boolean | null;
+};
+
+function binRentalStatusClientLabel(status: string): string {
+  const map: Record<string, string> = {
+    confirmed: "Booked",
+    drop_off_scheduled: "Delivery scheduled",
+    bins_delivered: "Delivered",
+    in_use: "Active",
+    pickup_scheduled: "Pickup scheduled",
+    bins_collected: "Collected",
+    completed: "Completed",
+    overdue: "Late return",
+    cancelled: "Cancelled",
+  };
+  return map[status] ?? status.replace(/_/g, " ");
+}
+
+function relativeDayPhrase(iso: string): string {
+  const parsed = parseDateOnly(iso);
+  if (!parsed) return "";
+  const d = new Date(parsed.getTime());
+  d.setHours(0, 0, 0, 0);
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - t.getTime()) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  if (diff > 1) return `In ${diff} days`;
+  if (diff === -1) return "Yesterday";
+  return `${Math.abs(diff)} days ago`;
+}
+
+function BinRentalTrackingSection({
+  binOrder,
+  primaryTitle,
+  serviceType,
+}: {
+  binOrder: BinOrderTrackRow;
+  primaryTitle: boolean;
+  serviceType: string;
+}) {
+  const st = String(binOrder.status || "").toLowerCase();
+  const pickupAddr = (binOrder.pickup_address || binOrder.delivery_address || "").trim();
+  const deliveryAddr = (binOrder.delivery_address || "").trim();
+
+  const deliveryDone = ["bins_delivered", "in_use", "pickup_scheduled", "bins_collected", "completed", "overdue"].includes(st);
+  const moveD = parseDateOnly(binOrder.move_date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const moveDayDone = moveD ? moveD.getTime() <= today.getTime() : false;
+  const pickupDone = ["bins_collected", "completed"].includes(st);
+
+  const bundleKey: BinBundleKey =
+    binOrder.bundle_type === "individual" ? "custom" : (binOrder.bundle_type as BinBundleKey);
+  const wardrobe = wardrobeBoxesForBundle(bundleKey);
+  const spec =
+    binOrder.bundle_type !== "individual"
+      ? BIN_RENTAL_BUNDLE_SPECS[binOrder.bundle_type as keyof typeof BIN_RENTAL_BUNDLE_SPECS]
+      : null;
+  const bundleTitle = spec ? `${spec.label} bundle` : "Custom bundle";
+
+  function stepIcon(done: boolean) {
+    return (
+      <div
+        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+        style={{
+          background: done ? "#22C55E22" : `${GOLD}15`,
+          border: `1.5px solid ${done ? "#22C55E" : GOLD}`,
+        }}
+      >
+        {done ? <Check size={10} color="#22C55E" weight="bold" /> : <div className="w-2 h-2 rounded-full bg-current opacity-40" style={{ color: GOLD }} />}
+      </div>
+    );
+  }
+
+  const MARKETING_QUOTE_URL = "https://yugoplus.co";
+
+  return (
+    <div
+      className="rounded-2xl border p-4 mb-4 space-y-4"
+      style={{ borderColor: `${GOLD}35`, background: `${GOLD}0A` }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Recycle size={22} color={GOLD} weight="regular" className="shrink-0" aria-hidden />
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: FOREST }}>
+              {primaryTitle ? "Your bin rental" : "Bin rental"}
+            </p>
+            <p className="text-[15px] font-bold truncate" style={{ color: WINE }}>
+              {binOrder.order_number}
+            </p>
+          </div>
+        </div>
+        <span
+          className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md shrink-0"
+          style={{
+            background: st === "overdue" ? "#FEE2E2" : `${GOLD}18`,
+            color: st === "overdue" ? "#B91C1C" : FOREST,
+          }}
+        >
+          {binRentalStatusClientLabel(st)}
+        </span>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: `${FOREST}99` }}>
+          Timeline
+        </p>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            {stepIcon(deliveryDone)}
+            <div className="min-w-0">
+              <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                Bin delivery — {formatMoveDate(binOrder.drop_off_date)}
+              </p>
+              <p className="text-[11px] opacity-70 mt-0.5" style={{ color: FOREST }}>
+                {relativeDayPhrase(binOrder.drop_off_date)}
+                {deliveryAddr ? (
+                  <>
+                    {" · "}
+                    <span className="break-words">{shortAddress(deliveryAddr)}</span>
+                  </>
+                ) : null}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            {stepIcon(moveDayDone)}
+            <div>
+              <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                Your move — {formatMoveDate(binOrder.move_date)}
+              </p>
+              <p className="text-[11px] opacity-70 mt-0.5" style={{ color: FOREST }}>{relativeDayPhrase(binOrder.move_date)}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            {stepIcon(pickupDone)}
+            <div className="min-w-0">
+              <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
+                Bin pickup — {formatMoveDate(binOrder.pickup_date)}
+              </p>
+              <p className="text-[11px] opacity-70 mt-0.5" style={{ color: FOREST }}>
+                {relativeDayPhrase(binOrder.pickup_date)}
+                {pickupAddr ? (
+                  <>
+                    {" · "}
+                    <span className="break-words">From {shortAddress(pickupAddr)}</span>
+                  </>
+                ) : null}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: `${FOREST}99` }}>
+          What&apos;s included
+        </p>
+        <ul className="text-[11px] space-y-1 pl-0 list-none" style={{ color: `${FOREST}CC` }}>
+          <li>
+            {binOrder.bin_count} plastic bins (27×16×13&quot;)
+          </li>
+          {wardrobe > 0 ? <li>{wardrobe} wardrobe boxes (on move day)</li> : null}
+          {binOrder.includes_paper ? <li>Packing paper + zip ties</li> : <li>Zip ties included</li>}
+          <li className="text-[10px] opacity-80">{bundleTitle}</li>
+        </ul>
+      </div>
+
+      <div
+        className="rounded-xl px-3 py-2.5 text-[11px] space-y-1"
+        style={{ background: `${FOREST}08`, border: `1px solid ${FOREST}14` }}
+      >
+        <p className="font-semibold" style={{ color: FOREST }}>Reminders</p>
+        <p style={{ color: `${FOREST}AA` }}>Stack bins in an accessible area for pickup.</p>
+        {wardrobe > 0 ? <p style={{ color: `${FOREST}AA` }}>Wardrobe boxes are returned on pickup day.</p> : null}
+        <p style={{ color: `${FOREST}AA` }}>Late returns: $15/day may be charged to your card on file.</p>
+      </div>
+
+      {serviceType === "bin_rental" && (
+        <div
+          className="rounded-xl px-3 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+          style={{ background: `${WINE}08`, border: `1px solid ${WINE}20` }}
+        >
+          <p className="text-[11px] font-medium" style={{ color: FOREST }}>
+            Need a Yugo move? We can coordinate bin delivery with your crew.
+          </p>
+          <Link
+            href={MARKETING_QUOTE_URL}
+            className="inline-flex items-center gap-1 text-[11px] font-bold whitespace-nowrap shrink-0"
+            style={{ color: GOLD }}
+          >
+            Get a moving quote
+            <ArrowRight className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
+          </Link>
+        </div>
+      )}
+
+      <p className="text-[10px] opacity-60" style={{ color: FOREST }}>
+        Questions? Call{" "}
+        <a href={`tel:${YUGO_PHONE.replace(/\D/g, "")}`} className="font-semibold underline-offset-2 hover:underline" style={{ color: GOLD }}>
+          {YUGO_PHONE}
+        </a>
+      </p>
+    </div>
+  );
+}
+
 export default function TrackMoveClient({
   move,
   crew,
@@ -139,6 +366,7 @@ export default function TrackMoveClient({
   inventoryChangeMaxItems = 10,
   latestInventoryAdjustmentPayment = null,
   crewChangeRequest = null,
+  binOrder = null,
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
@@ -179,6 +407,7 @@ export default function TrackMoveClient({
     new_subtotal: number;
     client_response: string | null;
   } | null;
+  binOrder?: BinOrderTrackRow | null;
 }) {
   const router = useRouter();
   const params = useParams();
@@ -814,6 +1043,14 @@ export default function TrackMoveClient({
             This page never expires, clients revisiting years later see their perks. */}
         {isCompleted && (
           <div className="space-y-5 mt-1">
+
+            {binOrder && (
+              <BinRentalTrackingSection
+                binOrder={binOrder}
+                primaryTitle={String(move.service_type || "").toLowerCase() === "bin_rental"}
+                serviceType={String(move.service_type || "").toLowerCase()}
+              />
+            )}
 
             {tipState === "tipped" && (
               <TipConfirmation amount={confirmedTipAmount} />
@@ -1572,6 +1809,14 @@ export default function TrackMoveClient({
         {/* Tab content */}
         {activeTab === "dash" && !isCompleted && (
           <div>
+            {binOrder && (
+              <BinRentalTrackingSection
+                binOrder={binOrder}
+                primaryTitle={String(move.service_type || "").toLowerCase() === "bin_rental"}
+                serviceType={String(move.service_type || "").toLowerCase()}
+              />
+            )}
+
             {additionalFeesCents > 0 && !indicativeSettled && baseBalance <= 0 && (
               <div className="pb-4 text-[11px] opacity-70" style={{ color: FOREST }}>
                 Additional charges of {formatCurrency((additionalFeesCents || 0) / 100)} from approved changes.

@@ -39,11 +39,13 @@ const POST_MIN_MS = 1100;
 const REVERSE_GEOCODE_MS = 45_000;
 
 const GOLD = "#B8962E";
-/** Burgundy route line (wine) — light / free-flowing traffic when Mapbox reports low or unknown. */
-const WINE_ROUTE = "#7B1F2F";
-const TRAFFIC_MODERATE = "#CA8A04";
-const TRAFFIC_HEAVY = "#EA580C";
-const TRAFFIC_SEVERE = "#B91C1C";
+/** Clear / low traffic — high-contrast on dark map (Mapbox dark-v11). */
+const ROUTE_CLEAR = "#5EEAD4";
+const TRAFFIC_MODERATE = "#FCD34D";
+const TRAFFIC_HEAVY = "#FB923C";
+const TRAFFIC_SEVERE = "#F87171";
+const CREW_NAV_LINE_WIDTH = 11;
+const CREW_NAV_HALO_WIDTH = CREW_NAV_LINE_WIDTH + 8;
 const FIRST_PERSON_PITCH = 62;
 const NAV_FOLLOW_ZOOM = 17;
 
@@ -865,6 +867,18 @@ export function CrewNavigation({
         >
           {trafficRouteGeoJson.features.length > 0 && (
             <Source id="crew-nav-route" type="geojson" data={trafficRouteGeoJson}>
+              {isNight && (
+                <Layer
+                  id="crew-nav-route-halo"
+                  type="line"
+                  layout={{ "line-cap": "round", "line-join": "round" }}
+                  paint={{
+                    "line-color": "rgba(255,255,255,0.28)",
+                    "line-width": CREW_NAV_HALO_WIDTH,
+                    "line-opacity": 0.95,
+                  }}
+                />
+              )}
               <Layer
                 id="crew-nav-route-line"
                 type="line"
@@ -880,13 +894,13 @@ export function CrewNavigation({
                     "moderate",
                     TRAFFIC_MODERATE,
                     "low",
-                    WINE_ROUTE,
+                    ROUTE_CLEAR,
                     "unknown",
-                    WINE_ROUTE,
-                    WINE_ROUTE,
+                    ROUTE_CLEAR,
+                    ROUTE_CLEAR,
                   ],
-                  "line-width": 6,
-                  "line-opacity": 0.92,
+                  "line-width": CREW_NAV_LINE_WIDTH,
+                  "line-opacity": 1,
                 }}
               />
             </Source>

@@ -1,7 +1,7 @@
 export type ViewMode = "day" | "week" | "month" | "year";
 export type CalendarRole = "admin" | "partner";
 
-export type JobType = "move" | "delivery" | "project_phase" | "project";
+export type JobType = "move" | "delivery" | "project_phase" | "project" | "bin_delivery" | "bin_pickup";
 export type BlockType = JobType | "maintenance" | "training" | "break" | "blocked" | "time_off";
 
 export type CalendarStatus = "scheduled" | "in_progress" | "completed" | "cancelled" | "rescheduled";
@@ -18,6 +18,8 @@ export const JOB_COLORS = {
   break: "#94A3B8",
   time_off: "#A8A29E",
   recurring: "#34D399",
+  bin_delivery: "#10B981",
+  bin_pickup: "#059669",
 } as const;
 
 export const STATUS_DOT_COLORS: Record<string, string> = {
@@ -107,7 +109,7 @@ export interface CrewColumn {
 }
 
 export interface YearHeatData {
-  [dateKey: string]: { total: number; moves: number; deliveries: number; projects: number };
+  [dateKey: string]: { total: number; moves: number; deliveries: number; projects: number; bins?: number };
 }
 
 export interface CalendarFilters {

@@ -8,6 +8,20 @@ import { toTitleCase } from "@/lib/format-text";
 
 export const dynamic = "force-dynamic";
 
+function shortCalAddr(addr: string | null | undefined): string {
+  const t = (addr || "").trim().replace(/\s+/g, " ");
+  if (t.length <= 44) return t;
+  return `${t.slice(0, 41)}…`;
+}
+
+function binOrderCalendarStatus(st: string | null | undefined): "scheduled" | "completed" | "cancelled" | "in_progress" {
+  const s = (st || "").toLowerCase();
+  if (s === "cancelled") return "cancelled";
+  if (s === "completed" || s === "bins_collected") return "completed";
+  if (s === "bins_delivered" || s === "in_use" || s === "pickup_scheduled" || s === "overdue") return "in_progress";
+  return "scheduled";
+}
+
 export async function GET(req: NextRequest) {
   const { error: authError } = await requireStaff();
   if (authError) return authError;
@@ -27,10 +41,12 @@ export async function GET(req: NextRequest) {
       const yearStart = `${year}-01-01`;
       const yearEnd = `${year}-12-31`;
 
-      const [{ data: moveCounts }, { data: delCounts }, { data: phaseCounts }] = await Promise.all([
+      const [{ data: moveCounts }, { data: delCounts }, { data: phaseCounts }, { data: binDropCounts }, { data: binPickCounts }] = await Promise.all([
         db.from("moves").select("scheduled_date").gte("scheduled_date", yearStart).lte("scheduled_date", yearEnd).not("scheduled_date", "is", null),
         db.from("deliveries").select("scheduled_date").gte("scheduled_date", yearStart).lte("scheduled_date", yearEnd).not("scheduled_date", "is", null),
         db.from("project_phases").select("scheduled_date").gte("scheduled_date", yearStart).lte("scheduled_date", yearEnd).not("scheduled_date", "is", null).neq("status", "skipped"),
+        db.from("bin_orders").select("drop_off_date").gte("drop_off_date", yearStart).lte("drop_off_date", yearEnd).neq("status", "cancelled"),
+        db.from("bin_orders").select("pickup_date").gte("pickup_date", yearStart).lte("pickup_date", yearEnd).neq("status", "cancelled"),
       ]);
 
       const heat: YearHeatData = {};
@@ -55,6 +71,19 @@ export async function GET(req: NextRequest) {
         heat[dk].projects++;
         heat[dk].total++;
       }
+      const bumpBinHeat = (dk: string) => {
+        if (!heat[dk]) heat[dk] = { total: 0, moves: 0, deliveries: 0, projects: 0 };
+        heat[dk].bins = (heat[dk].bins ?? 0) + 1;
+        heat[dk].total++;
+      };
+      for (const r of binDropCounts || []) {
+        const dk = (r.drop_off_date as string)?.slice(0, 10);
+        if (dk) bumpBinHeat(dk);
+      }
+      for (const r of binPickCounts || []) {
+        const dk = (r.pickup_date as string)?.slice(0, 10);
+        if (dk) bumpBinHeat(dk);
+      }
 
       return NextResponse.json({ heat });
     }
@@ -66,7 +95,7 @@ export async function GET(req: NextRequest) {
     const startDate = String(start).slice(0, 10);
     const endDate = String(end).slice(0, 10);
 
-    const [movesResult, deliveriesResult, phasesResult, projectsResult, blocksResult, crewsResult, recurringResult, benchmarksResult, durationDefaultsResult] = await Promise.allSettled([
+    const [movesResult, deliveriesResult, phasesResult, projectsResult, blocksResult, crewsResult, recurringResult, benchmarksResult, durationDefaultsResult, binDropResult, binPickResult] = await Promise.allSettled([
       db
         .from("moves")
         .select("id, move_code, client_name, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, crew_id, from_address, to_address, event_group_id, event_phase, event_name")
@@ -100,6 +129,18 @@ export async function GET(req: NextRequest) {
         .eq("is_paused", false),
       db.from("volume_benchmarks").select("move_size, baseline_hours"),
       db.from("duration_defaults").select("job_type, sub_type, default_hours").eq("job_type", "delivery"),
+      db
+        .from("bin_orders")
+        .select("id, order_number, client_name, delivery_address, pickup_address, drop_off_date, move_id, status")
+        .gte("drop_off_date", startDate)
+        .lte("drop_off_date", endDate)
+        .neq("status", "cancelled"),
+      db
+        .from("bin_orders")
+        .select("id, order_number, client_name, delivery_address, pickup_address, pickup_date, move_id, status")
+        .gte("pickup_date", startDate)
+        .lte("pickup_date", endDate)
+        .neq("status", "cancelled"),
     ]);
 
     const moves = movesResult.status === "fulfilled" && !movesResult.value.error ? movesResult.value.data : null;
@@ -125,6 +166,10 @@ export async function GET(req: NextRequest) {
     const blocks = blocksResult.status === "fulfilled" && !blocksResult.value.error ? blocksResult.value.data : null;
     const crews = crewsResult.status === "fulfilled" && !crewsResult.value.error ? crewsResult.value.data : null;
     const recurringSchedules = recurringResult.status === "fulfilled" && !recurringResult.value.error ? recurringResult.value.data : null;
+    const binOrdersDrop =
+      binDropResult.status === "fulfilled" && !binDropResult.value.error ? binDropResult.value.data : null;
+    const binOrdersPick =
+      binPickResult.status === "fulfilled" && !binPickResult.value.error ? binPickResult.value.data : null;
 
     const diagnostics: { movesError?: string; deliveriesError?: string } = {};
     if (movesResult.status === "rejected") {
@@ -266,6 +311,103 @@ export async function GET(req: NextRequest) {
         itemCount: itemCount || null,
         scheduleBlockId: null,
       });
+    }
+
+    const includeBinCal = (!typeFilter || typeFilter === "bin_rental") && !crewFilter;
+    if (includeBinCal) {
+      type BinDropRow = {
+        id: string;
+        order_number: string;
+        client_name: string;
+        delivery_address: string;
+        pickup_address: string | null;
+        drop_off_date: string;
+        move_id: string | null;
+        status: string | null;
+      };
+      type BinPickRow = {
+        id: string;
+        order_number: string;
+        client_name: string;
+        delivery_address: string;
+        pickup_address: string | null;
+        pickup_date: string;
+        move_id: string | null;
+        status: string | null;
+      };
+      for (const o of (binOrdersDrop || []) as BinDropRow[]) {
+        const dk = toDateKey(o.drop_off_date);
+        if (!dk) continue;
+        const calSt = binOrderCalendarStatus(o.status);
+        if (statusFilter && calSt !== statusFilter) continue;
+        const nm = String(o.client_name || "").trim() || "Client";
+        const ord = String(o.order_number || "").trim() || "BIN";
+        const addr = shortCalAddr(o.delivery_address);
+        events.push({
+          id: `bin-drop-${o.id}`,
+          type: "bin_delivery",
+          blockType: "bin_delivery",
+          name: `${ord} Delivery — ${nm} → ${addr}`,
+          description: "Bin rental · drop-off",
+          date: dk,
+          start: "09:00",
+          end: "09:45",
+          durationHours: 0.75,
+          crewId: null,
+          crewName: null,
+          truckId: null,
+          truckName: null,
+          status: o.status || "confirmed",
+          calendarStatus: calSt,
+          color: JOB_COLORS.bin_delivery,
+          href: o.move_id ? `/admin/moves/${o.move_id}` : `/admin/bin-rentals/${o.id}`,
+          clientName: nm,
+          fromAddress: null,
+          toAddress: null,
+          deliveryAddress: o.delivery_address || null,
+          category: "Bin rental",
+          moveSize: null,
+          itemCount: null,
+          scheduleBlockId: null,
+        });
+      }
+      for (const o of (binOrdersPick || []) as BinPickRow[]) {
+        const dk = toDateKey(o.pickup_date);
+        if (!dk) continue;
+        const calSt = binOrderCalendarStatus(o.status);
+        if (statusFilter && calSt !== statusFilter) continue;
+        const nm = String(o.client_name || "").trim() || "Client";
+        const ord = String(o.order_number || "").trim() || "BIN";
+        const pickSrc = (o.pickup_address || o.delivery_address || "").trim();
+        const addr = shortCalAddr(pickSrc);
+        events.push({
+          id: `bin-pick-${o.id}`,
+          type: "bin_pickup",
+          blockType: "bin_pickup",
+          name: `${ord} Pickup — ${nm} ← ${addr}`,
+          description: "Bin rental · pickup",
+          date: dk,
+          start: "14:00",
+          end: "14:45",
+          durationHours: 0.75,
+          crewId: null,
+          crewName: null,
+          truckId: null,
+          truckName: null,
+          status: o.status || "confirmed",
+          calendarStatus: calSt,
+          color: JOB_COLORS.bin_pickup,
+          href: o.move_id ? `/admin/moves/${o.move_id}` : `/admin/bin-rentals/${o.id}`,
+          clientName: nm,
+          fromAddress: pickSrc || null,
+          toAddress: null,
+          deliveryAddress: o.delivery_address || null,
+          category: "Bin rental",
+          moveSize: null,
+          itemCount: null,
+          scheduleBlockId: null,
+        });
+      }
     }
 
     for (const p of phases || []) {

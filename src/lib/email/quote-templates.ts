@@ -174,6 +174,19 @@ export interface QuoteTemplateData {
   // B2B One-Off
   b2bBusinessName?: string | null;
   b2bItems?: string | null;
+  // Bin rental
+  binBundleLabel?: string | null;
+  binDropOffDate?: string | null;
+  binPickupDate?: string | null;
+  binMoveDate?: string | null;
+  binDeliveryAddress?: string | null;
+  binPickupAddress?: string | null;
+  binLineItems?: { label: string; amount: number }[] | null;
+  binSubtotal?: number | null;
+  binTax?: number | null;
+  binGrandTotal?: number | null;
+  /** Bullet lines for bin rental "what's included" */
+  binIncludeLines?: string[] | null;
 }
 
 /* ─── Building blocks ─── */
@@ -718,6 +731,67 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
   `);
 }
 
+/* Bin rental */
+function binRentalTemplate(d: QuoteTemplateData): string {
+  const rows: [string, string][] = [];
+  const includeBullets =
+    d.binIncludeLines && d.binIncludeLines.length > 0
+      ? `<ul style="margin:0 0 16px;padding-left:18px;color:${TX2};font-size:12px;line-height:1.55">${d.binIncludeLines
+          .map((line) => `<li style="margin-bottom:4px">${line}</li>`)
+          .join("")}</ul>`
+      : `<p style="margin:0 0 16px;color:${TX2};font-size:12px;line-height:1.55">Reusable plastic bins, wardrobe boxes on move day, zip ties (1 per bin).</p>`;
+  if (d.binDropOffDate) {
+    rows.push(["Bin delivery", `${dateDisplay(d.binDropOffDate)} — ${d.binDeliveryAddress || d.toAddress || ""}`]);
+  }
+  if (d.binMoveDate) {
+    rows.push(["Your move", dateDisplay(d.binMoveDate)]);
+  }
+  if (d.binPickupDate) {
+    rows.push([
+      "Bin pickup",
+      `${dateDisplay(d.binPickupDate)} — from ${d.binPickupAddress || d.fromAddress || d.toAddress || ""}`,
+    ]);
+  }
+
+  const subtotal = d.binSubtotal ?? d.customPrice ?? 0;
+  const tax = d.binTax ?? Math.round(subtotal * 0.13);
+  const grand = d.binGrandTotal ?? subtotal + tax;
+
+  const quoteLines =
+    d.binLineItems && d.binLineItems.length > 0
+      ? d.binLineItems
+          .map(
+            (l) =>
+              `<tr><td style="padding:6px 0;border-bottom:1px solid ${CARD_BORDER};color:${TX2}">${l.label}</td><td style="padding:6px 0;border-bottom:1px solid ${CARD_BORDER};text-align:right">${formatCurrency(l.amount)}</td></tr>`,
+          )
+          .join("")
+      : "";
+
+  return quoteEmailLayout(`
+    ${subHeading("Your Yugo Bin Rental Quote")}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${bodyText("Your eco-friendly bin rental quote is ready.")}
+    <p style="font-size:11px;font-weight:700;color:${TX};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px">What&apos;s included</p>
+    ${includeBullets}
+    ${expiryNote(d.expiresAt)}
+    <p style="font-size:11px;font-weight:700;color:${TX};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px">Your schedule</p>
+    ${detailsPlain(rows)}
+    <div style="text-align:left;margin:16px 0">
+      <p style="font-size:11px;font-weight:700;color:${TX};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px">Quote</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="font-size:12px;color:${TX2}">
+        ${quoteLines}
+        <tr><td style="padding:8px 0;font-weight:600;color:${TX}">Subtotal</td><td style="padding:8px 0;text-align:right">${formatCurrency(subtotal)}</td></tr>
+        <tr><td style="padding:8px 0;font-weight:600;color:${TX}">HST (13%)</td><td style="padding:8px 0;text-align:right">${formatCurrency(tax)}</td></tr>
+        <tr><td style="padding:10px 0 0;font-weight:700;color:${TX}">Total</td><td style="padding:10px 0 0;text-align:right;font-weight:700;color:${GOLD_LIGHT}">${formatCurrency(grand)}</td></tr>
+      </table>
+    </div>
+    ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
+    ${ctaButton(d.quoteUrl, "View Quote & Book")}
+    <p style="font-size:11px;color:${TX3};text-align:center;margin:0 0 16px;line-height:1.6">This quote is valid for 7 days. Full payment confirms your rental.</p>
+    ${questionsFooter(d.coordinatorName, d.coordinatorPhone)}
+  `);
+}
+
 /* B2B One-Off */
 function b2bOneOffTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
@@ -756,6 +830,7 @@ const TEMPLATE_MAP: Record<string, (d: QuoteTemplateData) => string> = {
   "quote-specialty": specialtyTemplate,
   "quote-event": eventTemplate,
   "quote-labouronly": labourOnlyTemplate,
+  "quote-binrental": binRentalTemplate,
   "quote-b2boneoff": b2bOneOffTemplate,
 };
 

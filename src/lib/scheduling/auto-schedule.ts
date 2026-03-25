@@ -192,6 +192,8 @@ export async function autoScheduleMove(
 
   if (!move?.move_date) return;
 
+  if (move.service_type === "bin_rental") return;
+
   const crewSize = (move.crew_count as number) ?? 2;
   const truckType = (move.truck_primary as string) ?? "16ft";
   const window = (move.arrival_window as string) ?? "8AM-10AM";

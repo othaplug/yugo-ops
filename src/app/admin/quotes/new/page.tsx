@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import QuoteFormClient from "./QuoteFormClient";
+import { sumBinsOutOnRental, availableBinInventory } from "@/lib/pricing/bin-rental";
 
 export const metadata = { title: "New Quote" };
 
@@ -35,9 +36,23 @@ export default async function NewQuotePage() {
   const config: Record<string, string> = {};
   for (const r of configRows ?? []) config[r.key] = r.value;
 
+  const totalBins = Number(config.bin_total_inventory ?? "500") || 500;
+  const outOnRental = await sumBinsOutOnRental(db);
+  const binInventorySnapshot = {
+    total: totalBins,
+    out: outOnRental,
+    available: availableBinInventory(totalBins, outOnRental),
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto px-5 md:px-6 py-5 md:py-6">
-      <QuoteFormClient addons={addons ?? []} config={config} itemWeights={itemWeights ?? []} userRole={userRole} />
+      <QuoteFormClient
+        addons={addons ?? []}
+        config={config}
+        itemWeights={itemWeights ?? []}
+        userRole={userRole}
+        binInventorySnapshot={binInventorySnapshot}
+      />
     </div>
   );
 }

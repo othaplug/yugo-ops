@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import BackButton from "../../components/BackButton";
-import { PencilSimple as Pencil, CaretDown as ChevronDown, Lock, Check, Warning } from "@phosphor-icons/react";
+import { PencilSimple as Pencil, CaretDown as ChevronDown, Lock, Check, Warning, Recycle } from "@phosphor-icons/react";
 import { Icon } from "@/components/AppIcons";
 import MoveNotifyButton from "../MoveNotifyButton";
 import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
@@ -76,6 +77,7 @@ interface MoveDetailClientProps {
     inventory_change_request_id: string | null;
   }[];
   moveStatusEvents?: { event_type: string; created_at: string }[];
+  linkedBinOrders?: Record<string, unknown>[];
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
 import RecommendedCrewPanel from "./RecommendedCrewPanel";
@@ -135,6 +137,139 @@ const VEHICLE_LABELS: Record<string, string> = {
 };
 const VEHICLE_OPTIONS = Object.entries(VEHICLE_LABELS);
 
+const BIN_ORDER_STATUS_ADMIN: Record<string, string> = {
+  confirmed: "Booked",
+  drop_off_scheduled: "Delivery scheduled",
+  bins_delivered: "Delivered",
+  in_use: "Active",
+  pickup_scheduled: "Pickup scheduled",
+  bins_collected: "Collected",
+  completed: "Completed",
+  overdue: "Late return",
+  cancelled: "Cancelled",
+};
+
+function BinOrderPickupBlock({
+  bin,
+  userRole,
+}: {
+  bin: Record<string, unknown>;
+  userRole: string;
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const id = String(bin.id ?? "");
+  const binCount = Math.max(1, Math.floor(Number(bin.bin_count) || 1));
+  const wProv = bin.wardrobe_boxes_provided != null ? Math.max(0, Math.floor(Number(bin.wardrobe_boxes_provided))) : null;
+  const [binsReturned, setBinsReturned] = useState(Math.min(binCount, Math.floor(Number(bin.bins_returned ?? binCount))));
+  const [missing, setMissing] = useState(Math.max(0, Math.floor(Number(bin.bins_missing ?? 0))));
+  const [wardrobeRet, setWardrobeRet] = useState(
+    wProv != null ? Math.min(wProv, Math.floor(Number(bin.wardrobe_boxes_returned ?? wProv))) : 0,
+  );
+  const [condition, setCondition] = useState(String(bin.pickup_condition ?? "good"));
+  const [saving, setSaving] = useState(false);
+  const canEdit = ["owner", "admin", "coordinator"].includes(userRole);
+  if (!canEdit) return null;
+  const st = String(bin.status ?? "").toLowerCase();
+  if (["completed", "cancelled", "bins_collected"].includes(st)) return null;
+
+  const save = async (markCollected: boolean) => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/bin-orders/${id}/pickup`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bins_returned: binsReturned,
+          bins_missing: missing,
+          wardrobe_boxes_returned: wProv != null ? wardrobeRet : undefined,
+          pickup_condition: condition,
+          mark_collected: markCollected,
+        }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Save failed");
+      toast(markCollected ? "Pickup recorded" : "Pickup draft saved", "check");
+      router.refresh();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Save failed", "alertTriangle");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 pt-2 border-t border-[var(--brd)]/40 space-y-2">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">Pickup checklist</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+        <label className="text-[10px] text-[var(--tx3)]">
+          Bins returned
+          <input
+            type="number"
+            min={0}
+            max={binCount}
+            value={binsReturned}
+            onChange={(e) => setBinsReturned(Math.min(binCount, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+            className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+          />
+        </label>
+        <label className="text-[10px] text-[var(--tx3)]">
+          Missing bins
+          <input
+            type="number"
+            min={0}
+            max={binCount}
+            value={missing}
+            onChange={(e) => setMissing(Math.min(binCount, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+            className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+          />
+        </label>
+        {wProv != null && wProv > 0 ? (
+          <label className="text-[10px] text-[var(--tx3)]">
+            Wardrobe returned
+            <input
+              type="number"
+              min={0}
+              max={wProv}
+              value={wardrobeRet}
+              onChange={(e) => setWardrobeRet(Math.min(wProv, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+              className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]"
+            />
+          </label>
+        ) : (
+          <span className="text-[10px] text-[var(--tx3)] col-span-1">Wardrobe: n/a</span>
+        )}
+        <label className="text-[10px] text-[var(--tx3)] col-span-2 sm:col-span-1">
+          Condition
+          <select value={condition} onChange={(e) => setCondition(e.target.value)} className="mt-0.5 w-full bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]">
+            <option value="good">Good</option>
+            <option value="some_damaged">Some damaged</option>
+            <option value="many_damaged">Many damaged</option>
+          </select>
+        </label>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => save(false)}
+          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
+        >
+          Save counts
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => save(true)}
+          className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+        >
+          Complete pickup
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function MoveDetailClient({
   move: initialMove,
   crews = [],
@@ -147,6 +282,7 @@ export default function MoveDetailClient({
   pendingInventoryChange,
   paymentLedger = [],
   moveStatusEvents = [],
+  linkedBinOrders = [],
 }: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -298,7 +434,14 @@ export default function MoveDetailClient({
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <div className="flex items-center gap-2 mb-1">
         <BackButton label="Back" />
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Operations · {isOffice ? "Office Move" : "Residential Move"}</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">
+          Operations ·{" "}
+          {String(move.service_type || "").toLowerCase() === "bin_rental"
+            ? "Bin Rental"
+            : isOffice
+              ? "Office Move"
+              : "Residential Move"}
+        </p>
       </div>
 
       {isCompleted && (
@@ -327,8 +470,17 @@ export default function MoveDetailClient({
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
-                <Icon name={isOffice ? "building" : "home"} className="w-[10px] h-[10px]" />
-                {isOffice ? "Office" : "Residential"} Move
+                {String(move.service_type || "").toLowerCase() === "bin_rental" ? (
+                  <>
+                    <Recycle className="w-[10px] h-[10px]" weight="regular" aria-hidden />
+                    Bin Rental
+                  </>
+                ) : (
+                  <>
+                    <Icon name={isOffice ? "building" : "home"} className="w-[10px] h-[10px]" />
+                    {isOffice ? "Office" : "Residential"} Move
+                  </>
+                )}
               </span>
               <MoveNotifyButton move={move} />
               <ResendTrackingLinkButton move={move} />
@@ -1092,6 +1244,7 @@ export default function MoveDetailClient({
           local_move: "Residential", long_distance: "Long Distance",
           office_move: "Office", single_item: "Single Item",
           white_glove: "White Glove", specialty: "Specialty", b2b_delivery: "B2B Delivery",
+          event: "Event", labour_only: "Labour Only", bin_rental: "Bin Rental",
         };
 
         return (
@@ -1270,6 +1423,63 @@ export default function MoveDetailClient({
 
       {/* Distance & Logistics */}
       <DistanceLogistics fromAddress={move.from_address} toAddress={move.to_address || move.delivery_address} />
+
+      {linkedBinOrders.length > 0 && (
+        <CollapsibleSection title="Bin rentals" subtitle={`${linkedBinOrders.length} linked`} defaultCollapsed={false}>
+          <div className="space-y-3">
+            {linkedBinOrders.map((raw) => {
+              const b = raw as Record<string, unknown>;
+              const id = String(b.id ?? "");
+              const stKey = String(b.status ?? "").toLowerCase();
+              const stLabel = BIN_ORDER_STATUS_ADMIN[stKey] ?? stKey.replace(/_/g, " ");
+              return (
+                <div key={id} className="rounded-lg border border-[var(--brd)]/60 p-3 text-[11px] space-y-2 bg-[var(--bg)]/40">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-bold text-[var(--tx)] inline-flex items-center gap-2">
+                      <Recycle className="w-4 h-4 text-[var(--gold)] shrink-0" weight="regular" aria-hidden />
+                      {String(b.order_number ?? "Bin order")}
+                    </span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tx3)]">{stLabel}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-[var(--tx2)]">
+                    <p>
+                      <span className="text-[var(--tx3)]">Bundle · bins: </span>
+                      {String(b.bundle_type ?? "—")} · {String(b.bin_count ?? "—")}
+                    </p>
+                    <p>
+                      <span className="text-[var(--tx3)]">Drop-off: </span>
+                      {b.drop_off_date ? formatMoveDate(String(b.drop_off_date)) : "—"}
+                    </p>
+                    <p>
+                      <span className="text-[var(--tx3)]">Move day: </span>
+                      {b.move_date ? formatMoveDate(String(b.move_date)) : "—"}
+                    </p>
+                    <p>
+                      <span className="text-[var(--tx3)]">Pickup: </span>
+                      {b.pickup_date ? formatMoveDate(String(b.pickup_date)) : "—"}
+                    </p>
+                  </div>
+                  {(Boolean(b.delivery_address) || Boolean(b.pickup_address)) && (
+                    <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                      {b.delivery_address ? <span>Deliver: {String(b.delivery_address)}</span> : null}
+                      {b.pickup_address ? (
+                        <span className={b.delivery_address ? " block mt-0.5" : ""}>Pick up: {String(b.pickup_address)}</span>
+                      ) : null}
+                    </p>
+                  )}
+                  <Link
+                    href={`/admin/bin-rentals/${id}`}
+                    className="inline-flex text-[10px] font-bold text-[var(--gold)] hover:underline"
+                  >
+                    Open bin order
+                  </Link>
+                  <BinOrderPickupBlock bin={b} userRole={userRole} />
+                </div>
+              );
+            })}
+          </div>
+        </CollapsibleSection>
+      )}
 
       {/* Walkthrough status (move-day crew walkthrough) */}
       {(move.walkthrough_completed || move.walkthrough_skipped) && (

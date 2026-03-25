@@ -10,6 +10,7 @@ import {
   SPECIALTY_EQUIPMENT_DEFAULTS,
   SPECIALTY_PROJECT_BASE_DEFAULTS,
 } from "@/lib/pricing/specialty-project-defaults";
+import { buildBinRentalQuoteResponse } from "./bin-rental-flow";
 // ═══════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════
@@ -111,6 +112,16 @@ interface QuoteInput {
   labour_description?: string;
   labour_storage_needed?: boolean;
   labour_storage_weeks?: number;
+  // Bin rental (service_type bin_rental)
+  bin_bundle_type?: "studio" | "1br" | "2br" | "3br" | "4br_plus" | "custom";
+  bin_custom_count?: number;
+  bin_extra_bins?: number;
+  bin_packing_paper?: boolean;
+  /** Default true; set false to waive material delivery (standalone). */
+  bin_material_delivery?: boolean;
+  bin_linked_move_id?: string | null;
+  bin_delivery_notes?: string;
+  internal_notes?: string;
   // Recommended tier (coordinator's manual selection)
   recommended_tier?: "essential" | "signature" | "estate";
   // Custom crating (all service types)
@@ -2304,6 +2315,22 @@ export async function POST(req: NextRequest) {
   }
   if (!input.to_address && input.service_type === "labour_only") {
     input = { ...input, to_address: input.from_address };
+  }
+
+  if (input.service_type === "bin_rental") {
+    const sb = createAdminClient();
+    const config = await loadConfig(sb);
+    const neighbourhood = await getNeighbourhood(sb, input.to_address);
+    const result = await buildBinRentalQuoteResponse({
+      sb,
+      config,
+      input,
+      isPreview,
+      authUser: authUser ? { id: authUser.id, email: authUser.email } : null,
+      generateQuoteId: () => generateQuoteId(sb),
+      postalPrefix: neighbourhood.postalPrefix,
+    });
+    return NextResponse.json(result.body, { status: result.status });
   }
 
   if (input.service_type === "event" && input.event_mode === "multi") {

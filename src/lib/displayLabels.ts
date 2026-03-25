@@ -11,6 +11,7 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
   b2b_oneoff: "Commercial Delivery",
   b2b_delivery: "Commercial Delivery",
   labour_only: "Labour Service",
+  bin_rental: "Bin Rental",
   local_move: "Local Move",
   long_distance: "Long Distance Move",
 };

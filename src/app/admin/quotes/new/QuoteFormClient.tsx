@@ -12,7 +12,31 @@ import { useFormDraft } from "@/hooks/useFormDraft";
 import DraftBanner from "@/components/ui/DraftBanner";
 import { toTitleCase } from "@/lib/format-text";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
-import { CaretDown as ChevronDown, Check, PaperPlaneTilt as Send, Eye, CircleNotch as Loader2, CaretRight as ChevronRight, SidebarSimple as PanelRightOpen, Users, Clock, Truck, Plus, Trash as Trash2, Warning } from "@phosphor-icons/react";
+import {
+  CaretDown as ChevronDown,
+  Check,
+  PaperPlaneTilt as Send,
+  Eye,
+  CircleNotch as Loader2,
+  CaretRight as ChevronRight,
+  SidebarSimple as PanelRightOpen,
+  Users,
+  Clock,
+  Truck,
+  Plus,
+  Trash as Trash2,
+  Warning,
+  House,
+  Buildings,
+  Package,
+  Star,
+  Palette,
+  CalendarBlank,
+  Recycle,
+  type IconProps,
+} from "@phosphor-icons/react";
+import { calculateBinRentalPrice, BIN_RENTAL_BUNDLE_SPECS } from "@/lib/pricing/bin-rental";
+import { QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 const PanelRightClose = PanelRightOpen;
@@ -99,6 +123,7 @@ interface QuoteResult {
     target_margin: number;
     signature_margin: number | null;
   } | null;
+  bin_inventory?: { total: number; out_on_rental: number; available: number };
 }
 
 interface ItemWeight {
@@ -114,16 +139,29 @@ interface ItemWeight {
 
 // ─── Constants ──────────────────────────────────
 
-const SERVICE_TYPES = [
-  { value: "local_move", label: "Residential", desc: "Local or long distance home move" },
-  { value: "office_move", label: "Office / Commercial", desc: "Business, retail, salon, clinic relocation" },
-  { value: "single_item", label: "Single Item", desc: "One item or small batch delivery" },
-  { value: "white_glove", label: "White Glove", desc: "Premium handling, assembly, placement" },
-  { value: "specialty", label: "Specialty", desc: "Art, piano, trade show, staging, estate" },
-  { value: "event", label: "Event", desc: "Round-trip venue delivery, setup & teardown" },
-  { value: "b2b_delivery", label: "B2B One-Off", desc: "One-off delivery from a business source" },
-  { value: "labour_only", label: "Labour Only", desc: "Crew work at one location, no transit" },
-] as const;
+const SERVICE_TYPE_ICONS = {
+  House,
+  Buildings,
+  Package,
+  Star,
+  Palette,
+  CalendarBlank,
+  Truck,
+  Users,
+  Recycle,
+} as const;
+
+const SERVICE_TYPES: {
+  value: string;
+  label: string;
+  desc: string;
+  Icon: React.ComponentType<IconProps>;
+}[] = QUOTE_SERVICE_TYPE_DEFINITIONS.map((d) => ({
+  value: d.value,
+  label: d.label,
+  desc: d.description,
+  Icon: SERVICE_TYPE_ICONS[d.iconName],
+}));
 
 const MOVE_SIZES = [
   { value: "studio", label: "Studio" },
@@ -133,6 +171,20 @@ const MOVE_SIZES = [
   { value: "4br", label: "4 Bedroom" },
   { value: "5br_plus", label: "5+ Bedroom" },
   { value: "partial", label: "Partial Move" },
+];
+
+const BIN_BUNDLE_OPTIONS: {
+  value: "studio" | "1br" | "2br" | "3br" | "4br_plus" | "custom";
+  label: string;
+  detail: string;
+  popular?: boolean;
+}[] = [
+  { value: "studio", label: "Studio", detail: "15 bins, 2 wardrobe boxes — $99" },
+  { value: "1br", label: "1 Bedroom", detail: "30 bins, 4 wardrobe boxes — $179" },
+  { value: "2br", label: "2 Bedroom", detail: "50 bins, 6 wardrobe boxes — $279", popular: true },
+  { value: "3br", label: "3 Bedroom", detail: "70 bins, 8 wardrobe boxes — $399" },
+  { value: "4br_plus", label: "4 Bedroom+", detail: "90 bins, 10 wardrobe boxes — $529" },
+  { value: "custom", label: "Custom", detail: "Enter bin count (min 5) at per-bin rate" },
 ];
 
 const B2B_WEIGHT_OPTIONS = [
@@ -145,6 +197,7 @@ const B2B_WEIGHT_OPTIONS = [
 const ACCESS_OPTIONS = [
   { value: "", label: "Select…" },
   { value: "elevator", label: "Elevator" },
+  { value: "concierge", label: "Concierge" },
   { value: "ground_floor", label: "Ground floor" },
   { value: "loading_dock", label: "Loading dock" },
   { value: "walk_up_2nd", label: "Walk-up (2nd floor)" },
@@ -153,6 +206,14 @@ const ACCESS_OPTIONS = [
   { value: "long_carry", label: "Long carry" },
   { value: "narrow_stairs", label: "Narrow stairs" },
   { value: "no_parking_nearby", label: "No parking nearby" },
+];
+
+/** Bin rental delivery / pickup access (values must exist in ACCESS_OPTIONS). */
+const BIN_RENTAL_ACCESS_OPTIONS: { value: string; label: string }[] = [
+  { value: "elevator", label: "Elevator" },
+  { value: "ground_floor", label: "Ground" },
+  { value: "walk_up_2nd", label: "Walk-up" },
+  { value: "concierge", label: "Concierge" },
 ];
 
 const PARKING_OPTIONS = [
@@ -445,11 +506,14 @@ export default function QuoteFormClient({
   config,
   itemWeights = [],
   userRole = "coordinator",
+  binInventorySnapshot = null,
 }: {
   addons: Addon[];
   config: Record<string, string>;
   itemWeights?: ItemWeight[];
   userRole?: string;
+  /** Server-computed bin fleet availability for live preview */
+  binInventorySnapshot?: { total: number; out: number; available: number } | null;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -645,6 +709,17 @@ export default function QuoteFormClient({
   const [labourStorageNeeded, setLabourStorageNeeded] = useState(false);
   const [labourStorageWeeks, setLabourStorageWeeks] = useState(1);
   const [labourContext, setLabourContext] = useState("");
+
+  // Bin rental
+  const [binPickupSameAsDelivery, setBinPickupSameAsDelivery] = useState(true);
+  const [binBundleType, setBinBundleType] = useState<"studio" | "1br" | "2br" | "3br" | "4br_plus" | "custom">("2br");
+  const [binCustomCount, setBinCustomCount] = useState(10);
+  const [binExtraBins, setBinExtraBins] = useState(0);
+  const [binPackingPaper, setBinPackingPaper] = useState(false);
+  const [binMaterialDelivery, setBinMaterialDelivery] = useState(true);
+  const [binLinkedMoveId, setBinLinkedMoveId] = useState("");
+  const [binDeliveryNotes, setBinDeliveryNotes] = useState("");
+  const [binInternalNotes, setBinInternalNotes] = useState("");
 
   // Custom crating (all service types — coordinator decides per quote)
   const [cratingRequired, setCratingRequired] = useState(false);
@@ -980,6 +1055,7 @@ export default function QuoteFormClient({
       return;
     }
     if (prevServiceTypeRef.current === serviceType) return;
+    const previousServiceType = prevServiceTypeRef.current;
     prevServiceTypeRef.current = serviceType;
 
     setQuoteResult(null);
@@ -1034,7 +1110,46 @@ export default function QuoteFormClient({
     setReferralMsg("");
     setReferralDiscount(0);
     setArrivalWindow(TIME_WINDOW_OPTIONS[1] ?? TIME_WINDOW_OPTIONS[0] ?? "");
+
+    if (serviceType === "bin_rental") {
+      setBinPickupSameAsDelivery(true);
+      setBinBundleType("2br");
+      setBinCustomCount(10);
+      setBinExtraBins(0);
+      setBinPackingPaper(false);
+      setBinMaterialDelivery(previousServiceType !== "local_move");
+      setBinLinkedMoveId("");
+      setBinDeliveryNotes("");
+      setBinInternalNotes("");
+    } else if (previousServiceType === "bin_rental") {
+      setBinPickupSameAsDelivery(true);
+      setBinBundleType("2br");
+      setBinCustomCount(10);
+      setBinExtraBins(0);
+      setBinPackingPaper(false);
+      setBinMaterialDelivery(true);
+      setBinLinkedMoveId("");
+      setBinDeliveryNotes("");
+      setBinInternalNotes("");
+    }
   }, [serviceType]);
+
+  useEffect(() => {
+    if (serviceType !== "bin_rental" || !binPickupSameAsDelivery) return;
+    setFromAddress(toAddress);
+  }, [serviceType, binPickupSameAsDelivery, toAddress]);
+
+  useEffect(() => {
+    if (serviceType !== "bin_rental" || !binPickupSameAsDelivery) return;
+    setFromAccess(toAccess);
+  }, [serviceType, binPickupSameAsDelivery, toAccess]);
+
+  useEffect(() => {
+    if (serviceType !== "bin_rental") return;
+    const allowed = new Set(BIN_RENTAL_ACCESS_OPTIONS.map((o) => o.value));
+    if (!allowed.has(toAccess)) setToAccess("elevator");
+    if (!allowed.has(fromAccess)) setFromAccess("elevator");
+  }, [serviceType, toAccess, fromAccess]);
 
   useEffect(() => {
     if (serviceType !== "specialty") {
@@ -1140,6 +1255,89 @@ export default function QuoteFormClient({
     ),
     [config, serviceType, moveSize, addonSubtotal, fromAccess, toAccess, inventoryScoreWithBoxes, specialtyItems, moveDate],
   );
+
+  const configMap = useMemo(() => new Map(Object.entries(config)), [config]);
+
+  const binLivePreview = useMemo(() => {
+    if (serviceType !== "bin_rental") return null;
+    const linked = binLinkedMoveId.trim() || null;
+    const fleetCap = cfgNum(config, "bin_total_inventory", 500);
+    const avail =
+      binInventorySnapshot != null && Number.isFinite(binInventorySnapshot.available)
+        ? Math.max(0, Math.floor(binInventorySnapshot.available))
+        : null;
+    const r = calculateBinRentalPrice(
+      {
+        bundle_type: binBundleType,
+        bin_count: binCustomCount,
+        extra_bins: binExtraBins,
+        packing_paper: binPackingPaper,
+        material_delivery_charge: binMaterialDelivery,
+        linked_move_id: linked,
+        available_bins: avail,
+      },
+      configMap,
+    );
+    if (!r.ok) {
+      return {
+        error: r.error,
+        subtotal: null as number | null,
+        tax: null as number | null,
+        total: null as number | null,
+        lines: [] as { label: string; amount: number }[],
+        need: r.requiredBins ?? 0,
+        cap: fleetCap,
+        available: avail as number | null,
+        invOk: false,
+      };
+    }
+    const taxRate = cfgNum(config, "tax_rate", TAX_RATE);
+    const tax = Math.round(r.subtotal * taxRate);
+    const total = r.subtotal + tax;
+    const need = r.totalBins;
+    const invOk = avail == null || need <= avail;
+    return {
+      error: null as string | null,
+      subtotal: r.subtotal,
+      tax,
+      total,
+      lines: r.lines.map((l) => ({ label: l.label, amount: l.amount })),
+      need,
+      cap: fleetCap,
+      available: avail,
+      invOk,
+      dropOff: "",
+      moveD: moveDate,
+      pickup: "",
+    };
+  }, [
+    serviceType,
+    binBundleType,
+    binCustomCount,
+    binExtraBins,
+    binPackingPaper,
+    binMaterialDelivery,
+    binLinkedMoveId,
+    config,
+    configMap,
+    moveDate,
+    binInventorySnapshot,
+  ]);
+
+  const binSchedulePreview = useMemo(() => {
+    if (serviceType !== "bin_rental" || !moveDate) return null;
+    const dropBefore = Math.max(1, Math.floor(cfgNum(config, "bin_rental_drop_off_days_before", 7)));
+    const pickupAfter = Math.max(1, Math.floor(cfgNum(config, "bin_rental_pickup_days_after", 5)));
+    const rentalDays = Math.max(1, Math.floor(cfgNum(config, "bin_rental_rental_days", 12)));
+    const d = new Date(`${moveDate}T12:00:00`);
+    const drop = new Date(d);
+    drop.setDate(drop.getDate() - dropBefore);
+    const pick = new Date(d);
+    pick.setDate(pick.getDate() + pickupAfter);
+    const fmt = (x: Date) =>
+      x.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" });
+    return { delivery: fmt(drop), move: fmt(d), pickup: fmt(pick), cycle: rentalDays };
+  }, [serviceType, moveDate, config]);
 
   // ── Toggle add-on ─────────────────────────
   const toggleAddon = useCallback((addon: Addon) => {
@@ -1380,6 +1578,16 @@ export default function QuoteFormClient({
       base.b2b_payment_method = b2bPaymentMethod;
       base.b2b_retailer_source = b2bRetailerSource.trim() || undefined;
     }
+    if (serviceType === "bin_rental") {
+      base.bin_bundle_type = binBundleType;
+      base.bin_custom_count = binBundleType === "custom" ? binCustomCount : undefined;
+      base.bin_extra_bins = binExtraBins;
+      base.bin_packing_paper = binPackingPaper;
+      base.bin_material_delivery = binMaterialDelivery;
+      base.bin_linked_move_id = binLinkedMoveId.trim() || null;
+      base.bin_delivery_notes = binDeliveryNotes.trim() || undefined;
+      base.internal_notes = binInternalNotes.trim() || undefined;
+    }
     return base;
   }, [
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
@@ -1397,6 +1605,8 @@ export default function QuoteFormClient({
     labourVisits, labourSecondVisitDate, labourStorageNeeded, labourStorageWeeks, labourContext,
     b2bBusinessName, b2bItems, b2bWeightCategory, b2bSpecialInstructions, b2bPaymentMethod, b2bRetailerSource,
     singleItemSpecialHandling, specialtyBuildingReqs, specialtyAccessDifficulty,
+    binBundleType, binCustomCount, binExtraBins, binPackingPaper, binMaterialDelivery, binLinkedMoveId,
+    binDeliveryNotes, binInternalNotes,
   ]);
 
   // ── Generate quote (Step 1: creates quote in DB, returns quote_id) ────────────────────────
@@ -1446,6 +1656,24 @@ export default function QuoteFormClient({
       }
       if (!phone?.trim()) {
         toast("Please fill Contact phone", "alertTriangle");
+        return;
+      }
+    } else if (serviceType === "bin_rental") {
+      const clientName = [firstName, lastName].filter(Boolean).join(" ");
+      if (!toAddress.trim() || !moveDate) {
+        toast("Please fill delivery address and move date", "alertTriangle");
+        return;
+      }
+      if (!binPickupSameAsDelivery && !fromAddress.trim()) {
+        toast("Enter a pickup address or check same as delivery", "alertTriangle");
+        return;
+      }
+      if (!clientName.trim() || !email?.trim() || !phone?.trim()) {
+        toast("Please fill contact name, email, and phone", "alertTriangle");
+        return;
+      }
+      if (binBundleType === "custom" && binCustomCount < 5) {
+        toast("Custom orders need at least 5 bins", "alertTriangle");
         return;
       }
     } else if (!fromAddress || !toAddress || !moveDate) {
@@ -1620,6 +1848,11 @@ export default function QuoteFormClient({
                         }`}
                       >
                         <div className="flex items-start gap-2">
+                          <card.Icon
+                            className={`w-4 h-4 shrink-0 mt-0.5 ${sel ? "text-white" : "text-[var(--gold)]"}`}
+                            weight="regular"
+                            aria-hidden
+                          />
                           <div className="min-w-0 flex-1">
                             <div className={`text-[11px] leading-tight tracking-tight font-semibold ${sel ? "text-white" : "text-[var(--tx)]"}`}>
                               {card.label}
@@ -1879,7 +2112,9 @@ export default function QuoteFormClient({
                         ? "Work Location"
                         : serviceType === "b2b_delivery"
                           ? "Pickup & Delivery"
-                          : "Addresses"}
+                          : serviceType === "bin_rental"
+                            ? "Delivery & pickup"
+                            : "Addresses"}
                 </h3>
                 {serviceType === "event" && eventMulti && (
                   <p className="text-[11px] text-[var(--tx2)] -mt-1 mb-1">
@@ -1887,8 +2122,84 @@ export default function QuoteFormClient({
                   </p>
                 )}
 
+                {serviceType === "bin_rental" && (
+                  <div className="space-y-3">
+                    <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
+                      <div className="flex-1 min-w-0 w-full max-w-2xl">
+                        <MultiStopAddressField
+                          label="Delivery address *"
+                          placeholder="Where bins are delivered"
+                          stops={[{ address: toAddress }]}
+                          onChange={(stops) => {
+                            setToAddress(stops[0]?.address ?? "");
+                          }}
+                          inputClassName={fieldInput}
+                        />
+                      </div>
+                      <div className="w-full min-[400px]:w-[150px] shrink-0">
+                        <Field label="Access">
+                          <select value={toAccess} onChange={(e) => setToAccess(e.target.value)} className={fieldInput}>
+                            {BIN_RENTAL_ACCESS_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                      </div>
+                    </div>
+                    <Field label="Delivery notes">
+                      <textarea
+                        value={binDeliveryNotes}
+                        onChange={(e) => setBinDeliveryNotes(e.target.value)}
+                        placeholder="Leave at concierge / Ring unit 2801"
+                        rows={2}
+                        className={fieldInput}
+                      />
+                    </Field>
+                    <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={binPickupSameAsDelivery}
+                        onChange={(e) => setBinPickupSameAsDelivery(e.target.checked)}
+                        className="accent-[var(--gold)]"
+                      />
+                      Same as delivery address
+                    </label>
+                    <p className="text-[10px] text-[var(--tx3)] leading-snug -mt-1">
+                      If the client is moving, bins are picked up from the new address. Uncheck and enter the destination.
+                    </p>
+                    {!binPickupSameAsDelivery && (
+                      <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
+                        <div className="flex-1 min-w-0 w-full max-w-2xl">
+                          <MultiStopAddressField
+                            label="Pickup address *"
+                            placeholder="Where bins are collected"
+                            stops={[{ address: fromAddress }]}
+                            onChange={(stops) => {
+                              setFromAddress(stops[0]?.address ?? "");
+                            }}
+                            inputClassName={fieldInput}
+                          />
+                        </div>
+                        <div className="w-full min-[400px]:w-[150px] shrink-0">
+                          <Field label="Access">
+                            <select value={fromAccess} onChange={(e) => setFromAccess(e.target.value)} className={fieldInput}>
+                              {BIN_RENTAL_ACCESS_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </Field>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Event single: origin here; multi: per-leg below. Labour Only: own section. */}
-                {serviceType !== "labour_only" && !(serviceType === "event" && eventMulti) && (
+                {serviceType !== "labour_only" && !(serviceType === "event" && eventMulti) && serviceType !== "bin_rental" && (
                 <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <MultiStopAddressField
@@ -1911,7 +2222,7 @@ export default function QuoteFormClient({
                   </div>
                 </div>
                 )}
-                {serviceType !== "event" && serviceType !== "labour_only" && (
+                {serviceType !== "event" && serviceType !== "labour_only" && serviceType !== "bin_rental" && (
                 <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <MultiStopAddressField
@@ -1934,7 +2245,7 @@ export default function QuoteFormClient({
                   </div>
                 </div>
                 )}
-                {serviceType !== "labour_only" && (
+                {serviceType !== "labour_only" && serviceType !== "bin_rental" && (
                   <div className="grid grid-cols-1 min-[500px]:grid-cols-2 gap-3 pt-2">
                     <Field label="From address parking">
                       <select
@@ -1987,16 +2298,16 @@ export default function QuoteFormClient({
               {serviceType !== "event" && (
               <div>
                 <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
-                  {serviceType === "labour_only" ? "Scheduling" : "Move Details"}
+                  {serviceType === "labour_only" ? "Scheduling" : serviceType === "bin_rental" ? "Move date & rental cycle" : "Move Details"}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Field label={serviceType === "labour_only" ? "Date *" : "Move Date *"}>
+                  <Field label={serviceType === "labour_only" ? "Date *" : serviceType === "bin_rental" ? "Move date *" : "Move Date *"}>
                     <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
                   </Field>
                   <Field label="Preferred Time">
                     <input type="time" value={preferredTime} onChange={(e) => setPreferredTime(e.target.value)} className={fieldInput} />
                   </Field>
-                  {serviceType !== "labour_only" && (
+                  {serviceType !== "labour_only" && serviceType !== "bin_rental" && (
                   <Field label="Arrival Window">
                     <select value={arrivalWindow} onChange={(e) => setArrivalWindow(e.target.value)} className={fieldInput}>
                       {TIME_WINDOW_OPTIONS.map((label) => (
@@ -2012,8 +2323,34 @@ export default function QuoteFormClient({
                       </select>
                     </Field>
                   )}
-                  {serviceType === "local_move" && (
-                    <Field label="Recommend Tier">
+                {serviceType === "local_move" && (
+                  <div className="col-span-full rounded-xl border border-[var(--gold)]/35 bg-[var(--gold)]/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <Recycle className="w-6 h-6 shrink-0 text-[var(--gold)]" weight="regular" aria-hidden />
+                      <div>
+                        <p className="text-[11px] font-bold tracking-wide uppercase text-[var(--gold)]">Add eco-friendly bins</p>
+                        <p className="text-[11px] text-[var(--tx2)] mt-1 leading-snug">
+                          Skip the cardboard. Reusable bins delivered 7 days before your move, picked up 5 days after.
+                          2 Bedroom: {fmtPrice(cfgNum(config, "bin_bundle_2br", 279))} — delivery is free when coordinated with your move (uncheck material delivery or link the move when booked).
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setServiceType("bin_rental");
+                        setBinBundleType("2br");
+                        setBinMaterialDelivery(false);
+                        setBinLinkedMoveId("");
+                      }}
+                      className="shrink-0 px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-95 transition-opacity"
+                    >
+                      Add to quote
+                    </button>
+                  </div>
+                )}
+                {serviceType === "local_move" && (
+                  <Field label="Recommend Tier">
                       <div className="flex items-center gap-2">
                         <select
                           value={recommendedTier}
@@ -2080,6 +2417,22 @@ export default function QuoteFormClient({
                     </Field>
                   )}
                 </div>
+
+                {serviceType === "bin_rental" && binSchedulePreview && (
+                  <div className="mt-3 p-3 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[11px] space-y-1">
+                    <p className="font-semibold text-[var(--tx)]">Based on your move date</p>
+                    <p>
+                      <span className="text-[var(--tx3)]">Delivery:</span> {binSchedulePreview.delivery}
+                    </p>
+                    <p>
+                      <span className="text-[var(--tx3)]">Move day:</span> {binSchedulePreview.move}
+                    </p>
+                    <p>
+                      <span className="text-[var(--tx3)]">Pickup:</span> {binSchedulePreview.pickup}
+                    </p>
+                    <p className="text-[var(--tx3)] pt-1">Rental cycle: {binSchedulePreview.cycle} days total</p>
+                  </div>
+                )}
 
                 {serviceType === "local_move" && (
                   <p className="text-[9px] text-[var(--tx3)] mt-1.5">
@@ -3326,10 +3679,150 @@ export default function QuoteFormClient({
                 </div>
               )}
 
+              {serviceType === "bin_rental" && (
+                <div className="space-y-4">
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Bundle & pricing</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {BIN_BUNDLE_OPTIONS.map((b) => (
+                      <button
+                        key={b.value}
+                        type="button"
+                        onClick={() => setBinBundleType(b.value)}
+                        className={`text-left px-3 py-2 rounded-lg border transition-all ${
+                          binBundleType === b.value
+                            ? "border-[var(--gold)] bg-[var(--gold)]/10 ring-1 ring-[var(--gold)]/30"
+                            : "border-[var(--brd)] hover:border-[var(--gold)]/40"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[12px] font-semibold text-[var(--tx)]">{b.label}</span>
+                          {b.popular && (
+                            <span className="text-[8px] font-bold uppercase tracking-wider text-[var(--gold)]">Popular</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-[var(--tx3)] mt-0.5">{b.detail}</p>
+                      </button>
+                    ))}
+                  </div>
+                  {binBundleType === "custom" && (
+                    <Field label="Number of bins (min 5)">
+                      <input
+                        type="number"
+                        min={5}
+                        value={binCustomCount}
+                        onChange={(e) => setBinCustomCount(Math.max(5, Number(e.target.value) || 5))}
+                        className={`${fieldInput} w-32`}
+                      />
+                    </Field>
+                  )}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Extra bins</span>
+                    <button
+                      type="button"
+                      className="px-2 py-1 rounded border border-[var(--brd)] text-[11px]"
+                      onClick={() => setBinExtraBins((n) => Math.max(0, n - 1))}
+                    >
+                      −
+                    </button>
+                    <span className="text-[12px] font-mono w-8 text-center">{binExtraBins}</span>
+                    <button
+                      type="button"
+                      className="px-2 py-1 rounded border border-[var(--brd)] text-[11px]"
+                      onClick={() => setBinExtraBins((n) => n + 1)}
+                    >
+                      +
+                    </button>
+                    <span className="text-[11px] text-[var(--tx2)]">
+                      × {fmtPrice(cfgNum(config, "bin_individual_price", cfgNum(config, "bin_rental_individual_price", 6)))} each
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={binPackingPaper}
+                      onChange={(e) => setBinPackingPaper(e.target.checked)}
+                      className="accent-[var(--gold)]"
+                    />
+                    Packing paper — {fmtPrice(cfgNum(config, "bin_packing_paper_fee", 20))}
+                  </label>
+                  <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={binMaterialDelivery}
+                      onChange={(e) => setBinMaterialDelivery(e.target.checked)}
+                      className="accent-[var(--gold)]"
+                    />
+                    Material delivery charge — {fmtPrice(cfgNum(config, "bin_delivery_charge", 20))}{" "}
+                    <span className="text-[10px] text-[var(--tx3)]">
+                      (waived if bins are being delivered with a Yugo move — link move ID or uncheck)
+                    </span>
+                  </label>
+                  <Field label="Linked move ID (optional — waives delivery when set)">
+                    <input
+                      value={binLinkedMoveId}
+                      onChange={(e) => setBinLinkedMoveId(e.target.value)}
+                      placeholder="UUID of existing move, if bins ship with a booked move"
+                      className={fieldInput}
+                    />
+                  </Field>
+                  <Field label="Internal notes (coordinator)">
+                    <textarea
+                      value={binInternalNotes}
+                      onChange={(e) => setBinInternalNotes(e.target.value)}
+                      rows={2}
+                      className={`${fieldInput} resize-none`}
+                    />
+                  </Field>
+                  {binLivePreview && (
+                    <div className="rounded-lg border border-[var(--brd)] p-3 text-[11px] space-y-1">
+                      <p className="font-semibold text-[var(--tx)]">Inventory</p>
+                      {quoteResult?.bin_inventory ? (
+                        <p className="text-[var(--tx2)]">
+                          Available bins: {quoteResult.bin_inventory.available} of {quoteResult.bin_inventory.total} (
+                          {quoteResult.bin_inventory.out_on_rental} currently out on rental)
+                        </p>
+                      ) : binInventorySnapshot ? (
+                        <p className="text-[var(--tx2)]">
+                          Available bins: {binInventorySnapshot.available} of {binInventorySnapshot.total} (
+                          {binInventorySnapshot.out} currently out on rental)
+                        </p>
+                      ) : (
+                        <p className="text-[var(--tx2)]">
+                          Fleet capacity: {binLivePreview.cap} bins total — generate quote to confirm live availability
+                        </p>
+                      )}
+                      {binLivePreview.error && (
+                        <p className="text-amber-700 dark:text-amber-400 flex items-start gap-1">
+                          <Warning className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
+                          {binLivePreview.error}
+                        </p>
+                      )}
+                      {binLivePreview.available != null &&
+                        !binLivePreview.error &&
+                        binLivePreview.need > binLivePreview.available && (
+                          <p className="text-amber-700 dark:text-amber-400 flex items-start gap-1">
+                            <Warning className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
+                            Only {binLivePreview.available} bins available.
+                            {BIN_RENTAL_BUNDLE_SPECS[binBundleType as keyof typeof BIN_RENTAL_BUNDLE_SPECS]
+                              ? ` This ${BIN_BUNDLE_OPTIONS.find((b) => b.value === binBundleType)?.label ?? ""} bundle needs ${binLivePreview.need}.`
+                              : ""}
+                          </p>
+                        )}
+                      {binLivePreview.invOk && binLivePreview.subtotal != null && !binLivePreview.error && (
+                        <p className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" weight="bold" aria-hidden />
+                          Sufficient inventory
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 6. Add-ons (popular first, show all expander) ── */}
-              {applicableAddons.length > 0 && (
+              {applicableAddons.length > 0 && serviceType !== "bin_rental" && (
                 <div className="space-y-3">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Add-Ons</h3>
                   {recommendedTier === "estate" && serviceType === "local_move" && (
@@ -3560,6 +4053,8 @@ export default function QuoteFormClient({
                       <TiersDisplay tiers={quoteResult.tiers} recommendedTier={recommendedTier} />
                     ) : quoteResult.custom_price && serviceType === "event" ? (
                       <EventPriceDisplay price={quoteResult.custom_price} factors={quoteResult.factors as Record<string, unknown>} />
+                    ) : quoteResult.custom_price && serviceType === "bin_rental" ? (
+                      <BinRentalPriceDisplay price={quoteResult.custom_price} factors={quoteResult.factors as Record<string, unknown>} />
                     ) : quoteResult.custom_price && serviceType === "labour_only" ? (
                       <LabourOnlyPriceDisplay price={quoteResult.custom_price} factors={quoteResult.factors as Record<string, unknown>} />
                     ) : quoteResult.custom_price && (serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") ? (
@@ -3621,6 +4116,29 @@ export default function QuoteFormClient({
                   <>
                     {liveEstimate && "essential" in liveEstimate ? (
                       <OptimisticTiers est={liveEstimate} isLongDistance={serviceType === "long_distance"} />
+                    ) : serviceType === "bin_rental" && binLivePreview && binLivePreview.subtotal != null && !binLivePreview.error ? (
+                      <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4 space-y-2">
+                        <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Bin rental (estimate)</p>
+                        {binLivePreview.lines.map((l, i) => (
+                          <div key={i} className="flex justify-between text-[11px]">
+                            <span className="text-[var(--tx2)]">{l.label}</span>
+                            <span className="text-[var(--tx)] font-medium">{fmtPrice(l.amount)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between text-[11px] pt-1 border-t border-[var(--brd)]/40">
+                          <span className="text-[var(--tx3)]">Subtotal</span>
+                          <span className="font-semibold">{fmtPrice(binLivePreview.subtotal)}</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-[var(--tx3)]">HST</span>
+                          <span>{fmtPrice(binLivePreview.tax ?? 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-[12px] font-bold">
+                          <span>Total</span>
+                          <span className="text-[var(--gold)]">{fmtPrice(binLivePreview.total ?? 0)}</span>
+                        </div>
+                        <p className="text-[9px] text-[var(--tx3)]">Generate for live inventory and final totals.</p>
+                      </div>
                     ) : specialtyLivePreview ? (
                       <div className="space-y-2">
                         <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3">
@@ -4291,6 +4809,75 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
       <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
         <span>Deposit to book</span>
         <span className="font-bold text-[var(--gold)]">{fmtPrice(t.deposit)}</span>
+      </div>
+    </div>
+  );
+}
+
+function BinRentalPriceDisplay({ price: t, factors }: { price: TierResult; factors: Record<string, unknown> }) {
+  const lines = Array.isArray(factors.bin_line_items)
+    ? (factors.bin_line_items as { key?: string; label?: string; amount?: number }[])
+    : [];
+  const bundleKey = factors.bin_bundle_type as string | undefined;
+  const bundleSpec =
+    bundleKey && bundleKey !== "custom"
+      ? BIN_RENTAL_BUNDLE_SPECS[bundleKey as keyof typeof BIN_RENTAL_BUNDLE_SPECS]
+      : null;
+  const drop = factors.bin_drop_off_date as string | undefined;
+  const pick = factors.bin_pickup_date as string | undefined;
+  const move = factors.bin_move_date as string | undefined;
+  const cycle = factors.bin_rental_cycle_days as number | undefined;
+  const fmtShort = (d: string | undefined) =>
+    d
+      ? new Date(d + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })
+      : "—";
+  return (
+    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-bold text-[#B8962E]">Bin Rental</span>
+        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.total)}</span>
+      </div>
+      <div className="space-y-1.5 text-[11px]">
+        {lines.map((l, i) => (
+          <div key={i}>
+            <div className="flex justify-between gap-2">
+              <span className={PRICE_CARD.muted}>{l.label}</span>
+              <span className={`font-medium shrink-0 ${PRICE_CARD.body}`}>{fmtPrice(Number(l.amount) || 0)}</span>
+            </div>
+            {l.key === "bundle" && bundleSpec ? (
+              <p className={`${PRICE_CARD.muted} pl-0 pt-0.5 text-[10px]`}>
+                {bundleSpec.bins} bins + {bundleSpec.wardrobeBoxes} wardrobe boxes
+              </p>
+            ) : null}
+          </div>
+        ))}
+        <div className={`flex justify-between pt-1 font-semibold ${PRICE_CARD.borderTop}`}>
+          <span className={PRICE_CARD.muted}>Subtotal</span>
+          <span className={PRICE_CARD.body}>{fmtPrice(t.price)}</span>
+        </div>
+      </div>
+      <div className={`text-[11px] space-y-0.5 ${PRICE_CARD.muted}`}>
+        <div className="flex justify-between">
+          <span>HST ({(TAX_RATE * 100).toFixed(0)}%)</span>
+          <span>{fmtPrice(t.tax)}</span>
+        </div>
+        <div className={`flex justify-between font-bold ${PRICE_CARD.body}`}>
+          <span>Total</span>
+          <span>{fmtPrice(t.total)}</span>
+        </div>
+      </div>
+      <p className="text-[10px] text-[var(--tx3)]">Payment: Full at booking</p>
+      <div className="text-[10px] space-y-0.5 pt-2 border-t border-[var(--brd)]/40">
+        <p>
+          <span className={PRICE_CARD.muted}>Delivery:</span> {fmtShort(drop)}
+        </p>
+        <p>
+          <span className={PRICE_CARD.muted}>Move:</span> {fmtShort(move)}
+        </p>
+        <p>
+          <span className={PRICE_CARD.muted}>Pickup:</span> {fmtShort(pick)}
+        </p>
+        {cycle != null && <p className="text-[var(--tx3)]">Rental cycle: {cycle} days</p>}
       </div>
     </div>
   );

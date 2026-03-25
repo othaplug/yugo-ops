@@ -6,8 +6,6 @@ import { sendSMS } from "@/lib/sms/sendSMS";
 import { sendEmail } from "@/lib/email/send";
 
 const GRACE_DAYS = 2;
-const LATE_FEE_PER_DAY = 10;
-const REPLACEMENT_FEE_PER_BIN = 20;
 const WRITE_OFF_DAYS = 30;
 
 /**
@@ -23,6 +21,21 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
+
+  const { data: feeCfg } = await supabase
+    .from("platform_config")
+    .select("key, value")
+    .in("key", [
+      "bin_late_fee_per_day",
+      "bin_rental_late_fee_per_day",
+      "bin_missing_bin_fee",
+      "bin_rental_missing_bin_fee",
+    ]);
+  const feeMap = Object.fromEntries((feeCfg ?? []).map((r) => [r.key, r.value]));
+  const lateFeePerDay =
+    Number(feeMap.bin_late_fee_per_day ?? feeMap.bin_rental_late_fee_per_day ?? "15") || 15;
+  const replacementFeePerBin =
+    Number(feeMap.bin_missing_bin_fee ?? feeMap.bin_rental_missing_bin_fee ?? "12") || 12;
 
   const results = {
     flaggedOverdue: 0,
@@ -83,7 +96,7 @@ export async function GET(req: NextRequest) {
         await sendSMS(
           order.client_phone,
           `Hi ${firstName}, your Yugo bins (order ${order.order_number}) are overdue since ${scheduledDateStr}. ` +
-          `Late fees of $${LATE_FEE_PER_DAY}/day are now applying. ` +
+          `Late fees of $${lateFeePerDay}/day are now applying. ` +
           `Please call (647) 370-4525 to arrange pickup.`,
         );
 
@@ -94,7 +107,7 @@ export async function GET(req: NextRequest) {
             html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#0a0a0a;color:#e5e0d8">
               <h2 style="color:#ef4444">Your bins are overdue</h2>
               <p>Hi ${firstName}, your bin pickup for order <strong>${order.order_number}</strong> was scheduled for ${scheduledDateStr}.</p>
-              <p>Late fees of <strong>$${LATE_FEE_PER_DAY}/day</strong> are now accruing.</p>
+              <p>Late fees of <strong>$${lateFeePerDay}/day</strong> are now accruing.</p>
               <p>Please stack your bins by the door and call us at <a href="tel:6473704525" style="color:#C9A962">(647) 370-4525</a> to arrange pickup.</p>
             </div>`,
           }).catch(() => {});
@@ -114,61 +127,61 @@ export async function GET(req: NextRequest) {
         results.day2Notified++;
       }
 
-      // Day 6+: apply weekly late fees to card
-      if (daysOverdue >= 6 && order.square_card_id) {
-        const lastChargedAt = order.overdue_last_charged_at
-          ? new Date(order.overdue_last_charged_at)
-          : null;
-        const daysSinceLastCharge = lastChargedAt
-          ? Math.floor((today.getTime() - lastChargedAt.getTime()) / (1000 * 60 * 60 * 24))
-          : 999;
+      // Day 1–14 overdue: charge one day’s late fee per cron run (idempotent per calendar day)
+      if (daysOverdue >= 1 && daysOverdue <= 14 && order.square_card_id) {
+        const feeAmount = lateFeePerDay;
+        const feeCents = Math.round(feeAmount * 100);
 
-        // Charge weekly (every 7 days)
-        if (daysSinceLastCharge >= 7) {
-          const weeksOverdue = Math.ceil(daysOverdue / 7);
-          const feeAmount = LATE_FEE_PER_DAY * 7 * weeksOverdue;
-          const feeCents = Math.round(feeAmount * 100);
+        try {
+          const { locationId } = await getSquarePaymentConfig();
+          if (locationId) {
+            await squareClient.payments.create({
+              sourceId: order.square_card_id,
+              amountMoney: { amount: BigInt(feeCents), currency: "CAD" },
+              customerId: order.square_customer_id || undefined,
+              referenceId: order.order_number,
+              note: `Late bin return fee (day ${daysOverdue})`,
+              idempotencyKey: `bin-late-${order.id}-${todayStr}`,
+              locationId,
+            });
 
-          try {
-            const { locationId } = await getSquarePaymentConfig();
-            if (locationId) {
-              await squareClient.payments.create({
-                sourceId: order.square_card_id,
-                amountMoney: { amount: BigInt(feeCents), currency: "CAD" },
-                customerId: order.square_customer_id || undefined,
-                referenceId: order.order_number,
-                note: `Late bin return fee, ${daysOverdue} days overdue`,
-                idempotencyKey: `bin-late-${order.id}-${todayStr}`,
-                locationId,
-              });
+            await supabase
+              .from("bin_orders")
+              .update({
+                late_return_fees: (Number(order.late_return_fees) || 0) + feeAmount,
+                overdue_last_charged_at: new Date().toISOString(),
+              })
+              .eq("id", order.id);
 
-              await supabase
-                .from("bin_orders")
-                .update({
-                  late_return_fees: (Number(order.late_return_fees) || 0) + feeAmount,
-                  overdue_last_charged_at: new Date().toISOString(),
-                })
-                .eq("id", order.id);
-
-              if (order.client_phone) {
-                await sendSMS(
-                  order.client_phone,
-                  `Late return fee of $${feeAmount.toFixed(2)} has been charged to your card on file (order ${order.order_number}). ` +
-                  `Please contact us immediately: (647) 370-4525`,
-                ).catch(() => {});
-              }
-
-              results.lateFeeCharged++;
+            if (order.client_phone && (daysOverdue === 1 || daysOverdue % 3 === 0)) {
+              await sendSMS(
+                order.client_phone,
+                `Hi ${firstName}, your Yugo bin rental is ${daysOverdue} day(s) past pickup. Late fee: $${lateFeePerDay}/day. Schedule pickup: (647) 370-4525`,
+              ).catch(() => {});
             }
-          } catch (chargeErr) {
-            results.errors.push(`late-fee-${order.order_number}: ${chargeErr instanceof Error ? chargeErr.message : String(chargeErr)}`);
+
+            results.lateFeeCharged++;
           }
+        } catch (chargeErr) {
+          results.errors.push(`late-fee-${order.order_number}: ${chargeErr instanceof Error ? chargeErr.message : String(chargeErr)}`);
+        }
+      }
+
+      if (daysOverdue >= 15 && (daysOverdue - 15) % 7 === 0) {
+        const adminEmail = process.env.SUPER_ADMIN_EMAIL;
+        if (adminEmail) {
+          const totalLate = (Number(order.late_return_fees) || 0) + daysOverdue * lateFeePerDay;
+          await sendEmail({
+            to: adminEmail,
+            subject: `Escalation: ${order.order_number} ${daysOverdue} days late`,
+            html: `<p><strong>${order.order_number}</strong> is ${daysOverdue} days past pickup. Estimated late fees: $${totalLate.toFixed(0)}. Client: ${order.client_name}. Phone: ${order.client_phone}</p>`,
+          }).catch(() => {});
         }
       }
 
       // Day 30+: charge full replacement cost and close order
       if (daysOverdue >= WRITE_OFF_DAYS && order.square_card_id) {
-        const replacementCost = order.bin_count * REPLACEMENT_FEE_PER_BIN;
+        const replacementCost = order.bin_count * replacementFeePerBin;
         const replacementCents = Math.round(replacementCost * 100);
 
         try {
@@ -179,7 +192,7 @@ export async function GET(req: NextRequest) {
               amountMoney: { amount: BigInt(replacementCents), currency: "CAD" },
               customerId: order.square_customer_id || undefined,
               referenceId: order.order_number,
-              note: `Bin replacement, 30+ days overdue, ${order.bin_count} bins × $${REPLACEMENT_FEE_PER_BIN}`,
+              note: `Bin replacement, 30+ days overdue, ${order.bin_count} bins × $${replacementFeePerBin}`,
               idempotencyKey: `bin-replace-${order.id}`,
               locationId,
             });

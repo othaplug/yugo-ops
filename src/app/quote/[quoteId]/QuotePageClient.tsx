@@ -96,6 +96,7 @@ import SpecialtyLayout from "./layouts/SpecialtyLayout";
 import B2BOneOffLayout from "./layouts/B2BOneOffLayout";
 import EventLayout from "./layouts/EventLayout";
 import LabourOnlyLayout from "./layouts/LabourOnlyLayout";
+import BinRentalLayout from "./layouts/BinRentalLayout";
 import { abbreviateAddressRegions } from "@/lib/address-abbrev";
 import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
@@ -497,6 +498,9 @@ export default function QuotePageClient({
   const tax = Math.round((totalBeforeTax - referralDiscountAmt) * TAX_RATE);
   const grandTotal = totalBeforeTax - referralDiscountAmt + tax;
   const deposit = useMemo(() => {
+    if (quote.service_type === "bin_rental") {
+      return grandTotal;
+    }
     if (isResidential && selectedTier) {
       return calculateTieredDeposit(selectedTier, totalBeforeTax);
     }
@@ -505,7 +509,7 @@ export default function QuotePageClient({
       return stored;
     }
     return calculateDeposit(quote.service_type, totalBeforeTax);
-  }, [isResidential, selectedTier, quote.service_type, quote.deposit_amount, totalBeforeTax]);
+  }, [isResidential, selectedTier, quote.service_type, quote.deposit_amount, totalBeforeTax, grandTotal]);
 
   /* ── Contract data for ContractSign component ── */
   const contractAddonsList = useMemo((): ContractAddon[] => {
@@ -711,6 +715,8 @@ export default function QuotePageClient({
     if (st !== "b2b_oneoff" && st !== "b2b_delivery") return false;
     return factorsApplied?.b2b_payment_method === "invoice";
   }, [quote.service_type, factorsApplied]);
+
+  const binRentalBooking = quote.service_type === "bin_rental";
 
   const handleB2bInvoiceConfirm = useCallback(async () => {
     setInvoiceConfirmError(null);
@@ -1037,6 +1043,8 @@ export default function QuotePageClient({
             />
             <LabourOnlyLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
           </>
+        ) : quote.service_type === "bin_rental" ? (
+          <BinRentalLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
         ) : quote.custom_price != null ? (
           <>
             <InclusionsShowcase
@@ -1058,6 +1066,7 @@ export default function QuotePageClient({
 
         {/* ═══ SECTION 2: ADD-ONS ═══ */}
         {((isResidential && currentStep >= 2) || (!isResidential && isConfirmed)) &&
+          quote.service_type !== "bin_rental" &&
           (applicableAddons.length > 0 || (isResidential && selectedTier === "estate")) &&
           !booked && (
             <section ref={addonsRef} className="scroll-mt-6">
@@ -1101,7 +1110,9 @@ export default function QuotePageClient({
           )}
 
         {/* ═══ SECTION 3: VALUATION PROTECTION ═══ */}
-        {((isResidential && currentStep >= 3) || (!isResidential && isConfirmed)) && !booked && (
+        {((isResidential && currentStep >= 3) || (!isResidential && isConfirmed)) &&
+          quote.service_type !== "bin_rental" &&
+          !booked && (
           <section ref={protectionRef} className="scroll-mt-6">
             {isResidential && currentStep >= 3 && (
               <button
@@ -1221,6 +1232,18 @@ export default function QuotePageClient({
                 </button>
               </div>
             )}
+            {quote.service_type === "bin_rental" && isConfirmed && (
+              <div className="mb-6 flex flex-col items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleConfirmComplete}
+                  className="w-full md:w-auto px-8 py-3 rounded-xl text-[13px] font-bold text-white transition-all"
+                  style={{ backgroundColor: GOLD }}
+                >
+                  Continue to agreement &amp; payment
+                </button>
+              </div>
+            )}
           </section>
         )}
 
@@ -1332,7 +1355,9 @@ export default function QuotePageClient({
                 <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
                   {b2bInvoiceBooking
                     ? "No card required. We will email an invoice; payment is due within 30 days of the invoice date."
-                    : "Complete your booking with a secure deposit payment"}
+                    : binRentalBooking
+                      ? "Full payment confirms your rental. Your card stays on file for any late or missing-item fees."
+                      : "Complete your booking with a secure deposit payment"}
                 </p>
               </div>
               <div className="p-5 md:p-6">
@@ -1377,7 +1402,11 @@ export default function QuotePageClient({
                     selectedTier={selectedTier}
                     selectedAddons={Array.from(selectedAddons.values())}
                     disabled={false}
-                    submitLabel={`Pay ${fmtPrice(deposit)} & Book My Move`}
+                    submitLabel={
+                      binRentalBooking
+                        ? `Pay ${fmtPrice(deposit)} & Book`
+                        : `Pay ${fmtPrice(deposit)} & Book My Move`
+                    }
                     onSuccess={(result) => {
                       setPaymentMoveId(result.move_id);
                       setBooked(true);
@@ -1416,6 +1445,11 @@ export default function QuotePageClient({
                   <>
                     Your B2B delivery is confirmed on invoice terms (Net 30). We&apos;ll follow up with
                     invoice and scheduling details by email.
+                  </>
+                ) : quote.service_type === "bin_rental" ? (
+                  <>
+                    Your bin rental is booked. We&apos;ll send a confirmation with delivery and pickup
+                    details. Our team will reach out before each visit.
                   </>
                 ) : (
                   <>

@@ -3052,6 +3052,64 @@ function EngineConfigSection() {
   );
 }
 
+/* ────────── BIN RENTAL (platform_config) ────────── */
+function BinRentalPricingSection() {
+  const { isSuperAdmin } = usePricingAdmin();
+  const { rows, loading, save, undo, updateRow, saving } = useSection("config");
+  if (loading) return <Skeleton />;
+
+  const fields = [
+    { key: "bin_total_inventory", label: "Total bin fleet (capacity)", hint: "Used for availability on Generate Quote." },
+    { key: "bin_individual_price", label: "Price per extra / custom bin ($)", hint: "Custom bundles and extra bins." },
+    { key: "bin_bundle_studio", label: "Studio bundle ($)", hint: "15 bins + 2 wardrobe boxes." },
+    { key: "bin_bundle_1br", label: "1 BR bundle ($)", hint: "30 bins + 4 wardrobe boxes." },
+    { key: "bin_bundle_2br", label: "2 BR bundle ($)", hint: "50 bins + 6 wardrobe boxes." },
+    { key: "bin_bundle_3br", label: "3 BR bundle ($)", hint: "70 bins + 8 wardrobe boxes." },
+    { key: "bin_bundle_4br_plus", label: "4 BR+ bundle ($)", hint: "90 bins + 10 wardrobe boxes." },
+    { key: "bin_packing_paper_fee", label: "Packing paper add-on ($)", hint: "Optional add-on on bin quotes." },
+    { key: "bin_delivery_charge", label: "Material delivery ($)", hint: "When not linked to a Yugo move." },
+    { key: "bin_late_fee_per_day", label: "Late return fee ($/day)", hint: "Cron and client messaging." },
+    { key: "bin_missing_bin_fee", label: "Missing bin at pickup ($/bin)", hint: "Replacement charge per bin not returned." },
+    { key: "bin_wardrobe_replacement_fee", label: "Wardrobe box not returned ($/box)", hint: "Charged if wardrobe boxes missing at pickup." },
+    { key: "bin_rental_drop_off_days_before", label: "Drop-off days before move", hint: "Default 7." },
+    { key: "bin_rental_pickup_days_after", label: "Pickup days after move", hint: "Default 5." },
+    { key: "bin_rental_rental_days", label: "Rental cycle (days)", hint: "Default 12." },
+  ];
+
+  return (
+    <div className="pt-4 space-y-4">
+      <p className="text-[11px] text-[var(--tx3)]">
+        Bin rental is a coordinator service type on Generate Quote. Bundle prices, delivery, inventory cap, and fees apply to quotes and automations.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {fields.map(({ key, label, hint }) => {
+          const row = rows.find((r) => r.key === key);
+          return (
+            <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
+              {row ? (
+                <EditCell
+                  value={Number(row.value ?? 0)}
+                  onChange={(v) => updateRow(String(row.id), "value", v)}
+                  type="number"
+                  className="text-[15px] font-bold text-[var(--gold)]"
+                />
+              ) : (
+                <div>
+                  <p className="text-[10px] text-[var(--tx3)]">{MSG_CONFIG_MISSING}</p>
+                  <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey={key} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <SaveBar onSave={() => save()} onUndo={undo} saving={saving} />
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════
    MAIN EXPORT
    ════════════════════════════════════════ */
@@ -3139,6 +3197,10 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
 
       <Accordion title="Labour-only" subtitle="Per mover-hour, truck, second-visit discount, storage between visits">
         <LabourOnlyPricingSection />
+      </Accordion>
+
+      <Accordion title="Bin rental" subtitle="Bundle prices, fleet inventory, delivery, late & missing-bin fees">
+        <BinRentalPricingSection />
       </Accordion>
 
       <Accordion title="B2B Surcharges" subtitle="Access and weight surcharges for per-delivery B2B bookings. Day rates do not apply these.">

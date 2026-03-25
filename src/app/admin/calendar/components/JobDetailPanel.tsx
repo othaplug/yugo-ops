@@ -18,6 +18,8 @@ interface Props {
 const TYPE_LABELS: Record<string, string> = {
   move: "Move",
   delivery: "Delivery",
+  bin_delivery: "Bin delivery",
+  bin_pickup: "Bin pickup",
   project_phase: "Project Phase",
   project: "Project",
   blocked: "Blocked Time",

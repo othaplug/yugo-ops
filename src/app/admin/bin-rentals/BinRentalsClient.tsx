@@ -153,11 +153,10 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
           ))}
         </select>
         <Link
-          href="/bins"
-          target="_blank"
+          href="/admin/quotes/new"
           className="flex items-center gap-1.5 px-4 py-2.5 bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30 rounded-lg text-[13px] font-medium hover:bg-[var(--gold)]/25 transition-colors whitespace-nowrap"
         >
-          <ArrowSquareOut size={14} /> Public Page
+          <ArrowSquareOut size={14} /> Generate quote
         </Link>
       </div>
 

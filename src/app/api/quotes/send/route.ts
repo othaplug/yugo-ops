@@ -21,6 +21,7 @@ const SERVICE_TO_TEMPLATE: Record<string, string> = {
   b2b_delivery: "quote-b2boneoff",
   event: "quote-event",
   labour_only: "quote-labouronly",
+  bin_rental: "quote-binrental",
 };
 
 const SERVICE_SUBJECT: Record<string, string> = {
@@ -34,6 +35,7 @@ const SERVICE_SUBJECT: Record<string, string> = {
   b2b_delivery: "Your Delivery Quote",
   event: "Your Event Logistics Quote",
   labour_only: "Your Service Quote",
+  bin_rental: "Your Yugo Bin Rental Quote",
 };
 
 function quoteSubject(
@@ -45,6 +47,9 @@ function quoteSubject(
   const namePart = firstName ? `${firstName}, ` : "";
   if (serviceType === "event" && eventName?.trim()) {
     return `${namePart}Your Yugo Event Quote, ${eventName.trim()} (${quoteId})`;
+  }
+  if (serviceType === "bin_rental") {
+    return `${namePart}Your Yugo Bin Rental Quote (${quoteId})`;
   }
   const subjectBase = SERVICE_SUBJECT[serviceType] ?? "Your Quote is Ready";
   return `${namePart}${subjectBase} ${quoteId}`;
@@ -121,6 +126,33 @@ export async function POST(req: NextRequest) {
     const quoteUrl = `${baseUrl}/quote/${quoteId}`;
 
     const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
+
+    const binLineItemsRaw = Array.isArray(factors.bin_line_items)
+      ? (factors.bin_line_items as { label?: string; amount?: number }[])
+      : [];
+    const binLineItems =
+      binLineItemsRaw.length > 0
+        ? binLineItemsRaw
+            .filter((x) => x.label && typeof x.amount === "number")
+            .map((x) => ({ label: String(x.label), amount: Number(x.amount) }))
+        : null;
+
+    let binIncludeLines: string[] | null = null;
+    if (serviceType === "bin_rental") {
+      const n = Math.floor(Number(factors.bin_count_total) || 0);
+      const w = Math.floor(Number(factors.bin_wardrobe_boxes) || 0);
+      const lines: string[] = [];
+      if (n > 0) lines.push(`${n} plastic bins (27×16×13")`);
+      if (w > 0) lines.push(`${w} wardrobe boxes (provided on move day)`);
+      lines.push("Zip ties (1 per bin)");
+      if (factors.bin_packing_paper === true) lines.push("Packing paper");
+      if (factors.bin_material_delivery_charged === true) {
+        lines.push("Material delivery");
+      } else if (factors.bin_linked_move_id) {
+        lines.push("Delivery included with your Yugo move");
+      }
+      binIncludeLines = lines;
+    }
 
     const { data: coordConfig } = await supabase
       .from("platform_config")
@@ -246,6 +278,27 @@ export async function POST(req: NextRequest) {
         b2bItems: Array.isArray(factors.b2b_items)
           ? (factors.b2b_items as string[]).join(", ")
           : null,
+        binBundleLabel: (factors.bin_bundle_label as string) ?? null,
+        binDropOffDate: (factors.bin_drop_off_date as string) ?? null,
+        binPickupDate: (factors.bin_pickup_date as string) ?? null,
+        binMoveDate: (factors.bin_move_date as string) ?? quote.move_date,
+        binDeliveryAddress: quote.to_address ?? null,
+        binPickupAddress: quote.from_address ?? null,
+        binLineItems,
+        binSubtotal:
+          typeof factors.bin_subtotal === "number"
+            ? factors.bin_subtotal
+            : quote.custom_price != null
+              ? Number(quote.custom_price)
+              : null,
+        binTax: typeof factors.bin_tax === "number" ? factors.bin_tax : null,
+        binGrandTotal:
+          typeof factors.bin_grand_total === "number"
+            ? factors.bin_grand_total
+            : quote.deposit_amount != null
+              ? Number(quote.deposit_amount)
+              : null,
+        binIncludeLines,
       },
     });
 

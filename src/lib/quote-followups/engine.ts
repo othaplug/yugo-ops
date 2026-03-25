@@ -19,6 +19,7 @@ const SERVICE_LABELS: Record<string, string> = {
   white_glove: "White Glove Service",
   specialty: "Specialty Service",
   b2b_delivery: "Delivery",
+  bin_rental: "Bin Rental",
 };
 
 interface EngagementSummary {

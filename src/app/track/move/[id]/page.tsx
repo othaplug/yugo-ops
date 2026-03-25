@@ -97,6 +97,12 @@ export default async function TrackMovePage({
     : [];
   const crewSize = Math.max(2, crewMembersArr.length);
 
+  const { data: binOrder } = await supabase
+    .from("bin_orders")
+    .select("*")
+    .eq("move_id", move.id)
+    .maybeSingle();
+
   const icCfg = await getFeatureConfig([
     "change_request_enabled",
     "change_request_per_score_rate",
@@ -192,6 +198,7 @@ export default async function TrackMovePage({
         new_subtotal: number;
         client_response: string | null;
       } | null}
+      binOrder={binOrder}
     />
   );
 }

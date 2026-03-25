@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatAccessForDisplay } from "@/lib/format-text";
+import { createBinOrderFromBinRentalQuote } from "@/lib/automations/create-bin-order-from-quote";
 
 /* ═══════════════════════════════════════════════════════════
    createMoveFromQuote
@@ -48,6 +49,7 @@ const SERVICE_TO_MOVE_TYPE: Record<string, string> = {
   b2b_delivery: "b2b_oneoff",
   event: "event",
   labour_only: "labour_only",
+  bin_rental: "bin_rental",
   packing: "residential",
 };
 
@@ -484,6 +486,21 @@ export async function createMoveFromQuote(
         `Created primary move but failed on sibling rows for ${input.quoteId}: ${sibErr.message}`,
       );
     }
+  }
+
+  if (quote.service_type === "bin_rental") {
+    await createBinOrderFromBinRentalQuote({
+      supabase,
+      moveId: primary.id,
+      quote,
+      clientName,
+      clientEmail,
+      clientPhone,
+      squarePaymentId: input.squarePaymentId ?? null,
+      squareCustomerId: input.squareCustomerId ?? null,
+      squareCardId: input.squareCardId ?? null,
+      depositAmount: input.depositAmount,
+    });
   }
 
   return {

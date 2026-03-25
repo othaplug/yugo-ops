@@ -219,6 +219,10 @@ export const HERO_CONFIG: Record<string, { headline: string; subtitle: string }>
     headline: "Your Service Quote",
     subtitle: "Professional crew for your labour needs, no truck required.",
   },
+  bin_rental: {
+    headline: "Your Bin Rental Quote",
+    subtitle: "Eco-friendly plastic bins: delivered before your move, picked up after.",
+  },
 };
 
 /* ─── Helpers ────────────────────────────────── */
@@ -333,6 +337,8 @@ export function calculateDeposit(serviceType: string, total: number, tier?: stri
       return Math.max(300, Math.round(total * 0.25));
     case "labour_only":
       return Math.max(200, Math.round(total * 0.50));
+    case "bin_rental":
+      return total;
     default:
       if (total < 500) return total;
       if (total < 3000) return 150;

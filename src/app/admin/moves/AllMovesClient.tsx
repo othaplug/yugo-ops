@@ -65,6 +65,7 @@ const TYPE_FILTERS = [
   { value: "specialty", label: "Specialty" },
   { value: "event", label: "Event" },
   { value: "b2b", label: "B2B" },
+  { value: "bin_rental", label: "Bin Rental" },
 ];
 
 const STATUS_FILTERS = [
@@ -94,6 +95,7 @@ function normalizeType(move: Move): string {
   if (mt.includes("special")) return "specialty";
   if (mt.includes("b2b")) return "b2b";
   if (mt.includes("labour_only") || mt.includes("labour only")) return "labour_only";
+  if (mt.includes("bin_rental")) return "bin_rental";
   if (mt.includes("residential") || mt.includes("local")) return "residential";
   return mt || "residential";
 }
@@ -108,6 +110,7 @@ function typeLabel(type: string): string {
     event: "Event",
     b2b: "B2B",
     labour_only: "Labour Only",
+    bin_rental: "Bin Rental",
   };
   return map[type] || type;
 }
@@ -177,6 +180,7 @@ function serviceTypeLabel(st: string): string {
     event: "Event",
     b2b_delivery: "B2B",
     labour_only: "Labour Only",
+    bin_rental: "Bin Rental",
   };
   return map[st] || st;
 }

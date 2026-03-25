@@ -550,8 +550,8 @@ export default function ClientSignOffPage({
           <p className="text-[var(--text-base)] mb-6" style={{ color: MUTED }}>This job has already been signed off.</p>
           <Link
             href={`/crew/dashboard/job/${jobType}/${id}`}
-            className="inline-flex items-center gap-2 px-4 py-2 font-semibold text-[13px] transition-opacity hover:opacity-85"
-            style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+            className="inline-flex items-center gap-1 text-[13px] font-medium transition-opacity hover:opacity-70"
+            style={{ color: MUTED }}
           >
             <ChevronLeft size={14} /> Back to Job
           </Link>
@@ -1183,8 +1183,8 @@ export default function ClientSignOffPage({
             )}
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}`}
-              className="inline-flex items-center gap-2 px-4 py-2 font-semibold text-[var(--text-base)] transition-opacity hover:opacity-85"
-              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+              className="inline-flex items-center gap-1 text-[13px] font-medium transition-opacity hover:opacity-70"
+              style={{ color: MUTED }}
             >
               <ChevronLeft size={14} /> Back to Job
             </Link>

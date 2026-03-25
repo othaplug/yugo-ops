@@ -57,6 +57,9 @@ const SERVICE_LABELS: Record<string, string> = {
   white_glove: "White Glove Service",
   specialty: "Specialty Service",
   b2b_delivery: "B2B Delivery",
+  event: "Event",
+  labour_only: "Labour Only",
+  bin_rental: "Bin Rental",
 };
 
 const SPECIALTY_ITEM_TYPES = [

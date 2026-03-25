@@ -55,6 +55,10 @@ export type TemplateName =
   | "quote-singleitem"
   | "quote-whiteglove"
   | "quote-specialty"
+  | "quote-event"
+  | "quote-labouronly"
+  | "quote-binrental"
+  | "quote-b2boneoff"
   | "booking-confirmation"
   | "move-updated"
   | "pre-move-72hr"
@@ -103,6 +107,10 @@ type TemplateDataMap = {
   "quote-singleitem": QuoteTemplateData;
   "quote-whiteglove": QuoteTemplateData;
   "quote-specialty": QuoteTemplateData;
+  "quote-event": QuoteTemplateData;
+  "quote-labouronly": QuoteTemplateData;
+  "quote-binrental": QuoteTemplateData;
+  "quote-b2boneoff": QuoteTemplateData;
   "pre-move-72hr": PreMove72hrData;
   "pre-move-24hr": PreMove24hrData;
   "balance-receipt": BalanceReceiptData;

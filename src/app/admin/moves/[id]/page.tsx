@@ -50,6 +50,7 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
     { data: pendingInventoryChange },
     { data: paymentLedger },
     { data: moveStatusEvents },
+    { data: linkedBinOrders },
   ] = await Promise.all([
     db.from("move_change_requests").select("fee_cents").eq("move_id", move.id).eq("status", "approved"),
     db.from("extra_items").select("fee_cents").eq("job_id", move.id).eq("job_type", "move").eq("status", "approved"),
@@ -78,6 +79,7 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
       .eq("entity_type", "move")
       .eq("entity_id", move.id)
       .order("created_at", { ascending: true }),
+    db.from("bin_orders").select("*").eq("move_id", move.id).order("created_at", { ascending: false }),
   ]);
   const changeFeesCents = (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
   const extraFeesCents = (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
@@ -96,6 +98,7 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
       pendingInventoryChange={pendingInventoryChange ?? undefined}
       paymentLedger={paymentLedger ?? []}
       moveStatusEvents={moveStatusEvents ?? []}
+      linkedBinOrders={linkedBinOrders ?? []}
     />
   );
 }
