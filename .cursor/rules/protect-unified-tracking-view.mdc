@@ -10,7 +10,7 @@ This file is considered **stable and finalized**. Do NOT refactor, restructure, 
 
 ## What's locked
 
-- **Status fallback chain** in `CrewPopup`: `crewLocation?.status || session?.status || fallback`. This three-layer order is intentional — fixes the bug where the popup showed "En Route to Pickup" while the job card showed the real status (e.g. "Unloading").
+- **Status fallback chain** (shared helper `effectiveTrackingStatus`): `crewLocation?.status || session?.status || fallback`. Used by `CrewPopup`, **Teams** list rows, and **map markers** — same order everywhere. Fixes the bug where the Teams row assumed pickup whenever `crew_locations` had no status while the session already reflected destination/transit.
 - **Map rendering** — Mapbox `GodEyeMap` with crew markers, route lines, office marker, heading arrows, and warning badges.
 - **Bottom-left panel** — Live sessions tab (with `STAGE_ORDER` progress bar) and Teams tab.
 - **CrewPopup** — Status badge, current job, speed/ETA/last GPS grid, team members, "View Job Details" link.
@@ -18,7 +18,7 @@ This file is considered **stable and finalized**. Do NOT refactor, restructure, 
 
 ## Rules
 
-- Do NOT change the status fallback order in `CrewPopup`.
+- Do NOT change the status fallback order in `effectiveTrackingStatus` / `CrewPopup`.
 - Do NOT swap Mapbox for another map provider.
 - Do NOT remove or merge the Live/Teams panel tabs.
 - Do NOT remove the `STAGE_ORDER` / `STAGE_LABELS` progress bar logic.

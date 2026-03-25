@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { Star as PhStar, CaretLeft as PhCaretLeft, PencilSimple, Check } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use } from "react";
 import YugoLogo from "@/components/YugoLogo";
+import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
 
 const GOLD = "#C9A962";
 const FOREST = "#2A3D2E";
@@ -13,6 +13,7 @@ const INK = "#1A1A1A";
 const MUTED = "#6B7A6E";
 const BG = "#FAF8F4";
 const BORDER = "#E8E4DC";
+const NOTE_FILL = "#F0EDE8";
 
 const RATING_LABELS: Record<number, string> = {
   1: "Needs Improvement",
@@ -322,6 +323,12 @@ export default function ClientSignOffPage({
   const [skipSubmitting, setSkipSubmitting] = useState(false);
 
   const router = useRouter();
+  const { setImmersiveNav } = useCrewImmersiveNav();
+
+  useEffect(() => {
+    setImmersiveNav(true);
+    return () => setImmersiveNav(false);
+  }, [setImmersiveNav]);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -609,7 +616,7 @@ export default function ClientSignOffPage({
         .pop-in      { animation: popIn 0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
       `}</style>
 
-      <div className="max-w-[420px] mx-auto px-4 py-6 pb-16">
+      <div className="max-w-[420px] mx-auto px-4 pb-16 pt-[max(1.5rem,env(safe-area-inset-top))]">
 
         {/* Header bar */}
         <div className="flex items-center justify-between mb-6">
@@ -696,10 +703,10 @@ export default function ClientSignOffPage({
                           key={opt.value}
                           type="button"
                           onClick={() => updateItemCondition(idx, "condition", opt.value)}
-                          className="px-3 py-2 rounded-xl text-[11px] font-semibold border transition-all"
+                          className="px-3 py-2 rounded-xl text-[11px] font-semibold transition-all border-0"
                           style={{
-                            borderColor: ic.condition === opt.value ? opt.color : BORDER,
-                            backgroundColor: ic.condition === opt.value ? `${opt.color}15` : "transparent",
+                            backgroundColor:
+                              ic.condition === opt.value ? `${opt.color}18` : NOTE_FILL,
                             color: ic.condition === opt.value ? opt.color : MUTED,
                           }}
                         >
@@ -713,8 +720,8 @@ export default function ClientSignOffPage({
                           value={ic.notes}
                           onChange={(e) => updateItemCondition(idx, "notes", e.target.value)}
                           placeholder="Describe the damage (required)…"
-                          className="w-full p-3 rounded-xl border bg-white text-[12px] outline-none"
-                          style={{ color: INK, borderColor: "#FCA5A5" }}
+                          className="w-full p-3 rounded-xl border-0 text-[12px] outline-none"
+                          style={{ color: INK, backgroundColor: "#FEE2E2" }}
                           rows={2}
                         />
                       </div>
@@ -725,8 +732,8 @@ export default function ClientSignOffPage({
                         value={ic.notes}
                         onChange={(e) => updateItemCondition(idx, "notes", e.target.value)}
                         placeholder="Optional notes…"
-                        className="w-full px-3 py-2 rounded-xl border bg-white text-[12px] outline-none mt-1"
-                        style={{ color: INK, borderColor: BORDER }}
+                        className="w-full px-3 py-2 rounded-xl border-0 text-[12px] outline-none mt-1"
+                        style={{ color: INK, backgroundColor: NOTE_FILL }}
                       />
                     )}
                   </div>

@@ -258,6 +258,37 @@ export default function WalkthroughModal({
     setExtraItems((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  /** Persist pickup-stage inventory checks so the Items tab reflects walkthrough completion. */
+  async function verifyPickupFromWalkthrough(mode: "here_only" | "all_present") {
+    const list =
+      mode === "here_only"
+        ? items.filter((i) => i.status === "here")
+        : items.filter((i) => i.status !== "missing");
+    await Promise.all(
+      list.map(async (i) => {
+        if (!i.id.startsWith("noid-")) {
+          await fetch(`/api/crew/inventory/${encodeURIComponent(jobId)}/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ moveInventoryId: i.id, stage: "loading" }),
+          });
+        } else {
+          await fetch(`/api/crew/inventory/${encodeURIComponent(jobId)}/verify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              room: i.room,
+              itemName: i.item_name,
+              stage: "loading",
+            }),
+          });
+        }
+      })
+    );
+  }
+
   async function submitChangeRequest() {
     setSubmitting(true);
     setSubmitError("");
@@ -286,6 +317,7 @@ export default function WalkthroughModal({
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to submit");
+        await verifyPickupFromWalkthrough("here_only");
         onComplete({
           itemsMatched: matched,
           itemsMissing: deliveryMissing.length,
@@ -325,6 +357,7 @@ export default function WalkthroughModal({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to submit");
+      await verifyPickupFromWalkthrough("here_only");
       onComplete({
         itemsMatched: matched,
         itemsMissing: missing.length,
@@ -342,17 +375,27 @@ export default function WalkthroughModal({
     }
   }
 
-  function submitNoChanges() {
-    onComplete({
-      itemsMatched: matched,
-      itemsMissing: 0,
-      itemsExtra: 0,
-      extraItems: [],
-      missingItems: [],
-      netDelta: 0,
-      changeRequestId: null,
-      noChanges: true,
-    });
+  async function submitNoChanges() {
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await verifyPickupFromWalkthrough("all_present");
+      const present = items.filter((i) => i.status !== "missing").length;
+      onComplete({
+        itemsMatched: present,
+        itemsMissing: 0,
+        itemsExtra: 0,
+        extraItems: [],
+        missingItems: [],
+        netDelta: 0,
+        changeRequestId: null,
+        noChanges: true,
+      });
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : "Failed to save verification");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const hst = Math.round(netDelta * 0.13 * 100) / 100;
@@ -702,8 +745,9 @@ export default function WalkthroughModal({
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => setAddExtraOpen(true)}
-                  className="w-full py-2 border border-dashed border-[var(--gold)]/50 text-[13px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/5 flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-2.5 rounded-xl bg-[var(--gold)]/10 text-[13px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/15 flex items-center justify-center gap-2 transition-colors"
                 >
                   <Plus size={14} /> Add Extra Item
                 </button>
@@ -902,11 +946,13 @@ export default function WalkthroughModal({
                 </>
               ) : (
                 <button
-                  onClick={submitNoChanges}
-                  className="w-full py-2 font-bold text-[var(--text-base)] text-white"
+                  type="button"
+                  onClick={() => void submitNoChanges()}
+                  disabled={submitting}
+                  className="w-full py-2 font-bold text-[var(--text-base)] text-white disabled:opacity-60"
                   style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                 >
-                  No Changes, Inventory Matches
+                  {submitting ? "Saving…" : "No Changes, Inventory Matches"}
                 </button>
               )}
             </>

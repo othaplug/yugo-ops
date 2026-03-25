@@ -538,6 +538,7 @@ export default function QuoteFormClient({
   // Event fields
   const [eventName, setEventName] = useState("");
   const [venueAddress, setVenueAddress] = useState("");
+  const [extraVenueStops, setExtraVenueStops] = useState<StopEntry[]>([]);
   const [eventReturnDate, setEventReturnDate] = useState("");
   const [eventSetupRequired, setEventSetupRequired] = useState(false);
   const [eventSetupHours, setEventSetupHours] = useState(2);
@@ -633,6 +634,7 @@ export default function QuoteFormClient({
 
   // Labour Only fields
   const [workAddress, setWorkAddress] = useState("");
+  const [extraWorkStops, setExtraWorkStops] = useState<StopEntry[]>([]);
   const [workAccess, setWorkAccess] = useState("");
   const [labourDescription, setLabourDescription] = useState("");
   const [labourCrewSize, setLabourCrewSize] = useState(2);
@@ -703,31 +705,61 @@ export default function QuoteFormClient({
     if (d.declaredValue) setDeclaredValue(d.declaredValue as string);
   }, [quoteRestoreDraft]);
 
-  const handleClientEmailBlur = async () => {
-    const trimmed = email.trim();
-    if (!trimmed || !trimmed.includes("@")) return;
+  const handleClientDedupBlur = useCallback(async () => {
+    const emailTrim = email.trim().toLowerCase();
+    const phoneNorm = normalizePhone(phone);
+    const hasEmail = emailTrim.includes("@");
+    const hasPhone = phoneNorm.length === 10;
+    const isB2bQuote = serviceType === "b2b_delivery";
+    const biz = isB2bQuote ? b2bBusinessName.trim() : "";
+    const contactName = [firstName, lastName].filter(Boolean).join(" ").trim();
+    const canHubSpot =
+      hasEmail ||
+      hasPhone ||
+      (biz.length >= 2 && contactName.length >= 2) ||
+      biz.length >= 3;
+    const canOps = hasEmail || hasPhone;
+
+    if (!canHubSpot && !canOps) return;
+
     setClientBannerDismissed(false);
     setClientSearching(true);
     setClientDedupResult(null);
 
     try {
-      const [opsRes, hubspotRes, squareRes] = await Promise.allSettled([
-        fetch("/api/admin/clients/search-by-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: trimmed }),
-        }).then((r) => r.json()),
-        fetch("/api/hubspot/search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: trimmed }),
-        }).then((r) => r.json()),
-        fetch("/api/square/search-customer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: trimmed }),
-        }).then((r) => r.json()),
-      ]);
+      const opsP = canOps
+        ? fetch("/api/admin/clients/search-by-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: hasEmail ? emailTrim : undefined,
+              phone: hasPhone ? phoneNorm : undefined,
+            }),
+          }).then((r) => r.json())
+        : Promise.resolve({ client: null, prev_move: null });
+
+      const hubspotP = canHubSpot
+        ? fetch("/api/hubspot/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: hasEmail ? emailTrim : undefined,
+              phone: hasPhone ? phone : undefined,
+              company: biz || undefined,
+              contact_name: contactName || undefined,
+            }),
+          }).then((r) => r.json())
+        : Promise.resolve({ contact: null });
+
+      const squareP = hasEmail
+        ? fetch("/api/square/search-customer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: emailTrim }),
+          }).then((r) => r.json())
+        : Promise.resolve({ customer: null });
+
+      const [opsRes, hubspotRes, squareRes] = await Promise.allSettled([opsP, hubspotP, squareP]);
 
       const ops = opsRes.status === "fulfilled" ? opsRes.value : null;
       const hubspot = hubspotRes.status === "fulfilled" ? hubspotRes.value?.contact ?? null : null;
@@ -749,7 +781,7 @@ export default function QuoteFormClient({
     } finally {
       setClientSearching(false);
     }
-  };
+  }, [email, phone, firstName, lastName, serviceType, b2bBusinessName]);
 
   const handleClientAutoFill = () => {
     if (!clientDedupResult) return;
@@ -758,8 +790,12 @@ export default function QuoteFormClient({
     if (hubspot) {
       if (hubspot.first_name && !firstName) setFirstName(hubspot.first_name);
       if (hubspot.last_name && !lastName) setLastName(hubspot.last_name);
+      if (hubspot.email && !email.trim()) setEmail(hubspot.email.trim().toLowerCase());
       if (hubspot.phone && !phone) {
           setPhone(formatPhone(hubspot.phone));
+      }
+      if (serviceType === "b2b_delivery" && hubspot.company && !b2bBusinessName.trim()) {
+        setB2bBusinessName(hubspot.company);
       }
       setClientHubspotId(hubspot.hubspot_id);
     }
@@ -1434,10 +1470,21 @@ export default function QuoteFormClient({
       toast(`Quote ${id} generated`, "check");
 
       // Persist additional stops if any were added
-      const allExtraStops = [
-        ...extraFromStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "pickup", sort_order: i + 1 })),
-        ...extraToStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "dropoff", sort_order: i + 1 })),
-      ];
+      const extraPickups = extraFromStops
+        .filter((s) => s.address.trim())
+        .map((s, i) => ({ ...s, stop_type: "pickup" as const, sort_order: i + 1 }));
+      const extraDropoffsBase = extraToStops
+        .filter((s) => s.address.trim())
+        .map((s, i) => ({ ...s, stop_type: "dropoff" as const, sort_order: i + 1 }));
+      const extraVenueDropoffs =
+        serviceType === "event" && !eventMulti
+          ? extraVenueStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "dropoff" as const, sort_order: i + 1 }))
+          : [];
+      const extraLabourDropoffs =
+        serviceType === "labour_only"
+          ? extraWorkStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "dropoff" as const, sort_order: i + 1 }))
+          : [];
+      const allExtraStops = [...extraPickups, ...extraDropoffsBase, ...extraVenueDropoffs, ...extraLabourDropoffs];
       if (allExtraStops.length > 0) {
         fetch("/api/admin/job-stops", {
           method: "POST",
@@ -1642,10 +1689,30 @@ export default function QuoteFormClient({
                 </Field>
                 <div className="grid grid-cols-2 gap-2">
                   <Field label="First Name">
-                    <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className={fieldInput} />
+                    <input
+                      value={firstName}
+                      onChange={(e) => {
+                        setFirstName(e.target.value);
+                        setClientDedupResult(null);
+                        setClientBannerDismissed(false);
+                      }}
+                      onBlur={handleClientDedupBlur}
+                      placeholder="First name"
+                      className={fieldInput}
+                    />
                   </Field>
                   <Field label="Last Name">
-                    <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className={fieldInput} />
+                    <input
+                      value={lastName}
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        setClientDedupResult(null);
+                        setClientBannerDismissed(false);
+                      }}
+                      onBlur={handleClientDedupBlur}
+                      placeholder="Last name"
+                      className={fieldInput}
+                    />
                   </Field>
                   <Field label="Email">
                     <input
@@ -1656,18 +1723,30 @@ export default function QuoteFormClient({
                         setClientDedupResult(null);
                         setClientBannerDismissed(false);
                       }}
-                      onBlur={handleClientEmailBlur}
+                      onBlur={handleClientDedupBlur}
                       placeholder="client@email.com"
                       className={fieldInput}
                     />
-                    {clientSearching && (
-                      <p className="mt-1 text-[10px] text-[var(--tx3)]">Checking for existing contacts…</p>
-                    )}
                   </Field>
                   <Field label="Phone">
-                    <input ref={phoneInput.ref} type="tel" value={phone} onChange={phoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={fieldInput} />
+                    <input
+                      ref={phoneInput.ref}
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => {
+                        phoneInput.onChange(e);
+                        setClientDedupResult(null);
+                        setClientBannerDismissed(false);
+                      }}
+                      onBlur={handleClientDedupBlur}
+                      placeholder={PHONE_PLACEHOLDER}
+                      className={fieldInput}
+                    />
                   </Field>
                 </div>
+                {clientSearching && (
+                  <p className="text-[10px] text-[var(--tx3)]">Checking HubSpot, Square, and OPS+ for existing contacts…</p>
+                )}
 
                 {/* ── Client dedup banner ── */}
                 {!clientBannerDismissed && clientDedupResult && (
@@ -1681,7 +1760,8 @@ export default function QuoteFormClient({
                         </p>
                       </div>
                       <p className="text-[12px] text-[var(--tx2)] mb-0.5">
-                        <strong>{clientDedupResult.opsClient.name}</strong> has moved with Yugo before.
+                        <strong>{clientDedupResult.opsClient.name}</strong> has moved with Yugo before
+                        (matching email or phone).
                       </p>
                       {clientDedupResult.opsPrevMove && (
                         <p className="text-[11px] text-[var(--tx3)] mb-2">
@@ -1726,6 +1806,9 @@ export default function QuoteFormClient({
                         <p className="text-[12px] text-[var(--tx2)] mb-0.5">
                           <span className="font-semibold">HubSpot:</span>{" "}
                           {[clientDedupResult.hubspot.first_name, clientDedupResult.hubspot.last_name].filter(Boolean).join(" ") || clientDedupResult.hubspot.email}
+                          {clientDedupResult.hubspot.company && (
+                            <span className="text-[var(--tx3)]">, {clientDedupResult.hubspot.company}</span>
+                          )}
                           {clientDedupResult.hubspot.deal_ids.length > 0 && (
                             <span className="text-[var(--tx3)]"> ({clientDedupResult.hubspot.deal_ids.length} deal{clientDedupResult.hubspot.deal_ids.length !== 1 ? "s" : ""})</span>
                           )}
@@ -2578,14 +2661,15 @@ export default function QuoteFormClient({
                             Venue matches origin, on-site event (no separate venue address).
                           </p>
                         ) : (
-                          <AddressAutocomplete
-                            value={venueAddress}
-                            onRawChange={setVenueAddress}
-                            onChange={(r) => setVenueAddress(r.fullAddress)}
-                            placeholder="Restaurant XYZ, 100 King St W"
+                          <MultiStopAddressField
                             label="Venue / Event Address *"
-                            required
-                            className={fieldInput}
+                            placeholder="Restaurant XYZ, 100 King St W"
+                            stops={[{ address: venueAddress }, ...extraVenueStops]}
+                            onChange={(stops) => {
+                              setVenueAddress(stops[0]?.address ?? "");
+                              setExtraVenueStops(stops.slice(1));
+                            }}
+                            inputClassName={fieldInput}
                           />
                         )}
                       </div>
@@ -3051,14 +3135,15 @@ export default function QuoteFormClient({
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour Only</h3>
                   <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
                     <div className="flex-1 min-w-0">
-                      <AddressAutocomplete
-                        value={workAddress}
-                        onRawChange={setWorkAddress}
-                        onChange={(r) => setWorkAddress(r.fullAddress)}
-                        placeholder="55 Avenue Rd, Unit 2801"
+                      <MultiStopAddressField
                         label="Work Address *"
-                        required
-                        className={fieldInput}
+                        placeholder="55 Avenue Rd, Unit 2801"
+                        stops={[{ address: workAddress }, ...extraWorkStops]}
+                        onChange={(stops) => {
+                          setWorkAddress(stops[0]?.address ?? "");
+                          setExtraWorkStops(stops.slice(1));
+                        }}
+                        inputClassName={fieldInput}
                       />
                     </div>
                     <div className="w-full min-[400px]:w-[150px] shrink-0">
@@ -3160,7 +3245,12 @@ export default function QuoteFormClient({
                   <Field label="Business Name *">
                     <input
                       value={b2bBusinessName}
-                      onChange={(e) => setB2bBusinessName(e.target.value)}
+                      onChange={(e) => {
+                        setB2bBusinessName(e.target.value);
+                        setClientDedupResult(null);
+                        setClientBannerDismissed(false);
+                      }}
+                      onBlur={handleClientDedupBlur}
                       placeholder="Acme Corp"
                       className={fieldInput}
                     />

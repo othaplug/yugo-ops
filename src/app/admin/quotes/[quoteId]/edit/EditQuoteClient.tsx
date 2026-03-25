@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowsClockwise as RefreshCw, PaperPlaneTilt as Send, CheckCircle, CircleNotch as Loader2, TrendUp as TrendingUp, Warning } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
+import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -99,7 +100,9 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
   // ── Core fields ──────────────────────────────────────────
   const [fromAddress, setFromAddress] = useState(oq.from_address || "");
+  const [extraFromStops, setExtraFromStops] = useState<StopEntry[]>([]);
   const [toAddress, setToAddress] = useState(oq.to_address || "");
+  const [extraToStops, setExtraToStops] = useState<StopEntry[]>([]);
   const [fromAccess, setFromAccess] = useState(oq.from_access || "");
   const [toAccess, setToAccess] = useState(oq.to_access || "");
   const [moveDate, setMoveDate] = useState(oq.move_date || "");
@@ -193,6 +196,40 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const [livePreview, setLivePreview] = useState<any>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!oq.quote_id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/job-stops?job_type=quote&job_id=${encodeURIComponent(oq.quote_id)}`,
+        );
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const rows = (data.stops ?? []) as { stop_type?: string; address?: string; lat?: number | null; lng?: number | null }[];
+        const pickups: StopEntry[] = [];
+        const dropoffs: StopEntry[] = [];
+        for (const r of rows) {
+          const entry: StopEntry = {
+            address: (r.address || "").trim(),
+            lat: r.lat ?? null,
+            lng: r.lng ?? null,
+          };
+          if (!entry.address) continue;
+          if (r.stop_type === "pickup") pickups.push(entry);
+          else if (r.stop_type === "dropoff") dropoffs.push(entry);
+        }
+        if (cancelled) return;
+        setExtraFromStops(pickups);
+        setExtraToStops(dropoffs);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [oq.quote_id]);
 
   // Resolve previous quote price: essential (current) or curated/essentials (legacy) tier, or custom_price for non-tiered
   const oldPrice = oq.tiers?.essential?.price ?? oq.tiers?.curated?.price ?? oq.tiers?.essentials?.price ?? (typeof oq.custom_price === "number" ? oq.custom_price : null) ?? 0;
@@ -336,6 +373,37 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
     return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current); };
   }, [buildPayload, fromAddress, toAddress, moveDate, inventoryItems.length, moveSize]);
 
+  const replaceQuoteJobStops = useCallback(async (quoteId: string) => {
+    try {
+      const listRes = await fetch(
+        `/api/admin/job-stops?job_type=quote&job_id=${encodeURIComponent(quoteId)}`,
+      );
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        for (const s of (listData.stops ?? []) as { id?: string }[]) {
+          if (s.id) {
+            await fetch(`/api/admin/job-stops?id=${encodeURIComponent(s.id)}`, { method: "DELETE" });
+          }
+        }
+      }
+      const extraPickups = extraFromStops
+        .filter((s) => s.address.trim())
+        .map((s, i) => ({ ...s, stop_type: "pickup" as const, sort_order: i + 1 }));
+      const extraDropoffs = extraToStops
+        .filter((s) => s.address.trim())
+        .map((s, i) => ({ ...s, stop_type: "dropoff" as const, sort_order: i + 1 }));
+      const all = [...extraPickups, ...extraDropoffs];
+      if (all.length === 0) return;
+      await fetch("/api/admin/job-stops", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_type: "quote", job_id: quoteId, stops: all }),
+      });
+    } catch {
+      /* non-fatal */
+    }
+  }, [extraFromStops, extraToStops]);
+
   // ── Finalize: generate real quote + save to DB ────────────
   const handleRegenerate = useCallback(async () => {
     setError(null);
@@ -350,13 +418,15 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
       if (!res.ok) { setError(data.error || "Failed to generate quote"); return; }
       setNewQuoteResult(data);
       const id = data.quote_id ?? data.quoteId;
+      const qid = typeof id === "string" && id.trim() ? id.trim() : oq.quote_id;
       setNewQuoteId(typeof id === "string" && id.trim() ? id.trim() : null);
+      if (qid) await replaceQuoteJobStops(qid);
     } catch {
       setError("Network error generating quote");
     } finally {
       setGenerating(false);
     }
-  }, [buildPayload]);
+  }, [buildPayload, oq.quote_id, replaceQuoteJobStops]);
 
   const handleSendUpdate = useCallback(async () => {
     const quoteIdToSend = newQuoteId || oq.quote_id;
@@ -557,13 +627,27 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
         {/* ── Core fields ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>From Address</label>
-            <input type="text" value={fromAddress} onChange={(e) => setFromAddress(e.target.value)} className={inputClass} placeholder="123 Main St, Toronto, ON" />
-          </div>
-          <div>
-            <label className={labelClass}>To Address</label>
-            <input type="text" value={toAddress} onChange={(e) => setToAddress(e.target.value)} className={inputClass} placeholder="456 Bay St, Toronto, ON" />
+          <div className="md:col-span-2 space-y-4">
+            <MultiStopAddressField
+              label="From address"
+              placeholder="123 Main St, Toronto, ON"
+              stops={[{ address: fromAddress }, ...extraFromStops]}
+              onChange={(stops) => {
+                setFromAddress(stops[0]?.address ?? "");
+                setExtraFromStops(stops.slice(1));
+              }}
+              inputClassName={inputClass}
+            />
+            <MultiStopAddressField
+              label="To address"
+              placeholder="456 Bay St, Toronto, ON"
+              stops={[{ address: toAddress }, ...extraToStops]}
+              onChange={(stops) => {
+                setToAddress(stops[0]?.address ?? "");
+                setExtraToStops(stops.slice(1));
+              }}
+              inputClassName={inputClass}
+            />
           </div>
           <div>
             <label className={labelClass}>From Access</label>

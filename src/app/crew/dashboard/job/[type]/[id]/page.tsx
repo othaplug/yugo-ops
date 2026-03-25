@@ -185,6 +185,7 @@ export default function CrewJobPage({
   const [elapsedMs, setElapsedMs] = useState(0);
   const [itemsVerified, setItemsVerified] = useState(0);
   const [itemsTotal, setItemsTotal] = useState(0);
+  const [inventoryVerifyEpoch, setInventoryVerifyEpoch] = useState(0);
   const noteInputRef = useRef<HTMLInputElement | null>(null);
 
   const [pickupModalOpen, setPickupModalOpen] = useState(false);
@@ -1112,6 +1113,7 @@ export default function CrewJobPage({
             onRefresh={fetchJob}
             onCountChange={(v, t) => { setItemsVerified(v); setItemsTotal(t); }}
             readOnly={isCompleted}
+            verificationRefreshEpoch={inventoryVerifyEpoch}
           />
         </div>
       )}
@@ -1157,6 +1159,8 @@ export default function CrewJobPage({
             setWalkthroughDone(true);
             setWalkthroughModalOpen(false);
             setWalkthroughResult(result);
+            setInventoryVerifyEpoch((n) => n + 1);
+            void fetchJob();
             if (!result.noChanges && (result.changeRequestId || jobType === "delivery")) {
               setChangeRequestSubmitted(true);
             }

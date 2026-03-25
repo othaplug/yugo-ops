@@ -30,6 +30,8 @@ interface JobInventoryProps {
   onRefresh?: () => void;
   onCountChange?: (verified: number, total: number) => void;
   readOnly?: boolean;
+  /** Increment after walkthrough (or similar) to refetch server verifications. */
+  verificationRefreshEpoch?: number;
 }
 
 export default function JobInventory({
@@ -42,6 +44,7 @@ export default function JobInventory({
   onRefresh,
   onCountChange,
   readOnly = false,
+  verificationRefreshEpoch = 0,
 }: JobInventoryProps) {
   const { toast } = useToast();
   const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
@@ -50,6 +53,9 @@ export default function JobInventory({
   const [verifiedIdsUnloading, setVerifiedIdsUnloading] = useState<Set<string>>(new Set());
   const [verifiedRoomsLoading, setVerifiedRoomsLoading] = useState<Set<string>>(new Set());
   const [verifiedRoomsUnloading, setVerifiedRoomsUnloading] = useState<Set<string>>(new Set());
+  const [verifiedKeys, setVerifiedKeys] = useState<Set<string>>(new Set());
+  const [verifiedKeysLoading, setVerifiedKeysLoading] = useState<Set<string>>(new Set());
+  const [verifiedKeysUnloading, setVerifiedKeysUnloading] = useState<Set<string>>(new Set());
   const [customRooms, setCustomRooms] = useState<string[]>([]);
   const [addExtraOpen, setAddExtraOpen] = useState(false);
   const [extraDesc, setExtraDesc] = useState("");
@@ -57,45 +63,59 @@ export default function JobInventory({
   const [extraQty, setExtraQty] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
-  const [verifiedNoidKeys, setVerifiedNoidKeys] = useState<Set<string>>(new Set());
 
   const isUnloading = ["unloading", "arrived_at_destination", "delivering", "completed"].includes(currentStatus);
   const isCompleted = currentStatus === "completed";
 
   useEffect(() => {
-    if (jobType !== "move") return;
     if (isCompleted) {
-      fetch(`/api/crew/inventory/${jobId}/verifications?stage=all`)
+      fetch(`/api/crew/inventory/${encodeURIComponent(jobId)}/verifications?stage=all`)
         .then((r) => r.json())
         .then((d) => {
           if (d.verifiedIdsLoading) setVerifiedIdsLoading(new Set(d.verifiedIdsLoading));
           if (d.verifiedIdsUnloading) setVerifiedIdsUnloading(new Set(d.verifiedIdsUnloading));
           if (d.verifiedRoomsLoading) setVerifiedRoomsLoading(new Set(d.verifiedRoomsLoading));
           if (d.verifiedRoomsUnloading) setVerifiedRoomsUnloading(new Set(d.verifiedRoomsUnloading));
+          if (Array.isArray(d.verifiedKeysLoading)) setVerifiedKeysLoading(new Set(d.verifiedKeysLoading));
+          if (Array.isArray(d.verifiedKeysUnloading)) setVerifiedKeysUnloading(new Set(d.verifiedKeysUnloading));
         })
         .catch(() => {});
     } else {
-      fetch(`/api/crew/inventory/${jobId}/verifications?stage=${isUnloading ? "unloading" : "loading"}`)
+      fetch(`/api/crew/inventory/${encodeURIComponent(jobId)}/verifications?stage=${isUnloading ? "unloading" : "loading"}`)
         .then((r) => r.json())
         .then((d) => {
-          if (d.verifiedIds) setVerifiedIds(new Set(d.verifiedIds));
-          if (d.verifiedRooms) setVerifiedRooms(new Set(d.verifiedRooms));
+          if (Array.isArray(d.verifiedIds)) setVerifiedIds(new Set(d.verifiedIds));
+          if (Array.isArray(d.verifiedRooms)) setVerifiedRooms(new Set(d.verifiedRooms));
+          if (Array.isArray(d.verifiedKeys)) setVerifiedKeys(new Set(d.verifiedKeys));
         })
         .catch(() => {});
     }
-  }, [jobId, jobType, isUnloading, isCompleted]);
+  }, [jobId, isUnloading, isCompleted, verificationRefreshEpoch]);
 
   const isRoomBasedVerification = jobType === "move" && moveType === "residential" && inventory.length === 0;
   const roomsToConfirm = [...DEFAULT_ROOMS, ...customRooms];
-  const allItemsWithId = inventory.flatMap((r) => r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${r.room}-${i}`, item_name: name })));
+  const allItemsWithId = inventory.flatMap((r) => {
+    const rowItems =
+      r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${r.room}-${i}`, item_name: name, quantity: 1 as const }));
+    return rowItems.map((item) => ({ ...item, room: r.room }));
+  });
   const verifiableCount = allItemsWithId.filter((item) => {
     const id = "id" in item ? item.id : "";
     return typeof id === "string" && !id.startsWith("noid-");
   }).length;
+  const lineItemKey = (room: string, itemName: string) => `${room}::${itemName}`;
   const verifiedCount = allItemsWithId.filter((item) => {
     const id = "id" in item ? item.id : "";
-    if (typeof id !== "string") return false;
-    return !id.startsWith("noid-") ? verifiedIds.has(id) : verifiedNoidKeys.has(id);
+    const room = item.room;
+    const name = "item_name" in item ? item.item_name : "";
+    if (typeof id !== "string" || typeof name !== "string") return false;
+    if (!id.startsWith("noid-")) {
+      if (isCompleted) return verifiedIdsLoading.has(id) && verifiedIdsUnloading.has(id);
+      return verifiedIds.has(id);
+    }
+    const k = lineItemKey(room, name);
+    if (isCompleted) return verifiedKeysLoading.has(k) && verifiedKeysUnloading.has(k);
+    return verifiedKeys.has(k);
   }).length;
   const totalCount = isRoomBasedVerification ? roomsToConfirm.length : Math.max(verifiableCount, allItemsWithId.length + extraItems.length);
 
@@ -148,14 +168,26 @@ export default function JobInventory({
     } catch {}
   };
 
-  const toggleNoidVerify = (key: string) => {
+  const toggleLineItemVerify = async (room: string, itemName: string) => {
     if (readOnly || isCompleted) return;
-    setVerifiedNoidKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+    const k = lineItemKey(room, itemName);
+    if (verifiedKeys.has(k)) return;
+    try {
+      const res = await fetch(`/api/crew/inventory/${encodeURIComponent(jobId)}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          room,
+          itemName,
+          stage: isUnloading ? "unloading" : "loading",
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setVerifiedKeys((prev) => new Set([...prev, k]));
+    } catch {
+      toast("Could not verify item", "x");
+    }
   };
 
   const handleAddExtra = async (e: React.FormEvent) => {
@@ -210,8 +242,10 @@ export default function JobInventory({
           <span className="text-[11px] text-[var(--tx3)]">{roomsToConfirm.filter((r) => verifiedRoomsLoading.has(r) && verifiedRoomsUnloading.has(r)).length} of {roomsToConfirm.length} rooms</span>
         ) : isRoomBasedVerification ? (
           <span className="text-[11px] text-[var(--tx3)]">{verifiedRooms.size} of {roomsToConfirm.length} rooms</span>
-        ) : verifiableCount > 0 ? (
-          <span className="text-[11px] text-[var(--tx3)]">{verifiedCount} of {verifiableCount} verified</span>
+        ) : allItemsWithId.length > 0 ? (
+          <span className="text-[11px] text-[var(--tx3)]">
+            {verifiedCount} of {Math.max(verifiableCount, allItemsWithId.length)} verified
+          </span>
         ) : null}
       </div>
       {isRoomBasedVerification ? (
@@ -260,7 +294,7 @@ export default function JobInventory({
         <>
       {inventory.map((r) => {
         const expanded = !collapsedRooms.has(r.room);
-        const items = r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${i}`, item_name: name, quantity: 1 }));
+        const items = r.itemsWithId || r.items.map((name, i) => ({ id: `noid-${r.room}-${i}`, item_name: name, quantity: 1 }));
         return (
         <div key={r.room} className="mb-3 rounded-lg overflow-hidden border border-[var(--brd)]/40 transition-colors hover:border-[var(--brd)]/60">
           <button
@@ -286,19 +320,20 @@ export default function JobInventory({
             <div className="overflow-hidden">
               <div className="space-y-1.5 px-3 pb-3 pt-0.5">
                 {items.map((item, i) => {
-                  const id = "id" in item ? item.id : `noid-${i}`;
+                  const id = "id" in item ? item.id : `noid-${r.room}-${i}`;
                   const rawName = "item_name" in item ? item.item_name : String(item);
                   const qty = "quantity" in item ? (item.quantity ?? 1) : 1;
                   const hasId = typeof id === "string" && !id.startsWith("noid-");
-                  const verified = hasId ? verifiedIds.has(id) : verifiedNoidKeys.has(id);
-                  const verifiedAtPickup = hasId && verifiedIdsLoading.has(id);
-                  const verifiedAtDelivery = hasId && verifiedIdsUnloading.has(id);
+                  const lineKey = lineItemKey(r.room, rawName);
+                  const verified = hasId ? verifiedIds.has(id) : verifiedKeys.has(lineKey);
+                  const verifiedAtPickup = hasId ? verifiedIdsLoading.has(id) : verifiedKeysLoading.has(lineKey);
+                  const verifiedAtDelivery = hasId ? verifiedIdsUnloading.has(id) : verifiedKeysUnloading.has(lineKey);
                   const bothVerified = verifiedAtPickup && verifiedAtDelivery;
                   const canToggle = !readOnly && !isCompleted;
-                  const checked = isCompleted ? (hasId ? bothVerified : false) : verified;
+                  const checked = isCompleted ? bothVerified : verified;
                   return (
                     <label
-                      key={id}
+                      key={`${r.room}-${i}-${rawName}`}
                       className={`flex items-center gap-2.5 py-1.5 ${canToggle ? "cursor-pointer" : ""}`}
                     >
                       <input
@@ -306,14 +341,14 @@ export default function JobInventory({
                         checked={checked}
                         onChange={() => {
                           if (!canToggle) return;
-                          hasId ? toggleVerify(id) : toggleNoidVerify(id);
+                          hasId ? toggleVerify(id) : void toggleLineItemVerify(r.room, rawName);
                         }}
                         disabled={readOnly}
                         className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
                       />
                       <span className="text-[13px] flex-1 text-[var(--tx)]">{rawName}</span>
                       <span className="text-[11px] text-[var(--tx3)] tabular-nums">{qty}</span>
-                      {isCompleted && hasId && (
+                      {isCompleted && (
                         <span className="flex items-center gap-2 text-[10px] font-medium">
                           <span className={verifiedAtPickup ? "text-[var(--grn)]" : "text-[var(--tx3)]/60"}>
                             Pickup {verifiedAtPickup ? "✓" : "-"}
@@ -344,8 +379,9 @@ export default function JobInventory({
       )}
       {!isRoomBasedVerification && !readOnly && (
       <button
+        type="button"
         onClick={() => setAddExtraOpen(true)}
-        className="w-full py-2 border border-dashed border-[var(--gold)]/50 text-[12px] font-medium text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+        className="w-full py-2.5 rounded-xl bg-[var(--gold)]/10 text-[12px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/15 transition-colors"
       >
         + Add Extra Item
       </button>

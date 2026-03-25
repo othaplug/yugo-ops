@@ -544,14 +544,25 @@ function Step1BusinessDetails({
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
 
-  const handleEmailBlur = async () => {
-    const email = state.email.trim();
-    if (!email || !email.includes("@")) return;
+  const handleDedupBlur = async () => {
+    const emailTrim = state.email.trim().toLowerCase();
+    const phoneNorm = normalizePhone(state.phone);
+    const hasEmail = emailTrim.includes("@");
+    const hasPhone = phoneNorm.length === 10;
+    const biz = state.name.trim();
+    const cn = state.contactName.trim();
+    const canHubSpot =
+      hasEmail ||
+      hasPhone ||
+      (biz.length >= 2 && cn.length >= 2) ||
+      biz.length >= 3;
+    if (!canHubSpot) return;
+
     setBannerDismissed(false);
     setAutoFilled(false);
     setSearching(true);
     setDedupResults(null);
-    // Clear any previously stored IDs when email changes
+    // Clear any previously stored IDs when identity fields change
     update("hubspotContactId", "");
     update("squareCustomerId", "");
     update("squareCardId", "");
@@ -560,23 +571,35 @@ function Step1BusinessDetails({
     update("cardOnFile", false);
 
     try {
-      const [opsRes, hubspotRes, squareRes] = await Promise.allSettled([
-        fetch("/api/admin/partners/search-by-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        }).then((r) => r.json()),
-        fetch("/api/hubspot/search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, phone: state.phone }),
-        }).then((r) => r.json()),
-        fetch("/api/square/search-customer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        }).then((r) => r.json()),
-      ]);
+      const opsP = fetch("/api/admin/partners/search-by-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: hasEmail ? emailTrim : undefined,
+          phone: hasPhone ? phoneNorm : undefined,
+        }),
+      }).then((r) => r.json());
+
+      const hubspotP = fetch("/api/hubspot/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: hasEmail ? emailTrim : undefined,
+          phone: hasPhone ? state.phone : undefined,
+          company: biz || undefined,
+          contact_name: cn || undefined,
+        }),
+      }).then((r) => r.json());
+
+      const squareP = hasEmail
+        ? fetch("/api/square/search-customer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: emailTrim }),
+          }).then((r) => r.json())
+        : Promise.resolve({ customer: null });
+
+      const [opsRes, hubspotRes, squareRes] = await Promise.allSettled([opsP, hubspotP, squareP]);
 
       const ops = opsRes.status === "fulfilled" ? opsRes.value : null;
       const hubspot = hubspotRes.status === "fulfilled" ? hubspotRes.value?.contact ?? null : null;
@@ -691,6 +714,7 @@ function Step1BusinessDetails({
             type="text"
             value={state.name}
             onChange={(e) => update("name", e.target.value)}
+            onBlur={handleDedupBlur}
             placeholder="e.g. Roche Bobois"
             className={inputCls}
           />
@@ -712,6 +736,7 @@ function Step1BusinessDetails({
             type="text"
             value={state.contactName}
             onChange={(e) => update("contactName", e.target.value)}
+            onBlur={handleDedupBlur}
             placeholder="e.g. Marie Dubois"
             className={inputCls}
           />
@@ -737,7 +762,7 @@ function Step1BusinessDetails({
               setDedupResults(null);
               setAutoFilled(false);
             }}
-            onBlur={handleEmailBlur}
+            onBlur={handleDedupBlur}
             placeholder="contact@company.com"
             className={inputCls}
           />
@@ -752,6 +777,7 @@ function Step1BusinessDetails({
             type="tel"
             value={state.phone}
             onChange={phoneInput.onChange}
+            onBlur={handleDedupBlur}
             placeholder={PHONE_PLACEHOLDER}
             className={inputCls}
           />
@@ -769,8 +795,8 @@ function Step1BusinessDetails({
                     Partner already exists in OPS+
                   </p>
                   <p className="text-[11px] text-[var(--tx3)] mt-0.5">
-                    <strong>{dedupResults.opsPartnerName}</strong> is already registered with this
-                    email.
+                    <strong>{dedupResults.opsPartnerName}</strong> is already registered in OPS+
+                    (matching email or phone).
                   </p>
                   <a
                     href={`/admin/platform/partners/${dedupResults.opsPartnerId}`}

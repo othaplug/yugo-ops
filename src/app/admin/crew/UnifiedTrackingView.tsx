@@ -168,6 +168,19 @@ function isOnJob(status: string): boolean {
   return !["idle", "offline", "returning"].includes(status);
 }
 
+/** crew_locations row first, then tracking session stage, then coarse crew en-route fallback — matches CrewPopup. */
+function effectiveTrackingStatus(
+  crew: Crew,
+  crewLocation: CrewLocation | undefined,
+  session: Session | undefined,
+): string {
+  return (
+    crewLocation?.status ||
+    session?.status ||
+    (crew.status === "en-route" ? "en_route_pickup" : "idle")
+  );
+}
+
 function getOfflineMinutes(updatedAt: string | undefined): number {
   if (!updatedAt) return 999;
   return (Date.now() - new Date(updatedAt).getTime()) / 60000;
@@ -315,8 +328,8 @@ const GodEyeMap = dynamic(
               .filter((c) => c.current_lat != null && c.current_lng != null)
               .map((c) => {
                 const loc = crewLocations.get(c.id);
-                const hasJobSession = activeSessions.some((s) => s.teamId === c.id);
-                const status = loc?.status || (hasJobSession && c.status === "en-route" ? "en_route_pickup" : "idle");
+                const session = activeSessions.find((s) => s.teamId === c.id);
+                const status = effectiveTrackingStatus(c, loc, session);
                 const ringColor = teamColor(c.id);
                 const offMin = getOfflineMinutes(loc?.updated_at || c.updated_at);
                 const isSelected = selectedCrew === c.id;
@@ -436,7 +449,7 @@ function CrewPopup({
   onClose: () => void;
   onViewJob: (href: string) => void;
 }) {
-  const status = crewLocation?.status || session?.status || (crew.status === "en-route" ? "en_route_pickup" : "idle");
+  const status = effectiveTrackingStatus(crew, crewLocation, session);
   const speedKmh = crewLocation?.speed != null ? Math.round(Number(crewLocation.speed) * 3.6) : null;
   const offMin = getOfflineMinutes(crewLocation?.updated_at || crew.updated_at);
 
@@ -1003,10 +1016,11 @@ export default function UnifiedTrackingView({
               ) : (
                 crews.map((c) => {
                   const loc = crewLocations.get(c.id);
+                  const session = activeSessions.find((s) => s.teamId === c.id);
                   const offMin = getOfflineMinutes(loc?.updated_at || c.updated_at);
                   const isNearOffice = c.current_lat != null && c.current_lng != null && haversineM(c.current_lat, c.current_lng, office.lat, office.lng) < office.radiusM;
-                  const hasActiveSession = activeSessions.some((s) => s.teamId === c.id);
-                  const status = loc?.status || (hasActiveSession && c.status === "en-route" ? "en_route_pickup" : "idle");
+                  const hasActiveSession = !!session;
+                  const status = effectiveTrackingStatus(c, loc, session);
                   const isOff = offMin >= 30;
 
                   let locationLabel = "No GPS";

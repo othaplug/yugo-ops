@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { resolveCrewInventoryJob } from "@/lib/resolve-crew-inventory-job";
 
 export async function POST(
   req: NextRequest,
@@ -12,7 +13,7 @@ export async function POST(
   const payload = token ? verifyCrewToken(token) : null;
   if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { jobId } = await params;
+  const { jobId: rawJobId } = await params;
   const body = await req.json();
   const moveInventoryId = body.moveInventoryId ?? body.move_inventory_id;
   const room = (body.room || "").toString().trim();
@@ -23,14 +24,21 @@ export async function POST(
   }
 
   const admin = createAdminClient();
-  const { data: move } = await admin.from("moves").select("id, crew_id").eq("id", jobId).single();
-  if (!move || move.crew_id !== payload.teamId) {
+  const ctx = await resolveCrewInventoryJob(admin, rawJobId);
+  if (!ctx || ctx.crew_id !== payload.teamId) {
     return NextResponse.json({ error: "Job not found or not assigned" }, { status: 404 });
+  }
+
+  const entityId = ctx.id;
+  const jobTypeDb = ctx.kind;
+
+  if (jobTypeDb === "delivery" && moveInventoryId) {
+    return NextResponse.json({ error: "Delivery inventory uses room and item name" }, { status: 400 });
   }
 
   if (moveInventoryId) {
     const { data: inv } = await admin.from("move_inventory").select("id, move_id").eq("id", moveInventoryId).single();
-    if (!inv || inv.move_id !== jobId) return NextResponse.json({ error: "Invalid item" }, { status: 400 });
+    if (!inv || inv.move_id !== entityId) return NextResponse.json({ error: "Invalid item" }, { status: 400 });
   } else if (!room || !itemName) {
     return NextResponse.json({ error: "room and itemName required when not using moveInventoryId" }, { status: 400 });
   }
@@ -38,8 +46,8 @@ export async function POST(
   const { data: verification, error } = await admin
     .from("inventory_verifications")
     .insert({
-      job_id: jobId,
-      job_type: "move",
+      job_id: entityId,
+      job_type: jobTypeDb,
       move_inventory_id: moveInventoryId || null,
       room: room || null,
       item_name: itemName || null,

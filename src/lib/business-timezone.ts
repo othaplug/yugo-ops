@@ -40,6 +40,20 @@ export function getLocalHourInAppTimezone(date: Date = new Date(), timeZone?: st
   return Math.min(23, Math.max(0, parseInt(h ?? "0", 10)));
 }
 
+/** Hour (0–23) and minute (0–59) in the app timezone (for cron windows). */
+export function getLocalClockPartsInAppTimezone(date: Date = new Date(), timeZone?: string): { hour: number; minute: number } {
+  const tz = timeZone ?? getAppTimezone();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hour: "numeric",
+    hour12: false,
+    minute: "numeric",
+  }).formatToParts(date);
+  const hour = Math.min(23, Math.max(0, parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10)));
+  const minute = Math.min(59, Math.max(0, parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10)));
+  return { hour, minute };
+}
+
 /** YYYY-MM-DD for the calendar day of `tMs` in `timeZone` (canonical; use for DB filters and "today"). */
 export function ymdPartsInTimeZone(tMs: number, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {

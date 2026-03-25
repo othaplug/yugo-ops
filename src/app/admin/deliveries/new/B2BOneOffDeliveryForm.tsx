@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
-import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
+import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import DraftBanner from "@/components/ui/DraftBanner";
 import { CalendarBlank, Plus, Trash as Trash2, SpinnerGap, CheckCircle, Warning } from "@phosphor-icons/react";
 
@@ -58,6 +58,8 @@ interface HubSpotContact {
   deal_ids: string[];
 }
 
+type HubSpotMatchKind = "email" | "phone" | "company_name" | "company";
+
 export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -75,10 +77,38 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
   const [hsDuplicate, setHsDuplicate] = useState<{ type: "contact" | "company"; label: string } | null>(null);
   const [hsAutofilled, setHsAutofilled] = useState<string[]>([]);
   const hsContactIdRef = useRef<string | null>(null);
+  const formSnapshotRef = useRef({ businessName: "", contactName: "", contactPhone: "", contactEmail: "" });
+  const dedupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const runHubSpotLookup = useCallback(async (email: string) => {
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !trimmed.includes("@")) return;
+  formSnapshotRef.current = { businessName, contactName, contactPhone, contactEmail };
+
+  const clearHubSpotMatch = useCallback(() => {
+    setHsLookupState("idle");
+    setHsDuplicate(null);
+    setHsAutofilled([]);
+    setHsContact(null);
+    hsContactIdRef.current = null;
+  }, []);
+
+  useEffect(() => () => {
+    if (dedupTimerRef.current) clearTimeout(dedupTimerRef.current);
+  }, []);
+
+  const runHubSpotDedup = useCallback(async () => {
+    const snap = formSnapshotRef.current;
+    const email = snap.contactEmail.trim().toLowerCase();
+    const hasEmail = email.includes("@");
+    const digits = normalizePhone(snap.contactPhone);
+    const hasPhone = digits.length === 10;
+    const biz = snap.businessName.trim();
+    const cn = snap.contactName.trim();
+    const hasCompanyAndName = biz.length >= 2 && cn.length >= 2;
+    const hasCompanyLoose = biz.length >= 3;
+
+    if (!hasEmail && !hasPhone && !hasCompanyAndName && !hasCompanyLoose) {
+      setHsLookupState("idle");
+      return;
+    }
 
     setHsLookupState("loading");
     setHsDuplicate(null);
@@ -88,14 +118,21 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       const res = await fetch("/api/hubspot/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmed }),
+        body: JSON.stringify({
+          email: hasEmail ? email : undefined,
+          phone: hasPhone ? snap.contactPhone : undefined,
+          company: biz || undefined,
+          contact_name: cn || undefined,
+        }),
       });
       const data = await res.json();
       const contact: HubSpotContact | null = data.contact ?? null;
+      const match_kind = data.match_kind as HubSpotMatchKind | undefined;
 
       if (!contact) {
         setHsLookupState("not_found");
         setHsContact(null);
+        hsContactIdRef.current = null;
         return;
       }
 
@@ -106,35 +143,67 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       const filled: string[] = [];
       const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
 
-      setBusinessName((prev) => {
-        if (!prev.trim() && contact.company) { filled.push("Business Name"); return contact.company; }
-        return prev;
-      });
-      setContactName((prev) => {
-        if (!prev.trim() && fullName) { filled.push("Contact Name"); return fullName; }
-        return prev;
-      });
-      setContactPhone((prev) => {
-        if (!prev.trim() && contact.phone) { filled.push("Contact Phone"); return formatPhone(contact.phone); }
-        return prev;
-      });
+      if (match_kind !== "company") {
+        setBusinessName((prev) => {
+          if (!prev.trim() && contact.company) { filled.push("Business Name"); return contact.company; }
+          return prev;
+        });
+        setContactName((prev) => {
+          if (!prev.trim() && fullName) { filled.push("Contact Name"); return fullName; }
+          return prev;
+        });
+        setContactPhone((prev) => {
+          if (!prev.trim() && contact.phone) { filled.push("Contact Phone"); return formatPhone(contact.phone); }
+          return prev;
+        });
+        setContactEmail((prev) => {
+          if (!prev.trim() && contact.email) { filled.push("Contact Email"); return contact.email; }
+          return prev;
+        });
+      }
 
       setHsAutofilled(filled);
 
-      if (contact.deal_ids.length > 0) {
+      const reasonLabel =
+        match_kind === "email"
+          ? "email"
+          : match_kind === "phone"
+            ? "phone number"
+            : match_kind === "company_name"
+              ? "business and contact name"
+              : "business name";
+
+      if (match_kind === "company") {
+        const hsLabel = [fullName || contact.email, contact.company].filter(Boolean).join(" — ");
         setHsDuplicate({
-          type: "contact",
-          label: `${fullName || trimmed} already has ${contact.deal_ids.length} deal${contact.deal_ids.length > 1 ? "s" : ""} in HubSpot — review before creating a new booking.`,
+          type: "company",
+          label: `HubSpot lists a contact under a similar business name (${hsLabel || "see HubSpot"}). Confirm this is not a duplicate before creating the delivery.`,
         });
+      } else {
+        let label = `This ${reasonLabel} matches an existing HubSpot contact${fullName ? ` (${fullName})` : ""} — review before creating another record.`;
+        if (contact.deal_ids.length > 0) {
+          label += ` They already have ${contact.deal_ids.length} deal${contact.deal_ids.length > 1 ? "s" : ""} in HubSpot.`;
+        }
+        setHsDuplicate({ type: "contact", label });
       }
     } catch {
       setHsLookupState("idle");
     }
   }, []);
 
+  const scheduleHubSpotDedup = useCallback(() => {
+    if (dedupTimerRef.current) clearTimeout(dedupTimerRef.current);
+    dedupTimerRef.current = setTimeout(() => {
+      dedupTimerRef.current = null;
+      void runHubSpotDedup();
+    }, 400);
+  }, [runHubSpotDedup]);
+
   const [pickupAddress, setPickupAddress] = useState("");
+  const [extraPickupStops, setExtraPickupStops] = useState<StopEntry[]>([]);
   const [pickupAccess, setPickupAccess] = useState("loading_dock");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [extraDeliveryStops, setExtraDeliveryStops] = useState<StopEntry[]>([]);
   const [deliveryAccess, setDeliveryAccess] = useState("elevator");
 
   const [items, setItems] = useState<{ name: string; qty: number }[]>([]);
@@ -151,10 +220,10 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
   // Draft auto-save
   const formState = useMemo(() => ({
     businessName, contactName, contactPhone, contactEmail,
-    pickupAddress, pickupAccess, deliveryAddress, deliveryAccess,
+    pickupAddress, extraPickupStops, pickupAccess, deliveryAddress, extraDeliveryStops, deliveryAccess,
     items, weightCategory, scheduledDate, timeWindow,
     specialInstructions, quotedPrice, crewId,
-  }), [businessName, contactName, contactPhone, contactEmail, pickupAddress, pickupAccess, deliveryAddress, deliveryAccess, items, weightCategory, scheduledDate, timeWindow, specialInstructions, quotedPrice, crewId]);
+  }), [businessName, contactName, contactPhone, contactEmail, pickupAddress, extraPickupStops, pickupAccess, deliveryAddress, extraDeliveryStops, deliveryAccess, items, weightCategory, scheduledDate, timeWindow, specialInstructions, quotedPrice, crewId]);
 
   const titleFn = useCallback((s: typeof formState) => s.businessName || s.contactName || "B2B Delivery", []);
   const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("delivery_b2b", formState, titleFn);
@@ -167,8 +236,10 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
     if (data.contactPhone) setContactPhone(data.contactPhone as string);
     if (data.contactEmail) setContactEmail(data.contactEmail as string);
     if (data.pickupAddress) setPickupAddress(data.pickupAddress as string);
+    if (Array.isArray(data.extraPickupStops)) setExtraPickupStops(data.extraPickupStops as StopEntry[]);
     if (data.pickupAccess) setPickupAccess(data.pickupAccess as string);
     if (data.deliveryAddress) setDeliveryAddress(data.deliveryAddress as string);
+    if (Array.isArray(data.extraDeliveryStops)) setExtraDeliveryStops(data.extraDeliveryStops as StopEntry[]);
     if (data.deliveryAccess) setDeliveryAccess(data.deliveryAccess as string);
     if (Array.isArray(data.items)) setItems(data.items as { name: string; qty: number }[]);
     if (data.weightCategory) setWeightCategory(data.weightCategory as string);
@@ -241,6 +312,17 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
     if (res.ok && data.delivery) {
       clearDraft();
       const created = data.delivery;
+      const allExtraStops = [
+        ...extraPickupStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "pickup" as const, sort_order: i + 1 })),
+        ...extraDeliveryStops.filter((s) => s.address.trim()).map((s, i) => ({ ...s, stop_type: "dropoff" as const, sort_order: i + 1 })),
+      ];
+      if (allExtraStops.length > 0) {
+        fetch("/api/admin/job-stops", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ job_type: "delivery", job_id: created.id, stops: allExtraStops }),
+        }).catch(() => {});
+      }
       const path = created.delivery_number
         ? `/admin/deliveries/${encodeURIComponent(created.delivery_number)}`
         : `/admin/deliveries/${created.id}`;
@@ -298,7 +380,8 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
           <Field label="Business Name *">
             <input
               value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
+              onChange={(e) => { setBusinessName(e.target.value); clearHubSpotMatch(); }}
+              onBlur={scheduleHubSpotDedup}
               placeholder="e.g. Crate & Barrel Yorkdale"
               className={fieldInput}
             />
@@ -306,7 +389,8 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
           <Field label="Contact Name *">
             <input
               value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
+              onChange={(e) => { setContactName(e.target.value); clearHubSpotMatch(); }}
+              onBlur={scheduleHubSpotDedup}
               placeholder="e.g. Sarah"
               className={fieldInput}
             />
@@ -316,7 +400,8 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
               ref={contactPhoneInput.ref}
               type="tel"
               value={contactPhone}
-              onChange={contactPhoneInput.onChange}
+              onChange={(e) => { contactPhoneInput.onChange(e); clearHubSpotMatch(); }}
+              onBlur={scheduleHubSpotDedup}
               placeholder={PHONE_PLACEHOLDER}
               className={fieldInput}
             />
@@ -325,8 +410,8 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
             <input
               type="email"
               value={contactEmail}
-              onChange={(e) => { setContactEmail(e.target.value); setHsLookupState("idle"); setHsDuplicate(null); setHsAutofilled([]); }}
-              onBlur={(e) => runHubSpotLookup(e.target.value)}
+              onChange={(e) => { setContactEmail(e.target.value); clearHubSpotMatch(); }}
+              onBlur={scheduleHubSpotDedup}
               placeholder="sarah@company.com"
               className={fieldInput}
             />
@@ -337,17 +422,31 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       {/* Delivery Details */}
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Delivery Details</h3>
-        <Field label="Pickup Address *">
-          <AddressAutocomplete value={pickupAddress} onRawChange={setPickupAddress} onChange={(r) => setPickupAddress(r.fullAddress)} placeholder="Business address" className={fieldInput} />
-        </Field>
+        <MultiStopAddressField
+          label="Pickup Address *"
+          placeholder="Business address"
+          stops={[{ address: pickupAddress }, ...extraPickupStops]}
+          onChange={(stops) => {
+            setPickupAddress(stops[0]?.address ?? "");
+            setExtraPickupStops(stops.slice(1));
+          }}
+          inputClassName={fieldInput}
+        />
         <Field label="Pickup Access">
           <select value={pickupAccess} onChange={(e) => setPickupAccess(e.target.value)} className={fieldInput}>
             {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </Field>
-        <Field label="Delivery Address *">
-          <AddressAutocomplete value={deliveryAddress} onRawChange={setDeliveryAddress} onChange={(r) => setDeliveryAddress(r.fullAddress)} placeholder="Customer address" className={fieldInput} />
-        </Field>
+        <MultiStopAddressField
+          label="Delivery Address *"
+          placeholder="Customer address"
+          stops={[{ address: deliveryAddress }, ...extraDeliveryStops]}
+          onChange={(stops) => {
+            setDeliveryAddress(stops[0]?.address ?? "");
+            setExtraDeliveryStops(stops.slice(1));
+          }}
+          inputClassName={fieldInput}
+        />
         <Field label="Delivery Access">
           <select value={deliveryAccess} onChange={(e) => setDeliveryAccess(e.target.value)} className={fieldInput}>
             {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
