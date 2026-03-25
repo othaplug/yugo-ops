@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   CheckCircle,
   X,
@@ -66,6 +67,8 @@ interface ItemWeightRow {
 
 interface WalkthroughModalProps {
   jobId: string;
+  /** Moves use move walkthrough API; deliveries use /api/crew/delivery/[id]/walkthrough */
+  jobType?: "move" | "delivery";
   inventory: InventoryRoom[];
   perScoreRate?: number;
   onComplete: (result: {
@@ -107,6 +110,7 @@ const SKIP_REASONS = [
 
 export default function WalkthroughModal({
   jobId,
+  jobType = "move",
   inventory,
   perScoreRate = 35,
   onComplete,
@@ -196,6 +200,18 @@ export default function WalkthroughModal({
       }));
   }
 
+  /** Delivery rows use synthetic `noid-*` ids — still count as discrepancies for summary / API. */
+  function deliveryMissingPayload(): { item_name: string; quantity: number }[] {
+    return items
+      .filter((i) => i.status === "missing")
+      .map((i) => ({ item_name: i.item_name, quantity: i.quantity ?? 1 }));
+  }
+
+  const hasDiscrepancyForSubmit =
+    extraItems.length > 0 ||
+    missingItems().length > 0 ||
+    (jobType === "delivery" && missing > 0);
+
   // ── Handlers
   function setItemStatus(id: string, status: "here" | "missing") {
     setItems((prev) => prev.map((it) => it.id === id ? { ...it, status } : it));
@@ -247,6 +263,42 @@ export default function WalkthroughModal({
     setSubmitError("");
     try {
       const missing = missingItems();
+      const deliveryMissing = jobType === "delivery" ? deliveryMissingPayload() : [];
+
+      if (jobType === "delivery") {
+        const res = await fetch(`/api/crew/delivery/${encodeURIComponent(jobId)}/walkthrough`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items_added: extraItems.map((e) => ({
+              item_name: e.item_name,
+              item_slug: e.item_slug ?? null,
+              weight_score: e.weight_score,
+              quantity: e.quantity,
+              is_custom: e.is_custom,
+              custom_weight_class: e.custom_weight_class ?? null,
+            })),
+            items_missing: deliveryMissing,
+            items_matched: matched,
+            items_missing_count: deliveryMissing.length,
+            items_extra: extraItems.length,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to submit");
+        onComplete({
+          itemsMatched: matched,
+          itemsMissing: deliveryMissing.length,
+          itemsExtra: extraItems.length,
+          extraItems,
+          missingItems: missing,
+          netDelta,
+          changeRequestId: data.id ?? null,
+          noChanges: false,
+        });
+        return;
+      }
+
       const res = await fetch(`/api/crew/walkthrough/${jobId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -312,8 +364,12 @@ export default function WalkthroughModal({
     items: items.filter((it) => it.room === room.room),
   })).filter((g) => g.items.length > 0);
 
-  return (
-    <div className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99995] animate-fade-in p-4 sm:p-5">
+  const modal = (
+    <div
+      className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99995] animate-fade-in p-4 sm:p-5"
+      data-modal-root
+      style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
+    >
       <div
         className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[520px] shadow-2xl flex flex-col"
         style={{ maxHeight: "min(92dvh, 92vh)" }}
@@ -690,25 +746,42 @@ export default function WalkthroughModal({
                 </div>
               )}
 
-              {/* Missing items */}
-              {missingItems().length > 0 && (
+              {/* Missing items (all flagged missing; move rows may show estimated credit) */}
+              {items.filter((i) => i.status === "missing").length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">Missing Items (credit)</p>
+                  <p className="text-[10px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">
+                    {jobType === "move" ? "Missing Items (credit)" : "Missing Items"}
+                  </p>
                   <div className="space-y-1.5">
-                    {missingItems().map((m, i) => (
-                      <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--brd)]/50">
-                        <span className="text-[13px] text-[var(--tx)]">
-                          {m.item_name} {m.quantity > 1 && `×${m.quantity}`}
-                        </span>
-                        <span className="text-[13px] font-semibold text-red-400">-${m.credit}</span>
-                      </div>
-                    ))}
+                    {items
+                      .filter((i) => i.status === "missing")
+                      .map((m) => {
+                        const credit =
+                          jobType === "move" && !m.id.startsWith("noid-")
+                            ? Math.round(1 * (m.quantity ?? 1) * perScoreRate)
+                            : null;
+                        return (
+                          <div
+                            key={m.id}
+                            className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--brd)]/50"
+                          >
+                            <span className="text-[13px] text-[var(--tx)]">
+                              {m.item_name} {(m.quantity ?? 1) > 1 && `×${m.quantity}`}
+                            </span>
+                            {credit != null ? (
+                              <span className="text-[13px] font-semibold text-red-400">-${credit}</span>
+                            ) : (
+                              <span className="text-[11px] text-[var(--tx3)]">Flagged</span>
+                            )}
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
               )}
 
               {/* Net change */}
-              {(extraItems.length > 0 || missingItems().length > 0) && (
+              {hasDiscrepancyForSubmit && (
                 <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] px-4 py-3 space-y-1.5">
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="text-[var(--tx3)]">Subtotal change</span>
@@ -730,7 +803,7 @@ export default function WalkthroughModal({
               )}
 
               {/* No-change hint */}
-              {extraItems.length === 0 && missingItems().length === 0 && (
+              {!hasDiscrepancyForSubmit && (
                 <div className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/5 px-4 py-3 text-center">
                   <p className="text-[13px] text-[#22C55E] font-medium">Everything matches, no changes needed.</p>
                 </div>
@@ -802,7 +875,7 @@ export default function WalkthroughModal({
 
           {step === "summary" && (
             <>
-              {(extraItems.length > 0 || missingItems().length > 0) ? (
+              {hasDiscrepancyForSubmit ? (
                 <>
                   <button
                     onClick={submitChangeRequest}
@@ -810,7 +883,15 @@ export default function WalkthroughModal({
                     className="w-full py-3.5 rounded-2xl font-bold text-[var(--text-base)] text-white disabled:opacity-60 flex items-center justify-center gap-2"
                     style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
                   >
-                    {submitting ? <><CircleNotch size={14} className="animate-spin" /> Submitting…</> : "Submit Change Request"}
+                    {submitting ? (
+                      <>
+                        <CircleNotch size={14} className="animate-spin" /> Submitting…
+                      </>
+                    ) : jobType === "delivery" ? (
+                      "Submit walkthrough notes"
+                    ) : (
+                      "Submit Change Request"
+                    )}
                   </button>
                   <button
                     onClick={() => setStep("extras")}
@@ -835,4 +916,6 @@ export default function WalkthroughModal({
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(modal, document.body) : null;
 }

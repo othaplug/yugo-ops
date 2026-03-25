@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useCallback, useRef, useMemo, Suspense, type Dispatch, type SetStateAction } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check, Clipboard } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -755,6 +756,25 @@ export default function CrewJobPage({
             />
           </div>
 
+          {/* Optional note — attached to noteInputRef; sent with the next checkpoint API call */}
+          {session?.isActive && !isCompleted && (
+            <div className="px-2 space-y-1.5">
+              <label htmlFor="crew-checkpoint-note" className="block text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">
+                Note for next update (optional)
+              </label>
+              <input
+                id="crew-checkpoint-note"
+                ref={noteInputRef}
+                type="text"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="e.g. Delayed at gate, client at side entrance…"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--gold)]/40 outline-none"
+                autoComplete="off"
+              />
+            </div>
+          )}
+
           {/* Walkthrough gate, shown when at pickup and walkthrough not done */}
           {currentStatus === "arrived_at_pickup" && blockedByWalkthrough && (
             <div className="rounded-2xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-4 space-y-3">
@@ -772,6 +792,7 @@ export default function CrewJobPage({
                 Flag missing items and add any extras.
               </p>
               <button
+                type="button"
                 onClick={() => setWalkthroughModalOpen(true)}
                 className="w-full py-3 rounded-xl font-bold text-[13px] text-white"
                 style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
@@ -786,11 +807,19 @@ export default function CrewJobPage({
             <div className="rounded-2xl border border-[#22C55E]/25 bg-[#22C55E]/5 px-4 py-3 flex items-start gap-2.5">
               <CheckCircle size={16} color="#22C55E" className="shrink-0 mt-0.5" />
               <div>
-                <p className="text-[12px] font-bold text-[#22C55E]">Change request submitted</p>
+                <p className="text-[12px] font-bold text-[#22C55E]">
+                  {jobType === "delivery" ? "Walkthrough logged" : "Change request submitted"}
+                </p>
                 <p className="text-[11px] text-[#22C55E]/70 mt-0.5">
                   {walkthroughResult.itemsExtra > 0 && `${walkthroughResult.itemsExtra} extra item${walkthroughResult.itemsExtra !== 1 ? "s" : ""}. `}
                   {walkthroughResult.itemsMissing > 0 && `${walkthroughResult.itemsMissing} missing. `}
-                  Net {walkthroughResult.netDelta >= 0 ? "+" : ""}${walkthroughResult.netDelta}. Client notified.
+                  {jobType === "move" ? (
+                    <>
+                      Net {walkthroughResult.netDelta >= 0 ? "+" : ""}${walkthroughResult.netDelta}. Client notified.
+                    </>
+                  ) : (
+                    <>Details saved on the job for the coordinator.</>
+                  )}
                 </p>
               </div>
             </div>
@@ -973,17 +1002,25 @@ export default function CrewJobPage({
             </div>
           )}
 
-          {/* Quick actions */}
+          {/* Quick actions — Note only while job is active (matches checkpoint note field) */}
           {!isCompleted && (
-            <div className="flex items-center justify-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => noteInputRef.current?.focus()}
-                className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
-              >
-                <PencilSimple size={14} />
-                Note
-              </button>
+            <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+              {session?.isActive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = noteInputRef.current;
+                    if (el) {
+                      el.scrollIntoView({ block: "center", behavior: "smooth" });
+                      el.focus();
+                    }
+                  }}
+                  className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
+                >
+                  <PencilSimple size={14} />
+                  Note
+                </button>
+              )}
               <button
                 onClick={() => setReportModalOpen(true)}
                 className="flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-[#F59E0B] bg-[#F59E0B]/8 hover:bg-[#F59E0B]/15 active:scale-95 transition-all"
@@ -1116,15 +1153,16 @@ export default function CrewJobPage({
       )}
 
       {/* Inventory Walkthrough Modal */}
-      {walkthroughModalOpen && job && jobType === "move" && (
+      {walkthroughModalOpen && job && (
         <WalkthroughModal
           jobId={id}
+          jobType={jobType}
           inventory={job.inventory || []}
           onComplete={(result) => {
             setWalkthroughDone(true);
             setWalkthroughModalOpen(false);
             setWalkthroughResult(result);
-            if (!result.noChanges && result.changeRequestId) {
+            if (!result.noChanges && (result.changeRequestId || jobType === "delivery")) {
               setChangeRequestSubmitted(true);
             }
             // Open photo verification after walkthrough
@@ -1133,12 +1171,13 @@ export default function CrewJobPage({
           onSkip={(reason) => {
             setWalkthroughSkipped(true);
             setWalkthroughModalOpen(false);
-            // Save skip reason to server
-            fetch(`/api/crew/walkthrough/${id}/skip`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ skip_reason: reason }),
-            }).catch(() => {});
+            if (jobType === "move") {
+              fetch(`/api/crew/walkthrough/${id}/skip`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ skip_reason: reason }),
+              }).catch(() => {});
+            }
             // Open photo verification
             setPickupModalOpen(true);
           }}
@@ -1147,8 +1186,12 @@ export default function CrewJobPage({
       )}
 
       {/* Photo verification modal, shown after walkthrough */}
-      {pickupModalOpen && job && (
-        <div className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99990] animate-fade-in p-4 sm:p-5">
+      {pickupModalOpen && job && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99990] animate-fade-in p-4 sm:p-5"
+          data-modal-root
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
+        >
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] overflow-y-auto shadow-2xl" style={{ maxHeight: "min(90dvh, 90vh)" }}>
             <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 z-10">
               <h3 className="font-hero text-[26px] font-bold text-[var(--tx)]">
@@ -1172,7 +1215,10 @@ export default function CrewJobPage({
               )}
             </div>
 
-            <div className="sticky bottom-0 bg-[var(--card)] border-t border-[var(--brd)] px-5 py-4 space-y-2">
+            <div
+              className="sticky bottom-0 bg-[var(--card)] border-t border-[var(--brd)] px-5 py-4 space-y-2"
+              style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
+            >
               <div className="flex items-center justify-between text-[12px] text-[var(--tx3)] mb-1">
                 <span>{pickupPhotosCount} photo{pickupPhotosCount !== 1 ? "s" : ""} taken</span>
               </div>
@@ -1198,14 +1244,25 @@ export default function CrewJobPage({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Report Modal */}
-      {reportModalOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99990]">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 max-w-[360px] w-full shadow-2xl">
-            <h3 className="font-hero text-[24px] font-bold text-[var(--tx)] mb-2">Report Issue</h3>
+      {/* Report Modal — portaled to body so position:fixed is viewport-relative (main.tab-content uses transform animation) */}
+      {reportModalOpen && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99990]"
+          data-modal-root
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
+          role="presentation"
+        >
+          <div
+            className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-5 max-w-[360px] w-full shadow-2xl max-h-[min(90dvh,90vh)] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="crew-report-issue-title"
+          >
+            <h3 id="crew-report-issue-title" className="font-hero text-[24px] font-bold text-[var(--tx)] mb-2">Report Issue</h3>
             {reportSubmitted ? (
               <div className="py-4">
                 <div className="w-10 h-10 rounded-2xl bg-[#22C55E]/10 flex items-center justify-center mx-auto mb-3">
@@ -1283,7 +1340,8 @@ export default function CrewJobPage({
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {navOpen && session && navDestination && (

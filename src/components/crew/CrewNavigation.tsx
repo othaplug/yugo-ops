@@ -1,20 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Map, { Layer, Marker, NavigationControl, Source, useMap } from "react-map-gl/mapbox";
+import Map, { Layer, Marker, Source, useMap } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import {
   ArrowBendDownLeft,
   ArrowBendDownRight,
   ArrowRight,
+  Compass,
   ForkKnife,
   MapPin,
+  Minus,
   NavigationArrow,
+  Plus,
   SignIn,
   TrafficCone,
 } from "@phosphor-icons/react";
 import { markCrewLocationAllowed } from "@/lib/crew/useCrewPersistentTracking";
-import { fetchIntelligentRoute } from "@/lib/routing/intelligent-directions";
+import {
+  fetchIntelligentRoute,
+  type TrafficRouteFeatureCollection,
+} from "@/lib/routing/intelligent-directions";
 
 const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
@@ -32,10 +38,22 @@ const POST_MIN_MS = 1100;
 const REVERSE_GEOCODE_MS = 45_000;
 
 const GOLD = "#B8962E";
-/** Burgundy route line (wine) — distinct from gold UI accents. */
+/** Burgundy route line (wine) — light / free-flowing traffic when Mapbox reports low or unknown. */
 const WINE_ROUTE = "#7B1F2F";
+const TRAFFIC_MODERATE = "#CA8A04";
+const TRAFFIC_HEAVY = "#EA580C";
+const TRAFFIC_SEVERE = "#B91C1C";
 const FIRST_PERSON_PITCH = 62;
 const NAV_FOLLOW_ZOOM = 17;
+
+const EMPTY_TRAFFIC_ROUTE: TrafficRouteFeatureCollection = { type: "FeatureCollection", features: [] };
+
+export type CrewNavDestination = { lat: number; lng: number; address: string };
+
+type RouteStep = {
+  maneuver?: { instruction?: string; type?: string; modifier?: string; location?: [number, number] };
+  distance?: number;
+};
 
 /** Bearing 0 = north, 90 = east — from point A toward B. */
 function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
@@ -48,17 +66,58 @@ function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng:
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
+function nextManeuverLngLat(
+  userPos: { lat: number; lng: number } | null,
+  steps: RouteStep[]
+): [number, number] | null {
+  if (!userPos || steps.length < 2) return null;
+  let bestIdx = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < steps.length; i++) {
+    const loc = steps[i]?.maneuver?.location;
+    if (!loc) continue;
+    const d = haversineM(userPos.lat, userPos.lng, loc[1], loc[0]);
+    if (d < bestD) {
+      bestD = d;
+      bestIdx = i;
+    }
+  }
+  const next = steps[bestIdx + 1];
+  const loc = next?.maneuver?.location;
+  return loc ?? null;
+}
+
+function ManeuverGlyph({ type, modifier, className }: { type?: string; modifier?: string; className?: string }) {
+  const t = (type || "").toLowerCase();
+  const m = (modifier || "").toLowerCase();
+  if (m.includes("left") || t.includes("left"))
+    return <ArrowBendDownLeft className={className} weight="bold" aria-hidden />;
+  if (m.includes("right") || t.includes("right"))
+    return <ArrowBendDownRight className={className} weight="bold" aria-hidden />;
+  if (t.includes("merge")) return <SignIn className={className} weight="bold" aria-hidden />;
+  if (t.includes("roundabout") || t.includes("rotary"))
+    return <TrafficCone className={className} weight="bold" aria-hidden />;
+  if (t.includes("fork")) return <ForkKnife className={className} weight="bold" aria-hidden />;
+  if (t.includes("arrive")) return <MapPin className={className} weight="bold" aria-hidden />;
+  return <ArrowRight className={className} weight="bold" aria-hidden />;
+}
+
+const NAV_BTN_RING =
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-500/70 bg-zinc-800/95 text-white shadow-lg backdrop-blur-sm active:scale-95 transition-transform";
+
 /**
- * Keeps the map in first-person follow mode (pitch + heading) while `followNavigation` is on,
- * and renders the floating control to re-center on GPS + resume follow + refresh the route.
+ * Ops-style stack: compass (north-up), my location + follow, next-turn preview, zoom.
  */
-function CrewNavMapFollowAndRecenter({
+function CrewNavOpsFloatingControls({
   userPos,
   navBearingDeg,
   followNavigation,
   setFollowNavigation,
   setMapBearing,
   onRecenter,
+  mapBearing,
+  steps,
+  maneuverMeta,
 }: {
   userPos: { lat: number; lng: number } | null;
   navBearingDeg: number | null;
@@ -66,6 +125,9 @@ function CrewNavMapFollowAndRecenter({
   setFollowNavigation: (v: boolean) => void;
   setMapBearing: (deg: number) => void;
   onRecenter: (origin: { lat: number; lng: number }) => void;
+  mapBearing: number;
+  steps: RouteStep[];
+  maneuverMeta: { type?: string; modifier?: string };
 }) {
   const { current: mapRef } = useMap();
 
@@ -87,37 +149,136 @@ function CrewNavMapFollowAndRecenter({
   }, [userPos?.lat, userPos?.lng, navBearingDeg, followNavigation, mapRef]);
 
   return (
-    <button
-      type="button"
-      onClick={() => {
-        const u = userPos;
-        if (!u) return;
-        setFollowNavigation(true);
-        const map = mapRef?.getMap?.();
-        const bearing = navBearingDeg ?? map?.getBearing() ?? 0;
-        if (map) {
-          setMapBearing(bearing);
+    <div
+      className="absolute bottom-28 right-3 z-10 flex flex-col items-center gap-2"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      <button
+        type="button"
+        className={NAV_BTN_RING}
+        aria-label="Face north"
+        title="North up"
+        onClick={() => {
+          setFollowNavigation(false);
+          const m = mapRef?.getMap?.();
+          if (!m) return;
           try {
-            map.flyTo({
-              center: [u.lng, u.lat],
-              bearing,
-              pitch: FIRST_PERSON_PITCH,
-              zoom: NAV_FOLLOW_ZOOM,
-              duration: 650,
+            m.easeTo({ bearing: 0, pitch: 0, duration: 500 });
+            setMapBearing(0);
+          } catch {
+            /* ignore */
+          }
+        }}
+      >
+        <span className="relative flex h-8 w-8 items-center justify-center">
+          <Compass className="absolute text-zinc-400" size={28} weight="regular" aria-hidden />
+          <span
+            className="relative z-[1] text-[9px] font-bold text-red-400 drop-shadow"
+            style={{ transform: `rotate(${-mapBearing}deg)` }}
+            aria-hidden
+          >
+            N
+          </span>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        className={`${NAV_BTN_RING} h-12 w-12`}
+        disabled={!userPos}
+        aria-label="Center on my location and follow navigation"
+        title="My location & navigation view"
+        onClick={() => {
+          const u = userPos;
+          if (!u) return;
+          setFollowNavigation(true);
+          const m = mapRef?.getMap?.();
+          const bearing = navBearingDeg ?? m?.getBearing() ?? 0;
+          if (m) {
+            setMapBearing(bearing);
+            try {
+              m.flyTo({
+                center: [u.lng, u.lat],
+                bearing,
+                pitch: FIRST_PERSON_PITCH,
+                zoom: NAV_FOLLOW_ZOOM,
+                duration: 650,
+              });
+            } catch {
+              /* ignore */
+            }
+          }
+          onRecenter(u);
+        }}
+      >
+        <NavigationArrow className="text-[#4ADE80]" size={26} weight="fill" aria-hidden />
+      </button>
+
+      <button
+        type="button"
+        className="rounded-2xl bg-[#5EEAD4] p-2.5 shadow-xl ring-2 ring-teal-200/40 active:scale-95 transition-transform disabled:opacity-40"
+        disabled={!mapRef?.getMap?.() || steps.length < 2}
+        aria-label="Show next turn on map"
+        title="Next turn on map"
+        onClick={() => {
+          const m = mapRef?.getMap?.();
+          const target = nextManeuverLngLat(userPos, steps);
+          if (!m || !target) return;
+          setFollowNavigation(false);
+          try {
+            m.flyTo({
+              center: target,
+              zoom: Math.max(m.getZoom(), 16),
+              pitch: 48,
+              duration: 900,
             });
           } catch {
             /* ignore */
           }
-        }
-        onRecenter(u);
-      }}
-      disabled={!userPos}
-      className="absolute bottom-24 right-3 z-10 bg-white rounded-full p-3 shadow-lg text-zinc-800 disabled:opacity-40 disabled:pointer-events-none"
-      aria-label="Center on my location and follow navigation"
-      title="My location & navigation view"
-    >
-      <NavigationArrow size={22} weight="bold" aria-hidden />
-    </button>
+        }}
+      >
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#0f172a] rotate-45 shadow-inner">
+          <span className="-rotate-45 text-white">
+            <ManeuverGlyph type={maneuverMeta.type} modifier={maneuverMeta.modifier} className="h-7 w-7" />
+          </span>
+        </div>
+      </button>
+
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          className={`${NAV_BTN_RING} h-9 w-9`}
+          aria-label="Zoom in"
+          onClick={() => {
+            setFollowNavigation(false);
+            const m = mapRef?.getMap?.();
+            try {
+              m?.zoomIn({ duration: 220 });
+            } catch {
+              /* ignore */
+            }
+          }}
+        >
+          <Plus size={20} weight="bold" aria-hidden />
+        </button>
+        <button
+          type="button"
+          className={`${NAV_BTN_RING} h-9 w-9`}
+          aria-label="Zoom out"
+          onClick={() => {
+            setFollowNavigation(false);
+            const m = mapRef?.getMap?.();
+            try {
+              m?.zoomOut({ duration: 220 });
+            } catch {
+              /* ignore */
+            }
+          }}
+        >
+          <Minus size={20} weight="bold" aria-hidden />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -192,13 +353,6 @@ function formatEta(seconds: number): string {
   return r ? `${h} h ${r} min` : `${h} h`;
 }
 
-export type CrewNavDestination = { lat: number; lng: number; address: string };
-
-type RouteStep = {
-  maneuver?: { instruction?: string; type?: string; modifier?: string; location?: [number, number] };
-  distance?: number;
-};
-
 function ManeuverIcon({ type, modifier }: { type?: string; modifier?: string }) {
   const t = (type || "").toLowerCase();
   const m = (modifier || "").toLowerCase();
@@ -236,6 +390,8 @@ export function CrewNavigation({
 }) {
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
+  const [trafficRouteGeoJson, setTrafficRouteGeoJson] =
+    useState<TrafficRouteFeatureCollection>(EMPTY_TRAFFIC_ROUTE);
   const [steps, setSteps] = useState<RouteStep[]>([]);
   const [routeDurationSec, setRouteDurationSec] = useState<number | null>(null);
   const [routeDistanceM, setRouteDistanceM] = useState<number | null>(null);
@@ -299,15 +455,6 @@ export function CrewNavigation({
 
   const mapStyle = isNight ? "mapbox://styles/mapbox/dark-v11" : "mapbox://styles/mapbox/light-v11";
 
-  const lineGeoJson = useMemo(() => {
-    if (!routeCoords || routeCoords.length < 2) return null;
-    return {
-      type: "Feature" as const,
-      properties: {},
-      geometry: { type: "LineString" as const, coordinates: routeCoords },
-    };
-  }, [routeCoords]);
-
   const fetchRoute = useCallback(async (origin: { lat: number; lng: number }) => {
     if (!HAS_MAPBOX || fetchRouteInFlight.current) return;
     fetchRouteInFlight.current = true;
@@ -319,10 +466,12 @@ export function CrewNavigation({
       if (!intelligent?.coordinates?.length) {
         setMapError("Could not compute a driving route.");
         setTorontoWarnings([]);
+        setTrafficRouteGeoJson(EMPTY_TRAFFIC_ROUTE);
         return;
       }
       const r = intelligent.route;
       setRouteCoords(intelligent.coordinates);
+      setTrafficRouteGeoJson(intelligent.trafficRouteGeoJson);
       const dur = typeof r.duration === "number" ? r.duration : null;
       const dist = typeof r.distance === "number" ? r.distance : null;
       setRouteDurationSec(dur);
@@ -339,6 +488,7 @@ export function CrewNavigation({
     } catch {
       setMapError("Route request failed.");
       setTorontoWarnings([]);
+      setTrafficRouteGeoJson(EMPTY_TRAFFIC_ROUTE);
     } finally {
       fetchRouteInFlight.current = false;
     }
@@ -396,6 +546,7 @@ export function CrewNavigation({
   useEffect(() => {
     arrivedRef.current = false;
     setTorontoWarnings([]);
+    setTrafficRouteGeoJson(EMPTY_TRAFFIC_ROUTE);
     prevGeoRef.current = null;
     lastNavBearingRef.current = null;
     setNavBearingDeg(null);
@@ -597,6 +748,9 @@ export function CrewNavigation({
               ))}
             </ul>
           )}
+          <p className="text-[10px] opacity-70 mt-2 leading-snug">
+            Route traffic: burgundy = lighter flow · amber = moderate · orange = heavy · red = severe
+          </p>
         </div>
       </div>
 
@@ -613,14 +767,29 @@ export function CrewNavigation({
           onRotateStart={() => setFollowNavigation(false)}
           onPitchStart={() => setFollowNavigation(false)}
         >
-          {lineGeoJson && (
-            <Source id="crew-nav-route" type="geojson" data={lineGeoJson}>
+          {trafficRouteGeoJson.features.length > 0 && (
+            <Source id="crew-nav-route" type="geojson" data={trafficRouteGeoJson}>
               <Layer
                 id="crew-nav-route-line"
                 type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
                 paint={{
-                  "line-color": WINE_ROUTE,
-                  "line-width": 5,
+                  "line-color": [
+                    "match",
+                    ["get", "congestion"],
+                    "severe",
+                    TRAFFIC_SEVERE,
+                    "heavy",
+                    TRAFFIC_HEAVY,
+                    "moderate",
+                    TRAFFIC_MODERATE,
+                    "low",
+                    WINE_ROUTE,
+                    "unknown",
+                    WINE_ROUTE,
+                    WINE_ROUTE,
+                  ],
+                  "line-width": 6,
                   "line-opacity": 0.92,
                 }}
               />
@@ -629,32 +798,34 @@ export function CrewNavigation({
           {userPos && (
             <Marker longitude={userPos.lng} latitude={userPos.lat} anchor="center">
               <div
-                className="flex items-center justify-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]"
+                className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-zinc-500/80 bg-zinc-900/90 shadow-[0_4px_14px_rgba(0,0,0,0.5)]"
                 style={{
                   transform:
                     navBearingDeg != null ? `rotate(${navBearingDeg - mapBearing}deg)` : undefined,
                 }}
               >
-                <NavigationArrow className="text-[#22C55E]" size={44} weight="fill" aria-hidden />
+                <NavigationArrow className="text-[#4ADE80]" size={34} weight="fill" aria-hidden />
               </div>
             </Marker>
           )}
           <Marker longitude={destination.lng} latitude={destination.lat} anchor="bottom">
             <div className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ background: GOLD }} />
           </Marker>
-          <NavigationControl position="bottom-right" showCompass showZoom />
-          <CrewNavMapFollowAndRecenter
+          <CrewNavOpsFloatingControls
             userPos={userPos}
             navBearingDeg={navBearingDeg}
             followNavigation={followNavigation}
             setFollowNavigation={setFollowNavigation}
             setMapBearing={setMapBearing}
             onRecenter={(origin) => void fetchRoute(origin)}
+            mapBearing={mapBearing}
+            steps={steps}
+            maneuverMeta={maneuverMeta}
           />
         </Map>
 
         {speedDisplay && (
-          <div className="absolute top-3 right-3 bg-black/70 text-white text-[12px] font-bold px-2.5 py-1 rounded-lg">
+          <div className="absolute top-3 left-3 z-10 bg-black/70 text-white text-[12px] font-bold px-2.5 py-1 rounded-lg">
             {speedDisplay}
           </div>
         )}

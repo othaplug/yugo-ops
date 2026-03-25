@@ -22,9 +22,23 @@ export type ScoredRouteSummary = {
   congestionNote: string | null;
 };
 
+/** Normalized keys for Mapbox `annotation.congestion` → map line styling. */
+export type RouteCongestionKey = "unknown" | "low" | "moderate" | "heavy" | "severe";
+
+export type TrafficRouteFeatureCollection = {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    properties: { congestion: RouteCongestionKey };
+    geometry: { type: "LineString"; coordinates: [number, number][] };
+  }>;
+};
+
 export type IntelligentRouteResult = {
   route: MapboxDirectionRoute;
   coordinates: [number, number][];
+  /** One feature per contiguous traffic level; properties.congestion for data-driven line color. */
+  trafficRouteGeoJson: TrafficRouteFeatureCollection;
   truckType: CrewRoutingTruckType;
   summaries: ScoredRouteSummary[];
   selectedIndex: number;
@@ -107,6 +121,67 @@ export function scoreRoute(route: MapboxDirectionRoute, truckType: CrewRoutingTr
   return score;
 }
 
+export function normalizeRouteCongestion(raw: string | undefined | null): RouteCongestionKey {
+  const c = `${raw || "unknown"}`.toLowerCase();
+  if (c === "severe") return "severe";
+  if (c === "heavy") return "heavy";
+  if (c === "moderate") return "moderate";
+  if (c === "low") return "low";
+  return "unknown";
+}
+
+/**
+ * Split full-route coordinates into LineString features using per-segment congestion from Directions API.
+ * `congestion[i]` applies to the segment from coordinates[i] → coordinates[i+1].
+ */
+export function buildTrafficColoredRouteGeoJson(
+  coordinates: [number, number][],
+  congestion: string[] | undefined | null
+): TrafficRouteFeatureCollection {
+  if (!coordinates || coordinates.length < 2) {
+    return { type: "FeatureCollection", features: [] };
+  }
+  const n = coordinates.length - 1;
+  if (!congestion?.length || congestion.length !== n) {
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { congestion: "unknown" },
+          geometry: { type: "LineString", coordinates },
+        },
+      ],
+    };
+  }
+
+  const features: TrafficRouteFeatureCollection["features"] = [];
+  let segStart = 0;
+  for (let i = 0; i < congestion.length; i++) {
+    const level = normalizeRouteCongestion(congestion[i]);
+    const isLast = i === congestion.length - 1;
+    const nextLevel = isLast ? null : normalizeRouteCongestion(congestion[i + 1]);
+    if (isLast || nextLevel !== level) {
+      const slice = coordinates.slice(segStart, i + 2);
+      if (slice.length >= 2) {
+        features.push({
+          type: "Feature",
+          properties: { congestion: level },
+          geometry: { type: "LineString", coordinates: slice },
+        });
+      }
+      segStart = i + 1;
+    }
+  }
+  if (features.length === 0) {
+    return {
+      type: "FeatureCollection",
+      features: [{ type: "Feature", properties: { congestion: "unknown" }, geometry: { type: "LineString", coordinates } }],
+    };
+  }
+  return { type: "FeatureCollection", features };
+}
+
 function congestionNoteForRoute(route: MapboxDirectionRoute): string | null {
   const congestion = route.legs?.[0]?.annotation?.congestion;
   if (!congestion?.length) return null;
@@ -179,6 +254,9 @@ export async function fetchIntelligentRoute(
   const coords = best.route.geometry?.coordinates as [number, number][] | undefined;
   if (!coords?.length) return null;
 
+  const congestion = best.route.legs?.[0]?.annotation?.congestion;
+  const trafficRouteGeoJson = buildTrafficColoredRouteGeoJson(coords, congestion);
+
   const summaries: ScoredRouteSummary[] = scored.map((s) => {
     const distanceKm = s.route.distance / 1000;
     const fuelCost = fuelCostCadForDistanceKm(truckType, distanceKm, fuelPL);
@@ -200,6 +278,7 @@ export async function fetchIntelligentRoute(
   return {
     route: best.route,
     coordinates: coords,
+    trafficRouteGeoJson,
     truckType,
     summaries,
     selectedIndex,
