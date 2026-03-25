@@ -444,7 +444,7 @@ export default function LiveTrackingMap({
               {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
               {crew?.updated_at ? (
                 <span className="block mt-1 text-[10px]">
-                  <TrackingFreshness lastUpdate={crew.updated_at} />
+                  <TrackingFreshness crewOnJob={sessionActive} lastUpdate={crew.updated_at} />
                 </span>
               ) : null}
             </p>
@@ -521,7 +521,7 @@ export default function LiveTrackingMap({
             {crewName || crew?.name || "Crew"} • {hasPosition ? "Live position updating" : "Waiting for GPS..."}
             {crew?.updated_at ? (
               <span className="block mt-1 text-[10px]">
-                <TrackingFreshness lastUpdate={crew.updated_at} />
+                <TrackingFreshness crewOnJob={sessionActive} lastUpdate={crew.updated_at} />
               </span>
             ) : null}
           </p>

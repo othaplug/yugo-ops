@@ -356,7 +356,11 @@ const GodEyeMap = dynamic(
                           </span>
                         </div>
                         <span className="text-[8px] font-medium text-center text-white/70 px-1 leading-tight">
-                          <TrackingFreshness lastUpdate={loc?.updated_at || c.updated_at} />
+                          <TrackingFreshness
+                            tone="dark"
+                            crewOnJob={isOnJob(status)}
+                            lastUpdate={loc?.updated_at || c.updated_at}
+                          />
                         </span>
                       </div>
 
@@ -509,7 +513,10 @@ function CrewPopup({
         <div className="text-center">
           <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Last GPS</div>
           <div className="text-[11px] font-semibold text-[var(--tx)] mt-0.5">
-            <TrackingFreshness lastUpdate={crewLocation?.updated_at || crew.updated_at} />
+            <TrackingFreshness
+              crewOnJob={isOnJob(status)}
+              lastUpdate={crewLocation?.updated_at || crew.updated_at}
+            />
           </div>
         </div>
       </div>

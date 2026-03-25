@@ -1,15 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Map, { Layer, Marker, NavigationControl, Source } from "react-map-gl/mapbox";
+import Map, { Layer, Marker, NavigationControl, Source, useMap } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import {
   ArrowBendDownLeft,
   ArrowBendDownRight,
   ArrowRight,
-  Crosshair,
   ForkKnife,
   MapPin,
+  NavigationArrow,
   SignIn,
   TrafficCone,
 } from "@phosphor-icons/react";
@@ -32,6 +32,94 @@ const POST_MIN_MS = 1100;
 const REVERSE_GEOCODE_MS = 45_000;
 
 const GOLD = "#B8962E";
+/** Burgundy route line (wine) — distinct from gold UI accents. */
+const WINE_ROUTE = "#7B1F2F";
+const FIRST_PERSON_PITCH = 62;
+const NAV_FOLLOW_ZOOM = 17;
+
+/** Bearing 0 = north, 90 = east — from point A toward B. */
+function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLng = toRad(to.lng - from.lng);
+  const lat1 = toRad(from.lat);
+  const lat2 = toRad(to.lat);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+/**
+ * Keeps the map in first-person follow mode (pitch + heading) while `followNavigation` is on,
+ * and renders the floating control to re-center on GPS + resume follow + refresh the route.
+ */
+function CrewNavMapFollowAndRecenter({
+  userPos,
+  navBearingDeg,
+  followNavigation,
+  setFollowNavigation,
+  setMapBearing,
+  onRecenter,
+}: {
+  userPos: { lat: number; lng: number } | null;
+  navBearingDeg: number | null;
+  followNavigation: boolean;
+  setFollowNavigation: (v: boolean) => void;
+  setMapBearing: (deg: number) => void;
+  onRecenter: (origin: { lat: number; lng: number }) => void;
+}) {
+  const { current: mapRef } = useMap();
+
+  useEffect(() => {
+    if (!followNavigation || !userPos || !mapRef?.getMap) return;
+    const map = mapRef.getMap();
+    const bearing = navBearingDeg ?? map.getBearing();
+    setMapBearing(bearing);
+    try {
+      map.jumpTo({
+        center: [userPos.lng, userPos.lat],
+        bearing,
+        pitch: FIRST_PERSON_PITCH,
+        zoom: Math.max(map.getZoom(), NAV_FOLLOW_ZOOM),
+      });
+    } catch {
+      /* map may be tearing down */
+    }
+  }, [userPos?.lat, userPos?.lng, navBearingDeg, followNavigation, mapRef]);
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const u = userPos;
+        if (!u) return;
+        setFollowNavigation(true);
+        const map = mapRef?.getMap?.();
+        const bearing = navBearingDeg ?? map?.getBearing() ?? 0;
+        if (map) {
+          setMapBearing(bearing);
+          try {
+            map.flyTo({
+              center: [u.lng, u.lat],
+              bearing,
+              pitch: FIRST_PERSON_PITCH,
+              zoom: NAV_FOLLOW_ZOOM,
+              duration: 650,
+            });
+          } catch {
+            /* ignore */
+          }
+        }
+        onRecenter(u);
+      }}
+      disabled={!userPos}
+      className="absolute bottom-24 right-3 z-10 bg-white rounded-full p-3 shadow-lg text-zinc-800 disabled:opacity-40 disabled:pointer-events-none"
+      aria-label="Center on my location and follow navigation"
+      title="My location & navigation view"
+    >
+      <NavigationArrow size={22} weight="bold" aria-hidden />
+    </button>
+  );
+}
 
 function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -158,8 +246,16 @@ export function CrewNavigation({
   const [mapError, setMapError] = useState<string | null>(null);
   const [speedDisplay, setSpeedDisplay] = useState<string | null>(null);
   const [torontoWarnings, setTorontoWarnings] = useState<string[]>([]);
+  /** Degrees clockwise from north — device heading or course-over-ground. */
+  const [navBearingDeg, setNavBearingDeg] = useState<number | null>(null);
+  /** Map bearing used to rotate the crew arrow relative to the camera. */
+  const [mapBearing, setMapBearing] = useState(0);
+  /** When true, camera follows GPS in first-person (pitch + bearing). */
+  const [followNavigation, setFollowNavigation] = useState(true);
 
   const watchIdRef = useRef<number | null>(null);
+  const prevGeoRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastNavBearingRef = useRef<number | null>(null);
   /** After a high-accuracy watch fails (timeout / unavailable), retry once with relaxed options. */
   const geoRelaxedRetryDoneRef = useRef(false);
   const lastPostRef = useRef(0);
@@ -300,6 +396,10 @@ export function CrewNavigation({
   useEffect(() => {
     arrivedRef.current = false;
     setTorontoWarnings([]);
+    prevGeoRef.current = null;
+    lastNavBearingRef.current = null;
+    setNavBearingDeg(null);
+    setFollowNavigation(true);
   }, [destination.lat, destination.lng, sessionId]);
 
   useEffect(() => {
@@ -323,8 +423,22 @@ export function CrewNavigation({
       (position) => {
         setMapError(null);
         markCrewLocationAllowed();
-        const { latitude, longitude, speed } = position.coords;
+        const { latitude, longitude, speed, heading } = position.coords;
         setUserPos({ lat: latitude, lng: longitude });
+
+        let bearing: number | null = null;
+        const head =
+          typeof heading === "number" && !Number.isNaN(heading) && heading >= 0 ? heading : null;
+        if (head != null) {
+          bearing = head;
+        } else if (prevGeoRef.current && typeof speed === "number" && !Number.isNaN(speed) && speed > 0.5) {
+          bearing = calcBearing(prevGeoRef.current, { lat: latitude, lng: longitude });
+        } else if (lastNavBearingRef.current != null) {
+          bearing = lastNavBearingRef.current;
+        }
+        prevGeoRef.current = { lat: latitude, lng: longitude };
+        if (bearing != null) lastNavBearingRef.current = bearing;
+        setNavBearingDeg(bearing);
 
         if (speed != null && !Number.isNaN(speed) && speed >= 0) {
           const kmh = speed * 3.6;
@@ -444,12 +558,18 @@ export function CrewNavigation({
   const initialView = useMemo(() => {
     const lat = userPos?.lat ?? destination.lat;
     const lng = userPos?.lng ?? destination.lng;
-    return { latitude: lat, longitude: lng, zoom: 14, bearing: 0, pitch: 0 };
+    return {
+      latitude: lat,
+      longitude: lng,
+      zoom: NAV_FOLLOW_ZOOM,
+      bearing: 0,
+      pitch: FIRST_PERSON_PITCH,
+    };
   }, [userPos?.lat, userPos?.lng, destination.lat, destination.lng]);
 
   if (!HAS_MAPBOX) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[var(--bg)] p-6 text-center">
+      <div className="fixed inset-0 z-[var(--z-modal)] flex flex-col items-center justify-center bg-[var(--bg)] p-6 text-center">
         <p className="text-[var(--tx)] font-semibold mb-2">Mapbox is not configured</p>
         <p className="text-[13px] text-[var(--tx3)] mb-4">Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN for in-app navigation.</p>
         <button
@@ -464,7 +584,7 @@ export function CrewNavigation({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black">
+    <div className="fixed inset-0 z-[var(--z-modal)] flex flex-col bg-black">
       <div className="shrink-0 text-white p-4 flex items-start gap-3 border-b border-white/10 bg-[#1a3d2e]">
         <ManeuverIcon type={maneuverMeta.type} modifier={maneuverMeta.modifier} />
         <div className="min-w-0 flex-1">
@@ -487,6 +607,11 @@ export function CrewNavigation({
           style={{ width: "100%", height: "100%" }}
           mapStyle={mapStyle}
           reuseMaps
+          onMoveEnd={(e) => setMapBearing(e.viewState.bearing)}
+          onDragStart={() => setFollowNavigation(false)}
+          onZoomStart={() => setFollowNavigation(false)}
+          onRotateStart={() => setFollowNavigation(false)}
+          onPitchStart={() => setFollowNavigation(false)}
         >
           {lineGeoJson && (
             <Source id="crew-nav-route" type="geojson" data={lineGeoJson}>
@@ -494,22 +619,38 @@ export function CrewNavigation({
                 id="crew-nav-route-line"
                 type="line"
                 paint={{
-                  "line-color": GOLD,
+                  "line-color": WINE_ROUTE,
                   "line-width": 5,
-                  "line-opacity": 0.88,
+                  "line-opacity": 0.92,
                 }}
               />
             </Source>
           )}
           {userPos && (
             <Marker longitude={userPos.lng} latitude={userPos.lat} anchor="center">
-              <div className="w-4 h-4 rounded-full bg-[#22C55E] border-2 border-white shadow-lg" />
+              <div
+                className="flex items-center justify-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]"
+                style={{
+                  transform:
+                    navBearingDeg != null ? `rotate(${navBearingDeg - mapBearing}deg)` : undefined,
+                }}
+              >
+                <NavigationArrow className="text-[#22C55E]" size={44} weight="fill" aria-hidden />
+              </div>
             </Marker>
           )}
           <Marker longitude={destination.lng} latitude={destination.lat} anchor="bottom">
             <div className="w-3 h-3 rounded-full border-2 border-white shadow-md" style={{ background: GOLD }} />
           </Marker>
           <NavigationControl position="bottom-right" showCompass showZoom />
+          <CrewNavMapFollowAndRecenter
+            userPos={userPos}
+            navBearingDeg={navBearingDeg}
+            followNavigation={followNavigation}
+            setFollowNavigation={setFollowNavigation}
+            setMapBearing={setMapBearing}
+            onRecenter={(origin) => void fetchRoute(origin)}
+          />
         </Map>
 
         {speedDisplay && (
@@ -521,17 +662,6 @@ export function CrewNavigation({
           <div className="absolute top-12 left-3 right-3 bg-red-900/90 text-white text-[12px] px-3 py-2 rounded-lg">{mapError}</div>
         )}
 
-        <button
-          type="button"
-          onClick={() => {
-            const u = userPos;
-            if (u) void fetchRoute(u);
-          }}
-          className="absolute bottom-24 right-3 bg-white rounded-full p-3 shadow-lg text-zinc-800"
-          aria-label="Re-fetch route from current location"
-        >
-          <Crosshair size={22} />
-        </button>
       </div>
 
       <div className="shrink-0 text-white p-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#4a1528]">

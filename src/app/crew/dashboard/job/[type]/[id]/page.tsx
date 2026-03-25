@@ -15,6 +15,7 @@ import {
 import { normalizePhone } from "@/lib/phone";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import PageContent from "@/app/admin/components/PageContent";
+import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
 import StageProgressBar from "@/components/StageProgressBar";
 import JobPhotos from "./JobPhotos";
 import JobInventory from "./JobInventory";
@@ -203,6 +204,7 @@ export default function CrewJobPage({
   } | null>(null);
   const [changeRequestSubmitted, setChangeRequestSubmitted] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const { setImmersiveNav } = useCrewImmersiveNav();
 
   const statusFlow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
   const currentStatus = session?.status || "not_started";
@@ -423,6 +425,12 @@ export default function CrewJobPage({
   useEffect(() => {
     if (!isNavigatingLeg) setNavOpen(false);
   }, [isNavigatingLeg]);
+
+  useEffect(() => {
+    const immersive = Boolean(navOpen && session && navDestination);
+    setImmersiveNav(immersive);
+    return () => setImmersiveNav(false);
+  }, [navOpen, session, navDestination, setImmersiveNav]);
 
   useEffect(() => {
     let lock: WakeLockSentinel | null = null;
@@ -959,7 +967,7 @@ export default function CrewJobPage({
 
           {/* Dispatch notes */}
           {job.internalNotes && (
-            <div className="rounded-2xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-4">
+            <div className="rounded-2xl bg-[var(--gold)]/5 p-4">
               <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--gold)]/60 mb-2">Dispatch Notes</p>
               <p className="text-[12px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.internalNotes}</p>
             </div>

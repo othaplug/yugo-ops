@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { CaretLeft, CaretRight, List, X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import { Icons } from "@/app/admin/components/SidebarIcons";
 import YugoLogo from "@/components/YugoLogo";
 import CrewSettingsDropdown from "./CrewSettingsDropdown";
 import OfflineBanner from "@/components/ui/OfflineBanner";
+import { CrewImmersiveNavContext } from "./CrewImmersiveNavContext";
 
 const NAV_CORE = [
   { href: "/crew/dashboard", label: "Dashboard", icon: "target" as const },
@@ -39,6 +40,14 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   });
   const [hasActiveBinTasks, setHasActiveBinTasks] = useState(false);
   const [navTargetPath, setNavTargetPath] = useState<string | null>(null);
+  const [immersiveNav, setImmersiveNavState] = useState(false);
+  const setImmersiveNav = useCallback((v: boolean) => {
+    setImmersiveNavState(v);
+  }, []);
+  const immersiveNavApi = useMemo(
+    () => ({ immersiveNav, setImmersiveNav }),
+    [immersiveNav, setImmersiveNav]
+  );
 
   const navItems: ShellNavItem[] = useMemo(() => {
     const navItem: ShellNavItem = { href: navTargetPath, label: "Navigation", icon: "navigationArrow", navigation: true };
@@ -99,6 +108,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <ToastProvider>
+        <CrewImmersiveNavContext.Provider value={immersiveNavApi}>
         <div className="flex min-h-screen bg-[var(--bg)]">
           <a
             href="#crew-main"
@@ -106,7 +116,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
           >
             Skip to main content
           </a>
-          {sidebarOpen && (
+          {sidebarOpen && !immersiveNav && (
             <div
               className="fixed inset-0 z-40 md:hidden bg-black/35"
               style={{ left: `${SIDEBAR_WIDTH}px` }}
@@ -120,6 +130,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               fixed top-0 left-0 z-50 h-dvh h-screen max-h-[100dvh] flex flex-col overflow-hidden
               glass-sidebar border-r border-[var(--brd)]/50
               transition-all duration-300 ease-out
+              ${immersiveNav ? "hidden" : ""}
               ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
               ${sidebarCollapsed ? "md:w-14 w-[220px]" : "w-[220px]"}
             `}
@@ -265,15 +276,18 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
           </aside>
 
           <div
-            className={`hidden md:block shrink-0 transition-all duration-300 ${sidebarCollapsed ? "w-14" : "w-[220px]"}`}
+            className={`hidden md:block shrink-0 transition-all duration-300 ${immersiveNav ? "hidden" : ""} ${sidebarCollapsed ? "w-14" : "w-[220px]"}`}
           />
 
-          <div className="flex-1 flex flex-col min-w-0 min-h-0 admin-main-offset">
+          <div
+            className={`flex-1 flex flex-col min-w-0 min-h-0 ${immersiveNav ? "" : "admin-main-offset"}`}
+          >
             {/* Top bar — h-14 + border matches admin shell */}
             <div
               className={`fixed top-0 right-0 h-14 flex items-center justify-between gap-2 sm:gap-4 z-30 shrink-0 glass-topbar border-b border-[var(--brd)]/50 shadow-[0_1px_0_0_rgba(0,0,0,0.04)] safe-area-top transition-all duration-300 left-0 pl-3 pr-3 sm:px-4 md:px-6 ${
-                sidebarCollapsed ? "md:left-14" : "md:left-[220px]"
-              }`}
+                immersiveNav ? "hidden" : ""
+              } ${sidebarCollapsed ? "md:left-14" : "md:left-[220px]"}
+              `}
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <button
@@ -296,7 +310,9 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
             <main
               id="crew-main"
               key={pathname}
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 tab-content pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-0"
+              className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 tab-content ${
+                immersiveNav ? "pb-0" : "pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-0"
+              }`}
             >
               {children}
             </main>
@@ -304,7 +320,9 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
 
           {/* Mobile bottom navigation */}
           <nav
-            className="md:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] glass-topbar border-t border-[var(--brd)]/50 flex items-stretch safe-area-bottom"
+            className={`md:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] glass-topbar border-t border-[var(--brd)]/50 flex items-stretch safe-area-bottom ${
+              immersiveNav ? "hidden" : ""
+            }`}
             aria-label="Main navigation"
           >
             {navItems.map((item) => {
@@ -342,6 +360,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
         </div>
+        </CrewImmersiveNavContext.Provider>
         <OfflineBanner />
       </ToastProvider>
     </ThemeProvider>
