@@ -267,7 +267,7 @@ export async function buildBinRentalQuoteResponse(opts: {
       est_truck_size: null,
       truck_primary: null,
       truck_secondary: null,
-      recommended_tier: "custom",
+      recommended_tier: "signature",
       crating_pieces: [],
       crating_total: 0,
       supplies_allowance: 0,

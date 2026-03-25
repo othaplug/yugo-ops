@@ -22,6 +22,17 @@ interface InventoryItem {
   weight_score?: number; // For custom items not in item_weights
 }
 
+/** DB `quotes_recommended_tier_check` allows essential | signature | estate only */
+function normalizeRecommendedTierForDb(
+  raw: string | undefined | null
+): "essential" | "signature" | "estate" {
+  const t = (raw ?? "signature").toString().toLowerCase().trim();
+  if (t === "essential" || t === "signature" || t === "estate") return t;
+  if (t === "curated" || t === "essentials") return "essential";
+  if (t === "premier") return "signature";
+  return "signature";
+}
+
 interface QuoteInput {
   /** When provided, update existing quote in place instead of creating a new one */
   quote_id?: string;
@@ -2857,7 +2868,7 @@ export async function POST(req: NextRequest) {
           ? residentialPricedTruck
           : truckResult.primary?.vehicle_type ?? (labourTruckKey && TRUCK_DISPLAY[labourTruckKey] ? labourTruckKey : null),
       truck_secondary: truckResult.secondary?.vehicle_type ?? null,
-      recommended_tier: input.recommended_tier || "signature",
+      recommended_tier: normalizeRecommendedTierForDb(input.recommended_tier),
       crating_pieces: input.crating_pieces ?? [],
       crating_total: cratingForDisplay,
       supplies_allowance: estateSuppliesAllowance,
