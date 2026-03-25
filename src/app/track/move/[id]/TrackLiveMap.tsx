@@ -88,6 +88,9 @@ export default function TrackLiveMap({
   const [lastLocationAt, setLastLocationAt] = useState<string | null>(null);
   const [hasActiveTracking, setHasActiveTracking] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [navEtaSeconds, setNavEtaSeconds] = useState<number | null>(null);
+  const [navDistanceRemainingM, setNavDistanceRemainingM] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [crewSpeed, setCrewSpeed] = useState<number | null>(null);
   const [drawerExpanded, setDrawerExpanded] = useState(false);
@@ -134,6 +137,9 @@ export default function TrackLiveMap({
       if (data.dropoff?.lat != null && data.dropoff?.lng != null) setDropoff({ lat: data.dropoff.lat, lng: data.dropoff.lng });
       else setDropoff(null);
       setEtaMinutes(data.etaMinutes ?? null);
+      setIsNavigating(Boolean(data.is_navigating));
+      setNavEtaSeconds(data.nav_eta_seconds != null ? Number(data.nav_eta_seconds) : null);
+      setNavDistanceRemainingM(data.nav_distance_remaining_m != null ? Number(data.nav_distance_remaining_m) : null);
       if (data.crewPhone) setCrewPhone(data.crewPhone);
       if (data.dispatchPhone) setDispatchPhone(data.dispatchPhone);
       return data.hasActiveTracking;
@@ -228,10 +234,10 @@ export default function TrackLiveMap({
         es.onerror = () => {
           es?.close();
           es = null;
-          pollId = setInterval(loadInitial, 15000);
+          pollId = setInterval(loadInitial, 10000);
         };
       } else {
-        pollId = setInterval(loadInitial, 15000);
+        pollId = setInterval(loadInitial, 10000);
       }
     });
 
@@ -271,7 +277,9 @@ export default function TrackLiveMap({
           return Math.max(1, Math.round((km / 35) * 60));
         })()
       : null;
-  const displayEta = etaMinutes ?? computedEtaMinutes;
+  const navEtaMinutes =
+    navEtaSeconds != null && Number.isFinite(navEtaSeconds) ? Math.max(1, Math.round(navEtaSeconds / 60)) : null;
+  const displayEta = navEtaMinutes ?? etaMinutes ?? computedEtaMinutes;
 
   // Distance from crew to client
   const distToClient = crewLoc && clientLat && clientLng
@@ -330,6 +338,9 @@ export default function TrackLiveMap({
                   speed={hasActiveTracking ? crewSpeed : null}
                   lastLocationAt={hasActiveTracking ? lastLocationAt : null}
                   resizeSignal={mapResizeSignal}
+                  isNavigating={hasActiveTracking && isNavigating}
+                  etaOverlayMinutes={hasActiveTracking ? displayEta : null}
+                  distanceRemainingM={hasActiveTracking ? navDistanceRemainingM : null}
                 />
               ) : (
                 <LeafletMap

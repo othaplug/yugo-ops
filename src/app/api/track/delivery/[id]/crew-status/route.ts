@@ -57,14 +57,14 @@ export async function GET(
       ? await admin
           .from("deliveries")
           .select(
-            "id, crew_id, stage, completed_at, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, eta_current_minutes",
+            "id, crew_id, stage, completed_at, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, delivery_window, eta_current_minutes",
           )
           .eq("id", slug)
           .single()
       : await admin
           .from("deliveries")
           .select(
-            "id, crew_id, stage, completed_at, pickup_address, delivery_address, scheduled_date, time_slot, delivery_window, eta_current_minutes",
+            "id, crew_id, stage, completed_at, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, delivery_window, eta_current_minutes",
           )
           .ilike("delivery_number", slug)
           .single();
@@ -98,6 +98,22 @@ export async function GET(
       .maybeSingle();
 
     const stepCompletedAt = buildClientMainStepCompletedAt(timelineSession?.checkpoints, delivery.completed_at);
+
+    let isNavigating = false;
+    let navEtaSeconds: number | null = null;
+    let navDistanceRemainingM: number | null = null;
+    if (delivery.crew_id && ts?.is_active) {
+      const { data: cl } = await admin
+        .from("crew_locations")
+        .select("is_navigating, nav_eta_seconds, nav_distance_remaining_m")
+        .eq("crew_id", delivery.crew_id)
+        .maybeSingle();
+      if (cl) {
+        isNavigating = Boolean(cl.is_navigating);
+        if (cl.nav_eta_seconds != null) navEtaSeconds = Math.round(Number(cl.nav_eta_seconds));
+        if (cl.nav_distance_remaining_m != null) navDistanceRemainingM = Math.round(Number(cl.nav_distance_remaining_m));
+      }
+    }
 
     if (delivery.crew_id) {
       const { data: c } = await admin
@@ -151,10 +167,16 @@ export async function GET(
       ? { lat: crew.current_lat, lng: crew.current_lng }
       : { lat: 43.665, lng: -79.385 };
 
-    const [pickup, dropoff] = await Promise.all([
-      delivery.pickup_address ? geocodeAddress(delivery.pickup_address) : null,
-      delivery.delivery_address ? geocodeAddress(delivery.delivery_address) : null,
-    ]);
+    let pickup =
+      delivery.pickup_lat != null && delivery.pickup_lng != null
+        ? { lat: Number(delivery.pickup_lat), lng: Number(delivery.pickup_lng) }
+        : null;
+    let dropoff =
+      delivery.delivery_lat != null && delivery.delivery_lng != null
+        ? { lat: Number(delivery.delivery_lat), lng: Number(delivery.delivery_lng) }
+        : null;
+    if (!pickup && delivery.pickup_address) pickup = await geocodeAddress(delivery.pickup_address);
+    if (!dropoff && delivery.delivery_address) dropoff = await geocodeAddress(delivery.delivery_address);
 
     const isPrePickup = liveStage === "en_route_to_pickup" || liveStage === "en_route";
     let etaMinutes: number | null = delivery?.eta_current_minutes ?? null;
@@ -183,6 +205,9 @@ export async function GET(
         timeWindow: delivery.delivery_window || delivery.time_slot || null,
         eta_current_minutes: etaMinutes,
         stepCompletedAt,
+        is_navigating: isNavigating,
+        nav_eta_seconds: navEtaSeconds,
+        nav_distance_remaining_m: navDistanceRemainingM,
       },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );

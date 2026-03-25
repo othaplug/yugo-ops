@@ -4,6 +4,33 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { parseItemNameAndQty } from "@/lib/inventory-parse";
 import { normalizeDeliveryItem } from "@/lib/delivery-items";
+import { buildFuelConfigMap, resolveNavigationFuelPriceCadPerLitre, NAV_FUEL_KEYS } from "@/lib/routing/fuel-config";
+import { normalizeCrewTruckType } from "@/lib/routing/truck-profile";
+import { CREW_JOB_UUID_RE, normalizeCrewJobId, selectDeliveryByJobId } from "@/lib/resolve-delivery-by-job-id";
+
+const MAPBOX_TOKEN =
+  process.env.MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  "";
+
+async function geocodeAddressServer(
+  address: string | null | undefined
+): Promise<{ lat: number; lng: number } | null> {
+  if (!MAPBOX_TOKEN || !address?.trim()) return null;
+  try {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address.trim())}.json?access_token=${MAPBOX_TOKEN}&limit=1&types=address,place`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const c = data?.features?.[0]?.center;
+    if (Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number") {
+      return { lng: c[0], lat: c[1] };
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
 /** GET job detail for crew portal. */
 export async function GET(
@@ -20,16 +47,19 @@ export async function GET(
   const jobId = id;
 
   const admin = createAdminClient();
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
+  const { data: fuelCfgRows } = await admin.from("platform_config").select("key, value").in("key", [...NAV_FUEL_KEYS]);
+  const fuelPriceCadPerLitre = resolveNavigationFuelPriceCadPerLitre(buildFuelConfigMap(fuelCfgRows));
+
+  const normalizedJobId = normalizeCrewJobId(jobId);
+  const isUuid = CREW_JOB_UUID_RE.test(normalizedJobId);
 
   if (jobType === "delivery") {
-    const { data: d } = isUuid
-      ? await admin.from("deliveries").select("*").eq("id", jobId).maybeSingle()
-      : await admin.from("deliveries").select("*").ilike("delivery_number", jobId).maybeSingle();
+    const { data: raw } = await selectDeliveryByJobId(admin, normalizedJobId, "*");
 
-    if (!d) {
+    if (!raw) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
+    const d = raw as any;
     if (d.crew_id !== payload.teamId) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
@@ -72,6 +102,25 @@ export async function GET(
       .eq("delivery_id", d.id)
       .order("stop_number");
 
+    let fromLat = d.pickup_lat != null ? Number(d.pickup_lat) : null;
+    let fromLng = d.pickup_lng != null ? Number(d.pickup_lng) : null;
+    let toLat = d.delivery_lat != null ? Number(d.delivery_lat) : null;
+    let toLng = d.delivery_lng != null ? Number(d.delivery_lng) : null;
+    if ((fromLat == null || fromLng == null) && d.pickup_address?.trim()) {
+      const g = await geocodeAddressServer(d.pickup_address);
+      if (g) {
+        fromLat = g.lat;
+        fromLng = g.lng;
+      }
+    }
+    if ((toLat == null || toLng == null) && d.delivery_address?.trim()) {
+      const g = await geocodeAddressServer(d.delivery_address);
+      if (g) {
+        toLat = g.lat;
+        toLng = g.lng;
+      }
+    }
+
     return NextResponse.json({
       id: d.id,
       jobId: d.delivery_number || d.id,
@@ -102,12 +151,18 @@ export async function GET(
       scheduledTime: d.time_slot || null,
       crewId: d.crew_id,
       projectContext,
+      fromLat,
+      fromLng,
+      toLat,
+      toLng,
+      truckType: normalizeCrewTruckType((d as { vehicle_type?: string | null }).vehicle_type),
+      fuelPriceCadPerLitre,
     });
   }
 
   const { data: m } = isUuid
-    ? await admin.from("moves").select("*").eq("id", jobId).single()
-    : await admin.from("moves").select("*").ilike("move_code", jobId.replace(/^#/, "").toUpperCase()).single();
+    ? await admin.from("moves").select("*").eq("id", normalizedJobId).single()
+    : await admin.from("moves").select("*").ilike("move_code", normalizedJobId.replace(/^#/, "").toUpperCase()).single();
 
   if (!m || m.crew_id !== payload.teamId) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -141,6 +196,25 @@ export async function GET(
 
   const { data: extra } = await admin.from("extra_items").select("id, description, room, quantity, added_at").eq("job_id", m.id).eq("status", "approved").order("added_at");
 
+  let fromLat = m.from_lat != null ? Number(m.from_lat) : null;
+  let fromLng = m.from_lng != null ? Number(m.from_lng) : null;
+  let toLat = m.to_lat != null ? Number(m.to_lat) : null;
+  let toLng = m.to_lng != null ? Number(m.to_lng) : null;
+  if ((fromLat == null || fromLng == null) && m.from_address?.trim()) {
+    const g = await geocodeAddressServer(m.from_address);
+    if (g) {
+      fromLat = g.lat;
+      fromLng = g.lng;
+    }
+  }
+  if ((toLat == null || toLng == null) && m.to_address?.trim()) {
+    const g = await geocodeAddressServer(m.to_address);
+    if (g) {
+      toLat = g.lat;
+      toLng = g.lng;
+    }
+  }
+
   return NextResponse.json({
     id: m.id,
     jobId: m.move_code || m.id,
@@ -163,5 +237,11 @@ export async function GET(
     internalNotes: m.internal_notes || m.next_action || null,
     scheduledTime: m.scheduled_time || null,
     crewId: m.crew_id,
+    fromLat,
+    fromLng,
+    toLat,
+    toLng,
+    truckType: normalizeCrewTruckType(m.truck_primary as string | null),
+    fuelPriceCadPerLitre,
   });
 }

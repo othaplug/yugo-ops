@@ -40,7 +40,47 @@ const FOREGROUND_MS = 15_000;
 const BACKGROUND_MS = 60_000;
 const IDLE_MS = 30_000;
 
+/** Persists “crew allowed location once” for this origin so we don’t re-nag when Safari misreports permission. */
+const CREW_GEO_OPT_IN_KEY = "yugo_crew_geo_opt_in";
+
 export type GeoPermissionState = "unsupported" | "denied" | "prompt" | "granted" | "unknown";
+
+export function readCrewGeoOptIn(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(CREW_GEO_OPT_IN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setCrewGeoOptIn(active: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (active) window.localStorage.setItem(CREW_GEO_OPT_IN_KEY, "1");
+    else window.localStorage.removeItem(CREW_GEO_OPT_IN_KEY);
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+/** Call after any successful geolocation reading (job page, dashboard pill, etc.). */
+export function markCrewLocationAllowed(): void {
+  setCrewGeoOptIn(true);
+}
+
+/** Clear saved consent when the user revokes location in system/browser settings. */
+export function revokeCrewLocationMemory(): void {
+  setCrewGeoOptIn(false);
+}
+
+/** Effective UI / gating state: trust prior allow unless the browser reports denied or unsupported. */
+export function mergeCrewGeoPermissionForDisplay(api: GeoPermissionState): GeoPermissionState {
+  if (api === "denied" || api === "unsupported") return api;
+  if (api === "granted") return "granted";
+  if (readCrewGeoOptIn()) return "granted";
+  return api;
+}
 
 export async function checkLocationPermissions(): Promise<{
   status: GeoPermissionState;
@@ -55,6 +95,7 @@ export async function checkLocationPermissions(): Promise<{
   try {
     const p = await navigator.permissions.query({ name: "geolocation" as PermissionName });
     if (p.state === "denied") {
+      setCrewGeoOptIn(false);
       return {
         status: "denied",
         message:
@@ -67,6 +108,7 @@ export async function checkLocationPermissions(): Promise<{
         message: 'We need your location for live tracking. Tap "Allow" when prompted.',
       };
     }
+    setCrewGeoOptIn(true);
     return { status: "granted" };
   } catch {
     return { status: "unknown" };
@@ -95,10 +137,12 @@ async function registerTrackingSync() {
 export function useCrewPersistentTracking(opts: {
   sessionId: string | undefined;
   isActive: boolean;
+  /** When true (e.g. full-screen navigation), do not watchPosition — navigation owns GPS. */
+  suspend?: boolean;
   onAutoAdvanced: () => void;
   onPermissionChange?: (s: GeoPermissionState) => void;
 }) {
-  const { sessionId, isActive, onAutoAdvanced, onPermissionChange } = opts;
+  const { sessionId, isActive, suspend = false, onAutoAdvanced, onPermissionChange } = opts;
   const onAutoAdvancedRef = useRef(onAutoAdvanced);
   onAutoAdvancedRef.current = onAutoAdvanced;
 
@@ -108,9 +152,11 @@ export function useCrewPersistentTracking(opts: {
   const sessionIdRef = useRef(sessionId);
   const isActiveRef = useRef(isActive);
   sessionIdRef.current = sessionId;
-  isActiveRef.current = isActive;
+  isActiveRef.current = isActive && !suspend;
 
   const watchIdRef = useRef<number | null>(null);
+  /** First successful fix proves permission works even when Permissions API returns "unknown" (Safari). */
+  const reportedGrantedFromPositionRef = useRef(false);
   const lastSentRef = useRef(0);
   const bgIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const keepAliveAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -197,26 +243,35 @@ export function useCrewPersistentTracking(opts: {
 
   useEffect(() => {
     let cancelled = false;
-    checkLocationPermissions().then((r) => {
-      if (!cancelled) permRef.current?.(r.status);
-    });
+    const report = (api: GeoPermissionState) => {
+      if (!cancelled) permRef.current?.(mergeCrewGeoPermissionForDisplay(api));
+    };
+    checkLocationPermissions().then((r) => report(r.status));
+    let permObj: PermissionStatus | null = null;
     navigator.permissions
       ?.query({ name: "geolocation" as PermissionName })
       .then((p) => {
+        permObj = p;
         p.onchange = () => {
-          checkLocationPermissions().then((r) => permRef.current?.(r.status));
+          checkLocationPermissions().then((r) => report(r.status));
         };
       })
       .catch(() => {});
     return () => {
       cancelled = true;
+      if (permObj) permObj.onchange = null;
     };
   }, []);
 
   useEffect(() => {
+    reportedGrantedFromPositionRef.current = false;
     if (!("geolocation" in navigator)) {
       permRef.current?.("unsupported");
       return;
+    }
+
+    if (suspend && sessionId && isActive) {
+      return () => {};
     }
 
     const throttleMs = () => {
@@ -227,6 +282,11 @@ export function useCrewPersistentTracking(opts: {
     };
 
     const tickWatch = (pos: GeolocationPosition) => {
+      if (!reportedGrantedFromPositionRef.current) {
+        reportedGrantedFromPositionRef.current = true;
+        setCrewGeoOptIn(true);
+        permRef.current?.("granted");
+      }
       const now = Date.now();
       if (now - lastSentRef.current < throttleMs()) return;
       lastSentRef.current = now;
@@ -241,6 +301,8 @@ export function useCrewPersistentTracking(opts: {
       bgIntervalRef.current = setInterval(() => {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
+            setCrewGeoOptIn(true);
+            permRef.current?.(mergeCrewGeoPermissionForDisplay("granted"));
             void sendPosition(pos.coords, "background");
           },
           () => {},
@@ -264,7 +326,10 @@ export function useCrewPersistentTracking(opts: {
     watchIdRef.current = navigator.geolocation.watchPosition(
       tickWatch,
       (err) => {
-        if (err.code === err.PERMISSION_DENIED) permRef.current?.("denied");
+        if (err.code === err.PERMISSION_DENIED) {
+          setCrewGeoOptIn(false);
+          permRef.current?.("denied");
+        }
       },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     );
@@ -287,7 +352,7 @@ export function useCrewPersistentTracking(opts: {
       }
       postToServiceWorker({ type: "STOP_TRACKING" });
     };
-  }, [sessionId, isActive, sendPosition, clearBg, startKeepAlive, stopKeepAlive]);
+  }, [sessionId, isActive, suspend, sendPosition, clearBg, startKeepAlive, stopKeepAlive]);
 
   return { recheckPermission: checkLocationPermissions };
 }

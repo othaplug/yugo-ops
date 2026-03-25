@@ -3,15 +3,12 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { getFirstStatus } from "@/lib/crew-tracking-status";
-import { getPlatformToggles } from "@/lib/platform-settings";
 import { notifyOnCheckpoint } from "@/lib/tracking-notifications";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import { CREW_JOB_UUID_RE, normalizeCrewJobId, selectDeliveryByJobId } from "@/lib/resolve-delivery-by-job-id";
 
 export async function POST(req: NextRequest) {
-  const toggles = await getPlatformToggles();
-  if (!toggles.crew_tracking) {
-    return NextResponse.json({ error: "Crew GPS tracking is disabled" }, { status: 403 });
-  }
+  // Job sessions always allowed for assigned crew; `crew_tracking` toggle only gates live GPS ingest (see /api/tracking/location).
 
   const cookieStore = await cookies();
   const token = cookieStore.get(CREW_COOKIE_NAME)?.value;
@@ -21,15 +18,16 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { jobId, jobType } = body;
-  if (!jobId || !jobType || !["move", "delivery"].includes(jobType)) {
+  const { jobType } = body;
+  const rawJobId = normalizeCrewJobId(body.jobId);
+  if (!rawJobId || !jobType || !["move", "delivery"].includes(jobType)) {
     return NextResponse.json({ error: "jobId and jobType (move|delivery) required" }, { status: 400 });
   }
 
   const admin = createAdminClient();
 
   // Resolve jobId to entity (could be UUID or short code)
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId);
+  const isUuid = CREW_JOB_UUID_RE.test(rawJobId);
   let entityId: string;
 
   type JobSnapRow = {
@@ -45,25 +43,22 @@ export async function POST(req: NextRequest) {
 
   if (jobType === "move") {
     const { data: move } = isUuid
-      ? await admin.from("moves").select("id, move_code, crew_id, assigned_members, assigned_crew_name").eq("id", jobId).single()
+      ? await admin.from("moves").select("id, move_code, crew_id, assigned_members, assigned_crew_name").eq("id", rawJobId).maybeSingle()
       : await admin
           .from("moves")
           .select("id, move_code, crew_id, assigned_members, assigned_crew_name")
-          .ilike("move_code", jobId.replace(/^#/, "").toUpperCase())
-          .single();
+          .ilike("move_code", rawJobId.replace(/^#/, "").toUpperCase())
+          .maybeSingle();
     if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
     if (move.crew_id !== payload.teamId) return NextResponse.json({ error: "Job not assigned to your team" }, { status: 403 });
     jobRow = move as JobSnapRow;
     entityId = move.id;
   } else {
-    const { data: delivery } = isUuid
-      ? await admin.from("deliveries").select("id, delivery_number, crew_id, assigned_members, assigned_crew_name").eq("id", jobId).single()
-      : await admin
-          .from("deliveries")
-          .select("id, delivery_number, crew_id, assigned_members, assigned_crew_name")
-          .ilike("delivery_number", jobId)
-          .single();
-    if (!delivery) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    // Do not select assigned_* — older DBs may not have those columns (see migration job_crew_assignment_snapshot).
+    const selectCols = "id, delivery_number, crew_id";
+    const { data: deliveryData } = await selectDeliveryByJobId(admin, rawJobId, selectCols);
+    const delivery = (deliveryData as unknown as JobSnapRow | null) ?? null;
+    if (!delivery) return NextResponse.json({ error: "Job not found" }, { status: 404 });
     if (delivery.crew_id !== payload.teamId) return NextResponse.json({ error: "Job not assigned to your team" }, { status: 403 });
     jobRow = delivery as JobSnapRow;
     entityId = delivery.id;
@@ -80,7 +75,11 @@ export async function POST(req: NextRequest) {
       if (nameMissing) patch.assigned_crew_name = snap.assigned_crew_name;
       if (Object.keys(patch).length) {
         const tbl = jobType === "move" ? "moves" : "deliveries";
-        await admin.from(tbl).update(patch).eq("id", entityId);
+        const { error: patchErr } = await admin.from(tbl).update(patch).eq("id", entityId);
+        // Deliveries may not have assigned_* columns until migration is applied (Postgres 42703).
+        if (patchErr && String(patchErr.code) !== "42703") {
+          return NextResponse.json({ error: patchErr.message }, { status: 500 });
+        }
       }
     }
   }

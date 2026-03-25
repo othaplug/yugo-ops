@@ -76,9 +76,18 @@ export async function GET(
 
     if (!move) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
+    let crewDisplayName = "Your crew";
+    if (move.crew_id) {
+      const { data: crow } = await admin.from("crews").select("name").eq("id", move.crew_id).maybeSingle();
+      if (crow?.name?.trim()) crewDisplayName = crow.name.trim();
+    }
+
     let crew: { current_lat: number; current_lng: number; name: string } | null = null;
     let liveStage: string | null = move.stage || null;
     let lastLocationAt: string | null = null;
+    let isNavigating = false;
+    let navEtaSeconds: number | null = null;
+    let navDistanceRemainingM: number | null = null;
 
     // Prefer tracking_sessions (crew portal) over crews table
     const { data: ts } = await admin
@@ -96,10 +105,23 @@ export async function GET(
       crew = {
         current_lat: loc.lat,
         current_lng: loc.lng,
-        name: "Crew",
+        name: crewDisplayName,
       };
       liveStage = ts.status || liveStage;
       lastLocationAt = loc.timestamp || null;
+    }
+
+    if (move.crew_id && ts?.is_active) {
+      const { data: cl } = await admin
+        .from("crew_locations")
+        .select("is_navigating, nav_eta_seconds, nav_distance_remaining_m")
+        .eq("crew_id", move.crew_id)
+        .maybeSingle();
+      if (cl) {
+        isNavigating = Boolean(cl.is_navigating);
+        if (cl.nav_eta_seconds != null) navEtaSeconds = Math.round(Number(cl.nav_eta_seconds));
+        if (cl.nav_distance_remaining_m != null) navDistanceRemainingM = Math.round(Number(cl.nav_distance_remaining_m));
+      }
     }
 
     // NOTE: We intentionally do NOT fall back to crew_locations or crews table here.
@@ -228,6 +250,10 @@ export async function GET(
         scheduled_date: move?.scheduled_date ?? null,
         status: move?.status ?? null,
         arrival_window: move?.arrival_window ?? null,
+        is_navigating: isNavigating,
+        nav_eta_seconds: navEtaSeconds,
+        nav_distance_remaining_m: navDistanceRemainingM,
+        crew_name: crewDisplayName,
       },
       {
         headers: {

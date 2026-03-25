@@ -53,7 +53,7 @@ function useAnimatedPosition(target: { lat: number; lng: number } | null, durati
 }
 
 const YUGO_GOLD = "#C9A962";
-const YUGO_PURPLE = "#8B5CF6";
+const ROUTE_GOLD = "#B8962E";
 const CREW_RED = "#DC2626";
 
 /** Bearing in degrees (0 = north, 90 = east) from point A → point B. */
@@ -150,6 +150,12 @@ function FitBoundsController({
   return null;
 }
 
+function formatDistClientM(m: number | null | undefined): string {
+  if (m == null || !Number.isFinite(m) || m < 0) return "";
+  if (m < 1000) return `${Math.round(m)} m`;
+  return `${(m / 1000).toFixed(1)} km`;
+}
+
 export function TrackLiveMapMapbox({
   mapboxAccessToken,
   center,
@@ -163,6 +169,9 @@ export function TrackLiveMapMapbox({
   speed,
   lastLocationAt,
   resizeSignal = 0,
+  isNavigating = false,
+  etaOverlayMinutes = null,
+  distanceRemainingM = null,
 }: {
   mapboxAccessToken: string;
   center: Center;
@@ -176,6 +185,9 @@ export function TrackLiveMapMapbox({
   speed?: number | null;
   lastLocationAt?: string | null;
   resizeSignal?: number;
+  isNavigating?: boolean;
+  etaOverlayMinutes?: number | null;
+  distanceRemainingM?: number | null;
 }) {
   const hasPosition = crew != null;
   const animatedCrew = useAnimatedPosition(
@@ -298,14 +310,14 @@ export function TrackLiveMapMapbox({
       <FitBoundsController crew={crew} pickup={pickup ?? null} dropoff={dropoff ?? null} center={center} />
       <MapResizeOnSignal signal={resizeSignal} />
 
-      {/* Completed route: solid purple */}
+      {/* Completed route: solid gold */}
       {completedGeoJson && (
         <Source id="route-completed" type="geojson" data={completedGeoJson}>
           <Layer
             id="route-completed-layer"
             type="line"
             paint={{
-              "line-color": YUGO_PURPLE,
+              "line-color": ROUTE_GOLD,
               "line-width": 5,
               "line-opacity": 0.9,
             }}
@@ -313,16 +325,16 @@ export function TrackLiveMapMapbox({
         </Source>
       )}
 
-      {/* Remaining route: dashed purple */}
+      {/* Remaining route: dashed gold */}
       {remainingGeoJson && (
         <Source id="route-remaining" type="geojson" data={remainingGeoJson}>
           <Layer
             id="route-remaining-layer"
             type="line"
             paint={{
-              "line-color": YUGO_PURPLE,
+              "line-color": ROUTE_GOLD,
               "line-width": 4,
-              "line-opacity": 0.6,
+              "line-opacity": 0.65,
               "line-dasharray": [2, 2],
             }}
           />
@@ -336,9 +348,9 @@ export function TrackLiveMapMapbox({
             id="route-fallback-layer"
             type="line"
             paint={{
-              "line-color": YUGO_PURPLE,
+              "line-color": ROUTE_GOLD,
               "line-width": 3,
-              "line-opacity": 0.4,
+              "line-opacity": 0.45,
               "line-dasharray": [2, 2],
             }}
           />
@@ -462,6 +474,30 @@ export function TrackLiveMapMapbox({
           >
             <Clock size={10} color={YUGO_GOLD} aria-hidden />
             Last known location · {lastSeenLabel}
+          </div>
+        </div>
+      )}
+
+      {hasPosition && etaOverlayMinutes != null && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "12px",
+            left: "12px",
+            zIndex: 10,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            className="rounded-lg px-3 py-2 shadow-lg text-white max-w-[220px]"
+            style={{ background: "rgba(74, 21, 40, 0.92)" }}
+          >
+            <span className="text-lg font-bold tabular-nums">{etaOverlayMinutes} min</span>
+            <span className="text-[11px] ml-1.5 opacity-85">estimated arrival</span>
+            {distanceRemainingM != null && distanceRemainingM > 0 && (
+              <p className="text-[10px] opacity-80 mt-0.5">{formatDistClientM(distanceRemainingM)} remaining</p>
+            )}
+            {isNavigating && <p className="text-[9px] opacity-70 mt-1">Crew is navigating in the Yugo app</p>}
           </div>
         </div>
       )}

@@ -18,7 +18,8 @@ import PricingControlPanel from "./PricingControlPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
 import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
-import { House, Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText } from "@phosphor-icons/react";
+import { House, Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText, GasPump } from "@phosphor-icons/react";
+import { DEFAULT_FUEL_PRICE_DIESEL, DEFAULT_FUEL_PRICE_GAS } from "@/lib/routing/fuel-config";
 
 const TABS = [
   { id: "pricing",        label: "Pricing",        desc: "Rates & service fees",      Icon: CurrencyDollar },
@@ -543,6 +544,129 @@ function BusinessInfoSection() {
 
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
           {saving ? "Saving..." : "Save Business Info"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function FuelPricingSection() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [gas, setGas] = useState(String(DEFAULT_FUEL_PRICE_GAS));
+  const [diesel, setDiesel] = useState(String(DEFAULT_FUEL_PRICE_DIESEL));
+  const [fuelType, setFuelType] = useState<"gas" | "diesel">("gas");
+
+  useEffect(() => {
+    fetch("/api/admin/overhead-config", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((d: { config?: Record<string, string> }) => {
+        const c = d.config;
+        if (!c || typeof c !== "object") return;
+        if (c.fuel_price_gas_cad_per_litre) setGas(c.fuel_price_gas_cad_per_litre);
+        if (c.fuel_price_diesel_cad_per_litre) setDiesel(c.fuel_price_diesel_cad_per_litre);
+        setFuelType(c.navigation_fuel_type?.toLowerCase().trim() === "diesel" ? "diesel" : "gas");
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/overhead-config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          fuel_price_gas_cad_per_litre: gas,
+          fuel_price_diesel_cad_per_litre: diesel,
+          navigation_fuel_type: fuelType,
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast(typeof body.error === "string" ? body.error : "Failed to save", "x");
+        return;
+      }
+      toast("Fuel settings saved", "check");
+    } catch {
+      toast("Failed to save", "x");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const activePrice = fuelType === "diesel" ? diesel : gas;
+
+  if (loading) {
+    return (
+      <section className="pt-6 border-t border-[var(--brd)]/30">
+        <p className="text-[12px] text-[var(--tx3)] py-4">Loading…</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="pt-6 border-t border-[var(--brd)]/30">
+      <div className="mb-4">
+        <h2 className="admin-section-h2 flex items-center gap-2">
+          <GasPump className="w-[16px] h-[16px]" weight="duotone" aria-hidden /> Fuel pricing (CAD/L)
+        </h2>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">
+          Used for crew navigation fuel estimates, dispatch map route comparisons, and logged fuel cost on moves when navigation completes. Set both gasoline and diesel prices, then choose which fuel the fleet is running for estimates.
+        </p>
+      </div>
+      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Gasoline ($/L)</label>
+            <input
+              type="number"
+              min={0.01}
+              max={50}
+              step={0.01}
+              value={gas}
+              onChange={(e) => setGas(e.target.value)}
+              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Diesel ($/L)</label>
+            <input
+              type="number"
+              min={0.01}
+              max={50}
+              step={0.01}
+              value={diesel}
+              onChange={(e) => setDiesel(e.target.value)}
+              className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Active fuel for estimates</label>
+          <select
+            value={fuelType}
+            onChange={(e) => setFuelType(e.target.value === "diesel" ? "diesel" : "gas")}
+            className="w-full sm:max-w-xs px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+          >
+            <option value="gas">Gasoline</option>
+            <option value="diesel">Diesel</option>
+          </select>
+          <p className="text-[10px] text-[var(--tx3)] mt-1.5">
+            Currently using <span className="text-[var(--tx2)] font-medium">{fuelType === "diesel" ? "diesel" : "gasoline"}</span> at{" "}
+            <span className="text-[var(--gold)] font-semibold">${activePrice}</span>/L for navigation and fuel logging.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={saving}
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save fuel settings"}
         </button>
       </div>
     </section>
@@ -1928,7 +2052,12 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
         <div className="px-4 py-4 space-y-3">
           {[
-            { label: "Crew GPS Tracking", desc: "Enable real-time crew location tracking", state: crewTracking, set: setCrewTracking },
+            {
+              label: "Crew GPS Tracking",
+              desc: "Live map & GPS pings. Crew can still start jobs and advance checkpoints when off.",
+              state: crewTracking,
+              set: setCrewTracking,
+            },
             { label: "Partner Portal Access", desc: "Allow partners to view their deliveries", state: partnerPortal, set: setPartnerPortal },
             { label: "Auto-Invoicing", desc: "Generate invoices automatically on delivery", state: autoInvoicing, set: setAutoInvoicing },
             { label: "Automated Review Requests", desc: "Send Google review request emails 2 hours after moves complete", state: autoReviewRequests, set: setAutoReviewRequests },
@@ -2022,6 +2151,9 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
 
       {/* Quoting Defaults */}
       <QuotingDefaultsSection />
+
+      {/* Fuel prices — gas/diesel $/L for navigation & move fuel logging */}
+      <FuelPricingSection />
 
       {/* Feature Toggles */}
       <FeatureTogglesSection />
@@ -2252,7 +2384,8 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       >
         <div className="p-5 space-y-4">
           <p className="text-[13px] text-[var(--tx2)]">
-            Disabling Crew GPS Tracking will stop real-time crew location updates. Are you sure you want to continue?
+            Disabling Crew GPS Tracking stops live map pings and location ingestion. Crews can still start jobs and record
+            checkpoints. Continue?
           </p>
           <div className="flex gap-2">
             <button

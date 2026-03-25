@@ -70,11 +70,18 @@ export default function CrewDashboardPage() {
       const r = await fetch("/api/crew/dashboard");
       if (r.status === 401) { router.replace("/crew/login"); return; }
       const d = await r.json().catch(() => null);
-      if (!r.ok && d?.error) {
-        if (isInitial) setError(typeof d.error === "string" ? d.error : "Failed to load jobs");
+      if (!r.ok) {
+        if (isInitial) {
+          setError(
+            typeof d?.error === "string" && d.error.trim()
+              ? d.error
+              : `Could not load dashboard (${r.status}). Try again or sign in.`
+          );
+        }
         return;
       }
       if (d && typeof d === "object" && d.crewMember != null) {
+        setError("");
         setData({
           ...d,
           jobs: Array.isArray(d.jobs) ? d.jobs : [],

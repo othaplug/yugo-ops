@@ -12,13 +12,15 @@ export function toTitleCase(s: string | null | undefined): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+import { getDisplayLabel } from "@/lib/displayLabels";
+
 /**
- * Public-facing access label: no underscores, title case.
- * "ground_floor" → "Ground Floor", "" → null.
+ * Public-facing access label: map known DB keys (e.g. loading_dock) to copy; title-case unknowns.
  */
 export function formatAccessForDisplay(access: string | null | undefined): string | null {
   if (!access || !access.trim()) return null;
-  return toTitleCase(access.trim());
+  const label = getDisplayLabel(access.trim(), "access");
+  return label.trim() ? label : null;
 }
 
 /**

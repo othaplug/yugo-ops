@@ -16,7 +16,7 @@ UPDATE public.deliveries d
 SET
   assigned_members = COALESCE(
     NULLIF(d.assigned_members, 'null'::jsonb),
-    COALESCE(c.members, '[]'::jsonb)
+    to_jsonb(COALESCE(c.members, ARRAY[]::text[]))
   ),
   assigned_crew_name = COALESCE(NULLIF(TRIM(d.assigned_crew_name), ''), c.name)
 FROM public.crews c

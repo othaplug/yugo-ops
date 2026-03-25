@@ -183,6 +183,47 @@ const GodEyeMap = dynamic(
       const Nav = mod.NavigationControl;
       const Source = mod.Source;
       const Layer = mod.Layer;
+      const useMap = mod.useMap;
+
+      /** When a team is chosen from the list (or jobs panel), center the map on their latest GPS fix. */
+      function FlyToSelectedCrew({
+        crews,
+        crewLocations,
+        selectedCrew,
+      }: {
+        crews: Crew[];
+        crewLocations: Map<string, CrewLocation>;
+        selectedCrew: string | null;
+      }) {
+        const { current: mapRef } = useMap();
+        const trackingRef = useRef({ crews, crewLocations });
+        trackingRef.current = { crews, crewLocations };
+
+        useEffect(() => {
+          if (!selectedCrew) return;
+          const map = mapRef?.getMap?.();
+          if (!map) return;
+
+          const { crews: cList, crewLocations: locMap } = trackingRef.current;
+          const loc = locMap.get(selectedCrew);
+          const crew = cList.find((x) => x.id === selectedCrew);
+          const lng = loc != null ? Number(loc.lng) : crew?.current_lng != null ? Number(crew.current_lng) : NaN;
+          const lat = loc != null ? Number(loc.lat) : crew?.current_lat != null ? Number(crew.current_lat) : NaN;
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+          try {
+            map.flyTo({
+              center: [lng, lat],
+              zoom: Math.max(map.getZoom(), 15),
+              duration: 1000,
+            });
+          } catch {
+            /* map may be tearing down */
+          }
+        }, [selectedCrew, mapRef]);
+
+        return null;
+      }
 
       return function GodEyeMapInner({
         crews,
@@ -212,6 +253,7 @@ const GodEyeMap = dynamic(
             style={{ width: "100%", height: "100%" }}
             mapStyle="mapbox://styles/mapbox/dark-v11"
           >
+            <FlyToSelectedCrew crews={crews} crewLocations={crewLocations} selectedCrew={selectedCrew} />
             {/* Route lines for active jobs */}
             {Array.from(routeLines.entries()).map(([crewId, coords]) => {
               if (coords.length < 2) return null;

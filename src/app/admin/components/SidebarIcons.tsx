@@ -39,6 +39,7 @@ import {
   Envelope,
   Package,
   Notepad,
+  NavigationArrow,
 } from "@phosphor-icons/react";
 
 const SIZE = 16;
@@ -50,6 +51,8 @@ export const Icons = {
   target:         ic(Target),
   /** All Moves — route / journey */
   path:           ic(Path),
+  /** Turn-by-turn / crew navigation */
+  navigationArrow: ic(NavigationArrow),
   /** Jobs (deliveries list) */
   briefcase:      ic(Briefcase),
   dispatch:       ic(Broadcast),

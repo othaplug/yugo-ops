@@ -5,8 +5,22 @@ import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { getPlatformToggles } from "@/lib/platform-settings";
 
 const RATE_LIMIT_MS = 2000;
+const RATE_LIMIT_MS_NAVIGATION = 1000;
 const rateLimit = new Map<string, number>();
 const GEOFENCE_RADIUS_M = 100;
+
+/** Navigation: long stop during en-route without GPS speed implying movement */
+const NAV_STOP_MS = 5 * 60 * 1000;
+const NAV_STATIONARY_RADIUS_M = 25;
+const navStationaryState = new Map<string, { anchorLat: number; anchorLng: number; sinceMs: number }>();
+
+const EN_ROUTE_FOR_NAV_STOP = new Set([
+  "en_route_to_pickup",
+  "en_route_to_destination",
+  "en_route",
+  "on_route",
+  "in_transit",
+]);
 
 function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -66,7 +80,20 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { sessionId, lat, lng, accuracy, speed, heading, timestamp, source } = body;
+  const {
+    sessionId,
+    lat,
+    lng,
+    accuracy,
+    speed,
+    heading,
+    timestamp,
+    source,
+    eta_seconds,
+    distance_remaining_meters,
+    is_navigating,
+    approx_address,
+  } = body;
   if (lat == null || lng == null) {
     return NextResponse.json({ error: "lat, lng required" }, { status: 400 });
   }
@@ -75,14 +102,26 @@ export async function POST(req: NextRequest) {
   const lngNum = Number(lng);
   const ts = timestamp || new Date().toISOString();
   const lastLocation = { lat: latNum, lng: lngNum, accuracy: Number(accuracy) || 0, timestamp: ts };
+  const sourceStr = typeof source === "string" ? source : "";
+  const isNavigationSource = sourceStr === "navigation";
+  const etaSeconds =
+    eta_seconds != null && !Number.isNaN(Number(eta_seconds)) ? Math.round(Number(eta_seconds)) : null;
+  const distRemainM =
+    distance_remaining_meters != null && !Number.isNaN(Number(distance_remaining_meters))
+      ? Math.round(Number(distance_remaining_meters))
+      : null;
+  const navActive = Boolean(is_navigating) || isNavigationSource;
+  const approxAddr =
+    typeof approx_address === "string" && approx_address.trim() ? approx_address.trim().slice(0, 200) : null;
 
   const admin = createAdminClient();
 
-  // ── Rate limiting ──
+  // ── Rate limiting (navigation posts may be slightly more frequent) ──
   const rateLimitKey = sessionId || `team:${payload.teamId}`;
+  const limitMs = isNavigationSource ? RATE_LIMIT_MS_NAVIGATION : RATE_LIMIT_MS;
   const now = Date.now();
   const last = rateLimit.get(rateLimitKey) ?? 0;
-  if (now - last < RATE_LIMIT_MS) {
+  if (now - last < limitMs) {
     await admin
       .from("crews")
       .update({ current_lat: latNum, current_lng: lngNum, updated_at: ts })
@@ -121,6 +160,9 @@ export async function POST(req: NextRequest) {
           current_from_address: null,
           current_to_address: null,
           updated_at: ts,
+          nav_eta_seconds: null,
+          nav_distance_remaining_m: null,
+          is_navigating: false,
         },
         { onConflict: "crew_id" },
       ),
@@ -298,6 +340,51 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── Navigation: long stationary stop during en-route (5+ min, ~25m radius, slow/null speed) ──
+  if (
+    !autoAdvanced &&
+    isNavigationSource &&
+    session.is_active &&
+    EN_ROUTE_FOR_NAV_STOP.has(sessionStatus)
+  ) {
+    const sp = speed != null ? Number(speed) : NaN;
+    const slow = Number.isNaN(sp) || sp < 1;
+    const fast = !slow;
+    let st = navStationaryState.get(sessionId);
+
+    if (fast) {
+      navStationaryState.delete(sessionId);
+    } else {
+      const movedFar =
+        st != null && haversineM(latNum, lngNum, st.anchorLat, st.anchorLng) > NAV_STATIONARY_RADIUS_M;
+      if (movedFar || !st) {
+        navStationaryState.set(sessionId, { anchorLat: latNum, anchorLng: lngNum, sinceMs: now });
+      } else if (slow && now - st.sinceMs >= NAV_STOP_MS) {
+        const mins = Math.round((now - st.sinceMs) / 60000);
+        const place = approxAddr ? ` at ${approxAddr}` : "";
+        const checkpoints = Array.isArray(session.checkpoints) ? [...session.checkpoints] : [];
+        const lastNote = (checkpoints[checkpoints.length - 1] as { note?: string } | undefined)?.note;
+        const dup = lastNote?.includes("Stopped during navigation");
+        if (!dup) {
+          checkpoints.push({
+            status: sessionStatus,
+            timestamp: new Date().toISOString(),
+            lat: latNum,
+            lng: lngNum,
+            note: `Stopped during navigation for ${mins} min${place}`,
+          });
+          await admin
+            .from("tracking_sessions")
+            .update({ checkpoints, updated_at: new Date().toISOString() })
+            .eq("id", sessionId);
+        }
+        navStationaryState.set(sessionId, { anchorLat: latNum, anchorLng: lngNum, sinceMs: now });
+      }
+    }
+  } else if (!isNavigationSource) {
+    navStationaryState.delete(sessionId);
+  }
+
   // ── Single crew_locations upsert (no race condition) ──
   const crewLocStatus = mapSessionStatus(sessionStatus, session.is_active);
 
@@ -316,6 +403,9 @@ export async function POST(req: NextRequest) {
       current_from_address: moveFrom,
       current_to_address: moveTo,
       updated_at: ts,
+      nav_eta_seconds: navActive ? etaSeconds : null,
+      nav_distance_remaining_m: navActive ? distRemainM : null,
+      is_navigating: navActive,
     },
     { onConflict: "crew_id" },
   );
@@ -357,7 +447,10 @@ export async function POST(req: NextRequest) {
     speed: speed != null ? Number(speed) : null,
     heading: heading != null ? Number(heading) : null,
     timestamp: ts,
-    source: typeof source === "string" ? source : null,
+    source: sourceStr || null,
+    eta_seconds: etaSeconds,
+    distance_remaining_meters: distRemainM,
+    is_navigating: navActive,
   });
 
   if (!autoAdvanced) {

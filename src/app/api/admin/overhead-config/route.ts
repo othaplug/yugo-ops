@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { invalidateConfigCache } from "@/lib/config";
 
 /**
  * Overhead config — GET reads all overhead + cost model keys from platform_config.
@@ -21,6 +22,9 @@ const STANDARD_OVERHEAD_KEYS = [
 const COST_MODEL_KEYS = [
   "crew_hourly_cost",
   "fuel_cost_per_km",
+  "fuel_price_gas_cad_per_litre",
+  "fuel_price_diesel_cad_per_litre",
+  "navigation_fuel_type",
   // Truck daily rates (auto-derived from monthly if monthly is set)
   "truck_daily_cost_sprinter",
   "truck_daily_cost_16ft",
@@ -65,10 +69,23 @@ export async function PATCH(req: NextRequest) {
   const entries = Object.entries(body).filter(([k]) => allowed.has(k));
   if (entries.length === 0) return NextResponse.json({ error: "No valid keys" }, { status: 400 });
 
-  for (const [key, value] of entries) {
-    const { error } = await sb.from("platform_config").upsert({ key, value: String(value) }, { onConflict: "key" });
+  for (const [key, raw] of entries) {
+    let value = String(raw);
+    if (key === "navigation_fuel_type") {
+      value = value.toLowerCase().trim() === "diesel" ? "diesel" : "gas";
+    }
+    if (key === "fuel_price_gas_cad_per_litre" || key === "fuel_price_diesel_cad_per_litre") {
+      const n = parseFloat(value);
+      if (!Number.isFinite(n) || n <= 0 || n > 50) {
+        return NextResponse.json({ error: `Invalid ${key} (use a positive CAD/L amount)` }, { status: 400 });
+      }
+      value = String(n);
+    }
+    const { error } = await sb.from("platform_config").upsert({ key, value }, { onConflict: "key" });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  invalidateConfigCache();
 
   return NextResponse.json({ ok: true, updated: entries.length });
 }

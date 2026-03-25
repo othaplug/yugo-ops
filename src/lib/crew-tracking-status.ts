@@ -69,6 +69,22 @@ export function getNextStatus(
   return flow[idx + 1];
 }
 
+/** Human labels for the next N checkpoints after `current` (for crew UI). */
+export function getUpcomingStatusLabels(
+  current: string,
+  jobType: "move" | "delivery",
+  count: number
+): string[] {
+  const flow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
+  const idx = flow.indexOf(current as TrackingStatus);
+  if (idx < 0 || count <= 0) return [];
+  const out: string[] = [];
+  for (let j = idx + 1; j < flow.length && out.length < count; j++) {
+    out.push(getStatusLabel(flow[j]));
+  }
+  return out;
+}
+
 export function getFirstStatus(jobType: "move" | "delivery"): TrackingStatus {
   const flow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
   return flow[0];

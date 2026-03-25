@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { registerCrewServiceWorker } from "@/lib/crew/register-sw";
+import {
+  markCrewLocationAllowed,
+  readCrewGeoOptIn,
+  revokeCrewLocationMemory,
+} from "@/lib/crew/useCrewPersistentTracking";
 
 const IDLE_INTERVAL_MS = 30_000;
 
@@ -20,6 +25,10 @@ export default function CrewAlwaysOnLocation() {
   const watchIdRef = useRef<number | null>(null);
   const lastSentRef = useRef(0);
   const [status, setStatus] = useState<"live" | "off" | "unavailable" | "denied">("off");
+
+  useLayoutEffect(() => {
+    if (readCrewGeoOptIn()) setStatus("live");
+  }, []);
 
   const isOnJobPage = pathname?.startsWith("/crew/dashboard/job/") ?? false;
   const isPublicPage = pathname === "/crew/login" || pathname === "/crew/setup" || !pathname;
@@ -61,12 +70,15 @@ export default function CrewAlwaysOnLocation() {
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        markCrewLocationAllowed();
         setStatus("live");
         sendPosition(pos.coords);
       },
       (err) => {
-        if (err.code === err.PERMISSION_DENIED) setStatus("denied");
-        else setStatus("off");
+        if (err.code === err.PERMISSION_DENIED) {
+          revokeCrewLocationMemory();
+          setStatus("denied");
+        } else setStatus("off");
       },
       { enableHighAccuracy: false, maximumAge: 30_000, timeout: 15_000 },
     );

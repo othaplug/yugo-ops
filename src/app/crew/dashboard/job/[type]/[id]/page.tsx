@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useState, useEffect, useCallback, useRef } from "react";
+import { use, useState, useEffect, useCallback, useRef, useMemo, Suspense, type Dispatch, type SetStateAction } from "react";
+import dynamic from "next/dynamic";
 import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check, Clipboard } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { formatTime, formatDate } from "@/lib/client-timezone";
 import {
   MOVE_STATUS_FLOW,
@@ -22,10 +23,57 @@ import WalkthroughModal from "./WalkthroughModal";
 import {
   useCrewPersistentTracking,
   checkLocationPermissions,
+  markCrewLocationAllowed,
   type GeoPermissionState,
 } from "@/lib/crew/useCrewPersistentTracking";
+import type { CrewNavDestination } from "@/components/crew/CrewNavigation";
+
+const CrewNavigation = dynamic(
+  () => import("@/components/crew/CrewNavigation").then((m) => m.CrewNavigation),
+  { ssr: false }
+);
 
 const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
+
+function isValidNavCoord(lat: unknown, lng: unknown): lat is number {
+  return typeof lat === "number" && typeof lng === "number" && Number.isFinite(lat) && Number.isFinite(lng);
+}
+
+/** Opens nav when crew lands from sidebar/mobile with ?nav=1 (must be under Suspense). */
+function OpenNavFromQuery({ setNavOpen }: { setNavOpen: Dispatch<SetStateAction<boolean>> }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  useEffect(() => {
+    if (searchParams.get("nav") !== "1") return;
+    setNavOpen(true);
+    router.replace(pathname, { scroll: false });
+  }, [searchParams, pathname, router, setNavOpen]);
+  return null;
+}
+
+function CrewLocationStatusPill({ locationPermission }: { locationPermission: GeoPermissionState }) {
+  return (
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--brd)]/50 bg-[var(--card)]/35 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--tx3)]/75">
+      <span className="shrink-0">Location</span>
+      <span className="h-2.5 w-px shrink-0 bg-[var(--brd)]/55" aria-hidden />
+      <span
+        className={`min-w-0 font-semibold normal-case tracking-normal ${
+          locationPermission === "granted"
+            ? "text-emerald-400/95"
+            : locationPermission === "denied"
+              ? "text-amber-200/90"
+              : "text-[var(--tx)]"
+        }`}
+      >
+        {locationPermission === "granted" && "Enabled"}
+        {(locationPermission === "prompt" || locationPermission === "unknown") && "Pending"}
+        {locationPermission === "denied" && "Off"}
+        {locationPermission === "unsupported" && "Not on this device"}
+      </span>
+    </span>
+  );
+}
 
 type TabId = "status" | "details" | "items" | "photos";
 
@@ -82,6 +130,12 @@ interface JobDetail {
   scheduledTime: string | null;
   crewId: string;
   projectContext?: ProjectContext | null;
+  fromLat?: number | null;
+  fromLng?: number | null;
+  toLat?: number | null;
+  toLng?: number | null;
+  truckType?: string | null;
+  fuelPriceCadPerLitre?: number | null;
 }
 
 interface Session {
@@ -114,6 +168,8 @@ export default function CrewJobPage({
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  /** Start job / checkpoint failures while the job UI is visible (do not use full-page error gate). */
+  const [actionError, setActionError] = useState("");
   const [advancing, setAdvancing] = useState(false);
   const [note, setNote] = useState("");
   const [locationPermission, setLocationPermission] = useState<GeoPermissionState>("unknown");
@@ -146,6 +202,7 @@ export default function CrewJobPage({
     noChanges: boolean;
   } | null>(null);
   const [changeRequestSubmitted, setChangeRequestSubmitted] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
 
   const statusFlow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
   const currentStatus = session?.status || "not_started";
@@ -153,6 +210,20 @@ export default function CrewJobPage({
   const isCompleted = currentStatus === "completed";
   const progressIdx = statusFlow.indexOf(currentStatus as any);
   const progressPercent = isCompleted ? 100 : progressIdx >= 0 ? ((progressIdx + 1) / statusFlow.length) * 100 : 0;
+
+  const isNavigatingLeg =
+    currentStatus === "en_route_to_pickup" || currentStatus === "en_route_to_destination";
+
+  const navDestination: CrewNavDestination | null = useMemo(() => {
+    if (!job || !session?.isActive || isCompleted) return null;
+    if (currentStatus === "en_route_to_pickup" && isValidNavCoord(job.fromLat, job.fromLng)) {
+      return { lat: job.fromLat!, lng: job.fromLng!, address: job.fromAddress };
+    }
+    if (currentStatus === "en_route_to_destination" && isValidNavCoord(job.toLat, job.toLng)) {
+      return { lat: job.toLat!, lng: job.toLng!, address: job.toAddress };
+    }
+    return null;
+  }, [job, session?.isActive, isCompleted, currentStatus]);
 
   const totalItems = itemsTotal > 0 ? itemsTotal : (job
     ? (job.inventory?.flatMap((r) => r.itemsWithId || r.items.map((n) => ({ id: `noid`, item_name: n }))).length ?? 0) + (job.extraItems?.length ?? 0)
@@ -232,23 +303,40 @@ export default function CrewJobPage({
     locationPermission === "denied" || locationPermission === "unsupported";
 
   const startJob = async () => {
+    setActionError("");
     const perm = await checkLocationPermissions();
     if (perm.status === "denied" || perm.status === "unsupported") {
-      setError(perm.message || "Location is required to start this job.");
+      setActionError(perm.message || "Location is required to start this job.");
       return;
+    }
+    if (perm.status !== "granted" && "geolocation" in navigator) {
+      const ok = await new Promise<boolean>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          () => resolve(true),
+          () => resolve(false),
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+        );
+      });
+      if (!ok) {
+        setActionError("Allow location when your browser asks—live tracking is required to start this job.");
+        return;
+      }
+      markCrewLocationAllowed();
+      setLocationPermission("granted");
     }
     setAdvancing(true);
     try {
       const r = await fetch("/api/tracking/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId: id, jobType }),
+        body: JSON.stringify({ jobId: job?.id ?? id, jobType: job?.jobType ?? jobType }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Failed to start");
       await fetchSession();
+      setActionError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed");
+      setActionError(e instanceof Error ? e.message : "Failed");
     } finally {
       setAdvancing(false);
     }
@@ -261,7 +349,7 @@ export default function CrewJobPage({
       return;
     }
     if (blockedByLocation) {
-      setError("Turn on location access to update status.");
+      setActionError("Turn on location access to update status.");
       return;
     }
     if ("geolocation" in navigator) {
@@ -292,6 +380,7 @@ export default function CrewJobPage({
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Failed");
+      setActionError("");
       setNote("");
       await fetchSession();
       if (status === "arrived_at_pickup") {
@@ -300,11 +389,40 @@ export default function CrewJobPage({
         setWalkthroughSkipped(false);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed");
+      setActionError(e instanceof Error ? e.message : "Failed");
     } finally {
       setAdvancing(false);
     }
   };
+
+  const handleNavigationArrived = () => {
+    setNavOpen(false);
+    if (currentStatus === "en_route_to_pickup") {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (p) => void doAdvance("arrived_at_pickup", p.coords.latitude, p.coords.longitude),
+          () => void doAdvance("arrived_at_pickup"),
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+      } else {
+        void doAdvance("arrived_at_pickup");
+      }
+    } else if (currentStatus === "en_route_to_destination") {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (p) => void doAdvance("arrived_at_destination", p.coords.latitude, p.coords.longitude),
+          () => void doAdvance("arrived_at_destination"),
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+      } else {
+        void doAdvance("arrived_at_destination");
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isNavigatingLeg) setNavOpen(false);
+  }, [isNavigatingLeg]);
 
   useEffect(() => {
     let lock: WakeLockSentinel | null = null;
@@ -332,7 +450,7 @@ export default function CrewJobPage({
     );
   }
 
-  if (error || !job) {
+  if (!job) {
     return (
       <PageContent>
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
@@ -377,6 +495,7 @@ export default function CrewJobPage({
   }
 
   const jobCompleted = ["completed", "delivered", "done"].includes((job.status || "").toLowerCase());
+  /** No active session yet — show primary start control on Status tab. */
   const showStartButton = !session && !jobCompleted;
   const atArrivedRequiringPhotos = ["arrived_at_destination", "arrived"].includes(currentStatus);
   const blockedByPhotos = atArrivedRequiringPhotos && !canAdvanceFromArrived;
@@ -394,9 +513,14 @@ export default function CrewJobPage({
   ];
 
   const hasInventory = (job.inventory?.length ?? 0) > 0 || (job.extraItems?.length ?? 0) > 0 || (jobType === "move" && job.moveType === "residential" && (job.inventory?.length ?? 0) === 0);
+  const fromAccessDisplay = formatAccessForDisplay(job.fromAccess);
+  const toAccessDisplay = formatAccessForDisplay(job.toAccess);
 
   return (
     <PageContent className="max-w-[520px]">
+      <Suspense fallback={null}>
+        <OpenNavFromQuery setNavOpen={setNavOpen} />
+      </Suspense>
 
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between gap-2 mb-5">
@@ -407,7 +531,7 @@ export default function CrewJobPage({
           <CaretLeft size={15} weight="regular" />
           Jobs
         </Link>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
           {(session?.isActive || isCompleted) && (
             <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
               <Clock size={11} color="var(--tx3)" />
@@ -437,8 +561,37 @@ export default function CrewJobPage({
               GPS
             </span>
           )}
+          {showStartButton && (
+            <>
+              <CrewLocationStatusPill locationPermission={locationPermission} />
+              {(locationPermission === "denied" || locationPermission === "unsupported") && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    recheckPermission().then((r) => {
+                      setLocationPermission(r.status);
+                    })
+                  }
+                  className="shrink-0 text-[11px] font-semibold text-[var(--gold)] underline-offset-2 hover:underline"
+                >
+                  Check again
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
+
+      {showStartButton && (locationPermission === "prompt" || locationPermission === "unknown") && (
+        <p className="text-[11px] text-[var(--tx3)] mb-3 leading-relaxed">
+          Live tracking is required for this job for safety and verification. Allow when prompted so dispatch and the client can follow your progress.
+        </p>
+      )}
+      {showStartButton && locationPermission === "denied" && (
+        <p className="text-[11px] text-[var(--tx3)] mb-3 leading-relaxed">
+          Live tracking needs location access. Turn it on in your browser or device settings, then tap Check again.
+        </p>
+      )}
 
       {/* ── Job header ── */}
       <div className="mb-5">
@@ -473,20 +626,20 @@ export default function CrewJobPage({
               <div className="min-w-0">
                 <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup</p>
                 <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.fromAddress}</p>
-                {job.fromAccess && (
+                {fromAccessDisplay && (
                   <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
                     <Lock size={9} />
-                    {job.fromAccess}
+                    {fromAccessDisplay}
                   </p>
                 )}
               </div>
               <div className="min-w-0">
                 <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Drop-off</p>
                 <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.toAddress}</p>
-                {job.toAccess && (
+                {toAccessDisplay && (
                   <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
                     <Lock size={9} />
-                    {job.toAccess}
+                    {toAccessDisplay}
                   </p>
                 )}
               </div>
@@ -518,49 +671,57 @@ export default function CrewJobPage({
       {/* ══════════════ STATUS TAB ══════════════ */}
       {activeTab === "status" && (
         <div className="space-y-3">
-
-          {/* Location + charging note */}
-          <div className="px-2 space-y-2">
-            <div className="flex items-start justify-between gap-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] px-3 py-2.5">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]/70 mb-0.5">Location</p>
-                <p className="text-[12px] font-semibold text-[var(--tx)]">
-                  {locationPermission === "granted" && "Enabled"}
-                  {(locationPermission === "prompt" || locationPermission === "unknown") && "Tap Allow when prompted"}
-                  {locationPermission === "denied" && "Disabled — required for live tracking"}
-                  {locationPermission === "unsupported" && "Not available on this device"}
-                </p>
-                {locationPermission === "prompt" && (
-                  <p className="text-[11px] text-[var(--tx3)] mt-1">
-                    We use your location so dispatch and the client can see live progress.
-                  </p>
-                )}
-              </div>
-              {(locationPermission === "denied" || locationPermission === "unsupported") && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    recheckPermission().then((r) => {
-                      setLocationPermission(r.status);
-                    })
-                  }
-                  className="shrink-0 text-[11px] font-semibold text-[var(--gold)] underline-offset-2 hover:underline"
-                >
-                  Check again
-                </button>
-              )}
+          {actionError && (
+            <div className="mx-2 rounded-xl border border-red-500/35 bg-red-500/5 px-3 py-2.5">
+              <p className="text-[11px] text-red-200 leading-relaxed">{actionError}</p>
             </div>
+          )}
+
+          {/* Location + charging note (status pill lives in top bar until job starts) */}
+          <div className="px-2 space-y-2">
+            {locationPermission === "granted" && showStartButton && (
+              <p className="text-[10px] text-[var(--tx3)] leading-relaxed">
+                Keep location on for the whole job—live tracking stays active until you finish.
+              </p>
+            )}
+
+            {session?.isActive && !isCompleted && isNavigatingLeg && canUseLocationActions && !navDestination && (
+              <p className="text-[11px] text-[var(--tx3)] text-center leading-relaxed px-1">
+                Map routing needs coordinates for this job. Open the Details tab for full addresses, or ask dispatch to verify pickup and drop-off pins. Use{" "}
+                <span className="text-[var(--tx2)] font-medium">Navigation</span> in the crew menu when pins are available.
+              </p>
+            )}
+
             <p className="text-[10px] text-[var(--tx3)]/80 text-center leading-snug">
               Keep your device charged during moves for uninterrupted tracking.
             </p>
           </div>
 
+          {showStartButton && (
+            <div className="px-2 space-y-2">
+              <button
+                type="button"
+                onClick={() => void startJob()}
+                disabled={advancing || blockedByLocation}
+                className="w-full py-3 rounded-xl font-bold text-[14px] text-white disabled:opacity-50 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
+                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+              >
+                {advancing ? "Starting…" : "Start job"}
+              </button>
+              {blockedByLocation && (
+                <p className="text-[10px] text-[var(--tx3)] text-center leading-snug px-1">
+                  Location is off or unavailable. Enable it for this site in your settings, then tap Start job again.
+                </p>
+              )}
+            </div>
+          )}
+
           {blockedByLocation && (
             <div className="rounded-2xl border border-red-500/35 bg-red-500/5 p-4 space-y-2">
               <p className="text-[12px] font-bold text-red-300">Location required</p>
               <p className="text-[11px] text-[var(--tx2)] leading-relaxed">
-                Live tracking must be enabled before you can update this job. Open Settings → Privacy → Location Services →
-                your browser → Allow while using.
+                Live tracking is required for this job and must stay on until the job is finished. Open Settings → Privacy
+                → Location Services → your browser → Allow while using.
               </p>
             </div>
           )}
@@ -864,12 +1025,12 @@ export default function CrewJobPage({
           <div className="p-4">
             <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">Pickup</p>
             <p className="text-[13px] font-semibold text-[var(--tx)]">{job.fromAddress}</p>
-            {formatAccessForDisplay(job.fromAccess) && <p className="text-[11px] text-[var(--tx3)] mt-1">Access: {formatAccessForDisplay(job.fromAccess)}</p>}
+            {fromAccessDisplay && <p className="text-[11px] text-[var(--tx3)] mt-1">Access: {fromAccessDisplay}</p>}
           </div>
           <div className="p-4">
             <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">Drop-off</p>
             <p className="text-[13px] font-semibold text-[var(--tx)]">{job.toAddress}</p>
-            {formatAccessForDisplay(job.toAccess) && <p className="text-[11px] text-[var(--tx3)] mt-1">Access: {formatAccessForDisplay(job.toAccess)}</p>}
+            {toAccessDisplay && <p className="text-[11px] text-[var(--tx3)] mt-1">Access: {toAccessDisplay}</p>}
           </div>
           {job.accessNotes && (
             <div className="p-4">
@@ -1115,6 +1276,20 @@ export default function CrewJobPage({
             )}
           </div>
         </div>
+      )}
+
+      {navOpen && session && navDestination && (
+        <CrewNavigation
+          destination={navDestination}
+          sessionId={session.id}
+          jobId={jobType === "move" ? job.id : null}
+          jobType={jobType}
+          truckType={job.truckType ?? null}
+          fuelPriceCadPerLitre={job.fuelPriceCadPerLitre ?? null}
+          onExit={() => setNavOpen(false)}
+          onArrived={handleNavigationArrived}
+          onAutoAdvanced={fetchSession}
+        />
       )}
     </PageContent>
   );

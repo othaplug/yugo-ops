@@ -12,6 +12,7 @@ import {
   Camera,
   Warning,
 } from "@phosphor-icons/react";
+import { formatAccessForDisplay } from "@/lib/format-text";
 
 const STATUS_LABELS: Record<string, string> = {
   confirmed: "Confirmed",
@@ -43,10 +44,6 @@ interface BinTask {
   pickup_completed_at: string | null;
   taskType: "dropoff" | "pickup";
 }
-
-const ACCESS_LABELS: Record<string, string> = {
-  elevator: "Elevator", ground: "Ground Floor", walkup: "Walk-up", concierge: "Concierge",
-};
 
 const BUNDLE_SHORT: Record<string, string> = {
   studio: "Studio", "1br": "1BR", "2br": "2BR",
@@ -154,6 +151,7 @@ export default function CrewBinOrdersPage() {
     new Date(d + "T12:00:00").toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" });
 
   const today = new Date().toISOString().split("T")[0];
+  const activeTaskAccessLabel = activeTask ? formatAccessForDisplay(activeTask.delivery_access) : null;
 
   return (
     <div className="min-h-screen bg-[#0F1117] text-white">
@@ -246,7 +244,9 @@ export default function CrewBinOrdersPage() {
                 <DetailRow icon={<Package size={13} />} label={`${BUNDLE_SHORT[activeTask.bundle_type]} bundle, ${activeTask.bin_count} bins`} />
                 <DetailRow icon={<MapPin size={13} />} label={activeTask.delivery_address} />
                 <DetailRow icon={<Phone size={13} />} label={activeTask.client_name} sub={activeTask.client_phone} isPhone />
-                <DetailRow icon={<Truck size={13} />} label={`Access: ${ACCESS_LABELS[activeTask.delivery_access] || activeTask.delivery_access}`} />
+                {activeTaskAccessLabel && (
+                  <DetailRow icon={<Truck size={13} />} label={`Access: ${activeTaskAccessLabel}`} />
+                )}
                 {activeTask.delivery_notes && (
                   <DetailRow icon={<Warning size={13} />} label={activeTask.delivery_notes} />
                 )}

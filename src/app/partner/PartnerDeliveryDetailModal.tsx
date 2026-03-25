@@ -109,6 +109,9 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
     pickup: { lat: number; lng: number } | null;
     dropoff: { lat: number; lng: number } | null;
     liveStage: string | null;
+    navEtaSeconds?: number | null;
+    navDistanceRemainingM?: number | null;
+    isNavigating?: boolean;
   } | null>(null);
   const isInProgress = ["dispatched", "in-transit", "in_transit"].includes((d.status || "").toLowerCase().replace(/-/g, "_"));
   const isCompleted = ["delivered", "completed"].includes((d.status || "").toLowerCase());
@@ -200,6 +203,9 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               pickup: data.pickup ?? null,
               dropoff: data.dropoff ?? null,
               liveStage: data.liveStage ?? null,
+              navEtaSeconds: data.nav_eta_seconds ?? null,
+              navDistanceRemainingM: data.nav_distance_remaining_m ?? null,
+              isNavigating: Boolean(data.is_navigating),
             });
           }
         }
@@ -483,7 +489,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   </div>
 
                   {mapData ? (
-                    <div className="overflow-hidden h-[280px] bg-[#1A1A1A] rounded-lg">
+                    <div className="relative overflow-hidden h-[280px] bg-[#1A1A1A] rounded-lg">
                       <DeliveryTrackMap
                         center={mapData.center}
                         crew={isCompleted ? null : mapData.crew}
@@ -492,6 +498,22 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                         liveStage={isCompleted ? "completed" : mapData.liveStage}
                         lastKnownPos={isCompleted && mapData.crew ? { lat: mapData.crew.current_lat, lng: mapData.crew.current_lng } : null}
                       />
+                      {!isCompleted &&
+                        mapData.navEtaSeconds != null &&
+                        mapData.navEtaSeconds > 0 && (
+                          <div className="absolute bottom-2 left-2 z-[500] pointer-events-none rounded-lg px-2.5 py-1.5 text-white text-[11px] font-semibold shadow-lg bg-[rgba(74,21,40,0.92)]">
+                            ~{Math.max(1, Math.round(mapData.navEtaSeconds / 60))} min ETA
+                            {mapData.navDistanceRemainingM != null && mapData.navDistanceRemainingM > 0 && (
+                              <span className="font-normal opacity-85">
+                                {" "}
+                                ·{" "}
+                                {mapData.navDistanceRemainingM >= 1000
+                                  ? `${(mapData.navDistanceRemainingM / 1000).toFixed(1)} km`
+                                  : `${Math.round(mapData.navDistanceRemainingM)} m`}
+                              </span>
+                            )}
+                          </div>
+                        )}
                     </div>
                   ) : crewPosition ? (
                     <div className="overflow-hidden h-[240px] bg-[var(--bg)] rounded-lg">
