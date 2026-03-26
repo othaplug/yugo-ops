@@ -8,7 +8,7 @@ import { getDisplayLabel } from "@/lib/displayLabels";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
 import {
-  Truck as Boxes,
+  Sparkle,
   Plus,
   X,
   CaretDown as ChevronDown,
@@ -1573,7 +1573,7 @@ export default function PartnerB2BProjectsTab({
           {nonYugoItems.length > 0 && onScheduleDelivery && (
             <div className="mb-4 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-4">
               <div className="flex items-start gap-3">
-                <Boxes className="w-5 h-5 text-[var(--gold)] shrink-0 mt-0.5" />
+                <Sparkle className="w-5 h-5 text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
                 <div className="flex-1">
                   <div className="text-[12px] font-semibold text-[var(--tx)]">
                     {nonYugoItems.length} item{nonYugoItems.length > 1 ? "s" : ""} tracked manually

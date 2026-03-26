@@ -5,7 +5,7 @@
 export type QuoteServicePhosphorIcon =
   | "House"
   | "Buildings"
-  | "Package"
+  | "OfficeChair"
   | "Star"
   | "Palette"
   | "CalendarBlank"
@@ -45,7 +45,7 @@ export const QUOTE_SERVICE_TYPE_DEFINITIONS: readonly QuoteServiceTypeDefinition
     value: "single_item",
     label: "Single Item",
     description: "One item or small batch delivery",
-    iconName: "Package",
+    iconName: "OfficeChair",
     hasTiers: false,
     hasInventory: false,
   },

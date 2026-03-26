@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   MagnifyingGlass,
-  Package,
   Truck,
   CurrencyDollar,
   ChatText,
@@ -129,7 +128,7 @@ function EventGlyph({ icon, entityType }: { icon: string | null; entityType: str
       return <ClockClockwise size={size} className={cls} weight="duotone" aria-hidden />;
     default: {
       const et = normalizeEntityType(entityType);
-      if (et === "move") return <Package size={size} className={cls} weight="duotone" aria-hidden />;
+      if (et === "move") return <Truck size={size} className={cls} weight="duotone" aria-hidden />;
       if (et === "delivery") return <Truck size={size} className={cls} weight="duotone" aria-hidden />;
       if (et === "invoice") return <CurrencyDollar size={size} className={cls} weight="duotone" aria-hidden />;
       if (et === "quote") return <ChatText size={size} className={cls} weight="duotone" aria-hidden />;

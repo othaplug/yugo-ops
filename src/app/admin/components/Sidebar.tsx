@@ -24,7 +24,7 @@ const NAV = [
     { name: "Referral Partners", icon: "handshake", href: "/admin/partners/realtors" },
   ]},
   { label: "Moves", items: [
-    { name: "All Moves", icon: "package", href: "/admin/moves" },
+    { name: "All Moves", icon: "truck", href: "/admin/moves" },
     { name: "Quotes", icon: "fileText", href: "/admin/quotes", badge: "pending_quotes" },
   ]},
   { label: "Finance", items: [

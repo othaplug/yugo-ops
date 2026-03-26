@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Package,
+  Recycle,
+  ArrowsClockwise,
   Truck,
   CheckCircle,
   Warning,
@@ -236,7 +237,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
         </Section>
 
         {/* Bundle */}
-        <Section title="Bundle" icon={<Package size={14} />}>
+        <Section title="Bundle" icon={<Recycle size={14} />}>
           <InfoRow label="Type" value={`${BUNDLE_LABELS[order.bundle_type] || order.bundle_type} (${order.bin_count} bins)`} />
           <InfoRow label="Includes paper" value={order.includes_paper ? "Yes" : "No"} />
           <InfoRow label="Includes zip ties" value={order.includes_zip_ties ? "Yes" : "No"} />
@@ -288,7 +289,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
         </Section>
 
         {/* Status update */}
-        <Section title="Update Status" icon={<Package size={14} />}>
+        <Section title="Update Status" icon={<ArrowsClockwise size={14} />}>
           <div className="space-y-3">
             <select
               defaultValue={order.status}

@@ -34,7 +34,7 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
     entity_id: entityCode,
     event_type: "extra_item_requested",
     description: eventDescription,
-    icon: "package",
+    icon: "clipboard",
   }).then(() => {}, () => {});
 
   if (!process.env.RESEND_API_KEY) return;

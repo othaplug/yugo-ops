@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Package, ClipboardText, CheckCircle, Clock } from "@phosphor-icons/react";
+import { ShippingContainer, ClipboardText, CheckCircle, Clock } from "@phosphor-icons/react";
 
 type LogRow = { id: string; status: string; notes: string | null; created_at: string };
 
@@ -58,7 +58,7 @@ export default function PublicInboundTrackClient({ id, token }: { id: string; to
     <div className="min-h-screen bg-[#FAF8F5] text-[var(--tx)] px-4 py-10">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-2 mb-2">
-          <Package className="text-[#C9A962]" size={28} weight="duotone" aria-hidden />
+          <ShippingContainer className="text-[#C9A962]" size={28} weight="duotone" aria-hidden />
           <h1 className="text-xl font-semibold tracking-tight">Inbound shipment</h1>
         </div>
         <p className="text-sm text-[var(--tx3)] mb-6">Reference {num}</p>

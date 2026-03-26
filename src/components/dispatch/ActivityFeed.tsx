@@ -53,7 +53,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   pod: ClipboardText,
   review: Star,
   map: MapPin,
-  package: Truck,
+  truck: Truck,
   dollar: DollarSign,
   star: Star,
   alert: AlertTriangle,
@@ -108,7 +108,8 @@ export default function ActivityFeed({ events, unseenIds, onMarkSeen }: Activity
           </div>
         ) : (
           events.map((e) => {
-            const Icon = ICON_MAP[e.icon] || MessageSquare;
+            const iconKey = e.icon === "package" ? "truck" : e.icon;
+            const Icon = ICON_MAP[iconKey] || MessageSquare;
             const color = teamColor(e.crewId);
             const isUnseen = unseenIds?.has(e.id);
 

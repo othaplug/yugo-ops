@@ -5,7 +5,7 @@ import { Check } from "@phosphor-icons/react";
 import { GOLD, FOREST } from "./quote-shared";
 
 const STEPS = [
-  { key: "package", label: "Package" },
+  { key: "plan", label: "Plan" },
   { key: "customize", label: "Customize" },
   { key: "protect", label: "Protect" },
   { key: "confirm", label: "Confirm" },

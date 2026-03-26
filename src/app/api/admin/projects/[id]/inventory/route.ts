@@ -108,7 +108,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         orgId: proj.partner_id,
         title: `Item added to your project`,
         body: `${itemName}${vendorName ? ` (${vendorName})` : ""} was added to ${projectRef}`,
-        icon: "package",
+        icon: "clipboard",
         link: `/partner/projects/${id}`,
       });
     }

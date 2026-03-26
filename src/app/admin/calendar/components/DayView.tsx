@@ -47,7 +47,7 @@ function yToTime(y: number): string {
 
 const TYPE_ICON_MAP: Record<string, string> = {
   move: "mapPin",
-  delivery: "package",
+  delivery: "truck",
   project_phase: "palette",
   project: "projects",
   blocked: "lock",

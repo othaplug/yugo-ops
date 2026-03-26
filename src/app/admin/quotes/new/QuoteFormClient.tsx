@@ -28,7 +28,7 @@ import {
   Warning,
   House,
   Buildings,
-  Package,
+  OfficeChair,
   Star,
   Palette,
   CalendarBlank,
@@ -142,7 +142,7 @@ interface ItemWeight {
 const SERVICE_TYPE_ICONS = {
   House,
   Buildings,
-  Package,
+  OfficeChair,
   Star,
   Palette,
   CalendarBlank,

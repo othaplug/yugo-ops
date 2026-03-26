@@ -32,7 +32,7 @@ export default function StatusUpdater({
       entity_id: deliveryId,
       event_type: "status_change",
       description: `Delivery updated to ${nextStatus}`,
-      icon: nextStatus === "delivered" ? "check" : "package",
+      icon: nextStatus === "delivered" ? "check" : "truck",
     });
 
     // Auto-invoice on delivery
@@ -60,7 +60,7 @@ export default function StatusUpdater({
       }
     }
 
-    toast(`Status: ${nextStatus}`, nextStatus === "delivered" ? "check" : "package");
+    toast(`Status: ${nextStatus}`, nextStatus === "delivered" ? "check" : "truck");
     router.refresh();
   };
 

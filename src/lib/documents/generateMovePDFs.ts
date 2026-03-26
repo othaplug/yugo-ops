@@ -152,12 +152,12 @@ function generateMoveSummaryPDF(
   doc.text(`To: ${(move.to_address || "-").slice(0, 50)}${(move.to_address?.length ?? 0) > 50 ? "…" : ""}`, margin + 6, y + 50);
   y += boxH + SECTION_GAP;
 
-  // ─── Package & crew ───
+  // ─── Plan & crew ───
   setSectionLabel(doc, 9);
   doc.text("PACKAGE & CREW", margin, y);
   y += SUB_SECTION_GAP;
   setBodyText(doc, 9);
-  doc.text(`Package: ${tierLabel}`, margin, y);
+  doc.text(`Plan: ${tierLabel}`, margin, y);
   y += 6;
   const crewNames = crew?.members && Array.isArray(crew.members)
     ? (crew.members as string[]).join(", ")
@@ -264,7 +264,7 @@ function generateInvoicePDF(
   const amountOwing = Math.max(0, total - depositPaid - balancePaid);
 
   const tableBody: (string | number)[][] = [
-    [`${tierLabel} Package`, formatCurrency(tierPrice)],
+    [`${tierLabel} plan`, formatCurrency(tierPrice)],
     ...approvedExtras.map((e) => [`Add-on: ${e.description || "Item"}`, formatCurrency((Number(e.fee_cents) || 0) / 100 * (e.quantity || 1))]),
     ["Subtotal", formatCurrency(subtotal)],
     ["HST (13%)", formatCurrency(hst)],

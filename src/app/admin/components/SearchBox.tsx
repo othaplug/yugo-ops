@@ -10,7 +10,7 @@ import { runAdminEntitySearch } from "@/lib/admin-search";
 const TYPE_ICONS: Record<string, string> = {
   Move: "mapPin",
   Quote: "fileText",
-  Delivery: "package",
+  Delivery: "truck",
   Project: "projects",
   Client: "users",
   Invoice: "dollarSign",

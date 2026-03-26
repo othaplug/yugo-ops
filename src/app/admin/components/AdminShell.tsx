@@ -68,7 +68,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       { href: "/admin/partners/health", label: "Partner Health", Icon: Icons.barChart, minRole: "coordinator" },
       { href: "/admin/partners/realtors", label: "Referral Partners", Icon: Icons.handshake, minRole: "coordinator" },
       { href: "/admin/deliveries", label: "Jobs", Icon: Icons.briefcase, minRole: "coordinator" },
-      { href: "/admin/inbound-shipments", label: "Inbound Shipments", Icon: Icons.package, minRole: "coordinator" },
+      { href: "/admin/inbound-shipments", label: "Inbound Shipments", Icon: Icons.shippingContainer, minRole: "coordinator" },
     ],
   },
   {
@@ -82,7 +82,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
   {
     label: "Services",
     items: [
-      { href: "/admin/bin-rentals", label: "Bin Rentals", Icon: Icons.package, minRole: "coordinator" },
+      { href: "/admin/bin-rentals", label: "Bin Rentals", Icon: Icons.recycle, minRole: "coordinator" },
     ],
   },
   {

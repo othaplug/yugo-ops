@@ -1850,7 +1850,7 @@ const ICON_OPTIONS = [
   { name: "Users", label: "Users / Crew" },
   { name: "Shield", label: "Shield" },
   { name: "ShieldCheck", label: "Shield Check" },
-  { name: "Package", label: "Package / Wrapping" },
+  { name: "Package", label: "Wrapping & materials" },
   { name: "Home", label: "Home / Room" },
   { name: "Wrench", label: "Wrench / Tools" },
   { name: "MapPin", label: "Map Pin / GPS" },
@@ -3191,7 +3191,7 @@ export default function PricingControlPanel({ isSuperAdmin = false }: { isSuperA
         <InventoryVolumeSection />
       </Accordion>
 
-      <Accordion title="Package & Tier Features" subtitle="What's included in each move package, shown on customer quotes">
+      <Accordion title="Tier features & wrapping" subtitle="What's included in each service tier on customer quotes">
         <TierFeaturesSection />
       </Accordion>
 

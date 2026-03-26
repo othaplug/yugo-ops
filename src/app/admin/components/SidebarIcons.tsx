@@ -37,7 +37,8 @@ import {
   Scroll,
   UsersThree,
   Envelope,
-  Package,
+  Recycle,
+  ShippingContainer,
   Notepad,
   NavigationArrow,
 } from "@phosphor-icons/react";
@@ -89,6 +90,9 @@ export const Icons = {
   auditLog:       ic(Scroll),
   usersThree:     ic(UsersThree),
   envelope:       ic(Envelope),
-  package:        ic(Package),
+  /** Crew bin tasks / bin rental ops */
+  recycle:        ic(Recycle),
+  /** Inbound freight / container shipments */
+  shippingContainer: ic(ShippingContainer),
   drafts:         ic(Notepad),
 };

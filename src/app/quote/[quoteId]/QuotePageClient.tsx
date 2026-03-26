@@ -35,7 +35,7 @@ import {
   Money as DollarSign,
   TShirt as Shirt,
   ClipboardText as ClipboardCheck,
-  Package,
+  OfficeChair,
   CheckCircle,
   EggCrack,
   type Icon as LucideIcon,
@@ -181,7 +181,7 @@ function FeatureIcon({ iconName, className, style }: { iconName: string; classNa
   const ICON_MAP: Record<string, LucideIcon> = {
     Truck, Users, Shield, ShieldCheck, Star, Clock, Gift, Wrench, Toolbox,
     Armchair, Suitcase, UserCircle, FrameCorners, Compass,
-    Home, MapPin, DollarSign, Shirt, ClipboardCheck, Package, CheckCircle, Trash2,
+    Home, MapPin, DollarSign, Shirt, ClipboardCheck, OfficeChair, CheckCircle, Trash2,
     Ruler, Radar, Camera, Hand, Lock, EggCrack,
   };
   const Icon = ICON_MAP[iconName] ?? CheckCircle;
@@ -1100,7 +1100,7 @@ export default function QuotePageClient({
               )}
               {isResidential && selectedTier === "estate" && (
                 <p className="text-[12px] mb-4 px-4 py-2.5 rounded-lg border" style={{ color: FOREST, backgroundColor: `${GOLD}12`, borderColor: `${GOLD}40` }}>
-                  Packing supplies are included with your Estate package.
+                  Packing supplies are included with your Estate plan.
                 </p>
               )}
               <AddOnsSection
@@ -2016,11 +2016,11 @@ function ConfirmDetailsSection({
 
         <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
           <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
-            Your Package
+            Your plan
           </p>
           <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
             <p className="flex items-center gap-2 flex-wrap">
-              <strong>Package:</strong>
+              <strong>Plan:</strong>
               <span
                 className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider"
                 style={{
@@ -2066,7 +2066,7 @@ function ConfirmDetailsSection({
           </p>
           <div className="space-y-1.5 text-[13px]" style={{ color: FOREST }}>
             <div className="flex justify-between">
-              <span>{packageLabel} package</span>
+              <span>{packageLabel} tier</span>
               <span>{fmtPrice(basePrice)}</span>
             </div>
             {addonTotal > 0 && (

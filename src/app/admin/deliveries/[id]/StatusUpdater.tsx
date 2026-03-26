@@ -29,7 +29,7 @@ export default function StatusUpdater({
       entity_id: deliveryId,
       event_type: "status_change",
       description: `Delivery updated to ${nextStatus}`,
-      icon: nextStatus === "delivered" ? "check" : "package",
+      icon: nextStatus === "delivered" ? "check" : "truck",
     });
 
     router.refresh();

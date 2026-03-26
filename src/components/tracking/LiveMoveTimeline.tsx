@@ -21,10 +21,10 @@ export const STATUS_TO_TIMELINE: Record<
   en_route_to_pickup: { label: "Crew en route to your home", icon: "Truck" },
   arrived_at_pickup: { label: "Crew arrived at your home", icon: "MapPin" },
   walkthrough_complete: { label: "Inventory walkthrough complete", icon: "ClipboardText" },
-  loading: { label: "Loading started", icon: "Package" },
+  loading: { label: "Loading started", icon: "stack" },
   en_route_to_destination: { label: "Loading complete, en route to new home", icon: "Truck" },
   arrived_at_destination: { label: "Arrived at new home", icon: "MapPin" },
-  unloading: { label: "Unloading started", icon: "Package" },
+  unloading: { label: "Unloading started", icon: "stack" },
   completed: { label: "Move complete", icon: "CheckCircle" },
 };
 

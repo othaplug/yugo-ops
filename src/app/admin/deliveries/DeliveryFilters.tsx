@@ -87,7 +87,7 @@ export default function DeliveryFilters({
                 CATEGORY_BGS[d.category] || "bg-[var(--gdim)]"
               }`}
             >
-              <Icon name={CATEGORY_ICONS[d.category] || "package"} className="w-[16px] h-[16px]" />
+              <Icon name={CATEGORY_ICONS[d.category] || "truck"} className="w-[16px] h-[16px]" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[11px] font-semibold break-words line-clamp-2">

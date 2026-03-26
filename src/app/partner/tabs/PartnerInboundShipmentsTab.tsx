@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Package, ArrowSquareOut } from "@phosphor-icons/react";
+import { ShippingContainer, ArrowSquareOut } from "@phosphor-icons/react";
 import { INBOUND_SHIPMENT_STATUS_LABELS } from "@/lib/inbound-shipment-labels";
 
 type Row = {
@@ -100,7 +100,7 @@ export default function PartnerInboundShipmentsTab() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Package className="text-[var(--gold)]" size={24} weight="duotone" aria-hidden />
+        <ShippingContainer className="text-[var(--gold)]" size={24} weight="duotone" aria-hidden />
         <h2 className="text-lg font-semibold text-[var(--tx)]">Inbound shipments</h2>
       </div>
       <p className="text-sm text-[var(--tx3)]">

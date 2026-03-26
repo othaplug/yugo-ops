@@ -518,7 +518,7 @@ input, select, textarea {
   animation: client-completed-dot 2s ease-in-out infinite;
 }
 
-/* Instrument Sans for headings; `.admin-app` overrides to body stack (DM Sans) */
+/* Instrument Sans for h2+ / UI headings; `.admin-app` overrides to body stack (DM Sans) */
 .font-heading {
   font-family: var(--font-heading);
 }
@@ -527,7 +527,15 @@ input, select, textarea {
   --font-heading: var(--font-body);
 }
 
-/* Instrument Serif for hero text - Yugo logo, Welcome back, etc. Normal weight for lighter look. */
+/*
+ * All primary page titles (h1): Instrument Serif — admin + client + partner + crew.
+ * Skip monospace h1 (e.g. shipment / order numbers).
+ */
+h1:not(.font-mono) {
+  font-family: var(--font-hero);
+}
+
+/* Instrument Serif for hero / display lines. Normal weight when paired with this class alone. */
 .font-hero {
   font-family: var(--font-hero);
   font-weight: 400 !important;
@@ -1517,12 +1525,12 @@ select:focus-visible {
   font-family: var(--font-heading);
   color: var(--text-primary);
 }
-/* page-title — main page headings */
+/* page-title — main page headings (matches h1: Instrument Serif) */
 .ty-page-title {
   font-size: var(--text-3xl);
   font-weight: var(--fw-bold);
   line-height: var(--lh-tight);
-  font-family: var(--font-heading);
+  font-family: var(--font-hero);
   color: var(--text-primary);
 }
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Package,
+  Recycle,
   Truck,
   CheckCircle,
   MapPin,
@@ -170,7 +170,7 @@ export default function CrewBinOrdersPage() {
 
         {!loading && tasks.length === 0 && (
           <div className="text-center py-16">
-            <Package size={40} color="#374151" className="mx-auto mb-3" />
+            <Recycle size={40} color="#374151" className="mx-auto mb-3" />
             <p className="text-gray-400 font-medium">No bin tasks today or tomorrow</p>
           </div>
         )}
@@ -197,7 +197,7 @@ export default function CrewBinOrdersPage() {
                           <span className="font-bold text-[14px]">{task.order_number}</span>
                           {task.status === "overdue" && <Warning size={13} color="#ef4444" />}
                           <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${task.taskType === "dropoff" ? "bg-[#7C9FD4]/15 text-[#7C9FD4]" : "bg-[#22c55e]/15 text-[#22c55e]"}`}>
-                            {task.taskType === "dropoff" ? <><Package size={10} className="inline" /> Drop-off</> : <><Truck size={10} className="inline" /> Pickup</>}
+                            {task.taskType === "dropoff" ? <><Recycle size={10} className="inline" /> Drop-off</> : <><Truck size={10} className="inline" /> Pickup</>}
                           </span>
                         </div>
                         <p className="text-[13px] text-gray-300 mt-0.5">{task.client_name}</p>
@@ -231,7 +231,7 @@ export default function CrewBinOrdersPage() {
                   <span className="font-bold text-[16px]">{activeTask.order_number}</span>
                   <span className={`ml-2 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${activeTask.taskType === "dropoff" ? "bg-[#7C9FD4]/15 text-[#7C9FD4]" : "bg-[#22c55e]/15 text-[#22c55e]"}`}>
                     {activeTask.taskType === "dropoff"
-                    ? <><Package size={11} className="inline mr-0.5" /> Drop-off</>
+                    ? <><Recycle size={11} className="inline mr-0.5" /> Drop-off</>
                     : <><Truck size={11} className="inline mr-0.5" /> Pickup</>}
                   </span>
                 </div>
@@ -241,7 +241,7 @@ export default function CrewBinOrdersPage() {
               </div>
 
               <div className="space-y-2 text-[13px]">
-                <DetailRow icon={<Package size={13} />} label={`${BUNDLE_SHORT[activeTask.bundle_type]} bundle, ${activeTask.bin_count} bins`} />
+                <DetailRow icon={<Recycle size={13} />} label={`${BUNDLE_SHORT[activeTask.bundle_type]} bundle, ${activeTask.bin_count} bins`} />
                 <DetailRow icon={<MapPin size={13} />} label={activeTask.delivery_address} />
                 <DetailRow icon={<Phone size={13} />} label={activeTask.client_name} sub={activeTask.client_phone} isPhone />
                 {activeTaskAccessLabel && (

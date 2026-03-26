@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   Plus,
-  Package,
+  ShippingContainer,
   Truck,
   Warehouse,
   RocketLaunch,
@@ -107,7 +107,7 @@ export default function InboundShipmentsClient() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
           {[
-            { key: "awaiting", label: "Awaiting", value: stats.awaiting, Icon: Package },
+            { key: "awaiting", label: "Awaiting", value: stats.awaiting, Icon: ShippingContainer },
             { key: "in_transit", label: "In transit", value: stats.in_transit, Icon: Truck },
             { key: "at_facility", label: "At facility", value: stats.at_facility, Icon: Warehouse },
             { key: "ready", label: "Ready to deliver", value: stats.ready, Icon: RocketLaunch },

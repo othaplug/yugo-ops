@@ -49,7 +49,7 @@ export default function ResidentialLayout({
     <section className="mb-10">
       <div className="text-center mb-8">
         <h2 className="font-hero text-[30px] md:text-[32px] mb-2" style={{ color: WINE }}>
-          Choose Your Package
+          Choose your plan
         </h2>
         <p className="text-[13px] max-w-md mx-auto" style={{ color: `${FOREST}80` }}>
           Every package includes a professional crew, truck, and blanket wrapping.

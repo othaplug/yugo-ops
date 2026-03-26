@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Clock, Calendar, Check, Lock, Package } from "@phosphor-icons/react";
+import { X, Clock, Calendar, Check, Lock, Recycle } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { getDisplayLabel } from "@/lib/displayLabels";
 import Link from "next/link";
@@ -445,7 +445,7 @@ export default function CrewDashboardPage() {
             href="/crew/bin-orders"
             className="mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-[12px] text-[var(--tx3)] bg-[var(--bg)]/20 hover:bg-[var(--gold)]/8 hover:text-[var(--gold)] transition-colors"
           >
-            <Package size={14} />
+            <Recycle size={14} />
             Bin Tasks (Drop-offs &amp; Pickups)
           </Link>
         )}

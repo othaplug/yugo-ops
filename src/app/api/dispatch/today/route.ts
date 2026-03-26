@@ -374,7 +374,7 @@ export async function GET(req: NextRequest) {
     events.push({
       id: `pod-${p.id}`,
       type: "pod",
-      icon: "package",
+      icon: "truck",
       description: `PoD captured for ${jobLabel}`,
       timestamp: p.completed_at || p.id,
       jobId: jobLabel,

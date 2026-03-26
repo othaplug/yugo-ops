@@ -10,10 +10,11 @@ import {
   MagnifyingGlass, Check, X, Lock, Plug, Bell, CreditCard, Envelope,
   Phone, ClipboardText, Warning, Truck, Confetti, File, FileText,
   Money, PaintBrush, ToggleRight, Gear, Users,
-  House, Buildings, Armchair, Palette, Image, Handshake, Eye,
+  House, Buildings, Armchair, OfficeChair, Palette, Image, Handshake, Eye,
   Clock, Flag, Target, Calendar, MapPin, ChatText, Gift, Camera,
   Star, Link, CircleNotch, Pulse, CaretRight, User, UserMinus,
-  TrendUp, TrendDown, Minus, Certificate,
+  TrendUp, TrendDown, Minus, Certificate, Stack, Path, ShippingContainer,
+  Recycle,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import React from "react";
@@ -43,11 +44,19 @@ const ICON_MAP: Record<string, PhosphorIcon> = {
   toggleRight:      ToggleRight,
   settings:         Gear,
   users:            Users,
-  package:          Truck,
+  /** Inbound / ocean-air style shipments */
+  shippingContainer: ShippingContainer,
+  /** Bin rental / eco tasks */
+  recycle:          Recycle,
+  /** Loading & unloading milestones */
+  stack:            Stack,
+  /** Move journey / route */
+  path:             Path,
   projects:         ClipboardText,
   home:             House,
   building:         Buildings,
   sofa:             Armchair,
+  officeChair:      OfficeChair,
   palette:          Palette,
   hotel:            Buildings,
   image:            Image,

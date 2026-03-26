@@ -115,7 +115,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         orgId: proj.partner_id,
         title: `Item status updated: ${item.item_name}`,
         body: `${item.item_name} is now "${statusLabel}", ${projectRef}`,
-        icon: "package",
+        icon: "clipboard",
         link: `/partner/projects/${projectId}`,
       });
 

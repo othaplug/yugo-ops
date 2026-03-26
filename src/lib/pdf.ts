@@ -610,7 +610,7 @@ export function generateMoveSnapshotPDF(data: MoveSnapshotData) {
   infoLine("Scheduled", data.scheduledDate);
   infoLine("Completed", data.completedDate);
   if (data.serviceType) infoLine("Service", data.serviceType);
-  if (data.tierSelected) infoLine("Package", data.tierSelected);
+  if (data.tierSelected) infoLine("Plan", data.tierSelected);
   if (data.vehicleType) infoLine("Vehicle", data.vehicleType);
   infoLine("Items", String(data.inventoryCount));
   if (data.photosCount > 0) infoLine("Photos", String(data.photosCount));

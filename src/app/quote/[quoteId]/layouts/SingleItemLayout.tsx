@@ -1,4 +1,4 @@
-import { MapPin, ArrowRight, Diamond, Check } from "@phosphor-icons/react";
+import { MapPin, ArrowRight, OfficeChair, Check } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
@@ -47,7 +47,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
             className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
             style={{ backgroundColor: `${WINE}10` }}
           >
-            <Diamond className="w-7 h-7" style={{ color: WINE }} />
+            <OfficeChair className="w-7 h-7" style={{ color: WINE }} weight="duotone" aria-hidden />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-1">

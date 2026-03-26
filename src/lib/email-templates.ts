@@ -1044,7 +1044,7 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
         <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
         <tr><td style="color:#666;padding:4px 0">From:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
         <tr><td style="color:#666;padding:4px 0">To:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.toAddress}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">Essential</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Plan:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">Essential</td></tr>
         <tr><td style="color:#666;padding:4px 0">Crew:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
         <tr><td style="color:#666;padding:4px 0">Vehicle:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed flat rate)</td></tr>
@@ -1104,7 +1104,7 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
         <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
         <tr><td style="color:#666;padding:4px 0">From:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
         <tr><td style="color:#666;padding:4px 0">To:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.toAddress}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Package:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">Signature</td></tr>
+        <tr><td style="color:#666;padding:4px 0">Plan:</td><td style="color:#C9A962;font-weight:600;padding:4px 0;text-align:right">Signature</td></tr>
         <tr><td style="color:#666;padding:4px 0">Crew:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
         <tr><td style="color:#666;padding:4px 0">Vehicle:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
         <tr><td style="color:#666;padding:4px 0">Total:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed - no surprises)</td></tr>

@@ -52,7 +52,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
   const navItems: ShellNavItem[] = useMemo(() => {
     const navItem: ShellNavItem = { href: navTargetPath, label: "Navigation", icon: "navigationArrow", navigation: true };
     if (!hasActiveBinTasks) return [NAV_CORE[0], navItem, ...NAV_CORE.slice(1)];
-    const bin: ShellNavItem = { href: "/crew/bin-orders", label: "Bin Tasks", icon: "package" };
+    const bin: ShellNavItem = { href: "/crew/bin-orders", label: "Bin Tasks", icon: "recycle" };
     return [NAV_CORE[0], navItem, bin, ...NAV_CORE.slice(1)];
   }, [hasActiveBinTasks, navTargetPath]);
 

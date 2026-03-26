@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Package,
+  Recycle,
   Truck,
   CalendarBlank,
   CurrencyDollar,
@@ -105,7 +105,7 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
       {/* Stats bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <StatCard
-          icon={<Package size={18} color="#C9A962" />}
+          icon={<Recycle size={18} color="#C9A962" />}
           label="Active Orders"
           value={String(stats.activeOrders)}
           color="#C9A962"
