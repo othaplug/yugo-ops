@@ -24,6 +24,15 @@ interface ContractAddonData {
   quantity?: number;
 }
 
+interface BinRentalSchedulePdf {
+  delivery_date: string | null;
+  delivery_address: string;
+  move_date: string | null;
+  pickup_date: string | null;
+  pickup_address: string;
+  cycle_days: number;
+}
+
 interface ContractData {
   service_type: string;
   package_label: string;
@@ -37,6 +46,7 @@ interface ContractData {
   tax: number;
   grand_total: number;
   deposit: number;
+  bin_rental_schedule?: BinRentalSchedulePdf;
 }
 
 interface ContractSignPayload {
@@ -62,6 +72,8 @@ const CANCELLATION_TEXT: Record<string, string> = {
     "72-hour cancellation policy. Custom crating materials non-refundable.",
   b2b_oneoff:
     "Full refund if cancelled 24+ hours before delivery. Non-refundable within 24 hours.",
+  bin_rental:
+    "Full refund if cancelled 48+ hours before scheduled bin delivery. Fees may apply within 48 hours or after dispatch/delivery.",
 };
 
 const BALANCE_DUE_TEXT: Record<string, string> = {
@@ -72,6 +84,7 @@ const BALANCE_DUE_TEXT: Record<string, string> = {
   white_glove: "upon delivery",
   specialty: "upon project completion",
   b2b_oneoff: "upon delivery",
+  bin_rental: "included in full payment at booking",
 };
 
 function getClientIp(req: Request): string {
@@ -84,6 +97,15 @@ function getClientIp(req: Request): string {
 
 function fmtCurrency(n: number): string {
   return "$" + n.toLocaleString("en-CA");
+}
+
+function fmtPdfLongDate(d: string): string {
+  return new Date(d + "T00:00:00").toLocaleDateString("en-CA", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 function generateContractPdf(
@@ -103,7 +125,12 @@ function generateContractPdf(
   drawTopAccentBar(doc, true);
   let y = drawYugoHeader(doc, { yStart: 18, centerX, margin });
   setHeroTitle(doc, 14);
-  doc.text("Service Agreement", centerX, y, { align: "center" });
+  doc.text(
+    cd.service_type === "bin_rental" ? "Bin Rental Agreement" : "Service Agreement",
+    centerX,
+    y,
+    { align: "center" },
+  );
   y += 10;
 
   setBodyText(doc, 10);
@@ -128,17 +155,32 @@ function generateContractPdf(
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c: string) => c.toUpperCase());
 
-  const summaryLines = [
-    `Service: ${svcLabel} \u2014 ${cd.package_label}`,
-    `From: ${cd.from_address}`,
-    `To: ${cd.to_address}`,
-    ...(cd.move_date
+  const brs = cd.bin_rental_schedule;
+  const summaryLines =
+    cd.service_type === "bin_rental" && brs
       ? [
-          `Date: ${new Date(cd.move_date + "T00:00:00").toLocaleDateString("en-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
+          `Service: Bin rental \u2014 ${cd.package_label}`,
+          ...(brs.delivery_date
+            ? [`Bin delivery: ${fmtPdfLongDate(brs.delivery_date)} \u2192 ${brs.delivery_address}`]
+            : []),
+          ...(brs.move_date ? [`Move day (reference): ${fmtPdfLongDate(brs.move_date)}`] : []),
+          ...(brs.pickup_date
+            ? [`Bin pickup: ${fmtPdfLongDate(brs.pickup_date)} \u2190 ${brs.pickup_address}`]
+            : []),
+          `Included rental cycle: ${brs.cycle_days} days`,
+          `Rental package (before tax): ${fmtCurrency(cd.base_price)}`,
         ]
-      : []),
-    `Base Rate: ${fmtCurrency(cd.base_price)}`,
-  ];
+      : [
+          `Service: ${svcLabel} \u2014 ${cd.package_label}`,
+          `From: ${cd.from_address}`,
+          `To: ${cd.to_address}`,
+          ...(cd.move_date
+            ? [
+                `Date: ${new Date(cd.move_date + "T00:00:00").toLocaleDateString("en-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
+              ]
+            : []),
+          `Base Rate: ${fmtCurrency(cd.base_price)}`,
+        ];
 
   for (const line of summaryLines) {
     const wrapped = doc.splitTextToSize(line, contentWidth);
@@ -180,11 +222,16 @@ function generateContractPdf(
   y += 5;
 
   const balDue = BALANCE_DUE_TEXT[cd.service_type] ?? "before service date";
-  doc.text(
-    `Balance: ${fmtCurrency(cd.grand_total - cd.deposit)} (due ${balDue})`,
-    margin,
-    y,
-  );
+  const balanceAmt = cd.grand_total - cd.deposit;
+  if (balanceAmt <= 0.005) {
+    doc.text(`Balance: ${fmtCurrency(0)} (full payment at booking)`, margin, y);
+  } else {
+    doc.text(
+      `Balance: ${fmtCurrency(balanceAmt)} (due ${balDue})`,
+      margin,
+      y,
+    );
+  }
   y += 12;
 
   /* ── Terms & Conditions ── */
@@ -200,32 +247,60 @@ function generateContractPdf(
   y += 8;
   setBodyText(doc, 9);
 
-  const terms = [
-    {
-      title: "1. Flat-Rate Guarantee",
-      body: `The total quoted above (${fmtCurrency(cd.grand_total)} incl. HST) is a guaranteed flat rate. No hidden charges, hourly rates, or surprise fees.`,
-    },
-    {
-      title: "2. Payment Terms",
-      body: `A deposit of ${fmtCurrency(cd.deposit)} is due at booking. The remaining balance of ${fmtCurrency(cd.grand_total - cd.deposit)} is due ${balDue}.`,
-    },
-    {
-      title: "3. Card-on-File Authorization",
-      body: `I authorize ${companyLegalName} to securely store my payment card using Square's PCI-compliant vault and charge the balance per payment terms.`,
-    },
-    {
-      title: "4. Cancellation Policy",
-      body: CANCELLATION_TEXT[cd.service_type] ?? CANCELLATION_TEXT.local_move,
-    },
-    {
-      title: "5. Liability & Insurance",
-      body: "Standard coverage at $0.60/lb per article. Enhanced full-value protection available as add-on. Yugo carries $2M commercial liability insurance.",
-    },
-    {
-      title: "6. Scope Changes",
-      body: "Changes to scope will be communicated and require written approval before additional charges.",
-    },
-  ];
+  const terms =
+    cd.service_type === "bin_rental"
+      ? [
+          {
+            title: "1. Bin rental service",
+            body: "Plastic moving bin rental: delivery of bins, use during the included rental period, and scheduled pickup of emptied and stacked bins, as described in your quote.",
+          },
+          {
+            title: "2. Quoted fee",
+            body: `Total ${fmtCurrency(cd.grand_total)} incl. HST covers the rental package in your quote. This is a rental service, not a staffed residential move unless separately contracted.`,
+          },
+          {
+            title: "3. Payment",
+            body: `Full payment of ${fmtCurrency(cd.grand_total)} incl. HST is due at booking unless your coordinator confirms otherwise in writing.`,
+          },
+          {
+            title: "4. Card on file",
+            body: `I authorize ${companyLegalName} to keep a card on file for approved charges such as late returns, extra rental days, or missing/damaged bins.`,
+          },
+          {
+            title: "5. Cancellation",
+            body: CANCELLATION_TEXT.bin_rental,
+          },
+          {
+            title: "6. Bins & liability",
+            body: "Bins remain company property. Reasonable fees may apply for loss, damage, or late return. Contents you pack are your responsibility unless separate moving coverage applies.",
+          },
+        ]
+      : [
+          {
+            title: "1. Flat-Rate Guarantee",
+            body: `The total quoted above (${fmtCurrency(cd.grand_total)} incl. HST) is a guaranteed flat rate. No hidden charges, hourly rates, or surprise fees.`,
+          },
+          {
+            title: "2. Payment Terms",
+            body: `A deposit of ${fmtCurrency(cd.deposit)} is due at booking. The remaining balance of ${fmtCurrency(cd.grand_total - cd.deposit)} is due ${balDue}.`,
+          },
+          {
+            title: "3. Card-on-File Authorization",
+            body: `I authorize ${companyLegalName} to securely store my payment card using Square's PCI-compliant vault and charge the balance per payment terms.`,
+          },
+          {
+            title: "4. Cancellation Policy",
+            body: CANCELLATION_TEXT[cd.service_type] ?? CANCELLATION_TEXT.local_move,
+          },
+          {
+            title: "5. Liability & Insurance",
+            body: "Standard coverage at $0.60/lb per article. Enhanced full-value protection available as add-on. Yugo carries $2M commercial liability insurance.",
+          },
+          {
+            title: "6. Scope Changes",
+            body: "Changes to scope will be communicated and require written approval before additional charges.",
+          },
+        ];
 
   for (const term of terms) {
     checkPageBreak();

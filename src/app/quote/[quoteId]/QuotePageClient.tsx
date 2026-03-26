@@ -556,6 +556,23 @@ export default function QuotePageClient({
           }))
         : undefined;
 
+    const fromTrim = (quoteForDisplay.from_address ?? "").trim();
+    const toAddr = quoteForDisplay.to_address ?? "";
+    const binRentalSchedule =
+      quote.service_type === "bin_rental"
+        ? {
+            deliveryDate: (fa?.bin_drop_off_date as string | null) ?? null,
+            deliveryAddress: abbreviateAddressRegions(toAddr),
+            moveDate: (fa?.bin_move_date as string | null) ?? null,
+            pickupDate: (fa?.bin_pickup_date as string | null) ?? null,
+            pickupAddress: abbreviateAddressRegions(
+              fromTrim && fromTrim !== toAddr.trim() ? fromTrim : toAddr,
+            ),
+            cycleDays:
+              typeof fa?.bin_rental_cycle_days === "number" ? fa.bin_rental_cycle_days : 12,
+          }
+        : undefined;
+
     return {
       quoteId: quote.quote_id,
       serviceType: quote.service_type,
@@ -577,6 +594,7 @@ export default function QuotePageClient({
       grandTotal,
       deposit,
       eventLegs,
+      binRentalSchedule,
     };
   }, [
     quote.quote_id,
