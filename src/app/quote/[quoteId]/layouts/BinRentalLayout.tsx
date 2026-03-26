@@ -173,7 +173,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
             className="w-full py-3.5 rounded-xl font-bold text-[15px] text-white shadow-md transition-opacity hover:opacity-95"
             style={{ backgroundColor: FOREST }}
           >
-            Continue to book
+            Continue to payment
           </button>
           <p className="text-center text-[11px] leading-relaxed" style={{ color: `${FOREST}65` }}>
             Total {fmtPrice(total)} (incl. HST) — you&apos;ll review the rental agreement and pay on the next steps.

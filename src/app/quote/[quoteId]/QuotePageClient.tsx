@@ -1250,18 +1250,6 @@ export default function QuotePageClient({
                 </button>
               </div>
             )}
-            {quote.service_type === "bin_rental" && isConfirmed && (
-              <div className="mb-6 flex flex-col items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleConfirmComplete}
-                  className="w-full md:w-auto px-8 py-3 rounded-xl text-[13px] font-bold text-white transition-all"
-                  style={{ backgroundColor: GOLD }}
-                >
-                  Continue to agreement &amp; payment
-                </button>
-              </div>
-            )}
           </section>
         )}
 
