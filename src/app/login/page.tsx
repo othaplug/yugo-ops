@@ -33,14 +33,46 @@ export default function AdminLoginPage() {
     }
     setLoading(true);
     setError("");
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    if (authError) { setError(authError.message); setLoading(false); return; }
-    const res = await fetch("/api/auth/role");
-    const { role } = await res.json();
-    if (role === "client") router.push("/client");
-    else if (role === "partner") router.push("/partner");
-    else router.push("/admin");
-    router.refresh();
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+      // Let the browser commit Supabase auth cookies before the role route reads them.
+      await new Promise((r) => setTimeout(r, 0));
+
+      const ac = new AbortController();
+      const tid = window.setTimeout(() => ac.abort(), 25_000);
+      let res: Response;
+      try {
+        res = await fetch("/api/auth/role", { credentials: "same-origin", signal: ac.signal });
+      } finally {
+        window.clearTimeout(tid);
+      }
+      const text = await res.text();
+      let role: string | null | undefined;
+      try {
+        role = text ? (JSON.parse(text) as { role?: string | null }).role : null;
+      } catch {
+        setError("Could not verify your account. Please try again.");
+        await supabase.auth.signOut();
+        return;
+      }
+      if (role === "client") router.replace("/client");
+      else if (role === "partner") router.replace("/partner");
+      else router.replace("/admin");
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/abort|timed?\s*out/i.test(msg)) {
+        setError("Sign-in is taking too long. Check your connection and try again.");
+      } else {
+        setError(msg || "Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
