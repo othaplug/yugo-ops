@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import AdminShell from "./components/AdminShell";
 import ChangePasswordGate from "./components/ChangePasswordGate";
@@ -26,12 +25,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/login");
   }
 
-  const db = createAdminClient();
-  const { data: platformUser } = await db
+  // User-scoped client only — avoids throwing when SUPABASE_SERVICE_ROLE_KEY is missing (layout errors
+  // are not caught by admin/error.tsx and surface as a generic 500). RLS allows authenticated SELECT on platform_users.
+  const { data: platformUser } = await supabase
     .from("platform_users")
     .select("role, two_factor_enabled")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   const isSuperAdmin = isSuperAdminEmail(user.email);
 

@@ -10,9 +10,28 @@ import { formatCompactCurrency } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 import AdminPageClient from "./AdminPageClient";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export default async function AdminPage() {
-  const admin = createAdminClient();
+  let admin: SupabaseClient;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return (
+      <main className="min-h-[50vh] flex items-center justify-center px-6">
+        <div className="max-w-md text-center space-y-3">
+          <h1 className="text-[18px] font-bold text-[var(--tx)]">Dashboard can&apos;t load</h1>
+          <p className="text-[13px] text-[var(--tx3)] leading-relaxed">
+            This deployment is missing server-side Supabase configuration (typically{" "}
+            <code className="text-[11px] bg-[var(--card)] px-1 py-0.5 rounded border border-[var(--brd)]">
+              SUPABASE_SERVICE_ROLE_KEY
+            </code>
+            ). Add it in your host&apos;s environment variables and redeploy.
+          </p>
+        </div>
+      </main>
+    );
+  }
   const today = getTodayString();
 
   const [
