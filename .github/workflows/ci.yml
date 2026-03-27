@@ -7,17 +7,17 @@ on:
     branches: [main, master]
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     env:
-      # Placeholders so `next build` can run without a real .env (NEXT_PUBLIC_* inlined at build time).
-      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ci-placeholder-anon-key-min-16
-      SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key-placeholder-min-16-chars
-      NEXT_PUBLIC_APP_URL: https://ci.example.com
-      TRACK_SIGNING_SECRET: ci-track-signing-secret-min-32-chars-ok
-      CREW_SESSION_SECRET: ci-crew-session-secret-min-32-chars-ok__
-      SUPER_ADMIN_EMAIL: ci-admin@example.com
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.placeholder
+      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.service-role-placeholder
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      SUPER_ADMIN_EMAIL: ci@example.com
+      TRACK_SIGNING_SECRET: "01234567890123456789012345678901"
+      CREW_SESSION_SECRET: "01234567890123456789012345678901"
+      CRON_SECRET: "01234567890123456789012345678901"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,4 +25,5 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
+      - run: npm run typecheck
       - run: npm run build

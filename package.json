@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
+    "typecheck": "tsc --noEmit",
     "start": "next start",
     "db:push": "npx supabase db push --include-all",
     "db:wipe-mock": "npx supabase@latest db query -f scripts/wipe-mock-operational-data.sql --linked --agent=no",
@@ -39,7 +40,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/jspdf": "^1.3.3",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/react": "^19",

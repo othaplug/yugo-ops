@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+
 import { collectServerEnvIssues } from "@/lib/server-env-check";
 
 /**
