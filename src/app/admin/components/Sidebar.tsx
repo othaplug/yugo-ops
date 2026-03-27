@@ -89,7 +89,7 @@ export default function Sidebar() {
       {/* Nav Sections */}
       {NAV.map((section) => (
         <div key={section.label} className="py-2">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-1">
+          <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] px-4 py-1">
             {section.label}
           </div>
           {section.items.map((item) => {

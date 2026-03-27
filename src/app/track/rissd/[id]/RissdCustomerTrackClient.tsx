@@ -54,7 +54,7 @@ export default function RissdCustomerTrackClient({ shipment }: { shipment: Shipm
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-2 mb-1">
           <ShippingContainer className="text-[#C9A962]" size={26} weight="duotone" aria-hidden />
-          <p className="text-xs font-bold uppercase tracking-wider text-[var(--tx3)]">Handled by Yugo</p>
+          <p className="text-xs font-bold capitalize tracking-wider text-[var(--tx3)]">Handled by Yugo</p>
         </div>
         <h1 className="text-2xl font-semibold leading-tight">
           Your {brand} delivery
@@ -67,7 +67,7 @@ export default function RissdCustomerTrackClient({ shipment }: { shipment: Shipm
         <div className="mt-8 rounded-2xl border border-[var(--brd)] bg-white p-6 shadow-sm space-y-4">
           {dateLabel && (
             <div>
-              <div className="text-xs font-semibold uppercase text-[var(--tx3)]">Delivery</div>
+              <div className="text-xs font-semibold capitalize text-[var(--tx3)]">Delivery</div>
               <div className="text-lg font-semibold">{dateLabel}</div>
               {shipment.delivery_window ? (
                 <div className="text-sm text-[var(--tx3)]">Window: {shipment.delivery_window}</div>
@@ -75,11 +75,11 @@ export default function RissdCustomerTrackClient({ shipment }: { shipment: Shipm
             </div>
           )}
           <div>
-            <div className="text-xs font-semibold uppercase text-[var(--tx3)] mb-2">Service level</div>
+            <div className="text-xs font-semibold capitalize text-[var(--tx3)] mb-2">Service level</div>
             <div className="text-sm font-medium">{serviceLabel}</div>
           </div>
           <div>
-            <div className="text-xs font-semibold uppercase text-[var(--tx3)] mb-2">Includes</div>
+            <div className="text-xs font-semibold capitalize text-[var(--tx3)] mb-2">Includes</div>
             <ul className="space-y-2">
               {services.map((s) =>
                 s.on ? (
@@ -92,7 +92,7 @@ export default function RissdCustomerTrackClient({ shipment }: { shipment: Shipm
             </ul>
           </div>
           <div className="pt-2 border-t border-[var(--brd)]/50">
-            <div className="text-xs font-semibold uppercase text-[var(--tx3)]">Status</div>
+            <div className="text-xs font-semibold capitalize text-[var(--tx3)]">Status</div>
             <div className="text-base font-semibold mt-1">{statusLabel}</div>
             {!shipment.delivery_scheduled_date && (
               <p className="text-sm text-[var(--tx3)] mt-2">

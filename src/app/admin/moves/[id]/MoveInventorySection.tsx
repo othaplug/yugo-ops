@@ -350,13 +350,13 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4">
       <div className="flex items-center justify-between gap-3 mb-3">
-        <h3 className="font-heading text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+        <h3 className="font-heading text-[11px] font-bold tracking-wider capitalize text-[var(--tx3)]">
           Client inventory
         </h3>
         {/* Box count */}
         {!loading && (
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">Boxes</span>
+            <span className="text-[10px] font-semibold capitalize tracking-wider text-[var(--tx3)]">Boxes</span>
             {canEditInventory && editingBoxCount ? (
               <>
                 <input
@@ -393,7 +393,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
         <>
           {canEditInventory && itemWeights.length > 0 && (
             <div className="mb-4 pb-4 border-b border-[var(--brd)]/40">
-              <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/70 mb-2">Quick add from catalog</p>
+              <p className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]/70 mb-2">Quick add from catalog</p>
               <InventoryInput
                 itemWeights={itemWeights as ItemWeightRow[]}
                 value={[]}
@@ -417,7 +417,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                     onClick={() => toggleRoom(room)}
                     className="w-full flex items-center justify-between gap-2 bg-[var(--bg)]/80 px-3 py-2.5 text-left hover:bg-[var(--bg)] transition-colors cursor-pointer group"
                   >
-                    <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{room}</span>
+                    <span className="text-[9px] font-bold tracking-wider capitalize text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{room}</span>
                     <span className="flex items-center gap-1.5">
                       <span className="text-[9px] font-medium text-[var(--tx3)]">{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
                       <ChevronDown className={`w-[14px] h-[14px] text-[var(--tx3)] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
@@ -431,8 +431,8 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-[var(--brd)]/40">
-                            <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 w-[1%] whitespace-nowrap">Item</th>
-                            <th className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-3 py-2 text-right w-14">Qty</th>
+                            <th className="text-[9px] font-semibold capitalize text-[var(--tx3)] px-3 py-2 w-[1%] whitespace-nowrap">Item</th>
+                            <th className="text-[9px] font-semibold capitalize text-[var(--tx3)] px-3 py-2 text-right w-14">Qty</th>
                             {canEditInventory && <th className="w-16" aria-label="Actions" />}
                           </tr>
                         </thead>
@@ -491,7 +491,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
           {/* Pending extra items (crew/client requests) */}
           {!extraLoading && extraItems.length > 0 && (
             <div className="mb-4 pt-4 border-t border-[var(--brd)]/40">
-              <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Extra items</h4>
+              <h4 className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Extra items</h4>
               <ul className="space-y-2">
                 {extraItems.map((e) => {
                   const pending = e.status === "pending";
@@ -568,7 +568,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
             {bulkMode ? (
               <div className="flex flex-col gap-2">
                 <div>
-                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
+                  <label className="block text-[9px] font-medium tracking-wider capitalize text-[var(--tx3)] mb-0.5">Room</label>
                   <select
                     value={newRoom}
                     onChange={(e) => setNewRoom(e.target.value)}
@@ -581,7 +581,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Items (comma or newline, e.g. Table x1, Couch x2)</label>
+                  <label className="block text-[9px] font-medium tracking-wider capitalize text-[var(--tx3)] mb-0.5">Items (comma or newline, e.g. Table x1, Couch x2)</label>
                   <textarea
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
@@ -592,7 +592,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                 </div>
                 {parsedBulkItems.length > 0 && (
                   <div className="rounded-md border border-[var(--brd)] bg-[var(--bg)]/50 overflow-hidden">
-                    <div className="text-[9px] font-semibold uppercase text-[var(--tx3)] px-2 py-1.5 border-b border-[var(--brd)]/50">
+                    <div className="text-[9px] font-semibold capitalize text-[var(--tx3)] px-2 py-1.5 border-b border-[var(--brd)]/50">
                       List, check items to add
                     </div>
                     <ul className="divide-y divide-[var(--brd)]/30 max-h-[200px] overflow-y-auto">
@@ -625,7 +625,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
             ) : (
               <div className="flex flex-wrap items-end gap-2">
                 <div>
-                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Room</label>
+                  <label className="block text-[9px] font-medium tracking-wider capitalize text-[var(--tx3)] mb-0.5">Room</label>
                   <select
                     value={newRoom}
                     onChange={(e) => setNewRoom(e.target.value)}
@@ -638,7 +638,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                   </select>
                 </div>
                 <div className="flex-1 min-w-[120px]">
-                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Item</label>
+                  <label className="block text-[9px] font-medium tracking-wider capitalize text-[var(--tx3)] mb-0.5">Item</label>
                   <input
                     type="text"
                     value={newItemName}
@@ -649,7 +649,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                   />
                 </div>
                 <div className="w-14">
-                  <label className="block text-[9px] font-medium tracking-wider uppercase text-[var(--tx3)] mb-0.5">Qty</label>
+                  <label className="block text-[9px] font-medium tracking-wider capitalize text-[var(--tx3)] mb-0.5">Qty</label>
                   <input
                     type="number"
                     min={1}

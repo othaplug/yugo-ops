@@ -293,7 +293,7 @@ export default function AllDeliveriesView({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">All Deliveries</h1>
         </div>
         <div className="relative" ref={createDropRef}>
@@ -407,7 +407,7 @@ export default function AllDeliveriesView({
       {filterOpen && (
         <div className="md:hidden border-t border-[var(--brd)]/30 pt-4 pb-4 space-y-3 mb-5">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Filters</span>
+            <span className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Filters</span>
             <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[11px] font-medium">Done</button>
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5">

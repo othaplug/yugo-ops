@@ -703,13 +703,13 @@ export default function DataTable<T>({
           {/* Search, full width on mobile (no dead space on the right) */}
           {searchable && (
             <div className="relative flex-1 min-w-0 md:max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--tx2)]" aria-hidden />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full pl-9 pr-3 py-2.5 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)]/40 outline-none transition-colors"
+                className="w-full rounded-full border border-[var(--brd)] bg-[var(--card)] py-2.5 pl-10 pr-3 text-[13px] text-[var(--tx)] outline-none transition-colors placeholder:text-[var(--tx3)]/60 focus:border-[var(--gold)]/40"
               />
             </div>
           )}

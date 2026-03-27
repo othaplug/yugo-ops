@@ -32,11 +32,16 @@ export async function GET(req: NextRequest) {
       const pickupDate = new Date(order.pickup_date + "T12:00:00")
         .toLocaleDateString("en-CA", { month: "short", day: "numeric" });
 
+      const fn = order.client_name?.split(" ")[0] || "there";
       await sendSMS(
         order.client_phone,
-        `Hi ${order.client_name?.split(" ")[0]}, your Yugo bins arrive tomorrow between 9 AM–5 PM. ` +
-        `Please ensure access to your unit/lobby. Bins picked up on ${pickupDate}. ` +
-        `Questions? (647) 370-4525`,
+        [
+          `Hi ${fn},`,
+          `Your Yugo bins arrive tomorrow between 9 AM–5 PM.`,
+          `Please ensure access to your unit or lobby.`,
+          `Bins will be picked up on ${pickupDate}.`,
+          `Questions? (647) 370-4525`,
+        ].join("\n\n"),
       );
       results.dropoffReminders++;
     } catch (e) {
@@ -54,10 +59,15 @@ export async function GET(req: NextRequest) {
 
   for (const order of pickups || []) {
     try {
+      const fn2 = order.client_name?.split(" ")[0] || "there";
       await sendSMS(
         order.client_phone,
-        `Hi ${order.client_name?.split(" ")[0]}, we're picking up your Yugo bins tomorrow between 9 AM–5 PM. ` +
-        `Please stack bins by the door. Questions? (647) 370-4525`,
+        [
+          `Hi ${fn2},`,
+          `We're picking up your Yugo bins tomorrow between 9 AM–5 PM.`,
+          `Please stack bins by the door.`,
+          `Questions? (647) 370-4525`,
+        ].join("\n\n"),
       );
       results.pickupReminders++;
     } catch (e) {

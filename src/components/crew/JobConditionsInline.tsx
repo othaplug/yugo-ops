@@ -32,7 +32,7 @@ export default function JobConditionsInline({
 
   return (
     <div className={`rounded-xl bg-[var(--bg)]/25 px-2 py-2 sm:px-2.5 sm:py-2.5 space-y-2 ${className}`}>
-      <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/55 flex items-center gap-1.5">
+      <p className="text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/55 flex items-center gap-1.5">
         <Car size={12} className="text-[var(--gold)]/90 shrink-0" weight="duotone" aria-hidden />
         Route &amp; weather
       </p>

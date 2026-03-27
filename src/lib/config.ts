@@ -47,8 +47,8 @@ export async function getConfigs(
   return result;
 }
 
-const DEFAULT_COMPANY_DISPLAY = "HelloYugo";
-const DEFAULT_COMPANY_LEGAL = "HelloYugo Inc.";
+const DEFAULT_COMPANY_DISPLAY = "Yugo";
+const DEFAULT_COMPANY_LEGAL = "Yugo Inc.";
 
 export async function getCompanyDisplayName(): Promise<string> {
   return getConfig("company_name", DEFAULT_COMPANY_DISPLAY);
@@ -68,7 +68,7 @@ export async function getCompanyPhone(): Promise<string> {
 export async function getCompanyEmail(): Promise<string> {
   return getConfig(
     "company_email",
-    process.env.NEXT_PUBLIC_YUGO_EMAIL || "notifications@opsplus.co",
+    process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
   );
 }
 
@@ -83,13 +83,13 @@ export async function getNotificationsFromEmail(): Promise<string> {
   const name = await getCompanyDisplayName();
   const email = await getConfig(
     "notifications_from_email",
-    "notifications@opsplus.co",
+    "notifications@helloyugo.com",
   );
   return `${name} <${email}>`;
 }
 
 export async function getAdminNotificationEmail(): Promise<string> {
-  return getConfig("admin_notification_email", "notifications@opsplus.co");
+  return getConfig("admin_notification_email", "admin@helloyugo.com");
 }
 
 export async function getReviewUrl(): Promise<string> {

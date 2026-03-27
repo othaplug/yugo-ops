@@ -308,7 +308,7 @@ export default function AddressAutocomplete({
   return (
     <div ref={containerRef} className="w-full relative">
       {label && (
-        <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+        <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">
           {label}
           {required && <span className="text-[var(--red)] ml-0.5">*</span>}
         </label>

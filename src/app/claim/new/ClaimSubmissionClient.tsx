@@ -292,7 +292,7 @@ export default function ClaimSubmissionClient() {
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">Item Name</label>
+                    <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Item Name</label>
                     <input
                       type="text"
                       value={item.name}
@@ -303,7 +303,7 @@ export default function ClaimSubmissionClient() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">Description</label>
+                    <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Description</label>
                     <input
                       type="text"
                       value={item.description}
@@ -314,7 +314,7 @@ export default function ClaimSubmissionClient() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">What Happened</label>
+                    <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">What Happened</label>
                     <textarea
                       value={item.damage_description}
                       onChange={(e) => updateItem(item.id, "damage_description", e.target.value)}
@@ -326,7 +326,7 @@ export default function ClaimSubmissionClient() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">Estimated Value ($)</label>
+                      <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Estimated Value ($)</label>
                       <input
                         type="number"
                         value={item.declared_value || ""}
@@ -337,7 +337,7 @@ export default function ClaimSubmissionClient() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">Weight (lbs)</label>
+                      <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Weight (lbs)</label>
                       <input
                         type="number"
                         value={item.weight_lbs || ""}
@@ -349,7 +349,7 @@ export default function ClaimSubmissionClient() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">
+                    <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">
                       Photos (up to 5)
                     </label>
                     <input
@@ -409,7 +409,7 @@ export default function ClaimSubmissionClient() {
           <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-4">Confirm Your Info</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">Name</label>
+              <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Name</label>
               <input
                 type="text"
                 value={clientName}
@@ -419,7 +419,7 @@ export default function ClaimSubmissionClient() {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">Email</label>
+              <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Email</label>
               <input
                 type="email"
                 value={clientEmail}
@@ -429,7 +429,7 @@ export default function ClaimSubmissionClient() {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[#666] mb-1 uppercase tracking-wide">Phone</label>
+              <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Phone</label>
               <input
                 ref={phoneInput.ref}
                 type="tel"

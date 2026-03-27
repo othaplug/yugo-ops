@@ -1,9 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isFeatureEnabled } from "@/lib/platform-settings";
 import { getLegalBranding } from "@/lib/legal-branding";
+import { getCompanyPhone } from "@/lib/config";
 import type { TierFeature } from "./quote-shared";
 import QuotePageClient from "./QuotePageClient";
 import QuoteExpired from "./QuoteExpired";
+import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ quoteId: 
 
 export default async function QuotePage({ params }: { params: Promise<{ quoteId: string }> }) {
   const { quoteId } = await params;
+  const [supportPhone, brandingEarly] = await Promise.all([getCompanyPhone(), getLegalBranding()]);
   // Use admin client so the quote is found by link regardless of RLS (anon can only see sent/viewed/accepted).
   const admin = createAdminClient();
   const { data: quote, error } = await admin
@@ -23,12 +26,38 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
     .single();
 
   if (error || !quote) {
-    return <QuoteExpired quoteId={quoteId} reason="not_found" />;
+    return (
+      <QuoteExpired
+        quoteId={quoteId}
+        reason="not_found"
+        supportEmail={brandingEarly.email}
+        supportTel={supportPhone}
+      />
+    );
   }
 
-  const isExpired = quote.expires_at && new Date(quote.expires_at) < new Date();
-  if (isExpired && quote.status !== "accepted") {
-    return <QuoteExpired quoteId={quoteId} reason="expired" expiresAt={quote.expires_at} />;
+  const st = (quote.status || "").toLowerCase();
+  if (st === "expired") {
+    return (
+      <QuoteExpired
+        quoteId={quoteId}
+        reason="expired"
+        expiresAt={quote.expires_at}
+        supportEmail={brandingEarly.email}
+        supportTel={supportPhone}
+      />
+    );
+  }
+  if (isQuoteExpiredForBooking(quote)) {
+    return (
+      <QuoteExpired
+        quoteId={quoteId}
+        reason="expired"
+        expiresAt={quote.expires_at}
+        supportEmail={brandingEarly.email}
+        supportTel={supportPhone}
+      />
+    );
   }
 
   // Mark as viewed + record event (server-side, fire-and-forget)
@@ -83,7 +112,7 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
   const slotsRemaining = Math.max(0, totalCrews - movesOnDate);
 
   const valuationEnabled = await isFeatureEnabled("valuation_upgrades");
-  const branding = await getLegalBranding();
+  const branding = brandingEarly;
 
   let eventFeatures: TierFeature[] | null = null;
   const rawEv = eventFeatResult?.data?.value;
@@ -104,7 +133,11 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
       slotsRemaining={slotsRemaining}
       valuationTiers={valuationEnabled ? (valTiersResult?.data ?? []) : []}
       valuationUpgrades={valuationEnabled ? (valUpgradesResult?.data ?? []) : []}
-      branding={{ companyLegal: branding.companyLegal, brand: branding.brand }}
+      branding={{
+        companyLegal: branding.companyLegal,
+        brand: branding.brand,
+        email: branding.email,
+      }}
       eventFeatures={eventFeatures}
     />
   );

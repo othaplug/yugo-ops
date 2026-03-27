@@ -67,7 +67,7 @@ export default function TrackingAgreementModal() {
               color: FOREST,
             }}
           >
-            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
+            <h4 className="font-bold text-[11px] capitalize tracking-wider mb-2" style={{ color: GOLD }}>
               Terms of Use
             </h4>
             <p className="mb-3">
@@ -76,7 +76,7 @@ export default function TrackingAgreementModal() {
               inventory details, and move status.
             </p>
 
-            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
+            <h4 className="font-bold text-[11px] capitalize tracking-wider mb-2" style={{ color: GOLD }}>
               Privacy &amp; Data
             </h4>
             <p className="mb-3">
@@ -86,7 +86,7 @@ export default function TrackingAgreementModal() {
               your preferences and maintain your session.
             </p>
 
-            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
+            <h4 className="font-bold text-[11px] capitalize tracking-wider mb-2" style={{ color: GOLD }}>
               Tracking &amp; Location
             </h4>
             <p className="mb-3">
@@ -95,7 +95,7 @@ export default function TrackingAgreementModal() {
               only during active moves and is not stored permanently.
             </p>
 
-            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
+            <h4 className="font-bold text-[11px] capitalize tracking-wider mb-2" style={{ color: GOLD }}>
               Claims &amp; Liability
             </h4>
             <p>

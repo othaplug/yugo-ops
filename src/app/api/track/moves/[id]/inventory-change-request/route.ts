@@ -219,7 +219,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // SMS admin / dispatch
   try {
     const phone = await getDispatchPhone();
-    const bodySms = `Inventory change: ${moveCode}. +${parsed.added.length} / -${parsed.removed.length} lines. Net ${autoDelta >= 0 ? "+" : ""}$${autoDelta}. Review in admin.`;
+    const bodySms = [
+      `Inventory change: ${moveCode}`,
+      `+${parsed.added.length} / -${parsed.removed.length} lines. Net ${autoDelta >= 0 ? "+" : ""}$${autoDelta}.`,
+      `Review in admin.`,
+    ].join("\n\n");
     await sendSMS(phone.replace(/\s/g, ""), bodySms);
   } catch {
     /* optional */

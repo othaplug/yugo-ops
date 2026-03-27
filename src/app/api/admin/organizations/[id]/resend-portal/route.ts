@@ -68,7 +68,7 @@ export async function POST(
     if (sendError) {
       const message = (sendError as { message?: string }).message ?? String(sendError);
       return NextResponse.json(
-        { error: message.includes("domain") || message.includes("verified") ? `Email failed: ${message}. Verify the sending domain (opsplus.co) in Resend.` : message },
+        { error: message.includes("domain") || message.includes("verified") ? `Email failed: ${message}. Verify the sending domain (helloyugo.com) in Resend.` : message },
         { status: 500 }
       );
     }

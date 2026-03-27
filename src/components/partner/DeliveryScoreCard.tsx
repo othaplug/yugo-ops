@@ -19,7 +19,7 @@ export default function DeliveryScoreCard({ score, onTime, damageFree, rating }:
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <ChartBar size={14} color={color} />
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+          <span className="text-[11px] font-bold capitalize tracking-wider text-[var(--tx3)]">
             Delivery Score
           </span>
         </div>

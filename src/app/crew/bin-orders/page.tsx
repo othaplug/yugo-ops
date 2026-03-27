@@ -169,8 +169,7 @@ export default function CrewBinOrdersPage() {
         )}
 
         {!loading && tasks.length === 0 && (
-          <div className="text-center py-16">
-            <Recycle size={40} color="#374151" className="mx-auto mb-3" />
+          <div className="text-center py-16 px-4">
             <p className="text-gray-400 font-medium">No bin tasks today or tomorrow</p>
           </div>
         )}
@@ -196,7 +195,7 @@ export default function CrewBinOrdersPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-[14px]">{task.order_number}</span>
                           {task.status === "overdue" && <Warning size={13} color="#ef4444" />}
-                          <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${task.taskType === "dropoff" ? "bg-[#7C9FD4]/15 text-[#7C9FD4]" : "bg-[#22c55e]/15 text-[#22c55e]"}`}>
+                          <span className={`text-[10px] font-bold capitalize tracking-wide px-1.5 py-0.5 rounded ${task.taskType === "dropoff" ? "bg-[#7C9FD4]/15 text-[#7C9FD4]" : "bg-[#22c55e]/15 text-[#22c55e]"}`}>
                             {task.taskType === "dropoff" ? <><Recycle size={10} className="inline" /> Drop-off</> : <><Truck size={10} className="inline" /> Pickup</>}
                           </span>
                         </div>
@@ -229,7 +228,7 @@ export default function CrewBinOrdersPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="font-bold text-[16px]">{activeTask.order_number}</span>
-                  <span className={`ml-2 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${activeTask.taskType === "dropoff" ? "bg-[#7C9FD4]/15 text-[#7C9FD4]" : "bg-[#22c55e]/15 text-[#22c55e]"}`}>
+                  <span className={`ml-2 text-[10px] font-bold capitalize tracking-wide px-2 py-0.5 rounded ${activeTask.taskType === "dropoff" ? "bg-[#7C9FD4]/15 text-[#7C9FD4]" : "bg-[#22c55e]/15 text-[#22c55e]"}`}>
                     {activeTask.taskType === "dropoff"
                     ? <><Recycle size={11} className="inline mr-0.5" /> Drop-off</>
                     : <><Truck size={11} className="inline mr-0.5" /> Pickup</>}

@@ -30,7 +30,7 @@ export default function DeliveryCrewPhotosSection({ deliveryId }: { deliveryId: 
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
-      <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
+      <h3 className="font-heading text-[10px] font-bold tracking-wide capitalize text-[var(--tx3)] mb-2">
         Crew photos (by checkpoint)
       </h3>
       <div className="space-y-4">

@@ -126,7 +126,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
             {/* Vendor List (expanded) */}
             {isExpanded && (
               <div className="border-t border-[#E8E4DF] px-5 py-3">
-                <div className="text-[10px] font-semibold tracking-wider uppercase text-[#888] mb-3">Vendor Receiving</div>
+                <div className="text-[10px] font-semibold tracking-wider capitalize text-[#888] mb-3">Vendor Receiving</div>
                 <div className="space-y-2.5">
                   {project.vendors.map((v, i) => {
                     const statusKey = (v.status || "").toLowerCase();

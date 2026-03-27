@@ -1,5 +1,6 @@
 "use client";
 
+import { toTitleCase } from "@/lib/format-text";
 import { useEffect, useState } from "react";
 import { ShippingContainer, ClipboardText, CheckCircle, Clock } from "@phosphor-icons/react";
 
@@ -102,7 +103,7 @@ export default function PublicInboundTrackClient({ id, token }: { id: string; to
                   <CheckCircle size={18} weight="fill" aria-hidden />
                 </span>
                 <div>
-                  <div className="font-medium">{row.status.replace(/_/g, " ")}</div>
+                  <div className="font-medium">{toTitleCase(row.status)}</div>
                   <div className="text-[var(--tx3)] text-xs">
                     {new Date(row.created_at).toLocaleString()}
                   </div>

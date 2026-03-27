@@ -81,7 +81,7 @@ export default function MultiStopAddressField({
 
   return (
     <div className="space-y-1.5">
-      <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
+      <label className="block text-[11px] font-semibold text-[var(--tx3)] capitalize tracking-wide">
         {label}
       </label>
 
@@ -101,7 +101,7 @@ export default function MultiStopAddressField({
               disabled={disabled}
               className={
                 index > 0
-                  ? `pl-8 ${inputClassName ?? ""}`
+                  ? `field-input--leading ${inputClassName ?? ""}`.trim()
                   : inputClassName
               }
             />

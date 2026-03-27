@@ -119,7 +119,7 @@ export default function InboundShipmentsClient() {
             >
               <Icon className="text-[var(--gold)] shrink-0" size={22} aria-hidden />
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">{label}</div>
+                <div className="text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)]">{label}</div>
                 <div className="text-xl font-semibold text-[var(--tx)]">{value}</div>
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function InboundShipmentsClient() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--brd)] text-left text-[var(--tx3)] text-xs uppercase tracking-wide">
+              <tr className="border-b border-[var(--brd)] text-left text-[var(--tx3)] text-xs capitalize tracking-wide">
                 <th className="px-4 py-3 font-semibold">Reference</th>
                 <th className="px-4 py-3 font-semibold">Item</th>
                 <th className="px-4 py-3 font-semibold">Status</th>

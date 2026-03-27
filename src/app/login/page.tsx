@@ -84,7 +84,7 @@ export default function AdminLoginPage() {
           width: 100%; padding: 13px; background: linear-gradient(135deg, #C9A962 0%, #B89A52 100%);
           color: #08080A; border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
           font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
-          text-transform: uppercase; letter-spacing: 1px; min-height: 48px;
+          text-transform: capitalize; letter-spacing: 1px; min-height: 48px;
         }
         .adm-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,169,98,0.35); }
         .adm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -102,7 +102,7 @@ export default function AdminLoginPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
             <YugoLogo size={22} variant="gold" />
             <div style={{ height: 16, width: 1, background: "#1E1E22" }} />
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: "#4A4A4E" }}>Admin Console</span>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "capitalize" as const, color: "#4A4A4E" }}>Admin Console</span>
           </div>
 
           {mode === "login" && (
@@ -122,11 +122,11 @@ export default function AdminLoginPage() {
               )}
               <form onSubmit={handleLogin}>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 7 }}>Email</label>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "capitalize" as const, color: "#4A4A4E", marginBottom: 7 }}>Email</label>
                   <input className="adm-input" type="email" placeholder="admin@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
                 </div>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 7 }}>Password</label>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "capitalize" as const, color: "#4A4A4E", marginBottom: 7 }}>Password</label>
                   <div style={{ position: "relative" }}>
                     <input className="adm-input" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required
                       style={{ paddingRight: 32 }} />
@@ -182,7 +182,7 @@ export default function AdminLoginPage() {
               )}
               <form onSubmit={handleForgotPassword}>
                 <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#4A4A4E", marginBottom: 7 }}>Email</label>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "capitalize" as const, color: "#4A4A4E", marginBottom: 7 }}>Email</label>
                   <input className="adm-input" type="email" placeholder="admin@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
                 </div>
                 <button type="submit" className="adm-btn" disabled={resetLoading}>

@@ -26,11 +26,11 @@ function dateDisplay(dateStr: string | null | undefined): string {
 const GOLD_BTN = "#B8962E";
 const EQ_SANS = "Helvetica Neue,Helvetica,Arial,sans-serif";
 const EQ_H1 =
-  "font-size:20px;font-weight:700;margin:0 0 12px;color:#FFFFFF;letter-spacing:0.12em;text-transform:uppercase;line-height:1.35;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
+  "font-size:20px;font-weight:700;margin:0 0 12px;color:#FFFFFF;letter-spacing:0.12em;text-transform:capitalize;line-height:1.35;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
 const EQ_LEAD =
   "font-size:14px;color:#A3A3A3;line-height:1.65;margin:0 0 26px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
 const EQ_EYE =
-  "font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:10px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
+  "font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.16em;text-transform:capitalize;margin-bottom:10px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
 const EQ_PANEL =
   "background:#1C1C1C;border:1px solid rgba(255,255,255,0.1);border-radius:2px;padding:20px;margin-bottom:20px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
 const EQ_MUTED = "#8A8A8A";
@@ -44,7 +44,7 @@ function ctaButton(url: string, label: string, sub?: string): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0 ${sub ? "6px" : "16px"};">
       <tr>
         <td align="center" style="text-align:center;">
-          <a href="${url}" style="display:inline-block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:0.14em;text-transform:uppercase;font-family:${EQ_SANS};">
+          <a href="${url}" style="display:inline-block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:0.14em;text-transform:capitalize;font-family:${EQ_SANS};">
             ${label}
           </a>
         </td>
@@ -107,7 +107,7 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
     </p>
 
     <div style="${EQ_PANEL}">
-      <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:14px;font-family:${EQ_SANS}">Pre-move checklist</div>
+      <div style="font-size:10px;color:#B8962E;text-transform:capitalize;font-weight:700;letter-spacing:0.12em;margin-bottom:14px;font-family:${EQ_SANS}">Pre-move checklist</div>
       <div style="font-size:13px;color:${EQ_MUTED};line-height:2;font-family:${EQ_SANS}">
         <div>&#9744; Book elevator or loading dock at both locations</div>
         <div>&#9744; Reserve parking access for our truck</div>
@@ -121,7 +121,7 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
 
     ${accessNotes.length > 0 ? `
       <div style="background:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.22);border-radius:2px;padding:16px;margin-bottom:20px;font-family:${EQ_SANS}">
-        <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Access notes</div>
+        <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:capitalize;margin-bottom:8px">Access notes</div>
         <div style="font-size:12px;color:#A3A3A3;line-height:1.6">
           ${accessNotes.join("<br/>")}
         </div>
@@ -130,7 +130,7 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:22px;font-family:${EQ_SANS}">
       <tr>
-        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Move details</td>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:capitalize;">Move details</td>
       </tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Reference</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.moveCode}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.fromAddress}</td></tr>
@@ -171,7 +171,7 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:18px;font-family:${EQ_SANS}">
       <tr>
-        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Crew details</td>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:capitalize;">Crew details</td>
       </tr>
       ${d.crewLeadName ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Crew lead</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${d.crewLeadName}</td></tr>` : ""}
       ${d.crewSize ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Crew size</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${d.crewSize} movers</td></tr>` : ""}
@@ -181,7 +181,7 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:20px;font-family:${EQ_SANS}">
       <tr>
-        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Move details</td>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:capitalize;">Move details</td>
       </tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Date</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_VALUE};font-weight:600">${dateDisplay(d.moveDate)}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.fromAddress}</td></tr>
@@ -190,7 +190,7 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
 
     ${d.coordinatorName ? `
       <div style="background:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.22);border-radius:2px;padding:16px;margin-bottom:20px;font-family:${EQ_SANS}">
-        <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Your coordinator</div>
+        <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:capitalize;margin-bottom:6px">Your coordinator</div>
         <div style="font-size:13px;color:${EQ_VALUE};margin-top:4px">${d.coordinatorName}${d.coordinatorPhone ? ` &middot; ${formatPhone(d.coordinatorPhone)}` : ""}</div>
         <div style="font-size:11px;color:${EQ_MUTED};margin-top:4px">Available by phone or text if you need anything before tomorrow.</div>
       </div>
@@ -224,12 +224,12 @@ export function balanceReceiptEmail(d: BalanceReceiptData): string {
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:24px;font-family:${EQ_SANS}">
       <tr>
-        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Payment summary</td>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:capitalize;">Payment summary</td>
       </tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Reference</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.moveCode}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Balance paid</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:#2D9F5A;font-weight:700">${formatCurrency(d.amount)}</td></tr>
       ${d.paymentMethod ? `<tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Payment method</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.paymentMethod}</td></tr>` : ""}
-      <tr><td style="border-top:1px solid rgba(255,255,255,0.1);padding:14px 16px;font-size:12px;color:#B8962E;font-weight:700;text-transform:uppercase;letter-spacing:0.08em">Total paid</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.1);padding:14px 16px;font-size:14px;color:#B8962E;font-weight:700">${formatCurrency(d.totalPaid)}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.1);padding:14px 16px;font-size:12px;color:#B8962E;font-weight:700;text-transform:capitalize;letter-spacing:0.08em">Total paid</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.1);padding:14px 16px;font-size:14px;color:#B8962E;font-weight:700">${formatCurrency(d.totalPaid)}</td></tr>
     </table>
 
     ${ctaButton(d.trackingUrl, "View move details")}
@@ -258,7 +258,7 @@ export function moveCompleteEmail(d: MoveCompleteData): string {
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:24px;font-family:${EQ_SANS}">
       <tr>
-        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Move summary</td>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:capitalize;">Move summary</td>
       </tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Reference</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.moveCode}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.fromAddress}</td></tr>
@@ -267,14 +267,14 @@ export function moveCompleteEmail(d: MoveCompleteData): string {
     </table>
 
     <div style="margin-bottom:22px;font-family:${EQ_SANS}">
-      <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:10px">Your documents</div>
+      <div style="font-size:10px;color:#B8962E;text-transform:capitalize;font-weight:700;letter-spacing:0.12em;margin-bottom:10px">Your documents</div>
       <p style="font-size:13px;color:${EQ_MUTED};line-height:1.65;margin:0">
         Your move summary, invoice, and receipt are available to download directly from your portal. We keep these secure and accessible at any time.
       </p>
     </div>
 
     <div style="margin-bottom:24px;font-family:${EQ_SANS}">
-      <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:10px">What&apos;s next</div>
+      <div style="font-size:10px;color:#B8962E;text-transform:capitalize;font-weight:700;letter-spacing:0.12em;margin-bottom:10px">What&apos;s next</div>
       <div style="font-size:13px;color:${EQ_MUTED};line-height:1.85">
         <div>1. Download your documents from the portal</div>
         <div>2. A brief follow-up will arrive by email shortly</div>
@@ -298,7 +298,7 @@ export interface ReviewRequestData {
 
 export function reviewRequestEmail(d: ReviewRequestData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Experience?</div>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:capitalize;margin-bottom:8px">How Was Your Experience?</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your feedback means a great deal to us and to families looking for a mover they can trust. A brief review is the best way to share your experience.
@@ -307,7 +307,7 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
       <tr>
         <td align="center">
-          <a href="${d.googleReviewUrl}" style="display:block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:uppercase;">
+          <a href="${d.googleReviewUrl}" style="display:block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:capitalize;">
             Share Your Experience
           </a>
         </td>
@@ -318,10 +318,10 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
       <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px;">
         <tr>
           <td style="background-color:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.25);padding:22px;text-align:center;">
-            <div style="font-size:8px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Know Someone Moving?</div>
+            <div style="font-size:8px;color:#C9A962;text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Know Someone Moving?</div>
             <div style="font-family:'Instrument Serif', Georgia, serif;font-size:24px;font-weight:400;color:#F5F5F3;margin-bottom:8px;">Give $50. Get $50.</div>
             <p style="font-size:12px;color:#B8B5B0;margin:0 0 16px;line-height:1.6;">Share your referral link and you both receive $50 off a future move.</p>
-            <a href="${d.referralUrl}" style="display:inline-block;background-color:transparent;color:#C9A962;padding:9px 22px;font-size:11px;font-weight:700;letter-spacing:1px;text-decoration:none;border:1px solid #C9A96280;text-transform:uppercase;">
+            <a href="${d.referralUrl}" style="display:inline-block;background-color:transparent;color:#C9A962;padding:9px 22px;font-size:11px;font-weight:700;letter-spacing:1px;text-decoration:none;border:1px solid #C9A96280;text-transform:capitalize;">
               Share Your Link
             </a>
           </td>
@@ -353,7 +353,7 @@ export const reviewRequestEssentialsEmail = (d: ReviewRequestTierData): string =
 
 export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">How Was Your Experience?</div>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:capitalize;margin-bottom:8px">How Was Your Experience?</div>
     <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       It was a pleasure taking care of your move today. We hope you are already settling in comfortably.
@@ -373,7 +373,7 @@ export const reviewRequestPremierEmail = (d: ReviewRequestTierData): string => r
 
 export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Your Experience Matters</div>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:capitalize;margin-bottom:8px">Your Experience Matters</div>
     <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">How was your move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       It was truly a pleasure taking care of your move today. We hope you are already settling in and feeling at home.
@@ -390,7 +390,7 @@ export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
 
 export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">A Note of Gratitude</div>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:capitalize;margin-bottom:8px">A Note of Gratitude</div>
     <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">${firstName(d.clientName) ? `${firstName(d.clientName)}, it was our privilege` : "It was our privilege"}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Thank you for entrusting Yugo with your home and belongings. Every detail of your move matters to us, and we hope today reflected that.
@@ -414,7 +414,7 @@ export interface ReviewRequestReminderData {
 
 export function reviewRequestReminderEmail(d: ReviewRequestReminderData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">A Gentle Reminder</div>
+    <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:capitalize;margin-bottom:8px">A Gentle Reminder</div>
     <h1 style="font-family:'Instrument Serif', Verdana, Helvetica, sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">A moment for your review${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We know settling in keeps you busy. Whenever you have a moment, your review would mean the world to our team and to families searching for a mover they can trust.
@@ -439,7 +439,7 @@ export interface LowSatisfactionData {
 
 export function lowSatisfactionEmail(d: LowSatisfactionData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">We Are Here For You</div>
+    <div style="font-size:9px;font-weight:700;color:#D48A29;letter-spacing:1.5px;text-transform:capitalize;margin-bottom:8px">We Are Here For You</div>
     <h1 style="font-size:22px;font-weight:700;margin:0 0 8px;color:#F5F5F3">We hear you${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}.</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       We understand your experience fell short of what you deserved, and we sincerely apologize. This is not the standard we hold ourselves to, and we are committed to making it right.
@@ -475,7 +475,7 @@ export interface InternalLowSatAlertData {
 
 export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
   return legacyEmailLayout(`
-    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Low Satisfaction Alert</div>
+    <div style="font-size:9px;font-weight:700;color:#D14343;letter-spacing:1.5px;text-transform:capitalize;margin-bottom:8px">Low Satisfaction Alert</div>
     <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${d.moveCode} - ${d.clientName}</h1>
 
     <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.2);border-radius:8px;padding:14px;margin-bottom:20px">
@@ -622,7 +622,7 @@ export function cancellationConfirmEmail(d: CancellationConfirmData): string {
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:22px;font-family:${EQ_SANS}">
       <tr>
-        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Cancelled move</td>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:capitalize;">Cancelled move</td>
       </tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Reference</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:#B8962E;font-weight:700">${d.moveCode}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.fromAddress}</td></tr>
@@ -633,7 +633,7 @@ export function cancellationConfirmEmail(d: CancellationConfirmData): string {
 
     ${d.refundAmount && d.refundAmount > 0 ? `
       <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.22);border-radius:2px;padding:20px;margin-bottom:22px;font-family:${EQ_SANS}">
-        <div style="font-size:10px;color:#2D9F5A;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:8px">Refund issued</div>
+        <div style="font-size:10px;color:#2D9F5A;text-transform:capitalize;font-weight:700;letter-spacing:0.12em;margin-bottom:8px">Refund issued</div>
         <div style="font-size:26px;font-weight:700;color:#2D9F5A;margin-bottom:8px">${formatCurrency(d.refundAmount)}</div>
         <div style="font-size:12px;color:${EQ_MUTED};line-height:1.6">
           Refunds typically post within 3&ndash;5 business days; your bank may take up to 7 business days.
@@ -698,7 +698,7 @@ export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
     </p>
 
     <div style="${EQ_PANEL}">
-      <div style="font-size:10px;color:#B8962E;text-transform:uppercase;font-weight:700;letter-spacing:0.12em;margin-bottom:12px">Automatic payment</div>
+      <div style="font-size:10px;color:#B8962E;text-transform:capitalize;font-weight:700;letter-spacing:0.12em;margin-bottom:12px">Automatic payment</div>
       <div style="background:rgba(184,150,46,0.08);border:1px solid rgba(184,150,46,0.2);border-radius:2px;padding:16px;font-family:${EQ_SANS}">
         <div style="font-size:13px;color:#B8962E;font-weight:700;margin-bottom:8px">Card on file</div>
         <div style="font-size:12px;color:${EQ_MUTED};line-height:1.65">
@@ -735,7 +735,7 @@ export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
 
     <div style="margin-bottom:22px;font-family:${EQ_SANS}">
       <div style="background:rgba(184,150,46,0.1);border:1px solid rgba(184,150,46,0.28);border-radius:2px;padding:22px;text-align:center">
-        <div style="font-size:10px;color:#B8962E;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">Scheduled charge</div>
+        <div style="font-size:10px;color:#B8962E;font-weight:700;text-transform:capitalize;letter-spacing:0.12em;margin-bottom:10px">Scheduled charge</div>
         <div style="font-size:28px;font-weight:700;color:#B8962E;margin-bottom:10px;letter-spacing:0.02em">${formatCurrency(d.balanceAmount)}</div>
         <div style="font-size:12px;color:${EQ_MUTED};line-height:1.65">
           Charge date: <strong style="color:#E8E8E8">${dateDisplay(d.autoChargeDate)}</strong>. No action needed.
@@ -769,13 +769,13 @@ export function balanceAutoChargeReceiptEmail(d: BalanceAutoChargeReceiptData): 
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:20px;font-family:${EQ_SANS}">
       <tr>
-        <td style="background-color:${EQ_CREME_HEAD};padding:10px 14px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.12em;text-transform:uppercase;width:58%;">Description</td>
-        <td align="right" style="background-color:${EQ_CREME_HEAD};padding:10px 14px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.12em;text-transform:uppercase">Amount</td>
+        <td style="background-color:${EQ_CREME_HEAD};padding:10px 14px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.12em;text-transform:capitalize;width:58%;">Description</td>
+        <td align="right" style="background-color:${EQ_CREME_HEAD};padding:10px 14px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.12em;text-transform:capitalize">Amount</td>
       </tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:12px 14px;font-size:12px;color:${EQ_VALUE}">Base balance</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.08);padding:12px 14px;font-size:12px;color:${EQ_VALUE}">${formatCurrency(d.baseBalance)}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:12px 14px;font-size:12px;color:${EQ_MUTED}">Processing fee (3.3%)</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:12px 14px;font-size:12px;color:${EQ_VALUE}">${formatCurrency(d.processingFee)}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:12px 14px;font-size:12px;color:${EQ_MUTED}">Transaction fee</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.06);padding:12px 14px;font-size:12px;color:${EQ_VALUE}">${formatCurrency(d.transactionFee)}</td></tr>
-      <tr><td style="border-top:1px solid rgba(255,255,255,0.12);padding:14px 14px;font-size:12px;color:#B8962E;font-weight:700;text-transform:uppercase;letter-spacing:0.08em">Total</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.12);padding:14px 14px;font-size:15px;color:#B8962E;font-weight:700">${formatCurrency(d.totalCharged)}</td></tr>
+      <tr><td style="border-top:1px solid rgba(255,255,255,0.12);padding:14px 14px;font-size:12px;color:#B8962E;font-weight:700;text-transform:capitalize;letter-spacing:0.08em">Total</td><td align="right" style="border-top:1px solid rgba(255,255,255,0.12);padding:14px 14px;font-size:15px;color:#B8962E;font-weight:700">${formatCurrency(d.totalCharged)}</td></tr>
     </table>
 
     <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.22);border-radius:2px;padding:16px;margin-bottom:22px;text-align:center;font-family:${EQ_SANS}">
@@ -833,7 +833,7 @@ export function balanceChargeFailedAdminEmail(d: BalanceChargeFailedAdminData): 
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid rgba(255,255,255,0.14);margin-bottom:20px;font-family:${EQ_SANS}">
       <tr>
-        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:uppercase;">Client</td>
+        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:10px;font-weight:700;color:#B8962E;letter-spacing:0.14em;text-transform:capitalize;">Client</td>
       </tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Name</td><td style="border-top:1px solid rgba(255,255,255,0.08);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.clientName}</td></tr>
       <tr><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_MUTED}">Email</td><td style="border-top:1px solid rgba(255,255,255,0.06);padding:11px 16px;font-size:12px;color:${EQ_VALUE}">${d.clientEmail}</td></tr>
@@ -843,7 +843,7 @@ export function balanceChargeFailedAdminEmail(d: BalanceChargeFailedAdminData): 
     </table>
 
     <div style="background:rgba(184,150,46,0.1);border:1px solid rgba(184,150,46,0.22);border-radius:2px;padding:16px;font-family:${EQ_SANS}">
-      <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Action required</div>
+      <div style="font-size:10px;color:#B8962E;font-weight:700;letter-spacing:0.1em;text-transform:capitalize;margin-bottom:6px">Action required</div>
       <div style="font-size:12px;color:${EQ_MUTED}">Contact the client immediately. Move is imminent and balance is unpaid.</div>
     </div>
   `);

@@ -345,7 +345,7 @@ export default function InventoryInput({
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+        <h3 className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">
           {isCommercial ? "Equipment & Furniture" : "Client Inventory"}
         </h3>
         {!addOnlyMode && (value.length > 0 || internalBoxCount > 0) && (
@@ -420,7 +420,10 @@ export default function InventoryInput({
       {/* Search input */}
       <div ref={searchRef} className="relative">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--tx3)]" />
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 shrink-0 -translate-y-1/2 text-[var(--tx2)]"
+            aria-hidden
+          />
           <input
             type="text"
             value={search}
@@ -430,7 +433,7 @@ export default function InventoryInput({
             }}
             onFocus={() => setShowDropdown(true)}
             placeholder={isCommercial ? "Search items (desk, filing cabinet, server rack…)" : "Search items (sofa, bed, TV, fridge…)"}
-            className={`${fieldInput} pl-8`}
+            className={`${fieldInput} field-input--leading`}
           />
         </div>
         {showDropdown && filteredSearch.length > 0 && (
@@ -468,7 +471,7 @@ export default function InventoryInput({
           <button
             type="button"
             onClick={() => setPasteOpen((o) => !o)}
-            className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+            className="text-[10px] font-semibold text-[var(--tx2)] underline decoration-[var(--brd)] underline-offset-2 hover:text-[var(--gold)] hover:decoration-[var(--gold)]/50"
           >
             {pasteOpen ? "Hide paste inventory" : "Paste inventory list"}
           </button>
@@ -572,11 +575,13 @@ export default function InventoryInput({
       )}
 
       {/* Custom item input + Box count */}
-      <div className="border-t border-[var(--brd)]/30 pt-3 space-y-2">
-        <p className="text-[9px] text-[var(--tx3)]">Can&apos;t find an item?</p>
-        <div className="flex flex-wrap gap-2 items-start">
-          <div className="flex-1 min-w-[120px]">
-            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Item name</label>
+      <div className="border-t border-[var(--brd)]/30 pt-3 space-y-3">
+        <p className="text-[10px] text-[var(--tx2)]">Can&apos;t find an item?</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="min-w-0 flex-1 sm:min-w-[200px]">
+            <label className="mb-1 block text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
+              Item name
+            </label>
             <input
               type="text"
               value={customName}
@@ -586,71 +591,81 @@ export default function InventoryInput({
               className={fieldInput}
             />
           </div>
-          <div className="w-24 flex-none">
-            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Weight</label>
-            <select
-              value={customWeight}
-              onChange={(e) => setCustomWeight(Number(e.target.value))}
-              className={fieldInput}
-            >
-              {CUSTOM_WEIGHT_OPTS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="button"
-            onClick={addCustomItem}
-            disabled={!customName.trim()}
-            className="flex-none self-end inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
-          >
-            <Plus className="w-[12px] h-[12px]" /> Add Custom Item
-          </button>
-          {onBoxCountChange !== undefined && (
-            <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-end gap-2 sm:gap-3">
+            <div className="w-28 shrink-0 sm:w-24">
+              <label className="mb-1 block text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
+                Weight
+              </label>
               <select
-                value={showCustomBox ? -1 : internalBoxCount}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  if (v === -1) {
-                    setShowCustomBox(true);
-                    setCustomBoxInput(internalBoxCount > 0 ? String(internalBoxCount) : "");
-                  } else {
-                    setShowCustomBox(false);
-                    setCustomBoxInput("");
-                    onBoxCountChange(v);
-                  }
-                }}
-                className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2 py-1 text-[var(--tx)] outline-none min-w-0"
+                value={customWeight}
+                onChange={(e) => setCustomWeight(Number(e.target.value))}
+                className={fieldInput}
               >
-                {BOX_RANGES.map((o) => (
+                {CUSTOM_WEIGHT_OPTS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
-              {showCustomBox && (
-                <>
-                  <input
-                    type="number"
-                    min={1}
-                    max={9999}
-                    value={customBoxInput}
-                    onChange={(e) => {
-                      setCustomBoxInput(e.target.value);
-                      const n = parseInt(e.target.value, 10);
-                      if (!isNaN(n) && n > 0) onBoxCountChange(n);
-                    }}
-                    placeholder="e.g. 120"
-                    className="w-16 text-[11px] bg-[var(--bg)] border border-[var(--gold)]/50 rounded-lg px-2 py-1 text-[var(--tx)] outline-none focus:border-[var(--gold)]"
-                    autoFocus
-                  />
-                  <span className="text-[10px] text-[var(--tx3)]">boxes</span>
-                </>
-              )}
-              {internalBoxCount > 0 && (
-                <span className="text-[9px] text-[var(--tx3)] font-mono">+{boxScore.toFixed(1)}</span>
-              )}
             </div>
-          )}
+            {onBoxCountChange !== undefined && (
+              <div className="flex min-w-0 flex-col gap-1 sm:max-w-[200px]">
+                <span className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
+                  Box estimate
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <select
+                    value={showCustomBox ? -1 : internalBoxCount}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (v === -1) {
+                        setShowCustomBox(true);
+                        setCustomBoxInput(internalBoxCount > 0 ? String(internalBoxCount) : "");
+                      } else {
+                        setShowCustomBox(false);
+                        setCustomBoxInput("");
+                        onBoxCountChange(v);
+                      }
+                    }}
+                    className={`${fieldInput} min-w-[7.5rem] sm:min-w-0`}
+                    aria-label="Estimated number of boxes"
+                  >
+                    {BOX_RANGES.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  {showCustomBox && (
+                    <>
+                      <input
+                        type="number"
+                        min={1}
+                        max={9999}
+                        value={customBoxInput}
+                        onChange={(e) => {
+                          setCustomBoxInput(e.target.value);
+                          const n = parseInt(e.target.value, 10);
+                          if (!isNaN(n) && n > 0) onBoxCountChange(n);
+                        }}
+                        placeholder="e.g. 120"
+                        className="w-[4.5rem] rounded-md border border-[var(--gold)]/50 bg-[var(--bg)] px-2 py-1.5 text-[11px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+                        autoFocus
+                      />
+                      <span className="text-[10px] text-[var(--tx2)]">boxes</span>
+                    </>
+                  )}
+                  {internalBoxCount > 0 && (
+                    <span className="text-[10px] font-mono text-[var(--tx2)]">+{boxScore.toFixed(1)} score</span>
+                  )}
+                </div>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={addCustomItem}
+              disabled={!customName.trim()}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[var(--gold)] px-3 py-2 text-[10px] font-semibold text-[var(--btn-text-on-accent)] shadow-sm transition-[filter,opacity] hover:brightness-105 disabled:opacity-50 sm:self-end"
+            >
+              <Plus className="size-3.5 shrink-0" weight="bold" /> Add custom item
+            </button>
+          </div>
         </div>
       </div>
 
@@ -835,8 +850,8 @@ export default function InventoryInput({
 
       {/* Empty state */}
       {!addOnlyMode && value.length === 0 && internalBoxCount === 0 && (
-        <p className="text-[10px] text-[var(--tx3)] italic">
-          No inventory added, standard volume assumed for pricing.
+        <p className="text-[11px] leading-snug text-[var(--tx2)]">
+          No inventory added yet — standard volume is assumed for pricing.
         </p>
       )}
       {!addOnlyMode && value.length === 0 && internalBoxCount > 0 && (

@@ -360,13 +360,15 @@ export async function runPostPaymentActions(
         const to = digits.startsWith("1") ? `+${digits}` : `+1${digits}`;
 
         const companyDisplayName = await getCompanyDisplayName();
+        const first = clientName?.trim().split(/\s+/)[0] || "there";
         await sendSMS(
           to,
           [
-            `You're booked with ${companyDisplayName}! Ref: ${input.moveCode}.`,
-            `Your coordinator will reach out within 24hrs.`,
-            `Track your move: ${trackingUrl}`,
-          ].join(" ")
+            `Hi ${first},`,
+            `You're booked with ${companyDisplayName}. Reference: ${input.moveCode}.`,
+            `Your coordinator will reach out within 24 hours.`,
+            `Track your move:\n${trackingUrl}`,
+          ].join("\n\n"),
         );
       },
     },

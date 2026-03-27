@@ -34,7 +34,7 @@ export default function MonthView({ year, month, todayKey, eventsByDate, onEvent
         {DAY_NAMES.map((d) => (
           <div
             key={d}
-            className="bg-[var(--bg)] py-2 text-center text-[10px] font-bold tracking-[0.14em] uppercase text-[#64748B] dark:text-[#94A3B8]"
+            className="bg-[var(--bg)] py-2 text-center text-[10px] font-bold tracking-[0.14em] capitalize text-[#64748B] dark:text-[#94A3B8]"
           >
             {d}
           </div>

@@ -199,7 +199,7 @@ export default function TruckAssignments() {
             <p className="text-[11px] text-[var(--tx3)] mb-4">{formatDateLabel(date)}</p>
             <form onSubmit={handleAdd} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck</label>
+                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Truck</label>
                 <select
                   value={formTruckId}
                   onChange={(e) => setFormTruckId(e.target.value)}
@@ -227,7 +227,7 @@ export default function TruckAssignments() {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team</label>
+                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Team</label>
                 <select
                   value={formTeamId}
                   onChange={(e) => setFormTeamId(e.target.value)}

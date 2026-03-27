@@ -264,7 +264,7 @@ export default function DispatchBoardClient({ today }: Props) {
         {/* Row 1: Title + primary CTA */}
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 leading-none mb-1.5">Operations</p>
+            <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/50 leading-none mb-1.5">Operations</p>
             <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] leading-none tracking-tight">Dispatch</h1>
           </div>
           <Link
@@ -490,7 +490,7 @@ export default function DispatchBoardClient({ today }: Props) {
             <div className="sm:hidden w-9 h-1 rounded-full bg-[var(--brd)] mx-auto mb-4" />
             <div className="flex items-start justify-between mb-5">
               <div>
-                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-0.5">
+                <p className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60 mb-0.5">
                   Contact Client
                 </p>
                 <h3 className="font-semibold text-[var(--tx)] text-[15px]">{contactJob.client}</h3>
@@ -578,7 +578,7 @@ export default function DispatchBoardClient({ today }: Props) {
             <div className="sm:hidden w-9 h-1 rounded-full bg-[var(--brd)] mx-auto mb-4" />
             <div className="flex items-start justify-between mb-5">
               <div>
-                <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-0.5">
+                <p className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60 mb-0.5">
                   Reassign Crew
                 </p>
                 <h3 className="font-semibold text-[var(--tx)] text-[15px]">{reassignJob.label}</h3>

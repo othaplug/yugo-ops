@@ -78,7 +78,7 @@ export default function InventoryChangeRequestPanel({
 
       {added.length > 0 && (
         <div className="mb-3">
-          <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">Adding</div>
+          <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">Adding</div>
           <ul className="text-[11px] text-[var(--tx2)] space-y-0.5">
             {(added as Record<string, unknown>[]).map((row, i) => (
               <li key={`a-${i}`}>
@@ -94,7 +94,7 @@ export default function InventoryChangeRequestPanel({
 
       {removed.length > 0 && (
         <div className="mb-3">
-          <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">Removing</div>
+          <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">Removing</div>
           <ul className="text-[11px] text-[var(--tx2)] space-y-0.5">
             {(removed as Record<string, unknown>[]).map((row, i) => (
               <li key={`r-${i}`}>
@@ -163,14 +163,14 @@ export default function InventoryChangeRequestPanel({
         </div>
       ) : (
         <div className="space-y-2 mt-2">
-          <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Adjusted net ($)</label>
+          <label className="block text-[10px] font-bold capitalize text-[var(--tx3)]">Adjusted net ($)</label>
           <input
             type="number"
             value={adjustDelta}
             onChange={(e) => setAdjustDelta(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px] text-[var(--tx)]"
           />
-          <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Note to client</label>
+          <label className="block text-[10px] font-bold capitalize text-[var(--tx3)]">Note to client</label>
           <textarea
             value={adjustNote}
             onChange={(e) => setAdjustNote(e.target.value)}
@@ -206,7 +206,7 @@ export default function InventoryChangeRequestPanel({
       )}
 
       <div className="mt-3 pt-3 border-t border-[var(--brd)]/40">
-        <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Decline reason (optional if using Decline)</label>
+        <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Decline reason (optional if using Decline)</label>
         <textarea
           value={declineReason}
           onChange={(e) => setDeclineReason(e.target.value)}

@@ -90,10 +90,10 @@ export default function PartnerSpendSummary() {
       <p className="mt-5 text-3xl font-bold tracking-tight" style={{ color: TEXT }}>
         {formatCurrency(data.totalSpend)}
       </p>
-      <p className="text-xs font-medium uppercase tracking-wide opacity-70">Total spend (6 months)</p>
+      <p className="text-xs font-medium capitalize tracking-wide opacity-70">Total spend (6 months)</p>
 
       <div className="mt-6">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide opacity-70">Monthly</p>
+        <p className="mb-2 text-xs font-semibold capitalize tracking-wide opacity-70">Monthly</p>
         <div className="flex h-[7.5rem] items-end justify-between gap-1.5">
           {data.monthlySpend.map((m) => {
             const maxPx = 104;

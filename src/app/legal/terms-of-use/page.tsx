@@ -32,7 +32,7 @@ export default async function TermsOfUsePage() {
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "48px 24px 80px" }}>
         <div style={{ marginBottom: 40 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#C9A962", marginBottom: 8 }}>Legal</p>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "capitalize", color: "#C9A962", marginBottom: 8 }}>Legal</p>
           <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 40, fontWeight: 500, color: "#1A1714", marginBottom: 12, lineHeight: 1.2 }}>Terms of Use</h1>
           <p style={{ fontSize: 14, color: "#888" }}>Effective date: {EFFECTIVE} · {companyLegal}</p>
         </div>

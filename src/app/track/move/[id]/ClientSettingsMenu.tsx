@@ -345,7 +345,7 @@ export default function ClientSettingsMenu({
                 {/* Items */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider" style={{ color: GOLD }}>
+                    <label className="text-[10px] font-bold capitalize tracking-wider" style={{ color: GOLD }}>
                       Damaged Item(s) *
                     </label>
                     <button
@@ -415,7 +415,7 @@ export default function ClientSettingsMenu({
 
                 {/* Photos */}
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: GOLD }}>
+                  <label className="block text-[10px] font-bold capitalize tracking-wider mb-2" style={{ color: GOLD }}>
                     Photos (optional, max 5)
                   </label>
                   <div className="flex flex-wrap gap-2 mb-2">
@@ -550,7 +550,7 @@ export default function ClientSettingsMenu({
                 className="rounded-xl p-4"
                 style={{ backgroundColor: theme === "dark" ? "#222" : "#FAF7F2" }}
               >
-                <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: GOLD }}>
+                <div className="text-[10px] font-bold capitalize tracking-wider mb-2" style={{ color: GOLD }}>
                   What happens next
                 </div>
                 <p className="text-[12px] leading-relaxed" style={{ color: theme === "dark" ? "#AAA" : "#666" }}>

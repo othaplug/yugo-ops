@@ -148,20 +148,20 @@ export default function AdminInvoiceDetailModal({
             {/* Header: Invoice #, Client, Status, Amount, Due Date */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/30">
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Client</div>
+                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Client</div>
                 <div className="text-[var(--tx)] font-semibold">{String(inv.client_name ?? invoice.client_name ?? "-")}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Status</div>
+                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Status</div>
                 <Badge status={String(inv.status ?? status)} />
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Amount</div>
+                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Amount</div>
                 <div className="text-[var(--tx)] font-bold">{formatCurrency(subtotal)}</div>
                 <div className="text-[10px] text-[var(--tx3)]">+{formatCurrency(hst)} HST · Total {formatCurrency(total)}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Due Date</div>
+                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Due Date</div>
                 <div className="text-[var(--tx)]">{String(inv.due_date ?? dueDate) || "-"}</div>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function AdminInvoiceDetailModal({
             {/* Delivery info (if delivery invoice) */}
             {delivery && (
               <div className="p-4 rounded-lg bg-[var(--bg)]/30 border border-[var(--brd)]/20">
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Delivery</div>
+                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Delivery</div>
                 <div className="space-y-1 text-[12px]">
                   {!!delivery.delivery_number && (
                     <div className="flex items-center gap-2">
@@ -200,7 +200,7 @@ export default function AdminInvoiceDetailModal({
             {/* Line items */}
             {lineItems.length > 0 && (
               <div>
-                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Line items</div>
+                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Line items</div>
                 <div className="overflow-x-auto rounded-lg border border-[var(--brd)]/30">
                   <table className="w-full text-[12px]">
                     <thead>
@@ -280,7 +280,7 @@ export default function AdminInvoiceDetailModal({
                 <div className="mt-4 space-y-4 p-4 rounded-lg bg-[var(--bg)]/30 border border-[var(--brd)]/20">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Subtotal ($)</label>
+                      <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Subtotal ($)</label>
                       <input
                         type="number"
                         value={amount}
@@ -294,7 +294,7 @@ export default function AdminInvoiceDetailModal({
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Due Date</label>
+                      <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Due Date</label>
                       <input
                         type="date"
                         value={dueDate}
@@ -304,7 +304,7 @@ export default function AdminInvoiceDetailModal({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Status</label>
+                    <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Status</label>
                     <select
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
@@ -316,7 +316,7 @@ export default function AdminInvoiceDetailModal({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
+                    <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">
                       {fileUrl ? "Replace PDF" : "Upload PDF"}
                     </label>
                     <input

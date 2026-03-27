@@ -80,18 +80,18 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
     <div>
       {/* Summary stats */}
       <div className="border-t border-[var(--brd)]/30 pt-6 mb-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Summary</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Summary</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8">
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Invoices</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Total Invoices</div>
             <div className="text-[20px] font-bold text-[var(--tx)] mt-0.5">{invoices.length}</div>
           </div>
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Outstanding</div>
             <div className="text-[20px] font-bold text-red-500 mt-0.5">{formatCurrency(totalOutstanding)}</div>
           </div>
           <div className="hidden sm:block">
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Paid</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Total Paid</div>
             <div className="text-[20px] font-bold text-emerald-500 mt-0.5">{formatCurrency(totalPaid)}</div>
           </div>
         </div>
@@ -100,12 +100,12 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
       {/* Search + Filter + Download */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <div className="relative flex-1">
-          <MagnifyingGlass size={15} color="#999" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <MagnifyingGlass size={15} color="#999" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search invoices…"
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder-[var(--tx3)] focus:border-[var(--gold)] focus:outline-none transition-colors bg-[var(--card)]"
+            className="w-full rounded-lg border border-[var(--brd)] bg-[var(--card)] py-2 pl-10 pr-3 text-[12px] text-[var(--tx)] transition-colors placeholder:text-[var(--tx3)] focus:border-[var(--gold)] focus:outline-none"
           />
         </div>
         <select
@@ -130,17 +130,17 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
 
       {/* Table */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Invoices</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Invoices</div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[var(--brd)]/30">
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Invoice</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] hidden sm:table-cell">Date</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Due</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Amount</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Status</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] hidden sm:table-cell"></th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Invoice</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)] hidden sm:table-cell">Date</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Due</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Amount</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Status</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)] hidden sm:table-cell"></th>
               </tr>
             </thead>
             <tbody>

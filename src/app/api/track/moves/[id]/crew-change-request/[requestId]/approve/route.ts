@@ -148,7 +148,11 @@ export async function POST(
         .eq("id", move.crew_id)
         .maybeSingle();
       if (crew?.phone) {
-        const smsg = `Yugo: Client approved extras. ${paymentCharged ? `$${chargeAmount.toFixed(2)} charged.` : "Payment pending."} Load all extra items now.`;
+        const smsg = [
+          `Yugo: Client approved extras.`,
+          paymentCharged ? `$${chargeAmount.toFixed(2)} charged.` : `Payment pending.`,
+          `Load all extra items now.`,
+        ].join("\n\n");
         await sendSMS(normalizePhone(crew.phone), smsg);
       }
     }

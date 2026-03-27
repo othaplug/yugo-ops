@@ -139,7 +139,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
       )}
       {/* Header row */}
       <div className="mb-3">
-        <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50">Photos</p>
+        <p className="text-[9px] font-bold tracking-[0.15em] capitalize text-[var(--tx3)]/50">Photos</p>
         {!readOnly && canAddPhotos && (
           <p className="text-[11px] text-[var(--tx2)] mt-0.5">{prompt}</p>
         )}

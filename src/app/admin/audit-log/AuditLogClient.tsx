@@ -184,7 +184,7 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
       </div>
 
       <div className="mb-6">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/70 mb-1.5">Operations</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/70 mb-1.5">Operations</p>
         <h1 className="font-hero text-[22px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight leading-tight">
           Audit log
         </h1>
@@ -197,7 +197,7 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
         <div className="p-3 sm:p-4 border-b border-[var(--brd)] bg-[var(--bg)]/40 space-y-3">
           <div className="relative">
             <MagnifyingGlass
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] pointer-events-none"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx2)]"
               size={16}
               weight="regular"
               aria-hidden
@@ -207,7 +207,7 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
               value={search}
               onChange={(ev) => setSearch(ev.target.value)}
               placeholder="Search description, type, entity id…"
-              className="w-full rounded-xl border border-[var(--brd)] bg-[var(--bg)] pl-9 pr-3 py-2.5 text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/45 focus:ring-1 focus:ring-[var(--gold)]/25 transition-shadow"
+              className="w-full rounded-xl border border-[var(--brd)] bg-[var(--bg)] py-2.5 pl-10 pr-3 text-[12px] text-[var(--tx)] outline-none transition-shadow placeholder:text-[var(--tx3)] focus:border-[var(--gold)]/45 focus:ring-1 focus:ring-[var(--gold)]/25"
               aria-label="Filter audit events"
             />
           </div>
@@ -233,7 +233,7 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
               })}
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mr-0.5">When</span>
+              <span className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mr-0.5">When</span>
               {DATE_PRESETS.map((d) => {
                 const active = datePreset === d.key;
                 return (
@@ -267,19 +267,19 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
               <table className="w-full text-left border-collapse min-w-[720px]">
                 <thead>
                   <tr className="bg-[var(--bg)]/30">
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[120px]">
+                    <th className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[120px]">
                       Time
                     </th>
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[100px]">
+                    <th className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[100px]">
                       Entity
                     </th>
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[140px]">
+                    <th className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[140px]">
                       Event
                     </th>
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">
+                    <th className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)]">
                       Description
                     </th>
-                    <th className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[100px] text-right">
+                    <th className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] px-4 py-2.5 border-b border-[var(--brd)] w-[100px] text-right">
                       Link
                     </th>
                   </tr>
@@ -305,7 +305,7 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                           </div>
                         </td>
                         <td className="px-4 py-3 align-top">
-                          <span className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)]/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--tx2)]">
+                          <span className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)]/50 px-2 py-0.5 text-[10px] font-bold capitalize tracking-wide text-[var(--tx2)]">
                             {entityBadgeLabel(e.entity_type)}
                           </span>
                         </td>
@@ -348,7 +348,7 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)]/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--tx2)]">
+                        <span className="inline-flex items-center rounded-lg border border-[var(--brd)] bg-[var(--bg)]/50 px-2 py-0.5 text-[10px] font-bold capitalize tracking-wide text-[var(--tx2)]">
                           {entityBadgeLabel(e.entity_type)}
                         </span>
                         <span className="text-[11px] font-semibold text-[var(--tx)]">{humanizeEventType(e.event_type)}</span>

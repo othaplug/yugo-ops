@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, use } from "react";
-import { Star as PhStar, CaretLeft as PhCaretLeft, PencilSimple, Check } from "@phosphor-icons/react";
+import { Star as PhStar, CaretLeft as PhCaretLeft, PencilSimple, Check, WarningCircle, Package } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
@@ -266,10 +266,11 @@ export default function ClientSignOffPage({
   const { type, id } = use(params);
   const jobType = type === "delivery" ? "delivery" : "move";
 
-  // Phase: 1=item conditions, 2=items confirmation, 3=experience+NPS, 4=signature, 5=thank you, 6=skip form
+  // Phase: 1=item conditions, 2=items confirmation, 3=experience+NPS, 4=equipment, 5=signature, 6=thank you, 7=skip form
   const [phase, setPhase] = useState(1);
   const [loading, setLoading] = useState(true);
   const [existing, setExisting] = useState<{ id: string } | null>(null);
+  const [equipmentCheckDone, setEquipmentCheckDone] = useState(false);
 
   const [geoLat, setGeoLat] = useState<number | null>(null);
   const [geoLng, setGeoLng] = useState<number | null>(null);
@@ -322,6 +323,26 @@ export default function ClientSignOffPage({
   const [skipNote, setSkipNote] = useState("");
   const [skipSubmitting, setSkipSubmitting] = useState(false);
 
+  const [eqLines, setEqLines] = useState<
+    {
+      equipment_id: string;
+      name: string;
+      category: string;
+      assigned_quantity: number;
+      current_quantity: number;
+      is_consumable: boolean;
+    }[]
+  >([]);
+  const [eqLoading, setEqLoading] = useState(false);
+  const [eqMsg, setEqMsg] = useState<string | null>(null);
+  const [eqCounts, setEqCounts] = useState<Record<string, number>>({});
+  const [eqBatchReason, setEqBatchReason] = useState<string>("");
+  const [eqLeftRetrieve, setEqLeftRetrieve] = useState(false);
+  const [eqEquipSubmitting, setEqEquipSubmitting] = useState(false);
+  const [eqSkipOpen, setEqSkipOpen] = useState(false);
+  const [eqSkipChoice, setEqSkipChoice] = useState<"" | "labour_only" | "emergency_later">("");
+  const [eqSkipNote, setEqSkipNote] = useState("");
+
   const router = useRouter();
   const { setImmersiveNav } = useCrewImmersiveNav();
 
@@ -365,6 +386,7 @@ export default function ClientSignOffPage({
         const invData = inventoryRes.ok ? await inventoryRes.json() : { items: [] };
         if (signoffData?.id) setExisting(signoffData);
         if (signoffData?.partnerVertical) setPartnerVertical(signoffData.partnerVertical);
+        if (signoffData?.equipmentCheckDone) setEquipmentCheckDone(true);
         const photos = Array.isArray(photosData) ? photosData : photosData?.photos || [];
         setJobPhotos(photos);
         const items: string[] = invData?.items || [];
@@ -385,6 +407,110 @@ export default function ClientSignOffPage({
     load();
     return () => { cancelled = true; };
   }, [id, jobType]);
+
+  useEffect(() => {
+    if (phase !== 4 || existing || equipmentCheckDone) return;
+    let cancelled = false;
+    setEqLoading(true);
+    setEqMsg(null);
+    fetch(`/api/crew/equipment-check/${encodeURIComponent(id)}?jobType=${encodeURIComponent(jobType)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        if (d.error) {
+          setEqMsg(d.error);
+          setEqLines([]);
+          return;
+        }
+        if (d.message) setEqMsg(d.message);
+        const lines = Array.isArray(d.lines) ? d.lines : [];
+        setEqLines(lines);
+        const init: Record<string, number> = {};
+        for (const L of lines) init[L.equipment_id] = L.current_quantity;
+        setEqCounts(init);
+      })
+      .catch(() => {
+        if (!cancelled) setEqMsg("Could not load equipment list.");
+      })
+      .finally(() => {
+        if (!cancelled) setEqLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, id, jobType, existing, equipmentCheckDone]);
+
+  const submitEquipmentSkip = async () => {
+    if (!eqSkipChoice) return;
+    setEqEquipSubmitting(true);
+    try {
+      const res = await fetch(`/api/crew/equipment-check/${encodeURIComponent(id)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobType,
+          skipReason: eqSkipChoice,
+          skipNotes: eqSkipNote.trim() || null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Could not save skip");
+        setEqEquipSubmitting(false);
+        return;
+      }
+      setEquipmentCheckDone(true);
+      setEqSkipOpen(false);
+      setPhase(5);
+    } catch {
+      setError("Connection error");
+    }
+    setEqEquipSubmitting(false);
+  };
+
+  const submitEquipmentCheck = async () => {
+    const lines = eqLines.map((L) => ({
+      equipment_id: L.equipment_id,
+      actual_quantity: eqCounts[L.equipment_id] ?? L.current_quantity,
+    }));
+    let needsBatch = false;
+    for (const L of eqLines) {
+      const actual = eqCounts[L.equipment_id] ?? L.current_quantity;
+      const short = L.current_quantity - actual;
+      if (short <= 0) continue;
+      if (!L.is_consumable) needsBatch = true;
+      else if (actual <= 0 && L.current_quantity > 0) needsBatch = true;
+    }
+    if (needsBatch && !eqBatchReason) {
+      setError("Select what happened to missing items.");
+      return;
+    }
+    setError("");
+    setEqEquipSubmitting(true);
+    try {
+      const res = await fetch(`/api/crew/equipment-check/${encodeURIComponent(id)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobType,
+          lines,
+          shortageBatchReason: needsBatch ? eqBatchReason : undefined,
+          leftAtClientWillRetrieve: eqBatchReason === "left_at_client" ? eqLeftRetrieve : undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Submit failed");
+        setEqEquipSubmitting(false);
+        return;
+      }
+      setEquipmentCheckDone(true);
+      setPhase(5);
+    } catch {
+      setError("Connection error");
+    }
+    setEqEquipSubmitting(false);
+  };
 
   const startDrawing = (e: React.TouchEvent | React.MouseEvent) => {
     isDrawing.current = true;
@@ -480,12 +606,14 @@ export default function ClientSignOffPage({
         setError(
           data.code === "SCHEMA_UPDATE_REQUIRED"
             ? "A system update is needed. Please contact your dispatch or try again in a few minutes."
-            : data.error || "Failed to submit"
+            : data.code === "EQUIPMENT_CHECK_REQUIRED"
+              ? "Equipment check required before completing this job. Go back and complete the gear step (or use skip with a reason)."
+              : data.error || "Failed to submit"
         );
         setSubmitting(false);
         return;
       }
-      setPhase(5);
+      setPhase(6);
     } catch {
       setError("Connection error");
     }
@@ -593,7 +721,7 @@ export default function ClientSignOffPage({
     npsScore !== null &&
     (allConfirmed ? true : hasIssuesOrConcerns && feedbackNote.trim().length > 0);
 
-  const STEP_LABELS = ["Condition", "Items", "Experience", "Sign"];
+  const STEP_LABELS = ["Condition", "Items", "Experience", "Gear", "Sign"];
 
   return (
     <main className="min-h-screen" style={{ background: BG, fontFamily: "'DM Sans', sans-serif" }}>
@@ -631,8 +759,8 @@ export default function ClientSignOffPage({
           <div className="w-14" />
         </div>
 
-        {/* Step progress (phases 1–4) */}
-        {phase >= 1 && phase <= 4 && (
+        {/* Step progress (phases 1–5) */}
+        {phase >= 1 && phase <= 5 && (
           <div className="flex items-center gap-1.5 mb-8">
             {STEP_LABELS.map((label, i) => {
               const step = i + 1;
@@ -653,7 +781,7 @@ export default function ClientSignOffPage({
                       {done ? <CheckMark size={9} /> : step}
                     </div>
                     <span
-                      className="text-[9px] mt-1 font-bold tracking-wide uppercase"
+                      className="text-[9px] mt-1 font-bold tracking-wide capitalize"
                       style={{ color: active ? INK : "#BBB6AD" }}
                     >
                       {label}
@@ -675,7 +803,7 @@ export default function ClientSignOffPage({
         {phase === 1 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
                 Step 1 of 4
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
@@ -696,7 +824,7 @@ export default function ClientSignOffPage({
                 {itemConditions.map((ic, idx) => (
                   <div key={idx} className="p-4 rounded-2xl border bg-white" style={{ borderColor: ic.condition === "new_damage" ? "#FCA5A5" : BORDER }}>
                     <div className="text-[13px] font-semibold mb-2.5" style={{ color: INK }}>{ic.item_name}</div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: MUTED }}>Condition at delivery</div>
+                    <div className="text-[10px] font-bold capitalize tracking-widest mb-2" style={{ color: MUTED }}>Condition at delivery</div>
                     <div className="grid grid-cols-2 gap-1.5 mb-2">
                       {CONDITION_OPTIONS.map((opt) => (
                         <button
@@ -764,8 +892,8 @@ export default function ClientSignOffPage({
         {phase === 2 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
-                Step 2 of 4
+              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
+                Step 2 of 5
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
                 Items Confirmation
@@ -778,7 +906,7 @@ export default function ClientSignOffPage({
             {/* Photo gallery */}
             {!photosLoading && jobPhotos.length > 0 && (
               <div className="mb-5">
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: MUTED }}>
+                <p className="text-[10px] font-bold capitalize tracking-widest mb-2.5" style={{ color: MUTED }}>
                   Crew Photos ({jobPhotos.length})
                 </p>
                 <div className="grid grid-cols-3 gap-1.5 mb-3">
@@ -860,8 +988,8 @@ export default function ClientSignOffPage({
         {phase === 3 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
-                Step 3 of 4
+              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
+                Step 3 of 5
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
                 How was your experience?
@@ -873,7 +1001,7 @@ export default function ClientSignOffPage({
 
             {/* Star rating */}
             <div className="mb-6">
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>Overall Rating</p>
+              <p className="text-[10px] font-bold capitalize tracking-widest mb-3" style={{ color: MUTED }}>Overall Rating</p>
               <div className="flex justify-center gap-3 mb-2.5">
                 {[1, 2, 3, 4, 5].map((n) => {
                   const isFilled = rating != null && n <= rating;
@@ -937,7 +1065,7 @@ export default function ClientSignOffPage({
 
             {/* Confirmation checkboxes */}
             <div className="mb-5">
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>
+              <p className="text-[10px] font-bold capitalize tracking-widest mb-3" style={{ color: MUTED }}>
                 Please confirm the following
               </p>
               <p className="text-[11px] mb-3" style={{ color: MUTED }}>
@@ -1015,22 +1143,195 @@ export default function ClientSignOffPage({
             )}
 
             <button
-              onClick={() => setPhase(4)}
+              onClick={() => (equipmentCheckDone ? setPhase(5) : setPhase(4))}
               disabled={!phase3Valid}
               className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
               style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
             >
-              Continue to Sign
+              {equipmentCheckDone ? "Continue to Sign" : "Continue to Equipment Check"}
             </button>
           </div>
         )}
 
-        {/* ── Phase 4: Signature ── */}
-        {phase === 4 && (
+        {/* ── Phase 4: Equipment (crew) ── */}
+        {phase === 4 && !equipmentCheckDone && (
+          <div className="phase-enter">
+            <div className="mb-6">
+              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
+                Step 4 of 5
+              </p>
+              <h1 className="font-hero text-[26px] font-semibold leading-tight" style={{ color: INK }}>
+                Equipment check
+              </h1>
+              <p className="text-[12px] mt-1.5" style={{ color: MUTED }}>
+                Count what&apos;s on the truck before you leave. Dispatch is notified if anything is missing.
+              </p>
+            </div>
+            {eqMsg && (
+              <div className="mb-4 p-3 rounded-xl flex gap-2 items-start" style={{ backgroundColor: `${GOLD}12`, border: `1px solid ${GOLD}35` }}>
+                <WarningCircle size={18} className="shrink-0 mt-0.5" color={GOLD} aria-hidden />
+                <p className="text-[11px]" style={{ color: INK }}>{eqMsg}</p>
+              </div>
+            )}
+            {eqLoading ? (
+              <p className="text-[13px] text-center py-8" style={{ color: MUTED }}>Loading equipment…</p>
+            ) : eqLines.length === 0 ? (
+              <div className="text-center py-6">
+                <Package size={40} className="mx-auto mb-3 opacity-40" aria-hidden />
+                <p className="text-[12px]" style={{ color: MUTED }}>No equipment list for this truck yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 mb-5">
+                {["protection", "tools", "moving", "supplies", "tech"].map((cat) => {
+                  const inCat = eqLines.filter((l) => l.category === cat);
+                  if (!inCat.length) return null;
+                  return (
+                    <div key={cat} className="rounded-2xl border bg-white overflow-hidden" style={{ borderColor: BORDER }}>
+                      <div className="px-3 py-2 text-[9px] font-bold capitalize tracking-widest" style={{ backgroundColor: NOTE_FILL, color: MUTED }}>
+                        {cat}
+                      </div>
+                      <div className="divide-y" style={{ borderColor: BORDER }}>
+                        {inCat.map((L) => {
+                          const actual = eqCounts[L.equipment_id] ?? L.current_quantity;
+                          const short = L.current_quantity - actual;
+                          const warn = short > 0 && (!L.is_consumable || actual <= 0);
+                          return (
+                            <div key={L.equipment_id} className="px-3 py-2.5 flex items-center justify-between gap-2">
+                              <span className="text-[12px] font-medium flex-1 min-w-0" style={{ color: INK }}>{L.name}</span>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  className="w-14 px-2 py-1 rounded-lg border text-[12px] text-center tabular-nums"
+                                  style={{ borderColor: warn ? "#fca5a5" : BORDER, color: INK }}
+                                  value={actual}
+                                  onChange={(e) => {
+                                    const v = Math.max(0, parseInt(e.target.value, 10) || 0);
+                                    setEqCounts((prev) => ({ ...prev, [L.equipment_id]: v }));
+                                  }}
+                                  aria-label={`Actual count for ${L.name}`}
+                                />
+                                <span className="text-[10px] tabular-nums whitespace-nowrap" style={{ color: MUTED }}>
+                                  of {L.current_quantity}
+                                </span>
+                                {warn ? <WarningCircle size={16} className="text-amber-600 shrink-0" aria-label="Shortage" /> : null}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {eqLines.length > 0 && (() => {
+              let needsBatch = false;
+              for (const L of eqLines) {
+                const actual = eqCounts[L.equipment_id] ?? L.current_quantity;
+                const short = L.current_quantity - actual;
+                if (short <= 0) continue;
+                if (!L.is_consumable || actual <= 0) needsBatch = true;
+              }
+              return needsBatch ? (
+                <div className="mb-4 space-y-3">
+                  <p className="text-[11px] font-semibold" style={{ color: INK }}>What happened to missing items?</p>
+                  {([
+                    { v: "left_at_client", label: "Left at client (retrieve later)" },
+                    { v: "damaged", label: "Damaged during job" },
+                    { v: "lost", label: "Lost / cannot locate" },
+                    { v: "consumed", label: "Used (consumables)" },
+                  ] as const).map((o) => (
+                    <label key={o.v} className="flex items-center gap-2 text-[12px] cursor-pointer">
+                      <input
+                        type="radio"
+                        name="eq-batch"
+                        checked={eqBatchReason === o.v}
+                        onChange={() => setEqBatchReason(o.v)}
+                        className="accent-[#C9A962]"
+                      />
+                      {o.label}
+                    </label>
+                  ))}
+                  {eqBatchReason === "left_at_client" && (
+                    <label className="flex items-center gap-2 text-[11px] cursor-pointer mt-2">
+                      <input type="checkbox" checked={eqLeftRetrieve} onChange={(e) => setEqLeftRetrieve(e.target.checked)} className="accent-[#C9A962]" />
+                      Going back now to retrieve
+                    </label>
+                  )}
+                </div>
+              ) : null;
+            })()}
+            {error && phase === 4 ? (
+              <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-200">
+                <p className="text-[11px] text-red-700 font-semibold">{error}</p>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={submitEquipmentCheck}
+              disabled={eqEquipSubmitting || eqLines.length === 0}
+              className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 mb-2"
+              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+            >
+              {eqEquipSubmitting ? "Saving…" : "Submit equipment check"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEqSkipOpen(true); setError(""); }}
+              className="w-full py-2 text-[11px] font-semibold border rounded-xl transition-colors"
+              style={{ borderColor: BORDER, color: MUTED }}
+            >
+              Skip equipment check (reason required)
+            </button>
+            {eqSkipOpen ? (
+              <div className="mt-4 p-4 rounded-2xl border space-y-3" style={{ borderColor: BORDER, backgroundColor: NOTE_FILL }}>
+                <p className="text-[11px] font-bold capitalize tracking-widest" style={{ color: MUTED }}>Skip reason</p>
+                <label className="flex items-center gap-2 text-[12px]">
+                  <input type="radio" name="eqskip" checked={eqSkipChoice === "labour_only"} onChange={() => setEqSkipChoice("labour_only")} className="accent-[#C9A962]" />
+                  No equipment used (labour-only job)
+                </label>
+                <label className="flex items-center gap-2 text-[12px]">
+                  <input type="radio" name="eqskip" checked={eqSkipChoice === "emergency_later"} onChange={() => setEqSkipChoice("emergency_later")} className="accent-[#C9A962]" />
+                  Emergency — will complete later
+                </label>
+                <textarea
+                  value={eqSkipNote}
+                  onChange={(e) => setEqSkipNote(e.target.value)}
+                  placeholder="Notes for coordinator…"
+                  className="w-full p-2 rounded-lg border text-[12px]"
+                  style={{ borderColor: BORDER }}
+                  rows={2}
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEqSkipOpen(false)}
+                    className="flex-1 py-2 text-[11px] font-semibold border rounded-lg"
+                    style={{ borderColor: BORDER }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitEquipmentSkip}
+                    disabled={!eqSkipChoice || eqEquipSubmitting}
+                    className="flex-1 py-2 text-[11px] font-semibold rounded-lg bg-red-600 text-white disabled:opacity-40"
+                  >
+                    Confirm skip
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* ── Phase 5: Signature ── */}
+        {phase === 5 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
-                Step 4 of 4
+              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
+                Step 5 of 5
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
                 Sign to confirm
@@ -1041,7 +1342,7 @@ export default function ClientSignOffPage({
             </div>
 
             <div className="mb-5">
-              <label className="block text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: MUTED }}>
+              <label className="block text-[10px] font-bold capitalize tracking-widest mb-2" style={{ color: MUTED }}>
                 Your full name
               </label>
               <input
@@ -1057,7 +1358,7 @@ export default function ClientSignOffPage({
             {/* Signature canvas, ink-on-paper look */}
             <div className="mb-5">
               <div className="flex justify-between items-center mb-2">
-                <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>
+                <label className="flex items-center gap-1.5 text-[10px] font-bold capitalize tracking-widest" style={{ color: MUTED }}>
                   <PenLine size={11} /> Signature
                 </label>
                 <button
@@ -1135,8 +1436,8 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 5: Thank You ── */}
-        {phase === 5 && (
+        {/* ── Phase 6: Thank You ── */}
+        {phase === 6 && (
           <div className="phase-enter text-center py-12">
             {/* Animated success ring */}
             <div className="relative inline-flex items-center justify-center mb-7">
@@ -1191,8 +1492,8 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* ── Phase 6: Skip Form ── */}
-        {phase === 6 && (
+        {/* ── Phase 7: Skip Form ── */}
+        {phase === 7 && (
           <div className="phase-enter">
             <div className="mb-7">
               <h1 className="font-hero text-[28px] font-semibold" style={{ color: INK }}>Skip Sign-Off</h1>
@@ -1202,7 +1503,7 @@ export default function ClientSignOffPage({
             </div>
 
             <div className="space-y-2.5 mb-5">
-              <label className="block text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>
+              <label className="block text-[10px] font-bold capitalize tracking-widest mb-3" style={{ color: MUTED }}>
                 Reason
               </label>
               {SKIP_REASONS.map((r) => (
@@ -1267,12 +1568,12 @@ export default function ClientSignOffPage({
           </div>
         )}
 
-        {/* Skip link, visible in phases 1–4 */}
-        {phase >= 1 && phase <= 4 && (
+        {/* Skip link, visible in phases 1–5 */}
+        {phase >= 1 && phase <= 5 && (
           <p className="text-center mt-8">
             <button
               type="button"
-              onClick={() => setPhase(6)}
+              onClick={() => setPhase(7)}
               className="text-[11px] transition-colors hover:text-[#C9A962] underline underline-offset-2"
               style={{ color: MUTED }}
             >

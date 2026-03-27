@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Clock, Calendar, Check, Lock, Recycle } from "@phosphor-icons/react";
+import { X, Check, Lock, Recycle } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { getDisplayLabel } from "@/lib/displayLabels";
 import Link from "next/link";
@@ -154,9 +154,6 @@ export default function CrewDashboardPage() {
     return (
       <PageContent>
         <div className="max-w-[420px] mx-auto pt-8 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-4">
-            <Clock size={20} color="var(--gold)" />
-          </div>
           <h2 className="font-hero text-[26px] font-bold text-[var(--tx)] mb-2">Waiting for Crew Lead</h2>
           <p className="text-[13px] text-[var(--tx3)]">The crew lead must complete the pre-trip readiness check before jobs are available.</p>
           {jobs.length > 0 && (
@@ -203,7 +200,7 @@ export default function CrewDashboardPage() {
         {/* Header + progress */}
         <div className="flex items-start justify-between gap-4 pb-5 mb-6 border-b border-[var(--brd)]/25">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--gold)]/95 mb-1">
+            <p className="text-[10px] font-semibold capitalize tracking-[0.18em] text-[var(--gold)]/95 mb-1">
               {data.crewMember?.teamName || "Team"}
             </p>
             <h1 className="font-hero text-[26px] sm:text-[28px] font-bold text-[var(--tx)] leading-[1.15] tracking-tight">
@@ -221,7 +218,7 @@ export default function CrewDashboardPage() {
             {totalCount > 0 && (
               <div className="mt-5">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/45">Day progress</span>
+                  <span className="text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/45">Day progress</span>
                   <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">{completedCount}/{totalCount}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-[var(--brd)]/45 overflow-hidden">
@@ -258,9 +255,6 @@ export default function CrewDashboardPage() {
         <div>
           {jobs.length === 0 ? (
             <div className="pt-4 pb-10 text-center rounded-2xl bg-[var(--bg)]/15 px-4">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-3">
-                <Calendar size={20} color="var(--gold)" />
-              </div>
               <p className="text-[15px] font-semibold text-[var(--tx)] mb-1">No jobs on the schedule</p>
               <p className="text-[12px] text-[var(--tx3)]">Check back tomorrow or contact dispatch if this looks wrong.</p>
             </div>
@@ -308,13 +302,13 @@ export default function CrewDashboardPage() {
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       {statusInfo ? (
                         <span
-                          className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
+                          className="px-2 py-0.5 rounded-md text-[9px] font-bold capitalize tracking-wider"
                           style={{ background: statusInfo.bg, color: statusInfo.color }}
                         >
                           {statusInfo.label}
                         </span>
                       ) : job.status ? (
-                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[var(--gdim)] text-[var(--gold)]">
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold capitalize tracking-wider bg-[var(--gdim)] text-[var(--gold)]">
                           {getDisplayLabel(job.status, "status")}
                         </span>
                       ) : null}
@@ -346,7 +340,7 @@ export default function CrewDashboardPage() {
                       <span className="px-2 py-0.5 rounded-md bg-[var(--bg)] font-medium">{job.jobTypeLabel}</span>
                       {job.eventPhase && (
                         <span
-                          className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
+                          className="px-2 py-0.5 rounded-md text-[9px] font-bold capitalize tracking-wider"
                           style={{
                             background: job.eventPhase === "delivery" ? "#7C3AED22" : job.eventPhase === "return" ? "#05966922" : "#F59E0B22",
                             color: job.eventPhase === "delivery" ? "#7C3AED" : job.eventPhase === "return" ? "#059669" : "#F59E0B",
@@ -356,7 +350,7 @@ export default function CrewDashboardPage() {
                         </span>
                       )}
                       {job.isRecurring && (
-                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider" style={{ background: "#0D948820", color: "#0D9488" }}>
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold capitalize tracking-wider" style={{ background: "#0D948820", color: "#0D9488" }}>
                           Recurring
                         </span>
                       )}

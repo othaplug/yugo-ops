@@ -103,7 +103,7 @@ export default function TrackDocuments({
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-medium text-[#1A1A1A]">Payment Receipt (Square)</div>
               <div className="text-[11px] text-[#666] flex items-center gap-2 mt-0.5">
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#22C55E]/15 text-[#22C55E]">PAID</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold capitalize bg-[#22C55E]/15 text-[#22C55E]">PAID</span>
                 Official payment processor receipt
               </div>
             </div>
@@ -135,12 +135,12 @@ export default function TrackDocuments({
                   {dateStr}
                   {doc.amount != null && ` • ${formatCurrency(doc.amount)}`}
                   {isPaid && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#22C55E]/15 text-[#22C55E]">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold capitalize bg-[#22C55E]/15 text-[#22C55E]">
                       PAID
                     </span>
                   )}
                   {isSent && !isPaid && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#4A7CE5]/15 text-[#4A7CE5]">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold capitalize bg-[#4A7CE5]/15 text-[#4A7CE5]">
                       SENT
                     </span>
                   )}

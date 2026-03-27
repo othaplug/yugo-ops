@@ -169,12 +169,6 @@ export default function TrackPhotos({
 
       {photos.length === 0 ? (
         <div className="px-5 py-8 text-center">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-            style={{ backgroundColor: `${GOLD}14` }}
-          >
-            <ImageSquare size={20} color={GOLD} />
-          </div>
           <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No photos yet</p>
           <p className="text-[11px] text-[#888] max-w-[240px] mx-auto leading-relaxed">
             {moveComplete
@@ -202,7 +196,7 @@ export default function TrackPhotos({
               >
                 <img src={p.url} alt={label} className="w-full h-full object-cover" />
                 <div className="absolute bottom-0 left-0 right-0 bg-white/95 px-3 py-2 flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#666]">
+                  <span className="text-[10px] font-bold capitalize tracking-wider text-[#666]">
                     {label} {dateStr && `\u2022 ${dateStr}`}
                   </span>
                   {isClient && (

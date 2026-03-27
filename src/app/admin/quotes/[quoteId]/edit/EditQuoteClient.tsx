@@ -74,7 +74,7 @@ function formatCurrency(n: number): string {
 
 function SectionDivider({ label }: { label: string }) {
   return (
-    <div className="text-[10px] font-semibold text-[var(--tx3)] tracking-widest uppercase border-t border-[var(--brd)] pt-4 mt-1">
+    <div className="text-[10px] font-semibold text-[var(--tx3)] tracking-widest capitalize border-t border-[var(--brd)] pt-4 mt-1">
       {label}
     </div>
   );
@@ -459,7 +459,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const livePrice = livePreview?.tiers?.essential?.price ?? livePreview?.tiers?.curated?.price ?? livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
 
   const inputClass = "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
-  const labelClass = "block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1";
+  const labelClass = "block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1";
 
   if (done) {
     return (
@@ -494,7 +494,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
           <ArrowLeft size={18} weight="regular" />
         </button>
         <div>
-          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">Re-Quote</div>
+          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest capitalize">Re-Quote</div>
           <h1 className="text-lg font-bold text-[var(--tx)]">
             Edit Quote {oq.quote_id}
             <span className="text-sm font-normal text-[var(--tx3)] ml-2">v{oq.version || 1}</span>
@@ -507,7 +507,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
       {/* Current quote summary */}
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 mb-5">
-        <div className="text-[9px] font-bold text-[var(--tx3)] tracking-widest uppercase mb-3">Current Quote</div>
+        <div className="text-[9px] font-bold text-[var(--tx3)] tracking-widest capitalize mb-3">Current Quote</div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <div className="text-[var(--tx3)] text-[11px]">Client</div>
@@ -536,7 +536,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
               ? <Loader2 size={13} className="animate-spin text-[var(--gold)]" />
               : <TrendingUp size={13} className="text-[var(--gold)]" />
             }
-            <span className="text-[10px] font-bold text-[var(--gold)] tracking-widest uppercase">
+            <span className="text-[10px] font-bold text-[var(--gold)] tracking-widest capitalize">
               {previewLoading ? "Recalculating…" : "Live Price Preview"}
             </span>
             {livePreview?.distance_km && !previewLoading && (
@@ -556,7 +556,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                     const isEssential = tier === "essential";
                     return (
                       <div key={tier} className={`rounded-lg p-3 text-center border ${isEssential ? "border-[var(--gold)]/40 bg-[var(--gold)]/8" : "border-[var(--brd)] bg-[var(--bg)]"}`}>
-                        <div className="text-[9px] text-[var(--gold)] font-semibold uppercase mb-0.5">{tier}</div>
+                        <div className="text-[9px] text-[var(--gold)] font-semibold capitalize mb-0.5">{tier}</div>
                         <div className="text-[16px] font-bold text-[var(--tx)]">{formatCurrency(t.price)}</div>
                         <div className="text-[9px] text-[var(--tx3)] mt-0.5">+{formatCurrency(t.tax)} HST</div>
                       </div>
@@ -626,7 +626,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
       {/* Edit fields */}
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 mb-6 space-y-5">
-        <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">Update Details</div>
+        <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest capitalize">Update Details</div>
 
         {/* ── Core fields ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -793,7 +793,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                 </select>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
+                <span className="text-[9px] font-bold capitalize text-[var(--tx3)] shrink-0">Stair Carry</span>
                 <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                   <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
                 </button>
@@ -939,7 +939,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                         <div className="flex items-center gap-2">
                           <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                           {addon.is_popular && (
-                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                            <span className="text-[10px] font-bold capitalize px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
                           )}
                           <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                         </div>
@@ -1078,7 +1078,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
       {/* Generated result */}
       {newQuoteResult && (
         <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-5 mb-6 mt-6">
-          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase mb-3">New Quote Generated</div>
+          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest capitalize mb-3">New Quote Generated</div>
           <div className="flex items-center gap-6 mb-4 flex-wrap">
             <div>
               <div className="text-[11px] text-[var(--tx3)]">Quote ID</div>
@@ -1103,7 +1103,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                 if (!t) return null;
                 return (
                   <div key={tier} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3 text-center">
-                    <div className="text-[10px] text-[var(--gold)] font-semibold uppercase">{t.label || tier}</div>
+                    <div className="text-[10px] text-[var(--gold)] font-semibold capitalize">{t.label || tier}</div>
                     <div className="text-lg font-bold text-[var(--tx)] mt-1">{formatCurrency(t.price)}</div>
                   </div>
                 );
@@ -1126,7 +1126,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
           {newQuoteResult.addons?.items?.length > 0 && (
             <div className="mb-4 space-y-1">
-              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Add-Ons</div>
+              <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Add-Ons</div>
               {newQuoteResult.addons.items.map((item: any, i: number) => (
                 <div key={i} className="flex items-center justify-between text-[11px]">
                   <span className="text-[var(--tx2)]">{item.name}</span>

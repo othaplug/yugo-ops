@@ -21,7 +21,7 @@ const fieldInput = "field-input-compact w-full";
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
+      <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">{label}</label>
       {children}
     </div>
   );
@@ -348,7 +348,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
       {/* Business Details */}
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Business Details</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Business Details</h3>
           {hsLookupState === "loading" && (
             <span className="flex items-center gap-1 text-[10px] text-[var(--tx3)]">
               <SpinnerGap size={12} className="animate-spin" />
@@ -421,7 +421,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
 
       {/* Delivery Details */}
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Delivery Details</h3>
+        <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Delivery Details</h3>
         <MultiStopAddressField
           label="Pickup Address *"
           placeholder="Business address"
@@ -456,7 +456,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
 
       {/* Items */}
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Items</h3>
+        <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Items</h3>
         {items.length > 0 && (
           <ul className="space-y-1.5 mb-2">
             {items.map((item, idx) => (
@@ -485,7 +485,7 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
 
       {/* Schedule */}
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Schedule</h3>
+        <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Schedule</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label="Date *">
             <div className="relative">
@@ -508,13 +508,13 @@ export default function B2BOneOffDeliveryForm({ crews = [] }: { crews?: Crew[] }
 
       {/* Special Instructions */}
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Special Instructions</h3>
+        <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Special Instructions</h3>
         <textarea value={specialInstructions} onChange={(e) => setSpecialInstructions(e.target.value)} rows={3} placeholder="Call customer 30 min before arrival. Use service elevator…" className={`${fieldInput} resize-y`} />
       </section>
 
       {/* Assignment & Pricing */}
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
-        <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Assignment & Pricing</h3>
+        <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Assignment & Pricing</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {crews.length > 0 && (
             <Field label="Assign Crew">

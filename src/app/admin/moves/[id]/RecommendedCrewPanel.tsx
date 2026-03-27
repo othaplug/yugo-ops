@@ -109,7 +109,7 @@ export default function RecommendedCrewPanel({
     <div className="space-y-2">
       <div className="flex items-center gap-2 mb-3">
         <Users size={16} className="text-[var(--gold)]" />
-        <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+        <span className="text-[11px] font-bold capitalize tracking-wider text-[var(--tx3)]">
           Recommended Crew
         </span>
       </div>
@@ -130,7 +130,7 @@ export default function RecommendedCrewPanel({
           >
             {isTop && (
               <div className="absolute -top-2 left-4">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider capitalize bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
                   <Trophy size={9} />
                   Top Match
                 </span>
@@ -144,7 +144,7 @@ export default function RecommendedCrewPanel({
                     {rec.crew.name ?? "Unnamed crew member"}
                   </span>
                   {rec.crew.role === "lead" && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--gold)] bg-[var(--gold)]/10 px-1.5 py-0.5 rounded-full border border-[var(--gold)]/20">
+                    <span className="text-[9px] font-bold capitalize tracking-wider text-[var(--gold)] bg-[var(--gold)]/10 px-1.5 py-0.5 rounded-full border border-[var(--gold)]/20">
                       Lead
                     </span>
                   )}

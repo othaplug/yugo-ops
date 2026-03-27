@@ -148,7 +148,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
           ) : (
             <>
               <div className="mb-6">
-                <div className="text-[9px] font-bold text-[var(--red)] tracking-widest uppercase mb-1">Cancel Move</div>
+                <div className="text-[9px] font-bold text-[var(--red)] tracking-widest capitalize mb-1">Cancel Move</div>
                 <h2 className="text-lg font-bold text-[var(--tx)]">
                   Cancel move for {move.client_name || "this client"}?
                 </h2>

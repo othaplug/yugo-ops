@@ -22,12 +22,12 @@ export default function ContactDetailsModal({ open, onClose, contact }: ContactD
     <ModalOverlay open={open} onClose={onClose} title="Contact Details" maxWidth="sm">
       <div className="p-5 space-y-4">
         <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Name</div>
+          <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Name</div>
           <div className="text-[var(--text-base)] font-semibold text-[var(--tx)]">{contact.name}</div>
         </div>
         {contact.company && (
           <div>
-            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Company</div>
+            <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Company</div>
             <div className="text-[13px] text-[var(--tx2)]">{contact.company}</div>
           </div>
         )}

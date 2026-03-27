@@ -144,7 +144,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       try {
         await sendSMS(
           normalizePhone(move.client_phone),
-          `Yugo: We have a note about your inventory change request. Open your move link for details.`,
+          [
+            `Hi,`,
+            `Yugo has an update about your inventory change request.`,
+            `Open your move link for details:\n${trackUrl}`,
+          ].join("\n\n"),
         );
       } catch {
         /* optional */
@@ -247,7 +251,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     try {
       await sendSMS(
         normalizePhone(move.client_phone),
-        `Yugo: Your inventory change is approved. New total about $${newAmount}. View details: ${trackUrl}`,
+        [
+          `Hi,`,
+          `Your inventory change is approved.`,
+          `Your new total is about $${newAmount}.`,
+          `View details:\n${trackUrl}`,
+        ].join("\n\n"),
       );
     } catch {
       /* optional */

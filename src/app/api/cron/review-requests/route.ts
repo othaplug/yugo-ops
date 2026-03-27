@@ -93,7 +93,12 @@ export async function GET(req: NextRequest) {
       try {
         const { success, error } = await sendSMS(
           rr.client_phone,
-          `Hi${firstName ? ` ${firstName}` : ""}! Your Yugo move is complete. We'd love a quick Google review: ${reviewUrl}`
+          [
+            firstName ? `Hi ${firstName},` : "Hi,",
+            `Your Yugo move is complete.`,
+            `We'd love a quick Google review when you have a moment.`,
+            reviewUrl,
+          ].join("\n\n"),
         );
         if (!success) errors.push(`sms:${rr.id}:${error || "failed"}`);
       } catch (e) {

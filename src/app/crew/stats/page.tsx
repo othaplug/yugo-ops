@@ -157,7 +157,7 @@ export default function CrewStatsPage() {
           <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-1.5 mb-1">
               <Users size={12} color="var(--gold)" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">Jobs</span>
+              <span className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)]">Jobs</span>
             </div>
             <div className="text-[26px] font-bold text-[var(--tx)] tabular-nums">{stats.thisMonth.jobs}</div>
             <div className="text-[10px] text-[var(--tx3)]">This month</div>
@@ -165,7 +165,7 @@ export default function CrewStatsPage() {
           <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-1.5 mb-1">
               <Star size={12} color="#F59E0B" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">Rating</span>
+              <span className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)]">Rating</span>
             </div>
             <div className="text-[26px] font-bold text-[var(--tx)] tabular-nums">
               {stats.thisMonth.avgRating != null ? stats.thisMonth.avgRating.toFixed(1) : stats.profile.avgRating.toFixed(1)}
@@ -175,7 +175,7 @@ export default function CrewStatsPage() {
           <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-1.5 mb-1">
               <CurrencyDollar size={12} color="#22c55e" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">Tips</span>
+              <span className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)]">Tips</span>
             </div>
             <div className="text-[26px] font-bold text-[#22c55e] tabular-nums">${stats.thisMonth.tips}</div>
             <div className="text-[10px] text-[var(--tx3)]">${stats.thisMonth.avgTipPerJob} avg/job</div>
@@ -183,7 +183,7 @@ export default function CrewStatsPage() {
           <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-1.5 mb-1">
               <TrendUp size={12} color="var(--gold)" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">Career</span>
+              <span className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)]">Career</span>
             </div>
             <div className="text-[26px] font-bold text-[var(--tx)] tabular-nums">{stats.profile.totalJobs}</div>
             <div className="text-[10px] text-[var(--tx3)]">Total jobs</div>
@@ -191,7 +191,7 @@ export default function CrewStatsPage() {
           <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-1.5 mb-1">
               <Clock size={12} color="#38BDF8" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">On-time</span>
+              <span className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)]">On-time</span>
             </div>
             <div className="text-[26px] font-bold text-[var(--tx)] tabular-nums">{onTimeDisplay(stats.profile.onTimeRate)}</div>
             <div className="text-[10px] text-[var(--tx3)]">Arrival record</div>
@@ -199,7 +199,7 @@ export default function CrewStatsPage() {
           <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-1.5 mb-1">
               <ShieldWarning size={12} color={stats.profile.damageIncidents > 0 ? "#F59E0B" : "#22c55e"} />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">Safety</span>
+              <span className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)]">Safety</span>
             </div>
             <div className="text-[26px] font-bold text-[var(--tx)] tabular-nums">{stats.profile.damageIncidents}</div>
             <div className="text-[10px] text-[var(--tx3)]">Damage incidents</div>
@@ -267,7 +267,7 @@ export default function CrewStatsPage() {
                       <div className="flex items-center gap-2 min-w-0">
                         <p className="text-[13px] font-semibold text-[var(--tx)] truncate">{entry.name}</p>
                         {isYou && (
-                          <span className="shrink-0 rounded-md bg-[var(--gold)]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--gold)]">
+                          <span className="shrink-0 rounded-md bg-[var(--gold)]/15 px-1.5 py-0.5 text-[9px] font-bold capitalize tracking-wide text-[var(--gold)]">
                             You
                           </span>
                         )}
@@ -325,7 +325,7 @@ export default function CrewStatsPage() {
             {/* Monthly bars */}
             {tipData.monthlyBreakdown.some((m) => m.amount > 0) && (
               <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 mb-4">
-                <p className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3)]/60 mb-3">Monthly Tips</p>
+                <p className="text-[9px] font-bold tracking-widest capitalize text-[var(--tx3)]/60 mb-3">Monthly Tips</p>
                 <div className="flex gap-2 items-end h-12">
                   {tipData.monthlyBreakdown.map((m) => {
                     const maxAmount = Math.max(...tipData.monthlyBreakdown.map((x) => x.amount), 1);
@@ -354,7 +354,7 @@ export default function CrewStatsPage() {
             {/* Recent tips list */}
             <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl overflow-hidden">
               <div className="px-4 py-2 border-b border-[var(--brd)]/20">
-                <p className="text-[9px] font-bold tracking-widest uppercase text-[var(--tx3)]/60">Recent Gratuities</p>
+                <p className="text-[9px] font-bold tracking-widest capitalize text-[var(--tx3)]/60">Recent Gratuities</p>
               </div>
               {tipData.tips.slice(0, 10).map((tip) => (
                 <div

@@ -1,6 +1,7 @@
 import { SERVICE_TYPE_LABELS, TIER_LABELS } from "@/lib/displayLabels";
+import { getAppTimezone } from "@/lib/business-timezone";
 
-export const TAX_RATE = 0.13;
+export { ONTARIO_HST_RATE as TAX_RATE } from "@/lib/format-currency";
 export const WINE = "#5C1A33";
 export const FOREST = "#2C3E2D";
 export const GOLD = "#B8962E";
@@ -249,6 +250,7 @@ export function fmtPricePerLb(n: number) {
 export function fmtDate(d: string | null) {
   if (!d) return "\u2014";
   return new Date(d + "T00:00:00").toLocaleDateString("en-CA", {
+    timeZone: getAppTimezone(),
     weekday: "long",
     year: "numeric",
     month: "long",

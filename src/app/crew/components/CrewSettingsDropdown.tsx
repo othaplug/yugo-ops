@@ -75,7 +75,7 @@ export default function CrewSettingsDropdown() {
 
           <div className="py-2">
             <div className="px-4 py-2.5">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-2">Appearance</div>
+              <div className="text-[10px] font-semibold capitalize tracking-wider text-[var(--tx3)] mb-2">Appearance</div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[12px] text-[var(--tx2)]">Theme</span>
                 <div className="flex rounded-lg border border-[var(--brd)] p-0.5">
@@ -98,7 +98,7 @@ export default function CrewSettingsDropdown() {
             </div>
 
             <div className="px-4 py-2.5">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)] mb-2">Optimisation</div>
+              <div className="text-[10px] font-semibold capitalize tracking-wider text-[var(--tx3)] mb-2">Optimisation</div>
               <label className="flex items-center justify-between gap-3 cursor-pointer py-1">
                 <span className="text-[12px] text-[var(--tx2)]">Reduce motion</span>
                 <button

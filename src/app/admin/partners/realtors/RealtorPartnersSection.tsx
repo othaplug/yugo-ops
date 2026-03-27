@@ -9,7 +9,7 @@ export default function RealtorPartnersSection({ partners }: { partners: Realtor
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+        <h3 className="text-[11px] font-bold tracking-wider capitalize text-[var(--tx3)]">
           Realtor Partners (portal access)
         </h3>
         <Link

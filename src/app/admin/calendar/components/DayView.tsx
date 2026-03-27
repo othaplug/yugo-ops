@@ -272,7 +272,7 @@ export default function DayView({
         }) && (
           <div className="flex border-b border-[var(--brd)] bg-[var(--bg)]/40">
             <div className="w-12 sm:w-16 shrink-0 py-1.5 flex items-center justify-end pr-1.5">
-              <span className="text-[7px] sm:text-[8px] font-semibold text-[var(--tx3)]/60 uppercase tracking-wide">Unsched.</span>
+              <span className="text-[7px] sm:text-[8px] font-semibold text-[var(--tx3)]/60 capitalize tracking-wide">Unsched.</span>
             </div>
             {columns.map((col) => {
               const allColEvs = col.id === "__unassigned" ? unassigned : eventsByCrew[col.id] || [];

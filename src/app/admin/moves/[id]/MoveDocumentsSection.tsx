@@ -200,7 +200,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
-      <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
+      <h3 className="font-heading text-[10px] font-bold tracking-wide capitalize text-[var(--tx3)] mb-2">
         Documents & Invoices
       </h3>
       {loading ? (

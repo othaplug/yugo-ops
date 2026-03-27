@@ -157,7 +157,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
       <div className="p-5 space-y-5">
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Name</label>
             <input
               type="text"
               value={name}
@@ -167,7 +167,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Email</label>
             <div className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx2)]">
               {user.email}
             </div>
@@ -175,7 +175,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
           </div>
           {!user.id.startsWith("inv-") && (
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone (SMS)</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Phone (SMS)</label>
             <input
               type="tel"
               value={phone}
@@ -187,7 +187,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
           </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Role</label>
             {isAdmin ? (
               <div className="px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx2)] flex items-center gap-2">
                 <span className="w-2 h-2 bg-[var(--gold)] rounded-full" />

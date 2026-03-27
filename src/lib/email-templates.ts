@@ -86,7 +86,7 @@ function emailCardLogoBlack(): string {
 
 /** Client contact email and phone for footer. */
 function getContactEmail(): string {
-  return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) || "notifications@opsplus.co";
+  return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) || "notifications@helloyugo.com";
 }
 function getContactPhone(): string {
   return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) || "(647) 370-4525";
@@ -157,7 +157,7 @@ export function equinoxPromoCta(url: string, label: string): string {
   </tr>
   <tr>
     <td>
-      <a href="${url}" style="display:inline-block;background-color:#FFFFFF;color:#000000;padding:16px 40px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;text-decoration:none;font-family:${EQ_SANS};border-radius:0;line-height:1;">${label}</a>
+      <a href="${url}" style="display:inline-block;background-color:#FFFFFF;color:#000000;padding:16px 40px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:capitalize;text-decoration:none;font-family:${EQ_SANS};border-radius:0;line-height:1;">${label}</a>
     </td>
   </tr>
 </table>`;
@@ -188,7 +188,7 @@ function estateDivider(): string {
 
 /** Georgia small-caps section eyebrow. */
 function estateLabel(text: string): string {
-  return `<p style="font-family:${ESTATE_GEORGIA};font-size:10px;font-weight:700;letter-spacing:0.24em;color:${ESTATE_WINE};text-transform:uppercase;margin:0 0 20px;line-height:1.4;">${text}</p>`;
+  return `<p style="font-family:${ESTATE_GEORGIA};font-size:10px;font-weight:700;letter-spacing:0.24em;color:${ESTATE_WINE};text-transform:capitalize;margin:0 0 20px;line-height:1.4;">${text}</p>`;
 }
 
 /**
@@ -259,7 +259,7 @@ export function statusUpdateEmailHtml(params: {
     ? `
     <tr>
       <td align="center" style="padding:8px 0 32px;">
-        <a href="${ctaUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0A0806;padding:13px 32px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;">${ctaLabel}</a>
+        <a href="${ctaUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#0A0806;padding:13px 32px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;">${ctaLabel}</a>
       </td>
     </tr>
   `
@@ -276,7 +276,7 @@ export function statusUpdateEmailHtml(params: {
             ${emailCardLogoGold()}
             <table width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td style="font-size:18px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${EMAIL_TX};padding-bottom:14px;line-height:1.3;">${headline}</td>
+                <td style="font-size:18px;font-weight:700;letter-spacing:0.12em;text-transform:capitalize;color:${EMAIL_TX};padding-bottom:14px;line-height:1.3;">${headline}</td>
               </tr>
               <tr>
                 <td style="font-size:14px;color:#A3A3A3;line-height:1.6;">${body}</td>
@@ -339,12 +339,12 @@ export function deliveryNotificationEmail(delivery: {
   const items = delivery.items_count ?? 0;
   const inner = `
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr><td style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;padding-bottom:8px;">Project Update</td></tr>
+      <tr><td style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;padding-bottom:8px;">Project Update</td></tr>
       <tr><td style="font-size:26px;font-weight:700;letter-spacing:0.3px;color:${EMAIL_TX};padding-bottom:20px;">${delivery.delivery_number}, ${delivery.customer_name}</td></tr>
       <tr>
         <td style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:20px;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr><td style="font-size:9px;color:${EMAIL_TX3};text-transform:uppercase;font-weight:700;letter-spacing:0.5px;padding-bottom:8px;">Current Status</td></tr>
+            <tr><td style="font-size:9px;color:${EMAIL_TX3};text-transform:capitalize;font-weight:700;letter-spacing:0.5px;padding-bottom:8px;">Current Status</td></tr>
             <tr><td style="padding-bottom:16px;">${statusBadge(delivery.status)}</td></tr>
             <tr>
               <td>
@@ -373,7 +373,7 @@ export function deliveryNotificationEmail(delivery: {
       </tr>
       <tr>
         <td align="center" style="padding-bottom:24px;">
-          <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Track this project</a>
+          <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Track this project</a>
         </td>
       </tr>
     </table>
@@ -471,7 +471,7 @@ function moveStatusBarHtml(status: string, stage?: string | null): string {
       }
     </style>
     <div style="margin:20px 0 24px">
-      <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Current Stage</div>
+      <div style="font-size:9px;font-weight:700;color:#666;text-transform:capitalize;letter-spacing:0.5px;margin-bottom:8px">Current Stage</div>
       <div style="height:10px;background:#1E1E1E;border-radius:999px;overflow:hidden;border:1px solid #2A2A2A">
         <div class="move-bar-fill" style="height:100%;width:${pct}%;min-width:${pct > 0 ? 4 : 0}px;background:linear-gradient(90deg,#ECDEC4,#C9A962);border-radius:999px"></div>
       </div>
@@ -500,13 +500,13 @@ export function moveNotificationEmail(move: {
   const trackUrl = move.trackUrl || `${getEmailBaseUrl()}/track/move/${move.move_id}`;
   const statusBarHtml = moveStatusBarHtml(move.status, move.stage);
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Your Move Was Updated</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Your Move Was Updated</div>
     <div style="font-size:20px;font-weight:700;margin:0 0 8px;color:${EMAIL_TX};">Your Move Was Updated</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 4px;">We&apos;ve made changes to your move recently.</p>
     ${statusBarHtml}
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 24px;">Click below to view your full dashboard and see what changed.</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Track your move</a>
+      <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Track your move</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">This link is unique to your move. If you didn&apos;t expect this email, you can safely ignore it.</p>
   `;
@@ -520,11 +520,11 @@ export function trackingLinkEmail(params: {
 }) {
   const { clientName, trackUrl } = params;
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Track your move</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Track your move</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Hi${clientName ? `, ${clientName}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Use the link below to track your move, view documents, and message your coordinator. No account or login required.</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Track your move</a>
+      <a href="${trackUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Track your move</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">This link is unique to your move. If you didn&apos;t expect this email, you can safely ignore it.</p>
   `;
@@ -538,10 +538,10 @@ export function invoiceEmail(invoice: {
   due_date: string;
 }) {
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;">Invoice</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:16px;">Invoice</div>
     <div style="font-size:14px;font-weight:600;margin-bottom:16px;">${invoice.invoice_number}</div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;text-align:center;margin-bottom:16px;">
-      <div style="font-size:9px;color:${EMAIL_TX3};text-transform:uppercase;font-weight:700;margin-bottom:8px;">Amount Due</div>
+      <div style="font-size:9px;color:${EMAIL_TX3};text-transform:capitalize;font-weight:700;margin-bottom:8px;">Amount Due</div>
       <div style="font-family:'Instrument Serif',serif;font-size:28px;font-weight:700;color:${EMAIL_GOLD};">${formatCurrency(invoice.amount)}</div>
       <div style="font-size:10px;color:${EMAIL_TX3};margin-top:4px;">Due: ${invoice.due_date}</div>
     </div>
@@ -561,7 +561,7 @@ export function changeRequestNotificationEmail(params: {
   const isApproved = status === "approved";
   const feeDollars = feeCents > 0 ? (feeCents / 100).toFixed(2) : "";
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Change Request Update</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Change Request Update</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Your change request has been ${isApproved ? "approved" : "declined"}</div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:20px;">
       <div style="font-size:11px;color:${EMAIL_TX3};margin-bottom:8px;"><strong>Request type:</strong> ${type}</div>
@@ -572,7 +572,7 @@ export function changeRequestNotificationEmail(params: {
       ${isApproved && feeDollars ? `<p style="font-size:12px;color:#FFFFFF;line-height:1.5;margin:16px 0 0;">A fee of $${feeDollars} has been added. Please pay your updated balance in your portal.</p>` : ""}
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Track your move</a>
+      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Track your move</a>
     </td></tr></table>
   `;
   return emailLayout(inner);
@@ -589,7 +589,7 @@ export function inventoryChangeRequestAdminEmail(params: {
   const { moveCode, clientName, addedCount, removedCount, netDelta, adminUrl } = params;
   const deltaStr = `${netDelta >= 0 ? "+" : ""}$${netDelta}`;
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Inventory Change Request</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Inventory Change Request</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">New request, ${moveCode}</div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:20px;">
       <p style="font-size:13px;color:#FFFFFF;line-height:1.5;margin:0 0 12px;"><strong>Client:</strong> ${clientName}</p>
@@ -597,7 +597,7 @@ export function inventoryChangeRequestAdminEmail(params: {
       <p style="font-size:12px;color:#FFFFFF;line-height:1.5;margin:0;">Auto-calculated net: <strong>${deltaStr}</strong></p>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${adminUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Review in admin</a>
+      <a href="${adminUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Review in admin</a>
     </td></tr></table>
   `;
   return emailLayout(inner);
@@ -620,7 +620,7 @@ export function inventoryChangeRequestClientEmail(params: {
       ? "Your inventory change request needs attention"
       : "Your inventory change request was approved";
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Inventory Update</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Inventory Update</div>
     <div style="font-size:24px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">${headline}</div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:20px;">
       <p style="font-size:13px;color:#FFFFFF;line-height:1.5;margin:0 0 12px;">Hi ${clientName},</p>
@@ -634,7 +634,7 @@ export function inventoryChangeRequestClientEmail(params: {
       }
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">View your move</a>
+      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">View your move</a>
     </td></tr></table>
   `;
   return emailLayout(inner);
@@ -649,14 +649,14 @@ export function extraItemApprovalEmail(params: {
   const { description, portalUrl, feeCents = 0 } = params;
   const feeDollars = feeCents > 0 ? (feeCents / 100).toFixed(2) : "";
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Extra Item Approved</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Extra Item Approved</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Your extra item has been approved</div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:8px;padding:20px;margin-bottom:20px;">
       <p style="font-size:12px;color:#FFFFFF;line-height:1.5;margin:0;">${description}</p>
       ${feeDollars ? `<p style="font-size:12px;color:#FFFFFF;line-height:1.5;margin:16px 0 0;">A fee of $${feeDollars} has been added. Please pay your updated balance in your portal.</p>` : ""}
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Track your move</a>
+      <a href="${portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Track your move</a>
     </td></tr></table>
   `;
   return emailLayout(inner);
@@ -671,17 +671,17 @@ export function inviteUserEmail(params: {
 }) {
   const { name, email, roleLabel, tempPassword, loginUrl } = params;
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">You&apos;re Invited</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">You&apos;re Invited</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to Yugo${name ? `, ${name}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to join Yugo as a <strong style="color:${EMAIL_GOLD}">${roleLabel}</strong>. Your account has been created, sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
-      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
+      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
       <div style="font-size:12px;color:#FFFFFF;margin-bottom:4px;"><strong>Email:</strong> ${email}</div>
       <div style="font-size:12px;color:#FFFFFF;"><strong>Temporary password:</strong> <code style="background:${EMAIL_BG};padding:2px 8px;border-radius:4px;font-family:monospace;">${tempPassword}</code></div>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Log in to continue setup</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Log in to continue setup</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">For security, you&apos;ll be asked to create a new password when you first sign in. If you didn&apos;t expect this invitation, you can safely ignore this email.</p>
   `;
@@ -718,17 +718,17 @@ export function invitePartnerEmail(params: {
 }) {
   const { contactName, companyName, email, typeLabel, tempPassword, loginUrl } = params;
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">You&apos;re Invited as a Partner</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">You&apos;re Invited as a Partner</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to Yugo${contactName ? `, ${contactName}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;"><strong style="color:${EMAIL_GOLD}">${companyName}</strong> has been invited as a <strong style="color:${EMAIL_GOLD}">${typeLabel}</strong> partner with Yugo. Your account has been created, sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
-      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
+      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
       <div style="font-size:12px;color:#FFFFFF;margin-bottom:4px;"><strong>Email:</strong> ${email}</div>
       <div style="font-size:12px;color:#FFFFFF;"><strong>Temporary password:</strong> <code style="background:${EMAIL_BG};padding:2px 8px;border-radius:4px;font-family:monospace;">${tempPassword}</code></div>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Log in to continue setup</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Log in to continue setup</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">For security, you&apos;ll be asked to create a new password when you first sign in. If you didn&apos;t expect this invitation, you can safely ignore this email.</p>
   `;
@@ -759,11 +759,11 @@ Powered by Yugo | Learn more: ${baseUrl}/about`;
 export function addedToPartnerEmail(params: { contactName: string; companyName: string; loginUrl: string }) {
   const { companyName, loginUrl } = params;
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Portal access added</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Portal access added</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">You&apos;ve been added to ${companyName}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your account now has access to <strong style="color:${EMAIL_GOLD}">${companyName}</strong> on the Yugo+ Partner Portal. Log in with your existing password to view deliveries and manage requests.</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Log in to Partner Portal</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Log in to Partner Portal</a>
     </td></tr></table>
   `;
   return emailLayout(inner, loginUrl);
@@ -787,17 +787,17 @@ export function partnerPasswordResetEmail(params: {
 }) {
   const { contactName, companyName, email, tempPassword, loginUrl } = params;
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Password Reset</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Password Reset</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">New password for your Yugo+ partner account</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">A new temporary password has been set for your <strong style="color:${EMAIL_GOLD}">${companyName}</strong> partner portal access${contactName ? ` (${contactName})` : ""}. Sign in with the credentials below and you&apos;ll be prompted to set a new password.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
-      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
+      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your credentials</div>
       <div style="font-size:12px;color:#FFFFFF;margin-bottom:4px;"><strong>Email:</strong> ${email}</div>
       <div style="font-size:12px;color:#FFFFFF;"><strong>New temporary password:</strong> <code style="background:${EMAIL_BG};padding:2px 8px;border-radius:4px;font-family:monospace;">${tempPassword}</code></div>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Log in to partner portal</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Log in to partner portal</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">For security, we recommend changing this password after you sign in. If you didn&apos;t request this, contact your admin.</p>
   `;
@@ -837,7 +837,7 @@ function darkEmailWrapper(html: string) {
 export function welcomeEmail(client: { name: string; email: string; portalUrl: string }) {
   const displayName = client.name || "Partner";
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Partner Portal Access</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Partner Portal Access</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to Yugo${displayName !== "Partner" ? `, ${displayName}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;">Your partner portal is ready. Sign in anytime to:</p>
     <ul style="font-size:14px;color:${EMAIL_TX2};line-height:1.7;margin:0 0 24px;padding-left:20px;">
@@ -846,7 +846,7 @@ export function welcomeEmail(client: { name: string; email: string; portalUrl: s
       <li>Message our team and get support</li>
     </ul>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${client.portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Access Your Portal</a>
+      <a href="${client.portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Access Your Portal</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">If you didn&apos;t request this, you can safely ignore this email.</p>
   `;
@@ -857,13 +857,13 @@ export function referralReceivedEmail(params: { agentName: string; clientName: s
   const { agentName, clientName, property } = params;
   const ref = clientName || property || "this property";
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Referral Received</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Referral Received</div>
     <div style="font-size:20px;font-weight:600;margin:0 0 16px;color:${EMAIL_TX};">Hi ${agentName},</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your referral for <strong style="color:${EMAIL_GOLD}">${ref}</strong> has been received and added to our pipeline.</p>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:20px;">
       <div style="display:flex;align-items:center;gap:10px">
         <div>
-          <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:6px;">Status</div>
+          <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:6px;">Status</div>
           <div style="font-size:13px;color:#FFFFFF;font-weight:600;">In Pipeline - Your team is on it</div>
           <div style="font-size:12px;color:${EMAIL_TX2};margin-top:4px;line-height:1.5;">We&apos;ll be in touch as we process the lead and coordinate the move.</div>
         </div>
@@ -878,17 +878,17 @@ export function crewPortalInviteEmail(params: { name: string; email: string; log
   const { name, loginUrl, phone, pin } = params;
   const phoneDisplay = formatPhone(phone);
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Crew Portal Access</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Crew Portal Access</div>
     <div style="font-size:26px;font-weight:700;letter-spacing:0.3px;margin:0 0 20px;color:${EMAIL_TX};">Welcome to the Crew Portal${name ? `, ${name}` : ""}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to log in to the Yugo+ Crew Portal to start jobs, update status, and share your location with dispatch.</p>
     <div style="width:100%;height:1px;background:linear-gradient(to right,transparent,${EMAIL_GOLD}55,transparent);margin:0 0 20px"></div>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:10px;padding:20px;margin-bottom:24px;">
-      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your login</div>
+      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:8px;">Your login</div>
       <div style="font-size:12px;color:#FFFFFF;margin-bottom:4px;"><strong>Phone:</strong> ${phoneDisplay}</div>
       <div style="font-size:12px;color:#FFFFFF;"><strong>PIN:</strong> <code style="background:${EMAIL_BG};padding:2px 8px;border-radius:4px;font-family:monospace;">${pin}</code></div>
     </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
-      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Log in to Crew Portal</a>
+      <a href="${loginUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Log in to Crew Portal</a>
     </td></tr></table>
     <p style="font-size:11px;color:${EMAIL_TX3};line-height:1.5;">Sessions expire after one shift (12h). Keep your PIN secure. If you didn&apos;t expect this invite, you can safely ignore this email.</p>
   `;
@@ -1032,14 +1032,14 @@ export const curatedConfirmationEmail = (p: TierConfirmationParams): string => e
 export function essentialConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   return emailLayout(`
-    <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Move Confirmed</div>
+    <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:3px;text-transform:capitalize;margin-bottom:8px">Move Confirmed</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;margin:0 0 12px;color:#FFFFFF">Your Yugo move is confirmed${p.clientName ? `, ${p.clientName}` : ""}.</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Your move is confirmed. Here are your details:
     </p>
 
     <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:10px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:14px">Move Details</div>
+      <div style="font-size:10px;color:#666;text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:14px">Move Details</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
         <tr><td style="color:#666;padding:4px 0">From:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
@@ -1052,7 +1052,7 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
     </div>
 
     <div style="margin-bottom:20px">
-      <div style="font-size:10px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:10px">What to Expect</div>
+      <div style="font-size:10px;color:#C9A962;text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:10px">What to Expect</div>
       <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
         <div>&middot; Our crew will arrive within your time window</div>
         <div>&middot; All moving blankets, equipment, and floor protection included</div>
@@ -1061,7 +1061,7 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
     </div>
 
     <div style="margin-bottom:20px">
-      <div style="font-size:10px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:10px">What to Prepare</div>
+      <div style="font-size:10px;color:#C9A962;text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:10px">What to Prepare</div>
       <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
         <div>&middot; Have boxes packed and sealed</div>
         <div>&middot; Clear pathways for the crew</div>
@@ -1077,7 +1077,7 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
     </div>
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:4px 0 20px;">
-      <a href="${p.trackingUrl}" style="display:inline-block;background-color:#C9A962;color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">Track Your Move</a>
+      <a href="${p.trackingUrl}" style="display:inline-block;background-color:#C9A962;color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">Track Your Move</a>
     </td></tr></table>
 
     <p style="font-size:11px;color:#666;margin:0 0 16px;text-align:center">
@@ -1092,14 +1092,14 @@ export const premierConfirmationEmail = (p: TierConfirmationParams): string => s
 export function signatureConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   return emailLayout(`
-    <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Booking Confirmed</div>
+    <div style="font-size:10px;font-weight:700;color:#C9A962;letter-spacing:3px;text-transform:capitalize;margin-bottom:8px">Booking Confirmed</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;margin:0 0 12px;color:#FFFFFF">Great choice${p.clientName ? `, ${p.clientName}` : ""} - your Yugo Signature move is confirmed.</h1>
     <p style="font-size:14px;color:#B8B5B0;line-height:1.6;margin:0 0 24px">
       Everything is set. No surprises - just a smooth, professional move.
     </p>
 
     <div style="background:#1E1E1E;border:1px solid #C9A96233;border-radius:10px;padding:20px;margin-bottom:20px">
-      <div style="font-size:10px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:14px">Your Signature Move</div>
+      <div style="font-size:10px;color:#C9A962;text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:14px">Your Signature Move</div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="color:#666;padding:4px 0">Date:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
         <tr><td style="color:#666;padding:4px 0">From:</td><td style="color:#FFFFFF;font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
@@ -1112,14 +1112,14 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
     </div>
 
     <div style="margin-bottom:20px">
-      <div style="font-size:10px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:10px">What&apos;s Included</div>
+      <div style="font-size:10px;color:#C9A962;text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:10px">What&apos;s Included</div>
       <div style="font-size:12px;color:#B8B5B0;line-height:2">
         ${(p.includes || []).map((inc) => `<div><span style="color:#C9A962">&#10003;</span> ${inc}</div>`).join("")}
       </div>
     </div>
 
     <div style="margin-bottom:20px">
-      <div style="font-size:10px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:10px">Before Your Move</div>
+      <div style="font-size:10px;color:#C9A962;text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:10px">Before Your Move</div>
       <div style="font-size:13px;color:#B8B5B0;line-height:1.8">
         <div>&middot; You&apos;ll receive a reminder 48 hours before</div>
         <div>&middot; A day-before SMS with your crew details and ETA window</div>
@@ -1128,13 +1128,13 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
     </div>
 
     <div style="margin-bottom:20px">
-      <div style="font-size:10px;color:#C9A962;text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:10px">Your Tracking Page</div>
+      <div style="font-size:10px;color:#C9A962;text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:10px">Your Tracking Page</div>
       <div style="font-size:13px;color:#B8B5B0;line-height:1.6">
         Follow your move in real-time on move day:
       </div>
     </div>
 
-    <a href="${p.trackingUrl}" style="display:block;background:#C9A962;color:#000000;padding:13px 32px;border-radius:0;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;margin-bottom:16px;text-align:center">
+    <a href="${p.trackingUrl}" style="display:block;background:#C9A962;color:#000000;padding:13px 32px;border-radius:0;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;margin-bottom:16px;text-align:center">
       Track Your Move
     </a>
 
@@ -1266,7 +1266,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:16px;">
       <tr>
         <td>
-          <a href="${p.trackingUrl}" style="display:inline-block;background-color:${ESTATE_WINE};color:#FFFFFF;padding:16px 40px;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;text-decoration:none;font-family:${ESTATE_DM_SANS};border-radius:0;line-height:1;">Track Your Move</a>
+          <a href="${p.trackingUrl}" style="display:inline-block;background-color:${ESTATE_WINE};color:#FFFFFF;padding:16px 40px;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:capitalize;text-decoration:none;font-family:${ESTATE_DM_SANS};border-radius:0;line-height:1;">Track Your Move</a>
         </td>
       </tr>
     </table>
@@ -1303,7 +1303,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0;font-family:${ESTATE_DM_SANS};">Yugo Estate Team</p>
     `}
 
-    <p style="font-family:${ESTATE_GEORGIA};font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:${ESTATE_WINE};margin:32px 0 0;line-height:1.4;">Yugo - The Art of Moving</p>
+    <p style="font-family:${ESTATE_GEORGIA};font-size:11px;letter-spacing:0.18em;text-transform:capitalize;color:${ESTATE_WINE};margin:32px 0 0;line-height:1.4;">Yugo - The Art of Moving</p>
   `);
 }
 
@@ -1345,7 +1345,7 @@ export function internalBookingAlertEmail(params: {
     : "TBD";
 
   return emailLayout(`
-    <div style="font-size:10px;font-weight:700;color:#2D9F5A;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">New Booking</div>
+    <div style="font-size:10px;font-weight:700;color:#2D9F5A;letter-spacing:3px;text-transform:capitalize;margin-bottom:8px">New Booking</div>
     <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#FFFFFF">${clientName} - ${serviceLabel}${tierLabel ? ` (${tierLabel})` : ""}</h1>
 
     <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:10px;padding:20px;margin-bottom:16px">
@@ -1376,11 +1376,11 @@ export function verificationCodeEmail(params: { code: string; purpose: "email_ch
     ? "You requested to change your email address. Enter this code to confirm:"
     : "Use this code to complete your sign-in. It expires in 15 minutes.";
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Verification</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Verification</div>
     <div style="font-size:20px;font-weight:600;margin:0 0 16px;color:${EMAIL_TX};">${title}</div>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">${desc}</p>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:12px;padding:28px;text-align:center;margin-bottom:24px;">
-      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:uppercase;font-weight:700;letter-spacing:2px;margin-bottom:16px;">Your Code</div>
+      <div style="font-size:10px;color:${EMAIL_GOLD};text-transform:capitalize;font-weight:700;letter-spacing:2px;margin-bottom:16px;">Your Code</div>
       <div style="width:40px;height:1px;background:${EMAIL_GOLD};margin:0 auto 20px;opacity:0.5"></div>
       <code style="font-size:30px;font-weight:700;letter-spacing:10px;color:${EMAIL_GOLD};font-family:monospace;">${code}</code>
       <div style="font-size:10px;color:${EMAIL_TX3};margin-top:16px;letter-spacing:0.5px">Expires in 15 minutes</div>
@@ -1401,7 +1401,7 @@ function escapeHtml(s: string): string {
 /** Claim submitted (client) — premium dark layout. */
 export function claimConfirmationEmailHtml(claimNumber: string, clientName: string, itemCount: number, totalClaimed: number): string {
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Claim Received</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Claim Received</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;color:${EMAIL_TX};margin:0 0 12px;">Hi ${escapeHtml(clientName)}</h1>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your claim <strong>${escapeHtml(claimNumber)}</strong> has been received.</p>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:12px;padding:20px;margin-bottom:24px;">
@@ -1417,7 +1417,7 @@ export function claimConfirmationEmailHtml(claimNumber: string, clientName: stri
 /** Claim filed on client's behalf by admin — premium dark layout. */
 export function claimCreatedByAdminEmailHtml(claimNumber: string, clientName: string, itemCount: number, totalClaimed: number): string {
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Claim Filed</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Claim Filed</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;color:${EMAIL_TX};margin:0 0 12px;">Hi ${escapeHtml(clientName)}</h1>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">A damage claim <strong>${escapeHtml(claimNumber)}</strong> has been filed on your behalf by our team.</p>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:12px;padding:20px;margin-bottom:24px;">
@@ -1436,7 +1436,7 @@ export function claimApprovalEmailHtml(claimNumber: string, clientName: string, 
     ? `<p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;"><strong>Resolution:</strong> ${escapeHtml(resolutionNotes)}</p>`
     : "";
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Claim Review Complete</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Claim Review Complete</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;color:${EMAIL_TX};margin:0 0 12px;">Hi ${escapeHtml(clientName)}</h1>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your claim <strong>${escapeHtml(claimNumber)}</strong> has been reviewed.</p>
     <div style="background:rgba(45,159,90,0.12);border:1px solid rgba(45,159,90,0.3);border-radius:12px;padding:20px;margin-bottom:24px;">
@@ -1455,7 +1455,7 @@ export function claimStatusUpdateEmailHtml(claimNumber: string, clientName: stri
   const toLabel = toStatus.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
   const notesBlock = notes ? `<p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 16px;"><strong>Notes:</strong> ${escapeHtml(notes)}</p>` : "";
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Claim Status Update</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Claim Status Update</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;color:${EMAIL_TX};margin:0 0 12px;">Hi ${escapeHtml(clientName)}</h1>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">There&apos;s an update on your claim <strong>${escapeHtml(claimNumber)}</strong>.</p>
     <div style="background:#1A1A1A;border:1px solid ${EMAIL_BRD};border-radius:12px;padding:20px;margin-bottom:24px;">
@@ -1471,7 +1471,7 @@ export function claimStatusUpdateEmailHtml(claimNumber: string, clientName: stri
 /** Claim denied — premium dark layout. */
 export function claimDenialEmailHtml(claimNumber: string, clientName: string, reason: string): string {
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Claim Review Complete</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_GOLD};letter-spacing:3px;text-transform:capitalize;margin-bottom:8px;">Claim Review Complete</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;color:${EMAIL_TX};margin:0 0 12px;">Hi ${escapeHtml(clientName)}</h1>
     <p style="font-size:14px;color:${EMAIL_TX2};line-height:1.6;margin:0 0 20px;">Your claim <strong>${escapeHtml(claimNumber)}</strong> has been reviewed.</p>
     <div style="background:rgba(153,27,27,0.15);border:1px solid rgba(153,27,27,0.3);border-radius:12px;padding:20px;margin-bottom:24px;">
@@ -1513,7 +1513,7 @@ export function projectItemStatusEmailHtml(d: ProjectItemStatusEmailData): strin
   const isIssue = d.statusKey === "issue_reported";
   const isDelivered = ["delivered", "installed"].includes(d.statusKey);
 
-  const badge = `<span style="display:inline-block;background:${accent}22;color:${accent};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">${d.statusLabel}</span>`;
+  const badge = `<span style="display:inline-block;background:${accent}22;color:${accent};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:capitalize;">${d.statusLabel}</span>`;
 
   const notesBlock = d.notes ? `
       <tr><td style="height:14px;"></td></tr>
@@ -1532,7 +1532,7 @@ export function projectItemStatusEmailHtml(d: ProjectItemStatusEmailData): strin
   const inner = `
     <tr>
       <td style="padding-bottom:4px;">
-        <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:${EMAIL_TX3};margin:0 0 16px;">${escapeHtml(d.projectNumber)} &middot; ${escapeHtml(d.projectName)}</p>
+        <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:capitalize;color:${EMAIL_TX3};margin:0 0 16px;">${escapeHtml(d.projectNumber)} &middot; ${escapeHtml(d.projectName)}</p>
         <h1 style="font-size:28px;font-weight:700;letter-spacing:0.5px;color:${EMAIL_TX};margin:0 0 12px;">Item Status Update</h1>
         <p style="font-size:14px;color:${EMAIL_TX2};margin:0 0 24px;">Hi ${escapeHtml(d.partnerName)}, here&rsquo;s the latest on one of your project items.</p>
       </td>
@@ -1557,7 +1557,7 @@ export function projectItemStatusEmailHtml(d: ProjectItemStatusEmailData): strin
     <tr><td style="height:24px;"></td></tr>
     <tr>
       <td align="center">
-        <a href="${d.portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:0;">View Project</a>
+        <a href="${d.portalUrl}" style="display:inline-block;background-color:${EMAIL_GOLD};color:#000000;padding:13px 32px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:capitalize;text-decoration:none;border-radius:0;">View Project</a>
       </td>
     </tr>
     <tr><td style="height:32px;"></td></tr>

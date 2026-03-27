@@ -948,7 +948,7 @@ export function CrewNavigation({
       <div className="shrink-0 text-white px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#4a1528]">
         <div>
           <p className="text-2xl font-bold leading-none">{etaLabel}</p>
-          <p className="text-[11px] opacity-80 mt-1 uppercase tracking-wide">ETA</p>
+          <p className="text-[11px] opacity-80 mt-1 capitalize tracking-wide">ETA</p>
         </div>
         <div className="text-right min-w-0 flex-1 max-w-[55%]">
           <p className="text-[13px] font-medium truncate">{destination.address}</p>

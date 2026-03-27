@@ -80,11 +80,15 @@ export async function PATCH(
 
     if (order.client_phone) {
       const pickupDate = new Date(order.pickup_date);
+      const pickupLabel = pickupDate.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
       sendSMS(
         order.client_phone,
-        `Your Yugo bins have been delivered! Start packing. We pick up on ` +
-        `${pickupDate.toLocaleDateString("en-CA", { month: "short", day: "numeric" })}. ` +
-        `Questions? (647) 370-4525`,
+        [
+          `Hi,`,
+          `Your Yugo bins have been delivered. Start packing.`,
+          `We pick up on ${pickupLabel}.`,
+          `Questions? (647) 370-4525`,
+        ].join("\n\n"),
       ).catch(() => {});
     }
 
@@ -140,8 +144,11 @@ export async function PATCH(
     } else if (order.client_phone) {
       sendSMS(
         order.client_phone,
-        `Your bins have been collected. Thank you for choosing Yugo. ` +
-        `Planning your move? Get a quote any time at liveyugo.com.`,
+        [
+          `Hi,`,
+          `Your bins have been collected. Thank you for choosing Yugo.`,
+          `Planning your move? Get a quote any time at https://helloyugo.com`,
+        ].join("\n\n"),
       ).catch(() => {});
     }
 

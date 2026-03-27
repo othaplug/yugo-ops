@@ -1,5 +1,6 @@
 "use client";
 
+import { toTitleCase } from "@/lib/format-text";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -106,7 +107,7 @@ export default function RealtimeListener() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "quotes" }, (payload) => {
         const row = payload.new as { quote_number?: string; client_name?: string; total?: number; move_type?: string };
         const who = row.client_name ? ` \u2014 ${row.client_name}` : "";
-        const type = row.move_type ? ` (${row.move_type.replace(/_/g, " ")})` : "";
+        const type = row.move_type ? ` (${toTitleCase(row.move_type)})` : "";
         createNotification(addNotification, {
           title: `New booking quote${who}${type}`,
           icon: "dollar",

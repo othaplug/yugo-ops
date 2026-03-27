@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { verifyTrackToken } from "@/lib/track-token";
+import { verifyDeliveryTrackAccess } from "@/lib/delivery-tracking-tokens";
 
 export async function GET(
   req: NextRequest,
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const token = req.nextUrl.searchParams.get("token") || "";
-  if (!verifyTrackToken("delivery", id, token)) {
+  if (!(await verifyDeliveryTrackAccess(id, token))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -32,7 +32,7 @@ export async function POST(
   const body = await req.json();
   const token = body.token || "";
 
-  if (!verifyTrackToken("delivery", id, token)) {
+  if (!(await verifyDeliveryTrackAccess(id, token))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -138,7 +138,7 @@ export default function SearchBox() {
       </div>
       {open && results.length > 0 && (
         <div className="absolute left-0 w-full sm:w-[440px] top-full mt-1 max-h-[420px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-[14px] shadow-xl z-50 animate-fade-up">
-          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] border-b border-[var(--brd)]">
+          <div className="px-3 py-2 text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)] border-b border-[var(--brd)]">
             {results.length} result{results.length !== 1 ? "s" : ""}
           </div>
           {results.map((r, idx) => (
@@ -157,7 +157,7 @@ export default function SearchBox() {
                 {r.sub && <div className="text-[9px] text-[var(--tx3)] truncate">{r.sub}</div>}
               </div>
               <span
-                className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full shrink-0"
+                className="text-[10px] font-bold capitalize tracking-wide px-1.5 py-0.5 rounded-full shrink-0"
                 style={{
                   color: TYPE_COLORS[r.type] || "var(--tx3)",
                   backgroundColor: `${TYPE_COLORS[r.type]}18` || "var(--gdim)",

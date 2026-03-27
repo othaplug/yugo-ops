@@ -35,7 +35,7 @@ export default function RevenueForecastWidget() {
       <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)]/30">
         <div className="flex items-center gap-2">
           <TrendUp size={16} color="var(--tx2)" />
-          <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">
+          <span className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)]">
             Revenue Forecast
           </span>
         </div>
@@ -72,7 +72,7 @@ export default function RevenueForecastWidget() {
               <div className="rounded-xl bg-[var(--bg)] border border-[var(--brd)]/30 p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <CurrencyDollar size={12} color="#22c55e" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#22c55e]">
+                  <span className="text-[10px] font-bold capitalize tracking-wider text-[#22c55e]">
                     Confirmed
                   </span>
                 </div>
@@ -84,7 +84,7 @@ export default function RevenueForecastWidget() {
               <div className="rounded-xl bg-[var(--bg)] border border-[var(--brd)]/30 p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <ChartBar size={12} color="var(--tx2)" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx2)]">
+                  <span className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
                     Pipeline
                   </span>
                 </div>
@@ -108,7 +108,7 @@ export default function RevenueForecastWidget() {
             {/* Bar chart visualization */}
             {data?.forecasts && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]/60 mb-2">
+                <p className="text-[10px] font-semibold capitalize tracking-wider text-[var(--tx3)]/60 mb-2">
                   All Periods
                 </p>
                 <div className="space-y-2">

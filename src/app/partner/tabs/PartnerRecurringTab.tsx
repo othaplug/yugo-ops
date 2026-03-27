@@ -138,7 +138,7 @@ function ScheduleModal({
           {err && <div className="text-[12px] text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</div>}
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Schedule Name</label>
+            <label className="block text-[11px] font-semibold capitalize text-[var(--tx3)] mb-1">Schedule Name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -148,7 +148,7 @@ function ScheduleModal({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Frequency</label>
+            <label className="block text-[11px] font-semibold capitalize text-[var(--tx3)] mb-1">Frequency</label>
             <div className="flex gap-2">
               {["weekly", "biweekly", "monthly"].map((f) => (
                 <button
@@ -168,7 +168,7 @@ function ScheduleModal({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Days of Week</label>
+            <label className="block text-[11px] font-semibold capitalize text-[var(--tx3)] mb-1">Days of Week</label>
             <div className="flex gap-1.5">
               {DAY_NAMES.map((day, i) => {
                 const dow = i + 1;
@@ -193,7 +193,7 @@ function ScheduleModal({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Booking Type</label>
+            <label className="block text-[11px] font-semibold capitalize text-[var(--tx3)] mb-1">Booking Type</label>
             <div className="flex gap-2">
               {[["day_rate", "Day Rate"], ["per_delivery", "Per Delivery"]].map(([val, label]) => (
                 <button
@@ -215,7 +215,7 @@ function ScheduleModal({
           {bookingType === "day_rate" && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Vehicle</label>
+                <label className="block text-[11px] font-semibold capitalize text-[var(--tx3)] mb-1">Vehicle</label>
                 <select
                   value={vehicleType}
                   onChange={(e) => setVehicleType(e.target.value)}
@@ -227,7 +227,7 @@ function ScheduleModal({
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Day Type</label>
+                <label className="block text-[11px] font-semibold capitalize text-[var(--tx3)] mb-1">Day Type</label>
                 <select
                   value={dayType}
                   onChange={(e) => setDayType(e.target.value)}
@@ -242,7 +242,7 @@ function ScheduleModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Default Stops</label>
+              <label className="block text-[11px] font-semibold capitalize text-[var(--tx3)] mb-1">Default Stops</label>
               <input
                 type="number"
                 value={numStops}
@@ -253,7 +253,7 @@ function ScheduleModal({
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Time Window</label>
+              <label className="block text-[11px] font-semibold capitalize text-[var(--tx3)] mb-1">Time Window</label>
               <select
                 value={timeWindow}
                 onChange={(e) => setTimeWindow(e.target.value)}
@@ -267,7 +267,7 @@ function ScheduleModal({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold uppercase text-[var(--tx3)] mb-1">Default Pickup Address</label>
+            <label className="block text-[11px] font-semibold capitalize text-[var(--tx3)] mb-1">Default Pickup Address</label>
             <AddressAutocomplete
               value={pickupAddress}
               onRawChange={setPickupAddress}
@@ -461,7 +461,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
 
       {/* How it works */}
       <div className="rounded-xl border border-[var(--brd)]/50 p-4 bg-[var(--card)]/50">
-        <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">How it works</h4>
+        <h4 className="text-[11px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-2">How it works</h4>
         <ul className="space-y-1.5 text-[11px] text-[var(--tx3)]">
           <li className="flex items-start gap-2"><span className="text-[var(--gold)] mt-0.5">→</span>7 days before each scheduled run, a draft delivery is created automatically</li>
           <li className="flex items-start gap-2"><span className="text-[var(--gold)] mt-0.5">→</span>You&apos;ll receive a notification to add stops and confirm</li>

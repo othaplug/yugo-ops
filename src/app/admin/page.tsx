@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getMoveCode } from "@/lib/move-code";
 import { getTodayString } from "@/lib/business-timezone";
 import { formatCompactCurrency } from "@/lib/format-currency";
+import { toTitleCase } from "@/lib/format-text";
 import { isMoveWeatherBrief, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 import AdminPageClient from "./AdminPageClient";
 
@@ -104,11 +105,11 @@ export default async function AdminPage() {
   const changeTasks: ActionTask[] = (pendingChangesResult?.data || []).map((r: Record<string, unknown>) => {
     const moveRaw = r.moves as unknown;
     const move = Array.isArray(moveRaw) ? (moveRaw[0] as { client_name?: string; move_code?: string } | undefined) ?? null : (moveRaw as { client_name?: string; move_code?: string } | null);
-    const typeLabel = String(r.type || "change").replace(/_/g, " ");
+    const typeLabel = toTitleCase(String(r.type || "change"));
     return {
       id: String(r.id),
       taskType: "change_request" as const,
-      title: `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} request`,
+      title: `${typeLabel} Request`,
       subtitle: [move?.client_name, move?.move_code].filter(Boolean).join(" · "),
       createdAt: String(r.created_at || ""),
       href: "/admin/change-requests",

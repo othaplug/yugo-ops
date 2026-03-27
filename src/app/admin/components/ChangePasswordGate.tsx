@@ -83,7 +83,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New password</label>
+                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">New password</label>
                 <input
                   type="password"
                   value={password}
@@ -95,7 +95,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Confirm password</label>
+                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Confirm password</label>
                 <input
                   type="password"
                   value={confirm}

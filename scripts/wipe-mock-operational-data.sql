@@ -2,7 +2,8 @@
 -- WIPE MOCK / OPERATIONAL DATA (Supabase Postgres)
 -- =============================================================================
 --
--- Run in Supabase SQL Editor as a role that bypasses RLS (e.g. postgres / service).
+-- Run in Supabase SQL Editor as a role that bypasses RLS (e.g. postgres / service),
+-- or from repo: npm run db:wipe-mock   (requires: npx supabase link, Supabase CLI login)
 -- Take a full backup first. Test with BEGIN; … ROLLBACK; before COMMIT.
 --
 -- PRESERVES (not truncated / deleted):
@@ -93,7 +94,6 @@ DELETE FROM in_app_notifications n
 WHERE NOT EXISTS (
   SELECT 1 FROM platform_users pu WHERE pu.user_id = n.user_id
 );
-DELETE FROM slack_message_events;
 DELETE FROM push_subscriptions ps
 WHERE NOT EXISTS (
   SELECT 1 FROM platform_users pu WHERE pu.user_id = ps.user_id
@@ -101,33 +101,46 @@ WHERE NOT EXISTS (
 DELETE FROM eta_sms_log;
 DELETE FROM routing_suggestions;
 DELETE FROM widget_leads;
-DELETE FROM distance_cache;
-DELETE FROM crew_lockout_attempts;
 DELETE FROM messages;
-DELETE FROM inventory_verifications;
-DELETE FROM email_verification_codes;
 
--- ── 3) Intelligence / calibration (operational learning — fresh start) ────
-DELETE FROM calibration_suggestions;
-DELETE FROM address_intelligence;
-DELETE FROM crew_profiles;
-DELETE FROM scheduling_alternatives;
+-- Tables that may be missing if a migration was never applied on this project
+DO $opt$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'distance_cache',
+    'scope_changes',
+    'calibration_suggestions',
+    'address_intelligence',
+    'crew_profiles',
+    'scheduling_alternatives',
+    'shipment_status_log',
+    'inbound_shipments',
+    'bin_orders',
+    'gallery_project_items',
+    'gallery_projects',
+    'project_status_log',
+    'partner_statements',
+    'slack_message_events',
+    'inventory_verifications',
+    'email_verification_codes',
+    'crew_lockout_attempts'
+  ]
+  LOOP
+    BEGIN
+      EXECUTE format('DELETE FROM %I', t);
+    EXCEPTION
+      WHEN SQLSTATE '42P01' THEN NULL;
+    END;
+  END LOOP;
+END
+$opt$;
 
--- calibration_data references moves — removed with moves cascade / later truncate
-
--- ── 4) Partner notifications, inbound, bins, gallery, referrals ───────────
+-- ── 3) Partner notifications, referrals (core tables) ─────────────────────
 DELETE FROM partner_notifications;
 
-DELETE FROM shipment_status_log WHERE TRUE;
-DELETE FROM inbound_shipments WHERE TRUE;
-
-DELETE FROM bin_orders WHERE TRUE;
-
-DELETE FROM gallery_project_items WHERE TRUE;
-DELETE FROM gallery_projects WHERE TRUE;
-
 DELETE FROM quote_requests WHERE TRUE;
-DELETE FROM scope_changes WHERE TRUE;
 
 DELETE FROM partner_perks WHERE TRUE;
 DELETE FROM perk_redemptions WHERE TRUE;
@@ -140,16 +153,12 @@ DELETE FROM referrals WHERE TRUE;
 DELETE FROM claims WHERE TRUE;
 
 -- ── 6) Projects ─────────────────────────────────────────────────────────────
-DELETE FROM project_status_log WHERE TRUE;
 DELETE FROM project_timeline WHERE TRUE;
 DELETE FROM project_inventory WHERE TRUE;
 DELETE FROM project_phases WHERE TRUE;
 DELETE FROM projects WHERE TRUE;
 
--- ── 7) Partner billing statements ───────────────────────────────────────────
-DELETE FROM partner_statements WHERE TRUE;
-
--- ── 8) Recurring schedules (before partner rate cards) ─────────────────────
+-- ── 7) Recurring schedules (before partner rate cards) ─────────────────────
 DELETE FROM recurring_delivery_schedules WHERE TRUE;
 
 -- ── 9) Crew / iPad / trucks — one CASCADE truncate ─────────────────────────
@@ -201,15 +210,17 @@ TRUNCATE TABLE moves RESTART IDENTITY CASCADE;
 -- ── 14) Deliveries + delivery_stops (CASCADE) ───────────────────────────────
 TRUNCATE TABLE deliveries RESTART IDENTITY CASCADE;
 
--- ── 15) Quotes (self-FK) ───────────────────────────────────────────────────
-UPDATE quotes SET parent_quote_id = NULL WHERE parent_quote_id IS NOT NULL;
+-- ── 15) Quotes (self-FK, if column exists) ──────────────────────────────────
+DO $pq$
+BEGIN
+  UPDATE quotes SET parent_quote_id = NULL WHERE parent_quote_id IS NOT NULL;
+EXCEPTION
+  WHEN SQLSTATE '42703' THEN NULL;
+END
+$pq$;
 
-TRUNCATE TABLE
-  quote_analytics,
-  quote_engagement,
-  quote_events,
-  quotes
-RESTART IDENTITY CASCADE;
+-- Child tables (quote_events, quote_analytics, quote_engagement, …) cascade from quotes
+TRUNCATE TABLE quotes RESTART IDENTITY CASCADE;
 
 -- ── 16) Contacts (B2C quote contacts) ───────────────────────────────────────
 TRUNCATE TABLE contacts RESTART IDENTITY CASCADE;
@@ -229,6 +240,16 @@ DELETE FROM partner_users WHERE TRUE;
 
 DELETE FROM organizations
 WHERE id <> 'b0000000-0000-0000-0000-000000000001'::uuid;
+
+-- Ensure template org row exists (e.g. DB never had migration seed). Rate card lines: run npm run db:seed-rate-template if partner_rate_cards is empty.
+INSERT INTO public.organizations (id, name, type, notes)
+VALUES (
+  'b0000000-0000-0000-0000-000000000001',
+  '_Rate Card Templates',
+  'b2c',
+  'System: holds rate card templates'
+)
+ON CONFLICT (id) DO NOTHING;
 
 -- =============================================================================
 -- Review counts, then: COMMIT;   or   ROLLBACK;

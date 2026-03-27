@@ -388,7 +388,7 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-[var(--gold)]">{icon}</span>
-        <h3 className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">{title}</h3>
+        <h3 className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)]">{title}</h3>
       </div>
       <div className="space-y-2.5">{children}</div>
     </div>

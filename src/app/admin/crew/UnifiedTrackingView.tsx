@@ -296,7 +296,7 @@ const GodEyeMap = dynamic(
               <div className="flex flex-col items-center group cursor-default">
                 {/* Label */}
                 <span
-                  className="mb-1 px-2.5 py-1 rounded-md text-[9px] font-semibold tracking-[0.08em] uppercase whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity"
+                  className="mb-1 px-2.5 py-1 rounded-md text-[9px] font-semibold tracking-[0.08em] capitalize whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity"
                   style={{
                     background: "linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)",
                     color: "#C9A962",
@@ -503,7 +503,7 @@ function CrewPopup({
       {/* Current job */}
       {(clientName || currentMove) && (
         <div className="pt-3 mt-3 border-t border-[var(--brd)]/30">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Current Job</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Current Job</div>
           <div className="text-[12px] font-semibold text-[var(--tx)]">{clientName || "-"}</div>
           {fromAddr && toAddr && (
             <div className="text-[11px] text-[var(--tx2)] mt-1">{fromAddr} → {toAddr}</div>
@@ -514,17 +514,17 @@ function CrewPopup({
       {/* Stats grid */}
       <div className="grid grid-cols-3 gap-2 mb-3 pt-3 mt-3 border-t border-[var(--brd)]/30">
         <div className="text-center">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Speed</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Speed</div>
           <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{speedKmh != null ? `${speedKmh}` : "-"}</div>
           <div className="text-[8px] text-[var(--tx3)]">km/h</div>
         </div>
         <div className="text-center">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">ETA</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">ETA</div>
           <div className="text-[var(--text-base)] font-bold text-[var(--tx)] mt-0.5">{etaMin != null ? `${etaMin}` : "-"}</div>
           <div className="text-[8px] text-[var(--tx3)]">min</div>
         </div>
         <div className="text-center">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Last GPS</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Last GPS</div>
           <div className="text-[11px] font-semibold text-[var(--tx)] mt-0.5">
             <TrackingFreshness
               crewOnJob={isOnJob(status)}
@@ -536,7 +536,7 @@ function CrewPopup({
 
       {/* Team members */}
       <div className="mb-3 pt-3 border-t border-[var(--brd)]/30">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Team</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1.5">Team</div>
         <div className="flex flex-wrap gap-1.5">
           {(crew.members || []).map((m) => (
             <span key={m} className="px-2 py-1 rounded-md text-[10px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">{m}</span>
@@ -814,7 +814,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("jobs")}
-              className={`flex-1 px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "jobs" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-2.5 text-[10px] font-bold capitalize tracking-wider transition-colors ${activePanel === "jobs" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               {(() => {
                 const STALE_TAB_MS = 90 * 60 * 1000;
@@ -828,7 +828,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("teams")}
-              className={`flex-1 px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "teams" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-2.5 text-[10px] font-bold capitalize tracking-wider transition-colors ${activePanel === "teams" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               Teams ({crews.length})
             </button>
@@ -851,14 +851,14 @@ export default function UnifiedTrackingView({
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-60" />
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
                           </span>
-                          <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)]">Active Now</span>
+                          <span className="text-[9px] font-bold tracking-wider capitalize text-[var(--gold)]">Active Now</span>
                         </>
                       ) : (
                         <>
                           <span className="relative flex h-2 w-2">
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--tx3)]/40" />
                           </span>
-                          <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">Recent Sessions</span>
+                          <span className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]/50">Recent Sessions</span>
                         </>
                       )}
                     </div>
@@ -953,7 +953,7 @@ export default function UnifiedTrackingView({
                 {activeSessions.length === 0 && (todayMoves.length > 0 || todayDeliveries.length > 0) && (
                   <>
                     <div className="px-4 pt-3 pb-1">
-                      <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Scheduled Today</span>
+                      <span className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Scheduled Today</span>
                     </div>
                     {todayMoves.map((m) => {
                       const crew = crews.find((c) => c.id === m.crew_id);

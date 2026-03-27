@@ -60,5 +60,30 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
     ? { ...projectResult.data, phase_name: phaseName }
     : null;
 
-  return <DeliveryDetailClient delivery={delivery} clientEmail={org?.email} organizations={orgs || []} crews={crews || []} stops={stops} etaSmsLog={etaSmsLog ?? []} deliveryInvoice={deliveryInvoice ?? null} isB2BPartner={isB2BPartner} linkedProject={linkedProject} />;
+  let b2bOneOffPriorCount = 0;
+  if (delivery.booking_type === "one_off" && !delivery.organization_id && delivery.contact_email) {
+    const { count } = await db
+      .from("deliveries")
+      .select("id", { count: "exact", head: true })
+      .eq("booking_type", "one_off")
+      .is("organization_id", null)
+      .ilike("contact_email", delivery.contact_email.trim())
+      .neq("id", delivery.id);
+    b2bOneOffPriorCount = count ?? 0;
+  }
+
+  return (
+    <DeliveryDetailClient
+      delivery={delivery}
+      clientEmail={org?.email}
+      organizations={orgs || []}
+      crews={crews || []}
+      stops={stops}
+      etaSmsLog={etaSmsLog ?? []}
+      deliveryInvoice={deliveryInvoice ?? null}
+      isB2BPartner={isB2BPartner}
+      linkedProject={linkedProject}
+      b2bOneOffPriorCount={b2bOneOffPriorCount}
+    />
+  );
 }

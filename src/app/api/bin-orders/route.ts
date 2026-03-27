@@ -208,10 +208,15 @@ export async function POST(req: NextRequest) {
     // ── Notifications (fire-and-forget) ──
     sendSMS(
       clientPhone,
-      `Hi ${clientName.split(" ")[0]}, your Yugo bin order is confirmed. ` +
-      `Order: ${orderNumber}. Drop-off: ${formatDateShort(dropOffDate)}. ` +
-      `Move date: ${formatDateShort(moveDateObj)}. Pickup: ${formatDateShort(pickupDate)}. ` +
-      `We are here if you need anything. Call (647) 370-4525.`,
+      [
+        `Hi ${clientName.split(" ")[0]},`,
+        `Your Yugo bin order is confirmed.`,
+        `Order: ${orderNumber}`,
+        `Drop-off: ${formatDateShort(dropOffDate)}`,
+        `Move date: ${formatDateShort(moveDateObj)}`,
+        `Pickup: ${formatDateShort(pickupDate)}`,
+        `We are here if you need anything. Call (647) 370-4525.`,
+      ].join("\n\n"),
     ).catch(() => {});
 
     sendEmail({
@@ -235,7 +240,7 @@ export async function POST(req: NextRequest) {
       sendEmail({
         to: adminEmail,
         subject: `New bin order ${orderNumber}, ${clientName}`,
-        html: `<p>New bin rental: <strong>${orderNumber}</strong><br>Client: ${clientName} (${clientEmail})<br>Bundle: ${bundleType} (${binCount} bins)<br>Address: ${deliveryAddress}<br>Move: ${formatDateShort(moveDateObj)} | Drop-off: ${formatDateShort(dropOffDate)} | Pickup: ${formatDateShort(pickupDate)}<br>Total: $${total.toFixed(2)}</p><p><a href="${process.env.NEXT_PUBLIC_BASE_URL || "https://opsplus.co"}/admin/bin-rentals/${binOrder.id}">View in OPS+</a></p>`,
+        html: `<p>New bin rental: <strong>${orderNumber}</strong><br>Client: ${clientName} (${clientEmail})<br>Bundle: ${bundleType} (${binCount} bins)<br>Address: ${deliveryAddress}<br>Move: ${formatDateShort(moveDateObj)} | Drop-off: ${formatDateShort(dropOffDate)} | Pickup: ${formatDateShort(pickupDate)}<br>Total: $${total.toFixed(2)}</p><p><a href="${process.env.NEXT_PUBLIC_BASE_URL || "https://helloyugo.com"}/admin/bin-rentals/${binOrder.id}">View in admin</a></p>`,
       }).catch(() => {});
     }
 

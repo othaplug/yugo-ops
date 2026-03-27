@@ -35,13 +35,14 @@ export function parseNumberInput(s: string | null | undefined): number {
   return Number.isNaN(n) ? 0 : n;
 }
 
-const HST_RATE = 0.13;
+/** Ontario HST (13%) — single source for receipts, invoices, and Square-facing totals */
+export const ONTARIO_HST_RATE = 0.13;
 
 /** Calculate HST amount from a pre-tax value */
 export function calcHST(preTax: number | string | null | undefined): number {
   const n = typeof preTax === "string" ? parseFloat(preTax) : Number(preTax);
   if (Number.isNaN(n) || n <= 0) return 0;
-  return Math.round(n * HST_RATE * 100) / 100;
+  return Math.round(n * ONTARIO_HST_RATE * 100) / 100;
 }
 
 /** Format price + HST line: "$1,234 + $160 HST" */

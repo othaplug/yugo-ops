@@ -115,7 +115,7 @@ export async function sendNotification(
         const toE164 = digits.startsWith("1") && digits.length === 11 ? `+${digits}` : `+1${digits.slice(-10)}`;
         const title = buildNotificationTitle(eventSlug, data);
         const body = buildNotificationBody(eventSlug, data);
-        const smsBody = [title, body].filter(Boolean).join(": ").slice(0, 1600);
+        const smsBody = [title, body].filter(Boolean).join("\n\n").slice(0, 1600);
 
         const smsResult = await sendSMS(toE164, smsBody);
         results.sms = smsResult.success;

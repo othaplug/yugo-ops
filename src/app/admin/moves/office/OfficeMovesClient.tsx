@@ -131,28 +131,28 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 sm:mb-6">
         <Link href="/admin/moves/office" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Moves</div>
+          <div className="text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1">Total Moves</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--tx)]">{totalMoves}</span>
             <StatPctChange current={totalMovesThisMonth} previous={totalMovesPrev} />
           </div>
         </Link>
         <Link href="/admin/moves/office" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Upcoming Moves</div>
+          <div className="text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1">Upcoming Moves</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--grn)]">{upcomingMoves}</span>
             <StatPctChange current={upcomingMoves} previous={upcomingPrev} />
           </div>
         </Link>
         <Link href="/admin/revenue" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total Revenue</div>
+          <div className="text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1">Total Revenue</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(totalRevenue)}</span>
             <StatPctChange current={totalRevenue} previous={totalRevenuePrev} />
           </div>
         </Link>
         <Link href="/admin/moves/office" className="embossed-hover bg-[var(--card)] border border-[var(--brd)] rounded-lg p-3 hover:border-[var(--gold)] transition-all block">
-          <div className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Avg $/Move</div>
+          <div className="text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1">Avg $/Move</div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-heading text-[var(--tx)]">{formatCompactCurrency(avgPerMove)}</span>
             <StatPctChange current={avgPerMove} previous={avgPerMovePrev} />
@@ -203,7 +203,7 @@ export default function OfficeMovesClient({ moves }: { moves: Move[] }) {
         {filterOpen && (
           <div className="md:hidden border-b border-[var(--brd)] bg-[var(--bg)]/80 px-3 py-4 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase text-[var(--tx3)]">Filters</span>
+              <span className="text-[11px] font-bold capitalize text-[var(--tx3)]">Filters</span>
               <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[12px] font-semibold">Done</button>
             </div>
             <div className="flex flex-col gap-3">

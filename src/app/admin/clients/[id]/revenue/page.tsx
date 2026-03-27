@@ -51,7 +51,7 @@ export default async function ClientRevenuePage({ params }: { params: Promise<{ 
       </div>
 
       <div className="mb-2">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance · Client Revenue</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Finance · Client Revenue</p>
         <h1 className="font-hero text-[28px] font-bold text-[var(--tx)] tracking-tight leading-none">{org.name}</h1>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mb-6">Revenue and invoices for this client</p>
@@ -59,19 +59,19 @@ export default async function ClientRevenuePage({ params }: { params: Promise<{ 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Total paid</div>
+          <div className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1">Total paid</div>
           <div className="text-lg font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(totalPaid)}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Outstanding</div>
+          <div className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1">Outstanding</div>
           <div className="text-lg font-bold font-heading text-[var(--gold)]">{formatCompactCurrency(totalOutstanding)}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Past due</div>
+          <div className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1">Past due</div>
           <div className="text-lg font-bold font-heading text-[var(--red)]">{formatCompactCurrency(totalOverdue)}</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-          <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Invoices</div>
+          <div className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1">Invoices</div>
           <div className="text-lg font-bold font-heading">{all.length}</div>
         </div>
       </div>

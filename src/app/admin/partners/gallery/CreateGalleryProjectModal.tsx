@@ -122,7 +122,7 @@ export default function CreateGalleryProjectModal({
     <ModalOverlay open={open} onClose={handleClose} title="New gallery project" maxWidth="md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
             Project name *
           </label>
           <input
@@ -136,7 +136,7 @@ export default function CreateGalleryProjectModal({
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
             Project type
           </label>
           <select
@@ -152,7 +152,7 @@ export default function CreateGalleryProjectModal({
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
             Gallery partner
           </label>
           <select
@@ -179,7 +179,7 @@ export default function CreateGalleryProjectModal({
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
             Location / venue name
           </label>
           <input
@@ -194,7 +194,7 @@ export default function CreateGalleryProjectModal({
         {(projectType === "exhibition" || projectType === "art_fair") && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
                 Start date
               </label>
               <input
@@ -205,7 +205,7 @@ export default function CreateGalleryProjectModal({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
                 End date
               </label>
               <input
@@ -219,7 +219,7 @@ export default function CreateGalleryProjectModal({
         )}
 
         <div className="border-t border-[var(--brd)] pt-3">
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
             Transport & handling
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -252,7 +252,7 @@ export default function CreateGalleryProjectModal({
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
             Estimate
           </label>
           <input
@@ -265,7 +265,7 @@ export default function CreateGalleryProjectModal({
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
             Install / deinstall notes
           </label>
           <input
@@ -278,7 +278,7 @@ export default function CreateGalleryProjectModal({
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">
             Details
           </label>
           <textarea

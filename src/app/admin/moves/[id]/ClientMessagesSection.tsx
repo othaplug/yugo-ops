@@ -81,7 +81,7 @@ export default function ClientMessagesSection({ moveId, clientName }: { moveId: 
   return (
     <div className="group/card relative bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 hover:border-[var(--gold)]/40 transition-all">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
+        <h3 className="font-heading text-[10px] font-bold tracking-wide capitalize text-[var(--tx3)]">
           Client Messages
           {unreadCount > 0 && (
             <span className="ml-1.5 inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[var(--gold)] text-[9px] font-bold text-white">

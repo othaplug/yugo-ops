@@ -1,5 +1,6 @@
 "use client";
 
+import { toSentenceCase } from "@/lib/format-text";
 import Link from "next/link";
 import { TrendUp as TrendingUp, TrendDown as TrendingDown, Minus, ArrowUpRight } from "@phosphor-icons/react";
 
@@ -29,13 +30,13 @@ export default function KpiCard({
   const inner = (
     <div className={href ? "group cursor-pointer" : "group cursor-default"}>
       <p
-        className={`text-[9px] font-bold tracking-[0.16em] uppercase mb-1 sm:mb-2 transition-colors flex items-center gap-1 ${
+        className={`text-[9px] font-bold tracking-[0.16em] mb-1 sm:mb-2 transition-colors flex items-center gap-1 ${
           href
             ? "text-[var(--tx3)]/60 group-hover:text-[var(--tx3)]"
             : "text-[var(--tx3)]/60"
         }`}
       >
-        {label}
+        {toSentenceCase(label)}
         {href && (
           <ArrowUpRight className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 -translate-y-px group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         )}
@@ -48,7 +49,7 @@ export default function KpiCard({
         {value}
       </p>
       {sub && (
-        <p className="text-[9px] text-[var(--tx3)] mt-1.5">{sub}</p>
+        <p className="text-[9px] text-[var(--tx3)] mt-1.5">{toSentenceCase(sub)}</p>
       )}
       {delta !== undefined && delta !== 0 && (
         <div

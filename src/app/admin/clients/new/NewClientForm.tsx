@@ -230,7 +230,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return (
     <div>
       {label && (
-        <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">{label}</label>
+        <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">{label}</label>
       )}
       {children}
     </div>

@@ -393,7 +393,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Project type + Client */}
         <section className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Project & Client</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Project & Client</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Field label="Project Type">
               <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={fieldInput}>
@@ -449,7 +449,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         {/* Section: Link to Project (optional, shown when org is selected and has projects) */}
         {organizationId && (loadingProjects || projects.length > 0) && (
           <section className="space-y-2">
-            <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] flex items-center gap-1.5">
+            <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)] flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-[var(--gold)]" />
               Link to Project
               <span className="text-[9px] font-normal text-[var(--tx3)] normal-case ml-1">optional</span>
@@ -496,7 +496,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Customer details */}
         <section className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Customer / Recipient</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Customer / Recipient</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Field label="Name *">
               <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Full name" className={fieldInput} />
@@ -519,7 +519,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Addresses */}
         <section className="space-y-3">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Addresses</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Addresses</h3>
           <MultiStopAddressField
             label="Pickup"
             placeholder="Warehouse, store, or pickup location"
@@ -544,7 +544,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Schedule */}
         <section className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Schedule</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Schedule</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Field label="Date *">
               <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={fieldInput} />
@@ -566,7 +566,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Crew + Pricing */}
         <section className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Assignment & Pricing</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Assignment & Pricing</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {crews.length > 0 && (
               <Field label="Assign Crew">
@@ -613,7 +613,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Inventory */}
         <section className="space-y-3">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Inventory</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Inventory</h3>
 
           {/* Add from project inventory (Yugo items only) */}
           {linkedProjectId && yugoProjectItems.length > 0 && (
@@ -716,7 +716,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Complexity */}
         <section className="space-y-2">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Complexity Indicators</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Complexity Indicators</h3>
           <div className="flex flex-wrap gap-2">
             {COMPLEXITY_PRESETS.map((p) => (
               <button
@@ -741,7 +741,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 
         {/* Section: Notes */}
         <section className="space-y-3">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Notes & Instructions</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Notes & Instructions</h3>
           <Field label="Delivery Instructions">
             <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2} placeholder="Special delivery instructions…" className={`${fieldInput} resize-y`} />
           </Field>
@@ -769,7 +769,7 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">{label}</label>
+      <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">{label}</label>
       {children}
     </div>
   );

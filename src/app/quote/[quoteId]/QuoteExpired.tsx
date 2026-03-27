@@ -1,19 +1,28 @@
 "use client";
 
 import YugoLogo from "@/components/YugoLogo";
+import { normalizePhone } from "@/lib/phone";
+import { formatDateEt } from "@/lib/datetime-et";
 
 export default function QuoteExpired({
   quoteId,
   reason,
   expiresAt,
+  supportEmail,
+  supportTel,
 }: {
   quoteId: string;
   reason: "not_found" | "expired";
   expiresAt?: string | null;
+  supportEmail?: string;
+  supportTel?: string;
 }) {
-  const expiryDate = expiresAt
-    ? new Date(expiresAt).toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" })
-    : null;
+  const expiryDate = expiresAt ? formatDateEt(expiresAt, "date") : null;
+  const mail = supportEmail?.trim() || "support@helloyugo.com";
+  const mailSubject = encodeURIComponent("New Quote Request");
+  const telDigits = supportTel ? normalizePhone(supportTel) : "";
+  const telHref =
+    telDigits.length === 10 ? `tel:+1${telDigits}` : "tel:+16473704525";
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center px-5">
@@ -40,16 +49,16 @@ export default function QuoteExpired({
             </p>
           </>
         )}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center min-w-0">
           <a
-            href="mailto:info@helloyugo.com?subject=New%20Quote%20Request"
-            className="inline-block px-6 py-3 rounded-lg bg-[#B8962E] text-white text-[13px] font-semibold tracking-wide hover:bg-[#A07F26] transition-colors"
+            href={`mailto:${mail}?subject=${mailSubject}`}
+            className="inline-block px-6 py-3 min-h-[44px] min-w-0 rounded-lg bg-[#2C3E2D] text-white text-[13px] font-semibold tracking-wide hover:bg-[#243628] transition-colors"
           >
             Request a New Quote
           </a>
           <a
-            href="tel:+14168001234"
-            className="inline-block px-6 py-3 rounded-lg border border-[#2C3E2D]/20 text-[#2C3E2D] text-[13px] font-medium hover:bg-[#2C3E2D]/5 transition-colors"
+            href={telHref}
+            className="inline-block px-6 py-3 min-h-[44px] rounded-lg border border-[#2C3E2D]/20 text-[#2C3E2D] text-[13px] font-medium hover:bg-[#2C3E2D]/5 transition-colors"
           >
             Call Us
           </a>

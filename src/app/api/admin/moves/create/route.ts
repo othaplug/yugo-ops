@@ -471,7 +471,7 @@ export async function POST(req: NextRequest) {
 
         if (sendResult?.error) {
           const msg = (sendResult.error as { message?: string }).message ?? String(sendResult.error);
-          emailError = msg.includes("domain") || msg.includes("verified") ? `${msg} Verify the sending domain (opsplus.co) in Resend.` : msg;
+          emailError = msg.includes("domain") || msg.includes("verified") ? `${msg} Verify the sending domain (helloyugo.com) in Resend.` : msg;
         } else {
           emailSent = true;
         }

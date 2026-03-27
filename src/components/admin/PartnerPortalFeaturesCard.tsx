@@ -93,7 +93,7 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Portal Features</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Portal Features</div>
           <p className="text-[11px] text-[var(--tx3)]">
             Control which sections appear in this partner&apos;s portal.
           </p>

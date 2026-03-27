@@ -265,7 +265,7 @@ export default function PartnerStatementPayClient({
           <div className="flex items-center gap-2 mb-1">
             <Invoice size={14} color={GOLD} />
             <span
-              className="text-[10px] font-bold tracking-widest uppercase"
+              className="text-[10px] font-bold tracking-widest capitalize"
               style={{ color: GOLD }}
             >
               Statement Payment
@@ -287,7 +287,7 @@ export default function PartnerStatementPayClient({
         {!alreadyPaid && (
           <div className="text-right shrink-0">
             <div
-              className="text-[10px] font-bold tracking-wider uppercase mb-0.5"
+              className="text-[10px] font-bold tracking-wider capitalize mb-0.5"
               style={{ color: `${FOREST}40` }}
             >
               Balance owing
@@ -406,7 +406,7 @@ export default function PartnerStatementPayClient({
           {deliveries.length > 0 && (
             <div>
               <h3
-                className="text-[10px] font-bold uppercase tracking-widest mb-2"
+                className="text-[10px] font-bold capitalize tracking-widest mb-2"
                 style={{ color: `${FOREST}40` }}
               >
                 Deliveries ({deliveries.length})
@@ -421,7 +421,7 @@ export default function PartnerStatementPayClient({
                       {["#", "Date", "Description", "Price"].map((h, i) => (
                         <th
                           key={h}
-                          className={`px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider ${i === 3 ? "text-right" : "text-left"}`}
+                          className={`px-4 py-2.5 text-[10px] font-bold capitalize tracking-wider ${i === 3 ? "text-right" : "text-left"}`}
                           style={{ color: `${FOREST}40` }}
                         >
                           {h}
@@ -519,7 +519,7 @@ export default function PartnerStatementPayClient({
 
               <div className="text-center mb-5">
                 <p
-                  className="text-[10px] font-bold tracking-wider uppercase mb-1"
+                  className="text-[10px] font-bold tracking-wider capitalize mb-1"
                   style={{ color: `${FOREST}40` }}
                 >
                   Amount due

@@ -126,12 +126,12 @@ export default function PartnerDeliveriesTab({
       {deliveries.length > 0 && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
           <div className="relative flex-1">
-            <MagnifyingGlass size={16} color="#999" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <MagnifyingGlass size={16} color="#999" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, address, or delivery #..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:outline-none transition-colors bg-[var(--bg)]"
+              className="w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] py-2 pl-10 pr-3 text-[13px] text-[var(--tx)] transition-colors placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:outline-none"
             />
           </div>
           <select
@@ -375,31 +375,31 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-[13px]">
         {d.time_slot && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Time</div>
+            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Time</div>
             <div className="text-[var(--tx)] font-medium mt-0.5">{d.time_slot}</div>
           </div>
         )}
         {d.booking_type === "day_rate" && d.num_stops != null && d.num_stops > 0 && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Stops</div>
+            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Stops</div>
             <div className="text-[var(--tx)] font-medium mt-0.5">{d.num_stops} stop{d.num_stops !== 1 ? "s" : ""}</div>
           </div>
         )}
         {d.booking_type === "day_rate" && d.vehicle_type && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Vehicle</div>
+            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Vehicle</div>
             <div className="text-[var(--tx)] font-medium mt-0.5 capitalize">{d.vehicle_type.replace(/_/g, " ")}</div>
           </div>
         )}
         {d.total_price != null && d.total_price > 0 && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Price</div>
+            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Price</div>
             <div className="text-[#C9A962] font-bold mt-0.5">${Number(d.total_price).toLocaleString()}</div>
           </div>
         )}
         {itemsDisplay && (
           <div className="col-span-2 sm:col-span-1">
-            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Items</div>
+            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Items</div>
             <div className="text-[var(--tx)] font-medium mt-0.5 truncate">{itemsDisplay}</div>
           </div>
         )}

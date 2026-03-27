@@ -177,7 +177,11 @@ export async function POST(
   if ((added.length > 0 || removed.length > 0) && insertedId) {
     try {
       const phone = await getDispatchPhone();
-      const smsBody = `${moveCode}: Crew walkthrough complete. +${added.length} extra / -${removed.length} missing. Net ${autoDelta >= 0 ? "+" : ""}$${autoDelta}. Review: ${adminUrl}`;
+      const smsBody = [
+        `${moveCode}: Crew walkthrough complete.`,
+        `+${added.length} extra / -${removed.length} missing. Net ${autoDelta >= 0 ? "+" : ""}$${autoDelta}.`,
+        `Review in admin:\n${adminUrl}`,
+      ].join("\n\n");
       await sendSMS(normalizePhone(phone), smsBody);
     } catch { /* optional */ }
 
@@ -216,7 +220,12 @@ ${removed.length > 0 ? `<p><strong>Missing items:</strong><br>${missingLines.rep
           .join(", ");
         const hst = Math.round(autoDelta * 0.13 * 100) / 100;
         const total = Math.round((autoDelta + hst) * 100) / 100;
-        const clientSms = `Hi ${moveData.client_name?.split(" ")[0] ?? "there"}, your Yugo crew found items not on your original quote. Additional charge: $${total > 0 ? total.toFixed(2) : "0"} (incl. HST). Review and approve here: ${trackUrl}`;
+        const clientSms = [
+          `Hi ${moveData.client_name?.split(" ")[0] ?? "there"},`,
+          `Your Yugo crew found items not on your original quote.`,
+          `Additional charge: $${total > 0 ? total.toFixed(2) : "0"} (incl. HST).`,
+          `Review and approve here:\n${trackUrl}`,
+        ].join("\n\n");
         await sendSMS(normalizePhone(moveData.client_phone), clientSms);
       }
     } catch { /* optional */ }

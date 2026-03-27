@@ -127,7 +127,7 @@ export default function AdminNotificationsPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Admin</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Admin</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Notifications</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-2">
             {total} total{unreadOnPage > 0 ? ` · ${unreadOnPage} unread on this page` : ""}
@@ -147,13 +147,13 @@ export default function AdminNotificationsPage() {
       <div className="flex flex-wrap items-center gap-3 mb-5">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-[320px]">
-          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-[13px] h-[13px] text-[var(--tx3)] stroke-current stroke-[1.75]" />
+          <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-[13px] w-[13px] -translate-y-1/2 stroke-current stroke-[1.75] text-[var(--tx2)]" aria-hidden />
           <input
             type="text"
             placeholder="Search notifications..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--card)] text-[12px] text-[var(--tx)] placeholder-[var(--tx3)] focus:border-[var(--brd)] focus:outline-none transition-colors"
+            className="w-full rounded-lg border border-[var(--brd)] bg-[var(--card)] py-2 pl-10 pr-3 text-[12px] text-[var(--tx)] transition-colors placeholder:text-[var(--tx3)] focus:border-[var(--brd)] focus:outline-none"
           />
         </div>
 
@@ -250,7 +250,7 @@ export default function AdminNotificationsPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       {notif.source_type && tag && (
                         <span
-                          className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                          className="text-[9px] font-bold capitalize tracking-wide px-2 py-0.5 rounded-full"
                           style={{ color: tag.color, backgroundColor: tag.bg }}
                         >
                           {notif.source_type}

@@ -156,7 +156,7 @@ function TemplateRateEditor({
   ];
 
   const Th = ({ children }: { children: React.ReactNode }) => (
-    <th className="px-2 py-2.5 text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)] bg-[var(--bgsub)] border-b border-[var(--brd)] text-left whitespace-nowrap">
+    <th className="px-2 py-2.5 text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)] bg-[var(--bgsub)] border-b border-[var(--brd)] text-left whitespace-nowrap">
       {children}
     </th>
   );

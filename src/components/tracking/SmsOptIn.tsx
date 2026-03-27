@@ -121,7 +121,7 @@ export default function SmsOptIn({ moveId, initialPhone, token }: SmsOptInProps)
         <div className="mt-3 flex items-center gap-2">
           <input
             type="tel"
-            placeholder="(416) 555-0123"
+            placeholder="(647) 370-4525"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="flex-1 rounded-lg border border-[var(--brd)] bg-[var(--bg2)] px-3 py-2 text-sm text-[var(--tx1)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]"

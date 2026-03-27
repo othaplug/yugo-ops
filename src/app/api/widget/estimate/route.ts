@@ -9,9 +9,9 @@ import { rateLimit } from "@/lib/rate-limit";
  * Rate-limited to prevent abuse.
  */
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
-  const limited = rateLimit(`widget-estimate:${ip}`, 20, 60_000);
-  if (limited) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rl = rateLimit(`widget-estimate:${ip}`, 30, 60_000);
+  if (!rl.allowed) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 

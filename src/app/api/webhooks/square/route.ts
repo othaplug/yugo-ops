@@ -35,6 +35,34 @@ function verifySquareSignature(
   }
 }
 
+type SquareWebhookEvent = {
+  type?: string;
+  merchant_id?: string;
+  event_id?: string;
+  data?: { type?: string; id?: string; object?: Record<string, unknown> };
+};
+
+function stableSquareEventId(rawBody: string, event: SquareWebhookEvent): string {
+  if (event.event_id && typeof event.event_id === "string") return event.event_id;
+  return crypto.createHash("sha256").update(rawBody).digest("hex");
+}
+
+type IdempotencyOutcome = "new" | "duplicate" | "error";
+
+async function consumeSquareEventOnce(
+  supabase: ReturnType<typeof createAdminClient>,
+  eventId: string,
+): Promise<IdempotencyOutcome> {
+  const { error } = await supabase.from("webhook_idempotency_keys").insert({
+    source: "square",
+    event_id: eventId,
+  });
+  if (!error) return "new";
+  if (error.code === "23505") return "duplicate";
+  console.error("[square webhook] idempotency insert:", error.message);
+  return "error";
+}
+
 export async function POST(req: NextRequest) {
   const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
   const rawBody = await req.text();
@@ -48,42 +76,73 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  let event: {
-    type: string;
-    data?: {
-      object?: {
-        customer_id?: string;
-        card?: { id?: string; exp_month?: number; exp_year?: number; card_brand?: string; last_4?: string };
-      };
-    };
-  };
+  let event: SquareWebhookEvent;
 
   try {
-    event = JSON.parse(rawBody);
+    event = JSON.parse(rawBody) as SquareWebhookEvent;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Log to webhook_logs for visibility
   const supabase = createAdminClient();
+  const eventId = stableSquareEventId(rawBody, event);
+  const idem = await consumeSquareEventOnce(supabase, eventId);
+  if (idem === "error") {
+    return NextResponse.json({ error: "Failed to record webhook idempotency" }, { status: 500 });
+  }
+  if (idem === "duplicate") {
+    return NextResponse.json({ ok: true, duplicate: true });
+  }
+
   await supabase.from("webhook_logs").insert({
     source: "square",
-    event_type: event.type,
+    event_type: event.type ?? "unknown",
     payload: event,
     status: "received",
-  }).then(() => {});
+  });
 
   if (event.type === "card.expiring") {
     await handleCardExpiring(event, supabase);
   }
 
+  if (event.type === "payment.updated") {
+    await handlePaymentUpdated(event, supabase);
+  }
+
   return NextResponse.json({ ok: true });
 }
 
+async function handlePaymentUpdated(
+  event: SquareWebhookEvent,
+  supabase: ReturnType<typeof createAdminClient>,
+) {
+  const raw = event.data?.object as Record<string, unknown> | undefined;
+  const nested =
+    raw && typeof raw.payment === "object" && raw.payment !== null
+      ? (raw.payment as Record<string, unknown>)
+      : raw;
+  const paymentId =
+    (typeof nested?.id === "string" ? nested.id : null) ||
+    (typeof event.data?.id === "string" ? event.data.id : null);
+  if (!paymentId) return;
+
+  await supabase
+    .from("webhook_logs")
+    .insert({
+      source: "square",
+      event_type: "payment.updated.detail",
+      payload: {
+        payment_id: paymentId,
+        status: nested?.status,
+        reference_id: nested?.reference_id,
+      },
+      status: "processed",
+    })
+    .then(() => {});
+}
+
 async function handleCardExpiring(
-  event: {
-    data?: { object?: { customer_id?: string; card?: { id?: string } } };
-  },
+  event: SquareWebhookEvent,
   supabase: ReturnType<typeof createAdminClient>,
 ) {
   const customerId = event.data?.object?.customer_id;
@@ -154,7 +213,11 @@ async function handleCardExpiring(
       const trackUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
       await sendSMS(
         phone,
-        `Hi ${firstName}, the card on file for your upcoming Yugo move expires soon. Please update it here: ${trackUrl}`,
+        [
+          `Hi ${firstName},`,
+          `The card on file for your upcoming Yugo move expires soon.`,
+          `Please update it here:\n${trackUrl}`,
+        ].join("\n\n"),
       ).catch(() => {});
     }
   }

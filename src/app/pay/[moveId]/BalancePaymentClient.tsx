@@ -181,7 +181,7 @@ export default function BalancePaymentClient({
               Your balance has been paid in full. A receipt has been sent to your email.
             </p>
             <div className="bg-[#0F0F0F] rounded-xl p-4 border border-[#2A2A2A]">
-              <div className="text-[11px] text-[#C9A962] font-bold uppercase tracking-wider mb-2">
+              <div className="text-[11px] text-[#C9A962] font-bold capitalize tracking-wider mb-2">
                 {move.move_code || "Move Details"}
               </div>
               <div className="text-[24px] font-bold text-[#2D9F5A]">{fmtPrice(ccTotal)}</div>
@@ -206,12 +206,12 @@ export default function BalancePaymentClient({
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="font-hero text-[28px] font-bold tracking-wider text-[#C9A962]">Yugo+</div>
-          <div className="text-[11px] text-[#666] mt-1 uppercase tracking-widest">Balance Payment</div>
+          <div className="text-[11px] text-[#666] mt-1 capitalize tracking-widest">Balance Payment</div>
         </div>
 
         {/* Move Summary */}
         <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-5 mb-4">
-          <div className="text-[9px] font-bold text-[#C9A962] uppercase tracking-widest mb-3">Move Summary</div>
+          <div className="text-[9px] font-bold text-[#C9A962] capitalize tracking-widest mb-3">Move Summary</div>
           <div className="space-y-2 text-[12px]">
             {move.move_code && (
               <div className="flex justify-between">
@@ -240,7 +240,7 @@ export default function BalancePaymentClient({
 
         {/* Balance Breakdown */}
         <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-5 mb-4">
-          <div className="text-[9px] font-bold text-[#C9A962] uppercase tracking-widest mb-3">Payment Breakdown</div>
+          <div className="text-[9px] font-bold text-[#C9A962] capitalize tracking-widest mb-3">Payment Breakdown</div>
           <div className="space-y-2 text-[12px]">
             <div className="flex justify-between">
               <span className="text-[#666]">Move balance (incl. HST)</span>
@@ -263,7 +263,7 @@ export default function BalancePaymentClient({
 
         {/* Card Form */}
         <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-5 mb-4">
-          <div className="text-[9px] font-bold text-[#C9A962] uppercase tracking-widest mb-3">Card Details</div>
+          <div className="text-[9px] font-bold text-[#C9A962] capitalize tracking-widest mb-3">Card Details</div>
           <div
             className="rounded-xl border-2 p-4 transition-colors"
             style={{

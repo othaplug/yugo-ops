@@ -5,7 +5,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
 import { runPostPaymentActions } from "@/lib/automations/post-payment";
 import { rateLimit } from "@/lib/rate-limit";
+import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
+import { squareThrownErrorMessage } from "@/lib/square-payment-errors";
 import { logActivity } from "@/lib/activity";
+import { notifyAllAdmins } from "@/lib/notifications";
 
 export async function POST(req: Request) {
   try {
@@ -137,8 +140,15 @@ export async function POST(req: Request) {
       }
     } catch (e) {
       console.error("[Square] payment failed:", e);
-      const msg = e instanceof Error ? e.message : "Payment processing failed";
-      return NextResponse.json({ error: msg }, { status: 500 });
+      const msg = squareThrownErrorMessage(e);
+      notifyAllAdmins({
+        title: "Quote payment failed",
+        body: `Quote ${quoteId} — ${clientEmail}: ${msg}`,
+        icon: "warning",
+        sourceType: "payment",
+        sourceId: quoteId,
+      }).catch(() => {});
+      return NextResponse.json({ error: msg }, { status: 402 });
     }
 
     // ── 5. Update quote → accepted ──

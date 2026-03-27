@@ -346,7 +346,7 @@ export default function DeliveryDayForm({
             <h3 className="text-[20px] font-bold text-[var(--tx)]">When do you need delivery?</h3>
           </div>
           <section className="space-y-2">
-            <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Date</label>
+            <label className="block text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Date</label>
             <div className="relative">
               <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={`${fieldInput} pr-10`} style={{ colorScheme: "dark" }} />
               <CalendarBlank
@@ -357,7 +357,7 @@ export default function DeliveryDayForm({
             </div>
           </section>
           <section className="space-y-3">
-            <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Time Window</label>
+            <label className="block text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Time Window</label>
             <div className="grid grid-cols-3 gap-2">
               {TIME_WINDOW_CHOICES.map((tw) => {
                 const Icon = TW_ICONS[tw.value];
@@ -386,7 +386,7 @@ export default function DeliveryDayForm({
           <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-[var(--gold)]" />
-              <label className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Pickup Address</label>
+              <label className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Pickup Address</label>
             </div>
             <AddressAutocomplete
               value={pickupAddress || pickupRaw}
@@ -447,7 +447,7 @@ export default function DeliveryDayForm({
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Items</span>
+                  <span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Items</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -523,7 +523,7 @@ export default function DeliveryDayForm({
               </div>
               {availableServices.filter((s) => s.price_unit !== "percentage").length > 0 && (
                 <div className="space-y-1.5">
-                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[#888]">Services at this stop</span>
+                  <span className="text-[9px] font-semibold tracking-wider capitalize text-[#888]">Services at this stop</span>
                   {availableServices
                     .filter((s) => s.price_unit !== "percentage")
                     .map((svc) => (
@@ -690,7 +690,7 @@ export default function DeliveryDayForm({
           ))}
           {pricing && (
             <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gdim)] p-4 space-y-2">
-              <h3 className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] dark:text-[var(--tx)]">Price Summary</h3>
+              <h3 className="text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] dark:text-[var(--tx)]">Price Summary</h3>
               <div className="border-t border-[var(--gold)]/20 pt-2 flex justify-between">
                 <span className="text-[var(--text-base)] font-bold text-[var(--tx)]">Total</span>
                 <span className="text-[18px] font-bold text-[var(--gold)]">{fmt(pricing.totalPrice)}</span>

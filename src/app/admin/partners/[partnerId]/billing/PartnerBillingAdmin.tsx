@@ -173,7 +173,7 @@ export default function PartnerBillingAdmin({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Invoice size={16} color="var(--gold)" />
-            <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--gold)]">
+            <span className="text-[11px] font-bold tracking-widest capitalize text-[var(--gold)]">
               Billing Overview
             </span>
           </div>
@@ -214,7 +214,7 @@ export default function PartnerBillingAdmin({
           <h3 className="text-[13px] font-bold text-[var(--tx)]">Generate Statement Now</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">
+              <label className="block text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1.5">
                 Period Start
               </label>
               <input
@@ -225,7 +225,7 @@ export default function PartnerBillingAdmin({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">
+              <label className="block text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1.5">
                 Period End
               </label>
               <input
@@ -272,7 +272,7 @@ export default function PartnerBillingAdmin({
               <div className="text-[18px] font-bold" style={{ color: value > 0 ? color : "var(--tx3)" }}>
                 {fmt(value)}
               </div>
-              <div className="text-[10px] text-[var(--tx3)] uppercase tracking-wider mt-0.5">{label}</div>
+              <div className="text-[10px] text-[var(--tx3)] capitalize tracking-wider mt-0.5">{label}</div>
             </div>
           ))}
         </div>
@@ -300,7 +300,7 @@ export default function PartnerBillingAdmin({
                   {["Statement", "Period", "Deliveries", "Total", "Due", "Status", ""].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]"
+                      className="px-4 py-3 text-left text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)]"
                     >
                       {h}
                     </th>
@@ -341,7 +341,7 @@ export default function PartnerBillingAdmin({
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                          className="px-2 py-0.5 rounded-full text-[10px] font-bold capitalize tracking-wider"
                           style={{ color: cfg.color, background: cfg.bg }}
                         >
                           {cfg.label}

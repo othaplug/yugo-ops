@@ -3,6 +3,10 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { notifyOnCheckpoint } from "@/lib/tracking-notifications";
+import {
+  maybeNotifyB2BOneOffOutForDelivery,
+  maybeNotifyB2BOneOffDelivered,
+} from "@/lib/b2b-delivery-business-notifications";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 
 export async function POST(req: NextRequest) {
@@ -182,6 +186,9 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jobId: session.job_id, jobType: session.job_type }),
     }).catch((e) => console.error("[eta] send-completed failed:", e));
+    if (session.job_type === "delivery") {
+      maybeNotifyB2BOneOffDelivered(session.job_id).catch(() => {});
+    }
   } else if (enRouteStatuses.includes(status)) {
     await admin.from(table).update({ status: "in_progress", stage: status, updated_at: now }).eq("id", session.job_id);
     if (session.job_type === "move") {
@@ -219,6 +226,10 @@ export async function POST(req: NextRequest) {
     fromAddress,
     toAddress
   ).catch(() => {});
+
+  if (session.job_type === "delivery") {
+    maybeNotifyB2BOneOffOutForDelivery(session.job_id, status).catch(() => {});
+  }
 
   // Move summary, invoice, and receipt PDFs are generated above via generateMovePDFs (same as signoff/notify-complete)
 

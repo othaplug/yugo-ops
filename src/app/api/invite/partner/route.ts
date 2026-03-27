@@ -262,7 +262,12 @@ export async function POST(req: NextRequest) {
         const { sendSMS } = await import("@/lib/sms/sendSMS");
         await sendSMS(
           phoneTrimmed,
-          `Welcome to Yugo! Access your partner portal here: ${loginUrl}\nLogin: ${emailTrimmed}`
+          [
+            `Hi,`,
+            `Welcome to Yugo.`,
+            `Access your partner portal here:\n${loginUrl}`,
+            `Login email: ${emailTrimmed}`,
+          ].join("\n\n"),
         );
       } catch {
         // Non-critical — don't fail the request

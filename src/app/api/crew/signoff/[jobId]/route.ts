@@ -6,6 +6,7 @@ import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
 import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
+import { maybeNotifyB2BOneOffDelivered } from "@/lib/b2b-delivery-business-notifications";
 
 export async function GET(
   req: NextRequest,
@@ -53,7 +54,19 @@ export async function GET(
     }
   }
 
-  return NextResponse.json({ ...(data || {}), partnerVertical });
+  const { data: eqRow } = await admin
+    .from("equipment_checks")
+    .select("id, skip_reason")
+    .eq("job_type", jobType)
+    .eq("job_id", entityId)
+    .maybeSingle();
+
+  return NextResponse.json({
+    ...(data || {}),
+    partnerVertical,
+    equipmentCheckDone: !!eqRow,
+    equipmentCheckSkippedReason: eqRow?.skip_reason ?? null,
+  });
 }
 
 export async function POST(
@@ -402,6 +415,7 @@ export async function POST(
 
   // Fire-and-forget: auto-generate invoice for deliveries
   if (jobType === "delivery") {
+    maybeNotifyB2BOneOffDelivered(entityId).catch(() => {});
     fetch(`${origin.replace(/\/$/, "")}/api/invoices/auto-delivery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

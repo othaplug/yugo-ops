@@ -38,7 +38,7 @@ export default function SegmentedProgressBar({
   return (
     <div className={`${className}`} ref={containerRef}>
       {label && (
-        <div className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-3">
+        <div className="text-[9px] font-bold tracking-[0.16em] capitalize text-[var(--tx3)]/60 mb-3">
           {label}
         </div>
       )}

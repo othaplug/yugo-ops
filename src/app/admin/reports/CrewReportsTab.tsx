@@ -292,7 +292,7 @@ export default function CrewReportsTab({
               <div className="absolute top-full right-0 mt-1.5 w-[280px] rounded-lg bg-[var(--card)] shadow-xl z-50 overflow-hidden">
                 <div className="p-4 space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Date & filters</span>
+                    <span className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Date & filters</span>
                     <button type="button" onClick={() => setFilterOpen(false)} className="text-[var(--gold)] text-[11px] font-semibold hover:underline">Done</button>
                   </div>
                   <div className="space-y-3">
@@ -404,36 +404,36 @@ export default function CrewReportsTab({
                 {r.summary && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                     <div>
-                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Jobs</div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Jobs</div>
                       <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{String(r.summary.jobsCompleted ?? 0)}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Damage</div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Damage</div>
                       <div className={`text-[16px] font-bold font-heading mt-0.5 ${(r.jobs?.filter((j) => j.hasDamage).length ?? 0) > 0 ? "text-[var(--org)]" : "text-[var(--tx)]"}`}>{r.jobs?.filter((j) => j.hasDamage).length ?? 0}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total time</div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Total time</div>
                       <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">
                         {Math.floor((Number(r.summary.totalJobTime) || 0) / 60)}h {(Number(r.summary.totalJobTime) || 0) % 60}m
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Sign-offs</div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Sign-offs</div>
                       <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{String(r.summary.clientSignOffs ?? 0)}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Expenses</div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Expenses</div>
                       <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">${((Number(r.summary.expensesTotal) || 0) / 100).toFixed(2)}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Avg rating</div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Avg rating</div>
                       <div className="text-[16px] font-bold font-heading text-[var(--tx)] mt-0.5">{typeof r.summary.averageSatisfaction === "number" || typeof r.summary.averageSatisfaction === "string" ? r.summary.averageSatisfaction : "-"}</div>
                     </div>
                   </div>
                 )}
                 {r.jobs && r.jobs.length > 0 && (
                   <div className="border-t border-[var(--brd)]/30 pt-5">
-                    <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Jobs</div>
+                    <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-3">Jobs</div>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {r.jobs.map((j, i) => (
                         <button
@@ -462,13 +462,13 @@ export default function CrewReportsTab({
                 )}
                 {r.crew_note && (
                   <div className="border-t border-[var(--brd)]/30 pt-5">
-                    <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Crew note</div>
+                    <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Crew note</div>
                     <p className="text-[13px] text-[var(--tx2)] whitespace-pre-wrap font-heading">{r.crew_note}</p>
                   </div>
                 )}
                 {r.readiness && !r.readiness.passed && r.readiness.flaggedItems?.length ? (
                   <div className="border-t border-[var(--brd)]/30 pt-5">
-                    <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--org)] mb-1">Readiness flagged</div>
+                    <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--org)] mb-1">Readiness flagged</div>
                     <p className="text-[12px] text-[var(--tx2)]">{r.readiness.flaggedItems.join(", ")}</p>
                   </div>
                 ) : null}
@@ -510,14 +510,14 @@ export default function CrewReportsTab({
                     <p className="text-[11px] text-[var(--tx3)]">To: {detailData.job?.toAddress || "-"}</p>
                   </div>
                   <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Trip</div>
+                    <div className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-2">Trip</div>
                     <div className="grid grid-cols-2 gap-2 text-[12px]">
                       <div><span className="text-[var(--tx3)]">KM travelled</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.kmTravelled != null ? `${detailData.kmTravelled.toFixed(1)} km` : "-"}</span></div>
                       <div><span className="text-[var(--tx3)]">Stops</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.stopsMade ?? "-"}</span></div>
                     </div>
                   </div>
                   <div className={`rounded-xl border p-4 ${(detailData.incidents?.filter((i) => i.issue_type === "damage").length ?? 0) > 0 ? "border-[var(--org)]/60 bg-[var(--ordim)]/30" : "border-[var(--brd)] bg-[var(--bg)]"}`}>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Damage</div>
+                    <div className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-2">Damage</div>
                     {detailData.incidents?.filter((i) => i.issue_type === "damage").length ? (
                       <ul className="space-y-2">
                         {detailData.incidents.filter((i) => i.issue_type === "damage").map((inc) => (
@@ -532,7 +532,7 @@ export default function CrewReportsTab({
                     )}
                   </div>
                   <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Session</div>
+                    <div className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-2">Session</div>
                     {detailData.session?.startedAt || detailData.session?.completedAt ? (
                       <p className="text-[12px] text-[var(--tx2)]">
                         {detailData.session.startedAt && <span>Started: {new Date(detailData.session.startedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
@@ -543,7 +543,7 @@ export default function CrewReportsTab({
                     )}
                   </div>
                   <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-3">Time breakdown</div>
+                    <div className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-3">Time breakdown</div>
                     <div className="grid grid-cols-2 gap-2 text-[12px]">
                       <div><span className="text-[var(--tx3)]">Total</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.summary?.totalMinutes ?? 0} min</span></div>
                       <div><span className="text-[var(--tx3)]">Drive</span> <span className="font-heading font-semibold text-[var(--tx)]">{detailData.summary?.driveMinutes ?? 0} min</span></div>
@@ -552,7 +552,7 @@ export default function CrewReportsTab({
                     </div>
                     {detailData.timeBreakdown && detailData.timeBreakdown.length > 0 ? (
                       <div className="mt-3 pt-3 border-t border-[var(--brd)]">
-                        <div className="text-[10px] font-semibold text-[var(--tx3)] uppercase mb-2">By stage</div>
+                        <div className="text-[10px] font-semibold text-[var(--tx3)] capitalize mb-2">By stage</div>
                         <ul className="space-y-1 text-[11px] text-[var(--tx2)]">
                           {detailData.timeBreakdown.map((t, i) => (
                             <li key={i} className="flex justify-between"><span>{t.label}</span><span className="tabular-nums">{t.minutes}m</span></li>
@@ -564,7 +564,7 @@ export default function CrewReportsTab({
                     )}
                   </div>
                   <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Client sign-off</div>
+                    <div className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-2">Client sign-off</div>
                     {detailData.signOff ? (
                       <>
                         <p className="text-[13px] text-[var(--tx)]">Signed by {detailData.signOff.signedBy}</p>
@@ -577,13 +577,13 @@ export default function CrewReportsTab({
                   </div>
                   {(detailData.photosCount != null && detailData.photosCount > 0) && (
                     <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] p-4">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Photos</div>
+                      <div className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-2">Photos</div>
                       <p className="text-[12px] text-[var(--tx2)]">{detailData.photosCount} photo{detailData.photosCount !== 1 ? "s" : ""} captured</p>
                     </div>
                   )}
                   {detailData.incidents && detailData.incidents.length > 0 && (
                     <div className="rounded-xl border border-[var(--org)]/40 bg-[var(--ordim)]/30 p-4">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--org)] mb-2">Incidents</div>
+                      <div className="text-[10px] font-bold capitalize tracking-wider text-[var(--org)] mb-2">Incidents</div>
                       <ul className="space-y-2">
                         {detailData.incidents.map((inc) => (
                           <li key={inc.id} className="text-[12px] text-[var(--tx2)]">

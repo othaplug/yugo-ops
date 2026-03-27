@@ -219,7 +219,7 @@ export default function SquarePaymentForm({
 
       {/* Amount display */}
       <div className="text-center py-3">
-        <p className="text-[11px] font-semibold tracking-wider uppercase" style={{ color: FOREST }}>
+        <p className="text-[11px] font-semibold tracking-wider capitalize" style={{ color: FOREST }}>
           Deposit Amount
         </p>
         <p className="font-hero text-[36px] mt-1" style={{ color: WINE }}>

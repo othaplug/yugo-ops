@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/app/admin/components/Toast";
 import { expandItemRow } from "@/lib/inventory-parse";
-import { CaretDown, X, ClipboardText, Plus, DownloadSimple } from "@phosphor-icons/react";
+import { CaretDown, X, Plus, DownloadSimple } from "@phosphor-icons/react";
 
 const GOLD = "#C9A962";
 const FOREST = "#2C3B2D";
@@ -206,7 +206,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
         </div>
         <form onSubmit={handleAddExtra} className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888] mb-1.5">Description *</label>
+            <label className="block text-[10px] font-bold capitalize tracking-wider text-[#888] mb-1.5">Description *</label>
             <input
               value={extraDesc}
               onChange={(e) => setExtraDesc(e.target.value)}
@@ -217,7 +217,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888] mb-1.5">Quantity</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wider text-[#888] mb-1.5">Quantity</label>
               <input
                 type="number"
                 min={1}
@@ -227,7 +227,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#888] mb-1.5">Room</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wider text-[#888] mb-1.5">Room</label>
               <input
                 value={extraRoom}
                 onChange={(e) => setExtraRoom(e.target.value)}
@@ -286,9 +286,6 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
           <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A]">Inventory</h3>
         </div>
         <div className="px-5 py-10 text-center">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: `${GOLD}14` }}>
-            <ClipboardText size={20} color={GOLD} />
-          </div>
           <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No items yet</p>
           <p className="text-[11px] text-[#888] max-w-[220px] mx-auto leading-relaxed">Your coordinator will add items as your move is being prepared.</p>
           {!moveComplete && (
@@ -385,8 +382,8 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                     </colgroup>
                     <thead>
                       <tr style={{ backgroundColor: "#F5F5F3" }}>
-                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] min-w-0">Item</th>
-                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
+                        <th className="text-[9px] font-bold capitalize tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] min-w-0">Item</th>
+                        <th className="text-[9px] font-bold capitalize tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
                       </tr>
                     </thead>
                     <tbody>

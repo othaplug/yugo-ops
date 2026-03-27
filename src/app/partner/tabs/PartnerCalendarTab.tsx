@@ -405,7 +405,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
     return (
       <div className="grid grid-cols-7 gap-px bg-[#E8E4DF] dark:bg-[var(--brd)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-xl overflow-hidden">
         {DAY_NAMES.map((d) => (
-          <div key={d} className="bg-[#F9F7F4] dark:bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-wider uppercase text-[#999] dark:text-[var(--tx3)]/50">{d}</div>
+          <div key={d} className="bg-[#F9F7F4] dark:bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-wider capitalize text-[#999] dark:text-[var(--tx3)]/50">{d}</div>
         ))}
         {cells.map((day, i) => {
           if (day === null) return <div key={`e-${i}`} className="bg-white dark:bg-[var(--card)] min-h-[90px]" />;
@@ -726,7 +726,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             const count = delCount + projCount;
             return (
               <button key={key} type="button" onClick={() => switchToDay(key)} className={`flex-1 py-2 text-center border-l border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 transition-colors ${isToday ? "bg-[#C9A962]/5" : ""}`}>
-                <div className={`text-[9px] font-bold uppercase ${isToday ? "text-[#C9A962]" : "text-[#999] dark:text-[var(--tx3)]/50"}`}>{DAY_NAMES[i]} {date.getDate()}</div>
+                <div className={`text-[9px] font-bold capitalize ${isToday ? "text-[#C9A962]" : "text-[#999] dark:text-[var(--tx3)]/50"}`}>{DAY_NAMES[i]} {date.getDate()}</div>
                 {count > 0 && <div className="text-[7px] text-[#2C3E2D] dark:text-[var(--gold)] font-semibold">{delCount > 0 && `${delCount} del${delCount > 1 ? "s" : ""}`}{delCount > 0 && projCount > 0 ? " · " : ""}{projCount > 0 && `${projCount} proj`}</div>}
               </button>
             );

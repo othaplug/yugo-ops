@@ -21,7 +21,7 @@ import { getDisplayLabel } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
 import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
-import { formatAccessForDisplay } from "@/lib/format-text";
+import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
 import TipConfirmation from "@/components/tracking/TipConfirmation";
@@ -148,7 +148,7 @@ function binRentalStatusClientLabel(status: string): string {
     overdue: "Late return",
     cancelled: "Cancelled",
   };
-  return map[status] ?? status.replace(/_/g, " ");
+  return map[status] ?? toTitleCase(status);
 }
 
 function relativeDayPhrase(iso: string): string {
@@ -209,7 +209,7 @@ function BinRentalTrackingSection({
     );
   }
 
-  const MARKETING_QUOTE_URL = "https://yugoplus.co";
+  const MARKETING_QUOTE_URL = "https://helloyugo.com";
 
   return (
     <div
@@ -220,7 +220,7 @@ function BinRentalTrackingSection({
         <div className="flex items-center gap-2 min-w-0">
           <Recycle size={22} color={GOLD} weight="regular" className="shrink-0" aria-hidden />
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: FOREST }}>
+            <p className="text-[10px] font-bold capitalize tracking-wider" style={{ color: FOREST }}>
               {primaryTitle ? "Your bin rental" : "Bin rental"}
             </p>
             <p className="text-[15px] font-bold truncate" style={{ color: WINE }}>
@@ -229,7 +229,7 @@ function BinRentalTrackingSection({
           </div>
         </div>
         <span
-          className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md shrink-0"
+          className="text-[10px] font-bold capitalize tracking-wide px-2 py-1 rounded-md shrink-0"
           style={{
             background: st === "overdue" ? "#FEE2E2" : `${GOLD}18`,
             color: st === "overdue" ? "#B91C1C" : FOREST,
@@ -240,7 +240,7 @@ function BinRentalTrackingSection({
       </div>
 
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: `${FOREST}99` }}>
+        <p className="text-[10px] font-bold capitalize tracking-wider mb-2" style={{ color: `${FOREST}99` }}>
           Timeline
         </p>
         <div className="space-y-3">
@@ -291,7 +291,7 @@ function BinRentalTrackingSection({
       </div>
 
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: `${FOREST}99` }}>
+        <p className="text-[10px] font-bold capitalize tracking-wider mb-1.5" style={{ color: `${FOREST}99` }}>
           What&apos;s included
         </p>
         <ul className="text-[11px] space-y-1 pl-0 list-none" style={{ color: `${FOREST}CC` }}>
@@ -817,7 +817,11 @@ export default function TrackMoveClient({
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden font-sans" data-theme="light" style={{ backgroundColor: "#FAF7F2", color: FOREST }}>
+    <div
+      className="h-screen flex flex-col overflow-x-hidden overflow-y-hidden font-sans min-w-0 max-w-[100vw]"
+      data-theme="light"
+      style={{ backgroundColor: "#FAF7F2", color: FOREST }}
+    >
       <TrackingAgreementModal />
       {/* Header, outside scroll container; always visible on mobile */}
       <header className="shrink-0 z-50 border-b" style={{ backgroundColor: WINE, borderColor: `${WINE}80` }}>
@@ -952,7 +956,7 @@ export default function TrackMoveClient({
                         ) || null;
                 return label ? (
                   <span
-                    className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
+                    className="text-[10px] font-bold capitalize tracking-widest px-1.5 py-0.5 rounded-full"
                     style={{ backgroundColor: `${GOLD}18`, color: GOLD, opacity: 1 }}
                   >
                     {label}
@@ -1133,7 +1137,7 @@ export default function TrackMoveClient({
                     <div className="space-y-4">
                       {isSingleItem && (move as { item_description?: string | null }).item_description && (
                         <div className="pb-3 border-b" style={{ borderColor: `${FOREST}10` }}>
-                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: `${FOREST}55` }}>Item</div>
+                          <div className="text-[9px] font-bold capitalize tracking-[0.12em] mb-1" style={{ color: `${FOREST}55` }}>Item</div>
                           <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>
                             <SafeText fallback="Item details are unavailable here. Check your confirmation email.">
                               {(move as { item_description?: string | null }).item_description ?? ""}
@@ -1143,7 +1147,7 @@ export default function TrackMoveClient({
                       )}
                       {(serviceType === "white_glove" || serviceType === "specialty") && (
                         <div className="pb-3 border-b" style={{ borderColor: `${FOREST}10` }}>
-                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: `${FOREST}55` }}>Service included</div>
+                          <div className="text-[9px] font-bold capitalize tracking-[0.12em] mb-1" style={{ color: `${FOREST}55` }}>Service included</div>
                           <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}90` }}>
                             White glove handling, custom crating when needed, and specialty care for high-value items.
                           </p>
@@ -1156,7 +1160,7 @@ export default function TrackMoveClient({
                         style={{ backgroundColor: totalBalance > 0 ? `${GOLD}10` : `${FOREST}08`, border: `1px solid ${totalBalance > 0 ? GOLD : FOREST}18` }}
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: `${FOREST}70` }}>Total balance</span>
+                          <span className="text-[10px] font-semibold capitalize tracking-[0.1em]" style={{ color: `${FOREST}70` }}>Total balance</span>
                           <span className="text-[15px] font-bold" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
                             {totalBalance > 0 ? formatCurrency(totalBalance) : "Paid ✓"}
                           </span>
@@ -1198,14 +1202,14 @@ export default function TrackMoveClient({
                         </div>
                         <div className="flex flex-col gap-3.5 min-w-0 flex-1">
                           <div>
-                            <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-0.5" style={{ color: `${FOREST}50` }}>From</div>
+                            <div className="text-[9px] font-bold capitalize tracking-[0.12em] mb-0.5" style={{ color: `${FOREST}50` }}>From</div>
                             <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{shortAddress(move.from_address)}</div>
                             {(move as { from_access?: string | null }).from_access && formatAccessForDisplay((move as { from_access?: string | null }).from_access) && (
                               <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}65` }}>Access: {formatAccessForDisplay((move as { from_access?: string | null }).from_access)}</div>
                             )}
                           </div>
                           <div>
-                            <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-0.5" style={{ color: `${FOREST}50` }}>To</div>
+                            <div className="text-[9px] font-bold capitalize tracking-[0.12em] mb-0.5" style={{ color: `${FOREST}50` }}>To</div>
                             <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{shortAddress(move.to_address || move.delivery_address)}</div>
                             {(move as { to_access?: string | null }).to_access && formatAccessForDisplay((move as { to_access?: string | null }).to_access) && (
                               <div className="text-[10px] mt-0.5" style={{ color: `${FOREST}65` }}>Access: {formatAccessForDisplay((move as { to_access?: string | null }).to_access)}</div>
@@ -1217,7 +1221,7 @@ export default function TrackMoveClient({
                       {/* Crew */}
                       {crewMembers.length > 0 && (
                         <div className="pt-1 border-t" style={{ borderColor: `${FOREST}10` }}>
-                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] mb-2" style={{ color: `${FOREST}50` }}>Your Crew</div>
+                          <div className="text-[9px] font-bold capitalize tracking-[0.12em] mb-2" style={{ color: `${FOREST}50` }}>Your Crew</div>
                           <div className="flex flex-wrap gap-2">
                             {crewMembers.map((name: string, i: number) => (
                               <div
@@ -1381,7 +1385,7 @@ export default function TrackMoveClient({
                     </div>
                     <div className="pt-0.5">
                       <div
-                        className="text-[9px] font-bold uppercase tracking-[0.14em] mb-1"
+                        className="text-[9px] font-bold capitalize tracking-[0.14em] mb-1"
                         style={{ color: GOLD }}
                       >
                         {serviceType === "office_move" ? "Refer another business" : "Refer a friend & earn cash"}
@@ -1512,35 +1516,35 @@ export default function TrackMoveClient({
               if (isOffice) {
                 heading = "Planning another office move?";
                 title = "Get a quote for your next relocation.";
-                ctas = [{ label: "Get a Quote", sub: "Office relocation or commercial move", href: "https://yugoplus.co" }];
+                ctas = [{ label: "Get a Quote", sub: "Office relocation or commercial move", href: "https://helloyugo.com" }];
               } else if (isSingleItem) {
                 heading = "Need to move more?";
                 title = "Book a full move or another single item.";
                 ctas = [
-                  { label: "Book a Full Move", sub: "Local or long distance", href: "https://yugoplus.co" },
-                  { label: "Another Single Item", sub: "Sofa, piano, art piece", href: "https://yugoplus.co" },
+                  { label: "Book a Full Move", sub: "Local or long distance", href: "https://helloyugo.com" },
+                  { label: "Another Single Item", sub: "Sofa, piano, art piece", href: "https://helloyugo.com" },
                 ];
               } else {
                 ctas =
                   tier === "essential"
                     ? [
-                        { label: "Upgrade to Signature", sub: "Full protection, nothing left to chance", href: "https://yugoplus.co" },
-                        { label: "Single Item Delivery", sub: "Sofa, piano, art piece, we deliver one item too", href: "https://yugoplus.co" },
+                        { label: "Upgrade to Signature", sub: "Full protection, nothing left to chance", href: "https://helloyugo.com" },
+                        { label: "Single Item Delivery", sub: "Sofa, piano, art piece, we deliver one item too", href: "https://helloyugo.com" },
                       ]
                     : tier === "signature"
                       ? [
-                          { label: "Go Estate Next Time", sub: "White glove & dedicated coordinator", href: "https://yugoplus.co" },
-                          { label: "Single Item Delivery", sub: "One piece? We&apos;ve got you", href: "https://yugoplus.co" },
+                          { label: "Go Estate Next Time", sub: "White glove & dedicated coordinator", href: "https://helloyugo.com" },
+                          { label: "Single Item Delivery", sub: "One piece? We&apos;ve got you", href: "https://helloyugo.com" },
                         ]
                       : tier === "estate"
                         ? [
-                            { label: "Book again", sub: "Local or long distance", href: "https://yugoplus.co" },
-                            { label: "Refer a friend", sub: "Give $50, get $50", href: "https://yugoplus.co" },
+                            { label: "Book again", sub: "Local or long distance", href: "https://helloyugo.com" },
+                            { label: "Refer a friend", sub: "Give $50, get $50", href: "https://helloyugo.com" },
                           ]
                         : [
-                            { label: "Book a Move", sub: "Local or long distance", href: "https://yugoplus.co" },
-                            { label: "Single Item", sub: "Sofa, piano, art piece", href: "https://yugoplus.co" },
-                            { label: "White Glove Service", sub: "Premium packing & placement", href: "https://yugoplus.co" },
+                            { label: "Book a Move", sub: "Local or long distance", href: "https://helloyugo.com" },
+                            { label: "Single Item", sub: "Sofa, piano, art piece", href: "https://helloyugo.com" },
+                            { label: "White Glove Service", sub: "Premium packing & placement", href: "https://helloyugo.com" },
                           ];
               }
               return (
@@ -1569,7 +1573,7 @@ export default function TrackMoveClient({
                       </div>
                       <div className="pt-0.5">
                         <div
-                          className="text-[9px] font-bold uppercase tracking-[0.13em] mb-1"
+                          className="text-[9px] font-bold capitalize tracking-[0.13em] mb-1"
                           style={{ color: `${FOREST}80` }}
                         >
                           {heading}
@@ -1767,7 +1771,7 @@ export default function TrackMoveClient({
 
                   {/* Footer */}
                   <p
-                    className="px-4 pt-3 pb-4 text-[10px] font-medium tracking-wide uppercase"
+                    className="px-4 pt-3 pb-4 text-[10px] font-medium tracking-wide capitalize"
                     style={{ color: `${GOLD}cc`, letterSpacing: "0.06em" }}
                   >
                     100% goes directly to your crew
@@ -1826,7 +1830,7 @@ export default function TrackMoveClient({
             {/* ── Event Phases (shown when move is part of an event booking) ── */}
             {move.event_name && (
               <div className="rounded-2xl p-4 mb-4 space-y-3" style={{ background: "#7C3AED11", border: "1px solid #7C3AED30" }}>
-                <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#7C3AED" }}>
+                <div className="text-[10px] font-bold capitalize tracking-wider" style={{ color: "#7C3AED" }}>
                   Event · {move.event_name}
                 </div>
                 <div className="space-y-2">
@@ -1897,7 +1901,7 @@ export default function TrackMoveClient({
               {scheduledDate && (
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: FOREST }}>Date</div>
+                    <div className="text-[10px] font-semibold capitalize tracking-wider opacity-50" style={{ color: FOREST }}>Date</div>
                     <div className="text-[13px] font-medium mt-0.5" style={{ color: FOREST }}>
                       {formatMoveDate(scheduledDate)}
                     </div>
@@ -1951,13 +1955,13 @@ export default function TrackMoveClient({
                 {/* Address text */}
                 <div className="flex flex-col gap-3 min-w-0 flex-1">
                   <div className="addr-from min-w-0">
-                    <div className="text-[9px] font-bold uppercase tracking-widest opacity-40" style={{ color: FOREST }}>From</div>
+                    <div className="text-[9px] font-bold capitalize tracking-widest opacity-40" style={{ color: FOREST }}>From</div>
                     <div className="text-[13px] font-medium mt-0.5 leading-snug" style={{ color: FOREST }}>
                       {shortAddress(move.from_address)}
                     </div>
                   </div>
                   <div className="addr-to min-w-0">
-                    <div className="text-[9px] font-bold uppercase tracking-widest opacity-40" style={{ color: FOREST }}>To</div>
+                    <div className="text-[9px] font-bold capitalize tracking-widest opacity-40" style={{ color: FOREST }}>To</div>
                     <div className="text-[13px] font-medium mt-0.5 leading-snug" style={{ color: FOREST }}>
                       {shortAddress(move.to_address || move.delivery_address)}
                     </div>
@@ -1968,7 +1972,7 @@ export default function TrackMoveClient({
               <div className="flex flex-col gap-3 pt-1">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: FOREST }}>Balance Due</div>
+                    <div className="text-[10px] font-semibold capitalize tracking-wider opacity-50" style={{ color: FOREST }}>Balance Due</div>
                     <div className="font-hero text-[18px] font-bold mt-0.5" style={{ color: totalBalance > 0 ? GOLD : FOREST }}>
                       {formatCurrency(totalBalance)}
                     </div>
@@ -2035,7 +2039,7 @@ export default function TrackMoveClient({
             {/* Crew */}
             {crewMembers.length > 0 && (
               <div className="border-t border-[var(--brd)]/20 pt-5 mt-6">
-                <div className="text-[10px] font-semibold uppercase tracking-wider opacity-50 mb-3" style={{ color: FOREST }}>Your Crew</div>
+                <div className="text-[10px] font-semibold capitalize tracking-wider opacity-50 mb-3" style={{ color: FOREST }}>Your Crew</div>
                 <div className="flex flex-wrap gap-3">
                   {crewMembers.map((name: string, i: number) => (
                     <div key={i} className="flex items-center gap-2.5">
@@ -2134,7 +2138,7 @@ export default function TrackMoveClient({
                             opacity: inventoryChangeEligible ? 1 : 0.75,
                           }}
                         >
-                          <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: GOLD }}>
+                          <div className="text-[10px] font-bold capitalize tracking-wider mb-1" style={{ color: GOLD }}>
                             Need to update your inventory?
                           </div>
                           <p className="text-[11px] leading-relaxed opacity-80 mb-3" style={{ color: FOREST }}>
@@ -2283,7 +2287,7 @@ export default function TrackMoveClient({
 
                   {/* Refer a friend (under same hero) */}
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1" style={{ color: FOREST }}>
+                    <div className="text-[10px] font-bold capitalize tracking-widest opacity-50 mb-1" style={{ color: FOREST }}>
                       Refer a friend & earn cash
                     </div>
                   <p className="text-[11px] opacity-70 mb-3" style={{ color: FOREST }}>
@@ -2429,7 +2433,7 @@ export default function TrackMoveClient({
             </p>
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase opacity-80" style={{ color: FOREST }}>Type of Change</label>
+                <label className="mb-1 block text-[10px] font-bold capitalize opacity-80" style={{ color: FOREST }}>Type of Change</label>
                 <select
                   value={changeType}
                   onChange={(e) => setChangeType(e.target.value)}
@@ -2454,7 +2458,7 @@ export default function TrackMoveClient({
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase opacity-80" style={{ color: FOREST }}>
+                <label className="mb-1 block text-[10px] font-bold capitalize opacity-80" style={{ color: FOREST }}>
                   {changeType === "Change destination address" ? "Additional details (optional)" : "Details"}
                 </label>
                 <textarea
@@ -2467,7 +2471,7 @@ export default function TrackMoveClient({
                 />
               </div>
               <div>
-                <label className="mb-2 block text-[10px] font-bold uppercase opacity-80" style={{ color: FOREST }}>Urgency</label>
+                <label className="mb-2 block text-[10px] font-bold capitalize opacity-80" style={{ color: FOREST }}>Urgency</label>
                 <div className="flex gap-4">
                   <label className="flex cursor-pointer items-center gap-2 text-[12px] opacity-80" style={{ color: FOREST }}>
                     <input type="radio" name="urgency" checked={!changeUrgent} onChange={() => setChangeUrgent(false)} className="accent-[#B8962E]" />
@@ -2536,7 +2540,7 @@ export default function TrackMoveClient({
                 </div>
 
                 <div className="mb-1.5">
-                  <div className="text-[9px] font-bold tracking-widest uppercase mb-2" style={{ color: GOLD }}>Card Details</div>
+                  <div className="text-[9px] font-bold tracking-widest capitalize mb-2" style={{ color: GOLD }}>Card Details</div>
                   <div className="rounded-xl border-2 p-3.5 transition-colors" style={{ borderColor: sqCardReady ? GOLD : `${FOREST}15`, backgroundColor: "#FAF7F2" }}>
                     <div id="sq-track-card" style={{ minHeight: 80 }} />
                     {!sqSdkReady && !sqError && (
@@ -2680,7 +2684,7 @@ function CrewChangeRequestBanner({
 
         {added.length > 0 && (
           <div className="mb-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/60 mb-1.5">Items not on quote</p>
+            <p className="text-[10px] font-bold capitalize tracking-wider text-amber-700/60 mb-1.5">Items not on quote</p>
             <div className="space-y-1">
               {added.map((item, i) => (
                 <div key={i} className="flex items-center justify-between text-[12px]">
@@ -2694,7 +2698,7 @@ function CrewChangeRequestBanner({
 
         {removed.length > 0 && (
           <div className="mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/60 mb-1.5">Items not found (credit)</p>
+            <p className="text-[10px] font-bold capitalize tracking-wider text-amber-700/60 mb-1.5">Items not found (credit)</p>
             <div className="space-y-1">
               {removed.map((item, i) => (
                 <div key={i} className="flex items-center justify-between text-[12px]">

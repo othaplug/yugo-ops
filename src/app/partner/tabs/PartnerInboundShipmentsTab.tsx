@@ -116,7 +116,7 @@ export default function PartnerInboundShipmentsTab() {
         <div className="overflow-x-auto rounded-xl border border-[var(--brd)] bg-[var(--card)]">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase text-[var(--tx3)] border-b border-[var(--brd)]">
+              <tr className="text-left text-xs capitalize text-[var(--tx3)] border-b border-[var(--brd)]">
                 <th className="px-3 py-2 font-semibold">Reference</th>
                 <th className="px-3 py-2 font-semibold">Item</th>
                 <th className="px-3 py-2 font-semibold">Status</th>

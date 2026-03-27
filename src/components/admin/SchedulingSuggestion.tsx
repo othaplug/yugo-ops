@@ -45,7 +45,7 @@ export default function SchedulingSuggestion({ moveId }: Props) {
     <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--brd)]/30">
         <Lightning size={14} className="text-[var(--gold)]" weight="duotone" />
-        <span className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Scheduling Intelligence</span>
+        <span className="text-[11px] font-bold tracking-wider capitalize text-[var(--tx3)]">Scheduling Intelligence</span>
       </div>
 
       <div className="px-4 py-3">
@@ -70,7 +70,7 @@ export default function SchedulingSuggestion({ moveId }: Props) {
               <span className="text-[12px] font-semibold">Requested slot has limited availability</span>
             </div>
             <div className="space-y-2">
-              <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+              <span className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]">
                 Suggested alternatives
               </span>
               {data.alternatives.slice(0, 4).map((alt, i) => (

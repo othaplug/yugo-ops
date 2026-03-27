@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, Button, Flex, hubspot } from "@hubspot/ui-extensions";
 
-const YUGO_APP_BASE_URL = "https://opsplus.co";
+const YUGO_APP_BASE_URL = "https://helloyugo.com";
 
 hubspot.extend<"crm.record.sidebar">(({ context }) => (
   <Extension context={context} />

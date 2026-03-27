@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
+import { verifyDeliveryTrackAccess } from "@/lib/delivery-tracking-tokens";
 import { isUuid } from "@/lib/move-code";
 import { isDeliveryId } from "@/lib/delivery-number";
+import { rateLimit } from "@/lib/rate-limit";
 
 const POLL_MS = 5000;
 
@@ -15,6 +17,12 @@ export async function GET(
   const token = req.nextUrl.searchParams.get("token") || "";
   const jobTypeParam = req.nextUrl.searchParams.get("jobType") || "";
 
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anon";
+  const rl = rateLimit(`track-sse:${ip}:${token.slice(0, 48)}`, 20, 60_000);
+  if (!rl.allowed) {
+    return new Response("Too many requests", { status: 429 });
+  }
+
   const admin = createAdminClient();
   let entityId: string;
   let jobType: "move" | "delivery";
@@ -24,7 +32,8 @@ export async function GET(
       ? await admin.from("deliveries").select("id").eq("id", jobId).single()
       : await admin.from("deliveries").select("id").ilike("delivery_number", jobId).single();
     if (!d) return new Response("Not found", { status: 404 });
-    if (!verifyTrackToken("delivery", d.id, token)) return new Response("Unauthorized", { status: 401 });
+    const okDel = await verifyDeliveryTrackAccess(d.id, token);
+    if (!okDel) return new Response("Unauthorized", { status: 401 });
     entityId = d.id;
     jobType = "delivery";
   } else {

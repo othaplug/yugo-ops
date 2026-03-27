@@ -8,7 +8,8 @@ import path from "path";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency, calcHST } from "@/lib/format-currency";
+import { getLegalBranding } from "@/lib/legal-branding";
 import {
   WINE,
   GOLD,
@@ -30,7 +31,6 @@ import {
 } from "@/lib/pdf-brand";
 
 const BUCKET = "move-documents";
-const HST_RATE = 0.13;
 
 const TIER_FEATURES: Record<string, string> = {
   essential: "Professional crew, dedicated truck, protective wrapping for key furniture, floor & entryway protection.",
@@ -108,8 +108,8 @@ function pdfHeader(doc: jsPDF, yStart: number, centerX: number, logoBase64?: str
   return drawYugoHeader(doc, { yStart, centerX, margin: 50, logoBase64 });
 }
 
-function pdfFooter(doc: jsPDF): void {
-  drawYugoFooter(doc, { y: 285 });
+function pdfFooter(doc: jsPDF, footerLine: string): void {
+  drawYugoFooter(doc, { y: 285, line: footerLine });
 }
 
 /** Move Summary PDF — Yugo design: logo, accent bars, organized sections */
@@ -118,7 +118,8 @@ function generateMoveSummaryPDF(
   crew: CrewRow,
   inventory: InventoryRow,
   tierLabel: string,
-  logoBase64: string
+  logoBase64: string,
+  footerLine: string,
 ): Buffer {
   const doc = new jsPDF("p", "pt", "letter");
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -211,7 +212,7 @@ function generateMoveSummaryPDF(
   setBodyText(doc, 8);
   doc.text(`: ${move.valuation_tier || "Released value"}`, margin + 58, y);
 
-  pdfFooter(doc);
+  pdfFooter(doc, footerLine);
   drawBottomAccentBar(doc, true);
   return Buffer.from(doc.output("arraybuffer"));
 }
@@ -222,7 +223,10 @@ function generateInvoicePDF(
   extraItems: ExtraRow,
   tierLabel: string,
   tierPrice: number,
-  logoBase64: string
+  logoBase64: string,
+  footerLine: string,
+  brandDisplay: string,
+  companyLegal: string,
 ): Buffer {
   const doc = new jsPDF("p", "pt", "letter");
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -257,7 +261,7 @@ function generateInvoicePDF(
 
   const approvedExtras = extraItems.filter((e) => (e.status ?? "approved") === "approved" && (e.fee_cents ?? 0) > 0);
   const subtotal = tierPrice + approvedExtras.reduce((s, e) => s + (Number(e.fee_cents) || 0) / 100 * (e.quantity || 1), 0);
-  const hst = Math.round(subtotal * HST_RATE * 100) / 100;
+  const hst = calcHST(subtotal);
   const total = subtotal + hst;
   const depositPaid = Number(move.deposit_amount ?? Math.round(tierPrice * 0.25));
   const balancePaid = Number(move.balance_amount ?? (total - depositPaid));
@@ -301,11 +305,11 @@ function generateInvoicePDF(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...GRAY);
-  doc.text("Thank you for choosing Yugo.", margin, y);
+  doc.text(`Thank you for choosing ${brandDisplay}.`, margin, y);
   y += 5;
-  doc.text("Yugo Technologies Inc., Toronto ON", margin, y);
+  doc.text(`${companyLegal}, Toronto ON`, margin, y);
 
-  pdfFooter(doc);
+  pdfFooter(doc, footerLine);
   drawBottomAccentBar(doc, false);
   return Buffer.from(doc.output("arraybuffer"));
 }
@@ -317,7 +321,9 @@ function generateReceiptPDF(
   depositPaid: number,
   balancePaid: number,
   logoBase64: string,
-  cardLast4?: string | null
+  footerLine: string,
+  brandDisplay: string,
+  cardLast4?: string | null,
 ): Buffer {
   const doc = new jsPDF("p", "pt", "letter");
   const margin = 50;
@@ -373,9 +379,9 @@ function generateReceiptPDF(
 
   doc.setFontSize(9);
   doc.setTextColor(...GRAY);
-  doc.text("This receipt confirms full payment for your Yugo move.", margin, y);
+  doc.text(`This receipt confirms full payment for your ${brandDisplay} move.`, margin, y);
 
-  pdfFooter(doc);
+  pdfFooter(doc, footerLine);
   drawBottomAccentBar(doc, true);
   return Buffer.from(doc.output("arraybuffer"));
 }
@@ -416,10 +422,40 @@ export async function generateMovePDFs(moveId: string): Promise<{ summaryPath: s
   const depositPaid = Number(moveRow.deposit_amount ?? Math.round(tierPrice * 0.25));
   const balancePaid = Number(moveRow.balance_amount ?? (tierPrice - depositPaid));
 
+  const branding = await getLegalBranding();
+  const footerLine = `${branding.companyLegal} · ${branding.address}`.replace(/\s+/g, " ").trim();
+  const brandDisplay = branding.brand;
+  const companyLegal = branding.companyLegal;
+
   const logoBase64 = loadYugoLogoBase64();
-  const summaryBuffer = generateMoveSummaryPDF(moveRow, crewData, invList, tierLabel, logoBase64);
-  const invoiceBuffer = generateInvoicePDF(moveRow, extras, tierLabel, tierPrice, logoBase64);
-  const receiptBuffer = generateReceiptPDF(moveRow, tierLabel, depositPaid, balancePaid, logoBase64, undefined);
+  const summaryBuffer = generateMoveSummaryPDF(
+    moveRow,
+    crewData,
+    invList,
+    tierLabel,
+    logoBase64,
+    footerLine,
+  );
+  const invoiceBuffer = generateInvoicePDF(
+    moveRow,
+    extras,
+    tierLabel,
+    tierPrice,
+    logoBase64,
+    footerLine,
+    brandDisplay,
+    companyLegal,
+  );
+  const receiptBuffer = generateReceiptPDF(
+    moveRow,
+    tierLabel,
+    depositPaid,
+    balancePaid,
+    logoBase64,
+    footerLine,
+    brandDisplay,
+    undefined,
+  );
 
   const summaryPath = `moves/${moveId}/move-summary-${displayId}.pdf`;
   const invoicePath = `moves/${moveId}/invoice-${displayId}.pdf`;

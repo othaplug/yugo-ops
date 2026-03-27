@@ -274,7 +274,7 @@ export default function CrewAnalyticsClient({
       {/* Header */}
       <div className="flex items-start justify-between mb-1">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Operations</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
             Crew Performance
           </h1>
@@ -404,7 +404,7 @@ export default function CrewAnalyticsClient({
 
       {/* Summary strip */}
       <div className="border-t border-[var(--brd)]/30 pt-6 mt-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Overview</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Overview</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <SummaryCell label="Total Jobs" value={String(totalJobs)} sub={`${sorted.length} crews`} />
           <SummaryCell label="Satisfaction" value={avgSatAll} sub="/5 avg" accent />
@@ -421,11 +421,11 @@ export default function CrewAnalyticsClient({
         </div>
       ) : (
         <div className="border-t border-[var(--brd)]/30 pt-6 mt-6">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+          <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">
             Crew Comparison
           </div>
           {/* Table header */}
-          <div className="hidden sm:grid grid-cols-[1fr_80px_80px_80px_80px_32px] gap-2 px-4 py-2 text-[10px] font-bold tracking-[0.1em] uppercase text-[var(--tx3)]/60">
+          <div className="hidden sm:grid grid-cols-[1fr_80px_80px_80px_80px_32px] gap-2 px-4 py-2 text-[10px] font-bold tracking-[0.1em] capitalize text-[var(--tx3)]/60">
             <span>Crew</span>
             <span className="text-right">Jobs</span>
             <span className="text-right">Satisfaction</span>
@@ -648,7 +648,7 @@ function CrewDetailView({
           {detail.trends.length > 1 && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">
                   Performance Trends
                 </div>
                 <div className="flex gap-1">
@@ -748,7 +748,7 @@ function CrewDetailView({
 
           {/* Job History Table */}
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">
               Job History, {detail.jobs.length} job{detail.jobs.length !== 1 ? "s" : ""}
             </div>
 
@@ -757,7 +757,7 @@ function CrewDetailView({
             ) : (
               <>
                 {/* Table header - desktop */}
-                <div className="hidden md:grid grid-cols-[100px_1fr_120px_70px_70px_60px_32px] gap-2 px-4 py-2 text-[10px] font-bold tracking-[0.1em] uppercase text-[var(--tx3)]/60">
+                <div className="hidden md:grid grid-cols-[100px_1fr_120px_70px_70px_60px_32px] gap-2 px-4 py-2 text-[10px] font-bold tracking-[0.1em] capitalize text-[var(--tx3)]/60">
                   <span>Date</span>
                   <span>Client / Route</span>
                   <span>Type</span>
@@ -860,7 +860,7 @@ function CrewDetailView({
                         {isExpanded && (
                           <div className="pb-4 px-4 -mx-1">
                             <div className="bg-[var(--bg)] rounded-xl p-4 mt-1">
-                              <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 mb-3">
+                              <div className="text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/60 mb-3">
                                 Time Breakdown
                               </div>
                               {job.stages.length === 0 ? (
@@ -894,7 +894,7 @@ function CrewDetailView({
                                     );
                                   })}
                                   <div className="flex items-center justify-between pt-2 border-t border-[var(--brd)]/30 mt-3">
-                                    <span className="text-[11px] font-bold text-[var(--tx3)] uppercase tracking-wide">Total</span>
+                                    <span className="text-[11px] font-bold text-[var(--tx3)] capitalize tracking-wide">Total</span>
                                     <span className="text-[13px] font-bold text-[var(--tx)]">
                                       {fmtDuration(job.totalDuration)}
                                     </span>
@@ -949,7 +949,7 @@ function SummaryCell({
 }) {
   return (
     <div className="py-3">
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">{label}</div>
       <div className={`text-[22px] sm:text-[26px] font-bold ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"} leading-tight truncate`}>
         {value}
         {sub && <span className="text-[11px] font-normal text-[var(--tx3)] ml-1">{sub}</span>}
@@ -961,7 +961,7 @@ function SummaryCell({
 function KpiCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-xl p-4">
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">{label}</div>
       <div className="text-[22px] font-bold leading-tight" style={{ color }}>
         {value}
       </div>

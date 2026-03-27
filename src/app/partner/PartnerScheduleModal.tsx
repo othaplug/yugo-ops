@@ -9,6 +9,7 @@ import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { Plus, Trash as Trash2 } from "@phosphor-icons/react";
 import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
+import { calcHST } from "@/lib/format-currency";
 
 const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage"];
 
@@ -439,7 +440,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {/* Title row */}
           <div className="px-5 sm:px-6 pt-5 pb-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--gold)] mb-0.5">
+              <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--gold)] mb-0.5">
                 {currentStep.description}
               </p>
               <h2 className="font-hero text-[22px] sm:text-[26px] font-bold text-[var(--tx)] leading-tight">
@@ -988,7 +989,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             <div className="space-y-5">
               <div className="rounded-xl border border-[var(--brd)] divide-y divide-[var(--brd)]">
                 <div className="px-4 py-3">
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Delivery</p>
+                  <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Delivery</p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
                     <span className="text-[var(--tx3)]">Type</span>
                     <span className="font-semibold text-[var(--tx)]">{DELIVERY_TYPES.find((d) => d.value === deliveryType)?.label}</span>
@@ -999,7 +1000,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                   </div>
                 </div>
                 <div className="px-4 py-3">
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Client</p>
+                  <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Client</p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
                     <span className="text-[var(--tx3)]">Name</span>
                     <span className="font-semibold text-[var(--tx)]">{form.customer_name || "-"}</span>
@@ -1011,7 +1012,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                 </div>
                 {inventory.length > 0 && (
                   <div className="px-4 py-3">
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Items ({inventory.length})</p>
+                    <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Items ({inventory.length})</p>
                     <ul className="space-y-0.5">
                       {inventory.map((item, i) => <li key={i} className="text-[12px] text-[var(--tx)]">· {item}</li>)}
                     </ul>
@@ -1141,12 +1142,12 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   }
 
   function renderPricePreview() {
-    const hst = pricing ? Math.round(pricing.totalPrice * 0.13) : 0;
+    const hst = pricing ? calcHST(pricing.totalPrice) : 0;
     const totalWithHst = pricing ? pricing.totalPrice + hst : 0;
     return (
       <div className="rounded-xl border border-[#C9A962]/30 bg-[var(--gdim)] p-4 space-y-2">
         <div className="flex items-center gap-2 mb-1">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--gold)]">Price Preview</h3>
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--gold)]">Price Preview</h3>
           {pricingLoading && <span className="text-[10px] text-[var(--tx3)]">Calculating…</span>}
         </div>
         {pricing ? (
@@ -1192,14 +1193,14 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">{children}</h3>
+    <h3 className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)]">{children}</h3>
   );
 }
 
 function FormField({ label, required, children, className = "" }: { label: string; required?: boolean; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <label className="block text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)] mb-1.5">
+      <label className="block text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)] mb-1.5">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       {children}

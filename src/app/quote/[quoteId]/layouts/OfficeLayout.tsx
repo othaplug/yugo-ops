@@ -82,7 +82,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
           style={{ backgroundColor: `${FOREST}08` }}
         >
           <Building2 className="w-3.5 h-3.5" style={{ color: FOREST }} />
-          <span className="text-[11px] font-semibold tracking-wide uppercase" style={{ color: FOREST }}>
+          <span className="text-[11px] font-semibold tracking-wide capitalize" style={{ color: FOREST }}>
             Commercial Relocation
           </span>
         </div>
@@ -97,14 +97,14 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
           <div className="flex items-start gap-3">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">From</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">From</p>
               <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">To</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">To</p>
               <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
             </div>
           </div>
@@ -205,7 +205,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
       <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: GOLD }}>
         <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${GOLD}08` }}>
           <h2
-            className="font-heading text-[13px] font-bold tracking-wider uppercase"
+            className="font-heading text-[13px] font-bold tracking-wider capitalize"
             style={{ color: WINE }}
           >
             Investment Summary

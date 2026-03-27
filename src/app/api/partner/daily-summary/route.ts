@@ -158,7 +158,7 @@ export async function POST() {
               <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px;">Yugo<span style="color:#C9A962;">+</span></span>
             </td>
             <td align="right">
-              <span style="font-size:11px;color:#666;letter-spacing:0.06em;text-transform:uppercase;">Daily Summary</span>
+              <span style="font-size:11px;color:#666;letter-spacing:0.06em;text-transform:capitalize;">Daily Summary</span>
             </td>
           </tr>
         </table>
@@ -166,7 +166,7 @@ export async function POST() {
 
       <!-- Hero -->
       <tr><td style="background:#141414;border:1px solid #222;border-radius:16px;padding:32px 32px 28px;">
-        <p style="margin:0 0 4px;font-size:12px;color:#C9A962;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;">${todayFormatted}</p>
+        <p style="margin:0 0 4px;font-size:12px;color:#C9A962;font-weight:600;text-transform:capitalize;letter-spacing:0.1em;">${todayFormatted}</p>
         <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Good morning, ${contactName}</h1>
         <p style="margin:0;font-size:14px;color:#888;">
           Here's your delivery summary for today from <strong style="color:#ddd;">${orgName}</strong>.
@@ -178,19 +178,19 @@ export async function POST() {
             <td width="33%" style="padding-right:8px;">
               <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:16px;text-align:center;">
                 <div style="font-size:24px;font-weight:700;color:#fff;">${deliveriesToday.length}</div>
-                <div style="font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:0.08em;">Today</div>
+                <div style="font-size:11px;color:#666;margin-top:2px;text-transform:capitalize;letter-spacing:0.08em;">Today</div>
               </div>
             </td>
             <td width="33%" style="padding-right:8px;">
               <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:16px;text-align:center;">
                 <div style="font-size:24px;font-weight:700;color:#22C55E;">${deliveriesToday.filter((d) => ["delivered", "completed", "confirmed"].includes((d.status || "").toLowerCase())).length}</div>
-                <div style="font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:0.08em;">Confirmed</div>
+                <div style="font-size:11px;color:#666;margin-top:2px;text-transform:capitalize;letter-spacing:0.08em;">Confirmed</div>
               </div>
             </td>
             <td width="33%">
               <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:16px;text-align:center;">
                 <div style="font-size:24px;font-weight:700;color:#C9A962;">${upcoming.length}</div>
-                <div style="font-size:11px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:0.08em;">Upcoming</div>
+                <div style="font-size:11px;color:#666;margin-top:2px;text-transform:capitalize;letter-spacing:0.08em;">Upcoming</div>
               </div>
             </td>
           </tr>
@@ -200,15 +200,15 @@ export async function POST() {
       ${deliveriesToday.length > 0 ? `
       <!-- Today's Deliveries -->
       <tr><td style="padding-top:28px;">
-        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.1em;">Today's Deliveries</p>
+        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#666;text-transform:capitalize;letter-spacing:0.1em;">Today's Deliveries</p>
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#141414;border:1px solid #222;border-radius:12px;overflow:hidden;">
           <thead>
             <tr style="background:#1A1A1A;">
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">Ref #</th>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">Recipient</th>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">Address</th>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">Status</th>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">Time</th>
+              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:capitalize;letter-spacing:0.08em;">Ref #</th>
+              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:capitalize;letter-spacing:0.08em;">Recipient</th>
+              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:capitalize;letter-spacing:0.08em;">Address</th>
+              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:capitalize;letter-spacing:0.08em;">Status</th>
+              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:capitalize;letter-spacing:0.08em;">Time</th>
             </tr>
           </thead>
           <tbody>${deliveryRows}</tbody>
@@ -225,14 +225,14 @@ export async function POST() {
       ${upcoming.length > 0 ? `
       <!-- Upcoming -->
       <tr><td style="padding-top:28px;">
-        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.1em;">Upcoming This Week</p>
+        <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#666;text-transform:capitalize;letter-spacing:0.1em;">Upcoming This Week</p>
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#141414;border:1px solid #222;border-radius:12px;overflow:hidden;">
           <thead>
             <tr style="background:#1A1A1A;">
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">Date</th>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">Ref #</th>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">Recipient</th>
-              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">Status</th>
+              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:capitalize;letter-spacing:0.08em;">Date</th>
+              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:capitalize;letter-spacing:0.08em;">Ref #</th>
+              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:capitalize;letter-spacing:0.08em;">Recipient</th>
+              <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#555;text-transform:capitalize;letter-spacing:0.08em;">Status</th>
             </tr>
           </thead>
           <tbody>${upcomingRows}</tbody>

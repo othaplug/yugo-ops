@@ -11,6 +11,7 @@ import AddPortalAccessModal from "./AddPortalAccessModal";
 import DeviceSetupCodes from "./DeviceSetupCodes";
 import TruckAssignments from "./TruckAssignments";
 import FleetVehiclesManager from "./FleetVehiclesManager";
+import EquipmentDashboard from "./EquipmentDashboard";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
 import PartnersManagement from "./PartnersManagement";
@@ -252,7 +253,7 @@ function AuditLogSection() {
       {/* Filter bar */}
       <div className="py-3 border-b border-[var(--brd)]/30 flex flex-wrap items-center gap-3">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Action</label>
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Action</label>
           <select
             value={filters.action}
             onChange={(e) => setFilters((f) => ({ ...f, action: e.target.value }))}
@@ -265,7 +266,7 @@ function AuditLogSection() {
           </select>
         </div>
         <div className="flex-1 min-w-[160px]">
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Search</label>
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Search</label>
           <input
             value={filters.search}
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
@@ -295,7 +296,7 @@ function AuditLogSection() {
               <thead>
                 <tr className="border-b border-[var(--brd)]">
                   {["Time", "User", "Role", "Action", "Resource", "Details"].map((h) => (
-                    <th key={h} className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] pb-2 pr-4 whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] pb-2 pr-4 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -458,8 +459,8 @@ function BusinessInfoSection() {
   if (loading) return <div className="py-6"><p className="text-[12px] text-[var(--tx3)]">Loading...</p></div>;
 
   const inputCls = "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none";
-  const labelCls = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
-  const subheadCls = "text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]/60 mb-3 flex items-center gap-1.5";
+  const labelCls = "block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5";
+  const subheadCls = "text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]/60 mb-3 flex items-center gap-1.5";
 
   const inp = (key: string, label: string, placeholder: string, type = "text") => (
     <div key={key}>
@@ -521,7 +522,7 @@ function BusinessInfoSection() {
             Email Configuration
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {inp("notifications_from_email", "Notifications 'From' Email", "notifications@opsplus.co", "email")}
+            {inp("notifications_from_email", "Notifications 'From' Email", "notifications@helloyugo.com", "email")}
             {inp("admin_notification_email", "Admin Notification Email", "admin@helloyugo.com", "email")}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-2">The &quot;From&quot; email must be verified in your email provider (Resend). Admin notification email receives payment failures, tips, etc.</p>
@@ -621,7 +622,7 @@ function FuelPricingSection() {
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Gasoline ($/L)</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Gasoline ($/L)</label>
             <input
               type="number"
               min={0.01}
@@ -633,7 +634,7 @@ function FuelPricingSection() {
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Diesel ($/L)</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Diesel ($/L)</label>
             <input
               type="number"
               min={0.01}
@@ -646,7 +647,7 @@ function FuelPricingSection() {
           </div>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Active fuel for estimates</label>
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Active fuel for estimates</label>
           <select
             value={fuelType}
             onChange={(e) => setFuelType(e.target.value === "diesel" ? "diesel" : "gas")}
@@ -730,25 +731,25 @@ function QuotingDefaultsSection() {
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote Expiry (days)</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Quote Expiry (days)</label>
             <input type="number" value={config.quote_expiry_days || "7"} onChange={(e) => setConfig((p) => ({ ...p, quote_expiry_days: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Default Deposit %</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Default Deposit %</label>
             <input type="number" value={config.default_deposit_pct || "25"} onChange={(e) => setConfig((p) => ({ ...p, default_deposit_pct: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Minimum Deposit ($)</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Minimum Deposit ($)</label>
             <input type="number" value={config.minimum_deposit || "100"} onChange={(e) => setConfig((p) => ({ ...p, minimum_deposit: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Quote ID Prefix</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Quote ID Prefix</label>
             <input type="text" value={config.quote_id_prefix || "YG-"} onChange={(e) => setConfig((p) => ({ ...p, quote_id_prefix: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Follow-up Max Attempts</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Follow-up Max Attempts</label>
             <input type="number" value={config.followup_max_attempts || "3"} onChange={(e) => setConfig((p) => ({ ...p, followup_max_attempts: e.target.value }))} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div className="flex items-end">
@@ -760,7 +761,7 @@ function QuotingDefaultsSection() {
         </div>
 
         <div className="pt-4 border-t border-[var(--brd)]/40">
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Client inventory changes (pre-move)</div>
+          <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-3">Client inventory changes (pre-move)</div>
           <p className="text-[11px] text-[var(--tx3)] mb-3">
             Lets clients add/remove catalog items from the move tracking page before move day (with coordinator review).
           </p>
@@ -775,7 +776,7 @@ function QuotingDefaultsSection() {
               Enable inventory change requests
             </label>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">$ per weight-score unit</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">$ per weight-score unit</label>
               <input
                 type="number"
                 value={config.change_request_per_score_rate || "35"}
@@ -784,7 +785,7 @@ function QuotingDefaultsSection() {
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Min hours before move</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Min hours before move</label>
               <input
                 type="number"
                 value={config.change_request_min_hours_before_move || "48"}
@@ -793,7 +794,7 @@ function QuotingDefaultsSection() {
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Max lines per request</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Max lines per request</label>
               <input
                 type="number"
                 value={config.change_request_max_items_per_request || "10"}
@@ -1058,16 +1059,16 @@ function EmailTemplatesSection() {
       <ModalOverlay open onClose={() => setEditing(null)} title={`Edit: ${SLUG_LABELS[editing.template_slug] || editing.template_slug}`} maxWidth="md">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject Line</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Subject Line</label>
             <input type="text" value={editSubject} onChange={(e) => setEditSubject(e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body (HTML)</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Body (HTML)</label>
             <textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={8} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] font-mono focus:border-[var(--brd)] outline-none resize-y" />
           </div>
           {editing.merge_variables?.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Available Variables</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Available Variables</label>
               <div className="flex flex-wrap gap-1.5">
                 {editing.merge_variables.map((v: string) => (
                   <span key={v} className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg)] border border-[var(--brd)] text-[var(--gold)] font-mono">{`{{${v}}}`}</span>
@@ -1088,12 +1089,12 @@ function EmailTemplatesSection() {
       <ModalOverlay open onClose={() => setPreviewSlug(null)} title={`Preview: ${SLUG_LABELS[previewTpl.template_slug] || previewTpl.template_slug}`} maxWidth="md">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Subject</label>
-            <div className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)]">{previewTpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "Yugo", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )}</div>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Subject</label>
+            <div className="px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)]">{previewTpl.subject.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "Yugo", move_date: "March 15, 2026", quote_link: "https://helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )}</div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Body Preview</label>
-            <div className="px-4 py-3 bg-[var(--card)] rounded-lg text-[13px] text-[var(--tx)]" dangerouslySetInnerHTML={{ __html: previewTpl.body_html.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "Yugo", move_date: "March 15, 2026", quote_link: "https://app.helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )} } />
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Body Preview</label>
+            <div className="px-4 py-3 bg-[var(--card)] rounded-lg text-[13px] text-[var(--tx)]" dangerouslySetInnerHTML={{ __html: previewTpl.body_html.replace(/\{\{(\w+)\}\}/g, (_: string, key: string) => ({ client_name: "John Smith", company_name: "Yugo", move_date: "March 15, 2026", quote_link: "https://helloyugo.com/quote/abc123", total_price: "$1,250.00", crew_names: "Marcus, Devon", company_phone: "(647) 370-4525", move_address: "123 Queen St W" }[key] || `{{${key}}}`) )} } />
           </div>
           <button type="button" onClick={() => setPreviewSlug(null)} className="w-full px-4 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)]">Close</button>
         </div>
@@ -1553,7 +1554,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             {/* Add new staff */}
             <div className="flex flex-wrap items-end gap-2">
               <div className="flex-1 min-w-[140px]">
-                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Full Name</label>
+                <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Full Name</label>
                 <input
                   type="text"
                   value={addStaffName}
@@ -1564,7 +1565,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                 />
               </div>
               <div className="min-w-[100px]">
-                <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Role</label>
+                <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Role</label>
                 <select
                   value={addStaffRole}
                   onChange={(e) => setAddStaffRole(e.target.value)}
@@ -1591,7 +1592,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             {/* Active staff list */}
             <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)] bg-[var(--bg)]/40">
-                <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Active Employees</span>
+                <span className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]">Active Employees</span>
                 {!staffLoading && (
                   <span className="text-[10px] font-semibold text-[var(--tx3)] tabular-nums">{staffRoster.filter((s) => s.is_active).length}</span>
                 )}
@@ -1787,7 +1788,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               {editingTeam === team.id && (
                 <div className="px-4 py-3 border-t border-[var(--brd)] bg-[var(--bg)] space-y-4">
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Current Members</div>
+                    <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Current Members</div>
                     {(team.memberIds ?? []).length > 0 ? (
                       <div className="flex flex-wrap gap-2 mb-3">
                         {(team.memberIds ?? []).map((member) => (
@@ -1807,7 +1808,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                     ) : (
                       <p className="text-[11px] text-[var(--tx3)] mb-3">No members assigned.</p>
                     )}
-                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Available Staff (click to add)</div>
+                    <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Available Staff (click to add)</div>
                     <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto p-1">
                       {activeStaffNames.filter((m) => {
                         const norm = (s: string) => s.trim().toLowerCase();
@@ -1834,7 +1835,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Portal Access (who can log in on tablet)</div>
+                    <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Portal Access (who can log in on tablet)</div>
                     {crewPortalMembers.filter((m) => m.team_id === team.id && m.is_active).length === 0 ? (
                       <p className="text-[11px] text-[var(--tx3)]">No one with portal access on this team. Use “+ Add Portal Access” above.</p>
                     ) : (
@@ -1871,7 +1872,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                   </div>
                   {/* Tablet phone, linked to the crew's registered device */}
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Tablet Phone (customer-facing)</div>
+                    <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Tablet Phone (customer-facing)</div>
                     <p className="text-[10px] text-[var(--tx3)] mb-2">
                       The phone number is linked to this team&apos;s registered tablet. Customers on the live tracking page call this number directly.
                       {" "}<button type="button" onClick={() => { const el = document.getElementById("tab-devices"); if (el) el.click(); }} className="text-[var(--gold)] font-semibold hover:underline">Manage in Devices tab &rarr;</button>
@@ -2034,6 +2035,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {activeTab === "devices" && (
         <div className="space-y-6">
           <FleetVehiclesManager />
+          <EquipmentDashboard />
           <DeviceSetupCodes />
           <TruckAssignments />
         </div>
@@ -2122,7 +2124,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             );
           })}
           <div className="pt-4 mt-4 border-t border-[var(--brd)]">
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Google Review URL</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Google Review URL</label>
             <p className="text-[11px] text-[var(--tx3)] mb-2">Link customers are redirected to when they click the review button in emails</p>
             <div className="flex gap-2">
               <input
@@ -2222,9 +2224,6 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             <div className="py-8 text-center text-[13px] text-[var(--tx3)]">Loading users…</div>
           ) : users.length === 0 ? (
             <div className="py-10 px-4 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--gdim)] border border-[rgba(201,169,98,0.25)] mb-4">
-                <Icon name="users" className="w-6 h-6 text-[var(--gold)]" />
-              </div>
               <p className="text-[var(--text-base)] font-medium text-[var(--tx)] mb-1">No users yet</p>
               <p className="text-[12px] text-[var(--tx3)] mb-5 max-w-[260px] mx-auto">Invite team members to give them access to the platform. They&apos;ll receive an email to sign in and get started.</p>
               <button
@@ -2275,7 +2274,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       <ModalOverlay open={addTeamModalOpen} onClose={() => setAddTeamModalOpen(false)} title="Add Team" maxWidth="md">
         <div className="p-5 space-y-5">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team name</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Team name</label>
             <input
               value={addTeamName}
               onChange={(e) => setAddTeamName(e.target.value)}
@@ -2284,7 +2283,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Team members</label>
+            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-3">Team members</label>
             <div className="flex flex-wrap gap-3 max-h-44 overflow-y-auto p-1 -m-1">
               {activeStaffNames.map((m) => (
                 <label key={m} className="flex items-center gap-1.5 cursor-pointer group py-1.5 px-2 rounded-lg hover:bg-[var(--bg)]/50 transition-colors">
@@ -2423,7 +2422,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
         {editingStaff && (
           <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleEditStaff(); }}>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Name</label>
               <input
                 type="text"
                 value={editStaffName}
@@ -2432,7 +2431,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Role</label>
               <select
                 value={editStaffRole}
                 onChange={(e) => setEditStaffRole(e.target.value)}
@@ -2447,7 +2446,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Phone</label>
               <input
                 type="tel"
                 value={editStaffPhone}
@@ -2457,7 +2456,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Email</label>
               <input
                 type="email"
                 value={editStaffEmail}
@@ -2467,7 +2466,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Hourly Rate ($)</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Hourly Rate ($)</label>
               <input
                 type="number"
                 step="0.50"
@@ -2479,7 +2478,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Specialties</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Specialties</label>
               <div className="flex flex-wrap gap-1.5">
                 {["Piano", "Art Handling", "Heavy Lift", "Fragile Items", "Electronics", "Disassembly", "Packing", "Office Moves"].map((sp) => {
                   const slug = sp.toLowerCase().replace(/\s+/g, "_");
@@ -2608,7 +2607,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               Set a new 6-digit PIN for <strong>{resetPinMember.name}</strong>. They will use it to log in to the Crew Portal.
             </p>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New PIN (6 digits)</label>
+              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">New PIN (6 digits)</label>
               <input
                 type="password"
                 inputMode="numeric"
@@ -2656,7 +2655,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             </p>
             {teamDeleteBlocked.moves.length > 0 && (
               <div>
-                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Moves</div>
+                <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Moves</div>
                 <ul className="space-y-3">
                   {teamDeleteBlocked.moves.map((job) => {
                     const key = `m-${job.id}`;
@@ -2736,7 +2735,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
             )}
             {teamDeleteBlocked.deliveries.length > 0 && (
               <div>
-                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Deliveries</div>
+                <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Deliveries</div>
                 <ul className="space-y-3">
                   {teamDeleteBlocked.deliveries.map((job) => {
                     const key = `d-${job.id}`;

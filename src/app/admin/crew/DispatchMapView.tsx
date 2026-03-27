@@ -345,7 +345,7 @@ export default function DispatchMapView() {
         <div className={view === "map" ? "" : "lg:col-span-3"}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-[var(--brd)]">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--tx3)]">
+              <div className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx3)]">
                 Active Jobs ({sessions.length})
               </div>
             </div>

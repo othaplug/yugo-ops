@@ -8,7 +8,7 @@ ALTER TABLE public.registered_devices ADD COLUMN IF NOT EXISTS phone TEXT;
 INSERT INTO public.platform_config (key, value, description) VALUES
   ('company_website', '', 'Company website URL'),
   ('dispatch_phone', '', 'Dispatch phone number shown on crew portal and tracking pages'),
-  ('notifications_from_email', 'notifications@opsplus.co', 'Email address used as the From address for outbound emails'),
+  ('notifications_from_email', 'notifications@helloyugo.com', 'Email address used as the From address for outbound emails'),
   ('admin_notification_email', '', 'Email that receives admin alerts (tips, payment failures, etc.)'),
   ('company_social_instagram', '', 'Instagram profile URL'),
   ('company_social_facebook', '', 'Facebook page URL'),

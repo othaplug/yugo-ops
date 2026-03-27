@@ -13,7 +13,6 @@ import { createButtonBaseClass } from "./components/CreateButton";
 import {
   Plus,
   CaretRight,
-  CalendarBlank,
   ArrowUpRight,
   ArrowsClockwise,
   CloudRain,
@@ -512,7 +511,7 @@ export default function AdminPageClient({
               </button>
               {quickActionsOpen && (
                 <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
-                  <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 px-4 pt-2 pb-1.5">Create</p>
+                  <p className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 px-4 pt-2 pb-1.5">Create</p>
                   {[
                     { href: "/admin/quotes/new", label: "New Quote" },
                     { href: "/admin/moves/new", label: "New Move" },
@@ -528,7 +527,7 @@ export default function AdminPageClient({
                     </Link>
                   ))}
                   <div className="border-t border-[var(--brd)]/50 my-1" />
-                  <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 px-4 pt-1.5 pb-1.5">Navigate</p>
+                  <p className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 px-4 pt-1.5 pb-1.5">Navigate</p>
                   {[
                     { href: "/admin/deliveries", label: "Deliveries" },
                     { href: "/admin/reports", label: "Reports" },
@@ -572,7 +571,7 @@ export default function AdminPageClient({
             className="flex items-center gap-2 group w-full text-left"
           >
             <Lightning size={14} className="text-[var(--gold)]" weight="duotone" aria-hidden />
-            <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]">Daily Brief</span>
+            <span className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--gold)]">Daily Brief</span>
             <CaretRight
               weight="regular"
               className={`w-2.5 h-2.5 text-[var(--gold)]/50 transition-transform duration-200 ${briefOpen ? "rotate-90" : ""}`}
@@ -594,7 +593,7 @@ export default function AdminPageClient({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
             </span>
-            <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--gold)]">Live</span>
+            <span className="text-[10px] font-bold tracking-wider capitalize text-[var(--gold)]">Live</span>
           </div>
           {liveSessions.map((s) => (
             <Link
@@ -642,7 +641,7 @@ export default function AdminPageClient({
                     <span className="text-[10px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">
                       {formatMoveDate(job.date)}
                     </span>
-                    <span className={`text-[9px] font-bold uppercase ${job.type === "move" ? "text-[#3B82F6]/80" : "text-[var(--org)]/80"}`}>
+                    <span className={`text-[9px] font-bold capitalize ${job.type === "move" ? "text-[#3B82F6]/80" : "text-[var(--org)]/80"}`}>
                       {job.type}
                     </span>
                     <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">{job.name}</span>
@@ -751,7 +750,7 @@ export default function AdminPageClient({
                         <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${statusStyle}`}>
                           {statusLabel}
                         </span>
-                        <span className={`text-[9px] font-semibold uppercase tracking-wide ${tagColor}`}>
+                        <span className={`text-[9px] font-semibold capitalize tracking-wide ${tagColor}`}>
                           {job.tag}
                         </span>
                       </div>
@@ -779,9 +778,6 @@ export default function AdminPageClient({
             </div>
           ) : (
             <div className="py-12 text-center">
-              <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto mb-4">
-                <CalendarBlank size={18} className="text-[var(--gold)]" />
-              </div>
               <div className="text-[var(--text-base)] font-semibold text-[var(--tx)] mb-1">No jobs scheduled</div>
               <p className="text-[12px] text-[var(--tx3)] mb-4">Get started by creating a quote or checking the calendar.</p>
               <div className="flex items-center justify-center gap-2">
@@ -799,7 +795,7 @@ export default function AdminPageClient({
           {todayJobs.length > 0 && upcomingJobs.length > 0 && (
             <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Coming up</h3>
+                <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Coming up</h3>
                 <Link href="/admin/deliveries" className="admin-view-all-link shrink-0">
                   All
                 </Link>
@@ -816,7 +812,7 @@ export default function AdminPageClient({
                     <span className="text-[11px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">{job.date ? formatMoveDate(job.date) : "TBD"}</span>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getJobLineColor(job) }} />
                     <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">{job.name}</span>
-                    <span className={`text-[9px] font-semibold uppercase ${upTagColor}`}>{job.tag}</span>
+                    <span className={`text-[9px] font-semibold capitalize ${upTagColor}`}>{job.tag}</span>
                   </Link>
                   );
                 })}
@@ -1099,7 +1095,7 @@ export default function AdminPageClient({
             <div className="pt-6 border-t border-[var(--brd)]/30">
               <Link href="/admin/invoices" className="group flex items-center justify-between py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/10 hover:border-[var(--red)]/30 transition-all cursor-pointer">
                 <div>
-                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--red)]/80">Overdue</div>
+                  <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--red)]/80">Overdue</div>
                   <div className="text-[18px] font-bold text-[var(--red)] tabular-nums group-hover:opacity-80 transition-opacity">{formatCompactCurrency(overdueAmount)}</div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1130,7 +1126,7 @@ export default function AdminPageClient({
                   const isFull = free === 0;
                   return (
                     <div key={day.date} className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] px-3 py-3 text-center">
-                      <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{day.label}</div>
+                      <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">{day.label}</div>
                       <div className="relative w-10 h-10 mx-auto mb-2">
                         <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
                           <circle cx="18" cy="18" r="15" fill="none" stroke="var(--brd)" strokeWidth="3" opacity="0.3" />

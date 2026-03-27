@@ -100,7 +100,7 @@ export default function DraftsClient() {
                   <span className="text-[13px] font-semibold text-[var(--tx)] truncate">
                     {draft.title}
                   </span>
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${TYPE_COLORS[draft.formType] ?? "bg-[var(--bg)] text-[var(--tx3)]"}`}>
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold capitalize tracking-wide ${TYPE_COLORS[draft.formType] ?? "bg-[var(--bg)] text-[var(--tx3)]"}`}>
                     {getDraftLabel(draft.formType)}
                   </span>
                 </div>

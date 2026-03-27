@@ -86,7 +86,11 @@ export async function POST(
       if (crew?.phone) {
         await sendSMS(
           normalizePhone(crew.phone),
-          `Yugo: Client declined extras. Do NOT load: ${declinedNote || "extra items"}. Proceed with original list.`,
+          [
+            `Yugo: Client declined extras.`,
+            `Do NOT load: ${declinedNote || "extra items"}.`,
+            `Proceed with original list.`,
+          ].join("\n\n"),
         );
       }
     }

@@ -141,15 +141,31 @@ export async function sendMoveReminderSms(params: {
 
   const fmtDate = formatMoveDate(params.moveDate);
   const firstName = params.clientName ? params.clientName.split(" ")[0] : "";
-  const greeting = firstName ? `Hi ${firstName}, ` : "";
+  const greet = firstName ? `Hi ${firstName},` : "Hi,";
 
   let body: string;
   if (params.reminderType === "confirmation") {
-    body = `Your Yugo move is confirmed for ${fmtDate}. Track your move details: ${params.trackingUrl}`;
+    body = [
+      greet,
+      `Your Yugo move is confirmed for ${fmtDate}.`,
+      `Track your move details:\n${params.trackingUrl}`,
+    ].join("\n\n");
   } else if (params.reminderType === "72hr") {
-    body = `${greeting}your move with Yugo is in 3 days (${fmtDate}).${params.scheduledTime ? ` Start time: ${params.scheduledTime}.` : ""} Questions? Call (647) 370-4525`;
+    const parts = [
+      greet,
+      `Your move with Yugo is in 3 days (${fmtDate}).`,
+      ...(params.scheduledTime ? [`Start time: ${params.scheduledTime}.`] : []),
+      `Questions? Call (647) 370-4525.`,
+    ];
+    body = parts.join("\n\n");
   } else {
-    body = `${greeting}your Yugo move is tomorrow! Crew of ${params.crewSize ?? "2-3"}${params.scheduledTime ? ` arriving ${params.scheduledTime}` : ""}. Track your move live: ${params.trackingUrl}`;
+    const crewLine = `Crew of ${params.crewSize ?? "2–3"}${params.scheduledTime ? `, arriving ${params.scheduledTime}` : ""}.`;
+    body = [
+      greet,
+      `Your Yugo move is tomorrow!`,
+      crewLine,
+      `Track your move live:\n${params.trackingUrl}`,
+    ].join("\n\n");
   }
 
   const result = await sendSMS(to, body);

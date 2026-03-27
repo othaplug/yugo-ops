@@ -1,5 +1,6 @@
 "use client";
 
+import { toTitleCase } from "@/lib/format-text";
 import Link from "next/link";
 import {
   CheckCircle as CheckCircle2,
@@ -42,23 +43,23 @@ export interface DispatchJob {
 }
 
 const STATUS_DOT: Record<string, { icon: React.ElementType; color: string; label: string }> = {
-  confirmed: { icon: Circle, color: "text-[#3B82F6]", label: "CONFIRMED" },
-  scheduled: { icon: Circle, color: "text-[#3B82F6]", label: "CONFIRMED" },
-  en_route: { icon: Circle, color: "text-[var(--grn)]", label: "EN ROUTE" },
-  en_route_to_pickup: { icon: Circle, color: "text-[var(--grn)]", label: "EN ROUTE" },
-  arrived_at_pickup: { icon: Circle, color: "text-[var(--grn)]", label: "LOADING" },
-  loading: { icon: Circle, color: "text-[var(--grn)]", label: "LOADING" },
-  en_route_to_destination: { icon: Circle, color: "text-[var(--grn)]", label: "IN TRANSIT" },
-  in_transit: { icon: Circle, color: "text-[var(--grn)]", label: "IN TRANSIT" },
-  arrived_at_destination: { icon: Circle, color: "text-[var(--grn)]", label: "UNLOADING" },
-  unloading: { icon: Circle, color: "text-[var(--grn)]", label: "UNLOADING" },
-  in_progress: { icon: Circle, color: "text-[var(--grn)]", label: "IN PROGRESS" },
-  dispatched: { icon: Circle, color: "text-[var(--org)]", label: "IN PROGRESS" },
-  completed: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "COMPLETED" },
-  delivered: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "COMPLETED" },
-  job_complete: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "COMPLETED" },
-  problem: { icon: AlertCircle, color: "text-[var(--red)]", label: "PROBLEM" },
-  delayed: { icon: AlertCircle, color: "text-[var(--red)]", label: "DELAYED" },
+  confirmed: { icon: Circle, color: "text-[#3B82F6]", label: "Confirmed" },
+  scheduled: { icon: Circle, color: "text-[#3B82F6]", label: "Confirmed" },
+  en_route: { icon: Circle, color: "text-[var(--grn)]", label: "En Route" },
+  en_route_to_pickup: { icon: Circle, color: "text-[var(--grn)]", label: "En Route" },
+  arrived_at_pickup: { icon: Circle, color: "text-[var(--grn)]", label: "Loading" },
+  loading: { icon: Circle, color: "text-[var(--grn)]", label: "Loading" },
+  en_route_to_destination: { icon: Circle, color: "text-[var(--grn)]", label: "In Transit" },
+  in_transit: { icon: Circle, color: "text-[var(--grn)]", label: "In Transit" },
+  arrived_at_destination: { icon: Circle, color: "text-[var(--grn)]", label: "Unloading" },
+  unloading: { icon: Circle, color: "text-[var(--grn)]", label: "Unloading" },
+  in_progress: { icon: Circle, color: "text-[var(--grn)]", label: "In Progress" },
+  dispatched: { icon: Circle, color: "text-[var(--org)]", label: "In Progress" },
+  completed: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "Completed" },
+  delivered: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "Completed" },
+  job_complete: { icon: CheckCircle2, color: "text-[var(--grn)]", label: "Completed" },
+  problem: { icon: AlertCircle, color: "text-[var(--red)]", label: "Problem" },
+  delayed: { icon: AlertCircle, color: "text-[var(--red)]", label: "Delayed" },
 };
 
 const IN_PROGRESS_STATUSES = [
@@ -82,7 +83,7 @@ function isJobInProgress(status: string, stage: string | null): boolean {
 
 function getStatusInfo(status: string) {
   const s = (status || "").toLowerCase().replace(/-/g, "_");
-  return STATUS_DOT[s] || { icon: Circle, color: "text-[var(--tx3)]", label: (status || "-").replace(/_/g, " ").toUpperCase() };
+  return STATUS_DOT[s] || { icon: Circle, color: "text-[var(--tx3)]", label: toTitleCase(status || "-") };
 }
 
 function firstLine(addr: string) {
@@ -126,7 +127,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <StatusIcon className={`w-4 h-4 shrink-0 ${statusInfo.color}`} />
-          <span className={`text-[9px] font-bold tracking-wider uppercase ${statusInfo.color}`}>
+          <span className={`text-[9px] font-bold tracking-wider capitalize ${statusInfo.color}`}>
             {statusInfo.label}
           </span>
           <span className="text-[11px] font-mono text-[var(--tx2)]">{job.label}</span>
@@ -135,7 +136,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
           )}
         </div>
         <span
-          className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+          className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded capitalize tracking-wide ${
             job.type === "move"
               ? "bg-[#3B82F6]/15 text-[#3B82F6]"
               : "bg-[#A855F7]/15 text-[#A855F7]"
@@ -150,7 +151,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
         <User className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0" />
         <span className="text-[12px] font-semibold text-[var(--tx)]">{job.client}</span>
         {job.tier && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--tx3)] uppercase">
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--tx3)] capitalize">
             {job.tier}
           </span>
         )}

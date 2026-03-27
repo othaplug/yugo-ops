@@ -83,9 +83,12 @@ export async function GET(req: NextRequest) {
       if (daysOverdue <= 2 && !order.overdue_notified_day1 && order.client_phone) {
         await sendSMS(
           order.client_phone,
-          `Hi ${firstName}, your Yugo bin pickup was scheduled for ${scheduledDateStr}. ` +
-          `Please have bins stacked by the door. We'll attempt pickup tomorrow. ` +
-          `Questions? Call (647) 370-4525`,
+          [
+            `Hi ${firstName},`,
+            `Your Yugo bin pickup was scheduled for ${scheduledDateStr}.`,
+            `Please have bins stacked by the door. We'll attempt pickup tomorrow.`,
+            `Questions? Call (647) 370-4525`,
+          ].join("\n\n"),
         );
         await supabase.from("bin_orders").update({ overdue_notified_day1: true }).eq("id", order.id);
         results.day1Notified++;
@@ -95,9 +98,12 @@ export async function GET(req: NextRequest) {
       if (daysOverdue >= 3 && daysOverdue <= 5 && !order.overdue_notified_day2 && order.client_phone) {
         await sendSMS(
           order.client_phone,
-          `Hi ${firstName}, your Yugo bins (order ${order.order_number}) are overdue since ${scheduledDateStr}. ` +
-          `Late fees of $${lateFeePerDay}/day are now applying. ` +
-          `Please call (647) 370-4525 to arrange pickup.`,
+          [
+            `Hi ${firstName},`,
+            `Your Yugo bins (order ${order.order_number}) are overdue since ${scheduledDateStr}.`,
+            `Late fees of $${lateFeePerDay}/day are now applying.`,
+            `Please call (647) 370-4525 to arrange pickup.`,
+          ].join("\n\n"),
         );
 
         if (order.client_email) {
@@ -156,7 +162,12 @@ export async function GET(req: NextRequest) {
             if (order.client_phone && (daysOverdue === 1 || daysOverdue % 3 === 0)) {
               await sendSMS(
                 order.client_phone,
-                `Hi ${firstName}, your Yugo bin rental is ${daysOverdue} day(s) past pickup. Late fee: $${lateFeePerDay}/day. Schedule pickup: (647) 370-4525`,
+                [
+                  `Hi ${firstName},`,
+                  `Your Yugo bin rental is ${daysOverdue} day(s) past pickup.`,
+                  `Late fee: $${lateFeePerDay}/day.`,
+                  `Schedule pickup: (647) 370-4525`,
+                ].join("\n\n"),
               ).catch(() => {});
             }
 
@@ -207,9 +218,12 @@ export async function GET(req: NextRequest) {
         if (order.client_phone) {
           await sendSMS(
             order.client_phone,
-            `Your Yugo bin order ${order.order_number} has been closed after 30 days. ` +
-            `Replacement cost of $${replacementCost.toFixed(2)} has been charged. ` +
-            `Questions? (647) 370-4525`,
+            [
+              `Hi ${firstName},`,
+              `Your Yugo bin order ${order.order_number} has been closed after 30 days.`,
+              `Replacement cost of $${replacementCost.toFixed(2)} has been charged to the card on file.`,
+              `Questions? (647) 370-4525`,
+            ].join("\n\n"),
           ).catch(() => {});
         }
 

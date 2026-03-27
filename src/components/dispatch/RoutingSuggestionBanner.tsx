@@ -46,7 +46,7 @@ export default function RoutingSuggestionBanner({ date }: { date: string }) {
         <Lightbulb size={16} weight="fill" />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] mb-0.5">
+        <p className="text-[11px] font-bold capitalize tracking-wider text-[var(--gold)] mb-0.5">
           Routing Suggestion
         </p>
         <p className="text-[13px] font-semibold text-[var(--tx)]">{suggestion.suggestion}</p>

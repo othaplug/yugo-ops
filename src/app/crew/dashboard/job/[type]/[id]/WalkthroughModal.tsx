@@ -455,7 +455,7 @@ export default function WalkthroughModal({
                 </p>
               </div>
               <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 px-4 py-3 text-left">
-                <p className="text-[11px] font-bold text-[var(--gold)] uppercase tracking-wider mb-1">Remember</p>
+                <p className="text-[11px] font-bold text-[var(--gold)] capitalize tracking-wider mb-1">Remember</p>
                 <p className="text-[12px] text-[var(--tx2)]">
                   You cannot set or change prices. Just identify what's here and what's missing -
                   your coordinator will handle any price adjustments.
@@ -517,7 +517,7 @@ export default function WalkthroughModal({
                 roomGroups.map((group) => (
                   <div key={group.room} className="rounded-xl border border-[var(--brd)]/60 overflow-hidden">
                     <div className="px-3 py-2 bg-[var(--bg)]/80 border-b border-[var(--brd)]/40">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--gold)]">
+                      <span className="text-[10px] font-bold capitalize tracking-[0.14em] text-[var(--gold)]">
                         {group.room}
                       </span>
                     </div>
@@ -614,19 +614,20 @@ export default function WalkthroughModal({
                   {/* Search */}
                   {!selectedItem && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                      <label className="block text-[10px] font-semibold text-[var(--tx3)] capitalize tracking-wider mb-1">
                         Search item
                       </label>
                       <div className="relative">
                         <MagnifyingGlass
                           size={14}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]"
+                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx2)]"
+                          aria-hidden
                         />
                         <input
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="e.g. dining table, boxes…"
-                          className="w-full pl-8 pr-3 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] text-[13px] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/60"
+                          className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] text-[13px] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/60"
                         />
                         {searching && (
                           <CircleNotch size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] animate-spin" />
@@ -674,7 +675,7 @@ export default function WalkthroughModal({
                   {/* Custom item */}
                   {!selectedItem && customItemName && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                      <label className="block text-[10px] font-semibold text-[var(--tx3)] capitalize tracking-wider mb-1">
                         Item name
                       </label>
                       <input
@@ -682,7 +683,7 @@ export default function WalkthroughModal({
                         onChange={(e) => setCustomItemName(e.target.value)}
                         className="w-full px-3 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] text-[13px] outline-none"
                       />
-                      <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mt-3 mb-1">
+                      <label className="block text-[10px] font-semibold text-[var(--tx3)] capitalize tracking-wider mt-3 mb-1">
                         Weight
                       </label>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -706,7 +707,7 @@ export default function WalkthroughModal({
                   {/* Quantity */}
                   {(selectedItem || customItemName) && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">
+                      <label className="block text-[10px] font-semibold text-[var(--tx3)] capitalize tracking-wider mb-1">
                         Quantity
                       </label>
                       <div className="flex items-center gap-3">
@@ -762,22 +763,22 @@ export default function WalkthroughModal({
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
                   <p className="text-[20px] font-bold text-[#22C55E]">{matched}</p>
-                  <p className="text-[10px] text-[#22C55E]/70 uppercase tracking-wider mt-0.5">Matched</p>
+                  <p className="text-[10px] text-[#22C55E]/70 capitalize tracking-wider mt-0.5">Matched</p>
                 </div>
                 <div>
                   <p className="text-[20px] font-bold text-red-400">{missing}</p>
-                  <p className="text-[10px] text-red-400/70 uppercase tracking-wider mt-0.5">Missing</p>
+                  <p className="text-[10px] text-red-400/70 capitalize tracking-wider mt-0.5">Missing</p>
                 </div>
                 <div>
                   <p className="text-[20px] font-bold text-[var(--gold)]">{extraItems.length}</p>
-                  <p className="text-[10px] text-[var(--gold)]/70 uppercase tracking-wider mt-0.5">Extra</p>
+                  <p className="text-[10px] text-[var(--gold)]/70 capitalize tracking-wider mt-0.5">Extra</p>
                 </div>
               </div>
 
               {/* Extra items */}
               {extraItems.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">Extra Items</p>
+                  <p className="text-[10px] font-bold text-[var(--tx3)] capitalize tracking-wider mb-2">Extra Items</p>
                   <div className="space-y-1.5">
                     {extraItems.map((e, i) => (
                       <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--brd)]/50">
@@ -794,7 +795,7 @@ export default function WalkthroughModal({
               {/* Missing items (all flagged missing; move rows may show estimated credit) */}
               {items.filter((i) => i.status === "missing").length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">
+                  <p className="text-[10px] font-bold text-[var(--tx3)] capitalize tracking-wider mb-2">
                     {jobType === "move" ? "Missing Items (credit)" : "Missing Items"}
                   </p>
                   <div className="space-y-1.5">

@@ -83,7 +83,12 @@ export async function PATCH(req: NextRequest) {
         .toLocaleDateString("en-CA", { month: "short", day: "numeric" });
       sendSMS(
         order.client_phone,
-        `Your Yugo bins have been delivered! Start packing. We pick up on ${pickupDate}. Questions? Call (647) 370-4525`,
+        [
+          `Hi,`,
+          `Your Yugo bins have been delivered. Start packing.`,
+          `We pick up on ${pickupDate}.`,
+          `Questions? Call (647) 370-4525`,
+        ].join("\n\n"),
       ).catch(() => {});
     }
 
@@ -134,7 +139,11 @@ export async function PATCH(req: NextRequest) {
     } else if (order.client_phone) {
       sendSMS(
         order.client_phone,
-        `Your bins have been collected! Thanks for going green with Yugo. Need movers? liveyugo.com`,
+        [
+          `Hi,`,
+          `Your bins have been collected. Thanks for going green with Yugo.`,
+          `Need movers? https://helloyugo.com`,
+        ].join("\n\n"),
       ).catch(() => {});
     }
 

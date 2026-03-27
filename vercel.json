@@ -59,6 +59,14 @@
     {
       "path": "/api/cron/crew-eod-auto",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/quotes-expire-daily",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/data-integrity-weekly",
+      "schedule": "0 7 * * 1"
     }
   ]
 }

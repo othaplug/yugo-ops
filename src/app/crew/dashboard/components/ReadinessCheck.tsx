@@ -124,7 +124,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
             ))}
           </div>
           <div>
-            <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1.5 uppercase tracking-wider">
+            <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1.5 capitalize tracking-wider">
               Note (optional)
             </label>
             <input

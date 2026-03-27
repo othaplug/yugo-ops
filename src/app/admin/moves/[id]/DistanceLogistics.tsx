@@ -50,18 +50,18 @@ export default function DistanceLogistics({
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3 transition-colors">
-      <h3 className="font-heading text-[11px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
+      <h3 className="font-heading text-[11px] font-bold tracking-wide capitalize text-[var(--tx3)] mb-2">
         Distance & Logistics
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
         <div>
-          <span className="text-[10px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Distance</span>
+          <span className="text-[10px] font-medium tracking-widest capitalize text-[var(--tx3)]/70">Distance</span>
           <div className="text-[11px] font-medium text-[var(--tx)]">
             {!hasAddresses ? "Add addresses above" : loading ? "Loading…" : error ? error : distance ?? "-"}
           </div>
         </div>
         <div>
-          <span className="text-[10px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Drive Time</span>
+          <span className="text-[10px] font-medium tracking-widest capitalize text-[var(--tx3)]/70">Drive Time</span>
           <div className="text-[11px] font-medium text-[var(--tx)]">
             {!hasAddresses ? "-" : loading ? "Loading…" : error ? "-" : duration ?? "-"}
           </div>

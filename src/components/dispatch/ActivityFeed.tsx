@@ -11,7 +11,6 @@ import {
   Star,
   Warning as AlertTriangle,
   CheckCircle as CheckCircle2,
-  Radio,
 } from "@phosphor-icons/react";
 
 export interface DispatchEvent {
@@ -95,16 +94,11 @@ export default function ActivityFeed({ events, unseenIds, onMarkSeen }: Activity
     <div ref={containerRef} className="flex flex-col h-full min-h-0 -mx-1">
       <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-0.5 px-1 pr-2">
         {events.length === 0 ? (
-          <div className="py-16 sm:py-20 flex flex-col items-center gap-3 text-center">
-            <div className="w-10 h-10 rounded-full bg-[var(--gdim)] flex items-center justify-center">
-              <Radio className="w-5 h-5 text-[var(--tx3)]" />
-            </div>
-            <div>
-              <p className="text-[12px] font-semibold text-[var(--tx2)]">No activity yet</p>
-              <p className="text-[10px] text-[var(--tx3)] mt-0.5">
-                Events appear here as jobs progress
-              </p>
-            </div>
+          <div className="py-16 sm:py-20 flex flex-col items-center text-center px-2">
+            <p className="text-[12px] font-semibold text-[var(--tx2)]">No activity yet</p>
+            <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+              Events appear here as jobs progress
+            </p>
           </div>
         ) : (
           events.map((e) => {

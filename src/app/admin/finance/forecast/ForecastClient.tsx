@@ -149,7 +149,7 @@ export default function ForecastClient() {
       {/* ──── HEADER ──── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Finance</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Revenue Forecast</h1>
           <p className="text-[11px] text-[var(--tx3)] mt-2">Pipeline, capacity &amp; revenue projections</p>
         </div>
@@ -386,16 +386,16 @@ export default function ForecastClient() {
           <table className="w-full text-[11px]">
             <thead>
               <tr>
-                <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">
+                <th className="text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2">
                   Metric
                 </th>
-                <th className="text-right text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">
+                <th className="text-right text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2">
                   This Month
                 </th>
-                <th className="text-right text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">
+                <th className="text-right text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2">
                   Last Month
                 </th>
-                <th className="text-right text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">
+                <th className="text-right text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2">
                   Change
                 </th>
               </tr>
@@ -494,7 +494,7 @@ function PipelineCard({
 }) {
   return (
     <div className={`rounded-xl border p-4 ${bgClass}`}>
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-1">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60 mb-1">{label}</div>
       <div className={`text-2xl font-heading font-bold ${color}`}>{formatCurrency(total)}</div>
       {children}
     </div>

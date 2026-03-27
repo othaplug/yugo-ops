@@ -399,7 +399,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                       <button
                         type="button"
                         onClick={() => setCollapsedSections((prev) => ({ ...prev, [section.label]: !prev[section.label] }))}
-                        className="sidebar-nav-lift w-full flex items-center justify-between text-[9px] font-semibold tracking-[1.2px] uppercase text-[var(--tx3)] px-4 py-2 mx-2 rounded-lg font-heading hover:text-[var(--tx2)]"
+                        className="sidebar-nav-lift w-full flex items-center justify-between text-[9px] font-semibold tracking-[1.2px] capitalize text-[var(--tx3)] px-4 py-2 mx-2 rounded-lg font-heading hover:text-[var(--tx2)]"
                       >
                         {section.label}
                         <CaretDown
@@ -519,7 +519,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1) both" }}
                   >
                     <div className="px-4 pt-4 pb-1">
-                      <p className="text-[10px] font-bold tracking-[1.4px] uppercase text-[var(--tx3)]">Quick Create</p>
+                      <p className="text-[10px] font-bold tracking-[1.4px] capitalize text-[var(--tx3)]">Quick Create</p>
                     </div>
                     <div className="grid grid-cols-3 gap-px p-2">
                       {QUICK_ACTIONS.map((action) => (
@@ -568,7 +568,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                         <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
                           <ItemIcon />
                         </span>
-                        <span className="text-[9px] font-bold tracking-wide uppercase leading-none">{item.label}</span>
+                        <span className="text-[9px] font-bold tracking-wide capitalize leading-none">{item.label}</span>
                       </Link>
                     );
                   })}
@@ -588,7 +588,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     >
                       <Plus size={22} weight="regular" color="#fff" aria-hidden />
                     </button>
-                    <span className="mt-1 text-[9px] font-bold tracking-wide uppercase leading-none text-[var(--tx3)]">Create</span>
+                    <span className="mt-1 text-[9px] font-bold tracking-wide capitalize leading-none text-[var(--tx3)]">Create</span>
                   </div>
 
                   {/* Right two nav items */}
@@ -606,7 +606,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                         <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
                           <ItemIcon />
                         </span>
-                        <span className="text-[9px] font-bold tracking-wide uppercase leading-none">{item.label}</span>
+                        <span className="text-[9px] font-bold tracking-wide capitalize leading-none">{item.label}</span>
                       </Link>
                     );
                   })}
@@ -617,7 +617,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     className="flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation text-[var(--tx3)]"
                   >
                     <SquaresFour size={16} weight="regular" className="text-current" aria-hidden />
-                    <span className="text-[9px] font-bold tracking-wide uppercase leading-none">More</span>
+                    <span className="text-[9px] font-bold tracking-wide capitalize leading-none">More</span>
                   </button>
                 </div>
               </nav>

@@ -308,7 +308,7 @@ export default function TrackLiveMap({
           <p className="text-[13px] text-[#666] mb-4">Live tracking activates when your crew begins.</p>
           {scheduledStr && <p className="text-[12px] text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
           {move?.arrival_window && <p className="text-[12px] text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}
-          <p className="text-[11px] text-[#999] font-medium uppercase tracking-wider">Live signal off</p>
+          <p className="text-[11px] text-[#999] font-medium capitalize tracking-wider">Live signal off</p>
         </div>
       )}
 
@@ -479,7 +479,7 @@ export default function TrackLiveMap({
                   {/* Crew members */}
                   {crew?.members && crew.members.length > 0 && (
                     <div>
-                      <div className="text-[9px] font-bold tracking-wider uppercase text-[#999] mb-2">Your Team</div>
+                      <div className="text-[9px] font-bold tracking-wider capitalize text-[#999] mb-2">Your Team</div>
                       <div className="flex flex-wrap gap-2">
                         {crew.members.map((name, i) => (
                           <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#E7E5E4]">

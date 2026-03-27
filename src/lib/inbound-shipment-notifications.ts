@@ -168,7 +168,13 @@ export async function notifyInboundShipmentStakeholders(
       }
       if (row.customer_phone?.trim()) {
         const partnerName = row.partner_name || row.business_name || "your retailer";
-        const msg = `Hi ${row.customer_name?.split(" ")[0] || "there"}, your ${summary} from ${partnerName} is at Yugo and ready to deliver. We'll reach out to schedule. Questions: (647) 370-4525`;
+        const cn = row.customer_name?.split(" ")[0] || "there";
+        const msg = [
+          `Hi ${cn},`,
+          `Your ${summary} from ${partnerName} is at Yugo and ready to deliver.`,
+          `We'll reach out to schedule.`,
+          `Questions: (647) 370-4525`,
+        ].join("\n\n");
         try {
           await sendSMS(row.customer_phone.trim(), msg);
         } catch {

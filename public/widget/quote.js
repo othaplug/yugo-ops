@@ -3,7 +3,7 @@
 
   var WIDGET_URL = (document.currentScript && document.currentScript.src)
     ? new URL(document.currentScript.src).origin + "/widget/quote"
-    : "https://opsplus.co/widget/quote";
+    : "https://helloyugo.com/widget/quote";
 
   function createIframe(container) {
     var iframe = document.createElement("iframe");

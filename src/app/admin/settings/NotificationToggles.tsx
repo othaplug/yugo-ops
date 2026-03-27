@@ -148,7 +148,7 @@ export default function NotificationToggles() {
     <div className="space-y-5">
       {/* Master toggles */}
       <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-[var(--brd)]">
-        <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Master:</span>
+        <span className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]">Master:</span>
         {(["email", "sms", "push"] as const).map((ch) => {
           const on = masterState(ch);
           return (
@@ -172,7 +172,7 @@ export default function NotificationToggles() {
       {/* Category groups */}
       {grouped.map((group) => (
         <div key={group.category}>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{group.label}</div>
+          <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">{group.label}</div>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden divide-y divide-[var(--brd)]">
             {group.items.map((event) => {
               const pref = getPref(event.event_slug);

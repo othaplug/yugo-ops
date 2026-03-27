@@ -146,7 +146,7 @@ export default function ResidentialLayout({
                       </h3>
                       {isRecommended && (
                         <span
-                          className="uppercase text-[9px] font-bold tracking-wider"
+                          className="capitalize text-[9px] font-bold tracking-wider"
                           style={{
                             letterSpacing: "0.5px",
                             color: "#0A0A0A",

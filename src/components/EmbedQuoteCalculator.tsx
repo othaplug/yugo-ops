@@ -75,7 +75,7 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
     >
       {/* Header */}
       <div className="px-5 py-4" style={{ background: WINE }}>
-        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: GOLD, margin: "0 0 2px" }}>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "capitalize", color: GOLD, margin: "0 0 2px" }}>
           Yugo Moving
         </p>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: 0 }}>
@@ -90,7 +90,7 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
       <div className="px-5 py-5 space-y-4">
         {/* Move size */}
         <div>
-          <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: FOREST, opacity: 0.6, marginBottom: 8 }}>
+          <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "capitalize", color: FOREST, opacity: 0.6, marginBottom: 8 }}>
             Home Size
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
@@ -120,7 +120,7 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
         {/* Postal codes */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: FOREST, opacity: 0.6, marginBottom: 6 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "capitalize", color: FOREST, opacity: 0.6, marginBottom: 6 }}>
               From Postal
             </label>
             <input
@@ -143,7 +143,7 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
             />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: FOREST, opacity: 0.6, marginBottom: 6 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "capitalize", color: FOREST, opacity: 0.6, marginBottom: 6 }}>
               To Postal
             </label>
             <input
@@ -169,7 +169,7 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
 
         {/* Month */}
         <div>
-          <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: FOREST, opacity: 0.6, marginBottom: 6 }}>
+          <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "capitalize", color: FOREST, opacity: 0.6, marginBottom: 6 }}>
             When
           </label>
           <select
@@ -202,7 +202,7 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
               border: `1.5px solid ${GOLD}30`,
             }}
           >
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: GOLD, margin: "0 0 4px" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "capitalize", color: GOLD, margin: "0 0 4px" }}>
               Estimated Price
             </p>
             <p style={{ fontSize: 26, fontWeight: 700, color: WINE, margin: 0 }}>

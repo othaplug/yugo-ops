@@ -203,7 +203,7 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
 
       <form onSubmit={onSubmit} className="space-y-8">
         <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)]">Partner / sender</h2>
+          <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Partner / sender</h2>
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input type="radio" checked={mode === "partner"} onChange={() => setMode("partner")} />
@@ -264,7 +264,7 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
         </section>
 
         <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)]">Carrier</h2>
+          <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Carrier</h2>
           <div className="grid sm:grid-cols-2 gap-3">
             <select
               className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
@@ -302,7 +302,7 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
 
         <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)]">Items</h2>
+            <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Items</h2>
             <button
               type="button"
               onClick={() =>
@@ -379,7 +379,7 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
         </section>
 
         <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)]">End customer</h2>
+          <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">End customer</h2>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={!customerLater} onChange={() => setCustomerLater(false)} />
             Customer details available now
@@ -451,7 +451,7 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
         </section>
 
         <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)]">Service requirements</h2>
+          <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Service requirements</h2>
           <select
             className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
             value={serviceLevel}
@@ -518,7 +518,7 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
 
         <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)]">Pricing</h2>
+            <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Pricing</h2>
             <button
               type="button"
               onClick={() => void runSuggest()}

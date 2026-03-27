@@ -238,7 +238,7 @@ export default function InventoryChangeRequestModal({
                 </ul>
               )}
               <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: `${GOLD}30`, backgroundColor: `${GOLD}08` }}>
-                <div className="text-[9px] font-bold uppercase tracking-wider opacity-60" style={{ color: FOREST }}>
+                <div className="text-[9px] font-bold capitalize tracking-wider opacity-60" style={{ color: FOREST }}>
                   Can&apos;t find your item?
                 </div>
                 <input
@@ -271,7 +271,7 @@ export default function InventoryChangeRequestModal({
               </div>
               {added.length > 0 && (
                 <div>
-                  <div className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-2" style={{ color: FOREST }}>
+                  <div className="text-[9px] font-bold capitalize tracking-wider opacity-50 mb-2" style={{ color: FOREST }}>
                     Adding
                   </div>
                   <ul className="space-y-2">

@@ -84,7 +84,7 @@ export default function RescheduleDeliveryModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)]/30">
           <div>
-            <p className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]">
+            <p className="text-[9px] font-bold tracking-widest capitalize text-[var(--gold)]">
               Reschedule Delivery
             </p>
             <h2 className="admin-section-h2">
@@ -125,7 +125,7 @@ export default function RescheduleDeliveryModal({
 
               {/* Date picker */}
               <div>
-                <label className="block text-[11px] font-semibold tracking-widest uppercase text-[var(--tx3)] mb-2">
+                <label className="block text-[11px] font-semibold tracking-widest capitalize text-[var(--tx3)] mb-2">
                   New Date
                 </label>
                 <input
@@ -140,7 +140,7 @@ export default function RescheduleDeliveryModal({
 
               {/* Window picker */}
               <div>
-                <label className="block text-[11px] font-semibold tracking-widest uppercase text-[var(--tx3)] mb-2">
+                <label className="block text-[11px] font-semibold tracking-widest capitalize text-[var(--tx3)] mb-2">
                   Delivery Window
                 </label>
                 <div className="grid grid-cols-2 gap-2">

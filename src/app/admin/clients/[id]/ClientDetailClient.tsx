@@ -120,7 +120,7 @@ export default function ClientDetailClient({
       </button>
 
       <div className="mb-4">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">CRM · Client Profile</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60">CRM · Client Profile</p>
       </div>
 
       {/* Hero + actions */}
@@ -227,7 +227,7 @@ export default function ClientDetailClient({
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2.5 text-[10px] font-bold tracking-[0.08em] uppercase transition-all border-b-2 -mb-px ${
+              className={`px-4 py-2.5 text-[10px] font-bold tracking-[0.08em] capitalize transition-all border-b-2 -mb-px ${
                 activeTab === tab
                   ? "border-[var(--gold)] text-[var(--gold)]"
                   : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
@@ -283,11 +283,11 @@ export default function ClientDetailClient({
 
       {/* Overview + since */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Overview</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-3">Overview</div>
         <div className="grid md:grid-cols-2 gap-6">
           {partnerSince && (
             <div>
-              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{personaLabel} since</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">{personaLabel} since</div>
               <div className="text-[15px] font-bold font-heading text-[var(--tx)]">
                 {partnerSince.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 {partnerDuration && (
@@ -297,11 +297,11 @@ export default function ClientDetailClient({
             </div>
           )}
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Type" : "Partner type"}</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">{isClient ? "Type" : "Partner type"}</div>
             <div className="text-[13px] font-semibold text-[var(--tx)] capitalize">{isClient ? "Move" : (client.type ?? "-")}</div>
             {client.address && (
               <>
-                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mt-3 mb-1">Address</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mt-3 mb-1">Address</div>
                 <div className="text-[12px] text-[var(--tx2)]">{client.address}</div>
               </>
             )}
@@ -311,28 +311,28 @@ export default function ClientDetailClient({
 
       {/* High-level metrics */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Metrics</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-3">Metrics</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-6">
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Moves" : "Projects"}</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">{isClient ? "Moves" : "Projects"}</div>
             <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{isClient ? moves.length : deliveries.length}</div>
           </div>
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">AVG DEL</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">AVG DEL</div>
             <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "-"}</div>
           </div>
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total paid</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Total paid</div>
             <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
           </div>
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Outstanding</div>
             <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
               {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
             </div>
           </div>
           <div className="col-span-2 sm:col-span-1">
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoices</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Invoices</div>
             <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{allInvoices.length} <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span></div>
           </div>
         </div>
@@ -340,7 +340,7 @@ export default function ClientDetailClient({
 
       {/* Recent moves (B2C) or Recent projects (partners) */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
-        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">{isClient ? "Recent moves" : "Recent projects"}</h3>
+        <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-3">{isClient ? "Recent moves" : "Recent projects"}</h3>
         <div className="divide-y divide-[var(--brd)]/30 -mx-2">
           {isClient ? (
           moves.length === 0 ? (
@@ -383,7 +383,7 @@ export default function ClientDetailClient({
       {changeRequests.length > 0 && (
         <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Change requests</h3>
+            <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Change requests</h3>
             <Link href="/admin/change-requests" className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
               View all
             </Link>
@@ -418,7 +418,7 @@ export default function ClientDetailClient({
       {/* Invoices - click opens detail popup */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Invoices</h3>
+          <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Invoices</h3>
           {outstandingTotal > 0 && (
             <div className="text-[11px] font-semibold text-[var(--org)]">
               Outstanding: {formatCompactCurrency(outstandingTotal)}

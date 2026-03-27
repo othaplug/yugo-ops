@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CaretDown as ChevronDown, CaretRight as ChevronRight, CalendarX } from "@phosphor-icons/react";
+import { CaretDown as ChevronDown, CaretRight as ChevronRight } from "@phosphor-icons/react";
 import JobCard, { type DispatchJob } from "./JobCard";
 
 const ACTIVE_STATUSES = [
@@ -81,16 +81,11 @@ export default function DispatchSchedule({
       <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-3 px-1 pr-2">
 
         {showEmpty && (
-          <div className="py-16 sm:py-20 px-4 flex flex-col items-center gap-3 text-center">
-            <div className="w-12 h-12 rounded-full bg-[var(--gdim)] flex items-center justify-center">
-              <CalendarX className="w-6 h-6 text-[var(--tx3)]" />
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold text-[var(--tx2)]">No jobs scheduled</p>
-              <p className="text-[10px] text-[var(--tx3)] mt-1">
-                Use the date arrows above to check other days
-              </p>
-            </div>
+          <div className="py-16 sm:py-20 px-4 flex flex-col items-center text-center">
+            <p className="text-[13px] font-semibold text-[var(--tx2)]">No jobs scheduled</p>
+            <p className="text-[10px] text-[var(--tx3)] mt-1">
+              Use the date arrows above to check other days
+            </p>
           </div>
         )}
 
@@ -117,7 +112,7 @@ export default function DispatchSchedule({
                 ) : (
                   <ChevronRight className="w-4 h-4 text-[var(--tx3)] group-hover:text-[var(--tx2)] transition-colors" />
                 )}
-                <span className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)] group-hover:text-[var(--tx2)] transition-colors">
+                <span className="text-[11px] font-bold tracking-wider capitalize text-[var(--tx3)] group-hover:text-[var(--tx2)] transition-colors">
                   Completed
                 </span>
               </div>

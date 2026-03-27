@@ -70,7 +70,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
     <ModalOverlay open={open} onClose={onClose} title={isClient ? "Edit Client" : "Edit Partner"}>
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{isClient ? "Name *" : "Company Name *"}</label>
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">{isClient ? "Name *" : "Company Name *"}</label>
           <input
             type="text"
             value={name}
@@ -82,7 +82,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
         </div>
         {!isClient && (
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Partner Type *</label>
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Partner Type *</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
@@ -102,7 +102,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
         )}
         {!isClient && (
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Contact Name</label>
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Contact Name</label>
           <input
             type="text"
             value={contactName}
@@ -113,7 +113,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
         </div>
         )}
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Email *</label>
           <input
             type="email"
             value={email}
@@ -124,7 +124,7 @@ export default function EditPartnerModal({ open, onClose, client, onSaved }: Edi
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
+          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Phone</label>
           <input
             ref={phoneInput.ref}
             type="tel"

@@ -11,7 +11,7 @@ Copy `.env.example` to `.env.local` and configure. **Required for production:**
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
-| `NEXT_PUBLIC_APP_URL` | App base URL (e.g. https://app.opsplus.co) |
+| `NEXT_PUBLIC_APP_URL` | App base URL (e.g. https://helloyugo.com or https://app.helloyugo.com) |
 | `SUPER_ADMIN_EMAIL` | Superadmin email (must be set in production) |
 | `TRACK_SIGNING_SECRET` | Min 32 chars for track link HMAC |
 | `CREW_SESSION_SECRET` | Min 32 chars for crew PIN hashing and JWT |

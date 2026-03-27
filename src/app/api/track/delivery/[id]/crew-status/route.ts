@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { verifyTrackToken } from "@/lib/track-token";
+import { verifyDeliveryTrackAccess } from "@/lib/delivery-tracking-tokens";
 import { isUuid } from "@/lib/move-code";
 import { getDispatchPhone } from "@/lib/config";
 import { buildClientMainStepCompletedAt } from "@/lib/delivery-track-stage-times";
@@ -70,7 +70,8 @@ export async function GET(
           .single();
 
     if (!delivery) return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
-    if (!verifyTrackToken("delivery", delivery.id, token)) {
+    const ok = await verifyDeliveryTrackAccess(delivery.id, token);
+    if (!ok) {
       return NextResponse.json({ error: "Invalid or missing token" }, { status: 401 });
     }
 

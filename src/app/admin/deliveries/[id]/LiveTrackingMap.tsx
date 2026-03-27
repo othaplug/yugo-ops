@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { useTheme } from "@/app/admin/components/ThemeContext";
 import { toTitleCase } from "@/lib/format-text";
-import { Clock, CornersIn, CornersOut } from "@phosphor-icons/react";
+import { CornersIn, CornersOut } from "@phosphor-icons/react";
 import { TrackingFreshness } from "@/components/tracking/TrackingFreshness";
 
 const LiveTrackingMapLeaflet = dynamic(
@@ -423,9 +423,6 @@ export default function LiveTrackingMap({
   if (isDeliveryMode && !sessionActive && !loading) {
     return (
       <div className="px-6 py-8 text-center">
-        <div className="w-10 h-10 rounded-full bg-[var(--gdim)] flex items-center justify-center mx-auto mb-3">
-          <Clock size={20} className="text-[var(--tx3)]" aria-hidden />
-        </div>
         <p className="text-[12px] font-medium text-[var(--tx2)]">Crew assigned, waiting to start</p>
         <p className="text-[10px] text-[var(--tx3)] mt-1">
           Live tracking will activate when {crewName || "the crew"} starts this job and their GPS goes live

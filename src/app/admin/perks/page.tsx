@@ -151,23 +151,23 @@ function CreatePerkModal({
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Partner *</label>
+            <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Partner *</label>
             <select value={form.partner_id} onChange={(e) => set("partner_id", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" required>
               <option value="">Select a partner</option>
               {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Title *</label>
+            <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Title *</label>
             <input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. 10% off your first order" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Description</label>
+            <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Description</label>
             <textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={2} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none resize-none" />
           </div>
           <div className={`grid gap-3 ${["percentage_off", "dollar_off"].includes(form.offer_type) ? "grid-cols-2" : "grid-cols-1"}`}>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Offer Type</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Offer Type</label>
               <select value={form.offer_type} onChange={(e) => set("offer_type", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none">
                 <option value="percentage_off">% Off</option>
                 <option value="dollar_off">$ Off</option>
@@ -179,7 +179,7 @@ function CreatePerkModal({
             </div>
             {["percentage_off", "dollar_off"].includes(form.offer_type) && (
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">
+                <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">
                   {form.offer_type === "percentage_off" ? "% Value" : "$ Value"}
                 </label>
                 {form.offer_type === "dollar_off" ? (
@@ -195,31 +195,31 @@ function CreatePerkModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Code</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Code</label>
               <input value={form.redemption_code} onChange={(e) => set("redemption_code", e.target.value.toUpperCase())} placeholder="YUGO10" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] font-mono focus:border-[var(--gold)] outline-none" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Redemption URL</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Redemption URL</label>
               <input value={form.redemption_url} onChange={(e) => set("redemption_url", e.target.value)} placeholder="https://…" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Valid From</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Valid From</label>
               <input type="date" value={form.valid_from} onChange={(e) => set("valid_from", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Valid Until (blank = no expiry)</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Valid Until (blank = no expiry)</label>
               <input type="date" value={form.valid_until} onChange={(e) => set("valid_until", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Max Redemptions (blank = unlimited)</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Max Redemptions (blank = unlimited)</label>
               <input type="number" value={form.max_redemptions} onChange={(e) => set("max_redemptions", e.target.value)} placeholder="∞" className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Display Order</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Display Order</label>
               <input type="number" value={form.display_order} onChange={(e) => set("display_order", e.target.value)} className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] focus:border-[var(--gold)] outline-none" />
             </div>
           </div>
@@ -297,7 +297,7 @@ function CreatePromoReferralModal({
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Code *</label>
+            <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Code *</label>
             <input
               value={form.code}
               onChange={(e) => set("code", e.target.value.toUpperCase())}
@@ -308,7 +308,7 @@ function CreatePromoReferralModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Referrer credit ($)</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Referrer credit ($)</label>
               <input
                 type="number"
                 value={form.referrer_credit}
@@ -318,7 +318,7 @@ function CreatePromoReferralModal({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Referred discount ($)</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Referred discount ($)</label>
               <input
                 type="number"
                 value={form.referred_discount}
@@ -329,7 +329,7 @@ function CreatePromoReferralModal({
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Label (for display)</label>
+            <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Label (for display)</label>
             <input
               value={form.label}
               onChange={(e) => set("label", e.target.value)}
@@ -338,7 +338,7 @@ function CreatePromoReferralModal({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)] mb-1">Expires (optional)</label>
+            <label className="block text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)] mb-1">Expires (optional)</label>
             <input
               type="date"
               value={form.expires_at}
@@ -589,7 +589,7 @@ export default function PerksPage() {
     <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-6 animate-fade-up">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Growth</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Growth</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Perks & Referrals</h1>
         </div>
         {tab === "perks" && (
@@ -602,22 +602,22 @@ export default function PerksPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)] mb-6">
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Active Perks</p>
+          <p className="text-[9px] font-bold tracking-[0.16em] capitalize text-[var(--tx3)]/60 mb-2">Active Perks</p>
           <p className="text-[28px] font-bold font-heading leading-none text-[var(--grn)]">{activePerks}</p>
           <p className="text-[9px] text-[var(--tx3)] mt-1.5">{perks.length} total offers</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Referrals</p>
+          <p className="text-[9px] font-bold tracking-[0.16em] capitalize text-[var(--tx3)]/60 mb-2">Referrals</p>
           <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{referrals.length}</p>
           <p className="text-[9px] text-[var(--tx3)] mt-1.5">{activeReferrals} active codes</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Used (30d)</p>
+          <p className="text-[9px] font-bold tracking-[0.16em] capitalize text-[var(--tx3)]/60 mb-2">Used (30d)</p>
           <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{usedThisMonth}</p>
           <p className="text-[9px] text-[var(--tx3)] mt-1.5">redemptions</p>
         </div>
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">Conversion</p>
+          <p className="text-[9px] font-bold tracking-[0.16em] capitalize text-[var(--tx3)]/60 mb-2">Conversion</p>
           <p className="text-[28px] font-bold font-heading leading-none text-[var(--tx)]">{convRate}%</p>
           <p className="text-[9px] text-[var(--tx3)] mt-1.5">referral rate</p>
         </div>
@@ -627,7 +627,7 @@ export default function PerksPage() {
       {/* Tab bar */}
       <div className="flex gap-0 border-b border-[var(--brd)] mb-6">
         {TABS.map(({ key, label, Icon }) => (
-          <button key={key} onClick={() => setTab(key)} className={`flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-bold tracking-[0.08em] uppercase border-b-2 -mb-px transition-all ${tab === key ? "border-[var(--gold)] text-[var(--gold)]" : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"}`}>
+          <button key={key} onClick={() => setTab(key)} className={`flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-bold tracking-[0.08em] capitalize border-b-2 -mb-px transition-all ${tab === key ? "border-[var(--gold)] text-[var(--gold)]" : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"}`}>
             <Icon className="w-[13px] h-[13px]" />
             {label}
           </button>

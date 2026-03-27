@@ -85,7 +85,11 @@ export async function GET(req: NextRequest) {
         if (quote.client_phone) {
           await sendSMS(
             quote.client_phone,
-            `Hi ${firstName}, your Yugo moving quote is still available for 48 hours at the original price. View: ${quoteUrl}`
+            [
+              `Hi ${firstName},`,
+              `Your Yugo moving quote is still available for 48 hours at the original price.`,
+              `View your quote:\n${quoteUrl}`,
+            ].join("\n\n"),
           ).catch(() => {});
         }
       } else {

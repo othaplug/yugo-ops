@@ -229,7 +229,7 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
           {showAddresses && (
           <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
           <section className="space-y-2">
-            <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+            <h3 className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] flex items-center gap-2">
               <Icon name="mapPin" className="w-3.5 h-3.5 text-[var(--gold)]" />
               Location
             </h3>
@@ -287,7 +287,7 @@ export default function EditMoveDetailsModal({ open, onClose, section = null, mo
           {showAddresses && (
           <fieldset disabled={isCompleted} className={isCompleted ? "opacity-70" : ""}>
           <section className="space-y-4 pt-4 border-t border-[var(--brd)]/60">
-            <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] flex items-center gap-2">
+            <h3 className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] flex items-center gap-2">
               <Icon name="calendar" className="w-3.5 h-3.5 text-[var(--gold)]" />
               Schedule
             </h3>

@@ -133,13 +133,13 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]" />
+          <MagnifyingGlass size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--tx2)]" aria-hidden />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by order, client, address…"
-            className="w-full pl-8 pr-4 py-2.5 bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:outline-none focus:border-[var(--gold)]"
+            className="w-full rounded-lg border border-[var(--brd)] bg-[var(--card)] py-2.5 pl-10 pr-4 text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]"
           />
         </div>
         <select
@@ -167,7 +167,7 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
             <thead>
               <tr className="border-b border-[var(--brd)]">
                 {["Order", "Client", "Bundle", "Move Date", "Drop-off", "Pickup", "Status", "Total"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)]">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -243,7 +243,7 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
       <div className="flex items-center gap-2 mb-2">
         {icon}
-        <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">{label}</span>
+        <span className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)]">{label}</span>
       </div>
       <p className="text-[22px] font-bold" style={{ color }}>{value}</p>
     </div>

@@ -125,13 +125,20 @@ export function drawBottomAccentBar(doc: jsPDF, useWine = false): void {
 /**
  * Standard footer for all PDFs.
  */
-export function drawYugoFooter(doc: jsPDF, options: { y?: number } = {}): void {
+export function drawYugoFooter(
+  doc: jsPDF,
+  options: { y?: number; line?: string } = {},
+): void {
   const pageWidth = doc.internal.pageSize.getWidth();
   const y = options.y ?? 282;
+  const line =
+    options.line ||
+    process.env.COMPANY_PDF_FOOTER_LINE ||
+    "Professional moving services · Toronto, ON";
   doc.setFontSize(7);
   doc.setFont(FONT_BODY, "normal");
   doc.setTextColor(...GRAY);
-  doc.text("Yugo Technologies Inc. · Toronto, ON · helloyugo.com", pageWidth / 2, y, { align: "center" });
+  doc.text(line, pageWidth / 2, y, { align: "center" });
 }
 
 /**
