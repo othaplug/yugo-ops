@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import { NextRequest, NextResponse } from "next/server";
 
 function parseDevice(ua: string | null): string {
@@ -23,11 +24,12 @@ function parseDevice(ua: string | null): string {
 }
 
 function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    req.headers.get("x-real-ip") ||
-    "-"
-  );
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return req.headers.get("x-real-ip")?.trim() || "-";
 }
 
 export async function GET(req: NextRequest) {
@@ -41,6 +43,18 @@ export async function GET(req: NextRequest) {
 
     const email = (user.email || "").trim().toLowerCase();
     const admin = createAdminClient();
+
+    if (isSuperAdminEmail(user.email)) {
+      void Promise.resolve(
+        admin.from("login_history").insert({
+          user_id: user.id,
+          device: parseDevice(req.headers.get("user-agent")),
+          ip_address: getClientIp(req),
+          status: "success",
+        })
+      ).catch(() => {});
+      return NextResponse.json({ role: "admin" });
+    }
 
     // platform_users: role = access (client → client portal; admin/manager/dispatcher → admin)
     const { data: platformUser } = await supabase
@@ -60,7 +74,7 @@ export async function GET(req: NextRequest) {
       })).catch(() => {});
 
       if (role === "client") return NextResponse.json({ role: "client" });
-      if (["admin", "manager", "dispatcher", "coordinator", "viewer", "sales"].includes(role)) {
+      if (["owner", "admin", "manager", "dispatcher", "coordinator", "viewer", "sales"].includes(role)) {
         return NextResponse.json({ role: "admin" });
       }
     }

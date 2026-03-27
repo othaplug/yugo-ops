@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Eye, EyeSlash, Lock, Shield, MapPin, Calendar, ShareNetwork, Envelope } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
+import { resolveLoginPortal } from "@/lib/auth/resolve-login-portal";
 import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
 
@@ -38,18 +39,29 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
     }
     setLoading(true);
     setError("");
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: signData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (authError) {
       setError(authError.message);
       setLoading(false);
       return;
     }
-    const res = await fetch("/api/auth/role");
-    const { role } = await res.json();
-    if (role === "partner") {
-      try { await fetch("/api/partner/login-track", { method: "POST" }); } catch {}
+    if (!signData.user) {
+      setError("Sign-in did not return a user. Please try again.");
+      setLoading(false);
+      return;
+    }
+    const portal = await resolveLoginPortal(supabase, signData.user);
+    if (portal === "partner") {
+      try {
+        await fetch("/api/partner/login-track", { method: "POST" });
+      } catch {
+        /* best-effort */
+      }
       router.replace(redirectTo);
-    } else if (role === "admin") {
+    } else if (portal === "admin") {
       router.replace("/admin");
     } else {
       setError("This account doesn't have partner access. Please contact your account manager.");

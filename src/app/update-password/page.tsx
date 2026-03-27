@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { resolveLoginPortal } from "@/lib/auth/resolve-login-portal";
 import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
 import { Check, Eye, EyeSlash } from "@phosphor-icons/react";
@@ -54,10 +55,14 @@ export default function UpdatePasswordPage() {
 
     setSuccess(true);
     setTimeout(async () => {
-      const res = await fetch("/api/auth/role");
-      const { role } = await res.json();
-      if (role === "partner") router.push("/partner");
-      else if (role === "admin") router.push("/admin");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      const portal = await resolveLoginPortal(supabase, user);
+      if (portal === "partner") router.push("/partner");
+      else if (portal === "admin") router.push("/admin");
       else router.push("/login");
     }, 2000);
   };

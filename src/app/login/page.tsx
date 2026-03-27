@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { resolveLoginPortal } from "@/lib/auth/resolve-login-portal";
 import { useRouter, useSearchParams } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
 import { Eye, EyeSlash, EnvelopeSimple as Envelope } from "@phosphor-icons/react";
@@ -34,42 +35,28 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: signData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (authError) {
         setError(authError.message);
         return;
       }
-      // Let the browser commit Supabase auth cookies before the role route reads them.
-      await new Promise((r) => setTimeout(r, 0));
-
-      const ac = new AbortController();
-      const tid = window.setTimeout(() => ac.abort(), 25_000);
-      let res: Response;
-      try {
-        res = await fetch("/api/auth/role", { credentials: "same-origin", signal: ac.signal });
-      } finally {
-        window.clearTimeout(tid);
-      }
-      const text = await res.text();
-      let role: string | null | undefined;
-      try {
-        role = text ? (JSON.parse(text) as { role?: string | null }).role : null;
-      } catch {
-        setError("Could not verify your account. Please try again.");
-        await supabase.auth.signOut();
+      const user = signData.user;
+      if (!user) {
+        setError("Sign-in did not return a user. Please try again.");
         return;
       }
-      if (role === "client") router.replace("/client");
-      else if (role === "partner") router.replace("/partner");
+
+      const portal = await resolveLoginPortal(supabase, user);
+      if (portal === "client") router.replace("/client");
+      else if (portal === "partner") router.replace("/partner");
       else router.replace("/admin");
       router.refresh();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (/abort|timed?\s*out/i.test(msg)) {
-        setError("Sign-in is taking too long. Check your connection and try again.");
-      } else {
-        setError(msg || "Something went wrong. Please try again.");
-      }
+      setError(msg || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

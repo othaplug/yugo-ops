@@ -1,10 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import type { User } from "@supabase/supabase-js";
 
 export type AuthRole = "admin" | "partner" | "client" | null;
 
 export async function getAuthRole(user: User | null): Promise<AuthRole> {
   if (!user?.email) return null;
+
+  if (isSuperAdminEmail(user.email)) return "admin";
 
   const supabase = await createClient();
   const email = user.email.trim().toLowerCase();
@@ -17,7 +20,9 @@ export async function getAuthRole(user: User | null): Promise<AuthRole> {
     .single();
   if (platformUser) {
     if (platformUser.role === "client") return "client";
-    if (["admin", "manager", "dispatcher", "coordinator", "viewer", "sales"].includes(platformUser.role || "")) return "admin";
+    if (["owner", "admin", "manager", "dispatcher", "coordinator", "viewer", "sales"].includes(platformUser.role || "")) {
+      return "admin";
+    }
   }
 
   // 2. No platform_users or not staff: check if they are a client (move client only)

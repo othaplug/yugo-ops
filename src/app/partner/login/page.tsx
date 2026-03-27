@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { resolveLoginPortal } from "@/lib/auth/resolve-login-portal";
 import { useRouter, useSearchParams } from "next/navigation";
 import LoginForm from "./LoginForm";
 
@@ -18,10 +19,9 @@ export default function PartnerLoginPage() {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const res = await fetch("/api/auth/role");
-        const { role } = await res.json();
-        if (role === "partner") router.replace("/partner");
-        else if (role === "admin") router.replace("/admin");
+        const portal = await resolveLoginPortal(supabase, user);
+        if (portal === "partner") router.replace("/partner");
+        else if (portal === "admin") router.replace("/admin");
         else if (!errorParam) {
           // No error in URL: send to /partner; that page will redirect back to /partner/login?error=no_org if no org
           router.replace("/partner");
