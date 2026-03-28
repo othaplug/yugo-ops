@@ -259,9 +259,9 @@ export default function CrewReportsTab({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2" ref={filterRef}>
-          <div className="flex items-center gap-1.5">
+      <div className="flex w-full min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2" ref={filterRef}>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             {(["day", "week", "month", "year"] as const).map((p) => (
               <button
                 key={p}
@@ -360,6 +360,8 @@ export default function CrewReportsTab({
               </div>
             )}
           </div>
+        </div>
+        <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
           <button
             type="button"
             onClick={exportCSV}

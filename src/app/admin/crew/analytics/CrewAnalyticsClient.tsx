@@ -272,8 +272,8 @@ export default function CrewAnalyticsClient({
   return (
     <div className="max-w-[960px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       {/* Header */}
-      <div className="flex items-start justify-between mb-1">
-        <div>
+      <div className="mb-1 flex w-full min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Operations</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
             Crew Performance
@@ -281,7 +281,7 @@ export default function CrewAnalyticsClient({
         </div>
         <Link
           href="/admin/reports"
-          className="group inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-[var(--brd)]/60 bg-[var(--card)]/60 hover:border-[var(--gold)]/40 hover:bg-[var(--gold)]/5 transition-all duration-200 mt-0.5"
+          className="group inline-flex shrink-0 items-center gap-2 self-start rounded-xl border border-[var(--brd)]/60 bg-[var(--card)]/60 px-3.5 py-2 transition-all duration-200 hover:border-[var(--gold)]/40 hover:bg-[var(--gold)]/5 sm:mt-0.5"
         >
           <FileText size={13} weight="duotone" className="text-[var(--gold)] shrink-0" aria-hidden />
           <span className="text-[11px] font-semibold text-[var(--tx2)] group-hover:text-[var(--gold)] transition-colors whitespace-nowrap">

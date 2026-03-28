@@ -277,24 +277,24 @@ export default function DispatchBoardClient({ today }: Props) {
         </div>
 
         {/* Row 2: Date navigator + secondary controls */}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 w-full min-w-0">
 
-          {/* Date nav */}
-          <div className="flex items-center gap-1">
+          {/* Date nav — full width on mobile (center control grows), compact from md */}
+          <div className="flex flex-1 min-w-0 items-center gap-1 md:flex-initial">
             <button
               type="button"
               onClick={() => setDate(prevDate)}
-              className="admin-btn-icon"
+              className="admin-btn-icon shrink-0"
               aria-label="Previous day"
             >
               <ChevronLeft weight="bold" className="w-3 h-3" />
             </button>
 
-            <div className="relative">
+            <div className="relative min-w-0 flex-1 md:flex-initial md:w-auto">
               <button
                 type="button"
                 onClick={() => dateInputRef.current?.showPicker?.()}
-                className="admin-btn admin-btn-ghost"
+                className="admin-btn admin-btn-ghost w-full min-w-0 justify-center md:w-auto"
               >
                 <CalendarDays weight="regular" className="w-3 h-3 shrink-0 opacity-70" />
                 <span className="hidden sm:inline">{shortDate}</span>
@@ -315,7 +315,7 @@ export default function DispatchBoardClient({ today }: Props) {
               <button
                 type="button"
                 onClick={() => setDate(today)}
-                className="admin-btn admin-btn-ghost"
+                className="admin-btn admin-btn-ghost shrink-0"
               >
                 Today
               </button>
@@ -324,7 +324,7 @@ export default function DispatchBoardClient({ today }: Props) {
             <button
               type="button"
               onClick={() => setDate(nextDate)}
-              className="admin-btn-icon"
+              className="admin-btn-icon shrink-0"
               aria-label="Next day"
             >
               <ChevronRight weight="bold" className="w-3 h-3" />
@@ -332,7 +332,7 @@ export default function DispatchBoardClient({ today }: Props) {
           </div>
 
           {/* Secondary: auto-refresh (desktop only) + refresh */}
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <label className="hidden md:flex items-center gap-1.5 text-[10px] font-medium text-[var(--tx3)] cursor-pointer select-none">
               <input
                 type="checkbox"

@@ -42,7 +42,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[min(220px,calc(100vw-2rem))] max-w-[220px] bg-[var(--bg2)] border border-[var(--brd)] rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-up">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[min(220px,calc(100dvw-1.5rem))] max-w-[220px] overflow-hidden rounded-xl border border-[var(--brd)] bg-[var(--bg2)] shadow-2xl animate-fade-up">
           <div className="px-4 py-3 border-b border-[var(--brd)]">
             <div className="text-[12px] font-semibold text-[var(--tx)] truncate">{user?.email}</div>
             <div className="text-[9px] text-[var(--tx3)]">Administrator</div>

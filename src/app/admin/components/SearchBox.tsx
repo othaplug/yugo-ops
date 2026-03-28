@@ -111,12 +111,14 @@ export default function SearchBox() {
   }, [query, search]);
 
   return (
-    <div ref={ref} className="relative flex-1 min-w-0">
-      <div className="flex items-center gap-2 h-9 bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 w-full transition-colors duration-200">
+    <div ref={ref} className="relative min-w-0 flex-1">
+      <div className="flex h-9 w-full min-w-0 items-center gap-1.5 rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2 sm:gap-2 sm:px-3 transition-colors duration-200">
         <span className="text-[var(--tx3)] shrink-0"><Icon name="search" className="w-[14px] h-[14px]" /></span>
         <input
           type="text"
-          placeholder="Search DLV-0255, PRJ-0001, moves, clients…"
+          placeholder="Search…"
+          title="Search moves, deliveries, quotes, clients"
+          aria-label="Search moves, deliveries, quotes, clients"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}

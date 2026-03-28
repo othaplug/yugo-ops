@@ -449,6 +449,7 @@ function CrewPopup({
   onClose: () => void;
   onViewJob: (href: string) => void;
 }) {
+  const [sheetExpanded, setSheetExpanded] = useState(true);
   const status = effectiveTrackingStatus(crew, crewLocation, session);
   const speedKmh = crewLocation?.speed != null ? Math.round(Number(crewLocation.speed) * 3.6) : null;
   const offMin = getOfflineMinutes(crewLocation?.updated_at || crew.updated_at);
@@ -470,10 +471,24 @@ function CrewPopup({
 
   return (
     <div
-      className="fixed sm:absolute bottom-0 sm:top-4 left-0 right-0 sm:left-auto sm:right-4 sm:bottom-auto w-full sm:w-[340px] max-h-[70vh] sm:max-h-[480px] overflow-y-auto bg-[var(--card)] border-t sm:border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl p-5 shadow-xl z-30 animate-fade-up"
+      className={`fixed sm:absolute bottom-0 sm:top-4 left-0 right-0 sm:left-auto sm:right-4 sm:bottom-auto w-full sm:w-[340px] flex flex-col overflow-hidden bg-[var(--card)] border-t sm:border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl shadow-xl z-30 animate-fade-up transition-[height,max-height] duration-300 ease-out ${
+        sheetExpanded ? "max-sm:h-[min(70vh,720px)]" : "max-sm:h-[38vh]"
+      } sm:max-h-[480px] sm:h-auto`}
       role="dialog"
       aria-label="Crew details"
     >
+      <div className="sm:hidden shrink-0 flex justify-center pt-2.5 pb-1">
+        <button
+          type="button"
+          onClick={() => setSheetExpanded((e) => !e)}
+          aria-expanded={sheetExpanded}
+          aria-label={sheetExpanded ? "Collapse crew details" : "Expand crew details"}
+          className="flex w-full max-w-[120px] items-center justify-center rounded-lg py-1.5 touch-manipulation active:bg-[var(--bg)]/50"
+        >
+          <span className="h-1 w-9 rounded-full bg-[var(--tx3)]/45" aria-hidden />
+        </button>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-5 pt-0 sm:pt-5">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-3">
           <div
@@ -552,6 +567,7 @@ function CrewPopup({
           View Job Details →
         </Link>
       )}
+      </div>
     </div>
   );
 }
@@ -582,6 +598,7 @@ export default function UnifiedTrackingView({
   const [crewLocations, setCrewLocations] = useState<Map<string, CrewLocation>>(new Map());
   const [routeLines, setRouteLines] = useState<Map<string, [number, number][]>>(new Map());
   const [activePanel, setActivePanel] = useState<"jobs" | "teams">("jobs");
+  const [jobsPanelExpanded, setJobsPanelExpanded] = useState(true);
   const [relativeTimeTick, setRelativeTimeTick] = useState(0);
 
   // Tick to refresh relative times
@@ -808,9 +825,24 @@ export default function UnifiedTrackingView({
         </div>
 
         {/* Bottom panel: Active Jobs + Teams, full-width bottom sheet on mobile, floating card on desktop */}
-        <div className="absolute bottom-0 left-0 right-0 sm:bottom-3 sm:left-3 sm:right-auto z-10 w-full sm:w-[360px] max-h-[46vh] sm:max-h-[55vh] bg-[var(--card)]/97 border-t sm:border border-[var(--brd)] sm:rounded-xl backdrop-blur-sm shadow-lg overflow-hidden flex flex-col rounded-t-2xl sm:rounded-xl">
+        <div
+          className={`absolute bottom-0 left-0 right-0 sm:bottom-3 sm:left-3 sm:right-auto z-10 w-full sm:w-[360px] flex flex-col overflow-hidden bg-[var(--card)]/97 border-t sm:border border-[var(--brd)] sm:rounded-xl backdrop-blur-sm shadow-lg rounded-t-2xl sm:rounded-xl transition-[height,max-height] duration-300 ease-out ${
+            jobsPanelExpanded ? "max-sm:h-[46vh]" : "max-sm:h-[30vh]"
+          } sm:max-h-[55vh] sm:h-auto`}
+        >
+          <div className="sm:hidden shrink-0 flex justify-center pt-2.5 pb-0.5">
+            <button
+              type="button"
+              onClick={() => setJobsPanelExpanded((e) => !e)}
+              aria-expanded={jobsPanelExpanded}
+              aria-label={jobsPanelExpanded ? "Collapse jobs and teams panel" : "Expand jobs and teams panel"}
+              className="flex w-full max-w-[120px] items-center justify-center rounded-lg py-1.5 touch-manipulation active:bg-[var(--bg)]/40"
+            >
+              <span className="h-1 w-9 rounded-full bg-[var(--tx3)]/45" aria-hidden />
+            </button>
+          </div>
           {/* Panel tabs */}
-          <div className="flex border-b border-[var(--brd)]">
+          <div className="flex shrink-0 border-b border-[var(--brd)]">
             <button
               type="button"
               onClick={() => setActivePanel("jobs")}
@@ -835,7 +867,7 @@ export default function UnifiedTrackingView({
           </div>
 
           {/* Panel content */}
-          <div className="overflow-y-auto max-h-[45vh]">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain sm:flex-initial sm:max-h-[45vh]">
             {activePanel === "jobs" && (
               <>
                 {/* Live sessions */}
@@ -1077,6 +1109,7 @@ export default function UnifiedTrackingView({
         {/* Crew detail popup */}
         {selectedCrewData && (
           <CrewPopup
+            key={selectedCrewData.id}
             crew={selectedCrewData}
             crewLocation={crewLocations.get(selectedCrewData.id)}
             session={activeSessions.find((s) => s.teamId === selectedCrewData.id)}
