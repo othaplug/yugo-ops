@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEFAULT_PM_RATE_CARD } from "./pm-rate-card-defaults";
+import { seedPmRateMatrixFromDefaults } from "./seed-pm-rate-matrix";
 
 export type PmPropertyInput = {
   building_name: string;
@@ -97,5 +98,14 @@ export async function provisionPmPartnerPortfolio(
     return { contractId: null };
   }
 
-  return { contractId: (contractRow as { id: string })?.id ?? null };
+  const contractId = (contractRow as { id: string })?.id ?? null;
+  if (contractId && input.contract_type === "fixed_rate" && rateCard) {
+    const { count } = await admin
+      .from("pm_rate_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("contract_id", contractId);
+    if ((count ?? 0) === 0) await seedPmRateMatrixFromDefaults(admin, contractId);
+  }
+
+  return { contractId };
 }
