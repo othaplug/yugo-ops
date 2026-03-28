@@ -9,6 +9,7 @@ export type PartnerVertical =
   | "art_gallery" | "antique_dealer"
   | "hospitality"
   | "medical_equipment" | "av_technology" | "appliances"
+  | "property_management_residential" | "property_management_commercial" | "developer_builder"
   | "realtor" | "property_manager" | "developer";
 
 export type PartnerProfile = "delivery" | "referral";
@@ -65,6 +66,15 @@ export const PARTNER_SEGMENT_GROUPS: {
           { value: "appliances", label: "Appliances" },
         ],
       },
+      {
+        label: "Property & Portfolio",
+        templateSlug: "property_management",
+        verticals: [
+          { value: "property_management_residential", label: "Property Management (Residential)" },
+          { value: "property_management_commercial", label: "Property Management (Commercial)" },
+          { value: "developer_builder", label: "Developer / Builder" },
+        ],
+      },
     ],
   },
   {
@@ -109,6 +119,17 @@ VERTICAL_LABELS["gallery"] = "Gallery";
 
 const REFERRAL_VERTICALS = new Set<string>(["realtor", "property_manager", "developer"]);
 
+/** Delivery-profile verticals that use the property management partner portal (contracts, buildings, PM moves). */
+export const PM_DELIVERY_VERTICALS = new Set<string>([
+  "property_management_residential",
+  "property_management_commercial",
+  "developer_builder",
+]);
+
+export function isPropertyManagementDeliveryVertical(type: string): boolean {
+  return PM_DELIVERY_VERTICALS.has(resolveVertical(type));
+}
+
 const LEGACY_TYPE_MAP: Record<string, PartnerVertical> = {
   retail: "furniture_retailer",
   designer: "interior_designer",
@@ -123,6 +144,7 @@ export function resolveVertical(raw: string): string {
 
 export function getPartnerProfile(type: string): PartnerProfile {
   const v = resolveVertical(type);
+  if (PM_DELIVERY_VERTICALS.has(v)) return "delivery";
   return REFERRAL_VERTICALS.has(v) ? "referral" : "delivery";
 }
 
@@ -133,17 +155,19 @@ export function getPartnerFeatures(type: string) {
   const isReferral = profile === "referral";
 
   const isDesigner = v === "interior_designer" || v === "designer";
+  const isPmPortal = PM_DELIVERY_VERTICALS.has(v);
   return {
-    canCreateDelivery: isDelivery,
+    canCreateDelivery: isDelivery && !isPmPortal,
     canSubmitReferral: isReferral,
     showProjects: v === "interior_designer" || v === "art_gallery" || v === "designer",
-    showDayRates: !isDesigner,
+    showDayRates: !isDesigner && !isPmPortal,
     showCommission: isReferral,
     showMoves: v === "interior_designer",
-    showDeliveries: isDelivery,
+    showDeliveries: isDelivery && !isPmPortal,
     showReferrals: isReferral,
     showVendorReceiving: v === "interior_designer",
     showMaterials: isReferral,
+    showPropertyManagementPortal: isPmPortal,
   };
 }
 

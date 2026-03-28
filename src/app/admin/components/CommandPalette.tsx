@@ -10,6 +10,14 @@ import { runAdminEntitySearch } from "@/lib/admin-search";
 
 const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () => ReactElement }[] }[] = [
   {
+    group: "Leads",
+    items: [
+      { name: "Leads Dashboard", href: "/admin/leads", Icon: Icons.funnel },
+      { name: "All Leads", href: "/admin/leads/all", Icon: Icons.clipboardList },
+      { name: "My Leads", href: "/admin/leads/mine", Icon: Icons.userCheck },
+    ],
+  },
+  {
     group: "Operations",
     items: [
       { name: "Command Center", href: "/admin", Icon: Icons.home },

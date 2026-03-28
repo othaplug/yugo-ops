@@ -23,6 +23,7 @@ import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import { ScheduleDeliveryButton, ScheduleMoveItem } from "../../components/ScheduleItem";
+import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
 
 interface MoveRow {
   id: string;
@@ -82,6 +83,7 @@ export default function ClientDetailClient({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [resendPortalLoading, setResendPortalLoading] = useState(false);
+  const [proposalLoading, setProposalLoading] = useState(false);
   const [summaryDelivery, setSummaryDelivery] = useState<typeof deliveries[0] | null>(null);
   const [summaryInvoice, setSummaryInvoice] = useState<typeof allInvoices[0] | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "rate-card" | "analytics" | "portal">("overview");
@@ -96,6 +98,7 @@ export default function ClientDetailClient({
 
   const isClient = client.type === "b2c";
   const personaLabel = isClient ? "Client" : "Partner";
+  const showPmProposal = !isClient && isPropertyManagementDeliveryVertical(String(client.vertical || client.type || ""));
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -175,30 +178,67 @@ export default function ClientDetailClient({
                 {resendPortalLoading ? "Sending…" : "Send tracking link"}
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!client.email?.trim()) {
-                    toast("Add partner email first (Edit).", "x");
-                    return;
-                  }
-                  setResendPortalLoading(true);
-                  try {
-                    const res = await fetch(`/api/admin/organizations/${client.id}/resend-portal`, { method: "POST" });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || "Failed to send");
-                    toast("Partner portal access sent.", "mail");
-                  } catch (e) {
-                    toast(e instanceof Error ? e.message : "Failed to send", "x");
-                  } finally {
-                    setResendPortalLoading(false);
-                  }
-                }}
-                disabled={resendPortalLoading || !client.email?.trim()}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
-              >
-                {resendPortalLoading ? "Sending…" : "Resend portal access"}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!client.email?.trim()) {
+                      toast("Add partner email first (Edit).", "x");
+                      return;
+                    }
+                    setResendPortalLoading(true);
+                    try {
+                      const res = await fetch(`/api/admin/organizations/${client.id}/resend-portal`, { method: "POST" });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Failed to send");
+                      toast("Partner portal access sent.", "mail");
+                    } catch (e) {
+                      toast(e instanceof Error ? e.message : "Failed to send", "x");
+                    } finally {
+                      setResendPortalLoading(false);
+                    }
+                  }}
+                  disabled={resendPortalLoading || !client.email?.trim()}
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
+                >
+                  {resendPortalLoading ? "Sending…" : "Resend portal access"}
+                </button>
+                {showPmProposal && (
+                  <button
+                    type="button"
+                    disabled={proposalLoading}
+                    onClick={async () => {
+                      setProposalLoading(true);
+                      try {
+                        const res = await fetch(`/api/admin/organizations/${client.id}/pm-proposal`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({}),
+                        });
+                        if (!res.ok) {
+                          const err = await res.json().catch(() => ({}));
+                          throw new Error((err as { error?: string }).error || "Failed to generate");
+                        }
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `yugo-proposal-${client.name?.replace(/\s+/g, "-") || "partner"}.pdf`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        toast("Proposal downloaded", "check");
+                      } catch (e) {
+                        toast(e instanceof Error ? e.message : "Failed", "x");
+                      } finally {
+                        setProposalLoading(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all disabled:opacity-50"
+                  >
+                    {proposalLoading ? "Generating…" : "Generate proposal PDF"}
+                  </button>
+                )}
+              </>
             )}
             <button
               onClick={() => setEditModalOpen(true)}

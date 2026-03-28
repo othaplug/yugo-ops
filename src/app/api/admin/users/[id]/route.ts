@@ -25,17 +25,31 @@ export async function PATCH(
     const updates: Record<string, unknown> = {};
 
     if (typeof body.name === "string") updates.name = body.name.trim();
-    if (typeof body.role === "string" && ["admin", "manager", "dispatcher", "coordinator", "viewer", "sales", "client"].includes(body.role)) updates.role = body.role;
+    if (typeof body.role === "string" && ["owner", "admin", "manager", "dispatcher", "coordinator", "viewer", "sales", "client"].includes(body.role)) updates.role = body.role;
     if (body.phone !== undefined) updates.phone = body.phone === "" || body.phone === null ? null : String(body.phone).trim();
+
+    if (Array.isArray(body.specializations)) {
+      updates.specializations = body.specializations.map((s: unknown) => String(s).trim().toLowerCase()).filter(Boolean);
+    }
+    if (typeof body.on_vacation === "boolean") updates.on_vacation = body.on_vacation;
+    if (typeof body.out_of_office === "boolean") updates.out_of_office = body.out_of_office;
+    if (body.max_open_leads !== undefined) {
+      const n = parseInt(String(body.max_open_leads), 10);
+      if (!Number.isNaN(n) && n >= 1 && n <= 500) updates.max_open_leads = n;
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
     const isSelf = id === check.user!.id;
+    const assignmentOnly =
+      Object.keys(updates).every((k) =>
+        ["specializations", "on_vacation", "out_of_office", "max_open_leads"].includes(k)
+      );
     const onlyPhone = Object.keys(updates).length === 1 && "phone" in updates;
-    if (isSelf && !onlyPhone) {
-      return NextResponse.json({ error: "Cannot edit your own user (you may update your phone only)" }, { status: 400 });
+    if (isSelf && !onlyPhone && !assignmentOnly) {
+      return NextResponse.json({ error: "Cannot edit your own user (you may update your phone or assignment preferences only)" }, { status: 400 });
     }
 
     if (id.startsWith("inv-")) {

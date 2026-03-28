@@ -25,6 +25,7 @@ export default async function AdminPage() {
     { data: crews },
     { data: quotesExpanded },
     { data: reviewRequests },
+    leadPulseResult,
   ] = await Promise.all([
     admin.from("deliveries").select("*").order("created_at", { ascending: false }),
     admin.from("moves").select("*").order("created_at", { ascending: false }),
@@ -71,7 +72,80 @@ export default async function AdminPage() {
         return { data: [] };
       }
     })(),
+    (async () => {
+      try {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+        const attentionStatuses = ["new", "assigned", "follow_up_sent", "awaiting_reply"] as const;
+
+        const [attentionCountRes, monthCountRes, avgRes, previewRes] = await Promise.all([
+          admin
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .in("status", attentionStatuses)
+            .is("quote_uuid", null),
+          admin
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", `${monthStart}T00:00:00.000Z`),
+          admin
+            .from("leads")
+            .select("response_time_seconds")
+            .gte("created_at", `${monthStart}T00:00:00.000Z`)
+            .not("first_response_at", "is", null),
+          admin
+            .from("leads")
+            .select(
+              "id, lead_number, first_name, last_name, created_at, completeness_path, status, service_type, follow_up_sent_at",
+            )
+            .in("status", attentionStatuses)
+            .is("quote_uuid", null)
+            .order("created_at", { ascending: true })
+            .limit(8),
+        ]);
+
+        if (
+          attentionCountRes.error ||
+          monthCountRes.error ||
+          avgRes.error ||
+          previewRes.error
+        ) {
+          return { data: null };
+        }
+
+        const avgRows = avgRes.data ?? [];
+        const avgSec =
+          avgRows.length > 0
+            ? avgRows.reduce((s, l) => s + (Number(l.response_time_seconds) || 0), 0) / avgRows.length
+            : null;
+
+        const previewRows = previewRes.data ?? [];
+
+        return {
+          data: {
+            needsAttention: attentionCountRes.count ?? 0,
+            monthReceived: monthCountRes.count ?? 0,
+            avgResponseMin: avgSec != null ? Math.round(avgSec / 60) : null,
+            attentionPreview: previewRows.map((row) => ({
+              id: String(row.id),
+              lead_number: String(row.lead_number ?? ""),
+              first_name: row.first_name ?? null,
+              last_name: row.last_name ?? null,
+              created_at: String(row.created_at ?? ""),
+              completeness_path: row.completeness_path ?? null,
+              status: String(row.status ?? "new"),
+              service_type: row.service_type ?? null,
+              follow_up_sent_at: row.follow_up_sent_at ?? null,
+            })),
+          },
+        };
+      } catch {
+        return { data: null };
+      }
+    })(),
   ]);
+
+  const leadPulse = leadPulseResult.data;
 
   const allDeliveries = (deliveries || []) as Record<string, unknown>[];
   const allMoves = (moves || []) as Record<string, unknown>[];
@@ -521,6 +595,7 @@ export default async function AdminPage() {
       todayEarnings={todayEarnings}
       satisfaction={satisfaction}
       dailyBrief={dailyBrief}
+      leadPulse={leadPulse}
     />
   );
 }

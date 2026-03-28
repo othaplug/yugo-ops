@@ -9,6 +9,7 @@ import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
 import { getCompanyDisplayName } from "@/lib/config";
 import { sendQuoteLinkSms } from "@/lib/quote-sms";
+import { updateLeadAfterQuoteSent } from "@/lib/leads/update-from-quote";
 
 const SERVICE_TO_TEMPLATE: Record<string, string> = {
   local_move: "quote-residential",
@@ -80,6 +81,8 @@ export async function POST(req: NextRequest) {
     const hubspotDealId = body.hubspot_deal_id ?? body.hubspotDealId;
     const bodyEmail = (body.email ?? body.client_email) as string | undefined;
     const bodyClientName = (body.client_name ?? body.clientName) as string | undefined;
+    const leadIdRaw = body.lead_id ?? body.leadId;
+    const leadId = typeof leadIdRaw === "string" && leadIdRaw.length > 0 ? leadIdRaw : undefined;
 
     if (!quoteId || typeof quoteId !== "string") {
       return NextResponse.json({ error: "quoteId is required" }, { status: 400 });
@@ -397,6 +400,14 @@ export async function POST(req: NextRequest) {
       description: `Quote sent to ${fullName || clientEmail}, ${quoteId}`,
       icon: "mail",
     });
+
+    if (leadId && quote.id) {
+      await updateLeadAfterQuoteSent(supabase, {
+        leadId,
+        quoteUuid: quote.id as string,
+        performedByUserId: user?.id ?? null,
+      }).catch((e) => console.warn("[quotes/send] lead update:", e));
+    }
 
     return NextResponse.json({ success: true, emailId: result.id });
   } catch (err) {

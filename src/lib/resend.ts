@@ -23,7 +23,7 @@ function patchEmailHtml(payload: CreateEmailOptions): CreateEmailOptions {
 
   const nextHtml = applyEmailFooterTokens(html, {
     recipientEmail,
-    fromHeader: fromHeader || "Yugo <notifications@helloyugo.com>",
+    fromHeader: fromHeader || "Yugo+ <notifications@opsplus.co>",
     template,
     showMarketingTopRow,
   });

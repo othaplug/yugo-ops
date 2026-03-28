@@ -15,6 +15,7 @@ import {
   Star, Link, CircleNotch, Pulse, CaretRight, User, UserMinus,
   TrendUp, TrendDown, Minus, Certificate, Stack, Path, ShippingContainer,
   Recycle,
+  Lightning,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import React from "react";
@@ -48,6 +49,7 @@ const ICON_MAP: Record<string, PhosphorIcon> = {
   shippingContainer: ShippingContainer,
   /** Bin rental / eco tasks */
   recycle:          Recycle,
+  lightning:        Lightning,
   /** Loading & unloading milestones */
   stack:            Stack,
   /** Move journey / route */

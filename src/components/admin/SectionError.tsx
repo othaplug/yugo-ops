@@ -10,23 +10,12 @@ interface SectionErrorProps {
   section?: string;
 }
 
-const isDev = process.env.NODE_ENV === "development";
-
 export default function SectionError({ error, reset, section }: SectionErrorProps) {
   useEffect(() => {
     console.error(`[${section ?? "admin"} error]`, error);
-    if (isDev) {
-      fetch("/api/debug-capture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: `SectionError/${section ?? "unknown"}`,
-          message: "Section error boundary caught",
-          data: { message: error.message, stack: error.stack, digest: error.digest },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    }
+    // #region agent log
+    fetch('/api/debug-capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'a968d1',location:`SectionError/${section}`,message:'Section error boundary caught',data:{message:error.message,stack:error.stack,digest:error.digest},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
   }, [error, section]);
 
   return (
@@ -49,22 +38,9 @@ export default function SectionError({ error, reset, section }: SectionErrorProp
               ref: {error.digest}
             </p>
           )}
-          {isDev && error.stack && (
-            <pre
-              style={{
-                fontSize: "8px",
-                textAlign: "left",
-                opacity: 0.4,
-                maxHeight: "100px",
-                overflow: "auto",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-all",
-                marginTop: "8px",
-              }}
-            >
-              {error.stack}
-            </pre>
-          )}
+          {/* #region agent log */}
+          {error.stack && <pre style={{fontSize:'8px',textAlign:'left',opacity:0.4,maxHeight:'100px',overflow:'auto',whiteSpace:'pre-wrap',wordBreak:'break-all',marginTop:'8px'}}>{error.stack}</pre>}
+          {/* #endregion */}
         </div>
         <div className="flex gap-3 justify-center">
           <button

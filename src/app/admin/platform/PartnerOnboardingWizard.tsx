@@ -11,6 +11,7 @@ import {
   PARTNER_SEGMENT_GROUPS,
   VERTICAL_TO_TEMPLATE_SLUG,
   TEMPLATE_SLUG_LABELS,
+  isPropertyManagementDeliveryVertical,
 } from "@/lib/partner-type";
 
 function generatePassword(length = 12): string {
@@ -91,6 +92,40 @@ interface RateTemplate {
   template_slug: string;
 }
 
+interface PmPropertyDraft {
+  building_name: string;
+  address: string;
+  postal_code: string;
+  total_units: string;
+  unit_types: string[];
+  has_loading_dock: boolean;
+  has_move_elevator: boolean;
+  elevator_type: string;
+  move_hours: string;
+  parking_type: string;
+  building_contact_name: string;
+  building_contact_phone: string;
+  notes: string;
+}
+
+function emptyPmProperty(): PmPropertyDraft {
+  return {
+    building_name: "",
+    address: "",
+    postal_code: "",
+    total_units: "",
+    unit_types: [],
+    has_loading_dock: false,
+    has_move_elevator: false,
+    elevator_type: "",
+    move_hours: "8to6",
+    parking_type: "",
+    building_contact_name: "",
+    building_contact_phone: "",
+    notes: "",
+  };
+}
+
 interface WizardState {
   // Step 1
   profile: PartnerProfile;
@@ -135,6 +170,13 @@ interface WizardState {
   sendSetupSms: boolean;
   // Activation
   activationMode: "draft" | "activate" | "activate_welcome";
+  // Property management (delivery verticals)
+  pmProperties: PmPropertyDraft[];
+  pmContractType: "per_move" | "fixed_rate" | "day_rate_retainer";
+  pmContractStart: string;
+  pmContractEnd: string;
+  pmAutoRenew: boolean;
+  pmTenantCommsBy: "partner" | "yugo";
 }
 
 const DEFAULT_STATE: WizardState = {
@@ -175,6 +217,12 @@ const DEFAULT_STATE: WizardState = {
   showPassword: false,
   sendSetupSms: false,
   activationMode: "activate",
+  pmProperties: [emptyPmProperty()],
+  pmContractType: "fixed_rate",
+  pmContractStart: "",
+  pmContractEnd: "",
+  pmAutoRenew: false,
+  pmTenantCommsBy: "partner",
 };
 
 interface PartnerOnboardingWizardProps {
@@ -234,6 +282,33 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
     }));
   };
 
+  const patchPmProperty = useCallback((idx: number, patch: Partial<PmPropertyDraft>) => {
+    setState((s) => ({
+      ...s,
+      pmProperties: s.pmProperties.map((p, i) => (i === idx ? { ...p, ...patch } : p)),
+    }));
+  }, []);
+
+  const togglePmUnitType = useCallback((idx: number, ut: string) => {
+    setState((s) => ({
+      ...s,
+      pmProperties: s.pmProperties.map((p, i) =>
+        i === idx
+          ? {
+              ...p,
+              unit_types: p.unit_types.includes(ut)
+                ? p.unit_types.filter((x) => x !== ut)
+                : [...p.unit_types, ut],
+            }
+          : p
+      ),
+    }));
+  }, []);
+
+  const addPmProperty = useCallback(() => {
+    setState((s) => ({ ...s, pmProperties: [...s.pmProperties, emptyPmProperty()] }));
+  }, []);
+
   const handleClose = () => {
     setStep(1);
     setState(DEFAULT_STATE);
@@ -241,7 +316,15 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
   };
 
   const canAdvance = (): boolean => {
-    if (step === 1) return !!state.name.trim() && !!state.email.trim() && !!state.contactName.trim();
+    if (step === 1) {
+      if (!state.name.trim() || !state.email.trim() || !state.contactName.trim()) return false;
+      if (isPropertyManagementDeliveryVertical(state.type)) {
+        const hasBuilding = state.pmProperties.some((p) => p.building_name.trim() && p.address.trim());
+        if (!hasBuilding) return false;
+        if (!state.pmContractStart.trim() || !state.pmContractEnd.trim()) return false;
+      }
+      return true;
+    }
     if (step === 4) return !state.createPortalLogin || (!!state.password && state.password.length >= 8);
     return true;
   };
@@ -299,6 +382,34 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
           password: state.createPortalLogin ? state.password : undefined,
           activation_mode: state.activationMode,
           send_setup_sms: state.sendSetupSms && !!state.phone,
+          ...(isPropertyManagementDeliveryVertical(state.type)
+            ? {
+                pm_onboarding: {
+                  properties: state.pmProperties
+                    .filter((p) => p.building_name.trim() && p.address.trim())
+                    .map((p) => ({
+                      building_name: p.building_name.trim(),
+                      address: p.address.trim(),
+                      postal_code: p.postal_code.trim() || undefined,
+                      total_units: parseInt(p.total_units, 10) || undefined,
+                      unit_types: p.unit_types.length ? p.unit_types : undefined,
+                      has_loading_dock: p.has_loading_dock,
+                      has_move_elevator: !!p.elevator_type && p.elevator_type !== "none",
+                      elevator_type: p.elevator_type.trim() || undefined,
+                      move_hours: p.move_hours || undefined,
+                      parking_type: p.parking_type.trim() || undefined,
+                      building_contact_name: p.building_contact_name.trim() || undefined,
+                      building_contact_phone: p.building_contact_phone.trim() || undefined,
+                      notes: p.notes.trim() || undefined,
+                    })),
+                  contract_type: state.pmContractType,
+                  start_date: state.pmContractStart,
+                  end_date: state.pmContractEnd,
+                  auto_renew: state.pmAutoRenew,
+                  tenant_comms_by: state.pmTenantCommsBy,
+                },
+              }
+            : {}),
         }),
       });
       const data = await res.json();
@@ -409,6 +520,9 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
               update={update}
               activeSegments={activeSegments}
               phoneInput={phoneInput}
+              patchPmProperty={patchPmProperty}
+              addPmProperty={addPmProperty}
+              togglePmUnitType={togglePmUnitType}
             />
           )}
           {step === 2 && (
@@ -528,16 +642,30 @@ interface DedupResults {
 }
 
 /* ── Step 1: Business Details ── */
+const PM_UNIT_OPTS = [
+  { id: "studio", label: "Studio" },
+  { id: "1br", label: "1BR" },
+  { id: "2br", label: "2BR" },
+  { id: "3br", label: "3BR" },
+  { id: "4br_plus", label: "4BR+" },
+];
+
 function Step1BusinessDetails({
   state,
   update,
   activeSegments,
   phoneInput,
+  patchPmProperty,
+  addPmProperty,
+  togglePmUnitType,
 }: {
   state: WizardState;
   update: <K extends keyof WizardState>(key: K, val: WizardState[K]) => void;
   activeSegments: typeof PARTNER_SEGMENT_GROUPS;
   phoneInput: ReturnType<typeof usePhoneInput>;
+  patchPmProperty: (idx: number, patch: Partial<PmPropertyDraft>) => void;
+  addPmProperty: () => void;
+  togglePmUnitType: (idx: number, ut: string) => void;
 }) {
   const [searching, setSearching] = useState(false);
   const [dedupResults, setDedupResults] = useState<DedupResults | null>(null);
@@ -656,6 +784,8 @@ function Step1BusinessDetails({
     (dedupResults.hubspot !== null ||
       dedupResults.square !== null ||
       dedupResults.opsPartnerId !== null);
+
+  const showPm = state.profile === "delivery" && isPropertyManagementDeliveryVertical(state.type);
 
   return (
     <div className="space-y-6">
@@ -789,7 +919,7 @@ function Step1BusinessDetails({
             {dedupResults.opsPartnerId ? (
               /* Existing OPS+ partner — block creation */
               <div className="rounded-xl border border-red-400/40 bg-red-500/5 p-4 flex items-start gap-3">
-                <span className="text-red-400 shrink-0 mt-0.5 text-base">⚠</span>
+                <Icon name="alertTriangle" className="w-4 h-4 shrink-0 mt-0.5 text-red-400 stroke-[1.75]" aria-hidden />
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-semibold text-red-400">
                     Partner already exists in OPS+
@@ -812,7 +942,7 @@ function Step1BusinessDetails({
               /* External contact found — offer auto-fill */
               <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[var(--gold)] text-sm">🔍</span>
+                  <Icon name="search" className="w-4 h-4 shrink-0 text-[var(--gold)] stroke-[1.75]" aria-hidden />
                   <p className="text-[12px] font-bold tracking-wide capitalize text-[var(--gold)]">
                     Existing Contact Found
                   </p>
@@ -871,6 +1001,230 @@ function Step1BusinessDetails({
               Fields pre-filled from HubSpot
               {dedupResults?.square?.card_on_file && " · Card on file linked from Square"}.
             </p>
+          </div>
+        )}
+
+        {showPm && (
+          <div className="col-span-2 rounded-xl border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-5 space-y-5">
+            <p className="text-[11px] font-bold tracking-widest uppercase text-[var(--gold)]">Property management details</p>
+            {state.pmProperties.map((prop, idx) => (
+              <div key={idx} className="space-y-3 pb-4 border-b border-[var(--brd)]/50 last:border-0 last:pb-0">
+                <p className="text-[12px] font-semibold text-[var(--tx)]">Property {idx + 1}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className={labelCls}>Building name *</label>
+                    <input
+                      type="text"
+                      value={prop.building_name}
+                      onChange={(e) => patchPmProperty(idx, { building_name: e.target.value })}
+                      className={inputCls}
+                      placeholder="The Lakeshore Residences"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelCls}>Address *</label>
+                    <input
+                      type="text"
+                      value={prop.address}
+                      onChange={(e) => patchPmProperty(idx, { address: e.target.value })}
+                      className={inputCls}
+                      placeholder="123 Lakeshore Blvd, Toronto, ON"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Postal code</label>
+                    <input
+                      type="text"
+                      value={prop.postal_code}
+                      onChange={(e) => patchPmProperty(idx, { postal_code: e.target.value })}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Total units</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={prop.total_units}
+                      onChange={(e) => patchPmProperty(idx, { total_units: e.target.value })}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <p className={labelCls}>Unit types offered</p>
+                    <div className="flex flex-wrap gap-3">
+                      {PM_UNIT_OPTS.map((u) => (
+                        <label key={u.id} className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={prop.unit_types.includes(u.id)}
+                            onChange={() => togglePmUnitType(idx, u.id)}
+                            className="accent-[var(--gold)]"
+                          />
+                          {u.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={prop.has_loading_dock}
+                      onChange={(e) => patchPmProperty(idx, { has_loading_dock: e.target.checked })}
+                      className="accent-[var(--gold)]"
+                    />
+                    Loading dock
+                  </label>
+                  <div>
+                    <label className={labelCls}>Move elevator</label>
+                    <select
+                      value={prop.elevator_type}
+                      onChange={(e) => patchPmProperty(idx, { elevator_type: e.target.value })}
+                      className={inputCls}
+                    >
+                      <option value="">—</option>
+                      <option value="dedicated">Dedicated</option>
+                      <option value="shared">Shared</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Move hours</label>
+                    <select
+                      value={prop.move_hours}
+                      onChange={(e) => patchPmProperty(idx, { move_hours: e.target.value })}
+                      className={inputCls}
+                    >
+                      <option value="8to6">8 AM – 6 PM</option>
+                      <option value="24_7">24/7</option>
+                      <option value="custom">Custom (see notes)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Parking</label>
+                    <input
+                      type="text"
+                      value={prop.parking_type}
+                      onChange={(e) => patchPmProperty(idx, { parking_type: e.target.value })}
+                      className={inputCls}
+                      placeholder="Dedicated loading / street / none"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Building contact</label>
+                    <input
+                      type="text"
+                      value={prop.building_contact_name}
+                      onChange={(e) => patchPmProperty(idx, { building_contact_name: e.target.value })}
+                      className={inputCls}
+                      placeholder="Name"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Building contact phone</label>
+                    <input
+                      type="tel"
+                      value={prop.building_contact_phone}
+                      onChange={(e) => patchPmProperty(idx, { building_contact_phone: e.target.value })}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelCls}>Notes</label>
+                    <textarea
+                      value={prop.notes}
+                      onChange={(e) => patchPmProperty(idx, { notes: e.target.value })}
+                      rows={2}
+                      className={inputCls}
+                      placeholder="Key fob, security desk, etc."
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addPmProperty}
+              className="text-[12px] font-semibold text-[var(--gold)] hover:underline"
+            >
+              + Add property
+            </button>
+
+            <div>
+              <p className={labelCls}>Contract type</p>
+              <div className="flex flex-col gap-2">
+                {(
+                  [
+                    { id: "per_move" as const, label: "Per-move pricing" },
+                    { id: "fixed_rate" as const, label: "Fixed-rate contract" },
+                    { id: "day_rate_retainer" as const, label: "Day-rate retainer" },
+                  ]
+                ).map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer">
+                    <input
+                      type="radio"
+                      name="pm_contract_type"
+                      checked={state.pmContractType === c.id}
+                      onChange={() => update("pmContractType", c.id)}
+                      className="accent-[var(--gold)]"
+                    />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Contract start *</label>
+                <input
+                  type="date"
+                  value={state.pmContractStart}
+                  onChange={(e) => update("pmContractStart", e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Contract end *</label>
+                <input
+                  type="date"
+                  value={state.pmContractEnd}
+                  onChange={(e) => update("pmContractEnd", e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={state.pmAutoRenew}
+                onChange={(e) => update("pmAutoRenew", e.target.checked)}
+                className="accent-[var(--gold)]"
+              />
+              Auto-renew
+            </label>
+            <div>
+              <p className={labelCls}>Tenant communication</p>
+              <label className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer">
+                <input
+                  type="radio"
+                  name="pm_tenant_comms"
+                  checked={state.pmTenantCommsBy === "partner"}
+                  onChange={() => update("pmTenantCommsBy", "partner")}
+                  className="accent-[var(--gold)]"
+                />
+                Property manager contacts tenant
+              </label>
+              <label className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer mt-1">
+                <input
+                  type="radio"
+                  name="pm_tenant_comms"
+                  checked={state.pmTenantCommsBy === "yugo"}
+                  onChange={() => update("pmTenantCommsBy", "yugo")}
+                  className="accent-[var(--gold)]"
+                />
+                Yugo contacts tenant (SMS when scheduled)
+              </label>
+            </div>
           </div>
         )}
 

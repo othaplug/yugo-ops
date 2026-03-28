@@ -3,9 +3,60 @@ import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-templates";
 import { requireAdmin } from "@/lib/api-auth";
-import { VERTICAL_LABELS } from "@/lib/partner-type";
+import { VERTICAL_LABELS, isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
+import { provisionPmPartnerPortfolio, type PmOnboardingInput } from "@/lib/partners/provision-pm-onboarding";
 import { getEmailFrom } from "@/lib/email/send";
 import { squareClient } from "@/lib/square";
+
+async function maybeProvisionPmPortfolio(
+  admin: ReturnType<typeof createAdminClient>,
+  orgId: string,
+  typeVal: string,
+  rawPm: unknown,
+  contractStatus: "draft" | "active"
+) {
+  if (!isPropertyManagementDeliveryVertical(typeVal) || !rawPm || typeof rawPm !== "object") return;
+  const { count } = await admin
+    .from("partner_contracts")
+    .select("id", { count: "exact", head: true })
+    .eq("partner_id", orgId);
+  if ((count ?? 0) > 0) return;
+
+  const o = rawPm as Record<string, unknown>;
+  const props = Array.isArray(o.properties) ? o.properties : [];
+  const parsed: PmOnboardingInput = {
+    properties: props
+      .filter((p): p is Record<string, unknown> => p && typeof p === "object")
+      .map((p) => ({
+        building_name: String(p.building_name || "").trim(),
+        address: String(p.address || "").trim(),
+        postal_code: p.postal_code ? String(p.postal_code) : undefined,
+        total_units: typeof p.total_units === "number" ? p.total_units : parseInt(String(p.total_units || ""), 10) || undefined,
+        unit_types: Array.isArray(p.unit_types) ? (p.unit_types as string[]) : undefined,
+        has_loading_dock: !!p.has_loading_dock,
+        has_move_elevator: !!p.has_move_elevator,
+        elevator_type: p.elevator_type ? String(p.elevator_type) : undefined,
+        move_hours: p.move_hours ? String(p.move_hours) : undefined,
+        parking_type: p.parking_type ? String(p.parking_type) : undefined,
+        building_contact_name: p.building_contact_name ? String(p.building_contact_name) : undefined,
+        building_contact_phone: p.building_contact_phone ? String(p.building_contact_phone) : undefined,
+        notes: p.notes ? String(p.notes) : undefined,
+      })),
+    contract_type:
+      o.contract_type === "per_move" || o.contract_type === "day_rate_retainer"
+        ? o.contract_type
+        : "fixed_rate",
+    start_date: String(o.start_date || "").slice(0, 10),
+    end_date: String(o.end_date || "").slice(0, 10),
+    auto_renew: !!o.auto_renew,
+    tenant_comms_by: o.tenant_comms_by === "yugo" ? "yugo" : "partner",
+    rate_card: o.rate_card && typeof o.rate_card === "object" ? (o.rate_card as Record<string, unknown>) : null,
+    days_per_week: typeof o.days_per_week === "number" ? o.days_per_week : null,
+    day_rate: typeof o.day_rate === "number" ? o.day_rate : null,
+  };
+  if (!parsed.start_date || !parsed.end_date) return;
+  await provisionPmPartnerPortfolio(admin, orgId, parsed, contractStatus);
+}
 
 async function resolveTemplateId(admin: ReturnType<typeof createAdminClient>, templateSlug: string | null): Promise<string | null> {
   if (!templateSlug) return null;
@@ -31,10 +82,11 @@ export async function POST(req: NextRequest) {
       delivery_types, delivery_frequency, typical_items,
       special_requirements, preferred_windows, pickup_locations,
       billing_method, payment_terms, tax_id, insurance_cert_required,
-      create_portal_login, activation_mode, send_setup_sms,
+      create_portal_login, activation_mode,       send_setup_sms,
       // External IDs from dedup search
       hubspot_contact_id, square_customer_id, square_card_id,
       card_last_four, card_brand, card_on_file,
+      pm_onboarding,
     } = body;
 
     if (!email || typeof email !== "string" || !name || typeof name !== "string") {
@@ -158,6 +210,7 @@ export async function POST(req: NextRequest) {
         existingSquareCustomerId: square_customer_id || null,
         admin,
       }).catch(() => {});
+      await maybeProvisionPmPortfolio(admin, orgId, typeVal, pm_onboarding, isActivating ? "active" : "draft");
       return NextResponse.json({ ok: true, message: "Partner saved as draft" });
     }
 
@@ -213,6 +266,8 @@ export async function POST(req: NextRequest) {
 
       await admin.from("partner_users").insert({ user_id: userId, org_id: orgId });
     }
+
+    await maybeProvisionPmPortfolio(admin, orgId, typeVal, pm_onboarding, isActivating ? "active" : "draft");
 
     // ── Sync to HubSpot / Square if not already linked ─────────────────────
     syncPartnerToExternal({

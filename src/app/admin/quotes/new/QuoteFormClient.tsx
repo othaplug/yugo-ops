@@ -33,11 +33,15 @@ import {
   Palette,
   CalendarBlank,
   Recycle,
+  MagnifyingGlass,
+  Lightbulb,
+  ListChecks,
   type IconProps,
 } from "@phosphor-icons/react";
 import { calculateBinRentalPrice, BIN_RENTAL_BUNDLE_SPECS } from "@/lib/pricing/bin-rental";
 import { QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
+import { mapSpecialtyToQuoteTypes, type SpecialtyDetected } from "@/lib/leads/specialty-detect";
 
 const PanelRightClose = PanelRightOpen;
 
@@ -135,6 +139,16 @@ interface ItemWeight {
   is_common: boolean;
   display_order?: number;
   active?: boolean;
+}
+
+/** Parsed inventory line from a lead — needs coordinator review when not high confidence */
+interface LeadInvReviewRow {
+  raw_text: string;
+  matched_item: string | null;
+  matched_name: string | null;
+  quantity: number;
+  confidence: string;
+  note?: string;
 }
 
 // ─── Constants ──────────────────────────────────
@@ -519,6 +533,7 @@ export default function QuoteFormClient({
   const router = useRouter();
   const { toast } = useToast();
   const hubspotDealId = searchParams.get("hubspot_deal_id") || "";
+  const leadIdParam = searchParams.get("lead_id")?.trim() || "";
 
   // ── Form state ────────────────────────────
   const [serviceType, setServiceType] = useState("local_move");
@@ -733,6 +748,10 @@ export default function QuoteFormClient({
 
   // Inventory
   const [inventoryItems, setInventoryItems] = useState<InventoryItemEntry[]>([]);
+  const [leadIntelSummary, setLeadIntelSummary] = useState<string | null>(null);
+  const [leadInventoryReview, setLeadInventoryReview] = useState<LeadInvReviewRow[]>([]);
+  const leadInventoryPrefillSigRef = useRef<string>("");
+  const leadSpecialtyPrefillSigRef = useRef<string>("");
 
   // Referral code
   const [referralCode, setReferralCode] = useState("");
@@ -925,6 +944,7 @@ export default function QuoteFormClient({
   const [dissolving, setDissolving] = useState(false);
   const [hubspotLoaded, setHubspotLoaded] = useState(false);
   const [hubspotBanner, setHubspotBanner] = useState("");
+  const [leadQuoteBanner, setLeadQuoteBanner] = useState("");
   const [previewOpen, setPreviewOpen] = useState(true);
   const prefillDone = useRef(false);
 
@@ -1008,6 +1028,151 @@ export default function QuoteFormClient({
       }
     })();
   }, [hubspotDealId]);
+
+  // ── Lead pre-fill (Send Quote from Leads dashboard) ────
+  useEffect(() => {
+    if (!leadIdParam) {
+      setLeadQuoteBanner("");
+      setLeadIntelSummary(null);
+      setLeadInventoryReview([]);
+      leadInventoryPrefillSigRef.current = "";
+      leadSpecialtyPrefillSigRef.current = "";
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/admin/leads/${encodeURIComponent(leadIdParam)}`);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const L = data.lead as Record<string, unknown> | undefined;
+        if (!L || cancelled) return;
+        const str = (v: unknown) => (v != null ? String(v).trim() : "");
+        const num = str(L.lead_number);
+        const fn = str(L.first_name);
+        const ln = str(L.last_name);
+        const nm = [fn, ln].filter(Boolean).join(" ");
+        if (num) {
+          setLeadQuoteBanner(nm ? `Creating quote for lead ${num} — ${nm}` : `Creating quote for lead ${num}`);
+        }
+        if (fn) setFirstName(fn);
+        if (ln) setLastName(ln);
+        if (str(L.email)) setEmail(str(L.email).toLowerCase());
+        if (str(L.phone)) setPhone(formatPhone(str(L.phone)));
+        const st = str(L.service_type);
+        if (st && SERVICE_TYPES.some((x) => x.value === st)) setServiceType(st);
+        const ms = str(L.move_size);
+        if (ms && MOVE_SIZES.some((x) => x.value === ms)) setMoveSize(ms);
+        if (str(L.from_address)) setFromAddress(str(L.from_address));
+        if (str(L.to_address)) setToAddress(str(L.to_address));
+        const pd = str(L.preferred_date);
+        if (pd) setMoveDate(pd.slice(0, 10));
+        if (str(L.from_access)) setFromAccess(str(L.from_access));
+        if (str(L.to_access)) setToAccess(str(L.to_access));
+        if (str(L.preferred_time)) setPreferredTime(str(L.preferred_time));
+        const rt = str(L.recommended_tier).toLowerCase();
+        if (rt === "estate") setRecommendedTier("estate");
+        else if (rt === "signature") setRecommendedTier("signature");
+        else if (rt === "curated") setRecommendedTier("essential");
+        const pbc = L.parsed_box_count != null ? Number(L.parsed_box_count) : NaN;
+        if (!Number.isNaN(pbc) && pbc > 0) setClientBoxCount(String(pbc));
+        const an = str(L.assembly_needed).toLowerCase();
+        if (an === "both") setAssembly("Both");
+        else if (an === "yes" || an === "true") setAssembly("Both");
+
+        const summary = str(L.intelligence_summary);
+        setLeadIntelSummary(summary || null);
+
+        const rawInv = L.parsed_inventory;
+        const review: LeadInvReviewRow[] = [];
+        const autoItems: InventoryItemEntry[] = [];
+        const invSig =
+          Array.isArray(rawInv) && rawInv.length > 0
+            ? `${leadIdParam}:${itemWeights.length}:${JSON.stringify(rawInv)}`
+            : `empty:${leadIdParam}`;
+        if (invSig !== leadInventoryPrefillSigRef.current) {
+          if (!Array.isArray(rawInv) || rawInv.length === 0) {
+            setInventoryItems([]);
+            setLeadInventoryReview([]);
+          } else {
+            for (const row of rawInv as Record<string, unknown>[]) {
+              const conf = String(row.confidence || "");
+              const slug = row.matched_item ? String(row.matched_item) : null;
+              const qty = Math.max(1, Number(row.quantity) || 1);
+              const highOk = slug && conf === "high";
+              if (highOk) {
+                const w = itemWeights.find((x) => x.slug === slug);
+                autoItems.push({
+                  slug: slug!,
+                  name: w?.item_name || String(row.matched_name || slug),
+                  quantity: qty,
+                  weight_score: Number(w?.weight_score ?? row.weight_score ?? 1),
+                  fragile: false,
+                });
+              } else {
+                review.push({
+                  raw_text: String(row.raw_text || ""),
+                  matched_item: slug,
+                  matched_name: row.matched_name ? String(row.matched_name) : null,
+                  quantity: qty,
+                  confidence: conf,
+                  note: row.note ? String(row.note) : undefined,
+                });
+              }
+            }
+            setInventoryItems(autoItems);
+            setLeadInventoryReview(review);
+          }
+          leadInventoryPrefillSigRef.current = invSig;
+        }
+
+        const specRaw = L.specialty_items_detected;
+        const specSig =
+          Array.isArray(specRaw) && specRaw.length > 0
+            ? `${leadIdParam}:${JSON.stringify(specRaw)}`
+            : `empty:${leadIdParam}`;
+        if (specSig !== leadSpecialtyPrefillSigRef.current) {
+          if (!Array.isArray(specRaw) || specRaw.length === 0) {
+            setSpecialtyItems([]);
+          } else {
+            const blob = `${str(L.raw_inventory_text)} ${str(L.message)}`;
+            const mapped = mapSpecialtyToQuoteTypes(specRaw as SpecialtyDetected[], blob);
+            if (mapped.length > 0) setSpecialtyItems(mapped);
+          }
+          leadSpecialtyPrefillSigRef.current = specSig;
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [leadIdParam, itemWeights]);
+
+  const acceptLeadReviewRow = useCallback(
+    (index: number) => {
+      setLeadInventoryReview((prev) => {
+        const row = prev[index];
+        if (!row?.matched_item) return prev;
+        const w = itemWeights.find((x) => x.slug === row.matched_item);
+        const entry: InventoryItemEntry = {
+          slug: row.matched_item,
+          name: w?.item_name || row.matched_name || row.matched_item,
+          quantity: row.quantity,
+          weight_score: Number(w?.weight_score ?? 1),
+          fragile: false,
+        };
+        setInventoryItems((inv) => [...inv, entry]);
+        return prev.filter((_, i) => i !== index);
+      });
+    },
+    [itemWeights],
+  );
+
+  const dismissLeadReviewRow = useCallback((index: number) => {
+    setLeadInventoryReview((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
   // ── Applicable add-ons (popular first) ────
   const applicableAddons = useMemo(
@@ -1748,6 +1913,7 @@ export default function QuoteFormClient({
           email,
           client_name: [firstName, lastName].filter(Boolean).join(" "),
           hubspot_deal_id: hubspotDealId || undefined,
+          lead_id: leadIdParam || undefined,
         }),
       });
       const data = await res.json();
@@ -1813,6 +1979,85 @@ export default function QuoteFormClient({
         <div className="mb-4 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[12px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
           <Check className="w-4 h-4 shrink-0" />
           {hubspotBanner}
+        </div>
+      )}
+
+      {leadQuoteBanner && (
+        <div className="mb-4 px-4 py-2.5 rounded-lg bg-[var(--gold)]/12 border border-[var(--gold)]/35 text-[12px] font-medium text-[var(--tx)] flex items-center gap-2">
+          <Users className="w-4 h-4 shrink-0 text-[var(--gold)]" aria-hidden />
+          {leadQuoteBanner}
+        </div>
+      )}
+
+      {leadIntelSummary && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] flex gap-3">
+          <Lightbulb className="w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5" weight="fill" aria-hidden />
+          <div className="min-w-0 space-y-1">
+            <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">Lead intelligence</p>
+            <p className="leading-snug">{leadIntelSummary}</p>
+          </div>
+        </div>
+      )}
+
+      {leadInventoryReview.length > 0 && (
+        <div className="mb-4 rounded-lg border border-amber-500/35 bg-amber-500/5 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-amber-500/20 flex items-center gap-2 bg-amber-500/10">
+            <ListChecks className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" aria-hidden />
+            <p className="text-[11px] font-semibold text-[var(--tx)]">Review parsed inventory</p>
+            <span className="text-[10px] text-[var(--tx3)]">Accept the suggested line items or skip if wrong.</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-[11px]">
+              <thead>
+                <tr className="border-b border-[var(--brd)] text-[var(--tx3)] uppercase tracking-wide">
+                  <th className="px-4 py-2 font-semibold">Client wrote</th>
+                  <th className="px-4 py-2 font-semibold">Suggested match</th>
+                  <th className="px-4 py-2 font-semibold">Confidence</th>
+                  <th className="px-4 py-2 font-semibold w-[1%] whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leadInventoryReview.map((row, idx) => (
+                  <tr key={`${row.raw_text}-${idx}`} className="border-b border-[var(--brd)]/60 align-top">
+                    <td className="px-4 py-2.5 text-[var(--tx)]">
+                      <span className="font-medium">{row.raw_text || "—"}</span>
+                      {row.note ? <p className="text-[10px] text-[var(--tx3)] mt-1">{row.note}</p> : null}
+                    </td>
+                    <td className="px-4 py-2.5 text-[var(--tx)]">
+                      {row.matched_name || row.matched_item ? (
+                        <>
+                          {row.matched_name || row.matched_item}
+                          <span className="text-[var(--tx3)]"> ×{row.quantity}</span>
+                        </>
+                      ) : (
+                        <span className="text-[var(--tx3)]">No match</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 capitalize text-[var(--tx3)]">{row.confidence || "—"}</td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex flex-wrap gap-1.5 justify-end">
+                        <button
+                          type="button"
+                          disabled={!row.matched_item}
+                          onClick={() => acceptLeadReviewRow(idx)}
+                          className="px-2 py-1 rounded-md bg-[var(--gold)]/20 text-[var(--tx)] font-medium border border-[var(--gold)]/40 hover:bg-[var(--gold)]/30 disabled:opacity-40 disabled:pointer-events-none"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => dismissLeadReviewRow(idx)}
+                          className="px-2 py-1 rounded-md border border-[var(--brd)] text-[var(--tx3)] hover:bg-[var(--bg)]"
+                        >
+                          Skip
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -1987,7 +2232,7 @@ export default function QuoteFormClient({
                     /* Returning client — show history and offer auto-fill */
                     <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3.5">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[var(--gold)] text-sm">🔍</span>
+                        <MagnifyingGlass size={16} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
                         <p className="text-[11px] font-bold tracking-wide capitalize text-[var(--gold)]">
                           Returning Client
                         </p>
@@ -2030,7 +2275,7 @@ export default function QuoteFormClient({
                     /* External contact found (HubSpot/Square) */
                     <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3.5">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[var(--gold)] text-sm">🔍</span>
+                        <MagnifyingGlass size={16} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
                         <p className="text-[11px] font-bold tracking-wide capitalize text-[var(--gold)]">
                           Existing Contact Found
                         </p>
@@ -2124,7 +2369,7 @@ export default function QuoteFormClient({
 
                 {serviceType === "bin_rental" && (
                   <div className="space-y-3">
-                    <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
+                    <div className="flex flex-col sm:flex-row gap-3 items-start">
                       <div className="flex-1 min-w-0 w-full max-w-2xl">
                         <MultiStopAddressField
                           label="Delivery address *"
@@ -2136,7 +2381,7 @@ export default function QuoteFormClient({
                           inputClassName={fieldInput}
                         />
                       </div>
-                      <div className="w-full min-[400px]:w-[150px] shrink-0">
+                      <div className="w-full sm:w-[150px] shrink-0">
                         <Field label="Access">
                           <select value={toAccess} onChange={(e) => setToAccess(e.target.value)} className={fieldInput}>
                             {BIN_RENTAL_ACCESS_OPTIONS.map((o) => (
@@ -2170,7 +2415,7 @@ export default function QuoteFormClient({
                       If the client is moving, bins are picked up from the new address. Uncheck and enter the destination.
                     </p>
                     {!binPickupSameAsDelivery && (
-                      <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
+                      <div className="flex flex-col sm:flex-row gap-3 items-start">
                         <div className="flex-1 min-w-0 w-full max-w-2xl">
                           <MultiStopAddressField
                             label="Pickup address *"
@@ -2182,7 +2427,7 @@ export default function QuoteFormClient({
                             inputClassName={fieldInput}
                           />
                         </div>
-                        <div className="w-full min-[400px]:w-[150px] shrink-0">
+                        <div className="w-full sm:w-[150px] shrink-0">
                           <Field label="Access">
                             <select value={fromAccess} onChange={(e) => setFromAccess(e.target.value)} className={fieldInput}>
                               {BIN_RENTAL_ACCESS_OPTIONS.map((o) => (
@@ -2200,7 +2445,7 @@ export default function QuoteFormClient({
 
                 {/* Event single: origin here; multi: per-leg below. Labour Only: own section. */}
                 {serviceType !== "labour_only" && !(serviceType === "event" && eventMulti) && serviceType !== "bin_rental" && (
-                <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
+                <div className="flex flex-col sm:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <MultiStopAddressField
                       label={serviceType === "event" ? "Origin Address *" : serviceType === "b2b_delivery" ? "Pickup *" : "From"}
@@ -2213,7 +2458,7 @@ export default function QuoteFormClient({
                       inputClassName={fieldInput}
                     />
                   </div>
-                  <div className="w-full min-[400px]:w-[150px] shrink-0">
+                  <div className="w-full sm:w-[150px] shrink-0">
                     <Field label="From Access">
                       <select value={fromAccess} onChange={(e) => setFromAccess(e.target.value)} className={fieldInput}>
                         {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -2223,7 +2468,7 @@ export default function QuoteFormClient({
                 </div>
                 )}
                 {serviceType !== "event" && serviceType !== "labour_only" && serviceType !== "bin_rental" && (
-                <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
+                <div className="flex flex-col sm:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <MultiStopAddressField
                       label="To"
@@ -2236,7 +2481,7 @@ export default function QuoteFormClient({
                       inputClassName={fieldInput}
                     />
                   </div>
-                  <div className="w-full min-[400px]:w-[150px] shrink-0">
+                  <div className="w-full sm:w-[150px] shrink-0">
                     <Field label="To Access">
                       <select value={toAccess} onChange={(e) => setToAccess(e.target.value)} className={fieldInput}>
                         {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -3486,7 +3731,7 @@ export default function QuoteFormClient({
               {serviceType === "labour_only" && (
                 <div className="space-y-3">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Labour Only</h3>
-                  <div className="flex flex-col min-[400px]:flex-row gap-3 items-start">
+                  <div className="flex flex-col sm:flex-row gap-3 items-start">
                     <div className="flex-1 min-w-0">
                       <MultiStopAddressField
                         label="Work Address *"
@@ -3499,7 +3744,7 @@ export default function QuoteFormClient({
                         inputClassName={fieldInput}
                       />
                     </div>
-                    <div className="w-full min-[400px]:w-[150px] shrink-0">
+                    <div className="w-full sm:w-[150px] shrink-0">
                       <Field label="Access">
                         <select value={workAccess} onChange={(e) => setWorkAccess(e.target.value)} className={fieldInput}>
                           {ACCESS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}

@@ -21,6 +21,8 @@ import {
   Car,
   Drop,
   Warning,
+  WarningCircle,
+  XCircle,
   UsersThree,
   Funnel,
   CurrencyDollar,
@@ -31,6 +33,7 @@ import {
   Clock,
   CloudSun,
 } from "@phosphor-icons/react";
+import { COMPLETENESS_PATH_LABELS } from "@/lib/leads/admin-labels";
 import RevenueForecastWidget from "@/components/admin/RevenueForecastWidget";
 import { buildPrecipAlertText, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
 import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
@@ -105,6 +108,25 @@ type QuotePipeline = {
 type TodayEarnings = { potential: number; collected: number; pending: number; jobCount: number };
 type SatisfactionData = { avgRating: number; count: number; pendingReviews: number };
 
+type LeadAttentionPreviewRow = {
+  id: string;
+  lead_number: string;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: string;
+  completeness_path: string | null;
+  status: string;
+  service_type: string | null;
+  follow_up_sent_at: string | null;
+};
+
+type LeadPulse = {
+  needsAttention: number;
+  avgResponseMin: number | null;
+  monthReceived: number;
+  attentionPreview?: LeadAttentionPreviewRow[];
+};
+
 interface Props {
   todayJobs: Job[];
   upcomingJobs: Job[];
@@ -124,6 +146,7 @@ interface Props {
   todayEarnings: TodayEarnings;
   satisfaction: SatisfactionData;
   dailyBrief: string;
+  leadPulse: LeadPulse | null;
 }
 
 /* ── Helpers ── */
@@ -251,6 +274,7 @@ export default function AdminPageClient({
   todayEarnings,
   satisfaction,
   dailyBrief,
+  leadPulse,
 }: Props) {
   const router = useRouter();
   const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
@@ -1148,6 +1172,88 @@ export default function AdminPageClient({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Leads (speed to lead) */}
+          {leadPulse && (leadPulse.needsAttention > 0 || leadPulse.monthReceived > 0 || leadPulse.avgResponseMin != null) && (
+            <div className="pt-6 border-t border-[var(--brd)]/30">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Lightning size={14} className="text-[var(--gold)]" weight="duotone" aria-hidden />
+                  <h2 className="admin-section-h2">Leads</h2>
+                </div>
+                <Link href="/admin/leads" className="admin-view-all-link shrink-0 gap-1">
+                  Open
+                  <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
+                </Link>
+              </div>
+              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-[var(--tx3)]">Needs attention</span>
+                  <span className={`font-bold tabular-nums ${leadPulse.needsAttention > 0 ? "text-amber-400" : "text-[var(--tx)]"}`}>
+                    {leadPulse.needsAttention}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-[var(--tx3)]">This month (new)</span>
+                  <span className="font-bold text-[var(--tx)] tabular-nums">{leadPulse.monthReceived}</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-[var(--tx3)]">Avg response (min)</span>
+                  <span className="font-bold text-[var(--tx)] tabular-nums">
+                    {leadPulse.avgResponseMin != null ? leadPulse.avgResponseMin : "—"}
+                  </span>
+                </div>
+                {(leadPulse.attentionPreview?.length ?? 0) > 0 && (
+                  <ul className="pt-2 mt-2 border-t border-[var(--brd)]/40 space-y-2">
+                    {leadPulse.attentionPreview!.map((row) => {
+                      const path = row.completeness_path || "manual_review";
+                      const PathIcon =
+                        path === "auto_quote" ? CheckCircle : path === "needs_info" ? WarningCircle : XCircle;
+                      const pathColor =
+                        path === "auto_quote"
+                          ? "text-emerald-500"
+                          : path === "needs_info"
+                            ? "text-amber-400"
+                            : "text-red-400";
+                      const nm = [row.first_name, row.last_name].filter(Boolean).join(" ") || "Unknown";
+                      const sec = Math.max(0, Math.floor((Date.now() - new Date(row.created_at).getTime()) / 1000));
+                      const m = Math.floor(sec / 60);
+                      const timer = m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+                      return (
+                        <li key={row.id}>
+                          <Link
+                            href={`/admin/leads/${row.id}`}
+                            className="flex items-start gap-2 rounded-lg p-2 -mx-2 hover:bg-[var(--gdim)]/50 text-left"
+                          >
+                            <PathIcon className={`w-4 h-4 shrink-0 mt-0.5 ${pathColor}`} weight="fill" aria-hidden />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                                <Clock className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0" aria-hidden />
+                                <span className="font-mono tabular-nums text-[var(--tx2)]">{timer}</span>
+                                <span className="font-semibold text-[var(--tx)] truncate">
+                                  {row.lead_number} · {nm}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+                                {COMPLETENESS_PATH_LABELS[path] || path}
+                                {row.service_type ? ` · ${row.service_type.replace(/_/g, " ")}` : ""}
+                              </p>
+                              {row.follow_up_sent_at ? (
+                                <p className="text-[10px] text-amber-400/90 mt-0.5">
+                                  Follow-up sent {formatRelative(row.follow_up_sent_at)}
+                                </p>
+                              ) : null}
+                            </div>
+                            <CaretRight className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0 mt-1" aria-hidden />
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </div>
           )}

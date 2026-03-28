@@ -67,14 +67,6 @@
     {
       "path": "/api/cron/data-integrity-weekly",
       "schedule": "0 7 * * 1"
-    },
-    {
-      "path": "/api/cron/recurring-deliveries",
-      "schedule": "0 10 * * *"
-    },
-    {
-      "path": "/api/cron/fleet-maintenance",
-      "schedule": "30 10 * * *"
     }
   ]
 }

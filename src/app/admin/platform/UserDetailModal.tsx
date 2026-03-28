@@ -11,6 +11,10 @@ interface User {
   name: string | null;
   role: string;
   phone?: string | null;
+  specializations?: string[] | null;
+  on_vacation?: boolean;
+  out_of_office?: boolean;
+  max_open_leads?: number | null;
 }
 
 interface UserDetailModalProps {
@@ -28,8 +32,14 @@ interface UserDetailModalProps {
 export default function UserDetailModal({ open, onClose, user, currentUserId, isPartner, isMoveClient, moveId, onSaved, onDeleted }: UserDetailModalProps) {
   const { toast } = useToast();
   const [name, setName] = useState(user.name || "");
-  const [role, setRole] = useState(["admin", "manager", "dispatcher", "coordinator", "viewer", "sales", "client"].includes(user.role) ? user.role : "dispatcher");
+  const [role, setRole] = useState(
+    ["owner", "admin", "manager", "dispatcher", "coordinator", "viewer", "sales", "client"].includes(user.role) ? user.role : "dispatcher"
+  );
   const [phone, setPhone] = useState(user.phone ?? "");
+  const [specInput, setSpecInput] = useState((user.specializations ?? []).join(", "));
+  const [onVacation, setOnVacation] = useState(!!user.on_vacation);
+  const [outOfOffice, setOutOfOffice] = useState(!!user.out_of_office);
+  const [maxOpenLeads, setMaxOpenLeads] = useState(user.max_open_leads ?? 20);
   const [newPassword, setNewPassword] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -39,13 +49,22 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
   useEffect(() => {
     if (open) {
       setName(user.name || "");
-      setRole(["admin", "manager", "dispatcher", "coordinator", "viewer", "sales", "client"].includes(user.role) ? user.role : "dispatcher");
+      setRole(
+        ["owner", "admin", "manager", "dispatcher", "coordinator", "viewer", "sales", "client"].includes(user.role) ? user.role : "dispatcher"
+      );
       setPhone(user.phone ?? "");
+      setSpecInput((user.specializations ?? []).join(", "));
+      setOnVacation(!!user.on_vacation);
+      setOutOfOffice(!!user.out_of_office);
+      setMaxOpenLeads(user.max_open_leads ?? 20);
     }
   }, [open, user]);
 
   const isSelf = currentUserId === user.id;
   const isAdmin = user.role === "admin";
+  const assignmentEligibleRoles = ["owner", "coordinator", "sales"];
+  const showLeadAssignment =
+    !user.id.startsWith("inv-") && assignmentEligibleRoles.includes(user.role);
   // Role can only be changed for users created from User management; move clients and partners are locked.
   const canEditRole = !isSelf && !isAdmin && !isPartner && !isMoveClient;
 
@@ -87,9 +106,26 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
     e.preventDefault();
     setSaving(true);
     try {
-      const payload: { name?: string; role?: string; phone?: string | null } = { name: name.trim() };
+      const payload: {
+        name?: string;
+        role?: string;
+        phone?: string | null;
+        specializations?: string[];
+        on_vacation?: boolean;
+        out_of_office?: boolean;
+        max_open_leads?: number;
+      } = { name: name.trim() };
       if (canEditRole) payload.role = role;
       if (!user.id.startsWith("inv-")) payload.phone = phone.trim() || null;
+      if (showLeadAssignment) {
+        payload.specializations = specInput
+          .split(",")
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
+        payload.on_vacation = onVacation;
+        payload.out_of_office = outOfOffice;
+        payload.max_open_leads = maxOpenLeads;
+      }
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -102,6 +138,12 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
       if (typeof data.role === "string") updates.role = data.role;
       if (payload.phone !== undefined) updates.phone = payload.phone ?? null;
       if (data.phone !== undefined) updates.phone = data.phone;
+      if (showLeadAssignment) {
+        updates.specializations = payload.specializations;
+        updates.on_vacation = payload.on_vacation;
+        updates.out_of_office = payload.out_of_office;
+        updates.max_open_leads = payload.max_open_leads;
+      }
       onSaved?.(updates);
       toast("User updated", "check");
     } catch (err: unknown) {
@@ -200,6 +242,7 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
                 disabled={!canEditRole}
                 className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none disabled:opacity-60"
               >
+                <option value="owner">Owner</option>
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
                 <option value="dispatcher">Dispatcher</option>
@@ -209,6 +252,44 @@ export default function UserDetailModal({ open, onClose, user, currentUserId, is
               </select>
             )}
           </div>
+          {showLeadAssignment && (
+            <div className="rounded-lg border border-[var(--brd)] bg-[var(--card)]/40 p-4 space-y-3">
+              <h3 className="text-[11px] font-bold tracking-wider text-[var(--tx3)] uppercase">Lead assignment</h3>
+              <p className="text-[10px] text-[var(--tx3)]">
+                Specializations are matched to lead service type (lowercase). Example: local_move, office_move, b2b_delivery
+              </p>
+              <div>
+                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Specializations</label>
+                <input
+                  type="text"
+                  value={specInput}
+                  onChange={(e) => setSpecInput(e.target.value)}
+                  placeholder="local_move, office_move, b2b_delivery"
+                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Max open leads</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={maxOpenLeads}
+                  onChange={(e) => setMaxOpenLeads(parseInt(e.target.value, 10) || 20)}
+                  className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer">
+                <input type="checkbox" checked={onVacation} onChange={(e) => setOnVacation(e.target.checked)} className="accent-[var(--gold)]" />
+                On vacation (excluded from smart assignment)
+              </label>
+              <label className="flex items-center gap-2 text-[12px] text-[var(--tx)] cursor-pointer">
+                <input type="checkbox" checked={outOfOffice} onChange={(e) => setOutOfOffice(e.target.checked)} className="accent-[var(--gold)]" />
+                Out of office
+              </label>
+            </div>
+          )}
+
           <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50">
             {saving ? "Saving…" : "Save changes"}
           </button>

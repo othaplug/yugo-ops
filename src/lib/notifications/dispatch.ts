@@ -206,6 +206,8 @@ export function buildNotificationTitle(
     high_value_move: "High-value move flag",
     system_error: "System error",
     crew_gps_offline: "Crew GPS offline",
+    lead_new: "New lead",
+    partner_pm_booking: "PM booking request",
   };
   return titles[slug] || "Notification";
 }
@@ -236,6 +238,9 @@ export function buildNotificationBody(
   if (slug === "crew_gps_offline") {
     return (data.body as string) || (data.description as string) || "";
   }
+  if (slug === "partner_pm_booking") {
+    return (data.body as string) || "";
+  }
   return (data.description as string) || "";
 }
 
@@ -264,6 +269,8 @@ export function getNotificationIcon(slug: string): string {
     high_value_move: "dollar",
     system_error: "alertTriangle",
     crew_gps_offline: "mapPin",
+    lead_new: "lightning",
+    partner_pm_booking: "truck",
   };
   return icons[slug] || "bell";
 }
@@ -290,6 +297,8 @@ export function buildNotificationLink(
   if (slug === "payment_received" || slug === "payment_failed" || slug === "deposit_received")
     return "/admin/invoices";
   if (slug === "tip_received") return "/admin/tips";
+  if (slug === "lead_new" && data.sourceId) return `/admin/leads/${data.sourceId}`;
+  if (slug === "partner_pm_booking" && data.moveId) return `/admin/moves/${data.moveId}`;
   return "/admin";
 }
 
@@ -311,5 +320,7 @@ export function getSourceType(slug: string): string {
     return "payment";
   if (slug.startsWith("partner_")) return "delivery";
   if (slug === "claim_submitted") return "claim";
+  if (slug === "lead_new") return "lead";
+  if (slug === "partner_pm_booking") return "move";
   return "system";
 }

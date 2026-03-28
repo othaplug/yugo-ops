@@ -39,7 +39,9 @@ CREATE INDEX IF NOT EXISTS idx_partner_statements_status   ON partner_statements
 CREATE INDEX IF NOT EXISTS idx_partner_statements_due_date ON partner_statements (due_date);
 
 ALTER TABLE partner_statements ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_partner_statements" ON partner_statements FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY "service_role_partner_statements" ON partner_statements FOR ALL TO service_role USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Add statement_id to deliveries
 ALTER TABLE deliveries
@@ -70,7 +72,9 @@ CREATE TABLE IF NOT EXISTS move_timeline_events (
 CREATE INDEX IF NOT EXISTS idx_move_timeline_move_id ON move_timeline_events (move_id, occurred_at ASC);
 
 ALTER TABLE move_timeline_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_move_timeline_events" ON move_timeline_events FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY "service_role_move_timeline_events" ON move_timeline_events FOR ALL TO service_role USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ─────────────────────────────────────────────────────
 -- 4. WEATHER AWARENESS
@@ -137,7 +141,9 @@ CREATE TABLE IF NOT EXISTS widget_leads (
 );
 
 ALTER TABLE widget_leads ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_widget_leads" ON widget_leads FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY "service_role_widget_leads" ON widget_leads FOR ALL TO service_role USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ─────────────────────────────────────────────────────
 -- 10. SMART ROUTING LOG
@@ -154,7 +160,9 @@ CREATE TABLE IF NOT EXISTS routing_suggestions (
 );
 
 ALTER TABLE routing_suggestions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_routing_suggestions" ON routing_suggestions FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY "service_role_routing_suggestions" ON routing_suggestions FOR ALL TO service_role USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ─────────────────────────────────────────────────────
 -- 11. PLATFORM CONFIG DEFAULTS

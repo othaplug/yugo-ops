@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { CalendarBlank, CaretLeft, CaretRight, Check, FileText, ArrowRight } from "@phosphor-icons/react";
+import { CalendarBlank, CaretLeft, CaretRight, Check, FileText, ArrowRight, CurrencyDollar } from "@phosphor-icons/react";
 
 const LineChart = dynamic(() => import("recharts").then((m) => m.LineChart), { ssr: false });
 const BarChart = dynamic(() => import("recharts").then((m) => m.BarChart), { ssr: false });
@@ -912,8 +912,9 @@ function CrewDetailView({
                                     </div>
                                   )}
                                   {job.tip > 0 && (
-                                    <div className="text-[11px] font-medium text-[var(--tx2)]">
-                                      💵 ${job.tip} tip
+                                    <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--tx2)]">
+                                      <CurrencyDollar size={14} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
+                                      ${job.tip} tip
                                     </div>
                                   )}
                                 </div>

@@ -522,7 +522,7 @@ function BusinessInfoSection() {
             Email Configuration
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {inp("notifications_from_email", "Notifications 'From' Email", "notifications@helloyugo.com", "email")}
+            {inp("notifications_from_email", "Notifications 'From' Email", "notifications@opsplus.co", "email")}
             {inp("admin_notification_email", "Admin Notification Email", "admin@helloyugo.com", "email")}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-2">The &quot;From&quot; email must be verified in your email provider (Resend). Admin notification email receives payment failures, tips, etc.</p>
@@ -1113,7 +1113,24 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   const tabParam = searchParams.get("tab") || "pricing";
   const activeTab: TabId = TABS.some((t) => t.id === tabParam) ? (tabParam as TabId) : "pricing";
   const [inviteUserOpen, setInviteUserOpen] = useState(false);
-  const [users, setUsers] = useState<{ id: string; email: string; name: string | null; role: string; status: string; last_sign_in_at?: string | null; phone?: string | null }[]>([]);
+  const [users, setUsers] = useState<
+    {
+      id: string;
+      email: string;
+      name: string | null;
+      role: string;
+      status: string;
+      last_sign_in_at?: string | null;
+      phone?: string | null;
+      specializations?: string[] | null;
+      on_vacation?: boolean;
+      out_of_office?: boolean;
+      max_open_leads?: number | null;
+    }[]
+  >([]);
+  const [leadAssignmentMode, setLeadAssignmentMode] = useState<"round_robin" | "smart" | "manual">("smart");
+  const [leadAssignmentLoading, setLeadAssignmentLoading] = useState(false);
+  const [leadAssignmentSaving, setLeadAssignmentSaving] = useState(false);
   const [usersLoading, setUsersLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; name: string | null; role: string; phone?: string | null } | null>(null);
   const [crewTracking, setCrewTracking] = useState(initialToggles.crewTracking);
@@ -1371,6 +1388,40 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
     }
   };
 
+  const fetchLeadAssignmentMode = () => {
+    setLeadAssignmentLoading(true);
+    fetch("/api/admin/lead-assignment-settings")
+      .then((r) => r.json())
+      .then((d) => {
+        const m = d?.mode;
+        if (m === "round_robin" || m === "smart" || m === "manual") setLeadAssignmentMode(m);
+      })
+      .catch(() => {})
+      .finally(() => setLeadAssignmentLoading(false));
+  };
+
+  const persistLeadAssignmentMode = async (mode: "round_robin" | "smart" | "manual") => {
+    setLeadAssignmentSaving(true);
+    try {
+      const res = await fetch("/api/admin/lead-assignment-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(typeof data.error === "string" ? data.error : "Failed to save assignment mode", "x");
+        return;
+      }
+      setLeadAssignmentMode(mode);
+      toast("Assignment mode saved", "check");
+    } catch {
+      toast("Failed to save", "x");
+    } finally {
+      setLeadAssignmentSaving(false);
+    }
+  };
+
   const fetchUsers = () => {
     setUsersLoading(true);
     fetch("/api/admin/users")
@@ -1385,6 +1436,10 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "users" && isSuperAdmin) fetchLeadAssignmentMode();
+  }, [activeTab, isSuperAdmin]);
 
 
   useEffect(() => {
@@ -2197,6 +2252,88 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {/* User Management - Superadmin only */}
       {activeTab === "users" && isSuperAdmin && (
       <section className="pt-6 border-t border-[var(--brd)]/30 first:border-t-0 first:pt-0">
+        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 mb-8 space-y-4">
+          <div>
+            <h2 className="admin-section-h2 flex items-center gap-2 text-[15px]">Team &amp; assignment</h2>
+            <p className="text-[11px] text-[var(--tx3)] mt-1">
+              Smart assignment uses workload, specializations, recent conversion (30 days), and availability. HubSpot enterprise deals stay in HubSpot — only transactional leads auto-assign here.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Assignment mode</p>
+            {leadAssignmentLoading ? (
+              <p className="text-[12px] text-[var(--tx3)]">Loading…</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {(
+                  [
+                    { id: "round_robin" as const, label: "Round-robin", sub: "Simple rotation among eligible reps" },
+                    { id: "smart" as const, label: "Smart assignment", sub: "Workload, specialization, performance, availability" },
+                    { id: "manual" as const, label: "Manual only", sub: "No automatic assignment on new leads" },
+                  ]
+                ).map((opt) => (
+                  <label
+                    key={opt.id}
+                    className={`flex items-start gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+                      leadAssignmentMode === opt.id ? "border-[var(--gold)]/50 bg-[var(--gold)]/5" : "border-[var(--brd)] hover:border-[var(--brd)]"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="lead_assignment_mode"
+                      checked={leadAssignmentMode === opt.id}
+                      onChange={() => persistLeadAssignmentMode(opt.id)}
+                      disabled={leadAssignmentSaving}
+                      className="mt-1 accent-[var(--gold)]"
+                    />
+                    <span>
+                      <span className="block text-[13px] font-semibold text-[var(--tx)]">{opt.label}</span>
+                      <span className="block text-[11px] text-[var(--tx3)]">{opt.sub}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="overflow-x-auto border border-[var(--brd)]/60 rounded-lg">
+            <table className="w-full text-left text-[11px]">
+              <thead>
+                <tr className="border-b border-[var(--brd)] bg-[var(--bg)] text-[var(--tx3)] uppercase tracking-wider">
+                  <th className="p-2.5 font-semibold">Rep</th>
+                  <th className="p-2.5 font-semibold">Role</th>
+                  <th className="p-2.5 font-semibold">Specializations</th>
+                  <th className="p-2.5 font-semibold">Max open</th>
+                  <th className="p-2.5 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users
+                  .filter((u) => ["owner", "coordinator", "sales"].includes(u.role))
+                  .map((u) => {
+                    const roleLabel =
+                      u.role === "owner" ? "Owner" : u.role === "coordinator" ? "Coordinator" : "Sales";
+                    const away = u.on_vacation || u.out_of_office;
+                    const statusLabel = away ? "Away" : u.status === "activated" ? "Active" : "Pending";
+                    return (
+                      <tr key={u.id} className="border-b border-[var(--brd)]/40">
+                        <td className="p-2.5 text-[var(--tx)] font-medium">{u.name || u.email}</td>
+                        <td className="p-2.5 text-[var(--tx2)]">{roleLabel}</td>
+                        <td className="p-2.5 text-[var(--tx2)] max-w-[200px] truncate" title={(u.specializations ?? []).join(", ")}>
+                          {(u.specializations ?? []).length ? (u.specializations ?? []).join(", ") : "—"}
+                        </td>
+                        <td className="p-2.5 text-[var(--tx2)]">{u.max_open_leads ?? 20}</td>
+                        <td className="p-2.5">
+                          <span className={away ? "text-[var(--org)]" : "text-[var(--grn)]"}>{statusLabel}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-[10px] text-[var(--tx3)]">Edit specializations, caps, and availability in each user&apos;s detail panel below.</p>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="min-w-0">
             <h2 className="admin-section-h2 flex items-center gap-2">
@@ -2251,7 +2388,19 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
                       {u.status === "activated" ? "Active" : u.status === "pending" ? "Pending" : "Inactive"}
                     </span>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gdim)] text-[var(--gold)]">
-                      {u.role === "owner" ? "Owner" : u.role === "admin" ? "Admin" : u.role === "manager" ? "Manager" : u.role === "coordinator" ? "Coordinator" : u.role === "viewer" ? "Viewer" : u.role === "sales" ? "Sales" : "Dispatcher"}
+                      {u.role === "owner"
+                        ? "Owner"
+                        : u.role === "admin"
+                          ? "Admin"
+                          : u.role === "manager"
+                            ? "Manager"
+                            : u.role === "coordinator"
+                              ? "Coordinator"
+                              : u.role === "viewer"
+                                ? "Viewer"
+                                : u.role === "sales"
+                                  ? "Sales"
+                                  : "Dispatcher"}
                     </span>
                     {u.last_sign_in_at && (
                       <span className="text-[9px] text-[var(--tx3)]">

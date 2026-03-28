@@ -41,6 +41,7 @@ import {
   ShippingContainer,
   Notepad,
   NavigationArrow,
+  Funnel,
 } from "@phosphor-icons/react";
 
 const SIZE = 16;
@@ -95,4 +96,6 @@ export const Icons = {
   /** Inbound freight / container shipments */
   shippingContainer: ic(ShippingContainer),
   drafts:         ic(Notepad),
+  /** Leads / funnel (speed-to-lead) */
+  funnel:         ic(Funnel),
 };

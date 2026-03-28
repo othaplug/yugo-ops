@@ -81,10 +81,14 @@ export async function getDispatchPhone(): Promise<string> {
 
 export async function getNotificationsFromEmail(): Promise<string> {
   const name = await getCompanyDisplayName();
-  const email = await getConfig(
-    "notifications_from_email",
-    "notifications@helloyugo.com",
-  );
+  const envAddr = process.env.NOTIFICATIONS_FROM_EMAIL?.trim();
+  const email =
+    envAddr && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(envAddr)
+      ? envAddr
+      : await getConfig(
+          "notifications_from_email",
+          "notifications@opsplus.co",
+        );
   return `${name} <${email}>`;
 }
 

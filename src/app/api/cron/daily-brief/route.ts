@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
-import { getTodayString } from "@/lib/business-timezone";
+import {
+  addCalendarDaysYmd,
+  getAppTimezone,
+  getTodayString,
+  utcInstantForCalendarDateInTz,
+} from "@/lib/business-timezone";
 
 /**
  * Vercel Cron: runs daily at 7 AM EST.
@@ -37,6 +42,37 @@ export async function GET(req: NextRequest) {
   if (!coordinatorEmail) {
     return NextResponse.json({ error: "coordinator_email not configured" }, { status: 400 });
   }
+
+  const tz = getAppTimezone();
+  const yesterday = addCalendarDaysYmd(today, -1, tz);
+  const yStart = utcInstantForCalendarDateInTz(yesterday, tz).toISOString();
+  const yEnd = utcInstantForCalendarDateInTz(addCalendarDaysYmd(yesterday, 1, tz), tz).toISOString();
+
+  const { data: leadsYesterday } = await supabase
+    .from("leads")
+    .select("id, response_time_seconds, first_response_at, status, estimated_value")
+    .gte("created_at", yStart)
+    .lt("created_at", yEnd);
+
+  const newY = leadsYesterday?.length ?? 0;
+  const respondedY = (leadsYesterday || []).filter((l) => l.first_response_at);
+  const avgYMin =
+    respondedY.length > 0
+      ? Math.round(
+          respondedY.reduce((s, l) => s + (Number(l.response_time_seconds) || 0), 0) / respondedY.length / 60,
+        )
+      : null;
+  const convertedY = (leadsYesterday || []).filter((l) => l.status === "converted").length;
+  const revY = (leadsYesterday || [])
+    .filter((l) => l.status === "converted")
+    .reduce((s, l) => s + (Number(l.estimated_value) || 0), 0);
+
+  const { data: staleList } = await supabase
+    .from("leads")
+    .select("lead_number, first_name, source, move_size")
+    .eq("status", "stale")
+    .order("created_at", { ascending: false })
+    .limit(5);
 
   // ── Today's moves ──
   const { data: moves } = await supabase
@@ -131,6 +167,36 @@ export async function GET(req: NextRequest) {
     ? weatherAlerts.map((w) => `<li style="margin-bottom:4px;font-size:12px;color:#60a5fa;">${w}</li>`).join("")
     : "";
 
+  function formatCompactLeadMoney(n: number) {
+    if (!n || n <= 0) return "$0";
+    return `$${Math.round(n).toLocaleString()}`;
+  }
+
+  const leadYesterdayLine =
+    newY > 0
+      ? `${newY} new yesterday.${avgYMin != null ? ` Avg response: ${avgYMin} min.` : ""}${
+          convertedY > 0
+            ? ` ${convertedY} converted (${formatCompactLeadMoney(revY)} est. value).`
+            : ""
+        }`
+      : "No new leads yesterday.";
+
+  /** Inline SVG (mail) — email clients; replaces emoji */
+  const leadBriefMailSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A962" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:8px;display:inline-block" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
+
+  const staleRows =
+    staleList && staleList.length > 0
+      ? staleList
+          .map((s) => {
+            const num = s.lead_number || "—";
+            const nm = s.first_name || "Unknown";
+            const src = String(s.source || "").replace(/_/g, " ");
+            const sz = s.move_size || "—";
+            return `<li style="margin-bottom:4px;font-size:12px;color:#f87171;">${num} — ${nm} (${src}, ${sz})</li>`;
+          })
+          .join("")
+      : "";
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -156,6 +222,19 @@ export async function GET(req: NextRequest) {
       <div style="flex:1;background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;text-align:center;">
         <div style="font-size:24px;font-weight:700;color:${unassigned.length > 0 ? "#ef4444" : "#22c55e"};">${unassigned.length}</div>
         <div style="font-size:10px;color:#9c9489;text-transform:capitalize;letter-spacing:1px;">Unassigned</div>
+      </div>
+    </div>
+
+    <!-- Leads -->
+    <div style="margin-bottom:20px;">
+      <p style="font-size:10px;letter-spacing:1.5px;text-transform:capitalize;color:#9c9489;margin:0 0 10px;">Leads</p>
+      <div style="background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;">
+        <p style="margin:0 0 8px;font-size:12px;color:#e8e0d0;">${leadBriefMailSvg}<span style="vertical-align:middle;">${leadYesterdayLine}</span></p>
+        ${
+          staleRows
+            ? `<p style="margin:10px 0 6px;font-size:11px;font-weight:700;color:#f87171;">Stale (follow up)</p><ul style="margin:0;padding-left:18px;">${staleRows}</ul>`
+            : ""
+        }
       </div>
     </div>
 
@@ -226,7 +305,11 @@ export async function GET(req: NextRequest) {
     const smsAlertPart = alerts.length > 0 ? ` ${alerts.length} alert${alerts.length > 1 ? "s" : ""}.` : "";
     const smsExpiring = expiring.length > 0 ? ` ${expiring.length} quote${expiring.length > 1 ? "s" : ""} expiring.` : "";
     const smsUnassigned = unassigned.length > 0 ? ` ${unassigned.length} unassigned.` : "";
-    const smsBody = `Yugo Daily Brief: ${jobs.length} job${jobs.length !== 1 ? "s" : ""} today, $${revenue.toLocaleString()} revenue.${smsAlertPart}${smsUnassigned}${smsExpiring}`;
+    const smsLeads =
+      newY > 0
+        ? ` Leads yday: ${newY} new${avgYMin != null ? `, ~${avgYMin}m resp` : ""}.${staleList?.length ? ` ${staleList.length} stale.` : ""}`
+        : "";
+    const smsBody = `Yugo Daily Brief: ${jobs.length} job${jobs.length !== 1 ? "s" : ""} today, $${revenue.toLocaleString()} revenue.${smsAlertPart}${smsUnassigned}${smsExpiring}${smsLeads}`;
     await sendSMS(coordinatorPhone, smsBody).catch(() => {});
   }
 

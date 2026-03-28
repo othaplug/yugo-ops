@@ -6,6 +6,14 @@ import { verificationCodeEmail } from "@/lib/email-templates";
 import { getEmailFrom } from "@/lib/email/send";
 import { rateLimit } from "@/lib/rate-limit";
 
+function formatResendError(error: unknown): string {
+  if (error && typeof error === "object" && "message" in error) {
+    const m = (error as { message: unknown }).message;
+    if (typeof m === "string" && m.trim()) return m;
+  }
+  return "Email could not be sent. Check spam or try again.";
+}
+
 function generateCode(): string {
   const arr = new Uint8Array(6);
   crypto.getRandomValues(arr);
@@ -37,22 +45,43 @@ export async function POST() {
 
     const code = generateCode();
     const admin = createAdminClient();
-    await admin.from("email_verification_codes").insert({
-      user_id: user.id,
-      code,
-      purpose: "2fa",
-      expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-    });
+    const { data: codeRow, error: insertError } = await admin
+      .from("email_verification_codes")
+      .insert({
+        user_id: user.id,
+        code,
+        purpose: "2fa",
+        expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !codeRow?.id) {
+      console.error("[2fa/send] email_verification_codes insert failed", insertError);
+      return NextResponse.json(
+        { error: "Could not create verification code. Try again." },
+        { status: 500 },
+      );
+    }
 
     const resend = getResend();
     const emailFrom = await getEmailFrom();
-    await resend.emails.send({
+    const { error: sendError } = await resend.emails.send({
       from: emailFrom,
-      to: user.email,
+      to: [user.email],
       subject: "Your Yugo+ login code",
       html: verificationCodeEmail({ code, purpose: "2fa" }),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });
+
+    if (sendError) {
+      console.error("[2fa/send] Resend rejected send", sendError, { from: emailFrom });
+      await admin.from("email_verification_codes").delete().eq("id", codeRow.id);
+      return NextResponse.json(
+        { error: formatResendError(sendError) },
+        { status: 502 },
+      );
+    }
 
     return NextResponse.json({ ok: true, message: "Code sent to your email" });
   } catch (err: unknown) {

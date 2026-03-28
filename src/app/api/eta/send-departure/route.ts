@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
             event_slug: "crew_departed",
             title: "Crew departed, send personal text",
             body: `${move.client_name} · ETA ~${etaMinutes} min. Send them a personal update.`,
-            icon: "🚚",
+            icon: "truck",
             link: `/admin/moves/${move.id}`,
             source_type: "move",
             source_id: move.id,

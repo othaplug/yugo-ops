@@ -17,7 +17,7 @@ export async function sendPushToUser(
 ): Promise<void> {
   if (!privateKey || !publicKey) return;
 
-  webPush.setVapidDetails("mailto:notifications@helloyugo.com", publicKey, privateKey);
+  webPush.setVapidDetails("mailto:notifications@opsplus.co", publicKey, privateKey);
 
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const admin = createAdminClient();

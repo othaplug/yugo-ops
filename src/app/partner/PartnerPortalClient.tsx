@@ -27,6 +27,7 @@ import PartnerDeliveryDetailModal from "./PartnerDeliveryDetailModal";
 import PartnerEditDeliveryModal from "./PartnerEditDeliveryModal";
 import PartnerSettingsPanel from "./PartnerSettingsPanel";
 import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
+import PartnerPropertyManagementPortal from "./PartnerPropertyManagementPortal";
 import { PartnerNotificationProvider, usePartnerNotifications } from "./PartnerNotificationContext";
 import { usePartnerOrgDisplayName } from "./PartnerOrgContext";
 import { ToastProvider, useToast } from "@/app/admin/components/Toast";
@@ -313,6 +314,10 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
     if (status === "paid" || status === "void" || status === "cancelled") return false;
     return new Date(inv.due_date + "T23:59:59") < new Date();
   });
+
+  if (features.showPropertyManagementPortal) {
+    return <PartnerPropertyManagementPortal orgId={orgId} orgName={headerOrgName} contactName={contactName} />;
+  }
 
   return (
     <PartnerNotificationProvider orgId={orgId}>

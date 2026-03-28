@@ -27,6 +27,7 @@ export function parseQuantityFromLine(text: string): { name: string; qty: number
 export type ItemWeightLike = {
   slug: string;
   item_name: string;
+  weight_score?: number;
   active?: boolean;
 };
 

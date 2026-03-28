@@ -77,7 +77,7 @@ const FEATURE_DEFAULTS: Record<string, string> = {
   followup_max_attempts: "3",
   sms_eta_enabled: "false",
   quote_sms_enabled: "true",
-  public_domain: "helloyugo.com",
+  public_domain: "opsplus.co",
   sms_enabled: "true",
   sms_followup_enabled: "true",
   sms_premove_enabled: "true",

@@ -25,28 +25,33 @@ export default function CalendarHeader({
     <div className="px-3 sm:px-5 pt-4 pb-3 space-y-2 border-b border-[var(--brd)]/50">
       {/* Single row: title · nav · spacer · filters · view toggle · CTA */}
       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-        {/* Title */}
-        <h1 className="font-hero text-[15px] sm:text-[17px] font-bold text-[var(--tx)] leading-none whitespace-nowrap shrink-0">
+        {/* Title — larger on phones; compact on md+ where the toolbar is dense */}
+        <h1 className="font-hero text-[22px] font-bold text-[var(--tx)] leading-tight shrink-0 md:whitespace-nowrap md:text-[17px] md:leading-none">
           {headerLabel}
         </h1>
 
         {/* Date navigation */}
         <div className="flex items-center gap-0.5 shrink-0">
           <button
+            type="button"
             onClick={() => onNavigate(-1)}
-            className="p-1 rounded-md hover:bg-[var(--card)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+            className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center p-2 sm:p-1 rounded-md hover:bg-[var(--card)] text-[var(--tx2)] hover:text-[var(--tx)] transition-colors"
+            aria-label="Previous period"
           >
-            <CaretLeft size={13} weight="regular" className="text-current" aria-hidden />
+            <CaretLeft size={20} weight="regular" className="text-current" aria-hidden />
           </button>
           <button
+            type="button"
             onClick={() => onNavigate(1)}
-            className="p-1 rounded-md hover:bg-[var(--card)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors"
+            className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center p-2 sm:p-1 rounded-md hover:bg-[var(--card)] text-[var(--tx2)] hover:text-[var(--tx)] transition-colors"
+            aria-label="Next period"
           >
-            <CaretRight size={13} weight="regular" className="text-current" aria-hidden />
+            <CaretRight size={20} weight="regular" className="text-current" aria-hidden />
           </button>
           <button
+            type="button"
             onClick={onToday}
-            className="ml-0.5 px-2 py-0.5 rounded-md text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
+            className="ml-0.5 min-h-[36px] sm:min-h-0 px-3 py-2 sm:px-2 sm:py-0.5 rounded-md text-xs sm:text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
           >
             Today
           </button>
@@ -103,15 +108,16 @@ export default function CalendarHeader({
         </div>
 
         {/* View mode segmented control */}
-        <div className="flex bg-[var(--bg)] border border-[var(--brd)] rounded-md p-0.5 shrink-0">
+        <div className="flex bg-[var(--bg)] border border-[var(--brd)] rounded-lg sm:rounded-md p-1 sm:p-0.5 shrink-0 w-full sm:w-auto min-w-0">
           {VIEWS.map((mode) => (
             <button
               key={mode}
+              type="button"
               onClick={() => onViewChange(mode)}
-              className={`px-2 py-0.5 rounded text-[10px] font-semibold capitalize transition-colors ${
+              className={`flex-1 sm:flex-none min-h-[40px] sm:min-h-0 px-2 py-2 sm:py-0.5 rounded-md sm:rounded text-xs sm:text-[10px] font-semibold capitalize transition-colors ${
                 view === mode
                   ? "bg-[var(--card)] text-[var(--gold)] shadow-sm"
-                  : "text-[var(--tx3)] hover:text-[var(--tx)]"
+                  : "text-[var(--tx2)] hover:text-[var(--tx)]"
               }`}
             >
               {mode}
@@ -120,19 +126,20 @@ export default function CalendarHeader({
         </div>
 
         <button
+          type="button"
           onClick={onScheduleJob}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors shrink-0"
+          className="inline-flex items-center justify-center gap-1 min-h-[40px] sm:min-h-0 px-4 sm:px-2.5 py-2 sm:py-1 rounded-lg sm:rounded-md text-xs sm:text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors shrink-0 w-full sm:w-auto"
         >
           + Schedule
         </button>
       </div>
 
       {/* Mobile-only filter row */}
-      <div className="flex sm:hidden items-center gap-1 flex-wrap">
+      <div className="flex sm:hidden items-center gap-1.5 flex-wrap">
         <select
           value={filters.crewId}
           onChange={(e) => onFiltersChange({ ...filters, crewId: e.target.value })}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-0.5 text-[var(--tx2)] outline-none"
+          className="text-xs min-h-[40px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-2 text-[var(--tx2)] outline-none"
         >
           <option value="">All Teams</option>
           {crews.map((c) => (
@@ -142,7 +149,7 @@ export default function CalendarHeader({
         <select
           value={filters.type}
           onChange={(e) => onFiltersChange({ ...filters, type: e.target.value })}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-0.5 text-[var(--tx2)] outline-none"
+          className="text-xs min-h-[40px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-2 text-[var(--tx2)] outline-none"
         >
           <option value="">All Types</option>
           <option value="move">Moves</option>
@@ -154,7 +161,7 @@ export default function CalendarHeader({
         <select
           value={filters.status}
           onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-          className="text-[10px] bg-[var(--bg)] border border-[var(--brd)] rounded-md px-2 py-0.5 text-[var(--tx2)] outline-none"
+          className="text-xs min-h-[40px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-2.5 py-2 text-[var(--tx2)] outline-none"
         >
           <option value="">All Statuses</option>
           <option value="scheduled">Scheduled</option>

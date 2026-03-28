@@ -31,8 +31,8 @@ async function main() {
   }
 
   const sql = fs.readFileSync(MIGRATION_FILE, "utf-8");
-  console.log(`📋 Running migration: ${path.basename(MIGRATION_FILE)}`);
-  console.log(`🔗 Project: ${PROJECT_REF}\n`);
+  console.log(`Running migration: ${path.basename(MIGRATION_FILE)}`);
+  console.log(`Project: ${PROJECT_REF}\n`);
 
   const res = await fetch(
     `https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`,
@@ -53,7 +53,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("✅ Migration applied successfully!");
+  console.log("Migration applied successfully.");
   if (body && Object.keys(body).length > 0) {
     console.log("Response:", JSON.stringify(body, null, 2));
   }

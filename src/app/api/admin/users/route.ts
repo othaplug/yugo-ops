@@ -9,7 +9,9 @@ export async function GET() {
   try {
     const admin = createAdminClient();
 
-    const { data: platformUsers, error: puError } = await admin.from("platform_users").select("user_id, email, name, role, created_at, phone");
+    const { data: platformUsers, error: puError } = await admin
+      .from("platform_users")
+      .select("user_id, email, name, role, created_at, phone, specializations, on_vacation, out_of_office, max_open_leads");
     if (puError) console.error("[admin/users] platform_users:", puError);
     const platformMap = new Map<string, { email: string; name: string | null; role: string; created_at: string | null; phone: string | null }>();
     for (const p of platformUsers ?? []) {
@@ -46,6 +48,10 @@ export async function GET() {
       status: "activated" | "pending" | "inactive";
       move_id?: string | null;
       phone?: string | null;
+      specializations?: string[] | null;
+      on_vacation?: boolean;
+      out_of_office?: boolean;
+      max_open_leads?: number | null;
     }> = [];
 
     // Internal team only: exclude partner users and client role
@@ -66,6 +72,10 @@ export async function GET() {
         last_sign_in_at: auth?.last_sign_in_at ?? null,
         status: auth?.last_sign_in_at ? "activated" : "pending",
         phone: p.phone ?? null,
+        specializations: Array.isArray(p.specializations) ? (p.specializations as string[]) : null,
+        on_vacation: !!p.on_vacation,
+        out_of_office: !!p.out_of_office,
+        max_open_leads: typeof p.max_open_leads === "number" ? p.max_open_leads : 20,
       });
     }
 

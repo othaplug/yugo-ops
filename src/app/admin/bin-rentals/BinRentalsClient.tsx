@@ -102,7 +102,7 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
 
   return (
     <PageContent>
-      {/* Stats bar */}
+      {/* Stats bar — min label height keeps values aligned when titles wrap */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <StatCard
           icon={<Recycle size={18} color="#C9A962" />}
@@ -160,8 +160,83 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
         </Link>
       </div>
 
-      {/* Table */}
-      <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+      {/* Mobile: card list (matches stat tile language) */}
+      <div className="md:hidden space-y-3">
+        {filtered.length === 0 ? (
+          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl px-4 py-10 text-center text-[var(--tx2)] text-[14px]">
+            {search || statusFilter !== "all" ? "No orders match your filter." : "No bin orders yet."}
+          </div>
+        ) : (
+          filtered.map((o) => (
+            <Link
+              key={o.id}
+              href={`/admin/bin-rentals/${o.id}`}
+              className="block bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 text-left hover:bg-[var(--gdim)]/40 active:scale-[0.99] transition-all touch-manipulation"
+            >
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <Recycle size={22} color="#C9A962" className="shrink-0 mt-0.5" weight="duotone" aria-hidden />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 font-mono font-bold text-[17px] text-[var(--gold)]">
+                      <span className="truncate">{o.order_number}</span>
+                      {o.status === "overdue" && <Warning size={16} color="#ef4444" className="shrink-0" aria-hidden />}
+                    </div>
+                    <p className="text-[15px] font-semibold text-[var(--tx)] truncate mt-0.5">{o.client_name}</p>
+                    <p className="text-[12px] text-[var(--tx3)] truncate">{o.client_email}</p>
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0 inline-flex px-2.5 py-1 rounded-full text-[12px] font-semibold ${STATUS_STYLES[o.status] || "bg-[var(--gdim)] text-[var(--tx3)]"}`}
+                >
+                  {STATUS_LABELS[o.status] || o.status}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[13px]">
+                <div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-0.5">Bundle</p>
+                  <p className="text-[var(--tx)] font-medium">
+                    {BUNDLE_LABELS[o.bundle_type] || o.bundle_type}{" "}
+                    <span className="text-[var(--tx3)] font-normal">({o.bin_count})</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-0.5">Move date</p>
+                  <p className="text-[var(--tx2)]">{fmtDate(o.move_date)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-0.5">Drop-off</p>
+                  <div className="flex items-center gap-1.5 text-[var(--tx2)]">
+                    {o.drop_off_completed_at ? (
+                      <CheckCircle size={14} color="#22c55e" aria-hidden />
+                    ) : (
+                      <span className="w-3 h-3 rounded-full border border-[var(--brd)] shrink-0" aria-hidden />
+                    )}
+                    {fmtDate(o.drop_off_date)}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-0.5">Pickup</p>
+                  <div className="flex items-center gap-1.5 text-[var(--tx2)]">
+                    {o.pickup_completed_at ? (
+                      <CheckCircle size={14} color="#22c55e" aria-hidden />
+                    ) : (
+                      <span className="w-3 h-3 rounded-full border border-[var(--brd)] shrink-0" aria-hidden />
+                    )}
+                    {fmtDate(o.pickup_date)}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-[var(--brd)]/60 flex items-center justify-between">
+                <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)]">Total</span>
+                <span className="text-[20px] font-bold text-[var(--tx)]">${Number(o.total).toFixed(0)}</span>
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+
+      {/* md+: table */}
+      <div className="hidden md:block bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
@@ -231,7 +306,7 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
         </div>
       </div>
 
-      <p className="text-[11px] text-[var(--tx3)] mt-3 text-right">
+      <p className="text-[12px] sm:text-[11px] text-[var(--tx3)] mt-3 text-right">
         {filtered.length} of {orders.length} orders
       </p>
     </PageContent>
@@ -241,9 +316,11 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-2">
-        {icon}
-        <span className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)]">{label}</span>
+      <div className="flex items-start gap-2 mb-2 min-h-[2.75rem]">
+        <span className="shrink-0 pt-0.5">{icon}</span>
+        <span className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)] leading-snug line-clamp-2">
+          {label}
+        </span>
       </div>
       <p className="text-[22px] font-bold" style={{ color }}>{value}</p>
     </div>

@@ -22,6 +22,7 @@ import {
   CaretLeft,
   CaretRight,
   FilePlus,
+  House,
   List,
   MapPin,
   Plus,
@@ -59,6 +60,14 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       { href: "/admin/crew", label: "Live Tracking", Icon: Icons.mapPin },
       { href: "/admin/crew/analytics", label: "Crew Analytics", Icon: Icons.barChart, minRole: "admin" },
       { href: "/admin/reports", label: "Reports", Icon: Icons.clipboardList, minRole: "admin" },
+    ],
+  },
+  {
+    label: "Leads",
+    items: [
+      { href: "/admin/leads", label: "Dashboard", Icon: Icons.funnel, minRole: "sales" },
+      { href: "/admin/leads/all", label: "All Leads", Icon: Icons.clipboardList, minRole: "sales" },
+      { href: "/admin/leads/mine", label: "My Leads", Icon: Icons.userCheck, minRole: "sales" },
     ],
   },
   {
@@ -294,7 +303,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
   const userLevel = ROLE_LEVEL[role] ?? 0;
 
   const MOBILE_NAV = [
-    { href: "/admin", label: "Home", Icon: Icons.home, exact: true as const },
+    { href: "/admin", label: "Home", Icon: House, exact: true as const },
   ].filter((item) => {
     const needed = ROLE_LEVEL[(item as { minRole?: string }).minRole ?? "viewer"] ?? 0;
     return userLevel >= needed || isSuperAdmin;
@@ -549,76 +558,92 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               )}
 
               <nav
-                className="fixed bottom-0 left-0 right-0 z-[60] glass-topbar border-t border-[var(--brd)]/50"
+                className="fixed bottom-0 left-0 right-0 z-[60] glass-topbar border-t border-[var(--brd)]/50 overflow-x-hidden isolate"
                 style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
               >
-                <div className="flex items-end h-16">
-                  {/* Left two nav items */}
-                  {MOBILE_NAV.slice(0, 2).map((item) => {
-                    const active = (item as { exact?: boolean }).exact ? pathname === item.href : pathname.startsWith(item.href);
-                    const ItemIcon = item.Icon;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation transition-colors ${
-                          active ? "text-[var(--gold)]" : "text-[var(--tx3)]"
-                        }`}
-                      >
-                        <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
-                          <ItemIcon />
-                        </span>
-                        <span className="text-[9px] font-bold tracking-wide capitalize leading-none">{item.label}</span>
-                      </Link>
-                    );
-                  })}
+                <div
+                  className="grid items-end min-h-[60px] w-full max-w-full"
+                  style={{ gridTemplateColumns: "minmax(0,1fr) 5.25rem minmax(0,1fr)" }}
+                >
+                  {/* Left tab(s) */}
+                  <div className="flex items-end justify-evenly gap-0.5 min-w-0 pb-1">
+                    {MOBILE_NAV.slice(0, 2).map((item) => {
+                      const active = (item as { exact?: boolean }).exact ? pathname === item.href : pathname.startsWith(item.href);
+                      const ItemIcon = item.Icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] px-1 py-1 touch-manipulation transition-colors ${
+                            active ? "text-[var(--gold)]" : "text-[var(--tx2)]"
+                          }`}
+                        >
+                          <ItemIcon
+                            size={26}
+                            weight={active ? "fill" : "regular"}
+                            className="shrink-0 text-current"
+                            aria-hidden
+                          />
+                          <span className="text-[11px] font-bold tracking-wide capitalize leading-none">{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
 
-                  {/* Centre gold + button */}
-                  <div className="flex-1 flex flex-col items-center justify-end pb-1 relative">
+                  {/* Centre quick-create — fixed column width so the FAB does not paint into the side tabs */}
+                  <div className="flex flex-col items-center justify-end pb-1 pt-2 relative z-20 w-full">
                     <button
+                      type="button"
                       onClick={() => setQuickActionsOpen((v) => !v)}
                       aria-label="Quick create"
                       aria-expanded={quickActionsOpen}
-                      className={`-mt-5 w-[52px] h-[52px] rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all touch-manipulation ${
-                        quickActionsOpen
-                          ? "bg-[var(--gold2)] rotate-45"
-                          : "bg-[var(--gold)]"
+                      className={`-mt-4 w-[50px] h-[50px] rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all touch-manipulation ${
+                        quickActionsOpen ? "bg-[var(--gold2)]" : "bg-[var(--gold)]"
                       }`}
                       style={{ boxShadow: "0 2px 10px rgba(201,169,98,0.22), 0 1px 2px rgba(0,0,0,0.06)" }}
                     >
-                      <Plus size={22} weight="regular" color="#fff" aria-hidden />
+                      {quickActionsOpen ? (
+                        <X size={24} weight="bold" color="#fff" aria-hidden />
+                      ) : (
+                        <Plus size={24} weight="bold" color="#fff" aria-hidden />
+                      )}
                     </button>
-                    <span className="mt-1 text-[9px] font-bold tracking-wide capitalize leading-none text-[var(--tx3)]">Create</span>
+                    <span className="mt-1 text-[11px] font-bold tracking-wide capitalize leading-none text-[var(--tx2)]">Create</span>
                   </div>
 
-                  {/* Right two nav items */}
-                  {MOBILE_NAV.slice(2).map((item) => {
-                    const active = (item as { exact?: boolean }).exact ? pathname === item.href : pathname.startsWith(item.href);
-                    const ItemIcon = item.Icon;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation transition-colors ${
-                          active ? "text-[var(--gold)]" : "text-[var(--tx3)]"
-                        }`}
-                      >
-                        <span className={active ? "text-[var(--gold)]" : "text-[var(--tx3)]"}>
-                          <ItemIcon />
-                        </span>
-                        <span className="text-[9px] font-bold tracking-wide capitalize leading-none">{item.label}</span>
-                      </Link>
-                    );
-                  })}
+                  {/* Right tab(s) + More */}
+                  <div className="flex items-end justify-evenly gap-0.5 min-w-0 pb-1">
+                    {MOBILE_NAV.slice(2).map((item) => {
+                      const active = (item as { exact?: boolean }).exact ? pathname === item.href : pathname.startsWith(item.href);
+                      const ItemIcon = item.Icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] px-1 py-1 touch-manipulation transition-colors ${
+                            active ? "text-[var(--gold)]" : "text-[var(--tx2)]"
+                          }`}
+                        >
+                          <ItemIcon
+                            size={26}
+                            weight={active ? "fill" : "regular"}
+                            className="shrink-0 text-current"
+                            aria-hidden
+                          />
+                          <span className="text-[11px] font-bold tracking-wide capitalize leading-none">{item.label}</span>
+                        </Link>
+                      );
+                    })}
 
-                  {/* More, opens full sidebar drawer */}
-                  <button
-                    onClick={() => setSidebarOpen(true)}
-                    className="flex-1 flex flex-col items-center justify-center gap-[3px] h-full pb-1 touch-manipulation text-[var(--tx3)]"
-                  >
-                    <SquaresFour size={16} weight="regular" className="text-current" aria-hidden />
-                    <span className="text-[9px] font-bold tracking-wide capitalize leading-none">More</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setSidebarOpen(true)}
+                      className="flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] px-1 py-1 touch-manipulation text-[var(--tx2)]"
+                    >
+                      <SquaresFour size={26} weight="regular" className="shrink-0 text-current" aria-hidden />
+                      <span className="text-[11px] font-bold tracking-wide capitalize leading-none">More</span>
+                    </button>
+                  </div>
                 </div>
               </nav>
             </div>
