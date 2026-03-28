@@ -24,10 +24,10 @@ export default async function PrivacyPolicyPage() {
         <Link href="/" style={{ textDecoration: "none" }}>
           <YugoLogo size={20} variant="gold" onLightBackground />
         </Link>
-        <nav style={{ display: "flex", gap: 20, fontSize: 12, color: "#888" }}>
+        <nav style={{ display: "flex", gap: 20, fontSize: 12, color: "#4F4B47" }}>
           <Link href="/legal/privacy-policy" style={{ color: "#1A1714", fontWeight: 600, textDecoration: "none" }}>Privacy Policy</Link>
-          <Link href="/legal/terms-of-use" style={{ color: "#888", textDecoration: "none" }}>Terms of Use</Link>
-          <Link href="/legal/terms-and-conditions" style={{ color: "#888", textDecoration: "none" }}>Terms & Conditions</Link>
+          <Link href="/legal/terms-of-use" style={{ color: "#4F4B47", textDecoration: "none" }}>Terms of Use</Link>
+          <Link href="/legal/terms-and-conditions" style={{ color: "#4F4B47", textDecoration: "none" }}>Terms & Conditions</Link>
         </nav>
       </header>
 
@@ -35,7 +35,7 @@ export default async function PrivacyPolicyPage() {
         <div style={{ marginBottom: 40 }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "capitalize", color: "#C9A962", marginBottom: 8 }}>Legal</p>
           <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 40, fontWeight: 500, color: "#1A1714", marginBottom: 12, lineHeight: 1.2 }}>Privacy Policy</h1>
-          <p style={{ fontSize: 14, color: "#888" }}>Effective date: {EFFECTIVE} · {companyLegal}</p>
+          <p style={{ fontSize: 14, color: "#4F4B47" }}>Effective date: {EFFECTIVE} · {companyLegal}</p>
         </div>
 
         <section style={{ marginBottom: 36 }}>

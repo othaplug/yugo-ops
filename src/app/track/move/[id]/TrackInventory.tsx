@@ -193,12 +193,12 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-[15px] font-bold text-[#1A1A1A]">Request Extra Item</h3>
-              <p className="text-[11px] text-[#888] mt-0.5">Sent to your coordinator for approval</p>
+              <p className="text-[11px] text-[#4F4B47] mt-0.5">Sent to your coordinator for approval</p>
             </div>
             <button
               type="button"
               onClick={() => setAddExtraOpen(false)}
-              className="w-7 h-7 rounded-full bg-[#F5F5F3] flex items-center justify-center text-[#666] hover:bg-[#EEECEA] transition-colors"
+              className="w-7 h-7 rounded-full bg-[#F5F5F3] flex items-center justify-center text-[#454545] hover:bg-[#EEECEA] transition-colors"
             >
               <X size={10} weight="regular" className="text-current" />
             </button>
@@ -206,7 +206,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
         </div>
         <form onSubmit={handleAddExtra} className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold capitalize tracking-wider text-[#888] mb-1.5">Description *</label>
+            <label className="block text-[10px] font-bold capitalize tracking-wider text-[#4F4B47] mb-1.5">Description *</label>
             <input
               value={extraDesc}
               onChange={(e) => setExtraDesc(e.target.value)}
@@ -217,7 +217,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold capitalize tracking-wider text-[#888] mb-1.5">Quantity</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wider text-[#4F4B47] mb-1.5">Quantity</label>
               <input
                 type="number"
                 min={1}
@@ -227,7 +227,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold capitalize tracking-wider text-[#888] mb-1.5">Room</label>
+              <label className="block text-[10px] font-bold capitalize tracking-wider text-[#4F4B47] mb-1.5">Room</label>
               <input
                 value={extraRoom}
                 onChange={(e) => setExtraRoom(e.target.value)}
@@ -287,12 +287,12 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
         </div>
         <div className="px-5 py-10 text-center">
           <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No items yet</p>
-          <p className="text-[11px] text-[#888] max-w-[220px] mx-auto leading-relaxed">Your coordinator will add items as your move is being prepared.</p>
+          <p className="text-[11px] text-[#4F4B47] max-w-[220px] mx-auto leading-relaxed">Your coordinator will add items as your move is being prepared.</p>
           {!moveComplete && (
             <button
               type="button"
               onClick={() => setAddExtraOpen(true)}
-              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-[#D4D4D4] text-[12px] font-semibold text-[#888] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-[#D4D4D4] text-[12px] font-semibold text-[#4F4B47] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
             >
               <Plus size={11} weight="regular" className="text-current" />
               Request extra item
@@ -310,7 +310,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
       <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A]">Inventory</h3>
-          <p className="text-[11px] text-[#888] mt-0.5">
+          <p className="text-[11px] text-[#4F4B47] mt-0.5">
             {totalItemCount} {totalItemCount === 1 ? "item" : "items"} across {rooms.length} {rooms.length === 1 ? "room" : "rooms"}
           </p>
         </div>
@@ -361,7 +361,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                   <CaretDown
                     size={9}
                     weight="regular"
-                    color="#999"
+                    color="#6B6B6B"
                     className="transition-transform duration-200"
                     style={{ transform: expanded ? "rotate(0deg)" : "rotate(-90deg)" }}
                     aria-hidden
@@ -382,8 +382,8 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                     </colgroup>
                     <thead>
                       <tr style={{ backgroundColor: "#F5F5F3" }}>
-                        <th className="text-[9px] font-bold capitalize tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] min-w-0">Item</th>
-                        <th className="text-[9px] font-bold capitalize tracking-widest text-[#999] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
+                        <th className="text-[9px] font-bold capitalize tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] min-w-0">Item</th>
+                        <th className="text-[9px] font-bold capitalize tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -425,7 +425,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
             type="button"
             onClick={() => setAddExtraOpen(true)}
             className="w-full py-3 rounded-xl border border-dashed flex items-center justify-center gap-2 text-[12px] font-semibold transition-all hover:scale-[1.005] active:scale-[0.998]"
-            style={{ borderColor: "#D4D0C8", color: "#888" }}
+            style={{ borderColor: "#D4D0C8", color: "#4F4B47" }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLButtonElement).style.borderColor = GOLD;
               (e.currentTarget as HTMLButtonElement).style.color = GOLD;
@@ -433,7 +433,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.borderColor = "#D4D0C8";
-              (e.currentTarget as HTMLButtonElement).style.color = "#888";
+              (e.currentTarget as HTMLButtonElement).style.color = "#4F4B47";
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
             }}
           >

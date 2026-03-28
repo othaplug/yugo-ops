@@ -92,7 +92,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
               <div className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: WINE }} />
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Pickup</p>
+                  <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Pickup</p>
                   <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.from_address}
                   </p>
@@ -103,7 +103,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             <div className="flex-1 min-w-0 text-right">
               <div className="flex items-start gap-2 justify-end">
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Delivery</p>
+                  <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Delivery</p>
                   <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.to_address}
                   </p>

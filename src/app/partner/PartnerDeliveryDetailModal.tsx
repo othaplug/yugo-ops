@@ -274,12 +274,12 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               {copied ? (
                 <Check size={16} color="#2D9F5A" weight="bold" />
               ) : (
-                <Link size={16} color="#888" />
+                <Link size={16} color="#6B6B6B" />
               )}
             </button>
             {!isLocked && onEdit && (
               <button onClick={onEdit} className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors" title="Edit">
-                <PencilSimple size={16} color="#888" />
+                <PencilSimple size={16} color="#6B6B6B" />
               </button>
             )}
             <button onClick={onShare} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors">
@@ -537,7 +537,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   ) : (
                     <div className="py-12 text-center border-t border-[var(--brd)]/30 pt-8">
                       <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
-                        <Clock size={22} color="#888" />
+                        <Clock size={22} color="#6B6B6B" />
                       </div>
                       <p className="text-[13px] text-[var(--tx3)]">{isCompleted ? "No location data recorded for this delivery." : "Crew location not yet available."}</p>
                       <p className="text-[11px] text-[#aaa] mt-0.5">{isCompleted ? "" : "Location updates appear here once the crew starts."}</p>
@@ -565,7 +565,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               ) : photos.length === 0 ? (
                 <div className="text-center py-12 border-t border-[var(--brd)]/30 pt-8">
                   <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--bg)] flex items-center justify-center">
-                    <Image size={22} color="#888" />
+                    <Image size={22} color="#6B6B6B" />
                   </div>
                   <p className="text-[13px] text-[var(--tx3)]">No photos yet.</p>
                   <p className="text-[11px] text-[#aaa] mt-0.5">Crew photos will appear here after delivery.</p>

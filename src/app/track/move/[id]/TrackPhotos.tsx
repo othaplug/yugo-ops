@@ -96,7 +96,7 @@ export default function TrackPhotos({
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
         <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A] mb-4">Photos</h3>
-        <p className="text-[12px] text-[#666]">Loading...</p>
+        <p className="text-[12px] text-[#454545]">Loading...</p>
       </div>
     );
   }
@@ -113,14 +113,14 @@ export default function TrackPhotos({
               <button
                 type="button"
                 onClick={handleDownloadAll}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#454545] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
               >
                 Download All
               </button>
               <button
                 type="button"
                 onClick={handleShare}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#666] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#454545] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
               >
                 Share
               </button>
@@ -157,7 +157,7 @@ export default function TrackPhotos({
                   <span className="text-[12px] font-semibold text-[#1A1A1A] block">
                     Upload Photos
                   </span>
-                  <span className="text-[10px] text-[#888]">
+                  <span className="text-[10px] text-[#4F4B47]">
                     {clientPhotoCount}/{MAX_PHOTOS} uploaded &middot; JPG, PNG, WebP
                   </span>
                 </div>
@@ -170,7 +170,7 @@ export default function TrackPhotos({
       {photos.length === 0 ? (
         <div className="px-5 py-8 text-center">
           <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No photos yet</p>
-          <p className="text-[11px] text-[#888] max-w-[240px] mx-auto leading-relaxed">
+          <p className="text-[11px] text-[#4F4B47] max-w-[240px] mx-auto leading-relaxed">
             {moveComplete
               ? "No photos were uploaded for this move."
               : "Upload photos of items you'd like moved, or your coordinator may add photos from the pre-move survey."}
@@ -196,7 +196,7 @@ export default function TrackPhotos({
               >
                 <img src={p.url} alt={label} className="w-full h-full object-cover" />
                 <div className="absolute bottom-0 left-0 right-0 bg-white/95 px-3 py-2 flex items-center justify-between">
-                  <span className="text-[10px] font-bold capitalize tracking-wider text-[#666]">
+                  <span className="text-[10px] font-bold capitalize tracking-wider text-[#454545]">
                     {label} {dateStr && `\u2022 ${dateStr}`}
                   </span>
                   {isClient && (

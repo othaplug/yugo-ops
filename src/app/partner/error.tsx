@@ -14,7 +14,7 @@ export default function PartnerError({ error, reset }: { error: Error & { digest
           <X size={24} color="#E53E3E" />
         </div>
         <h1 className="text-[18px] font-bold text-[#1A1714] font-hero">Something went wrong</h1>
-        <p className="text-[13px] text-[#888]">{error.message || "An unexpected error occurred."}</p>
+        <p className="text-[13px] text-[#4F4B47]">{error.message || "An unexpected error occurred."}</p>
         <div className="flex gap-3 justify-center">
           <button onClick={reset} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white">Try again</button>
           <Link href="/partner" className="px-4 py-2 rounded-lg text-[12px] font-semibold border border-[#E8E4DF] text-[#1A1714]">Dashboard</Link>

@@ -93,7 +93,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
           )}
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors text-[#888] dark:text-[var(--tx3)]"
+            className="p-2 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors text-[#4F4B47] dark:text-[var(--tx3)]"
             title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
             {isFullscreen ? (
@@ -109,7 +109,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
         {isFullscreen && (
           <button
             onClick={() => setIsFullscreen(false)}
-            className="absolute top-4 right-4 z-20 p-2 bg-white dark:bg-[var(--card)] rounded-lg shadow-md border border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#F5F3F0] dark:hover:bg-[var(--bg)] transition-colors text-[#888] dark:text-[var(--tx3)]"
+            className="absolute top-4 right-4 z-20 p-2 bg-white dark:bg-[var(--card)] rounded-lg shadow-md border border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#F5F3F0] dark:hover:bg-[var(--bg)] transition-colors text-[#4F4B47] dark:text-[var(--tx3)]"
           >
             <X size={16} weight="regular" />
           </button>
@@ -128,9 +128,9 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
               </span>
             </div>
             <div className="text-[12px] text-[#1A1A1A] dark:text-[var(--tx)] font-semibold">{selected.customer_name || selected.delivery_number}</div>
-            <div className="text-[11px] text-[#888] dark:text-[var(--tx3)] mt-0.5">{selected.delivery_address || "-"}</div>
+            <div className="text-[11px] text-[#4F4B47] dark:text-[var(--tx3)] mt-0.5">{selected.delivery_address || "-"}</div>
             {selected.crew_name && (
-              <div className="text-[11px] text-[#888] dark:text-[var(--tx3)] mt-1">Crew: {selected.crew_name}</div>
+              <div className="text-[11px] text-[#4F4B47] dark:text-[var(--tx3)] mt-1">Crew: {selected.crew_name}</div>
             )}
             <button onClick={() => setSelected(null)} className="mt-2 text-[10px] text-[#C9A962] dark:text-[var(--gold)] font-semibold hover:underline">
               Close
@@ -152,16 +152,16 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
               Crew completing a prior delivery. Yours is next.
             </div>
             {currentDelivery.crew_name && (
-              <div className="text-[11px] text-[#888] dark:text-[var(--tx3)] mt-1">Team: {currentDelivery.crew_name}</div>
+              <div className="text-[11px] text-[#4F4B47] dark:text-[var(--tx3)] mt-1">Team: {currentDelivery.crew_name}</div>
             )}
           </div>
         )}
 
         {loading ? (
-          <div className="w-full h-full flex items-center justify-center text-[13px] text-[#888] dark:text-[var(--tx3)]">Loading map...</div>
+          <div className="w-full h-full flex items-center justify-center text-[13px] text-[#4F4B47] dark:text-[var(--tx3)]">Loading map...</div>
         ) : !hasAny ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 text-[#D4D0CB] dark:text-[var(--tx3)]">
-            <p className="text-[var(--text-base)] text-[#888] dark:text-[var(--tx3)]">No Confirmed Deliveries Scheduled For Today.</p>
+            <p className="text-[var(--text-base)] text-[#4F4B47] dark:text-[var(--tx3)]">No Confirmed Deliveries Scheduled For Today.</p>
             <p className="text-[12px] text-[#aaa] dark:text-[var(--tx3)]/80 mt-1">Confirmed Or Dispatched Deliveries Will Appear On The Map Here.</p>
           </div>
         ) : (
@@ -184,7 +184,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
             {!crewHasStarted && !crewIsOutWorking && (
               <div className="absolute inset-0 bg-white/70 dark:bg-[var(--card)]/70 backdrop-blur-md flex flex-col items-center justify-center z-10" aria-hidden="true">
                 <span className="text-[var(--text-base)] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">Live signal off</span>
-                <span className="text-[12px] text-[#666] dark:text-[var(--tx3)] mt-1">Map and tracking will appear when crew start your job</span>
+                <span className="text-[12px] text-[#454545] dark:text-[var(--tx3)] mt-1">Map and tracking will appear when crew start your job</span>
               </div>
             )}
           </>
@@ -215,7 +215,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                         ? "bg-[#2D9F5A] text-white"
                         : index === 0
                           ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400"
-                          : "bg-[#F5F3F0] dark:bg-[var(--bg)] text-[#888] dark:text-[var(--tx3)]"
+                          : "bg-[#F5F3F0] dark:bg-[var(--bg)] text-[#4F4B47] dark:text-[var(--tx3)]"
                     }`}
                   >
                     {slotLabel}
@@ -225,7 +225,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                       {d.customer_name || d.delivery_number}
                     </div>
                     {isActive ? (
-                      <div className="text-[12px] text-[#888] dark:text-[var(--tx3)] mt-0.5">
+                      <div className="text-[12px] text-[#4F4B47] dark:text-[var(--tx3)] mt-0.5">
                         {d.delivery_address || "-"}
                       </div>
                     ) : crewIsOutWorking ? (
@@ -233,7 +233,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                         Crew completing a prior delivery. Yours is next.
                       </div>
                     ) : (
-                      <div className="text-[11px] text-[#999] dark:text-[var(--tx3)] mt-0.5">
+                      <div className="text-[11px] text-[#5C5853] dark:text-[var(--tx3)] mt-0.5">
                         Tracking activates when crew start this job
                       </div>
                     )}
@@ -241,7 +241,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                 </div>
                 <div className="flex items-center gap-2">
                   {isActive && d.crew_name && (
-                    <span className="text-[11px] text-[#888] dark:text-[var(--tx3)]">{d.crew_name}</span>
+                    <span className="text-[11px] text-[#4F4B47] dark:text-[var(--tx3)]">{d.crew_name}</span>
                   )}
                   {isActive ? (
                     <span className="flex items-center gap-1 text-[10px] text-[#2D9F5A] font-semibold">
@@ -254,7 +254,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                       En Route
                     </span>
                   ) : (
-                    <span className="text-[10px] text-[#888] dark:text-[var(--tx3)]">Awaiting GPS</span>
+                    <span className="text-[10px] text-[#4F4B47] dark:text-[var(--tx3)]">Awaiting GPS</span>
                   )}
                 </div>
               </div>

@@ -184,7 +184,7 @@ export default function ClaimSubmissionClient() {
           Your claim <strong>{claimNumber}</strong> has been submitted. We&rsquo;ll review it within 3 business days and contact you with next steps.
         </p>
         <div className="rounded-xl p-4 inline-block" style={{ backgroundColor: "#FAF7F2" }}>
-          <p className="text-[13px] text-[#888]">Reference: <strong>{claimNumber}</strong></p>
+          <p className="text-[13px] text-[#4F4B47]">Reference: <strong>{claimNumber}</strong></p>
         </div>
       </div>
     );
@@ -200,7 +200,7 @@ export default function ClaimSubmissionClient() {
               className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold transition-all"
               style={{
                 backgroundColor: idx <= step ? "#722F37" : "#e8e0d8",
-                color: idx <= step ? "#fff" : "#888",
+                color: idx <= step ? "#fff" : "#4F4B47",
               }}
             >
               {idx + 1}
@@ -273,7 +273,7 @@ export default function ClaimSubmissionClient() {
                 {VALUATION_INFO[moveInfo.valuation_tier]?.label || moveInfo.valuation_tier}
               </span>
             </div>
-            <p className="text-[13px] text-[#888]">
+            <p className="text-[13px] text-[#4F4B47]">
               {VALUATION_INFO[moveInfo.valuation_tier]?.desc || "Standard coverage applies."}
             </p>
           </div>
@@ -292,7 +292,7 @@ export default function ClaimSubmissionClient() {
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Item Name</label>
+                    <label className="block text-[11px] font-semibold text-[#454545] mb-1 capitalize tracking-wide">Item Name</label>
                     <input
                       type="text"
                       value={item.name}
@@ -303,7 +303,7 @@ export default function ClaimSubmissionClient() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Description</label>
+                    <label className="block text-[11px] font-semibold text-[#454545] mb-1 capitalize tracking-wide">Description</label>
                     <input
                       type="text"
                       value={item.description}
@@ -314,7 +314,7 @@ export default function ClaimSubmissionClient() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">What Happened</label>
+                    <label className="block text-[11px] font-semibold text-[#454545] mb-1 capitalize tracking-wide">What Happened</label>
                     <textarea
                       value={item.damage_description}
                       onChange={(e) => updateItem(item.id, "damage_description", e.target.value)}
@@ -326,7 +326,7 @@ export default function ClaimSubmissionClient() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Estimated Value ($)</label>
+                      <label className="block text-[11px] font-semibold text-[#454545] mb-1 capitalize tracking-wide">Estimated Value ($)</label>
                       <input
                         type="number"
                         value={item.declared_value || ""}
@@ -337,7 +337,7 @@ export default function ClaimSubmissionClient() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Weight (lbs)</label>
+                      <label className="block text-[11px] font-semibold text-[#454545] mb-1 capitalize tracking-wide">Weight (lbs)</label>
                       <input
                         type="number"
                         value={item.weight_lbs || ""}
@@ -349,7 +349,7 @@ export default function ClaimSubmissionClient() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">
+                    <label className="block text-[11px] font-semibold text-[#454545] mb-1 capitalize tracking-wide">
                       Photos (up to 5)
                     </label>
                     <input
@@ -359,7 +359,7 @@ export default function ClaimSubmissionClient() {
                       onChange={(e) => handlePhotoUpload(item.id, e.target.files)}
                       className="w-full text-[13px] text-[#555]"
                     />
-                    {uploading[item.id] && <p className="text-[12px] text-[#888] mt-1">Uploading...</p>}
+                    {uploading[item.id] && <p className="text-[12px] text-[#4F4B47] mt-1">Uploading...</p>}
                     {item.photo_urls.length > 0 && (
                       <div className="flex gap-2 mt-2 flex-wrap">
                         {item.photo_urls.map((url, pi) => (
@@ -377,7 +377,7 @@ export default function ClaimSubmissionClient() {
             <button
               onClick={addItem}
               className="w-full py-2.5 rounded-xl border-2 border-dashed text-[13px] font-semibold transition-colors"
-              style={{ borderColor: "#d4ccc2", color: "#888" }}
+              style={{ borderColor: "#d4ccc2", color: "#4F4B47" }}
             >
               + Add Another Item
             </button>
@@ -409,7 +409,7 @@ export default function ClaimSubmissionClient() {
           <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-4">Confirm Your Info</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Name</label>
+              <label className="block text-[11px] font-semibold text-[#454545] mb-1 capitalize tracking-wide">Name</label>
               <input
                 type="text"
                 value={clientName}
@@ -419,7 +419,7 @@ export default function ClaimSubmissionClient() {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Email</label>
+              <label className="block text-[11px] font-semibold text-[#454545] mb-1 capitalize tracking-wide">Email</label>
               <input
                 type="email"
                 value={clientEmail}
@@ -429,7 +429,7 @@ export default function ClaimSubmissionClient() {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-[#666] mb-1 capitalize tracking-wide">Phone</label>
+              <label className="block text-[11px] font-semibold text-[#454545] mb-1 capitalize tracking-wide">Phone</label>
               <input
                 ref={phoneInput.ref}
                 type="tel"
@@ -470,9 +470,9 @@ export default function ClaimSubmissionClient() {
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-4">Review Your Claim</h2>
             <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: "#FAF7F2" }}>
-              <p className="text-[13px] text-[#888]">Move: <strong>{moveInfo.move_code}</strong></p>
-              <p className="text-[13px] text-[#888]">Claimant: <strong>{clientName}</strong> ({clientEmail})</p>
-              <p className="text-[13px] text-[#888]">Valuation: <strong>{VALUATION_INFO[moveInfo.valuation_tier]?.label || moveInfo.valuation_tier}</strong></p>
+              <p className="text-[13px] text-[#4F4B47]">Move: <strong>{moveInfo.move_code}</strong></p>
+              <p className="text-[13px] text-[#4F4B47]">Claimant: <strong>{clientName}</strong> ({clientEmail})</p>
+              <p className="text-[13px] text-[#4F4B47]">Valuation: <strong>{VALUATION_INFO[moveInfo.valuation_tier]?.label || moveInfo.valuation_tier}</strong></p>
             </div>
             {!moveIsComplete && (
               <div className="rounded-xl p-4 mb-2 border border-amber-200 bg-amber-50">
@@ -485,9 +485,9 @@ export default function ClaimSubmissionClient() {
             {items.filter((i) => i.name.trim()).map((item, idx) => (
               <div key={item.id} className="rounded-xl p-4 mb-3 border" style={{ borderColor: "#e8e0d8" }}>
                 <p className="text-[var(--text-base)] font-bold text-[#1a1a1a]">{idx + 1}. {item.name}</p>
-                {item.description && <p className="text-[13px] text-[#888]">{item.description}</p>}
+                {item.description && <p className="text-[13px] text-[#4F4B47]">{item.description}</p>}
                 <p className="text-[13px] text-[#555] mt-1">{item.damage_description}</p>
-                <div className="flex gap-4 mt-2 text-[12px] text-[#888]">
+                <div className="flex gap-4 mt-2 text-[12px] text-[#4F4B47]">
                   <span>Value: ${item.declared_value.toLocaleString()}</span>
                   {item.weight_lbs > 0 && <span>Weight: {item.weight_lbs} lbs</span>}
                   {item.photo_urls.length > 0 && <span>{item.photo_urls.length} photo(s)</span>}

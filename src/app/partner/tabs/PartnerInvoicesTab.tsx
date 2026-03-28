@@ -100,7 +100,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
       {/* Search + Filter + Download */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <div className="relative flex-1">
-          <MagnifyingGlass size={15} color="#999" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
+          <MagnifyingGlass size={15} color="#6B6B6B" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}

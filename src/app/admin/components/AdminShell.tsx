@@ -507,7 +507,11 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               )}
 
               {/* Content - key forces fade-in on route change; overflow-x-hidden on mobile to prevent horizontal scroll */}
-              <main id="admin-main" key={pathname} className="flex-1 overflow-y-auto overflow-x-hidden md:overflow-x-auto tab-content min-h-0 pb-mobile-nav md:pb-0">
+              <main
+                id="admin-main"
+                key={pathname}
+                className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden md:overflow-x-auto tab-content min-h-0 pb-mobile-nav md:pb-0"
+              >
                 {children}
               </main>
             </div>
@@ -522,7 +526,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     onClick={() => setQuickActionsOpen(false)}
                   />
                   <div
-                    className="absolute bottom-[calc(64px+env(safe-area-inset-bottom,0px))] left-0 right-0 mx-3 mb-2 glass-topbar border border-[var(--brd)]/60 rounded-2xl overflow-hidden shadow-2xl"
+                    className="absolute bottom-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))] left-0 right-0 mx-3 mb-2 glass-topbar border border-[var(--brd)]/60 rounded-2xl overflow-hidden shadow-2xl"
                     style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1) both" }}
                   >
                     <div className="px-4 pt-4 pb-1">
@@ -556,12 +560,12 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               )}
 
               <nav
-                className="fixed bottom-0 left-0 right-0 z-[60] glass-topbar border-t border-[var(--brd)]/50 overflow-x-hidden isolate"
+                className="fixed bottom-0 left-0 right-0 z-[60] glass-topbar border-t border-[var(--brd)]/50 isolate w-full max-w-full"
                 style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
               >
                 <div
-                  className="grid items-end min-h-[60px] w-full max-w-full"
-                  style={{ gridTemplateColumns: "minmax(0,1fr) 5.25rem minmax(0,1fr)" }}
+                  className="grid items-end min-h-[56px] w-full max-w-full min-w-0 px-0.5"
+                  style={{ gridTemplateColumns: "minmax(0,1fr) 4.5rem minmax(0,1fr)" }}
                 >
                   {/* Left tab(s) */}
                   <div className="flex items-end justify-evenly gap-0.5 min-w-0 pb-1">
@@ -589,21 +593,21 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                   </div>
 
                   {/* Centre quick-create — fixed column width so the FAB does not paint into the side tabs */}
-                  <div className="flex flex-col items-center justify-end pb-1 pt-2 relative z-20 w-full">
+                  <div className="flex flex-col items-center justify-end pb-1 pt-1 relative z-20 w-full min-w-0">
                     <button
                       type="button"
                       onClick={() => setQuickActionsOpen((v) => !v)}
                       aria-label="Quick create"
                       aria-expanded={quickActionsOpen}
-                      className={`-mt-4 w-[50px] h-[50px] rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all touch-manipulation ${
+                      className={`h-11 w-11 rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all duration-300 touch-manipulation ${
                         quickActionsOpen ? "bg-[var(--gold2)]" : "bg-[var(--gold)]"
                       }`}
                       style={{ boxShadow: "0 2px 10px rgba(201,169,98,0.22), 0 1px 2px rgba(0,0,0,0.06)" }}
                     >
                       {quickActionsOpen ? (
-                        <X size={24} weight="bold" color="#fff" aria-hidden />
+                        <X size={20} weight="bold" color="#fff" aria-hidden />
                       ) : (
-                        <Plus size={24} weight="bold" color="#fff" aria-hidden />
+                        <Plus size={20} weight="bold" color="#fff" aria-hidden />
                       )}
                     </button>
                     <span className="mt-1 text-[11px] font-bold tracking-wide capitalize leading-none text-[var(--tx2)]">Create</span>

@@ -117,8 +117,8 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
         <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.monthlyVolume}>
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#524D47" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "#524D47" }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E8E4DC" }} />
               <Bar dataKey="count" fill={GOLD} radius={[4, 4, 0, 0]} name="Deliveries" />
             </BarChart>
@@ -132,8 +132,8 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data.monthlyCost}>
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#524D47" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "#524D47" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E8E4DC" }} formatter={(v) => [`$${v ?? 0}`, "Avg Cost"]} />
               <Line type="monotone" dataKey="avgCost" stroke={GOLD} strokeWidth={2} dot={{ r: 3, fill: GOLD }} />
             </LineChart>
@@ -182,8 +182,8 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.ratingDistribution} layout="vertical">
-                <XAxis type="number" tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="stars" tick={{ fontSize: 11, fill: "#888" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v} star${v === 1 ? "" : "s"}`} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "#524D47" }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="stars" tick={{ fontSize: 11, fill: "#524D47" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v} star${v === 1 ? "" : "s"}`} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E8E4DC" }} />
                 <Bar dataKey="count" fill={GOLD} radius={[0, 4, 4, 0]} name="Ratings" />
               </BarChart>

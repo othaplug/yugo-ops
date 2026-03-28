@@ -148,7 +148,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
         .ptr-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .ptr-link { background: none; border: none; color: #C9A962; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; }
         .ptr-link:hover { color: #B89A52; text-decoration: underline; }
-        .ptr-back { background: none; border: none; color: #999; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; width: 100%; text-align: center; transition: color 0.2s; }
+        .ptr-back { background: none; border: none; color: #6B6B6B; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; width: 100%; text-align: center; transition: color 0.2s; }
         .ptr-back:hover { color: #1A1714; }
         @keyframes ptrFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes ptrFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
@@ -178,7 +178,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
                 <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 32, fontWeight: 500, color: "#1A1714", marginBottom: 6, lineHeight: 1.2 }}>
                   {title}
                 </h1>
-                <p style={{ fontSize: 14, color: "#888", lineHeight: 1.5 }}>{subtitle}</p>
+                <p style={{ fontSize: 14, color: "#4F4B47", lineHeight: 1.5 }}>{subtitle}</p>
               </div>
 
               {error && (
@@ -199,7 +199,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
                     <input className="ptr-input" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required
                       style={{ paddingRight: 40 }} />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Toggle"
-                      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#999" }}>
+                      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#6B6B6B" }}>
                       {showPassword ? (
                         <Eye size={16} weight="regular" />
                       ) : (
@@ -239,11 +239,11 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
               <div style={{ marginTop: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <Lock size={12} color="#2D6A4F" />
-                  <span style={{ fontSize: 10, color: "#999" }}>Encrypted</span>
+                  <span style={{ fontSize: 10, color: "#6B6B6B" }}>Encrypted</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <Shield size={12} color="#2D6A4F" />
-                  <span style={{ fontSize: 10, color: "#999" }}>Secure portal</span>
+                  <span style={{ fontSize: 10, color: "#6B6B6B" }}>Secure portal</span>
                 </div>
               </div>
             </>
@@ -253,7 +253,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
             <>
               <div style={{ marginBottom: 28 }}>
                 <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 28, fontWeight: 500, color: "#1A1714", marginBottom: 6 }}>Reset your password</h1>
-                <p style={{ fontSize: 14, color: "#888" }}>Enter your email and we&apos;ll send you a temporary password and login link</p>
+                <p style={{ fontSize: 14, color: "#4F4B47" }}>Enter your email and we&apos;ll send you a temporary password and login link</p>
               </div>
               {error && (
                 <div style={{ background: "#FFF5F5", border: "1px solid #FED7D7", color: "#C53030", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20 }}>
@@ -286,7 +286,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
                   <Envelope size={28} color="#2D6A4F" />
                 </div>
                 <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#1A1714", marginBottom: 6 }}>Check your email</h2>
-                <p style={{ fontSize: 13, color: "#888" }}>If that email is on file, we sent a temporary password and login link to <strong style={{ color: "#1A1714" }}>{email}</strong></p>
+                <p style={{ fontSize: 13, color: "#4F4B47" }}>If that email is on file, we sent a temporary password and login link to <strong style={{ color: "#1A1714" }}>{email}</strong></p>
               </div>
               <div style={{ background: "#F0FFF4", border: "1px solid #C6F6D5", color: "#2D6A4F", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20, textAlign: "center" }}>
                 Check your inbox and spam folder

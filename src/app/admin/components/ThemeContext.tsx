@@ -29,8 +29,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.setProperty("--bg2", "#F5F3F0");
       root.setProperty("--card", "#FFFFFF");
       root.setProperty("--tx", "#1A1A1A");
-      root.setProperty("--tx2", "#444");
-      root.setProperty("--tx3", "#888");
+      root.setProperty("--tx2", "#333333");
+      root.setProperty("--tx3", "#524D47");
       root.setProperty("--brd", "#E8E4DF");
       root.setProperty("--gdim", "rgba(201,169,98,0.2)");
       root.setProperty("--btn-text-on-accent", "#FFFFFF");

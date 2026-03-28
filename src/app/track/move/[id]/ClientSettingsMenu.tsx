@@ -255,8 +255,8 @@ export default function ClientSettingsMenu({
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme === "dark" ? "#222" : "#F8F7F4")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
-                <FileText size={14} color={theme === "dark" ? "#888" : "#999"} />
-                <span className="text-[11px] font-medium" style={{ color: theme === "dark" ? "#999" : "#888" }}>
+                <FileText size={14} color={theme === "dark" ? "#888" : "#5C5853"} />
+                <span className="text-[11px] font-medium" style={{ color: theme === "dark" ? "#999" : "#4F4B47" }}>
                   Submit a claim
                 </span>
               </button>
@@ -297,7 +297,7 @@ export default function ClientSettingsMenu({
                   <h3 className="text-[16px] font-bold" style={{ color: theme === "dark" ? "#F5F5F3" : FOREST }}>
                     Submit a Claim
                   </h3>
-                  <p className="text-[11px] mt-1" style={{ color: theme === "dark" ? "#888" : "#999" }}>
+                  <p className="text-[11px] mt-1" style={{ color: theme === "dark" ? "#888" : "#5C5853" }}>
                     Report damages or missing items from your move
                   </p>
                 </div>
@@ -305,7 +305,7 @@ export default function ClientSettingsMenu({
                   type="button"
                   onClick={() => { setClaimOpen(false); resetClaimForm(); }}
                   className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                  style={{ backgroundColor: theme === "dark" ? "#333" : "#F5F5F3", color: theme === "dark" ? "#999" : "#666" }}
+                  style={{ backgroundColor: theme === "dark" ? "#333" : "#F5F5F3", color: theme === "dark" ? "#999" : "#454545" }}
                 >
                   <X size={12} weight="regular" className="text-current" />
                 </button>
@@ -326,7 +326,7 @@ export default function ClientSettingsMenu({
                     {submittedClaimNumber}
                   </p>
                 )}
-                <p className="text-[12px] max-w-[280px] mx-auto leading-relaxed" style={{ color: theme === "dark" ? "#888" : "#999" }}>
+                <p className="text-[12px] max-w-[280px] mx-auto leading-relaxed" style={{ color: theme === "dark" ? "#888" : "#5C5853" }}>
                   We&apos;ve received your claim and will follow up by email within 3 business days.
                 </p>
                 <button
@@ -439,7 +439,7 @@ export default function ClientSettingsMenu({
                   {claimPhotos.length < 5 && (
                     <label
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed text-[11px] font-semibold cursor-pointer transition-colors"
-                      style={{ borderColor: theme === "dark" ? "#555" : "#D4D0C8", color: theme === "dark" ? "#888" : "#888" }}
+                      style={{ borderColor: theme === "dark" ? "#555" : "#D4D0C8", color: theme === "dark" ? "#888" : "#4F4B47" }}
                     >
                       <Plus size={11} weight="regular" className="text-current" />
                       Add photo
@@ -461,7 +461,7 @@ export default function ClientSettingsMenu({
                     type="button"
                     onClick={() => { setClaimOpen(false); resetClaimForm(); }}
                     className="flex-1 py-2.5 rounded-xl border text-[12px] font-semibold transition-colors"
-                    style={{ borderColor: theme === "dark" ? "#444" : "#E7E5E4", color: theme === "dark" ? "#999" : "#555" }}
+                    style={{ borderColor: theme === "dark" ? "#444" : "#E7E5E4", color: theme === "dark" ? "#999" : "#454545" }}
                   >
                     Cancel
                   </button>
@@ -480,7 +480,7 @@ export default function ClientSettingsMenu({
                   </button>
                 </div>
 
-                <p className="text-[10px] text-center leading-relaxed" style={{ color: theme === "dark" ? "#666" : "#AAA" }}>
+                <p className="text-[10px] text-center leading-relaxed" style={{ color: theme === "dark" ? "#666" : "#5C5853" }}>
                   Claims must be submitted within 48 hours of move completion.
                   Photos help us process your claim faster.
                 </p>
@@ -516,7 +516,7 @@ export default function ClientSettingsMenu({
                 type="button"
                 onClick={() => setClaimStatusOpen(false)}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                style={{ backgroundColor: theme === "dark" ? "#333" : "#F5F5F3", color: theme === "dark" ? "#999" : "#666" }}
+                style={{ backgroundColor: theme === "dark" ? "#333" : "#F5F5F3", color: theme === "dark" ? "#999" : "#454545" }}
               >
               <X size={12} weight="regular" className="text-current" />
             </button>
@@ -540,7 +540,7 @@ export default function ClientSettingsMenu({
                   <div className="text-[13px] font-bold" style={{ color: theme === "dark" ? "#F5F5F3" : FOREST }}>
                     {claimStatusLabel(existingClaim.status)}
                   </div>
-                  <div className="text-[11px] mt-0.5" style={{ color: theme === "dark" ? "#888" : "#999" }}>
+                  <div className="text-[11px] mt-0.5" style={{ color: theme === "dark" ? "#888" : "#5C5853" }}>
                     {claimStatusDescription(existingClaim.status)}
                   </div>
                 </div>
@@ -553,7 +553,7 @@ export default function ClientSettingsMenu({
                 <div className="text-[10px] font-bold capitalize tracking-wider mb-2" style={{ color: GOLD }}>
                   What happens next
                 </div>
-                <p className="text-[12px] leading-relaxed" style={{ color: theme === "dark" ? "#AAA" : "#666" }}>
+                <p className="text-[12px] leading-relaxed" style={{ color: theme === "dark" ? "#AAA" : "#454545" }}>
                   {existingClaim.status === "resolved" || existingClaim.status === "settled" || existingClaim.status === "approved"
                     ? "Your claim has been resolved. If you have any questions, please contact us."
                     : existingClaim.status === "denied"

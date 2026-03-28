@@ -253,6 +253,12 @@ const TAG_COLORS: Record<string, string> = {
   Designer: "text-[var(--pur)]/80",
 };
 
+/** Matched empty-state CTAs — same min height / padding, flex-safe on narrow viewports */
+const ADMIN_DASH_CTA_ROW =
+  "flex flex-row items-stretch justify-center gap-2 w-full max-w-sm mx-auto min-w-0";
+const ADMIN_DASH_CTA_BASE =
+  "inline-flex flex-1 min-w-0 items-center justify-center min-h-[44px] px-3 sm:px-4 py-2.5 rounded-lg text-[12px] font-semibold leading-snug text-center transition-colors touch-manipulation";
+
 /* ── Component ── */
 
 export default function AdminPageClient({
@@ -464,7 +470,7 @@ export default function AdminPageClient({
   return (
     <div
       ref={pullRef as React.RefObject<HTMLDivElement>}
-      className="min-h-full"
+      className="min-h-full w-full min-w-0 max-w-full"
     >
       {/* Pull-to-refresh indicator */}
       {(pullDistance > 0 || refreshing) && (
@@ -491,12 +497,12 @@ export default function AdminPageClient({
         </div>
       )}
 
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-5 sm:py-6 md:py-8 animate-fade-up min-w-0">
+    <div className="max-w-[1200px] mx-auto w-full min-w-0 px-4 sm:px-5 md:px-6 py-5 sm:py-6 md:py-8 animate-fade-up">
 
       {/* ── Header ── */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+      <div className="mb-8 min-w-0">
+        <div className="flex items-start justify-between gap-3 sm:gap-4 min-w-0 w-full">
+          <div className="min-w-0 flex-1">
             <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
               {greeting}
             </h1>
@@ -521,7 +527,7 @@ export default function AdminPageClient({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {/* Quick Actions button */}
             <div className="relative" ref={quickActionsRef}>
               <button
@@ -641,7 +647,7 @@ export default function AdminPageClient({
       )}
 
       {/* ── Two Column Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8 min-w-0 w-full">
 
         {/* ── LEFT: Schedule ── */}
         <div className="min-w-0">
@@ -687,7 +693,7 @@ export default function AdminPageClient({
               <button
                 type="button"
                 onClick={() => setTasksOpen((v) => !v)}
-                className="flex items-center justify-between w-full mb-3 group"
+                className="flex items-center justify-between w-full min-w-0 mb-3 group"
               >
                 <div className="flex items-center gap-2">
                   <CaretRight
@@ -733,9 +739,9 @@ export default function AdminPageClient({
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="admin-section-h2">{scheduleLabel}</h2>
-            <Link href="/admin/calendar" className="admin-view-all-link shrink-0 gap-1">
+          <div className="flex items-center justify-between gap-2 mb-4 min-w-0 w-full">
+            <h2 className="admin-section-h2 min-w-0 flex-1 basis-0 pr-1">{scheduleLabel}</h2>
+            <Link href="/admin/calendar" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
               Calendar
               <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
             </Link>
@@ -801,14 +807,20 @@ export default function AdminPageClient({
               })}
             </div>
           ) : (
-            <div className="py-12 text-center">
+            <div className="py-12 text-center min-w-0 px-0">
               <div className="text-[var(--text-base)] font-semibold text-[var(--tx)] mb-1">No jobs scheduled</div>
-              <p className="text-[12px] text-[var(--tx3)] mb-4">Get started by creating a quote or checking the calendar.</p>
-              <div className="flex items-center justify-center gap-2">
-                <Link href="/admin/quotes/new" className="inline-flex px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
+              <p className="text-[12px] text-[var(--tx3)] mb-4 px-1">Get started by creating a quote or checking the calendar.</p>
+              <div className={ADMIN_DASH_CTA_ROW}>
+                <Link
+                  href="/admin/quotes/new"
+                  className={`${ADMIN_DASH_CTA_BASE} bg-[var(--gold)] text-[var(--btn-text-on-accent)]`}
+                >
                   Create a quote
                 </Link>
-                <Link href="/admin/calendar" className="inline-flex px-4 py-2 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--tx)] hover:border-[var(--gold)]/40 transition-colors">
+                <Link
+                  href="/admin/calendar"
+                  className={`${ADMIN_DASH_CTA_BASE} border border-[var(--brd)] text-[var(--tx2)] hover:text-[var(--tx)] hover:border-[var(--gold)]/40`}
+                >
                   View calendar
                 </Link>
               </div>
@@ -818,9 +830,11 @@ export default function AdminPageClient({
           {/* Upcoming preview (when showing today) */}
           {todayJobs.length > 0 && upcomingJobs.length > 0 && (
             <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Coming up</h3>
-                <Link href="/admin/deliveries" className="admin-view-all-link shrink-0">
+              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+                <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 min-w-0 flex-1 basis-0 truncate pr-1">
+                  Coming up
+                </h3>
+                <Link href="/admin/deliveries" className="admin-view-all-link shrink-0 whitespace-nowrap">
                   All
                 </Link>
               </div>
@@ -847,9 +861,9 @@ export default function AdminPageClient({
           {/* ── Weather & Route Conditions ── */}
           {hasJobs && (
             <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
-              <div className="flex items-center gap-2 mb-4">
-                <CloudRain size={14} className="text-sky-400/80" weight="duotone" aria-hidden />
-                <h2 className="admin-section-h2">Weather &amp; Route Conditions</h2>
+              <div className="flex items-center gap-2 mb-4 min-w-0 w-full">
+                <CloudRain size={14} className="text-sky-400/80 shrink-0" weight="duotone" aria-hidden />
+                <h2 className="admin-section-h2 min-w-0 flex-1 leading-snug">Weather &amp; Route Conditions</h2>
               </div>
 
               {(weatherLoading || trafficLoading) && allWeatherRows.length === 0 && trafficRows.length === 0 && (
@@ -983,9 +997,9 @@ export default function AdminPageClient({
           {/* Today's Earnings */}
           {todayEarnings.jobCount > 0 && (
             <div className="pb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <CurrencyDollar size={14} className="text-[var(--grn)]" weight="duotone" aria-hidden />
-                <h2 className="admin-section-h2">Today&apos;s Earnings</h2>
+              <div className="flex items-center gap-2 mb-3 min-w-0 w-full">
+                <CurrencyDollar size={14} className="text-[var(--grn)] shrink-0" weight="duotone" aria-hidden />
+                <h2 className="admin-section-h2 min-w-0 flex-1">Today&apos;s Earnings</h2>
               </div>
               <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4">
                 <div className="flex items-baseline gap-2 mb-3">
@@ -1022,9 +1036,9 @@ export default function AdminPageClient({
 
           {/* Revenue (multi-source) */}
           <div className="pb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="admin-section-h2">Revenue</h2>
-              <Link href="/admin/revenue" className="admin-view-all-link shrink-0 gap-1">
+            <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+              <h2 className="admin-section-h2 min-w-0 flex-1 basis-0 pr-1">Revenue</h2>
+              <Link href="/admin/revenue" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
                 Details
                 <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
               </Link>
@@ -1066,7 +1080,7 @@ export default function AdminPageClient({
             )}
 
             {/* Stacked bar chart */}
-            <div className="flex items-end gap-[3px] h-[56px]">
+            <div className="flex items-end gap-[3px] h-[56px] w-full min-w-0">
               {(monthlyRevenue.length > 0 ? monthlyRevenue : [{ m: "\u2014", moves: 0, deliveries: 0, invoices: 0 }] as MonthRevenue[]).map((d, i) => {
                 const total = d.moves + d.deliveries + d.invoices;
                 const maxV = Math.max(1, ...monthlyRevenue.map((x) => x.moves + x.deliveries + x.invoices));
@@ -1077,7 +1091,7 @@ export default function AdminPageClient({
                 const invPct = total > 0 ? (d.invoices / total) * 100 : 0;
 
                 return (
-                  <div key={`${d.m}-${i}`} className="flex-1 flex flex-col items-center gap-0.5 h-full group relative">
+                  <div key={`${d.m}-${i}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 h-full group relative">
                     <div className="flex-1 w-full flex items-end">
                       <div
                         className="w-full rounded-t overflow-hidden min-h-[2px] transition-all duration-300 flex flex-col-reverse"
@@ -1117,12 +1131,12 @@ export default function AdminPageClient({
           {/* Overdue (conditional), keep as alert banner */}
           {overdueAmount > 0 && (
             <div className="pt-6 border-t border-[var(--brd)]/30">
-              <Link href="/admin/invoices" className="group flex items-center justify-between py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/10 hover:border-[var(--red)]/30 transition-all cursor-pointer">
-                <div>
+              <Link href="/admin/invoices" className="group flex items-center justify-between gap-2 py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/10 hover:border-[var(--red)]/30 transition-all cursor-pointer min-w-0 w-full">
+                <div className="min-w-0 flex-1">
                   <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--red)]/80">Overdue</div>
                   <div className="text-[18px] font-bold text-[var(--red)] tabular-nums group-hover:opacity-80 transition-opacity">{formatCompactCurrency(overdueAmount)}</div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[11px] text-[var(--tx3)]">{overdueCount} invoice{overdueCount > 1 ? "s" : ""}</span>
                   <ArrowUpRight weight="regular" className="w-3.5 h-3.5 text-[var(--red)]/30 group-hover:text-[var(--red)]/70 transition-colors" />
                 </div>
@@ -1133,17 +1147,17 @@ export default function AdminPageClient({
           {/* Crew Capacity */}
           {crewCapacity.length > 0 && crewCapacity[0].total > 0 && (
             <div className="pt-6 border-t border-[var(--brd)]/30">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <UsersThree size={14} className="text-[var(--tx2)]" weight="duotone" aria-hidden />
-                  <h2 className="admin-section-h2">Crew Capacity</h2>
+              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <UsersThree size={14} className="text-[var(--tx2)] shrink-0" weight="duotone" aria-hidden />
+                  <h2 className="admin-section-h2 min-w-0">Crew Capacity</h2>
                 </div>
-                <Link href="/admin/dispatch" className="admin-view-all-link shrink-0 gap-1">
+                <Link href="/admin/dispatch" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
                   Dispatch
                   <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
                 </Link>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 w-full min-w-0">
                 {crewCapacity.map((day) => {
                   const free = day.total - day.booked;
                   const pct = Math.round((day.booked / day.total) * 100);
@@ -1179,12 +1193,12 @@ export default function AdminPageClient({
           {/* Leads (speed to lead) */}
           {leadPulse && (leadPulse.needsAttention > 0 || leadPulse.monthReceived > 0 || leadPulse.avgResponseMin != null) && (
             <div className="pt-6 border-t border-[var(--brd)]/30">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Lightning size={14} className="text-[var(--gold)]" weight="duotone" aria-hidden />
-                  <h2 className="admin-section-h2">Leads</h2>
+              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Lightning size={14} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
+                  <h2 className="admin-section-h2 min-w-0">Leads</h2>
                 </div>
-                <Link href="/admin/leads" className="admin-view-all-link shrink-0 gap-1">
+                <Link href="/admin/leads" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
                   Open
                   <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
                 </Link>
@@ -1261,12 +1275,12 @@ export default function AdminPageClient({
           {/* Quote Pipeline */}
           {(quotePipeline.openCount > 0 || quotePipeline.acceptedThisWeek > 0) && (
             <div className="pt-6 border-t border-[var(--brd)]/30">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Funnel size={14} className="text-[var(--tx2)]" weight="duotone" aria-hidden />
-                  <h2 className="admin-section-h2">Quote Pipeline</h2>
+              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Funnel size={14} className="text-[var(--tx2)] shrink-0" weight="duotone" aria-hidden />
+                  <h2 className="admin-section-h2 min-w-0">Quote Pipeline</h2>
                 </div>
-                <Link href="/admin/quotes" className="admin-view-all-link shrink-0 gap-1">
+                <Link href="/admin/quotes" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
                   Quotes
                   <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
                 </Link>
@@ -1330,13 +1344,13 @@ export default function AdminPageClient({
           {/* Customer Satisfaction */}
           {satisfaction.count > 0 && (
             <div className="pt-6 border-t border-[var(--brd)]/30">
-              <div className="flex items-center gap-2 mb-3">
-                <Star size={14} className="text-[var(--gold)]" weight="duotone" aria-hidden />
-                <h2 className="admin-section-h2">Customer Satisfaction</h2>
+              <div className="flex items-center gap-2 mb-3 min-w-0 w-full">
+                <Star size={14} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
+                <h2 className="admin-section-h2 min-w-0 flex-1">Customer Satisfaction</h2>
               </div>
-              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="text-center">
+              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 min-w-0">
+                <div className="flex items-center gap-4 mb-3 min-w-0 w-full">
+                  <div className="text-center shrink-0">
                     <div className="text-[28px] font-bold font-heading text-[var(--tx)] tabular-nums leading-none">
                       {satisfaction.avgRating.toFixed(1)}
                     </div>
@@ -1351,9 +1365,9 @@ export default function AdminPageClient({
                       ))}
                     </div>
                   </div>
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="text-[var(--tx3)]">Recent reviews</span>
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-[10px] min-w-0">
+                      <span className="text-[var(--tx3)] truncate">Recent reviews</span>
                       <span className="font-bold text-[var(--tx)] tabular-nums">{satisfaction.count}</span>
                     </div>
                     {satisfaction.pendingReviews > 0 && (

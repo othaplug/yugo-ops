@@ -67,7 +67,7 @@ export default function TrackDocuments({
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
         <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A] mb-4">Documents</h3>
-        <p className="text-[12px] text-[#666]">Loading...</p>
+        <p className="text-[12px] text-[#454545]">Loading...</p>
       </div>
     );
   }
@@ -76,7 +76,7 @@ export default function TrackDocuments({
     return (
       <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
         <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A] mb-4">Documents</h3>
-        <p className="text-[12px] text-[#666]">No documents yet. Contracts, invoices, and other documents will appear here as your move progresses.</p>
+        <p className="text-[12px] text-[#454545]">No documents yet. Contracts, invoices, and other documents will appear here as your move progresses.</p>
       </div>
     );
   }
@@ -92,7 +92,7 @@ export default function TrackDocuments({
       <div className="px-5 py-4 border-b border-[#E7E5E4]">
         <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A]">Your documents</h3>
         {hasAutoPdfs && (
-          <p className="text-[12px] text-[#666] mt-1">
+          <p className="text-[12px] text-[#454545] mt-1">
             Your move summary and receipt are ready to download below.
           </p>
         )}
@@ -102,7 +102,7 @@ export default function TrackDocuments({
           <div className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#C9A962]/50 transition-colors">
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-medium text-[#1A1A1A]">Payment Receipt (Square)</div>
-              <div className="text-[11px] text-[#666] flex items-center gap-2 mt-0.5">
+              <div className="text-[11px] text-[#454545] flex items-center gap-2 mt-0.5">
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold capitalize bg-[#22C55E]/15 text-[#22C55E]">PAID</span>
                 Official payment processor receipt
               </div>
@@ -131,7 +131,7 @@ export default function TrackDocuments({
                 <div className="text-[13px] font-medium text-[#1A1A1A] truncate">
                   <SafeText fallback="Document">{doc.title}</SafeText>
                 </div>
-                <div className="text-[11px] text-[#666] flex items-center gap-2 mt-0.5">
+                <div className="text-[11px] text-[#454545] flex items-center gap-2 mt-0.5">
                   {dateStr}
                   {doc.amount != null && ` • ${formatCurrency(doc.amount)}`}
                   {isPaid && (

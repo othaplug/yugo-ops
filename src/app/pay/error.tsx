@@ -13,7 +13,7 @@ export default function PayError({ error, reset }: { error: Error & { digest?: s
           <XCircle size={24} color="#E53E3E" aria-hidden />
         </div>
         <h1 className="text-[18px] font-bold text-[#1A1714]">Payment Error</h1>
-        <p className="text-[13px] text-[#888]">{error.message || "Something went wrong processing your payment. Please try again."}</p>
+        <p className="text-[13px] text-[#4F4B47]">{error.message || "Something went wrong processing your payment. Please try again."}</p>
         <button onClick={reset} className="px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[#C9A962] text-white">Try again</button>
       </div>
     </div>

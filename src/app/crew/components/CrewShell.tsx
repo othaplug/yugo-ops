@@ -310,8 +310,8 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
             <main
               id="crew-main"
               key={pathname}
-              className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 tab-content ${
-                immersiveNav ? "pb-0" : "pb-[calc(64px+env(safe-area-inset-bottom,0px))] md:pb-0"
+              className={`flex-1 min-w-0 overflow-y-auto overflow-x-hidden min-h-0 tab-content ${
+                immersiveNav ? "pb-0" : "pb-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px))] md:pb-0"
               }`}
             >
               {children}

@@ -523,7 +523,7 @@ export default function DeliveryDayForm({
               </div>
               {availableServices.filter((s) => s.price_unit !== "percentage").length > 0 && (
                 <div className="space-y-1.5">
-                  <span className="text-[9px] font-semibold tracking-wider capitalize text-[#888]">Services at this stop</span>
+                  <span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Services at this stop</span>
                   {availableServices
                     .filter((s) => s.price_unit !== "percentage")
                     .map((svc) => (

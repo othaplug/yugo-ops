@@ -97,14 +97,14 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
           <div className="flex items-start gap-3">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">From</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">From</p>
               <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">To</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">To</p>
               <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
             </div>
           </div>

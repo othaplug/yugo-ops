@@ -185,7 +185,7 @@ export default function BalancePaymentClient({
                 {move.move_code || "Move Details"}
               </div>
               <div className="text-[24px] font-bold text-[#2D9F5A]">{fmtPrice(ccTotal)}</div>
-              <div className="text-[11px] text-[#666] mt-1">Charged to your card</div>
+              <div className="text-[11px] text-[#454545] mt-1">Charged to your card</div>
             </div>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function BalancePaymentClient({
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="font-hero text-[28px] font-bold tracking-wider text-[#C9A962]">Yugo</div>
-          <div className="text-[11px] text-[#666] mt-1 capitalize tracking-widest">Balance Payment</div>
+          <div className="text-[11px] text-[#454545] mt-1 capitalize tracking-widest">Balance Payment</div>
         </div>
 
         {/* Move Summary */}
@@ -215,23 +215,23 @@ export default function BalancePaymentClient({
           <div className="space-y-2 text-[12px]">
             {move.move_code && (
               <div className="flex justify-between">
-                <span className="text-[#666]">Reference</span>
+                <span className="text-[#454545]">Reference</span>
                 <span className="text-[#C9A962] font-semibold">{move.move_code}</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-[#666]">Date</span>
+              <span className="text-[#454545]">Date</span>
               <span className="text-[#E8E5E0]">{fmtDate(move.scheduled_date)}</span>
             </div>
             {move.from_address && (
               <div className="flex justify-between gap-4">
-                <span className="text-[#666] shrink-0">From</span>
+                <span className="text-[#454545] shrink-0">From</span>
                 <span className="text-[#E8E5E0] text-right">{move.from_address}</span>
               </div>
             )}
             {move.to_address && (
               <div className="flex justify-between gap-4">
-                <span className="text-[#666] shrink-0">To</span>
+                <span className="text-[#454545] shrink-0">To</span>
                 <span className="text-[#E8E5E0] text-right">{move.to_address}</span>
               </div>
             )}
@@ -243,15 +243,15 @@ export default function BalancePaymentClient({
           <div className="text-[9px] font-bold text-[#C9A962] capitalize tracking-widest mb-3">Payment Breakdown</div>
           <div className="space-y-2 text-[12px]">
             <div className="flex justify-between">
-              <span className="text-[#666]">Move balance (incl. HST)</span>
+              <span className="text-[#454545]">Move balance (incl. HST)</span>
               <span className="text-[#E8E5E0]">{fmtPrice(balanceAmount)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#666]">Credit card processing fee (3.3%)</span>
+              <span className="text-[#454545]">Credit card processing fee (3.3%)</span>
               <span className="text-[#E8E5E0]">{fmtPrice(processingFee)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#666]">Transaction fee</span>
+              <span className="text-[#454545]">Transaction fee</span>
               <span className="text-[#E8E5E0]">{fmtPrice(transactionFee)}</span>
             </div>
             <div className="border-t border-[#2A2A2A] pt-2 mt-2 flex justify-between">
@@ -275,7 +275,7 @@ export default function BalancePaymentClient({
             {!sdkReady && !error && (
               <div className="flex items-center justify-center py-6">
                 <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "#C9A96230", borderTopColor: "#C9A962" }} />
-                <span className="ml-2 text-[12px] text-[#666]">Loading payment form…</span>
+                <span className="ml-2 text-[12px] text-[#454545]">Loading payment form…</span>
               </div>
             )}
           </div>
@@ -309,7 +309,7 @@ export default function BalancePaymentClient({
         {/* Security */}
         <div className="flex items-center justify-center gap-2 mt-4 mb-8">
           <Lock size={14} color="#666" />
-          <span className="text-[10px] text-[#666]">Secured by Square · 256-bit encryption</span>
+          <span className="text-[10px] text-[#454545]">Secured by Square · 256-bit encryption</span>
         </div>
       </div>
     </div>

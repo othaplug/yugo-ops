@@ -2820,7 +2820,7 @@ function AddOnsSection({
             type="button"
             onClick={onContinue}
             className="text-[12px] font-medium transition-opacity hover:opacity-70"
-            style={{ color: "#888" }}
+            style={{ color: "#4F4B47" }}
           >
             Skip, no add-ons needed
           </button>

@@ -293,7 +293,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
         >
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`} style={{ backgroundColor: style.border }} />
           <span className="truncate text-[#1A1A1A] dark:text-[var(--tx)]">
-            {timeStr && <span className="text-[#666] dark:text-[var(--tx3)] mr-1 font-medium">{timeStr}</span>}
+            {timeStr && <span className="text-[#454545] dark:text-[var(--tx3)] mr-1 font-medium">{timeStr}</span>}
             {d.customer_name || d.delivery_number}
           </span>
           {isCompleted && <span className="text-[#22C55E] ml-auto shrink-0 text-[10px] font-semibold">Done</span>}
@@ -310,12 +310,12 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
       >
         <div className="flex items-center gap-1.5 mb-1">
           <span className={`w-2 h-2 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`} style={{ backgroundColor: style.border }} />
-          {timeStr && <span className="text-[11px] text-[#666] font-medium">{timeStr}</span>}
+          {timeStr && <span className="text-[11px] text-[#454545] font-medium">{timeStr}</span>}
         </div>
         <div className={`text-[13px] font-semibold text-[#1A1A1A] ${isCancelled ? "line-through" : ""}`}>
           {itemCount > 0 ? `${itemCount}pc ` : ""}{d.customer_name || d.delivery_number}
         </div>
-        {addr && <div className="text-[11px] text-[#666] mt-0.5 truncate">→ {addr}</div>}
+        {addr && <div className="text-[11px] text-[#454545] mt-0.5 truncate">→ {addr}</div>}
         <div className="mt-1.5">
           <span
             className="inline-block text-[9px] font-bold px-2 py-0.5 rounded-full capitalize"
@@ -336,12 +336,12 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
           <h3 className="text-[22px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] font-hero" suppressHydrationWarning>{headerLabel}</h3>
           <div className="flex items-center gap-0.5">
             <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors">
-              <CaretLeft size={14} weight="regular" color="#888" />
+              <CaretLeft size={14} weight="regular" color="#4F4B47" />
             </button>
             <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors">
-              <CaretRight size={14} weight="regular" color="#888" />
+              <CaretRight size={14} weight="regular" color="#4F4B47" />
             </button>
-            <button onClick={goToday} className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] dark:border-[var(--brd)] text-[#666] dark:text-[var(--tx3)] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors">
+            <button onClick={goToday} className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] dark:border-[var(--brd)] text-[#454545] dark:text-[var(--tx3)] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors">
               Today
             </button>
           </div>
@@ -355,7 +355,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                 className={`px-2.5 py-1 rounded-md text-[10px] font-semibold capitalize transition-colors ${
                   view === m
                     ? "bg-white dark:bg-[var(--card)] text-[#2C3E2D] dark:text-[var(--gold)] shadow-sm"
-                    : "text-[#888] dark:text-[var(--tx3)] hover:text-[#1A1A1A] dark:hover:text-[var(--tx)]"
+                    : "text-[#4F4B47] dark:text-[var(--tx3)] hover:text-[#1A1A1A] dark:hover:text-[var(--tx)]"
                 }`}
               >
                 {m}
@@ -377,7 +377,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-[10px] bg-[#F5F3F0] dark:bg-[var(--bg)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[#666] dark:text-[var(--tx2)] focus:border-[#C9A962] outline-none"
+          className="text-[10px] bg-[#F5F3F0] dark:bg-[var(--bg)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[#454545] dark:text-[var(--tx2)] focus:border-[#C9A962] outline-none"
         >
           <option value="">All Statuses</option>
           <option value="scheduled">Scheduled</option>
@@ -389,7 +389,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="text-[10px] bg-[#F5F3F0] dark:bg-[var(--bg)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[#666] dark:text-[var(--tx2)] focus:border-[#C9A962] outline-none"
+          className="text-[10px] bg-[#F5F3F0] dark:bg-[var(--bg)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[#454545] dark:text-[var(--tx2)] focus:border-[#C9A962] outline-none"
         >
           <option value="">All Types</option>
           <option value="per_delivery">Per Delivery</option>
@@ -405,7 +405,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
     return (
       <div className="grid grid-cols-7 gap-px bg-[#E8E4DF] dark:bg-[var(--brd)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-xl overflow-hidden">
         {DAY_NAMES.map((d) => (
-          <div key={d} className="bg-[#F9F7F4] dark:bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-wider capitalize text-[#999] dark:text-[var(--tx3)]/50">{d}</div>
+          <div key={d} className="bg-[#F9F7F4] dark:bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-wider capitalize text-[#5C5853] dark:text-[var(--tx3)]/50">{d}</div>
         ))}
         {cells.map((day, i) => {
           if (day === null) return <div key={`e-${i}`} className="bg-white dark:bg-[var(--card)] min-h-[90px]" />;
@@ -567,7 +567,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
       <div className={draggingDelivery ? "select-none" : ""}>
         {dayDels.length === 0 && dayProjects.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-[var(--text-base)] text-[#888] dark:text-[var(--tx3)] mb-4">No deliveries or projects scheduled</div>
+            <div className="text-[var(--text-base)] text-[#4F4B47] dark:text-[var(--tx3)] mb-4">No deliveries or projects scheduled</div>
             <button
               onClick={() => onSelectDate?.(selectedDate)}
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[12px] font-semibold text-white transition-colors hover:opacity-90"
@@ -599,7 +599,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             {/* Hour lines */}
             {HOURS.map((h) => (
               <div key={h} className="absolute w-full flex items-start" style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT }}>
-                <div className="w-16 shrink-0 text-right pr-3 text-[10px] text-[#999] dark:text-[var(--tx3)] font-medium -mt-1.5">
+                <div className="w-16 shrink-0 text-right pr-3 text-[10px] text-[#5C5853] dark:text-[var(--tx3)] font-medium -mt-1.5">
                   {formatTime12(`${String(h).padStart(2, "0")}:00`)}
                 </div>
                 <div className="flex-1 border-t border-[#EEE] dark:border-[var(--brd)]/30" />
@@ -642,9 +642,9 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                         : d.customer_name || d.delivery_number}
                     </div>
                     {d.delivery_address && (
-                      <div className="text-[11px] text-[#666] mt-0.5 truncate">→ {d.delivery_address}</div>
+                      <div className="text-[11px] text-[#454545] mt-0.5 truncate">→ {d.delivery_address}</div>
                     )}
-                    <div className="flex items-center gap-2 mt-auto text-[10px] text-[#888]">
+                    <div className="flex items-center gap-2 mt-auto text-[10px] text-[#4F4B47]">
                       {d.vehicle_type && <span className="inline-flex items-center gap-0.5">{d.vehicle_type}</span>}
                       {d.estimated_duration_hours && <span className="inline-flex items-center gap-0.5"><Clock size={12} /> {d.estimated_duration_hours}h</span>}
                       <span className="font-semibold" style={{ color: style.text }}>
@@ -726,7 +726,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             const count = delCount + projCount;
             return (
               <button key={key} type="button" onClick={() => switchToDay(key)} className={`flex-1 py-2 text-center border-l border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 transition-colors ${isToday ? "bg-[#C9A962]/5" : ""}`}>
-                <div className={`text-[9px] font-bold capitalize ${isToday ? "text-[#C9A962]" : "text-[#999] dark:text-[var(--tx3)]/50"}`}>{DAY_NAMES[i]} {date.getDate()}</div>
+                <div className={`text-[9px] font-bold capitalize ${isToday ? "text-[#C9A962]" : "text-[#5C5853] dark:text-[var(--tx3)]/50"}`}>{DAY_NAMES[i]} {date.getDate()}</div>
                 {count > 0 && <div className="text-[7px] text-[#2C3E2D] dark:text-[var(--gold)] font-semibold">{delCount > 0 && `${delCount} del${delCount > 1 ? "s" : ""}`}{delCount > 0 && projCount > 0 ? " · " : ""}{projCount > 0 && `${projCount} proj`}</div>}
               </button>
             );
@@ -736,7 +736,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
           <div className="flex" style={{ height: (END_HOUR - START_HOUR) * HOUR_HEIGHT }}>
             <div className="w-12 shrink-0 relative">
               {HOURS.map((h) => (
-                <div key={h} className="absolute w-full text-right pr-1 text-[8px] text-[#999] dark:text-[var(--tx3)] font-medium" style={{ top: (h - START_HOUR) * HOUR_HEIGHT - 4 }}>
+                <div key={h} className="absolute w-full text-right pr-1 text-[8px] text-[#5C5853] dark:text-[var(--tx3)] font-medium" style={{ top: (h - START_HOUR) * HOUR_HEIGHT - 4 }}>
                   {h <= 12 ? `${h}AM` : `${h - 12}PM`}
                 </div>
               ))}
@@ -794,7 +794,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             const hrs = (deliveriesByDate[key] || []).reduce((sum, d) => sum + (d.estimated_duration_hours || 1.5), 0);
             return (
               <div key={key} className="flex-1 border-l border-[#E8E4DF] dark:border-[var(--brd)] px-1 py-1 text-center">
-                <div className="text-[7px] text-[#888] dark:text-[var(--tx3)]">{count > 0 ? `${count} · ${Math.round(hrs * 10) / 10}h` : "-"}</div>
+                <div className="text-[7px] text-[#4F4B47] dark:text-[var(--tx3)]">{count > 0 ? `${count} · ${Math.round(hrs * 10) / 10}h` : "-"}</div>
               </div>
             );
           })}
@@ -835,7 +835,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                 </button>
                 <div className="grid grid-cols-7 gap-[2px] min-w-0">
                   {DAY_LABELS.map((d, i) => (
-                    <div key={`h-${i}`} className="text-[6px] font-semibold text-[#888] dark:text-[var(--tx3)]/60 text-center">{d}</div>
+                    <div key={`h-${i}`} className="text-[6px] font-semibold text-[#4F4B47] dark:text-[var(--tx3)]/60 text-center">{d}</div>
                   ))}
                   {cells.map((day, i) => {
                     if (day === null) return <div key={`e-${i}`} className={`w-full min-h-[10px] aspect-square max-w-[20px] mx-auto rounded-[3px] ${emptyCellBg}`} />;
@@ -862,13 +862,13 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
         {/* Summary */}
         <div className="mt-6 text-center">
           <div className="flex items-center gap-2 justify-center mb-2 flex-wrap">
-            <span className="text-[9px] text-[#666] dark:text-[var(--tx3)]">Less</span>
+            <span className="text-[9px] text-[#454545] dark:text-[var(--tx3)]">Less</span>
             {[0, 1, 2, 4].map((n) => (
               <div key={n} className={`w-4 h-4 rounded-[3px] ${n === 0 ? emptyCellBg : ""}`} style={n > 0 ? { backgroundColor: getColor(n) } : undefined} />
             ))}
-            <span className="text-[9px] text-[#666] dark:text-[var(--tx3)]">More</span>
+            <span className="text-[9px] text-[#454545] dark:text-[var(--tx3)]">More</span>
           </div>
-          <div className="text-[12px] text-[#666] dark:text-[var(--tx3)] font-medium">
+          <div className="text-[12px] text-[#454545] dark:text-[var(--tx3)] font-medium">
             {yearView} Total: <span className="text-[#2C3E2D] dark:text-[var(--gold)] font-bold">{totalDeliveries} deliveries</span>
           </div>
         </div>

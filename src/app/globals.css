@@ -86,6 +86,9 @@
   --z-toast: 99999;
   --z-top: 100000;
 
+  /* Admin mobile bottom nav — main padding + toasts/sheets must match */
+  --admin-mobile-nav-bar: 68px;
+
   /* ── Fonts ── */
   --font-heading: 'Instrument Sans', 'DM Sans', system-ui, sans-serif;
   --font-hero: 'Instrument Serif', serif;
@@ -99,8 +102,9 @@
   --card: #FFFFFF;
   --brd: #DDD9D2;
   --tx: #111111;
-  --tx2: #3A3A3A;
-  --tx3: #6B6560;
+  /* Secondary / tertiary text: dark enough for WCAG AA on warm off-white */
+  --tx2: #333333;
+  --tx3: #524D47;
   --gold: #8C6E2F;
   --gold2: #7A5E25;
   --gdim: rgba(140,110,47,.1);
@@ -119,8 +123,8 @@
   --surface-card: #FFFFFF;
   --surface-border: #DDD9D2;
   --text-primary: #111111;
-  --text-secondary: #3A3A3A;
-  --text-tertiary: #6B6560;
+  --text-secondary: #333333;
+  --text-tertiary: #524D47;
   --text-accent: #8C6E2F;
 }
 
@@ -671,7 +675,7 @@ textarea.field-input-compact:focus {
   border-color: #C9A962;
   box-shadow: 0 0 0 3px rgba(201,169,98,0.12);
 }
-.field-input-partner::placeholder { color: #bbb; }
+.field-input-partner::placeholder { color: #6B6B6B; }
 
 /* Focus visible for keyboard accessibility (dark theme) */
 a:focus-visible,
@@ -817,9 +821,9 @@ input[type="time"] {
   padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
 }
 
-/* Bottom padding for mobile nav bar (64px bar + device safe area) */
+/* Bottom padding for mobile nav bar (bar height + device safe area) */
 .pb-mobile-nav {
-  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--admin-mobile-nav-bar) + env(safe-area-inset-bottom, 0px));
 }
 
 /* Slide-up animation for bottom sheets */
@@ -999,7 +1003,7 @@ input[type="time"] {
   border-color: #DDD9D2;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
-[data-theme="light"] .mc-l { color: #6B6560; }
+[data-theme="light"] .mc-l { color: #524D47; }
 [data-theme="light"] .mc-v { color: #111111; }
 [data-theme="light"] .sh-t { color: #111111; }
 [data-theme="light"] .dc {
@@ -1007,7 +1011,7 @@ input[type="time"] {
   border-color: #DDD9D2;
 }
 [data-theme="light"] .dc-t { color: #111111; }
-[data-theme="light"] .dc-s { color: #6B6560; }
+[data-theme="light"] .dc-s { color: #524D47; }
 [data-theme="light"] .act-body .act-t { color: #111111; }
 /* Light mode badge contrast */
 [data-theme="light"] .b-gr { background: rgba(29,138,71,0.1); color: #1D8A47; }

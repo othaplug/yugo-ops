@@ -417,7 +417,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                   </a>
                   <button
                     onClick={() => setWelcomeStep(3)}
-                    className="block mx-auto mt-3 text-[12px] text-[#999] hover:text-[#666] transition-colors"
+                    className="block mx-auto mt-3 text-[12px] text-[#5C5853] hover:text-[#454545] transition-colors"
                     style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
                   >
                     I&apos;ll do this later
@@ -501,7 +501,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-[var(--text-base)] font-semibold text-[var(--tx)]">Welcome back, {contactName}</span>
-              <span className="text-[12px] text-[#888] ml-2">
+              <span className="text-[12px] text-[#4F4B47] ml-2">
                 Last visit: {formatDateTime(loginInfo.lastLoginAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
               </span>
             </div>

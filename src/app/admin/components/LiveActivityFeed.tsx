@@ -82,7 +82,7 @@ export default function LiveActivityFeed({ initialEvents }: { initialEvents: Act
 
   return (
     <div className="pt-6 border-t border-[var(--brd)]/30">
-      <div className="flex items-center justify-between gap-2 mb-3">
+      <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
         <div className="flex items-center gap-2 min-w-0">
           <h2 className="admin-section-h2">Activity</h2>
           <span className="relative flex h-1.5 w-1.5 shrink-0">

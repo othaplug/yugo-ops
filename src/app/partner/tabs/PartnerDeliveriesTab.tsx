@@ -126,7 +126,7 @@ export default function PartnerDeliveriesTab({
       {deliveries.length > 0 && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
           <div className="relative flex-1">
-            <MagnifyingGlass size={16} color="#999" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
+            <MagnifyingGlass size={16} color="#6B6B6B" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" aria-hidden />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -334,7 +334,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       {/* Draft notice */}
       {statusKey === "draft" && (
         <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)]">
-          <Info size={13} color="#999" />
+          <Info size={13} color="#6B6B6B" />
           <span className="text-[11px] text-[var(--tx3)] font-medium">Saved draft, complete the details and submit when ready.</span>
           {onEditClick && (
             <button

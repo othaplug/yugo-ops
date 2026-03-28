@@ -50,7 +50,7 @@ const LeafletMap = dynamic(
 
 function MapLoading() {
   return (
-    <div className="w-full h-full min-h-[320px] flex items-center justify-center bg-[#FAFAF8] text-[#666] text-[12px]">
+    <div className="w-full h-full min-h-[320px] flex items-center justify-center bg-[#FAFAF8] text-[#454545] text-[12px]">
       Loading map...
     </div>
   );
@@ -305,10 +305,10 @@ export default function TrackLiveMap({
       {showPlaceholder && (
         <div className="rounded-xl border border-[#E7E5E4] bg-[#FAFAF8] p-5">
           <p className="text-[var(--text-base)] text-[#1A1A1A] mb-2">Your crew will appear here on move day.</p>
-          <p className="text-[13px] text-[#666] mb-4">Live tracking activates when your crew begins.</p>
-          {scheduledStr && <p className="text-[12px] text-[#666] mb-1">Scheduled: {scheduledStr}</p>}
-          {move?.arrival_window && <p className="text-[12px] text-[#666] mb-1">Crew arrives: {move.arrival_window}</p>}
-          <p className="text-[11px] text-[#999] font-medium capitalize tracking-wider">Live signal off</p>
+          <p className="text-[13px] text-[#454545] mb-4">Live tracking activates when your crew begins.</p>
+          {scheduledStr && <p className="text-[12px] text-[#454545] mb-1">Scheduled: {scheduledStr}</p>}
+          {move?.arrival_window && <p className="text-[12px] text-[#454545] mb-1">Crew arrives: {move.arrival_window}</p>}
+          <p className="text-[11px] text-[#5C5853] font-medium capitalize tracking-wider">Live signal off</p>
         </div>
       )}
 
@@ -359,8 +359,8 @@ export default function TrackLiveMap({
                 className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-10 pointer-events-none rounded-xl"
                 aria-hidden="true"
               >
-                <span className="text-[12px] font-semibold text-[#666]">Live signal off</span>
-                <span className="text-[11px] text-[#888] mt-1">Tracking begins when your crew starts the job</span>
+                <span className="text-[12px] font-semibold text-[#454545]">Live signal off</span>
+                <span className="text-[11px] text-[#4F4B47] mt-1">Tracking begins when your crew starts the job</span>
               </div>
             )}
 
@@ -444,7 +444,7 @@ export default function TrackLiveMap({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[13px] font-bold text-[#1A1A1A] truncate">{crew?.name || "Your Crew"}</span>
-                      {crew?.members && <span className="text-[10px] text-[#666]">{crew.members.length} movers</span>}
+                      {crew?.members && <span className="text-[10px] text-[#454545]">{crew.members.length} movers</span>}
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#22C55E]/15 text-[#22C55E]">
                         <span className="relative flex h-1 w-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" /><span className="relative inline-flex rounded-full h-1 w-1 bg-[#22C55E]" /></span>
                         {CREW_STATUS_TO_LABEL[liveStage || ""] || toTitleCase(liveStage || "") || "Live"}
@@ -464,7 +464,7 @@ export default function TrackLiveMap({
                 <div className="px-3 pb-4 space-y-3 border-t border-[#F0EFED]" style={{ opacity: drawerExpanded ? 1 : 0, transition: "opacity 0.25s ease 0.1s" }}>
                   {/* ETA + last update */}
                   {(displayEta != null || lastLocationAt) && (
-                    <div className="flex items-center gap-4 pt-3 text-[11px] text-[#666]">
+                    <div className="flex items-center gap-4 pt-3 text-[11px] text-[#454545]">
                       {displayEta != null && (
                         <div className="flex items-center gap-1.5">
                           <Clock size={12} color="#C9A962" aria-hidden />
@@ -479,7 +479,7 @@ export default function TrackLiveMap({
                   {/* Crew members */}
                   {crew?.members && crew.members.length > 0 && (
                     <div>
-                      <div className="text-[9px] font-bold tracking-wider capitalize text-[#999] mb-2">Your Team</div>
+                      <div className="text-[9px] font-bold tracking-wider capitalize text-[#5C5853] mb-2">Your Team</div>
                       <div className="flex flex-wrap gap-2">
                         {crew.members.map((name, i) => (
                           <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#E7E5E4]">
@@ -518,7 +518,7 @@ export default function TrackLiveMap({
       )}
 
       {loading && (
-        <div className="rounded-xl h-[200px] flex items-center justify-center bg-[#FAFAF8] border border-[#E7E5E4] text-[#666] text-[12px]">
+        <div className="rounded-xl h-[200px] flex items-center justify-center bg-[#FAFAF8] border border-[#E7E5E4] text-[#454545] text-[12px]">
           Loading...
         </div>
       )}

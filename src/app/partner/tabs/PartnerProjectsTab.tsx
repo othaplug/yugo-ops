@@ -38,8 +38,8 @@ const VENDOR_STATUS_COLOR: Record<string, string> = {
   received: "text-[#2D9F5A]",
   transit: "text-[#D48A29]",
   in_transit: "text-[#D48A29]",
-  wait: "text-[#888]",
-  pending: "text-[#888]",
+  wait: "text-[#4F4B47]",
+  pending: "text-[#4F4B47]",
   late: "text-[#D14343]",
   delayed: "text-[#D14343]",
 };
@@ -64,7 +64,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
   if (projects.length === 0) {
     return (
       <div className="bg-white border border-[#E8E4DF] rounded-xl p-8 text-center">
-        <p className="text-[var(--text-base)] text-[#888]">No active projects.</p>
+        <p className="text-[var(--text-base)] text-[#4F4B47]">No active projects.</p>
       </div>
     );
   }
@@ -85,7 +85,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="text-[17px] font-bold text-[#1A1A1A] font-hero">{project.name}</h3>
-                  <p className="text-[12px] text-[#888] mt-0.5">
+                  <p className="text-[12px] text-[#4F4B47] mt-0.5">
                     {project.address} {project.vendorCount} vendor{project.vendorCount !== 1 ? "s" : ""} {project.installDate}
                   </p>
                 </div>
@@ -99,7 +99,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                   {onShareProject && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onShareProject(project.id); }}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#E8E4DF] text-[#888] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#E8E4DF] text-[#4F4B47] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
                     >
                       <ShareNetwork size={12} className="inline mr-1" />
                       Share
@@ -107,7 +107,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                   )}
                   <CaretDown
                     size={16}
-                    color="#888"
+                    color="#6B6B6B"
                     className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
                   />
                 </div>
@@ -120,18 +120,18 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                   style={{ width: `${project.percent}%` }}
                 />
               </div>
-              <div className="text-right text-[11px] text-[#888] mt-1 font-medium">{project.percent}%</div>
+              <div className="text-right text-[11px] text-[#4F4B47] mt-1 font-medium">{project.percent}%</div>
             </div>
 
             {/* Vendor List (expanded) */}
             {isExpanded && (
               <div className="border-t border-[#E8E4DF] px-5 py-3">
-                <div className="text-[10px] font-semibold tracking-wider capitalize text-[#888] mb-3">Vendor Receiving</div>
+                <div className="text-[10px] font-semibold tracking-wider capitalize text-[#4F4B47] mb-3">Vendor Receiving</div>
                 <div className="space-y-2.5">
                   {project.vendors.map((v, i) => {
                     const statusKey = (v.status || "").toLowerCase();
                     const label = VENDOR_STATUS_LABEL[statusKey] || v.status;
-                    const colorClass = VENDOR_STATUS_COLOR[statusKey] || "text-[#888]";
+                    const colorClass = VENDOR_STATUS_COLOR[statusKey] || "text-[#4F4B47]";
                     const iconType = VENDOR_STATUS_ICON[statusKey] || "clock";
 
                     return (
@@ -140,7 +140,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                           <VendorIcon type={iconType} status={statusKey} />
                           <div>
                             <span className="text-[13px] font-semibold text-[#1A1A1A]">{v.vendor}</span>
-                            <span className="text-[12px] text-[#888] ml-1.5">{v.items}</span>
+                            <span className="text-[12px] text-[#4F4B47] ml-1.5">{v.items}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -167,12 +167,12 @@ function VendorIcon({ type, status }: { type: string; status: string }) {
     received: "#2D9F5A",
     transit: "#D48A29",
     in_transit: "#D48A29",
-    wait: "#888",
-    pending: "#888",
+    wait: "#6B6B6B",
+    pending: "#6B6B6B",
     late: "#D14343",
     delayed: "#D14343",
   };
-  const color = colors[status] || "#888";
+  const color = colors[status] || "#6B6B6B";
 
   if (type === "check") {
     return (

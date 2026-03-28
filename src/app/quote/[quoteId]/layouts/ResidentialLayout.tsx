@@ -55,7 +55,7 @@ export default function ResidentialLayout({
           Every package includes a professional crew, truck, and blanket wrapping.
         </p>
         {quote.expires_at && (
-          <p className="text-[12px] mt-2" style={{ color: "#999" }}>
+          <p className="text-[12px] mt-2" style={{ color: "#5C5853" }}>
             Quote valid until{" "}
             {new Date(quote.expires_at).toLocaleDateString("en-CA", { month: "long", day: "numeric" })}
           </p>

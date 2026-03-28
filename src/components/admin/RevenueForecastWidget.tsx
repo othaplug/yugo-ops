@@ -32,15 +32,15 @@ export default function RevenueForecastWidget() {
   return (
     <div className="rounded-2xl border border-[var(--brd)]/40 bg-[var(--card)] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)]/30">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-[var(--brd)]/30 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <TrendUp size={16} color="var(--tx2)" />
-          <span className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)]">
+          <span className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)] min-w-0 truncate">
             Revenue Forecast
           </span>
         </div>
         {/* Period selector */}
-        <div className="flex rounded-lg overflow-hidden border border-[var(--brd)]/40">
+        <div className="flex shrink-0 rounded-lg overflow-hidden border border-[var(--brd)]/40">
           {([7, 14, 30] as const).map((d) => (
             <button
               key={d}

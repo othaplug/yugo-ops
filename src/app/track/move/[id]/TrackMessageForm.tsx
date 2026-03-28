@@ -48,7 +48,7 @@ export default function TrackMessageForm({
 
   if (isComplete) {
     return (
-      <p className="text-[13px] text-[#666] py-3 px-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8]">
+      <p className="text-[13px] text-[#454545] py-3 px-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8]">
         This move is complete. For support, contact us at{" "}
         <a href="mailto:hello@yugo.com" className="text-[#C9A962] hover:underline">
           hello@yugo.com
@@ -67,7 +67,7 @@ export default function TrackMessageForm({
           placeholder="Type a message..."
           maxLength={2000}
           disabled={sending}
-          className="flex-1 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-2.5 text-[13px] text-[#1A1A1A] placeholder:text-[#999] focus:border-[#C9A962] outline-none disabled:opacity-50 transition-colors"
+          className="flex-1 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-2.5 text-[13px] text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none disabled:opacity-50 transition-colors"
         />
         <button
           type="submit"

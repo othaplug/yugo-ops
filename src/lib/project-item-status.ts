@@ -33,7 +33,7 @@ export const PROJECT_ITEM_STATUS_LABELS: Record<ProjectItemStatus, string> = {
 };
 
 export const PROJECT_ITEM_STATUS_UI: Record<ProjectItemStatus, { label: string; color: string; bg: string }> = {
-  spec_selected: { label: "Spec'd", color: "text-[#888]", bg: "bg-[#888]/10" },
+  spec_selected: { label: "Spec'd", color: "text-[#4F4B47]", bg: "bg-[#4F4B47]/12" },
   ordered: { label: "Ordered", color: "text-blue-500", bg: "bg-blue-500/10" },
   in_production: { label: "In Production", color: "text-blue-500", bg: "bg-blue-500/10" },
   ready_for_pickup: { label: "Ready for Pickup", color: "text-amber-500", bg: "bg-amber-500/10" },

@@ -14,7 +14,7 @@ export default function TrackError({ error, reset }: { error: Error & { digest?:
           <XCircle size={24} color="#E53E3E" aria-hidden />
         </div>
         <h1 className="text-[18px] font-bold text-[#1A1714]">Tracking Unavailable</h1>
-        <p className="text-[13px] text-[#888]">
+        <p className="text-[13px] text-[#4F4B47]">
           <SafeText fallback="We couldn&apos;t load tracking information. Please try again.">
             {error.message || "We couldn't load tracking information. Please try again."}
           </SafeText>

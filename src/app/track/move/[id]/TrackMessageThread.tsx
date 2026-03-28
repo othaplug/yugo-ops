@@ -61,11 +61,11 @@ export default function TrackMessageThread({ moveId, token, moveStatus }: { move
   return (
     <div className="space-y-4">
       {loading ? (
-        <p className="text-[13px] text-[#666]">Loading messages…</p>
+        <p className="text-[13px] text-[#454545]">Loading messages…</p>
       ) : (
         <div className="space-y-4 max-h-[320px] overflow-y-auto pr-1">
           {messages.length === 0 ? (
-            <p className="text-[13px] text-[#666]">No messages yet. Send one below.</p>
+            <p className="text-[13px] text-[#454545]">No messages yet. Send one below.</p>
           ) : (
             messages.map((m) => {
               const isClient = m.sender_type === "client";
@@ -85,7 +85,7 @@ export default function TrackMessageThread({ moveId, token, moveStatus }: { move
                       }`}
                     >
                       <p className="text-[13px] leading-snug whitespace-pre-wrap">{m.content}</p>
-                      <p className={`text-[10px] mt-1.5 ${isClient ? "text-[#666]" : "text-white/80"}`}>{formatMsgTime(m.created_at)}</p>
+                      <p className={`text-[10px] mt-1.5 ${isClient ? "text-[#454545]" : "text-white/80"}`}>{formatMsgTime(m.created_at)}</p>
                     </div>
                   </div>
                 </div>

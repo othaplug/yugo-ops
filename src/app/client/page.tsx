@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import YugoLogo from "@/components/YugoLogo";
-import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
+import { WINE, FOREST, GOLD, CREAM, TEXT_MUTED_ON_LIGHT } from "@/lib/client-theme";
 
 export default function ClientPage() {
   return (
@@ -15,7 +15,7 @@ export default function ClientPage() {
         <p className="text-[13px] leading-relaxed mb-6" style={{ color: FOREST }}>
           Use the tracking link we sent to your email to view your move details, inventory, documents, and message your coordinator. No account or login required.
         </p>
-        <p className="text-[11px] mb-8 opacity-80" style={{ color: FOREST }}>
+        <p className="text-[11px] mb-8" style={{ color: TEXT_MUTED_ON_LIGHT }}>
           Can&apos;t find the link? Check your spam folder or contact your coordinator.
         </p>
         <Link

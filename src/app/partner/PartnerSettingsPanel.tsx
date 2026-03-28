@@ -200,7 +200,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
             <div className="p-5 space-y-5">
               {/* Account */}
               <div>
-                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#888)] mb-3">Account</div>
+                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#524D47)] mb-3">Account</div>
                 <div className="rounded-xl border border-[var(--brd,#E8E4DF)] overflow-hidden">
                   <div className="px-4 py-3.5 flex items-center gap-3 bg-[var(--card,#fff)]">
                     <div className="w-10 h-10 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[13px] font-bold flex-shrink-0">
@@ -208,11 +208,11 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                     </div>
                     <div className="min-w-0">
                       <div className="text-[15px] font-semibold text-[var(--tx,#1A1A1A)] truncate">{contactName}</div>
-                      <div className="text-[12px] text-[var(--tx3,#888)] truncate">{userEmail}</div>
+                      <div className="text-[12px] text-[var(--tx3,#524D47)] truncate">{userEmail}</div>
                     </div>
                   </div>
                   <div className="border-t border-[var(--brd,#E8E4DF)] px-4 py-2.5 flex items-center justify-between">
-                    <span className="text-[12px] text-[var(--tx3,#888)]">{orgName}</span>
+                    <span className="text-[12px] text-[var(--tx3,#524D47)]">{orgName}</span>
                     <span className="text-[11px] font-semibold text-[#C9A962] capitalize tracking-wide">
                       {VERTICAL_LABELS[orgType] || orgType.replace(/_/g, " ")}
                     </span>
@@ -222,7 +222,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Theme */}
               <div>
-                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#888)] mb-3">Theme</div>
+                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#524D47)] mb-3">Theme</div>
                 <div className="flex gap-2">
                   {([
                     { key: "light" as Theme, label: "Light", PhIcon: Sun },
@@ -235,11 +235,11 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                       className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
                         theme === t.key
                           ? "border-[#C9A962] bg-[#C9A962]/5"
-                          : "border-[var(--brd,#E8E4DF)] bg-[var(--card,#fff)] hover:border-[var(--tx3,#888)]/30"
+                          : "border-[var(--brd,#E8E4DF)] bg-[var(--card,#fff)] hover:border-[var(--tx3,#524D47)]/30"
                       }`}
                     >
                       <t.PhIcon size={20} color={theme === t.key ? "#C9A962" : "currentColor"} />
-                      <span className={`text-[11px] font-semibold ${theme === t.key ? "text-[#C9A962]" : "text-[var(--tx3,#888)]"}`}>{t.label}</span>
+                      <span className={`text-[11px] font-semibold ${theme === t.key ? "text-[#C9A962]" : "text-[var(--tx3,#524D47)]"}`}>{t.label}</span>
                     </button>
                   ))}
                 </div>
@@ -247,7 +247,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Menu items */}
               <div>
-                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#888)] mb-3">Manage</div>
+                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#524D47)] mb-3">Manage</div>
                 <div className="space-y-1">
                   {[
                     { key: "profile" as const, PhIcon: UserCircle, label: "Edit Profile", desc: "Name, email, phone" },
@@ -260,13 +260,13 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--hover,#F5F3F0)] transition-colors text-left"
                     >
                       <div className="w-9 h-9 rounded-lg bg-[var(--hover,#F5F3F0)] flex items-center justify-center flex-shrink-0">
-                        <item.PhIcon size={16} color="var(--tx3,#888)" />
+                        <item.PhIcon size={16} color="var(--tx3,#524D47)" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">{item.label}</div>
-                        <div className="text-[11px] text-[var(--tx3,#888)]">{item.desc}</div>
+                        <div className="text-[11px] text-[var(--tx3,#524D47)]">{item.desc}</div>
                       </div>
-                      <CaretRight size={14} weight="regular" color="var(--tx3,#888)" />
+                      <CaretRight size={14} weight="regular" color="var(--tx3,#524D47)" />
                     </button>
                   ))}
                 </div>
@@ -274,20 +274,20 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Quick links */}
               <div>
-                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#888)] mb-3">Quick Links</div>
+                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#524D47)] mb-3">Quick Links</div>
                 <div className="space-y-1">
                   <a
                     href="/update-password"
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--hover,#F5F3F0)] transition-colors"
                   >
                     <div className="w-9 h-9 rounded-lg bg-[var(--hover,#F5F3F0)] flex items-center justify-center flex-shrink-0">
-                      <Lock size={16} color="var(--tx3,#888)" />
+                      <Lock size={16} color="var(--tx3,#524D47)" />
                     </div>
                     <div className="flex-1">
                       <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Change Password</div>
-                      <div className="text-[11px] text-[var(--tx3,#888)]">Update your login credentials</div>
+                      <div className="text-[11px] text-[var(--tx3,#524D47)]">Update your login credentials</div>
                     </div>
-                    <CaretRight size={14} weight="regular" color="var(--tx3,#888)" />
+                    <CaretRight size={14} weight="regular" color="var(--tx3,#524D47)" />
                   </a>
                   <a
                     href="/tracking"
@@ -295,13 +295,13 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--hover,#F5F3F0)] transition-colors"
                   >
                     <div className="w-9 h-9 rounded-lg bg-[var(--hover,#F5F3F0)] flex items-center justify-center flex-shrink-0">
-                      <NavigationArrow size={16} color="var(--tx3,#888)" />
+                      <NavigationArrow size={16} color="var(--tx3,#524D47)" />
                     </div>
                     <div className="flex-1">
                       <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Public Tracking Page</div>
-                      <div className="text-[11px] text-[var(--tx3,#888)]">Share with your customers</div>
+                      <div className="text-[11px] text-[var(--tx3,#524D47)]">Share with your customers</div>
                     </div>
-                    <ArrowSquareOut size={14} color="var(--tx3,#888)" />
+                    <ArrowSquareOut size={14} color="var(--tx3,#524D47)" />
                   </a>
                 </div>
               </div>
@@ -325,7 +325,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           {section === "profile" && (
             <div className="p-5 space-y-4">
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] capitalize tracking-wider block mb-1.5">Contact Name</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Contact Name</label>
                 <input
                   value={profile.contact_name}
                   onChange={(e) => setProfile((p) => ({ ...p, contact_name: e.target.value }))}
@@ -333,7 +333,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] capitalize tracking-wider block mb-1.5">Business Email</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Business Email</label>
                 <input
                   value={profile.email}
                   onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
@@ -342,7 +342,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] capitalize tracking-wider block mb-1.5">Phone</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Phone</label>
                 <input
                   value={profile.phone}
                   onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
@@ -352,9 +352,9 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               </div>
               <div className="pt-2">
                 <div className="rounded-xl bg-[var(--hover,#F5F3F0)] border border-[var(--brd,#E8E4DF)] px-4 py-3">
-                  <div className="text-[10px] font-semibold text-[var(--tx3,#888)] capitalize tracking-wider mb-0.5">Organization</div>
+                  <div className="text-[10px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider mb-0.5">Organization</div>
                   <div className="text-[var(--text-base)] font-semibold text-[var(--tx,#1A1A1A)]">{orgName}</div>
-                  <div className="text-[12px] text-[var(--tx3,#888)]">
+                  <div className="text-[12px] text-[var(--tx3,#524D47)]">
                     {VERTICAL_LABELS[orgType] || orgType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} · {userEmail}
                   </div>
                 </div>
@@ -372,7 +372,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           {/* Notifications Section */}
           {section === "notifications" && (
             <div className="p-5 space-y-4">
-              <p className="text-[12px] text-[var(--tx3,#888)]">Control which email notifications you receive.</p>
+              <p className="text-[12px] text-[var(--tx3,#524D47)]">Control which email notifications you receive.</p>
               {[
                 { key: "email_delivery_updates" as const, label: "Delivery status updates", desc: "Get notified when deliveries change status" },
                 { key: "email_daily_summary" as const, label: "Daily summary", desc: "Receive a morning digest of today's deliveries" },
@@ -381,7 +381,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <div key={pref.key} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--brd,#E8E4DF)]">
                   <div>
                     <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">{pref.label}</div>
-                    <div className="text-[11px] text-[var(--tx3,#888)]">{pref.desc}</div>
+                    <div className="text-[11px] text-[var(--tx3,#524D47)]">{pref.desc}</div>
                   </div>
                   <button
                     type="button"
@@ -405,7 +405,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <div className="rounded-xl border border-[var(--brd,#E8E4DF)] px-4 py-3 flex items-center justify-between gap-3">
                   <div>
                     <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Test Daily Summary</div>
-                    <div className="text-[11px] text-[var(--tx3,#888)]">Send yourself a preview email right now</div>
+                    <div className="text-[11px] text-[var(--tx3,#524D47)]">Send yourself a preview email right now</div>
                   </div>
                   <button
                     type="button"
@@ -440,9 +440,9 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           {/* Delivery Preferences Section */}
           {section === "preferences" && (
             <div className="p-5 space-y-4">
-              <p className="text-[12px] text-[var(--tx3,#888)]">Set defaults used when scheduling new deliveries.</p>
+              <p className="text-[12px] text-[var(--tx3,#524D47)]">Set defaults used when scheduling new deliveries.</p>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] capitalize tracking-wider block mb-1.5">Default Time Slot</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Default Time Slot</label>
                 <select
                   value={deliveryPrefs.default_time_slot}
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_time_slot: e.target.value }))}
@@ -457,7 +457,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--brd,#E8E4DF)]">
                 <div>
                   <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">Auto-share tracking link</div>
-                  <div className="text-[11px] text-[var(--tx3,#888)]">Automatically email tracking link to customer on dispatch</div>
+                  <div className="text-[11px] text-[var(--tx3,#524D47)]">Automatically email tracking link to customer on dispatch</div>
                 </div>
                 <button
                   type="button"
@@ -472,7 +472,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--brd,#E8E4DF)]">
                 <div>
                   <div className="text-[13px] font-semibold text-[var(--tx,#1A1A1A)]">End Customer Notifications</div>
-                  <div className="text-[11px] text-[var(--tx3,#888)]">Allow Yugo to send delivery tracking updates directly to your customers on your behalf</div>
+                  <div className="text-[11px] text-[var(--tx3,#524D47)]">Allow Yugo to send delivery tracking updates directly to your customers on your behalf</div>
                 </div>
                 <button
                   type="button"
@@ -486,7 +486,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               </div>
               {deliveryPrefs.customer_notifications && (
                 <div>
-                  <label className="text-[11px] font-semibold text-[var(--tx3,#888)] capitalize tracking-wider block mb-1.5">Custom notification message</label>
+                  <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Custom notification message</label>
                   <input
                     type="text"
                     value={deliveryPrefs.notification_message || ""}
@@ -497,7 +497,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 </div>
               )}
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#888)] capitalize tracking-wider block mb-1.5">Default Special Handling Note</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Default Special Handling Note</label>
                 <textarea
                   value={deliveryPrefs.default_special_handling}
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_special_handling: e.target.value }))}

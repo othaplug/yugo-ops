@@ -133,12 +133,12 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Origin</p>
+                    <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Origin</p>
                     <p className="text-[11px] font-medium" style={{ color: FOREST }}>{leg.from_address}</p>
                   </div>
                   <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
                   <div className="flex-1 min-w-0 text-right">
-                    <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Venue</p>
+                    <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Venue</p>
                     <p className="text-[11px] font-medium" style={{ color: FOREST }}>{leg.to_address}</p>
                   </div>
                 </div>
@@ -154,7 +154,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                 <div className="flex items-start gap-2">
                   <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: WINE }} />
                   <div>
-                    <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Origin</p>
+                    <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Origin</p>
                     <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
                   </div>
                 </div>
@@ -163,7 +163,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
               <div className="flex-1 min-w-0 text-right">
                 <div className="flex items-start gap-2 justify-end">
                   <div>
-                    <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Venue</p>
+                    <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Venue</p>
                     <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.to_address}</p>
                   </div>
                   <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />

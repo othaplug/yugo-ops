@@ -91,7 +91,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Work Address</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Work Address</p>
               <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} />
               <div>
-                <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Date</p>
+                <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Date</p>
                 <p className="text-[12px] font-medium" style={{ color: FOREST }}>{fmtDate(quote.move_date)}</p>
               </div>
             </div>

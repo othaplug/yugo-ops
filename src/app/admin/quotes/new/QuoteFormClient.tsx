@@ -353,8 +353,10 @@ const fieldInput = "field-input-compact w-full";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">{label}</label>
+    <div className="space-y-1.5">
+      <label className="block text-[11px] font-semibold text-[var(--tx3)] capitalize tracking-wide">
+        {label}
+      </label>
       {children}
     </div>
   );

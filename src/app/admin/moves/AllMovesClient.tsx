@@ -701,13 +701,14 @@ export default function AllMovesClient({
       )}
 
       {/* Mobile FAB, Create Move */}
-      <div className="sm:hidden fixed bottom-[calc(56px+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[50]">
+      <div className="sm:hidden fixed bottom-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[50]">
         <Link
           href="/admin/moves/new"
-          className="flex items-center justify-center w-14 h-14 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-lg shadow-[var(--gold)]/25 active:scale-95 transition-transform touch-manipulation"
+          className="flex items-center justify-center h-11 w-11 rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-md active:scale-95 transition-all duration-300 touch-manipulation"
+          style={{ boxShadow: "0 2px 10px rgba(201,169,98,0.22), 0 1px 2px rgba(0,0,0,0.06)" }}
           aria-label="Create new move"
         >
-          <Plus size={22} weight="regular" className="text-current" aria-hidden />
+          <Plus size={20} weight="regular" className="text-current" aria-hidden />
         </Link>
       </div>
     </div>

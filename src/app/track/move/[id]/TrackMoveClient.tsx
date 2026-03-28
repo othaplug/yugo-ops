@@ -2576,7 +2576,7 @@ export default function TrackMoveClient({
                 </button>
 
                 <div className="flex items-center justify-center gap-1.5 mt-3">
-                  <Lock size={12} color="#999" />
+                  <Lock size={12} color="#6B6B6B" />
                   <span className="text-[10px] opacity-50" style={{ color: FOREST }}>Secured by Square · 256-bit encryption</span>
                 </div>
               </div>

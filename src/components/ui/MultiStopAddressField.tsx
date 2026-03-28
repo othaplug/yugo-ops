@@ -111,7 +111,7 @@ export default function MultiStopAddressField({
               type="button"
               onClick={() => removeStop(index)}
               disabled={disabled}
-              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-[#999] hover:text-[#DC2626] hover:bg-red-50 transition-colors"
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-[#5C5853] hover:text-[#DC2626] hover:bg-red-50 transition-colors"
               title="Remove this stop"
             >
               <X size={13} />

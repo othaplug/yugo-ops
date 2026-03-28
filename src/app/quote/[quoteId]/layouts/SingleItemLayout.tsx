@@ -81,14 +81,14 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
         <div className="mt-4 pt-4 border-t border-[var(--brd)]/30">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Pickup</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Pickup</p>
               <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
                 {quote.from_address}
               </p>
             </div>
             <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Delivery</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Delivery</p>
               <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
                 {quote.to_address}
               </p>

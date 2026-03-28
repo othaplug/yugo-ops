@@ -29,7 +29,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       {visible && (
-        <div className="fixed right-4 bottom-[calc(56px+env(safe-area-inset-bottom,0px)+8px)] md:bottom-4 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3.5 py-2.5 shadow-lg flex items-center gap-2 z-[100000] text-[11px] font-medium animate-fade-up max-w-[calc(100vw-2rem)]">
+        <div className="fixed left-4 right-4 md:left-auto md:right-4 bottom-[calc(var(--admin-mobile-nav-bar)+env(safe-area-inset-bottom,0px)+8px)] md:bottom-4 md:max-w-sm bg-[var(--card)] border border-[var(--brd)] rounded-lg px-3.5 py-2.5 shadow-lg flex items-center gap-2 z-[100000] text-[11px] font-medium animate-fade-up min-w-0">
           <span className={iconKey === "x" || iconKey === "alertTriangle" ? "text-[var(--red)]" : "text-[var(--grn)]"}>
             <Icon name={iconKey} className="w-[14px] h-[14px]" />
           </span>
