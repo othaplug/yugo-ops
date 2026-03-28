@@ -5,6 +5,7 @@ import { X, Check, Envelope, Chat } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 
 interface Props {
   delivery: {
@@ -62,8 +63,13 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
   };
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5 modal-overlay" onClick={onClose}>
-      <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[420px] modal-card animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
+    <ModalDialogFrame
+      zClassName="z-[99999]"
+      backdropClassName="bg-black/50"
+      onBackdropClick={onClose}
+      panelClassName="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[420px] sheet-card sm:modal-card"
+      panelStyle={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[18px] font-bold text-[var(--tx)] font-hero">Share Tracking Link</h2>
@@ -130,8 +136,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
             </>
           )}
         </div>
-      </div>
-    </div>
+    </ModalDialogFrame>
   );
 
   if (typeof document === "undefined") return null;

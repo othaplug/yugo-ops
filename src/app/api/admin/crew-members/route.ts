@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
           await resend.emails.send({
             from: emailFrom,
             to: emailTrimmed,
-            subject: "You're invited to the Yugo+ Crew Portal",
+            subject: "You're invited to the Yugo Crew Portal",
             html: crewPortalInviteEmail({
               name: row.name,
               email: emailTrimmed,
@@ -251,7 +251,7 @@ export async function POST(req: NextRequest) {
         await resend.emails.send({
           from: emailFrom,
           to: emailTrimmed,
-          subject: "You're invited to the Yugo+ Crew Portal",
+          subject: "You're invited to the Yugo Crew Portal",
           html: crewPortalInviteEmail({
             name: data.name,
             email: emailTrimmed,

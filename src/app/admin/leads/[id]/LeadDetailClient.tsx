@@ -14,6 +14,7 @@ import {
   LEAD_STATUS_LABELS,
 } from "@/lib/leads/admin-labels";
 import { ArrowRight, Phone } from "@phosphor-icons/react";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 
 type Lead = Record<string, unknown>;
 type Activity = {
@@ -279,9 +280,16 @@ export default function LeadDetailClient({
       </div>
 
       {dismissOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-md w-full shadow-xl">
-            <h2 className="text-[14px] font-bold text-[var(--tx)] mb-3">Dismiss lead</h2>
+        <ModalDialogFrame
+          zClassName="z-50"
+          backdropClassName="bg-black/50"
+          onBackdropClick={() => setDismissOpen(false)}
+          panelClassName="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-md w-full shadow-xl modal-card"
+          ariaLabelledBy="dismiss-lead-title"
+        >
+            <h2 id="dismiss-lead-title" className="text-[14px] font-bold text-[var(--tx)] mb-3">
+              Dismiss lead
+            </h2>
             <label className="block text-[11px] text-[var(--tx3)] mb-1">Reason</label>
             <select
               value={dismissReason}
@@ -310,8 +318,7 @@ export default function LeadDetailClient({
                 Confirm
               </button>
             </div>
-          </div>
-        </div>
+        </ModalDialogFrame>
       )}
 
       <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 mb-6 space-y-2 text-[12px] text-[var(--tx2)]">

@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
 <body style="background:#0d0b08;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:24px 16px;">
     <div style="border-bottom:1px solid #2a2318;padding-bottom:16px;margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:2px;text-transform:capitalize;color:#C9A962;margin:0 0 4px;">Yugo+</p>
+      <p style="font-size:10px;letter-spacing:2px;text-transform:capitalize;color:#C9A962;margin:0 0 4px;">Yugo</p>
       <h1 style="font-size:22px;font-weight:700;color:#e8e0d0;margin:0;">Daily Brief</h1>
       <p style="font-size:12px;color:#9c9489;margin:4px 0 0;">${dateLabel}</p>
     </div>
@@ -287,7 +287,7 @@ export async function GET(req: NextRequest) {
     </div>
 
     <p style="font-size:11px;color:#5c5650;text-align:center;margin-top:24px;">
-      Yugo+, Auto-generated at 7 AM EST
+      Yugo · Auto-generated at 7 AM ET
     </p>
   </div>
 </body>

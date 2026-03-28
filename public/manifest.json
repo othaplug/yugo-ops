@@ -1,7 +1,7 @@
 {
-  "name": "Yugo+ Crew",
-  "short_name": "Yugo Crew",
-  "description": "Yugo+ crew operations tablet app",
+  "name": "Yugo Crew",
+  "short_name": "Yugo",
+  "description": "Yugo crew operations tablet app",
   "start_url": "/crew/login",
   "scope": "/crew/",
   "display": "standalone",

@@ -253,7 +253,7 @@ function buildStatementEmail(opts: {
 <body style="background:#f5f4f2;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
     <div style="background:#0d0b08;border-radius:12px;padding:28px;margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:2px;text-transform:capitalize;color:#C9A962;margin:0 0 4px;">Yugo+</p>
+      <p style="font-size:10px;letter-spacing:2px;text-transform:capitalize;color:#C9A962;margin:0 0 4px;">Yugo</p>
       <h1 style="font-size:20px;font-weight:700;color:#e8e0d0;margin:0 0 2px;">Statement Ready</h1>
       <p style="font-size:12px;color:#9c9489;margin:0;">${opts.statementNumber}</p>
     </div>

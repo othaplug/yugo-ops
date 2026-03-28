@@ -15,7 +15,7 @@ const Extension = ({ context }) => {
 
   return (
     <Flex direction="column" gap="medium">
-      <Text>Create a quote in Yugo+ using this deal&apos;s details.</Text>
+      <Text>Create a quote in Yugo using this deal&apos;s details.</Text>
       {quoteUrl && (
         <Button
           href={{
@@ -24,7 +24,7 @@ const Extension = ({ context }) => {
           }}
           variant="primary"
         >
-          Generate Quote in Yugo+
+          Generate Quote in Yugo
         </Button>
       )}
     </Flex>

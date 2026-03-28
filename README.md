@@ -1,4 +1,4 @@
-# Yugo+
+# Yugo
 
 Operations platform for moves, deliveries, crew tracking, and partner management.
 

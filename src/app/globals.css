@@ -382,6 +382,11 @@ input, select, textarea {
   to   { transform: none; opacity: 1; }
 }
 
+/* Portaled dialogs: panel forgot .modal-card — same entrance as GlobalModal */
+[data-modal-root] > .relative.z-10:not(.modal-card):not(.sheet-card):not(.drawer-card) {
+  animation: 320ms var(--ease-out-expo) both modal-card-in;
+}
+
 /* ═══════════════════════════════════════════════════════
    TAB / PANEL CONTENT TRANSITIONS
    ═══════════════════════════════════════════════════════ */
@@ -430,6 +435,7 @@ input, select, textarea {
 
 @media (prefers-reduced-motion: reduce) {
   .modal-overlay, .modal-card, .sheet-card, .drawer-card,
+  [data-modal-root] > .relative.z-10:not(.modal-card):not(.sheet-card):not(.drawer-card),
   .tab-content, .tab-content-slide, .enter-fade, .enter-up, .stagger-item {
     animation: none !important;
   }

@@ -8,6 +8,7 @@ import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { toTitleCase } from "@/lib/format-text";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 
 function isToday(iso: string): boolean {
   const d = new Date(iso);
@@ -291,8 +292,12 @@ export default function ChangeRequestsClient({
       </div>
 
       {approveModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="approve-modal-title">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl">
+        <ModalDialogFrame
+          zClassName="z-[99999]"
+          onBackdropClick={() => { setApproveModal(null); setApproveFeeDollars(""); }}
+          panelClassName="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl modal-card"
+          ariaLabelledBy="approve-modal-title"
+        >
             <h2 id="approve-modal-title" className="text-[13px] font-bold text-[var(--tx)] mb-3">Approve change request</h2>
             <label className="block text-[11px] font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>
             <input
@@ -321,8 +326,7 @@ export default function ChangeRequestsClient({
                 {loadingId === approveModal.id ? "…" : "Approve"}
               </button>
             </div>
-          </div>
-        </div>
+        </ModalDialogFrame>
       )}
     </div>
   );

@@ -66,7 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const about = [
     "Yugo provides fixed-rate renovation and tenant moves with transparent surcharges,",
     "a dedicated partner portal for buildings and units, and real-time move tracking for tenants.",
-    "Rates below come from your contract rate card in Yugo+.",
+    "Rates below come from your contract rate card in Yugo.",
   ];
   for (const line of about) {
     doc.text(line, 20, y, { maxWidth: pageW - 40 });

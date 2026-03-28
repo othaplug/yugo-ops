@@ -2,8 +2,8 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Yugo+",
-    short_name: "Yugo+",
+    name: "Yugo",
+    short_name: "Yugo",
     description: "Premium logistics operations platform",
     start_url: "/",
     display: "standalone",

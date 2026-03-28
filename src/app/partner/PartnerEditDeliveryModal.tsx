@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { X, Lock } from "@phosphor-icons/react";
 import { getDisplayLabel } from "@/lib/displayLabels";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 
 interface Delivery {
   id: string;
@@ -105,12 +106,13 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
   const locked = ["delivered", "completed", "cancelled"].includes((d.status || "").toLowerCase());
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5 modal-overlay" onClick={onClose}>
-      <div
-        className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[540px] overflow-y-auto mx-0 sm:mx-4 sheet-card sm:modal-card"
-        style={{ maxHeight: "min(90dvh, 90vh)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <ModalDialogFrame
+      zClassName="z-[99999]"
+      backdropClassName="bg-black/50"
+      onBackdropClick={onClose}
+      panelClassName="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[540px] overflow-y-auto mx-0 sm:mx-4 sheet-card sm:modal-card"
+      panelStyle={{ maxHeight: "min(90dvh, 90vh)" }}
+    >
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">
           <div>
             <h2 className="font-hero text-[26px] font-bold text-[var(--tx)]">Edit Delivery</h2>
@@ -184,8 +186,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
             </div>
           </form>
         )}
-      </div>
-    </div>
+    </ModalDialogFrame>
   );
 
   if (typeof document === "undefined") return null;

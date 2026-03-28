@@ -869,7 +869,7 @@ function FeatureTogglesSection() {
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
   const widgetEnabled = config["instant_quote_widget"] === "true";
 
-  const embedCode = `<!-- Yugo+ Instant Quote Widget -->
+  const embedCode = `<!-- Yugo Instant Quote Widget -->
 <div id="yugo-quote-widget"></div>
 <script>
 (function() {
@@ -880,16 +880,16 @@ function FeatureTogglesSection() {
   d.getElementById('yugo-quote-widget').appendChild(s);
 })();
 </script>
-<!-- End Yugo+ Widget -->`;
+<!-- End Yugo Widget -->`;
 
-  const iframeCode = `<!-- Yugo+ Instant Quote (iframe) -->
+  const iframeCode = `<!-- Yugo Instant Quote (iframe) -->
 <iframe
   src="${appUrl}/widget/quote"
   width="100%"
   height="720"
   frameborder="0"
   style="border:none;border-radius:12px;"
-  title="Get a Quote - Yugo+"
+  title="Get a Quote - Yugo"
 ></iframe>`;
 
   const copyEmbed = (code: string) => {

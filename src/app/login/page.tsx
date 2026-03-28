@@ -50,6 +50,17 @@ export default function AdminLoginPage() {
       }
 
       const portal = await resolveLoginPortal(supabase, user);
+      const token = signData.session?.access_token;
+      if (token) {
+        try {
+          await fetch("/api/auth/audit-login", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        } catch {
+          /* best-effort audit */
+        }
+      }
       if (portal === "client") router.replace("/client");
       else if (portal === "partner") router.replace("/partner");
       else router.replace("/admin");

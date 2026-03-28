@@ -95,7 +95,7 @@ function quoteEmailLayout(innerHtml: string): string {
         <tr>
           <td class="eq-inner" style="padding:32px 36px 40px;background-color:${BG};color:${TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
             <div class="eq-hdr" align="center" style="margin:0 0 24px;">
-              <img src="${logoUrl}" alt="Yugo+" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0;margin:0 auto;" />
+              <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0;margin:0 auto;" />
               <div style="width:40px;height:1px;background-color:${GOLD};margin:14px auto 0;line-height:0;font-size:0;">&nbsp;</div>
             </div>
             ${innerHtml}

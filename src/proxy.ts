@@ -16,6 +16,7 @@ const PUBLIC_PATHS = new Set([
   "/client",
   "/api/health",
   "/api/auth/role",
+  "/api/auth/audit-login",
   "/api/crew/login",
   "/api/crew/login-context",
   "/api/crew/logout",

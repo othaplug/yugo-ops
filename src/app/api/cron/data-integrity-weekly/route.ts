@@ -36,6 +36,17 @@ export async function GET(req: NextRequest) {
     lines.push(`${movesNoCrew} move(s) scheduled today with no crew assigned.`);
   }
 
+  const { count: movesPastNoCrew } = await admin
+    .from("moves")
+    .select("id", { count: "exact", head: true })
+    .is("crew_id", null)
+    .lt("scheduled_date", today)
+    .in("status", ["confirmed", "scheduled", "paid", "in_progress"]);
+
+  if (movesPastNoCrew && movesPastNoCrew > 0) {
+    lines.push(`${movesPastNoCrew} move(s) past scheduled date still have no crew — review in admin.`);
+  }
+
   if (lines.length > 0) {
     await notifyAllAdmins({
       title: "Weekly data integrity check",

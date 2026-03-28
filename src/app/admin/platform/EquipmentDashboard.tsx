@@ -30,6 +30,8 @@ export default function EquipmentDashboard() {
   const [restock, setRestock] = useState<RestockRow[]>([]);
   const [losses, setLosses] = useState<LossRow[]>([]);
   const [lossTotal, setLossTotal] = useState(0);
+  const [avgCostPerJob, setAvgCostPerJob] = useState<number | null>(null);
+  const [checks30d, setChecks30d] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,6 +42,8 @@ export default function EquipmentDashboard() {
         if (Array.isArray(d.itemsNeedingRestock)) setRestock(d.itemsNeedingRestock);
         if (Array.isArray(d.lossHistory)) setLosses(d.lossHistory);
         if (typeof d.lossTotal30d === "number") setLossTotal(d.lossTotal30d);
+        if (typeof d.avgEquipmentCostPerJob30d === "number") setAvgCostPerJob(d.avgEquipmentCostPerJob30d);
+        if (typeof d.equipmentChecksSubmitted30d === "number") setChecks30d(d.equipmentChecksSubmitted30d);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -125,6 +129,14 @@ export default function EquipmentDashboard() {
           <p className="text-[10px] font-bold capitalize tracking-widest text-[var(--tx3)] mb-2">Loss history (30 days)</p>
           <p className="text-[12px] text-[var(--tx2)] mb-2">
             Total estimated: <span className="font-semibold text-[var(--tx)]">${lossTotal.toFixed(2)}</span>
+            {avgCostPerJob != null && checks30d != null && checks30d > 0 ? (
+              <>
+                {" "}
+                · Avg equipment incident cost per check submitted:{" "}
+                <span className="font-semibold text-[var(--tx)]">${avgCostPerJob.toFixed(2)}</span>
+                <span className="text-[var(--tx3)]"> ({checks30d} checks)</span>
+              </>
+            ) : null}
           </p>
           <div className="overflow-x-auto max-h-[220px] overflow-y-auto">
             <table className="w-full text-[11px]">

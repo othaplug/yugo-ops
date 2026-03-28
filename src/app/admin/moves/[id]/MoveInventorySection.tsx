@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { PencilSimple as Pencil, Trash as Trash2, Plus, CaretDown as ChevronDown } from "@phosphor-icons/react";
 import { expandItemRow as expandItemRowFromName } from "@/lib/inventory-parse";
 import ModalOverlay from "../../components/ModalOverlay";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 import { useToast } from "../../components/Toast";
 import { toTitleCase } from "@/lib/format-text";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
@@ -704,8 +705,12 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
       )}
 
       {approveExtraModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="approve-extra-modal-title">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl">
+        <ModalDialogFrame
+          zClassName="z-[99999]"
+          onBackdropClick={() => { setApproveExtraModal(null); setApproveExtraFeeDollars(""); }}
+          panelClassName="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-sm shadow-xl modal-card"
+          ariaLabelledBy="approve-extra-modal-title"
+        >
             <h2 id="approve-extra-modal-title" className="text-[13px] font-bold text-[var(--tx)] mb-3">Approve extra item</h2>
             <label className="block text-[11px] font-medium text-[var(--tx2)] mb-1">Optional fee ($)</label>
             <input
@@ -734,8 +739,7 @@ export default function MoveInventorySection({ moveId, moveStatus, userRole = "v
                 {extraActioning === approveExtraModal.itemId ? "…" : "Approve"}
               </button>
             </div>
-          </div>
-        </div>
+        </ModalDialogFrame>
       )}
     </div>
   );

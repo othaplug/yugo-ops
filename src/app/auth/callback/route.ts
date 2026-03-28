@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { logAudit } from "@/lib/audit";
+import { insertAuditLog } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
     const { data } = await supabase.auth.exchangeCodeForSession(code);
 
     if (data?.user) {
-      await logAudit({
+      // Session-scoped insert (RLS) — works without SUPABASE_SERVICE_ROLE_KEY
+      await insertAuditLog(supabase, {
         userId: data.user.id,
         userEmail: data.user.email,
         action: "login",

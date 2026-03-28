@@ -1254,10 +1254,18 @@ export default function ClientSignOffPage({
                     </label>
                   ))}
                   {eqBatchReason === "left_at_client" && (
-                    <label className="flex items-center gap-2 text-[11px] cursor-pointer mt-2">
-                      <input type="checkbox" checked={eqLeftRetrieve} onChange={(e) => setEqLeftRetrieve(e.target.checked)} className="accent-[#C9A962]" />
-                      Going back now to retrieve
-                    </label>
+                    <div className="mt-2 rounded-xl border p-3 space-y-2" style={{ borderColor: BORDER, backgroundColor: NOTE_FILL }}>
+                      <p className="text-[11px] font-semibold" style={{ color: INK }}>
+                        Go back now to retrieve?
+                      </p>
+                      <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+                        <input type="checkbox" checked={eqLeftRetrieve} onChange={(e) => setEqLeftRetrieve(e.target.checked)} className="accent-[#C9A962]" />
+                        Yes — returning to the client now
+                      </label>
+                      <p className="text-[10px]" style={{ color: MUTED }}>
+                        If unchecked, dispatch is notified to coordinate pickup with the client.
+                      </p>
+                    </div>
                   )}
                 </div>
               ) : null;

@@ -50,7 +50,7 @@ export default function TrackingAgreementModal() {
             <Shield size={22} color={GOLD} />
           </div>
           <h2 className="font-hero text-[22px] font-semibold text-white mb-1">
-            Welcome to Yugo+ Tracking
+            Welcome to Yugo Tracking
           </h2>
           <p className="text-[12px] text-white/60">
             Before you begin, please review and accept our terms
@@ -71,7 +71,7 @@ export default function TrackingAgreementModal() {
               Terms of Use
             </h4>
             <p className="mb-3">
-              By using this tracking portal, you agree to Yugo+&apos;s Terms of Service and Privacy Policy.
+              By using this tracking portal, you agree to Yugo&apos;s Terms of Service and Privacy Policy.
               This portal provides real-time updates about your move, including crew location,
               inventory details, and move status.
             </p>
@@ -100,7 +100,7 @@ export default function TrackingAgreementModal() {
             </h4>
             <p>
               Any claims for damages must be reported within 48 hours of move completion.
-              Yugo+&apos;s liability is limited as outlined in your Service Agreement. For full
+              Yugo&apos;s liability is limited as outlined in your Service Agreement. For full
               details, please review our complete terms.
             </p>
           </div>

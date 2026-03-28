@@ -320,12 +320,16 @@ export async function POST(
     });
   }
 
-  const critical = incidents.filter((i) => !i.consumable);
-  if (critical.length) {
-    const parts = critical.map((c) => `${c.shortage}× ${byEq.get(c.equipment_id)?.name}`).join(", ");
+  const nonConsumableShortages = incidents.filter((i) => !i.consumable);
+  if (nonConsumableShortages.length) {
+    const parts = nonConsumableShortages.map((c) => `${c.shortage}× ${byEq.get(c.equipment_id)?.name}`).join(", ");
+    const retrieveNote =
+      shortageBatchReason === "left_at_client" && leftAtClientWillRetrieve !== true
+        ? " Not returning now to retrieve — coordinate pickup with the client if needed."
+        : "";
     await notifyAllAdmins({
       title: `Equipment shortage after job`,
-      body: `${jobType === "move" ? "Move" : "Delivery"} ${entityId.slice(0, 8)}… Missing: ${parts}. Reason: ${shortageBatchReason || "—"}. Crew: ${payload.name || "Lead"}.`,
+      body: `${jobType === "move" ? "Move" : "Delivery"} ${entityId.slice(0, 8)}… Missing: ${parts}. Reason: ${shortageBatchReason || "—"}. Crew: ${payload.name || "Lead"}.${retrieveNote}`,
       icon: "warning",
       link: jobType === "move" ? `/admin/moves/${entityId}` : `/admin/deliveries/${entityId}`,
       sourceType: "equipment_check",

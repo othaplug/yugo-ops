@@ -44,7 +44,7 @@ function PlusMark({ size, color }: { size: number; color: string }) {
   );
 }
 
-/** Yugo+ logo — always uses the gold image asset regardless of light/dark theme. */
+/** Yugo logo — always uses the gold image asset regardless of light/dark theme. */
 export default function YugoLogo({
   size = 18,
   className = "",
@@ -71,7 +71,7 @@ export default function YugoLogo({
       >
         <Image
           src={src}
-          alt="Yugo+"
+          alt="Yugo"
           height={size}
           width={size * 4}
           className="select-none object-contain"

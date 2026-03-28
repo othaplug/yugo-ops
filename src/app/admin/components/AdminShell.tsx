@@ -63,14 +63,6 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     ],
   },
   {
-    label: "Leads",
-    items: [
-      { href: "/admin/leads", label: "Dashboard", Icon: Icons.funnel, minRole: "sales" },
-      { href: "/admin/leads/all", label: "All Leads", Icon: Icons.clipboardList, minRole: "sales" },
-      { href: "/admin/leads/mine", label: "My Leads", Icon: Icons.userCheck, minRole: "sales" },
-    ],
-  },
-  {
     label: "Partners",
     items: [
       { href: "/admin/partners", label: "All Partners", Icon: Icons.handshake, minRole: "coordinator" },
@@ -86,11 +78,6 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
       { href: "/admin/quotes", label: "Quotes", Icon: Icons.quoteClipboard, badgeKey: "quotes", minRole: "sales" },
       { href: "/admin/widget-leads", label: "Widget Leads", Icon: Icons.zap, minRole: "sales" },
       { href: "/admin/moves", label: "All Moves", Icon: Icons.path },
-    ],
-  },
-  {
-    label: "Services",
-    items: [
       { href: "/admin/bin-rentals", label: "Bin Rentals", Icon: Icons.recycle, minRole: "coordinator" },
     ],
   },
@@ -108,6 +95,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     label: "CRM",
     items: [
       { href: "/admin/clients", label: "Contacts", Icon: Icons.userCheck, minRole: "admin" },
+      { href: "/admin/leads", label: "Leads", Icon: Icons.funnel, minRole: "sales" },
       { href: "/admin/change-requests", label: "Change Requests", Icon: Icons.clipboardList, minRole: "admin" },
       { href: "/admin/perks", label: "Perks & Referrals", Icon: Icons.gift, minRole: "admin" },
     ],
@@ -121,6 +109,9 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     ],
   },
 ];
+
+/** Flat list of sidebar hrefs — used so parent paths (e.g. /admin/partners) do not stay active when a more specific nav item matches. */
+const ALL_SIDEBAR_HREFS = SIDEBAR_SECTIONS_FULL.flatMap((s) => s.items.map((i) => i.href));
 
 function SidebarNavItem({
   href,
@@ -319,9 +310,15 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
-    // For /admin/crew, only "Tracking" is active on exact /admin/crew; Crew Analytics on /admin/crew/analytics
+    // Live Tracking: exact /admin/crew only; Crew Analytics uses /admin/crew/analytics
     if (href === "/admin/crew") return pathname === "/admin/crew";
-    return pathname.startsWith(href);
+    if (!pathname.startsWith(href)) return false;
+
+    const moreSpecific = ALL_SIDEBAR_HREFS.filter((h) => h !== href && h.startsWith(`${href}/`));
+    if (moreSpecific.length === 0) return true;
+    if (pathname === href || pathname === `${href}/`) return true;
+
+    return !moreSpecific.some((l) => pathname === l || pathname.startsWith(`${l}/`));
   };
 
   return (
@@ -408,13 +405,14 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                       <button
                         type="button"
                         onClick={() => setCollapsedSections((prev) => ({ ...prev, [section.label]: !prev[section.label] }))}
-                        className="sidebar-nav-lift w-full flex items-center justify-between text-[9px] font-semibold tracking-[1.2px] capitalize text-[var(--tx3)] px-4 py-2 mx-2 rounded-lg font-heading hover:text-[var(--tx2)]"
+                        className="sidebar-nav-lift w-full flex items-center justify-between text-[11px] font-bold tracking-wide capitalize text-[var(--tx2)] px-4 py-2.5 mx-2 rounded-lg font-heading hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] active:bg-[var(--gdim)] transition-colors min-h-[40px]"
+                        aria-expanded={!isCollapsed}
                       >
                         {section.label}
                         <CaretDown
-                          size={10}
-                          weight="regular"
-                          className={`text-current transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+                          size={14}
+                          weight="bold"
+                          className={`shrink-0 text-current opacity-80 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
                           aria-hidden
                         />
                       </button>

@@ -6,7 +6,7 @@ import { mapInboundServiceType } from "@/lib/leads/webflow-parse";
 export const dynamic = "force-dynamic";
 
 /**
- * HubSpot workflow / custom code can POST new contact payloads here to mirror into Yugo+.
+ * HubSpot workflow / custom code can POST new contact payloads here to mirror into Yugo.
  * Set HUBSPOT_INBOUND_LEADS_SECRET and send Authorization: Bearer <secret>.
  */
 function verify(req: NextRequest): boolean {

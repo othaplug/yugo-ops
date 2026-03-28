@@ -16,7 +16,7 @@ function generateTempPassword(): string {
 
 /**
  * Partner portal self-serve forgot password.
- * Sends the Yugo+ custom password reset email (same as admin-initiated reset) instead of Supabase's default.
+ * Sends the Yugo custom password reset email (same as admin-initiated reset) instead of Supabase's default.
  * Always returns 200 with a generic message to avoid revealing whether the email is registered.
  */
 export async function POST(req: NextRequest) {
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     const { error: sendError } = await resend.emails.send({
       from: emailFrom,
       to: email,
-      subject: "Your Yugo+ Partner Portal password has been reset",
+      subject: "Your Yugo Partner Portal password has been reset",
       html: partnerPasswordResetEmail({
         contactName: name,
         companyName: org.name,

@@ -12,6 +12,7 @@ import {
   LEAD_STATUS_LABELS,
 } from "@/lib/leads/admin-labels";
 import { useToast } from "../components/Toast";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 import {
   ArrowRight,
   ChartBar,
@@ -669,13 +670,22 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
       )}
 
       {manualOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-[14px] font-bold text-[var(--tx)] mb-3">Add lead manually</h2>
-            <p className="text-[11px] text-[var(--tx3)] mb-4">
-              Paste the full email or notes. We will extract contact details; you can correct them before saving.
-            </p>
-            <div className="space-y-3 text-[12px]">
+        <ModalDialogFrame
+          zClassName="z-50"
+          backdropClassName="bg-black/50"
+          onBackdropClick={() => setManualOpen(false)}
+          panelClassName="bg-[var(--card)] border border-[var(--brd)] rounded-xl max-w-lg w-full shadow-xl max-h-[min(520px,85dvh)] flex flex-col overflow-hidden my-auto modal-card"
+          ariaLabelledBy="manual-lead-title"
+        >
+            <div className="shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)]/60">
+              <h2 id="manual-lead-title" className="text-[14px] font-bold text-[var(--tx)]">
+                Add lead manually
+              </h2>
+              <p className="text-[11px] text-[var(--tx3)] mt-2 leading-relaxed">
+                Paste the full email or notes. We will extract contact details; you can correct them before saving.
+              </p>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-3 text-[12px]">
               <label className="block">
                 <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Source</span>
                 <select
@@ -747,17 +757,17 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
                 <textarea
                   value={mPaste}
                   onChange={(e) => setMPaste(e.target.value)}
-                  rows={6}
+                  rows={4}
                   placeholder="Paste email or notes…"
-                  className="mt-1 w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)] font-mono text-[11px]"
+                  className="mt-1 w-full min-h-[4.5rem] max-h-32 resize-y rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[var(--tx)] font-mono text-[11px]"
                 />
               </label>
             </div>
-            <div className="flex gap-2 justify-end mt-4">
+            <div className="shrink-0 flex gap-2 justify-end px-5 py-4 border-t border-[var(--brd)] bg-[var(--card)]">
               <button
                 type="button"
                 onClick={() => setManualOpen(false)}
-                className="px-3 py-1.5 rounded-lg text-[12px] text-[var(--tx2)]"
+                className="px-3 py-1.5 rounded-lg text-[12px] text-[var(--tx2)] hover:bg-[var(--gdim)]"
               >
                 Cancel
               </button>
@@ -770,8 +780,7 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
                 {manualBusy ? "Creating…" : "Create lead"}
               </button>
             </div>
-          </div>
-        </div>
+        </ModalDialogFrame>
       )}
     </div>
   );

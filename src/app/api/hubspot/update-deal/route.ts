@@ -33,7 +33,7 @@ const ALLOWED_PROPERTIES = new Set([
   "contract_signed",
   "package_type",
   "dealstage",
-  // Deal fields synced from Yugo+ (match get-deal / HubSpot deal property internal names)
+  // Deal fields synced from Yugo (match get-deal / HubSpot deal property internal names)
   "firstname",
   "lastname",
   "pick_up_address",

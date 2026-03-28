@@ -34,6 +34,7 @@ import { ToastProvider, useToast } from "@/app/admin/components/Toast";
 import YugoLogo from "@/components/YugoLogo";
 import Link from "next/link";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 
 interface PortalFeatures {
   projects?: boolean;
@@ -344,10 +345,13 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
 
       {/* First-time Welcome Overlay */}
       {showWelcome && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}>
-          <div className="bg-[var(--card)] rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 overflow-hidden" style={{ animation: "fadeSlideUp 0.4s ease" }}>
-            <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-
+        <ModalDialogFrame
+          zClassName="z-[99999]"
+          className="items-center justify-center"
+          backdropClassName="bg-black/55 backdrop-blur-md"
+          panelClassName="bg-[var(--card)] rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 overflow-hidden modal-card"
+          ariaModal
+        >
             {/* Progress dots */}
             <div className="flex justify-center gap-2 pt-6">
               {[0, 1, 2, 3].map((i) => (
@@ -462,8 +466,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                 </button>
               )}
             </div>
-          </div>
-        </div>
+        </ModalDialogFrame>
       )}
 
       <main

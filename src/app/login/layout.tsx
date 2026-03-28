@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 export const metadata = {
   title: "Sign In",
-  description: "Sign in to your Yugo+ operations dashboard",
+  description: "Sign in to your Yugo operations dashboard",
 };
 
 export default function LoginLayout({

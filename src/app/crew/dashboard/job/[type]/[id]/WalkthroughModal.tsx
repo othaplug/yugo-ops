@@ -409,13 +409,17 @@ export default function WalkthroughModal({
 
   const modal = (
     <div
-      className="fixed inset-0 bg-black/80 flex min-h-0 items-center justify-center z-[99995] animate-fade-in p-4 sm:p-5"
+      className="fixed inset-0 z-[99995] flex min-h-0 items-center justify-center p-4 sm:p-5"
       data-modal-root
       data-crew-portal
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
     >
       <div
-        className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl w-full max-w-[520px] shadow-2xl flex flex-col"
+        className="fixed inset-0 z-0 bg-black/80 backdrop-blur-sm modal-overlay"
+        aria-hidden
+      />
+      <div
+        className="relative z-10 w-full max-w-[520px] bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col modal-card"
         style={{ maxHeight: "min(92dvh, 92vh)" }}
       >
         {/* Header */}

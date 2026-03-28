@@ -10,6 +10,7 @@ import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { Plus, Trash as Trash2 } from "@phosphor-icons/react";
 import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
 import { calcHST } from "@/lib/format-currency";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 
 const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage"];
 
@@ -426,15 +427,13 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     (bookingType === "per_delivery" && perDeliveryStep === 3);
 
   const modalContent = (
-    <div
-      className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5 modal-overlay"
-      onClick={onClose}
+    <ModalDialogFrame
+      zClassName="z-[99999]"
+      backdropClassName="bg-black/50"
+      onBackdropClick={onClose}
+      panelClassName="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[640px] overflow-hidden mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card"
+      panelStyle={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <div
-        className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[640px] overflow-hidden mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card animate-slide-up sm:animate-none"
-        style={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
         {/* ── Header ── */}
         <div className="shrink-0 bg-[var(--card)] border-b border-[var(--brd)]">
           {/* Title row */}
@@ -1082,8 +1081,7 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
             </button>
           )}
         </div>
-      </div>
-    </div>
+    </ModalDialogFrame>
   );
 
   if (typeof document === "undefined") return null;

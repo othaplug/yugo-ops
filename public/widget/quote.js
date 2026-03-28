@@ -10,7 +10,7 @@
     iframe.src = WIDGET_URL;
     iframe.style.cssText =
       "width:100%;min-height:640px;border:none;border-radius:16px;display:block;";
-    iframe.setAttribute("title", "Yugo+ Quote Widget");
+    iframe.setAttribute("title", "Yugo Quote Widget");
     iframe.setAttribute("loading", "lazy");
     container.appendChild(iframe);
 
@@ -53,7 +53,7 @@
       var iframe = document.createElement("iframe");
       iframe.src = WIDGET_URL;
       iframe.style.cssText = "width:100%;min-height:640px;border:none;";
-      iframe.setAttribute("title", "Yugo+ Quote Widget");
+      iframe.setAttribute("title", "Yugo Quote Widget");
 
       window.addEventListener("message", function (e) {
         if (e.data && e.data.type === "yugo-widget-resize" && typeof e.data.height === "number") {

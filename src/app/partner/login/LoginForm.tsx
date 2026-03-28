@@ -54,6 +54,17 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
       return;
     }
     const portal = await resolveLoginPortal(supabase, signData.user);
+    const token = signData.session?.access_token;
+    if (token) {
+      try {
+        await fetch("/api/auth/audit-login", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        /* best-effort */
+      }
+    }
     if (portal === "partner") {
       try {
         await fetch("/api/partner/login-track", { method: "POST" });

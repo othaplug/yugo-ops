@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
 import { runPostPaymentActions } from "@/lib/automations/post-payment";
 import { rateLimit } from "@/lib/rate-limit";
-import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
+import { isQuoteExpiredForBooking, quoteExpiryBlockedStatuses } from "@/lib/quote-expiry";
 import { squareThrownErrorMessage } from "@/lib/square-payment-errors";
 import { logActivity } from "@/lib/activity";
 import { notifyAllAdmins } from "@/lib/notifications";
@@ -56,6 +56,20 @@ export async function POST(req: Request) {
 
     if (quote.status === "accepted") {
       return NextResponse.json({ error: "Quote already accepted" }, { status: 409 });
+    }
+
+    const st = String(quote.status || "").toLowerCase();
+    if (quoteExpiryBlockedStatuses().includes(st)) {
+      return NextResponse.json(
+        { error: "This quote is no longer available. Request a new quote if you still need service." },
+        { status: 410 },
+      );
+    }
+    if (isQuoteExpiredForBooking(quote)) {
+      return NextResponse.json(
+        { error: "This quote has expired. Request a new quote from your coordinator." },
+        { status: 410 },
+      );
     }
 
     const amountCents = Math.round(amount * 100);

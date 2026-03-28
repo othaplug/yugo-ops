@@ -10,6 +10,7 @@ import DeliveryScoreCard from "@/components/partner/DeliveryScoreCard";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 
 const DeliveryTrackMap = dynamic(
   () => import("@/app/track/delivery/[id]/DeliveryTrackMap").then((m) => m.default),
@@ -251,8 +252,15 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
   ];
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-5 modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col sheet-card sm:modal-card" style={{ maxHeight: "min(92dvh, 92vh)" }} onClick={(e) => e.stopPropagation()}>
+    <ModalDialogFrame
+      zClassName="z-[99999]"
+      backdropClassName="bg-black/40"
+      onBackdropClick={onClose}
+      panelClassName="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col sheet-card sm:modal-card"
+      panelStyle={{ maxHeight: "min(92dvh, 92vh)" }}
+      role="dialog"
+      ariaModal
+    >
         {/* Header */}
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between shrink-0">
           <div className="min-w-0">
@@ -594,8 +602,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </ModalDialogFrame>
   );
 
   if (typeof document === "undefined") return null;

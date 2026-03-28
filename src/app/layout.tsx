@@ -4,13 +4,13 @@ import OfflineBanner from "@/components/ui/OfflineBanner";
 import PhosphorProvider from "@/components/ui/PhosphorProvider";
 
 export const metadata = {
-  title: { default: "Yugo+", template: "%s | Yugo+" },
+  title: { default: "Yugo", template: "%s | Yugo" },
   description: "Premium logistics operations platform",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Yugo+",
+    title: "Yugo",
   },
   icons: {
     icon: [

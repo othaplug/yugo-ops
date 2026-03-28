@@ -407,7 +407,7 @@ export default function PartnerPropertyManagementPortal({
                   <p className="text-[13px] text-[var(--tx3)]">Loading…</p>
                 ) : programs.projects.length === 0 ? (
                   <p className="text-[13px] text-[var(--tx2)]">
-                    No programs yet. Moves can still be booked without a program. Your coordinator can add a program in Yugo+ when needed.
+                    No programs yet. Moves can still be booked without a program. Your coordinator can add a program in Yugo when needed.
                   </p>
                 ) : (
                   programs.projects.map((p) => (

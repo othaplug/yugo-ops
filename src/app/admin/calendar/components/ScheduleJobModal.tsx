@@ -145,11 +145,19 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
 
   return (
     <div
-      className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/60 backdrop-blur-sm modal-overlay"
-      onClick={onClose}
+      data-modal-root
+      className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="schedule-job-title"
     >
       <div
-        className="bg-[var(--card)] rounded-2xl shadow-2xl w-full sm:max-w-xl overflow-hidden border border-[var(--brd)] modal-card flex flex-col"
+        className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm modal-overlay"
+        aria-hidden
+        onClick={onClose}
+      />
+      <div
+        className="relative z-10 w-full sm:max-w-xl bg-[var(--card)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--brd)] modal-card flex flex-col pointer-events-auto"
         style={{ maxHeight: "min(90dvh, 90vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -160,7 +168,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
               <p className="text-[11px] font-semibold tracking-widest capitalize text-[var(--gold)] mb-1.5">
                 Calendar
               </p>
-              <h2 className="font-heading text-[22px] font-bold text-[var(--tx)] leading-tight">
+              <h2 id="schedule-job-title" className="font-heading text-[22px] font-bold text-[var(--tx)] leading-tight">
                 Schedule Job
               </h2>
               <p className="text-[13px] text-[var(--tx3)] mt-1">

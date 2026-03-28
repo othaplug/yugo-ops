@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-globals */
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  let data = { title: "Yugo+", body: "You have a new notification" };
+  let data = { title: "Yugo", body: "You have a new notification" };
   try {
     data = event.data.json();
   } catch {

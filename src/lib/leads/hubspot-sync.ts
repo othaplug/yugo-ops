@@ -111,7 +111,7 @@ export async function syncLeadToHubSpot(sb: SupabaseClient, lead: LeadLike): Pro
       if (lead.preferred_date) dealProps.move_date = lead.preferred_date;
       const intelParts: string[] = [];
       if (lead.source_detail) intelParts.push(lead.source_detail);
-      if (lead.intelligence_summary) intelParts.push(`Yugo+ intelligence: ${lead.intelligence_summary}`);
+      if (lead.intelligence_summary) intelParts.push(`Yugo intelligence: ${lead.intelligence_summary}`);
       if (lead.completeness_path) {
         const miss = Array.isArray(lead.fields_missing)
           ? (lead.fields_missing as string[]).join(", ")

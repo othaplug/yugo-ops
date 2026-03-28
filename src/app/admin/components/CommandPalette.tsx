@@ -185,16 +185,19 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
     <div
       data-modal-root
       className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
-      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Command palette"
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-[4px] modal-overlay" />
-
-      {/* Panel */}
       <div
-        className="relative w-full max-w-[560px] max-h-[min(85dvh,720px)] bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="fixed inset-0 z-0 bg-black/55 backdrop-blur-[4px] modal-overlay"
+        aria-hidden
+        onClick={onClose}
+      />
+
+      <div
+        className="relative z-10 w-full max-w-[560px] max-h-[min(85dvh,720px)] bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto modal-card"
         onClick={(e) => e.stopPropagation()}
-        style={{ animation: "cmdPaletteIn 0.16s cubic-bezier(0.34,1.4,0.64,1) both" }}
       >
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--brd)]">

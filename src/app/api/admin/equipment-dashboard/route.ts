@@ -9,7 +9,7 @@ export async function GET() {
   const admin = createAdminClient();
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
 
-  const [{ data: trucks }, { data: teRows }, { data: incidents }] = await Promise.all([
+  const [{ data: trucks }, { data: teRows }, { data: incidents }, { count: checks30d }] = await Promise.all([
     admin.from("trucks").select("id, name").order("name"),
     admin
       .from("truck_equipment")
@@ -24,6 +24,10 @@ export async function GET() {
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(80),
+    admin
+      .from("equipment_checks")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", since),
   ]);
 
   const truckMap = new Map((trucks || []).map((t) => [t.id, t.name as string]));
@@ -66,7 +70,7 @@ export async function GET() {
       truckId: t.id,
       name: t.name,
       status: s.short > 0 ? "low" : "full",
-      itemsLabel: s.total ? `${s.ok + (s.total - s.ok - s.short)}/${s.total}` : "—",
+      itemsLabel: s.total ? `${s.ok}/${s.total}` : "—",
       shortCount: s.short,
       lastChecked: s.last,
     };
@@ -122,10 +126,16 @@ export async function GET() {
     };
   });
 
+  const nChecks = checks30d ?? 0;
+  const avgEquipmentCostPerJob30d =
+    nChecks > 0 ? Math.round((lossTotal / nChecks) * 100) / 100 : 0;
+
   return NextResponse.json({
     fleetOverview,
     itemsNeedingRestock,
     lossHistory,
     lossTotal30d: Math.round(lossTotal * 100) / 100,
+    equipmentChecksSubmitted30d: nChecks,
+    avgEquipmentCostPerJob30d,
   });
 }

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef, useContext } from "rea
 import { toTitleCase } from "@/lib/format-text";
 import { InternalConfigKeyHint } from "@/components/admin/InternalConfigKeyHint";
 import { useToast } from "../components/Toast";
+import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 import {
   CaretDown,
   CaretUp,
@@ -1665,8 +1666,13 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
       )}
 
       {addModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-md shadow-xl">
+        <ModalDialogFrame
+          zClassName="z-[99999]"
+          onBackdropClick={() => setAddModal(null)}
+          panelClassName="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 w-full max-w-md shadow-xl modal-card"
+          role="dialog"
+          ariaModal
+        >
             <h3 className="text-[13px] font-bold text-[var(--tx)] mb-3">Add to Master List</h3>
             <div className="space-y-3">
               <div>
@@ -1741,8 +1747,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
                 {saving ? "Saving…" : "Save to Master List"}
               </button>
             </div>
-          </div>
-        </div>
+        </ModalDialogFrame>
       )}
     </div>
   );

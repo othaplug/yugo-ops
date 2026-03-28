@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type AuditAction =
@@ -40,6 +41,23 @@ interface AuditEntry {
   ipAddress?: string | null;
 }
 
+/** Insert using any Supabase client (e.g. user session — RLS allows authenticated inserts). */
+export async function insertAuditLog(client: SupabaseClient, entry: AuditEntry): Promise<void> {
+  const { error } = await client.from("audit_log").insert({
+    user_id: entry.userId ?? null,
+    user_email: entry.userEmail ?? null,
+    user_role: entry.userRole ?? null,
+    action: entry.action,
+    resource_type: entry.resourceType,
+    resource_id: entry.resourceId ?? null,
+    details: entry.details ?? null,
+    ip_address: entry.ipAddress ?? null,
+  });
+  if (error) {
+    console.error("[audit] insert failed:", error.message, error.code);
+  }
+}
+
 /**
  * Persist an audit row. Awaits the insert so serverless handlers finish before the response
  * (fire-and-forget was dropping most writes). Never throws to callers.
@@ -47,19 +65,7 @@ interface AuditEntry {
 export async function logAudit(entry: AuditEntry): Promise<void> {
   try {
     const sb = createAdminClient();
-    const { error } = await sb.from("audit_log").insert({
-      user_id: entry.userId ?? null,
-      user_email: entry.userEmail ?? null,
-      user_role: entry.userRole ?? null,
-      action: entry.action,
-      resource_type: entry.resourceType,
-      resource_id: entry.resourceId ?? null,
-      details: entry.details ?? null,
-      ip_address: entry.ipAddress ?? null,
-    });
-    if (error) {
-      console.error("[audit] insert failed:", error.message, error.code);
-    }
+    await insertAuditLog(sb, entry);
   } catch (e) {
     console.error("[audit] insert exception:", e);
   }
