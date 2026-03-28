@@ -38,7 +38,11 @@ export async function requirePartner() {
       primaryOrgId: null,
       userId: null,
       error: NextResponse.json(
-        { error: "Not a partner", detail: "No organization linked to this account. Contact support." },
+        {
+          error: "Not a partner",
+          detail:
+            "Your account doesn't have partner portal access. We don't see a partner organization tied to this login. Contact your YUGO+ contact or support to get access.",
+        },
         { status: 403 }
       ),
     };

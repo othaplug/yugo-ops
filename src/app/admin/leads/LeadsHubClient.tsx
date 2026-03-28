@@ -12,7 +12,7 @@ import {
   LEAD_STATUS_LABELS,
 } from "@/lib/leads/admin-labels";
 import { useToast } from "../components/Toast";
-import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import ModalOverlay from "../components/ModalOverlay";
 import {
   ArrowRight,
   ChartBar,
@@ -25,6 +25,7 @@ import {
   Plus,
   User,
   WarningCircle,
+  X,
   XCircle,
 } from "@phosphor-icons/react";
 
@@ -669,21 +670,32 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
         </section>
       )}
 
-      {manualOpen && (
-        <ModalDialogFrame
-          zClassName="z-50"
-          backdropClassName="bg-black/50"
-          onBackdropClick={() => setManualOpen(false)}
-          panelClassName="bg-[var(--card)] border border-[var(--brd)] rounded-xl max-w-lg w-full shadow-xl max-h-[min(520px,85dvh)] flex flex-col overflow-hidden my-auto modal-card"
-          ariaLabelledBy="manual-lead-title"
-        >
-            <div className="shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)]/60">
-              <h2 id="manual-lead-title" className="text-[14px] font-bold text-[var(--tx)]">
-                Add lead manually
-              </h2>
-              <p className="text-[11px] text-[var(--tx3)] mt-2 leading-relaxed">
-                Paste the full email or notes. We will extract contact details; you can correct them before saving.
-              </p>
+      <ModalOverlay
+        open={manualOpen}
+        onClose={() => setManualOpen(false)}
+        title=""
+        maxWidth="lg"
+        noHeader
+        noPadding
+      >
+        <div className="flex flex-col flex-1 min-h-0 max-h-[min(520px,85dvh)]">
+            <div className="shrink-0 px-5 py-4 border-b border-[var(--brd)] flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 id="manual-lead-title" className="font-heading text-[17px] font-bold text-[var(--tx)]">
+                  Add lead manually
+                </h2>
+                <p className="text-[12px] text-[var(--tx3)] mt-2 leading-relaxed">
+                  Paste the full email or notes. We will extract contact details; you can correct them before saving.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setManualOpen(false)}
+                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--bg)] text-[var(--tx2)] hover:text-[var(--tx)] transition-colors touch-manipulation shrink-0"
+                aria-label="Close"
+              >
+                <X size={18} weight="regular" aria-hidden />
+              </button>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-3 text-[12px]">
               <label className="block">
@@ -780,8 +792,8 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
                 {manualBusy ? "Creating…" : "Create lead"}
               </button>
             </div>
-        </ModalDialogFrame>
-      )}
+        </div>
+      </ModalOverlay>
     </div>
   );
 }

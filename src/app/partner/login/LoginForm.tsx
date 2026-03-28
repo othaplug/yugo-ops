@@ -75,7 +75,9 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
     } else if (portal === "admin") {
       router.replace("/admin");
     } else {
-      setError("This account doesn't have partner access. Please contact your account manager.");
+      setError(
+        "Your account doesn't have partner portal access.\n\nWe don't see a partner organization tied to this login. Contact your YUGO+ contact or support to get access."
+      );
       await supabase.auth.signOut();
     }
     setLoading(false);
@@ -180,9 +182,9 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
               </div>
 
               {error && (
-                <div style={{ background: "#FFF5F5", border: "1px solid #FED7D7", color: "#C53030", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-                  <X size={14} weight="regular" />
-                  {error}
+                <div style={{ background: "#FFF5F5", border: "1px solid #FED7D7", color: "#C53030", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 8 }}>
+                  <X size={14} weight="regular" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span style={{ whiteSpace: "pre-line", lineHeight: 1.5 }}>{error}</span>
                 </div>
               )}
 

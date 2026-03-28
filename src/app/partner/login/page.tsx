@@ -47,7 +47,13 @@ export default function PartnerLoginPage() {
       subtitle={isWelcome ? "Use the credentials from your invite email to sign in" : "Sign in to your partner dashboard"}
       redirectTo="/partner"
       isWelcome={isWelcome}
-      initialError={errorParam === "partner_lookup" && messageParam ? decodeURIComponent(messageParam) : errorParam === "no_org" ? "No organization linked to this account. Contact support." : undefined}
+      initialError={
+        errorParam === "partner_lookup" && messageParam
+          ? decodeURIComponent(messageParam)
+          : errorParam === "no_org"
+            ? "Your account doesn't have partner portal access.\n\nWe don't see a partner organization tied to this login. Contact your YUGO+ contact or support to get access."
+            : undefined
+      }
     />
   );
 }
