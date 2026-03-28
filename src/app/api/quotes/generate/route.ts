@@ -11,6 +11,14 @@ import {
   SPECIALTY_PROJECT_BASE_DEFAULTS,
 } from "@/lib/pricing/specialty-project-defaults";
 import { buildBinRentalQuoteResponse } from "./bin-rental-flow";
+import {
+  calculateDampenedInventoryModifier,
+  crewLoadedHourlyRate,
+  estimateFuelCostWithDeadhead,
+  estimateOperationalSuppliesCost,
+  estimateTruckCostPerMove,
+  expectedInventoryScoreForMoveSize,
+} from "@/lib/pricing/margin-cost-model";
 // ═══════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════
@@ -20,6 +28,7 @@ interface InventoryItem {
   name?: string;
   quantity: number;
   weight_score?: number; // For custom items not in item_weights
+  fragile?: boolean;
 }
 
 /** DB `quotes_recommended_tier_check` allows essential | signature | estate only */
@@ -835,11 +844,8 @@ async function calcInventoryModifier(
   sb: SupabaseAdmin,
   moveSize: string,
   inventoryItems: InventoryItem[],
+  config: Map<string, string>,
   clientBoxCount?: number,
-  /** Override floor from platform_config (inventory_modifier_floor). Falls back to bm.min_modifier. */
-  modifierFloor?: number,
-  /** Override cap from platform_config (inventory_modifier_cap). Falls back to bm.max_modifier. */
-  modifierCap?: number,
 ): Promise<{ modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number; boxCount?: number }> {
   const noAdj = { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
   if (!inventoryItems || inventoryItems.length === 0) return noAdj;
@@ -866,20 +872,29 @@ async function calcInventoryModifier(
   const boxCount = clientBoxCount ?? Number(bm.assumed_boxes);
   const boxScore = boxCount * 0.3;
   const inventoryScore = itemScore + boxScore;
-  const benchmarkScore = Number(bm.benchmark_score);
+  const expectedScore = expectedInventoryScoreForMoveSize(moveSize, config);
 
   if (totalItems < Number(bm.min_items_for_adjustment)) {
-    return { modifier: 1.0, inventoryScore, benchmarkScore, totalItems, maxModifier: Number(bm.max_modifier) };
+    return {
+      modifier: 1.0,
+      inventoryScore,
+      benchmarkScore: expectedScore,
+      totalItems,
+      maxModifier: Number(bm.max_modifier),
+      boxCount,
+    };
   }
 
-  let modifier = inventoryScore / benchmarkScore;
-  // Section 1: use config floor (default 0.65) — light moves get up to 35% discount
-  const floor = modifierFloor ?? Number(bm.min_modifier);
-  const maxMod = modifierCap ?? Number(bm.max_modifier);
-  modifier = Math.max(floor, Math.min(maxMod, modifier));
-  modifier = Math.round(modifier * 100) / 100;
+  const modifier = calculateDampenedInventoryModifier(inventoryScore, moveSize, config);
 
-  return { modifier, inventoryScore, benchmarkScore, totalItems, maxModifier: maxMod, boxCount };
+  return {
+    modifier,
+    inventoryScore,
+    benchmarkScore: expectedScore,
+    totalItems,
+    maxModifier: Number(bm.max_modifier),
+    boxCount,
+  };
 }
 
 // ═══════════════════════════════════════════════
@@ -1235,18 +1250,12 @@ async function calcResidential(
         })(),
       )
     : (estHours ?? 4);
-  const costPerMoverHour = cfgNum(config, "cost_per_mover_hour", 33);
-  const truckCostMap = parseJsonConfig<Record<string, number>>(
-    config,
-    "truck_costs_per_job",
-    { sprinter: 90, "16ft": 115, "20ft": 150, "24ft": 175, "26ft": 200 },
-  );
-  const fuelCostPerKm = cfgNum(config, "fuel_cost_per_km", 0.45);
-  const estLabourCost = Math.round(actualEstHours * (labour?.crewSize ?? minCrew) * costPerMoverHour);
-  const estTruckCost  = truckCostMap[recTruck] ?? 115;
-  const estFuelCost   = Math.round(distKm * 2 * fuelCostPerKm);
-  const estSuppliesCost = estateSuppliesAllowance; // non-zero only for estate
-  const estTotalCost  = estLabourCost + estTruckCost + estFuelCost + estSuppliesCost;
+  const loadedRate = crewLoadedHourlyRate(config);
+  const estLabourCost = Math.round(actualEstHours * (labour?.crewSize ?? minCrew) * loadedRate);
+  const estTruckCost = estimateTruckCostPerMove(recTruck, config);
+  const estFuelCost = estimateFuelCostWithDeadhead(distKm, recTruck, config);
+  const estSuppliesCost = estimateOperationalSuppliesCost(input.inventory_items ?? []);
+  const estTotalCost = estLabourCost + estTruckCost + estFuelCost + estSuppliesCost;
   const estMarginPct  = curPrice > 0 ? Math.round(((curPrice - estTotalCost) / curPrice) * 100) : 0;
   const estSigMarginPct  = sigPrice > 0 ? Math.round(((sigPrice - estTotalCost) / sigPrice) * 100) : 0;
   const estEstMarginPct  = estPrice > 0 ? Math.round(((estPrice - estTotalCost) / estPrice) * 100) : 0;
@@ -2220,7 +2229,7 @@ async function calcLabourOnly(
   config: Map<string, string>,
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
 ) {
-  const labourRate = cfgNum(config, "labour_only_rate", 85);
+  const labourRate = cfgNum(config, "labour_only_rate", 80);
   const crewSize = input.labour_crew_size ?? 2;
   const hours = input.labour_hours ?? 3;
   const truckFee = input.labour_truck_required ? cfgNum(config, "labour_only_truck_fee", 150) : 0;
@@ -2400,6 +2409,24 @@ export async function POST(req: NextRequest) {
     input = { ...input, to_address: input.from_address };
   }
 
+  const isLocalMove = input.service_type === "local_move";
+  const isLongDistance = input.service_type === "long_distance";
+  const needsMoveSizeForResidential =
+    isLocalMove || isLongDistance || input.service_type === "white_glove";
+  const moveSizeTrimmed = input.move_size?.trim() ?? "";
+  if (needsMoveSizeForResidential && !moveSizeTrimmed) {
+    return NextResponse.json(
+      {
+        error:
+          "move_size is required. Select a move size or add inventory so the form can suggest one.",
+      },
+      { status: 400 },
+    );
+  }
+  if (needsMoveSizeForResidential) {
+    input = { ...input, move_size: moveSizeTrimmed };
+  }
+
   const sb = createAdminClient();
   const config = await loadConfig(sb);
 
@@ -2416,8 +2443,6 @@ export async function POST(req: NextRequest) {
   }
 
   // Section 5: Batch all Mapbox distance calls (job route + deadhead + return trip)
-  const isLocalMove = input.service_type === "local_move";
-  const isLongDistance = input.service_type === "long_distance";
   /** Inventory scoring: local residential + white glove only (not long_distance). */
   const useInventoryScoring = isLocalMove || input.service_type === "white_glove";
   const needsDeadheadReturn = isLocalMove;
@@ -2437,20 +2462,22 @@ export async function POST(req: NextRequest) {
     const { data: br } = await sb
       .from("base_rates")
       .select("base_price")
-      .eq("move_size", input.move_size ?? "2br")
+      .eq("move_size", input.move_size!)
       .single();
     roughBase = br?.base_price ?? 1199;
   }
 
   const addonResult = await calculateAddons(sb, input.selected_addons, roughBase);
 
-  // Section 1: Inventory modifier floor/cap from platform_config (default 0.65 floor, 1.50 cap)
-  const invModFloor = cfgNum(config, "inventory_modifier_floor", 0.65);
-  const invModCap   = cfgNum(config, "inventory_modifier_cap",   1.50);
-
   // Inventory volume modifier (local_move + white_glove only)
   const invResult = useInventoryScoring
-    ? await calcInventoryModifier(sb, input.move_size ?? "2br", input.inventory_items ?? [], input.client_box_count, invModFloor, invModCap)
+    ? await calcInventoryModifier(
+        sb,
+        input.move_size!,
+        input.inventory_items ?? [],
+        config,
+        input.client_box_count,
+      )
     : { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
 
   // FIX 1: Inventory quantity sanity — flag for coordinator review (don't block quote)
@@ -2943,21 +2970,26 @@ export async function POST(req: NextRequest) {
     const estMarginEssential = typeof f.estimated_margin_essential === "number" ? f.estimated_margin_essential : (typeof f.estimated_margin_curated === "number" ? f.estimated_margin_curated : null);
     const estMarginSig = typeof f.estimated_margin_signature === "number" ? f.estimated_margin_signature : null;
     if (estMarginEssential !== null) {
-      const warnThreshold = typeof config.get === "function"
-        ? Number(config.get("margin_warning_threshold") ?? "35") || 35
-        : 35;
-      const critThreshold = typeof config.get === "function"
-        ? Number(config.get("margin_critical_threshold") ?? "25") || 25
-        : 25;
-      const targetMargin = typeof config.get === "function"
-        ? Number(config.get("margin_target_essential") ?? config.get("margin_target_curated") ?? "40") || 40
-        : 40;
-      if (estMarginEssential < warnThreshold) {
+      const cautionTh = cfgNum(config, "margin_warning_threshold", 35);
+      const lowTh = cfgNum(config, "margin_low_threshold", 25);
+      const critTh = cfgNum(config, "margin_critical_threshold", 15);
+      const targetMargin = cfgNum(
+        config,
+        "margin_target_essential",
+        cfgNum(config, "margin_target_curated", 40),
+      );
+      if (estMarginEssential < cautionTh) {
+        const level: "critical" | "warning" | "caution" =
+          estMarginEssential < critTh ? "critical" : estMarginEssential < lowTh ? "warning" : "caution";
+        const message =
+          level === "critical"
+            ? `Estimated margin ${estMarginEssential}% is unprofitable (threshold: ${critTh}%). Review pricing before sending.`
+            : level === "warning"
+              ? `Estimated margin ${estMarginEssential}% is low (below ${lowTh}%). Consider recommending a higher tier.`
+              : `Estimated margin ${estMarginEssential}% is below target (${targetMargin}%). Acceptable for volume or strategic moves.`;
         response.margin_warning = {
-          level: estMarginEssential < critThreshold ? "critical" : "warning",
-          message: estMarginEssential < critThreshold
-            ? `Estimated margin ${estMarginEssential}% is critically low (threshold: ${critThreshold}%). Review pricing or recommend Signature.`
-            : `Estimated margin ${estMarginEssential}% is below target ${targetMargin}%. Consider adjusting.`,
+          level,
+          message,
           estimated_margin: estMarginEssential,
           target_margin: targetMargin,
           signature_margin: estMarginSig,

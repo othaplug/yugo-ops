@@ -1,0 +1,14 @@
+---
+description: Use icon components instead of emoji characters in UI copy
+alwaysApply: true
+---
+
+# No emojis in product UI — use icons
+
+Do not use Unicode emoji characters (for example colored circles or pictograph warning symbols) in user-facing React or Next.js UI, API messages shown to admins, or coordinator tools.
+
+**Do:** Use Phosphor Icons or the project’s existing icon set (for example `@phosphor-icons/react`) with appropriate `size`, `weight`, and `className` for color and alerts.
+
+**Do not:** Paste emojis into JSX text, toast strings, or alert copy as substitutes for icons.
+
+Admin-only copy should follow the same rule unless the user explicitly asks for emoji in a specific string.

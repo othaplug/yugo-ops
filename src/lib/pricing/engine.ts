@@ -8,6 +8,13 @@
  * (src/app/api/quotes/generate/route.ts) and the admin quote preview.
  */
 
+import {
+  crewLoadedHourlyRate,
+  estimateFuelCostWithDeadhead,
+  estimateOperationalSuppliesCost,
+  estimateTruckCostPerMove,
+} from "./margin-cost-model";
+
 // ═══════════════════════════════════════════════
 // Config helpers (accepts both Map and Record)
 // ═══════════════════════════════════════════════
@@ -137,34 +144,23 @@ export interface EstimatedCostInput {
   crew: number;
   recommendedTruck: string;
   distanceKm: number;
+  /** @deprecated Retained for call-site compatibility; margin cost uses operational supplies only. */
   tier: string;
+  /** @deprecated Retained for call-site compatibility. */
   moveSize: string;
+  /** When set, refines operational supplies estimate (same as quote generate). */
+  inventoryItems?: { name?: string; quantity?: number; weight_score?: number; fragile?: boolean }[];
 }
 
 export function calcEstimatedCost(
   input: EstimatedCostInput,
   config: ConfigMap,
 ): EstimatedCost {
-  const costPerMoverHour = cfgNum(config, "cost_per_mover_hour", 33);
-  const truckCosts = cfgJson<Record<string, number>>(
-    config,
-    "truck_costs_per_job",
-    { sprinter: 90, "16ft": 115, "20ft": 150, "24ft": 175, "26ft": 200 },
-  );
-  const fuelCostPerKm = cfgNum(config, "fuel_cost_per_km", 0.45);
-
-  const labour = Math.round(input.actualEstimatedHours * input.crew * costPerMoverHour);
-  const truck = truckCosts[input.recommendedTruck] ?? 115;
-  const fuel = Math.round(input.distanceKm * 2 * fuelCostPerKm);
-
-  // Estate supplies allowance
-  const ESTATE_SUPPLIES_FALLBACK: Record<string, number> = {
-    studio: 250, "1br": 300, "2br": 375, "3br": 575, "4br": 850, "5br_plus": 1100, partial: 150,
-  };
-  const suppliesBySize = cfgJson<Record<string, number>>(config, "estate_supplies_by_size", {});
-  const supplies = input.tier === "estate"
-    ? (suppliesBySize[input.moveSize] ?? ESTATE_SUPPLIES_FALLBACK[input.moveSize] ?? 375)
-    : 0;
+  const loaded = crewLoadedHourlyRate(config);
+  const labour = Math.round(input.actualEstimatedHours * input.crew * loaded);
+  const truck = estimateTruckCostPerMove(input.recommendedTruck, config);
+  const fuel = estimateFuelCostWithDeadhead(input.distanceKm, input.recommendedTruck, config);
+  const supplies = estimateOperationalSuppliesCost(input.inventoryItems ?? []);
 
   return { labour, truck, fuel, supplies, total: labour + truck + fuel + supplies };
 }
@@ -178,10 +174,12 @@ export function calcEstimatedMarginPct(revenue: number, cost: EstimatedCost): nu
 // Margin flag
 // ═══════════════════════════════════════════════
 
-export type MarginFlag = "green" | "yellow" | "red";
+export type MarginFlag = "green" | "yellow" | "orange" | "red";
 
+/** Align thresholds with admin quote margin alerts (platform_config can override in warnings). */
 export function getMarginFlag(marginPct: number): MarginFlag {
-  if (marginPct < 25) return "red";
+  if (marginPct < 15) return "red";
+  if (marginPct < 25) return "orange";
   if (marginPct < 35) return "yellow";
   return "green";
 }
@@ -191,7 +189,7 @@ export function getMarginFlag(marginPct: number): MarginFlag {
 // ═══════════════════════════════════════════════
 
 export interface MarginWarning {
-  level: "warning" | "critical";
+  level: "warning" | "critical" | "caution";
   message: string;
   estimated_margin: number;
   target_margin: number;
@@ -216,15 +214,20 @@ export function calcMarginWarning(
       ? "margin_target_signature"
       : "margin_target_essential";
   const marginTarget = cfgNum(config, targetKey, tier === "estate" ? 55 : tier === "signature" ? 48 : 40);
-  const marginWarning = cfgNum(config, "margin_warning_threshold", 35);
-  const marginCritical = cfgNum(config, "margin_critical_threshold", 25);
+  const marginCaution = cfgNum(config, "margin_warning_threshold", 35);
+  const marginLow = cfgNum(config, "margin_low_threshold", 25);
+  const marginCritical = cfgNum(config, "margin_critical_threshold", 15);
 
-  if (estimatedMargin >= marginWarning) return null;
+  if (estimatedMargin >= marginCaution) return null;
 
-  const level: "warning" | "critical" = estimatedMargin < marginCritical ? "critical" : "warning";
-  const message = level === "critical"
-    ? `Estimated margin ${estimatedMargin}% is critically low (threshold: ${marginCritical}%). Review pricing or recommend Signature.`
-    : `Estimated margin ${estimatedMargin}% is below target ${marginTarget}%. Consider adjusting.`;
+  const level: "warning" | "critical" | "caution" =
+    estimatedMargin < marginCritical ? "critical" : estimatedMargin < marginLow ? "warning" : "caution";
+  const message =
+    level === "critical"
+      ? `Estimated margin ${estimatedMargin}% is unprofitable (threshold: ${marginCritical}%). Review pricing before sending.`
+      : level === "warning"
+        ? `Estimated margin ${estimatedMargin}% is low (below ${marginLow}%). Consider recommending a higher tier.`
+        : `Estimated margin ${estimatedMargin}% is below target (${marginTarget}%). Acceptable for volume or strategic moves.`;
 
   let signatureMargin: number | null = null;
   if (signatureRevenue && estimatedCost) {

@@ -36,12 +36,20 @@ import {
   MagnifyingGlass,
   Lightbulb,
   ListChecks,
+  Info,
+  XCircle,
+  CheckCircle,
   type IconProps,
 } from "@phosphor-icons/react";
 import { calculateBinRentalPrice, BIN_RENTAL_BUNDLE_SPECS } from "@/lib/pricing/bin-rental";
 import { QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 import { mapSpecialtyToQuoteTypes, type SpecialtyDetected } from "@/lib/leads/specialty-detect";
+import {
+  moveSizeInventoryMismatchMessage,
+  moveSizeLabel,
+  suggestMoveSizeFromInventory,
+} from "@/lib/pricing/move-size-suggestion";
 
 const PanelRightClose = PanelRightOpen;
 
@@ -427,6 +435,7 @@ function quickEstimate(
   moveDate?: string,
 ): { essential: number; signature: number; estate: number } | null {
   if (serviceType !== "local_move" && serviceType !== "long_distance") return null;
+  if (!moveSize.trim()) return null;
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const labourRate = cfgNum(config, "labour_rate_per_mover_hour", 45);
@@ -573,7 +582,8 @@ export default function QuoteFormClient({
   const [moveDate, setMoveDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
   const [arrivalWindow, setArrivalWindow] = useState(() => TIME_WINDOW_OPTIONS[1] ?? TIME_WINDOW_OPTIONS[0] ?? "");
-  const [moveSize, setMoveSize] = useState("2br");
+  const [moveSize, setMoveSize] = useState("");
+  const moveSizeUserTouchedRef = useRef(false);
   const [clientBoxCount, setClientBoxCount] = useState("");
 
   const phoneInput = usePhoneInput(phone, setPhone);
@@ -792,7 +802,10 @@ export default function QuoteFormClient({
     if (d.moveDate) setMoveDate(d.moveDate as string);
     if (d.preferredTime) setPreferredTime(d.preferredTime as string);
     if (d.arrivalWindow) setArrivalWindow(d.arrivalWindow as string);
-    if (d.moveSize) setMoveSize(d.moveSize as string);
+    if (d.moveSize) {
+      setMoveSize(d.moveSize as string);
+      moveSizeUserTouchedRef.current = true;
+    }
     if (d.b2bBusinessName) setB2bBusinessName(d.b2bBusinessName as string);
     if (d.eventName) setEventName(d.eventName as string);
     if (d.labourDescription) setLabourDescription(d.labourDescription as string);
@@ -1001,6 +1014,31 @@ export default function QuoteFormClient({
   const boxScore = clientBoxCountNum * 0.3;
   const inventoryScoreWithBoxes = inventoryScore + boxScore;
 
+  const moveSizeSuggestion = useMemo(() => {
+    if (inventoryItems.length === 0) return null;
+    return suggestMoveSizeFromInventory(
+      inventoryItems.map((i) => ({ name: i.name, quantity: i.quantity })),
+      clientBoxCountNum,
+      inventoryScore,
+    );
+  }, [inventoryItems, clientBoxCountNum, inventoryScore]);
+
+  useEffect(() => {
+    if (
+      serviceType !== "local_move" &&
+      serviceType !== "long_distance" &&
+      serviceType !== "white_glove"
+    ) {
+      return;
+    }
+    if (inventoryItems.length === 0) return;
+    if (moveSizeUserTouchedRef.current) return;
+    if (moveSize.trim()) return;
+    const s = moveSizeSuggestion;
+    if (!s) return;
+    setMoveSize(s.suggested);
+  }, [serviceType, inventoryItems.length, moveSize, moveSizeSuggestion]);
+
   // ── HubSpot pre-fill ──────────────────────
   useEffect(() => {
     if (!hubspotDealId || prefillDone.current) return;
@@ -1016,7 +1054,10 @@ export default function QuoteFormClient({
         if (d.fromAccess) setFromAccess(d.fromAccess);
         if (d.toAccess) setToAccess(d.toAccess);
         if (d.moveDate) setMoveDate(d.moveDate);
-        if (d.moveSize) setMoveSize(d.moveSize);
+        if (d.moveSize) {
+          setMoveSize(d.moveSize);
+          moveSizeUserTouchedRef.current = true;
+        }
         if (d.firstName) setFirstName(d.firstName);
         if (d.lastName) setLastName(d.lastName);
         if (d.email) setEmail(d.email);
@@ -1064,7 +1105,10 @@ export default function QuoteFormClient({
         const st = str(L.service_type);
         if (st && SERVICE_TYPES.some((x) => x.value === st)) setServiceType(st);
         const ms = str(L.move_size);
-        if (ms && MOVE_SIZES.some((x) => x.value === ms)) setMoveSize(ms);
+        if (ms && MOVE_SIZES.some((x) => x.value === ms)) {
+          setMoveSize(ms);
+          moveSizeUserTouchedRef.current = true;
+        }
         if (str(L.from_address)) setFromAddress(str(L.from_address));
         if (str(L.to_address)) setToAddress(str(L.to_address));
         const pd = str(L.preferred_date);
@@ -1604,6 +1648,7 @@ export default function QuoteFormClient({
           name: i.name,
           quantity: i.quantity,
           weight_score: i.weight_score,
+          fragile: i.fragile,
         }));
       }
     }
@@ -1626,6 +1671,7 @@ export default function QuoteFormClient({
           name: i.name,
           quantity: i.quantity,
           weight_score: i.weight_score,
+          fragile: i.fragile,
         }));
       }
     }
@@ -1640,6 +1686,7 @@ export default function QuoteFormClient({
       base.single_item_special_handling = singleItemSpecialHandling.trim() || undefined;
     }
     if (serviceType === "white_glove") {
+      base.move_size = moveSize || undefined;
       base.item_description = itemDescription.trim() || undefined;
       base.item_category = itemCategory;
       base.item_weight_class = itemWeight || undefined;
@@ -1652,6 +1699,7 @@ export default function QuoteFormClient({
           name: i.name,
           quantity: i.quantity,
           weight_score: i.weight_score,
+          fragile: i.fragile,
         }));
       }
       base.client_box_count = Number(clientBoxCount) || undefined;
@@ -1845,6 +1893,15 @@ export default function QuoteFormClient({
       }
     } else if (!fromAddress || !toAddress || !moveDate) {
       toast("Please fill addresses and move date", "alertTriangle");
+      return;
+    }
+    if (
+      (serviceType === "local_move" ||
+        serviceType === "long_distance" ||
+        serviceType === "white_glove") &&
+      !moveSize.trim()
+    ) {
+      toast("Select a move size or add inventory to auto-detect.", "alertTriangle");
       return;
     }
     setGenerating(true);
@@ -2563,11 +2620,64 @@ export default function QuoteFormClient({
                     </select>
                   </Field>
                   )}
-                  {(serviceType === "local_move" || serviceType === "long_distance") && (
+                  {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "white_glove") && (
                     <Field label="Move Size">
-                      <select value={moveSize} onChange={(e) => setMoveSize(e.target.value)} className={fieldInput}>
-                        {MOVE_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      <select
+                        value={moveSize}
+                        onChange={(e) => {
+                          moveSizeUserTouchedRef.current = true;
+                          setMoveSize(e.target.value);
+                        }}
+                        className={fieldInput}
+                      >
+                        <option value="">Select move size or add inventory to auto-detect</option>
+                        {MOVE_SIZES.map((s) => (
+                          <option key={s.value} value={s.value}>
+                            {s.label}
+                          </option>
+                        ))}
                       </select>
+                      {moveSizeSuggestion && inventoryItems.length > 0 && (
+                        <p className="mt-1.5 text-[10px] text-[var(--tx3)] flex items-start gap-1.5">
+                          <Lightbulb className="w-3.5 h-3.5 shrink-0 text-[var(--gold)] mt-0.5" aria-hidden />
+                          <span>
+                            Detected: {moveSizeLabel(moveSizeSuggestion.suggested)}
+                            {moveSizeSuggestion.confidence === "high" ? " (high confidence)" : " (medium confidence)"}
+                            {" — "}
+                            {moveSizeSuggestion.reason}
+                          </span>
+                        </p>
+                      )}
+                      {moveSize.trim() &&
+                        moveSizeSuggestion &&
+                        moveSize !== moveSizeSuggestion.suggested &&
+                        inventoryItems.length > 0 &&
+                        (() => {
+                          const msg = moveSizeInventoryMismatchMessage(
+                            moveSize,
+                            inventoryScoreWithBoxes,
+                            moveSizeSuggestion.suggested,
+                          );
+                          if (!msg) return null;
+                          return (
+                            <div className="mt-2 rounded-lg border border-amber-500/35 bg-amber-500/8 p-2.5 text-[10px] text-[var(--tx2)] space-y-2">
+                              <p className="flex items-start gap-1.5">
+                                <Warning className="w-3.5 h-3.5 shrink-0 text-amber-500 mt-0.5" aria-hidden />
+                                <span>{msg}</span>
+                              </p>
+                              <button
+                                type="button"
+                                className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                                onClick={() => {
+                                  moveSizeUserTouchedRef.current = false;
+                                  setMoveSize(moveSizeSuggestion.suggested);
+                                }}
+                              >
+                                Use {moveSizeLabel(moveSizeSuggestion.suggested)} instead
+                              </button>
+                            </div>
+                          );
+                        })()}
                     </Field>
                   )}
                 {serviceType === "local_move" && (
@@ -2817,10 +2927,16 @@ export default function QuoteFormClient({
                   itemWeights={itemWeights as { slug: string; item_name: string; weight_score: number; category: string; room?: string; is_common: boolean; display_order?: number; active?: boolean }[]}
                   value={inventoryItems}
                   onChange={setInventoryItems}
-                  moveSize={moveSize}
+                  moveSize={moveSize || moveSizeSuggestion?.suggested || "partial"}
                   fromAccess={fromAccess}
                   toAccess={toAccess}
-                  showLabourEstimate={!!moveSize}
+                  showLabourEstimate={
+                    (!!moveSize || !!moveSizeSuggestion || inventoryItems.length > 0) &&
+                    (serviceType === "local_move" ||
+                      serviceType === "long_distance" ||
+                      serviceType === "white_glove" ||
+                      serviceType === "office_move")
+                  }
                   boxCount={Number(clientBoxCount) || 0}
                   onBoxCountChange={(n) => setClientBoxCount(n > 0 ? String(n) : "")}
                   mode={serviceType === "office_move" ? "commercial" : "residential"}
@@ -4347,13 +4463,19 @@ export default function QuoteFormClient({
                     )}
                     {quoteResult.factors && typeof quoteResult.factors.inventory_modifier === "number" && typeof quoteResult.factors.inventory_max_modifier === "number" && quoteResult.factors.inventory_modifier >= quoteResult.factors.inventory_max_modifier && (
                       <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-[11px] text-[var(--tx2)]">
-                        <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ Inventory at volume ceiling (×{Number(quoteResult.factors.inventory_max_modifier).toFixed(2)})</p>
+                        <p className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                          <Info size={14} className="shrink-0 text-blue-500" weight="bold" aria-hidden />
+                          Inventory at volume ceiling (×{Number(quoteResult.factors.inventory_max_modifier).toFixed(2)})
+                        </p>
                         <p className="mt-0.5">Price is capped, consider manual adjustment for this move.</p>
                       </div>
                     )}
                     {quoteResult.factors && typeof quoteResult.factors.labour_component === "number" && typeof quoteResult.factors.subtotal_before_labour === "number" && (quoteResult.factors.subtotal_before_labour as number) > 0 && (quoteResult.factors.labour_component as number) > 0.5 * (quoteResult.factors.subtotal_before_labour as number) && (
                       <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-[11px] text-[var(--tx2)]">
-                        <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ High labour component: {fmtPrice(quoteResult.factors.labour_component as number)}</p>
+                        <p className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                          <Info size={14} className="shrink-0 text-blue-500" weight="bold" aria-hidden />
+                          High labour component: {fmtPrice(quoteResult.factors.labour_component as number)}
+                        </p>
                         <p className="mt-0.5">This move needs significantly more crew/time than standard.</p>
                       </div>
                     )}
@@ -4363,6 +4485,13 @@ export default function QuoteFormClient({
                   <>
                     {liveEstimate && "essential" in liveEstimate ? (
                       <OptimisticTiers est={liveEstimate} isLongDistance={serviceType === "long_distance"} />
+                    ) : (serviceType === "local_move" || serviceType === "long_distance") && !liveEstimate ? (
+                      <div className="rounded-xl border border-[var(--brd)]/60 bg-[var(--card)]/40 p-4 text-[11px] text-[var(--tx2)]">
+                        <p className="flex items-start gap-2">
+                          <Info className="w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5" aria-hidden />
+                          <span>Select move size or add inventory to see a rough tier preview. Generate quote for exact pricing.</span>
+                        </p>
+                      </div>
                     ) : serviceType === "bin_rental" && binLivePreview && binLivePreview.subtotal != null && !binLivePreview.error ? (
                       <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4 space-y-2">
                         <p className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Bin rental (estimate)</p>
@@ -4586,28 +4715,53 @@ export default function QuoteFormClient({
                     { label: "Estate", price: estPrice, margin: typeof f.estimated_margin_estate === "number" ? f.estimated_margin_estate : 0 },
                   ].filter((t) => t.price > 0);
 
-                  function marginFlag(m: number) {
-                    if (m < 25) return { dot: "bg-red-400", cls: "text-red-400" };
-                    if (m < 35) return { dot: "bg-[var(--gold)]", cls: "text-[var(--gold)]" };
-                    return { dot: "bg-emerald-400", cls: "text-emerald-400" };
+                  function marginAlertStyle(m: number) {
+                    if (m < 15) {
+                      return {
+                        cls: "text-red-400",
+                        Icon: XCircle,
+                        hint: "Unprofitable — review pricing before sending.",
+                      };
+                    }
+                    if (m < 25) {
+                      return {
+                        cls: "text-orange-400",
+                        Icon: Warning,
+                        hint: "Low margin. Consider recommending a higher tier.",
+                      };
+                    }
+                    if (m < 35) {
+                      return {
+                        cls: "text-[var(--gold)]",
+                        Icon: Warning,
+                        hint: "Below target. Acceptable for volume or strategic moves.",
+                      };
+                    }
+                    return {
+                      cls: "text-emerald-400",
+                      Icon: CheckCircle,
+                      hint: "Healthy margin.",
+                    };
                   }
 
                   return (
                     <>
                       {margins.map(({ label, price, margin }) => {
-                        const flag = marginFlag(margin);
+                        const alert = marginAlertStyle(margin);
                         const profit = price - estTotalCost;
+                        const AlertIcon = alert.Icon;
                         return (
                           <div key={label} className="flex items-start justify-between gap-2 py-1.5 border-b border-[var(--brd)]/40 last:border-0">
                             <div>
                               <span className="text-[var(--tx2)] font-medium">{label}</span>
                               <span className="text-[var(--tx3)] ml-1.5">{fmtPrice(price)}</span>
                             </div>
-                            <div className="text-right shrink-0">
-                              <span className={`inline-flex items-center gap-1.5 font-bold tabular-nums ${flag.cls}`}>
+                            <div className="text-right shrink-0 max-w-[min(100%,12rem)]">
+                              <span className={`inline-flex items-center gap-1.5 font-bold tabular-nums ${alert.cls}`}>
                                 {margin}%
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${flag.dot}`} />
+                                <AlertIcon className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
                               </span>
+                              <p className="text-[9px] text-[var(--tx3)] leading-snug">{alert.hint}</p>
                               <p className="text-[9px] text-[var(--tx3)]">profit {fmtPrice(profit)}</p>
                             </div>
                           </div>
@@ -4620,7 +4774,10 @@ export default function QuoteFormClient({
                             <span className="tabular-nums text-[var(--tx2)]">{fmtPrice(estTotalCost)}</span>
                           </div>
                           <div className="flex justify-between text-[9px]">
-                            <span>Labour {fmtPrice(cost.labour ?? 0)} · Truck {fmtPrice(cost.truck ?? 0)} · Fuel {fmtPrice(cost.fuel ?? 0)}{(cost.supplies ?? 0) > 0 ? ` · Supplies ${fmtPrice(cost.supplies ?? 0)}` : ""}</span>
+                            <span>
+                              Labour {fmtPrice(cost.labour ?? 0)} · Truck {fmtPrice(cost.truck ?? 0)} · Fuel{" "}
+                              {fmtPrice(cost.fuel ?? 0)} · Supplies {fmtPrice(cost.supplies ?? 0)}
+                            </span>
                           </div>
                         </div>
                       )}
@@ -4634,20 +4791,35 @@ export default function QuoteFormClient({
             {quoteResult?.margin_warning && (userRole === "owner" || userRole === "admin") && (() => {
               const mw = quoteResult.margin_warning as { level: string; message: string; estimated_margin: number; target_margin: number; signature_margin: number | null };
               const isCritical = mw.level === "critical";
+              const isWarning = mw.level === "warning";
+              const borderCls = isCritical
+                ? "border-red-400/40 bg-red-400/6"
+                : isWarning
+                  ? "border-orange-400/40 bg-orange-400/6"
+                  : "border-amber-400/40 bg-amber-400/6";
+              const titleCls = isCritical ? "text-red-400" : isWarning ? "text-orange-500" : "text-amber-600";
+              const IconCmp = isCritical ? XCircle : Warning;
+              const title =
+                mw.level === "critical" ? "Margin alert" : mw.level === "warning" ? "Low margin" : "Margin note";
               return (
-                <div className={`rounded-xl border px-4 py-3.5 ${isCritical ? "border-red-400/40 bg-red-400/6" : "border-amber-400/40 bg-amber-400/6"}`}>
+                <div className={`rounded-xl border px-4 py-3.5 ${borderCls}`}>
                   <div className="flex items-start gap-2.5">
-                    <Warning size={16} weight="bold" className={`shrink-0 mt-0.5 ${isCritical ? "text-red-400" : "text-amber-500"}`} />
+                    <IconCmp size={16} weight="bold" className={`shrink-0 mt-0.5 ${titleCls}`} aria-hidden />
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[11px] font-bold capitalize tracking-wider ${isCritical ? "text-red-400" : "text-amber-600"}`}>
-                        Margin {isCritical ? "Alert" : "Warning"}
+                      <p className={`text-[11px] font-bold capitalize tracking-wider ${titleCls}`}>
+                        {title}
                       </p>
-                      <p className={`text-[11px] mt-1 ${isCritical ? "text-red-400/80" : "text-amber-700/80"}`}>
-                        Essential margin: <strong>{mw.estimated_margin}%</strong> (target: {mw.target_margin}%)
+                      <p className={`text-[11px] mt-1 ${isCritical ? "text-red-400/90" : "text-[var(--tx2)]"}`}>
+                        {mw.message}
+                      </p>
+                      <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+                        Essential margin: <strong className="text-[var(--tx)]">{mw.estimated_margin}%</strong>
+                        {" · "}
+                        target {mw.target_margin}%
                       </p>
                       {mw.signature_margin !== null && (
                         <p className="text-[11px] text-[var(--tx3)] mt-0.5">
-                          Signature margin: <strong className="text-emerald-500">{mw.signature_margin}%</strong>, Consider recommending Signature for this move.
+                          Signature margin: <strong className="text-emerald-500">{mw.signature_margin}%</strong>. Consider recommending Signature for this move.
                         </p>
                       )}
                     </div>
