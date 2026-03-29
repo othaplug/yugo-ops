@@ -240,9 +240,23 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [quoteBadge, setQuoteBadge] = useState(0);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const [owner2faBannerDismissed, setOwner2faBannerDismissed] = useState(false);
   const quickActionsRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const uid = user?.id as string | undefined;
+    if (!uid) return;
+    try {
+      if (localStorage.getItem(`yugo_admin_dismiss_owner_2fa_banner:${uid}`) === "1") {
+        setOwner2faBannerDismissed(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -498,13 +512,29 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                 </div>
               </div>
 
-              {role === "owner" && !twoFactorEnabled && (
-                <div className="sticky top-14 z-20 px-4 py-2.5 text-center text-[12px] font-medium bg-amber-500/10 border-b border-amber-500/20 text-amber-400">
-                  <Shield weight="regular" className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
+              {role === "owner" && !twoFactorEnabled && !owner2faBannerDismissed && (
+                <div className="sticky top-14 z-20 relative px-4 py-2.5 pr-11 sm:pr-12 text-center text-[12px] font-medium bg-amber-500/10 border-b border-amber-500/20 text-amber-400">
+                  <Shield weight="regular" className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" aria-hidden />
                   Two-factor authentication is required for owner accounts.{" "}
                   <Link href="/admin/settings/security" className="underline font-bold hover:text-amber-300">
                     Enable 2FA
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const uid = user?.id as string | undefined;
+                      try {
+                        if (uid) localStorage.setItem(`yugo_admin_dismiss_owner_2fa_banner:${uid}`, "1");
+                      } catch {
+                        /* ignore */
+                      }
+                      setOwner2faBannerDismissed(true);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-lg text-amber-400 hover:bg-amber-500/15 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400/60"
+                    aria-label="Dismiss reminder"
+                  >
+                    <X size={18} weight="regular" className="text-current" aria-hidden />
+                  </button>
                 </div>
               )}
 

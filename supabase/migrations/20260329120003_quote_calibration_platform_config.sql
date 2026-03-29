@@ -4,7 +4,7 @@ ALTER TABLE moves DROP CONSTRAINT IF EXISTS moves_margin_flag_check;
 ALTER TABLE moves ADD CONSTRAINT moves_margin_flag_check
   CHECK (margin_flag IS NULL OR margin_flag IN ('green', 'yellow', 'orange', 'red'));
 
-COMMENT ON COLUMN moves.margin_flag IS 'green ≥35%, yellow 25–34%, orange 15–24%, red <15%';
+COMMENT ON COLUMN moves.margin_flag IS 'green >=35%, yellow 25-34%, orange 15-24%, red <15%';
 
 INSERT INTO platform_config (key, value) VALUES
   ('expected_score_studio', '12'),

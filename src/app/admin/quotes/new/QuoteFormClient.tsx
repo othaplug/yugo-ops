@@ -39,6 +39,7 @@ import {
   Info,
   XCircle,
   CheckCircle,
+  X,
   type IconProps,
 } from "@phosphor-icons/react";
 import { calculateBinRentalPrice, BIN_RENTAL_BUNDLE_SPECS } from "@/lib/pricing/bin-rental";
@@ -531,12 +532,15 @@ export default function QuoteFormClient({
   config,
   itemWeights = [],
   userRole = "coordinator",
+  isSuperAdmin = false,
   binInventorySnapshot = null,
 }: {
   addons: Addon[];
   config: Record<string, string>;
   itemWeights?: ItemWeight[];
   userRole?: string;
+  /** Margin/cost preview — super-admin emails only (see isSuperAdminEmail). */
+  isSuperAdmin?: boolean;
   /** Server-computed bin fleet availability for live preview */
   binInventorySnapshot?: { total: number; out: number; available: number } | null;
 }) {
@@ -562,6 +566,7 @@ export default function QuoteFormClient({
     opsPrevMove: { move_number: string; move_date: string; move_size: string; from_address: string; to_address: string } | null;
   } | null>(null);
   const [clientBannerDismissed, setClientBannerDismissed] = useState(false);
+  const [ecoBinsUpsellDismissed, setEcoBinsUpsellDismissed] = useState(false);
   const [clientSquareId, setClientSquareId] = useState("");
   const [clientSquareCardId, setClientSquareCardId] = useState("");
   const [clientHubspotId, setClientHubspotId] = useState("");
@@ -1001,6 +1006,16 @@ export default function QuoteFormClient({
       if (contactSearchTimerRef.current) clearTimeout(contactSearchTimerRef.current);
     };
   }, [contactSearch]);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("yugo_dismiss_eco_bins_quote_upsell") === "1") {
+        setEcoBinsUpsellDismissed(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const inventoryScore = useMemo(() => {
     return inventoryItems.reduce((sum, i) => sum + i.weight_score * i.quantity, 0);
@@ -2680,8 +2695,8 @@ export default function QuoteFormClient({
                         })()}
                     </Field>
                   )}
-                {serviceType === "local_move" && (
-                  <div className="col-span-full rounded-xl border border-[var(--gold)]/35 bg-[var(--gold)]/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                {serviceType === "local_move" && !ecoBinsUpsellDismissed && (
+                  <div className="col-span-full relative rounded-xl border border-[var(--gold)]/35 bg-[var(--gold)]/5 p-4 pr-11 sm:pr-12 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
                       <Recycle className="w-6 h-6 shrink-0 text-[var(--gold)]" weight="regular" aria-hidden />
                       <div>
@@ -2704,15 +2719,31 @@ export default function QuoteFormClient({
                     >
                       Add to quote
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          localStorage.setItem("yugo_dismiss_eco_bins_quote_upsell", "1");
+                        } catch {
+                          /* ignore */
+                        }
+                        setEcoBinsUpsellDismissed(true);
+                      }}
+                      className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-lg text-[var(--gold)] hover:bg-[var(--gold)]/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold)]/50"
+                      aria-label="Dismiss eco bins suggestion"
+                    >
+                      <X size={18} weight="regular" className="text-current" aria-hidden />
+                    </button>
                   </div>
                 )}
                 {serviceType === "local_move" && (
-                  <Field label="Recommend Tier">
-                      <div className="flex items-center gap-2">
+                  <div className="col-span-full">
+                    <Field label="Recommend Tier">
+                      <div className="flex flex-wrap items-center gap-2">
                         <select
                           value={recommendedTier}
                           onChange={(e) => setRecommendedTier(e.target.value as "essential" | "signature" | "estate")}
-                          className={`${fieldInput} w-[140px] min-w-0`}
+                          className={`${fieldInput} w-full min-w-[10.5rem] max-w-[16rem] shrink-0`}
                         >
                           <option value="essential">Essential</option>
                           <option value="signature">Signature</option>
@@ -2722,13 +2753,15 @@ export default function QuoteFormClient({
                           <button
                             type="button"
                             onClick={() => setRecommendedTier("estate")}
-                            className="text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] transition-colors whitespace-nowrap shrink-0"
+                            className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] hover:underline underline-offset-2 transition-colors whitespace-nowrap shrink-0"
                           >
-                            White glove? Estate →
+                            White glove? Estate
+                            <ChevronRight className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
                           </button>
                         )}
                       </div>
                     </Field>
+                  </div>
                   )}
                   {/* Box count moved into InventoryInput when inventory is shown */}
                   {(serviceType === "local_move" || serviceType === "long_distance") && itemWeights.length === 0 && (
@@ -4691,15 +4724,15 @@ export default function QuoteFormClient({
               </div>
             )}
 
-            {/* ── Margin estimate, ADMIN ONLY, never shown to clients ── */}
+            {/* ── Margin estimate, super-admin only; API omits fields for others ── */}
             {quoteResult?.factors &&
-              (userRole === "owner" || userRole === "admin") &&
+              isSuperAdmin &&
               (typeof (quoteResult.factors as Record<string, unknown>).estimated_margin_essential === "number" ||
                typeof (quoteResult.factors as Record<string, unknown>).estimated_margin_curated === "number") && (
               <div className="bg-[var(--bg2)] border border-[var(--brd)] rounded-xl p-4 space-y-3 text-[11px]">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Margin Estimate</h4>
-                  <span className="text-[10px] font-bold capitalize tracking-wide bg-[var(--tx3)]/20 text-[var(--tx3)] px-1.5 py-0.5 rounded">Admin Only</span>
+                  <span className="text-[10px] font-bold capitalize tracking-wide bg-[var(--tx3)]/20 text-[var(--tx3)] px-1.5 py-0.5 rounded">Super Admin</span>
                 </div>
                 {(() => {
                   const f = quoteResult.factors as Record<string, unknown>;
@@ -4787,8 +4820,8 @@ export default function QuoteFormClient({
               </div>
             )}
 
-            {/* ── Margin warning (admin only) ── */}
-            {quoteResult?.margin_warning && (userRole === "owner" || userRole === "admin") && (() => {
+            {/* ── Margin warning (super-admin only) ── */}
+            {quoteResult?.margin_warning && isSuperAdmin && (() => {
               const mw = quoteResult.margin_warning as { level: string; message: string; estimated_margin: number; target_margin: number; signature_margin: number | null };
               const isCritical = mw.level === "critical";
               const isWarning = mw.level === "warning";

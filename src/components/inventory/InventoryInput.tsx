@@ -471,9 +471,12 @@ export default function InventoryInput({
           <button
             type="button"
             onClick={() => setPasteOpen((o) => !o)}
-            className="text-[10px] font-semibold text-[var(--tx2)] underline decoration-[var(--brd)] underline-offset-2 hover:text-[var(--gold)] hover:decoration-[var(--gold)]/50"
+            className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold)]/85 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold)]/40 rounded-sm"
           >
-            {pasteOpen ? "Hide paste inventory" : "Paste inventory list"}
+            <span>{pasteOpen ? "Hide paste inventory" : "Paste inventory list"}</span>
+            <span className="font-bold leading-none" aria-hidden>
+              &gt;
+            </span>
           </button>
           {pasteOpen && (
             <div className="rounded-lg border border-[var(--brd)] p-3 space-y-2 bg-[var(--card)]">
@@ -574,25 +577,25 @@ export default function InventoryInput({
         </div>
       )}
 
-      {/* Custom item input + Box count */}
+      {/* Custom item input + weight (related); box estimate on its own row */}
       <div className="border-t border-[var(--brd)]/30 pt-3 space-y-3">
         <p className="text-[10px] text-[var(--tx2)]">Can&apos;t find an item?</p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="min-w-0 flex-1 sm:min-w-[200px]">
-            <label className="mb-1 block text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
-              Item name
-            </label>
-            <input
-              type="text"
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomItem(); } }}
-              placeholder={isCommercial ? "e.g. Standing desk, Server rack" : "e.g. Patio Set (wicker)"}
-              className={fieldInput}
-            />
-          </div>
-          <div className="flex flex-wrap items-end gap-2 sm:gap-3">
-            <div className="w-28 shrink-0 sm:w-24">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
+            <div className="min-w-0 flex-1">
+              <label className="mb-1 block text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
+                Item name
+              </label>
+              <input
+                type="text"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomItem(); } }}
+                placeholder={isCommercial ? "e.g. Standing desk, Server rack" : "e.g. Patio Set (wicker)"}
+                className={fieldInput}
+              />
+            </div>
+            <div className="w-full shrink-0 sm:w-32">
               <label className="mb-1 block text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
                 Weight
               </label>
@@ -600,17 +603,20 @@ export default function InventoryInput({
                 value={customWeight}
                 onChange={(e) => setCustomWeight(Number(e.target.value))}
                 className={fieldInput}
+                aria-label="Weight for custom item"
               >
                 {CUSTOM_WEIGHT_OPTS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
             </div>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3 sm:flex-wrap">
             {onBoxCountChange !== undefined && (
-              <div className="flex min-w-0 flex-col gap-1 sm:max-w-[200px]">
-                <span className="text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
+              <div className="min-w-0 flex-1 sm:max-w-md">
+                <label className="mb-1 block text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
                   Box estimate
-                </span>
+                </label>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <select
                     value={showCustomBox ? -1 : internalBoxCount}
@@ -625,7 +631,7 @@ export default function InventoryInput({
                         onBoxCountChange(v);
                       }
                     }}
-                    className={`${fieldInput} min-w-[7.5rem] sm:min-w-0`}
+                    className={`${fieldInput} min-w-[8rem] flex-1 sm:flex-initial sm:min-w-[9rem]`}
                     aria-label="Estimated number of boxes"
                   >
                     {BOX_RANGES.map((o) => (
@@ -652,7 +658,7 @@ export default function InventoryInput({
                     </>
                   )}
                   {internalBoxCount > 0 && (
-                    <span className="text-[10px] font-mono text-[var(--tx2)]">+{boxScore.toFixed(1)} score</span>
+                    <span className="text-[10px] font-mono text-[var(--tx2)] self-center sm:self-auto">+{boxScore.toFixed(1)} score</span>
                   )}
                 </div>
               </div>
@@ -661,7 +667,7 @@ export default function InventoryInput({
               type="button"
               onClick={addCustomItem}
               disabled={!customName.trim()}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[var(--gold)] px-3 py-2 text-[10px] font-semibold text-[var(--btn-text-on-accent)] shadow-sm transition-[filter,opacity] hover:brightness-105 disabled:opacity-50 sm:self-end"
+              className="inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-lg bg-[var(--gold)] px-3 py-2 text-[10px] font-semibold text-[var(--btn-text-on-accent)] shadow-sm transition-[filter,opacity] hover:brightness-105 disabled:opacity-50 sm:w-auto sm:self-end"
             >
               <Plus className="size-3.5 shrink-0" weight="bold" /> Add custom item
             </button>

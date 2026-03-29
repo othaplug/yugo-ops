@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import QuoteFormClient from "./QuoteFormClient";
 import { sumBinsOutOnRental, availableBinInventory } from "@/lib/pricing/bin-rental";
 
@@ -32,6 +33,7 @@ export default async function NewQuotePage() {
     .eq("user_id", user?.id ?? "")
     .single();
   const userRole = pu?.role ?? "viewer";
+  const isSuperAdmin = isSuperAdminEmail(user?.email);
 
   const config: Record<string, string> = {};
   for (const r of configRows ?? []) config[r.key] = r.value;
@@ -51,6 +53,7 @@ export default async function NewQuotePage() {
         config={config}
         itemWeights={itemWeights ?? []}
         userRole={userRole}
+        isSuperAdmin={isSuperAdmin}
         binInventorySnapshot={binInventorySnapshot}
       />
     </div>

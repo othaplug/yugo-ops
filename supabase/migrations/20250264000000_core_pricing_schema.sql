@@ -78,13 +78,13 @@ CREATE TABLE IF NOT EXISTS public.base_rates (
 );
 
 INSERT INTO public.base_rates (move_size, base_price, min_crew, estimated_hours) VALUES
-  ('studio', 549, 2, 3),
-  ('1br', 799, 2, 4),
-  ('2br', 1199, 3, 5),
-  ('3br', 1699, 3, 7),
-  ('4br', 2399, 4, 8),
-  ('5br_plus', 3199, 4, 10),
-  ('partial', 499, 2, 3)
+  ('studio', 449, 2, 3),
+  ('1br', 649, 2, 4),
+  ('2br', 999, 2, 5),
+  ('3br', 1399, 3, 7),
+  ('4br', 1999, 4, 8),
+  ('5br_plus', 2699, 4, 10),
+  ('partial', 449, 2, 3)
 ON CONFLICT (move_size) DO NOTHING;
 
 -- ─────────────────────────────────────────────

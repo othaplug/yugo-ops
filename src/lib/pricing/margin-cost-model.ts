@@ -48,8 +48,9 @@ export function expectedInventoryScoreForMoveSize(moveSize: string, config: Pric
 }
 
 /**
- * Dampened inventory modifier: dead zone ±20%, 50% dampening outside band,
- * floor/ceiling from config.
+ * Dampened inventory modifier: ratio within ±20% of 1.0 → no change.
+ * Light (ratio < 0.8): modifier = 1 - (1 - ratio) × dampening, floored.
+ * Heavy (ratio > 1.2): modifier = 1 + (ratio - 1) × dampening, capped.
  */
 export function calculateDampenedInventoryModifier(
   actualScore: number,
@@ -60,31 +61,42 @@ export function calculateDampenedInventoryModifier(
   if (actualScore <= 0 || expected <= 0) return 1.0;
 
   const ratio = actualScore / expected;
-  const deadZone = cfgNum(config, "inventory_modifier_dead_zone", 0.2);
-  const dampening = cfgNum(config, "inventory_modifier_dampening", 0.5);
-  const lowBound = 1.0 - deadZone;
-  const highBound = 1.0 + deadZone;
-
-  if (ratio >= lowBound && ratio <= highBound) return 1.0;
-
-  const floorM = cfgNum(config, "inventory_modifier_floor", 0.78);
+  const dampening = cfgNum(config, "inventory_modifier_dampening", 0.4);
+  const floorM = cfgNum(config, "inventory_modifier_floor", 0.8);
   const ceilingM = cfgNum(config, "inventory_modifier_ceiling", 1.25);
 
-  if (ratio < lowBound) {
-    const rawReduction = 1.0 - ratio;
-    const dampenedReduction = rawReduction * dampening;
-    const modifier = 1.0 - dampenedReduction;
-    return Math.round(Math.max(floorM, modifier) * 100) / 100;
+  let modifier = 1.0;
+
+  if (ratio >= 0.8 && ratio <= 1.2) {
+    modifier = 1.0;
+  } else if (ratio < 0.8) {
+    const reduction = (1.0 - ratio) * dampening;
+    modifier = 1.0 - reduction;
+    modifier = Math.max(floorM, modifier);
+  } else if (ratio > 1.2) {
+    const increase = (ratio - 1.0) * dampening;
+    modifier = Math.min(ceilingM, 1.0 + increase);
   }
 
-  if (ratio > highBound) {
-    const rawIncrease = ratio - 1.0;
-    const dampenedIncrease = rawIncrease * dampening;
-    const modifier = 1.0 + dampenedIncrease;
-    return Math.round(Math.min(ceilingM, modifier) * 100) / 100;
+  modifier = Math.round(modifier * 100) / 100;
+
+  if (
+    process.env.PRICING_DEBUG === "1" ||
+    process.env.PRICING_DEBUG === "true"
+  ) {
+    console.log("[PRICING DEBUG] calculateDampenedInventoryModifier", {
+      moveSize,
+      actualScore,
+      expected,
+      ratio: Math.round(ratio * 1000) / 1000,
+      dampening,
+      floorM,
+      ceilingM,
+      modifier,
+    });
   }
 
-  return 1.0;
+  return modifier;
 }
 
 function qtyOf(item: OperationalSuppliesItem): number {

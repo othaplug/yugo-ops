@@ -2251,7 +2251,13 @@ function SuppliesAndCratingSection() {
   const cratingRow = getVal("crating_prices");
 
   const SUPPLIES_DEFAULTS: Record<string, number> = {
-    studio: 250, "1br": 300, "2br": 375, "3br": 575, "4br": 850, "5br_plus": 1100, partial: 150,
+    studio: 120,
+    partial: 120,
+    "1br": 160,
+    "2br": 240,
+    "3br": 420,
+    "4br": 660,
+    "5br_plus": 850,
   };
   const SUPPLIES_LABELS: Record<string, string> = {
     studio: "Studio", "1br": "1 Bedroom", "2br": "2 Bedroom", "3br": "3 Bedroom",

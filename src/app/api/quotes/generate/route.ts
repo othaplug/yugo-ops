@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/api-auth";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
 import { validateInventoryQuantities } from "@/lib/inventory-quantity-validation";
@@ -152,6 +153,8 @@ interface QuoteInput {
   from_long_carry?: boolean;
   to_long_carry?: boolean;
   truck_type?: string;
+  /** When true, logs full residential pricing steps to the server console (also set PRICING_DEBUG=1). */
+  debug_pricing?: boolean;
   // Client info (used to look up / create a contact)
   client_name?: string;
   client_email?: string;
@@ -268,6 +271,58 @@ function truckSurchargeAmount(config: Map<string, string>, truck: TruckKey): num
     "26ft": 250,
   });
   return m[truck] ?? 0;
+}
+
+/** Default truck included in base rate for each move size (no surcharge if recommendation matches). */
+const BASE_TRUCK_FOR_MOVE_SIZE: Record<string, TruckKey> = {
+  studio: "sprinter",
+  partial: "sprinter",
+  "1br": "16ft",
+  "2br": "16ft",
+  "3br": "20ft",
+  "4br": "20ft",
+  "5br_plus": "26ft",
+};
+
+const TRUCK_UPGRADE_CHAIN: TruckKey[] = ["sprinter", "16ft", "20ft", "24ft", "26ft"];
+
+function truckSizeRank(t: TruckKey): number {
+  if (t === "none") return -1;
+  const i = TRUCK_UPGRADE_CHAIN.indexOf(t);
+  return i >= 0 ? i : 2;
+}
+
+/**
+ * Residential: surcharge only when recommended truck is larger than the tier default for move size.
+ * Upgrade fees are per step along sprinter → 16ft → 20ft → 24ft → 26ft (config: truck_upgrade_step_surcharges).
+ */
+function residentialTruckUpgradeSurcharge(
+  config: Map<string, string>,
+  moveSize: string | undefined,
+  recommended: TruckKey,
+): number {
+  if (recommended === "none") return 0;
+  const ms = moveSize ?? "2br";
+  const baseTruck = BASE_TRUCK_FOR_MOVE_SIZE[ms] ?? "16ft";
+  const baseRank = truckSizeRank(baseTruck);
+  const recRank = truckSizeRank(recommended);
+  if (recRank <= baseRank) return 0;
+
+  const steps = parseJsonConfig<Record<string, number>>(config, "truck_upgrade_step_surcharges", {
+    sprinter_16ft: 50,
+    "16ft_20ft": 75,
+    "20ft_24ft": 50,
+    "24ft_26ft": 50,
+  });
+
+  let total = 0;
+  for (let r = baseRank; r < recRank; r++) {
+    const from = TRUCK_UPGRADE_CHAIN[r];
+    const to = TRUCK_UPGRADE_CHAIN[r + 1];
+    const key = `${from}_${to}`;
+    total += steps[key] ?? 0;
+  }
+  return total;
 }
 
 function truckBreakdownLabel(truck: TruckKey, surcharge: number): string {
@@ -403,76 +458,59 @@ async function getAccessSurcharge(sb: SupabaseAdmin, accessType: string | undefi
 // Date multiplier
 // ═══════════════════════════════════════════════
 
-function getDayName(date: Date): string {
-  return ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][date.getUTCDay()];
-}
+/**
+ * Calendar-based date multiplier (no date_factors table compounding).
+ * Weekend + season + month-boundary bumps, capped at 1.20.
+ */
+function computeCalendarDateMultiplier(moveDate: Date): { multiplier: number; factors: Record<string, number> } {
+  const factors: Record<string, number> = {};
+  let mult = 1.0;
 
-/** Fallback day-of-week multipliers when date_factors has no row (weekend crew costs more). */
-const DEFAULT_DAY_OF_WEEK_MULTIPLIER: Record<string, number> = {
-  monday: 1.0,
-  tuesday: 1.0,
-  wednesday: 1.0,
-  thursday: 1.0,
-  friday: 1.05,
-  saturday: 1.10,
-  sunday: 1.10,
-};
+  const dayOfWeek = moveDate.getUTCDay();
+  const month = moveDate.getUTCMonth();
+  const dayOfMonth = moveDate.getUTCDate();
 
-function isMonthEnd(date: Date): boolean {
-  const d = date.getUTCDate();
-  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
-  return d >= lastDay - 2;
-}
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    factors.weekend = 1.05;
+    mult *= 1.05;
+  } else {
+    factors.weekend = 1.0;
+  }
 
-function getSeasonKey(month: number): string {
-  if (month >= 6 && month <= 8) return "peak_jun_aug";
-  if (month >= 9 && month <= 11) return "shoulder_sep_nov";
-  if (month >= 1 && month <= 3) return "off_peak_jan_mar";
-  return "spring_apr_may";
+  if (month >= 5 && month <= 7) {
+    factors.season = 1.1;
+    mult *= 1.1;
+  } else if (month === 4 || month === 8) {
+    factors.season = 1.05;
+    mult *= 1.05;
+  } else if (month === 3 || month === 9) {
+    factors.season = 1.03;
+    mult *= 1.03;
+  } else {
+    factors.season = 1.0;
+  }
+
+  if (dayOfMonth <= 3 || dayOfMonth >= 28) {
+    factors.month_boundary = 1.05;
+    mult *= 1.05;
+  } else {
+    factors.month_boundary = 1.0;
+  }
+
+  const raw = mult;
+  const capped = Math.min(mult, 1.2);
+  factors.raw_before_cap = Math.round(raw * 1000) / 1000;
+  factors.cap_max = 1.2;
+
+  return { multiplier: Math.round(capped * 1000) / 1000, factors };
 }
 
 async function getDateMultiplier(
-  sb: SupabaseAdmin,
+  _sb: SupabaseAdmin,
   moveDateStr: string,
 ): Promise<{ multiplier: number; factors: Record<string, number> }> {
-  const { data: allFactors } = await sb.from("date_factors").select("factor_type, factor_value, multiplier");
-  const lookup = new Map<string, number>();
-  for (const f of allFactors ?? []) lookup.set(`${f.factor_type}:${f.factor_value}`, f.multiplier);
-
-  const moveDate = new Date(moveDateStr + "T00:00:00Z");
-  const now = new Date();
-  const daysOut = Math.floor((moveDate.getTime() - now.getTime()) / 86_400_000);
-  const month = moveDate.getUTCMonth() + 1;
-
-  const factors: Record<string, number> = {};
-  let combined = 1.0;
-
-  const dayName = getDayName(moveDate);
-  const dayMult = lookup.get(`day_of_week:${dayName}`) ?? DEFAULT_DAY_OF_WEEK_MULTIPLIER[dayName] ?? 1.0;
-  factors.day_of_week = dayMult;
-  combined *= dayMult;
-
-  if (isMonthEnd(moveDate)) {
-    const meMult = lookup.get("month_period:month_end") ?? 1.0;
-    factors.month_end = meMult;
-    combined *= meMult;
-  }
-
-  const seasonMult = lookup.get(`season:${getSeasonKey(month)}`) ?? 1.0;
-  factors.season = seasonMult;
-  combined *= seasonMult;
-
-  if (daysOut >= 0 && daysOut < 7) {
-    const urgMult = lookup.get("urgency:last_minute_7days") ?? 1.0;
-    factors.urgency = urgMult;
-    combined *= urgMult;
-  } else if (daysOut >= 30) {
-    const ebMult = lookup.get("urgency:early_bird_30plus") ?? 1.0;
-    factors.early_bird = ebMult;
-    combined *= ebMult;
-  }
-
-  return { multiplier: Math.round(combined * 1000) / 1000, factors };
+  const moveDate = new Date(`${moveDateStr}T12:00:00Z`);
+  return computeCalendarDateMultiplier(moveDate);
 }
 
 // ═══════════════════════════════════════════════
@@ -874,17 +912,6 @@ async function calcInventoryModifier(
   const inventoryScore = itemScore + boxScore;
   const expectedScore = expectedInventoryScoreForMoveSize(moveSize, config);
 
-  if (totalItems < Number(bm.min_items_for_adjustment)) {
-    return {
-      modifier: 1.0,
-      inventoryScore,
-      benchmarkScore: expectedScore,
-      totalItems,
-      maxModifier: Number(bm.max_modifier),
-      boxCount,
-    };
-  }
-
   const modifier = calculateDampenedInventoryModifier(inventoryScore, moveSize, config);
 
   return {
@@ -978,13 +1005,40 @@ async function calcResidential(
   deadheadInfo: { distance_km: number; drive_time_min: number } | null,
   returnInfo: { distance_km: number; drive_time_min: number } | null,
 ) {
+  const pricingDebug =
+    input.debug_pricing === true ||
+    process.env.PRICING_DEBUG === "1" ||
+    process.env.PRICING_DEBUG === "true";
+  const pd = (...parts: unknown[]) => {
+    if (pricingDebug) console.log("[PRICING DEBUG]", ...parts);
+  };
+
+  pd("=== RESIDENTIAL PRICING TRACE (calcResidential) ===");
+  pd("Input move_size:", input.move_size, "| service_type:", input.service_type, "| move_date:", input.move_date);
+  pd("Addresses:", { from: input.from_address, to: input.to_address });
+  pd("Access:", { from_access: input.from_access, to_access: input.to_access });
+  pd("Parking / long carry:", {
+    from_parking: input.from_parking,
+    to_parking: input.to_parking,
+    from_long_carry: input.from_long_carry,
+    to_long_carry: input.to_long_carry,
+  });
+
   const { data: br } = await sb
     .from("base_rates")
     .select("base_price, min_crew, estimated_hours")
     .eq("move_size", input.move_size ?? "2br")
     .single();
 
-  const baseRate = br?.base_price ?? 1199;
+  const baseRate = br?.base_price ?? 999;
+  pd("Step 1 — base_rates (DB row for move_size):", {
+    move_size: input.move_size ?? "2br",
+    base_price: br?.base_price,
+    fallback_used: br?.base_price == null,
+    baseRate_effective: baseRate,
+    min_crew: br?.min_crew ?? "(fallback 3)",
+    estimated_hours: br?.estimated_hours ?? "(fallback 5)",
+  });
   const minCrew = br?.min_crew ?? 3;
   const estHours = br?.estimated_hours ?? 5;
 
@@ -1023,6 +1077,24 @@ async function calcResidential(
     distanceModifier = distModExtreme;     // 35% surcharge (>100 km)
   }
 
+  pd("Step 2 — distance_km:", distKm, "| buckets (km):", {
+    ultraShort: `≤${distUltraShortKm}`,
+    short: `≤${distShortKm}`,
+    baseline: `≤${distBaselineKm}`,
+    medium: `≤${distMediumKm}`,
+    long: `≤${distLongKm}`,
+    veryLong: `≤${distVeryLongKm}`,
+  });
+  pd("Step 2 — distance modifier coeffs:", {
+    distModUltraShort,
+    distModShort,
+    distModMedium,
+    distModLong,
+    distModVeryLong,
+    distModExtreme,
+  });
+  pd("Step 2 — distance_modifier (applied):", distanceModifier);
+
   // ── Access + specialty surcharges (flat — not multiplied by tier) ──────────
   const [fromAccess, toAccess] = await Promise.all([
     getAccessSurcharge(sb, input.from_access),
@@ -1037,12 +1109,21 @@ async function calcResidential(
   const costStack = invResult.modifier * distanceModifier;
   let operationalPrice = Math.round(baseRate * costStack);
 
+  pd("Step 3 — inventory:", {
+    inventory_modifier: invResult.modifier,
+    inventory_score: invResult.inventoryScore,
+    inventory_benchmark_expected: invResult.benchmarkScore,
+    inventory_items_count: invResult.totalItems,
+  });
+  pd("Step 3 — cost_stack (inv_modifier × distance_modifier):", costStack);
+  pd("Step 3 — baseRate × cost_stack (rounded, before surcharges):", operationalPrice);
+
   // Step 3: FIXED SURCHARGES — additive, not multiplicative
   const plc = parkingLongCarryLineTotal(config, input, "both");
   const recTruck = input.truck_type
     ? normalizeTruckType(input.truck_type)
     : recommendedTruckFromInventoryScore(invResult.inventoryScore);
-  const truckSur = truckSurchargeAmount(config, recTruck);
+  const truckSur = residentialTruckUpgradeSurcharge(config, input.move_size, recTruck);
 
   const deadheadFreeKm = cfgNum(config, "deadhead_free_zone_km", cfgNum(config, "deadhead_free_km", 15));
   const deadheadPerKm  = cfgNum(config, "deadhead_rate_per_km", cfgNum(config, "deadhead_per_km", 3.0));
@@ -1062,6 +1143,23 @@ async function calcResidential(
   const surchargesTotal = accessSurcharge + specialtySurcharge + plc.total + truckSur + deadheadSurcharge + mobilizationFee;
   operationalPrice += surchargesTotal;
 
+  pd("Step 4 — fixed surcharges (additive):", {
+    access_from: fromAccess,
+    access_to: toAccess,
+    access_total: accessSurcharge,
+    specialtySurcharge,
+    parking_long_carry_total: plc.total,
+    truck_recommended: recTruck,
+    truck_surcharge: truckSur,
+    deadhead_km: deadheadKm,
+    deadhead_free_km: deadheadFreeKm,
+    deadhead_per_km: deadheadPerKm,
+    deadhead_surcharge: deadheadSurcharge,
+    mobilization_fee: mobilizationFee,
+    surcharges_total: surchargesTotal,
+  });
+  pd("Step 4 — operational_price after surcharges (before market stack):", operationalPrice);
+
   // Step 4: MARKET STACK — price perception drivers, capped to prevent excessive compounding
   const marketStackRaw = dateMult.multiplier * neighbourhood.multiplier;
   const marketStackCap = cfgNum(config, "market_stack_cap", 1.38);
@@ -1071,6 +1169,18 @@ async function calcResidential(
 
   // Keep a "subtotal" alias for the coordinator breakdown view (price before labour)
   const subtotal = marketAdjustedPrice;
+
+  pd("Step 5 — market stack:", {
+    date_multiplier: dateMult.multiplier,
+    neighbourhood_multiplier: neighbourhood.multiplier,
+    neighbourhood_tier: neighbourhood.tier,
+    market_stack_raw: marketStackRaw,
+    market_stack_cap: marketStackCap,
+    market_stack_applied: marketStack,
+    was_capped: marketStackCapped,
+    market_adjusted_price: marketAdjustedPrice,
+    subtotal_before_labour: subtotal,
+  });
 
   // ── Tiered labour delta (v2): extra hours above baseline, per-tier rates ─
   const labourRates = {
@@ -1114,7 +1224,26 @@ async function calcResidential(
 
       // Legacy single delta (essential rate) for backward-compatible breakdown display
       labourDelta = tieredLabourDelta.essential;
+
+      pd("Step 6 — labour vs benchmark:", {
+        labour_crew: labour.crewSize,
+        labour_estimated_hours: labour.estimatedHours,
+        benchmark_crew: bm.baseline_crew,
+        benchmark_hours: bm.baseline_hours,
+        baseline_man_hours: baselineManHours,
+        min_hours_floor: minHoursFloor,
+        effective_min_hours: effectiveMinHours,
+        effective_hours_used: effectiveHours,
+        actual_man_hours: actualManHours,
+        extra_man_hours: extraManHours,
+        labour_rates_per_mover_hour: labourRates,
+        tiered_labour_delta: tieredLabourDelta,
+      });
+    } else {
+      pd("Step 6 — labour: no benchmark row or missing labour estimate; labour deltas stay 0");
     }
+  } else {
+    pd("Step 6 — labour: skipped (no labour estimate)");
   }
 
   const rounding = cfgNum(config, "rounding_nearest", 50);
@@ -1134,14 +1263,36 @@ async function calcResidential(
   let sigBase = roundTo(subtotal * signatureMult, rounding) + tieredLabourDelta.signature;
   let estBase = roundTo(subtotal * estateMult, rounding) + tieredLabourDelta.estate;
 
+  pd("Step 7 — tier multipliers & rounding (config):", {
+    tier_essential_multiplier: curatedMult,
+    tier_signature_multiplier: signatureMult,
+    tier_estate_multiplier: estateMult,
+    rounding_nearest: rounding,
+    minimum_job_amount: minJob,
+    tax_rate: taxRate,
+  });
+  pd("Step 7a — tier bases = roundTo(subtotal × tier_mult, rounding) + tier_labour_delta:", {
+    subtotal,
+    essential: curBase,
+    signature: sigBase,
+    estate: estBase,
+  });
+
   // Estate-only: packing supplies allowance — lookup by move size from config JSON.
   const suppliesBySize = parseJsonConfig<Record<string, number>>(config, "estate_supplies_by_size", {});
   const SUPPLIES_FALLBACK: Record<string, number> = {
-    studio: 250, "1br": 300, "2br": 375, "3br": 575, "4br": 850, "5br_plus": 1100, partial: 150,
+    studio: 120,
+    partial: 120,
+    "1br": 160,
+    "2br": 240,
+    "3br": 420,
+    "4br": 660,
+    "5br_plus": 850,
   };
-  const estateSuppliesAllowance = suppliesBySize[input.move_size ?? "2br"]
+  const estateSuppliesAllowance =
+    suppliesBySize[input.move_size ?? "2br"]
     ?? SUPPLIES_FALLBACK[input.move_size ?? "2br"]
-    ?? 375;
+    ?? 240;
   estBase += estateSuppliesAllowance;
 
   // Custom crating — applies to ALL tiers (coordinator-selected per quote).
@@ -1157,9 +1308,30 @@ async function calcResidential(
   sigBase += cratingTotal;
   estBase += cratingTotal;
 
+  pd("Step 7b — estate packing supplies allowance (estate tier only):", {
+    estateSuppliesAllowance,
+    cratingTotal,
+    curBase,
+    sigBase,
+    estBase,
+  });
+
+  const curBaseBeforeMin = curBase;
+  const sigBaseBeforeMin = sigBase;
+  const estBaseBeforeMin = estBase;
   if (curBase < minJob) curBase = minJob;
   if (sigBase < curBase) sigBase = curBase;
   if (estBase < sigBase) estBase = sigBase;
+
+  pd("Step 7c — after min_job + tier monotonicity:", {
+    minJob,
+    curBase_before: curBaseBeforeMin,
+    curBase_after: curBase,
+    sigBase_before: sigBaseBeforeMin,
+    sigBase_after: sigBase,
+    estBase_before: estBaseBeforeMin,
+    estBase_after: estBase,
+  });
 
   const addonForCur = addonResult.total - (addonResult.byTierExclusion.get("essential") ?? (addonResult.byTierExclusion.get("curated") ?? (addonResult.byTierExclusion.get("essentials") ?? 0)));
   const addonForSig = addonResult.total - (addonResult.byTierExclusion.get("signature") ?? (addonResult.byTierExclusion.get("premier") ?? 0));
@@ -1171,6 +1343,14 @@ async function calcResidential(
   if (sigPrice < curPrice) sigPrice = curPrice;
   if (estPrice < sigPrice) estPrice = sigPrice;
 
+  pd("Step 8 — addons:", {
+    addon_line_total: addonResult.total,
+    addon_for_essential: addonForCur,
+    addon_for_signature: addonForSig,
+    addon_for_estate: addonForEst,
+    prices_after_addons: { essential: curPrice, signature: sigPrice, estate: estPrice },
+  });
+
   // Tier spread caps: avoid flat multipliers inflating Signature/Estate on small moves
   const minCuratedToSig = cfgNum(config, "min_essential_signature_gap", cfgNum(config, "min_curated_signature_gap", 350));
   const minSigToEstate = cfgNum(config, "min_signature_estate_gap", 800);
@@ -1181,6 +1361,18 @@ async function calcResidential(
   const estGap = Math.min(Math.max(estPrice - sigPrice, minSigToEstate), maxSigToEstate);
   estPrice = sigPrice + estGap;
 
+  pd("Step 8b — tier spread caps (min/max gap between tiers):", {
+    min_essential_signature_gap: minCuratedToSig,
+    max_essential_signature_gap: maxCuratedToSig,
+    min_signature_estate_gap: minSigToEstate,
+    max_signature_estate_gap: maxSigToEstate,
+    sig_gap_applied: sigGap,
+    estate_gap_applied: estGap,
+    prices_after_spread_caps: { essential: curPrice, signature: sigPrice, estate: estPrice },
+  });
+
+  const preProcessing = { essential: curPrice, signature: sigPrice, estate: estPrice };
+
   // Processing cost recovery — absorbs credit card fees into the displayed price.
   // Applied after gap caps so tier spread is preserved, before tax and rounding
   // so the recovery is invisible to clients (absorbed into the $50 round).
@@ -1189,10 +1381,26 @@ async function calcResidential(
   curPrice  = Math.ceil((curPrice  + procFlat) / (1 - procRate));
   sigPrice  = Math.ceil((sigPrice  + procFlat) / (1 - procRate));
   estPrice  = Math.ceil((estPrice  + procFlat) / (1 - procRate));
+
+  pd("Step 9 — processing recovery: ceil((price + procFlat) / (1 - procRate)):", {
+    procRate,
+    procFlat,
+    pre_processing: preProcessing,
+    after_processing_before_nearest_rounding: { essential: curPrice, signature: sigPrice, estate: estPrice },
+  });
+
   // Re-apply rounding after recovery so prices land on the nearest $50
   curPrice  = Math.round(curPrice  / rounding) * rounding;
   sigPrice  = Math.round(sigPrice  / rounding) * rounding;
   estPrice  = Math.round(estPrice  / rounding) * rounding;
+
+  pd("Step 10 — final pre-tax tier prices (nearest rounding interval):", {
+    rounding_nearest: rounding,
+    essential: curPrice,
+    signature: sigPrice,
+    estate: estPrice,
+  });
+  pd("=== END RESIDENTIAL PRICING TRACE ===");
 
   const curTax = Math.round(curPrice * taxRate);
   const sigTax = Math.round(sigPrice * taxRate);
@@ -1447,7 +1655,7 @@ async function calcLongDistance(
     .eq("move_size", input.move_size ?? "2br")
     .single();
 
-  const baseRate = (br?.base_price ?? 1199) * 1.5;
+  const baseRate = (br?.base_price ?? 999) * 1.5;
   const distKm = distInfo?.distance_km ?? 0;
   const distanceSurcharge = distKm > 100 ? Math.round((distKm - 100) * 2.5) : 0;
 
@@ -2307,6 +2515,18 @@ async function calcLabourOnly(
   };
 }
 
+/** Strip internal cost/margin fields from API JSON for non–super-admin callers. DB `factors_applied` stays full. */
+function omitMarginEstimateFields(factors: unknown): unknown {
+  if (!factors || typeof factors !== "object") return factors;
+  const o = { ...(factors as Record<string, unknown>) };
+  delete o.estimated_cost;
+  delete o.estimated_margin_essential;
+  delete o.estimated_margin_signature;
+  delete o.estimated_margin_estate;
+  delete o.estimated_margin_curated;
+  return o;
+}
+
 // ═══════════════════════════════════════════════
 // MAIN POST HANDLER
 // ═══════════════════════════════════════════════
@@ -2464,7 +2684,7 @@ export async function POST(req: NextRequest) {
       .select("base_price")
       .eq("move_size", input.move_size!)
       .single();
-    roughBase = br?.base_price ?? 1199;
+    roughBase = br?.base_price ?? 999;
   }
 
   const addonResult = await calculateAddons(sb, input.selected_addons, roughBase);
@@ -2919,6 +3139,8 @@ export async function POST(req: NextRequest) {
 
   const expiresAtStr = new Date(Date.now() + expiryDays * 86_400_000).toISOString();
 
+  const marginFieldsForCaller = isSuperAdminEmail(authUser?.email);
+
   const response: Record<string, unknown> = {
     quote_id: quoteId,
     quoteId,
@@ -2928,7 +3150,7 @@ export async function POST(req: NextRequest) {
     drive_time_min: distInfo?.drive_time_min ?? null,
     move_date: input.move_date,
     expires_at: expiresAtStr,
-    factors,
+    factors: marginFieldsForCaller ? factors : omitMarginEstimateFields(factors),
     addons: {
       items: addonResult.breakdown,
       total: addonResult.total,
@@ -2964,8 +3186,8 @@ export async function POST(req: NextRequest) {
     tiers: valTiers ?? [],
   };
 
-  // Margin warning — admin-only, shown on quote preview
-  if (factors && typeof factors === "object") {
+  // Margin warning — super-admin only (same gate as estimated_margin* in factors)
+  if (marginFieldsForCaller && factors && typeof factors === "object") {
     const f = factors as Record<string, unknown>;
     const estMarginEssential = typeof f.estimated_margin_essential === "number" ? f.estimated_margin_essential : (typeof f.estimated_margin_curated === "number" ? f.estimated_margin_curated : null);
     const estMarginSig = typeof f.estimated_margin_signature === "number" ? f.estimated_margin_signature : null;

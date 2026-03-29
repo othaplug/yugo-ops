@@ -125,10 +125,10 @@ export default function ResidentialLayout({
                 }
               >
               <div
-                className={`p-6 md:p-8 flex flex-col flex-1 min-h-0 transition-all duration-300 ${isCollapsed ? "!p-5" : ""}`}
+                className={`p-6 md:p-8 flex flex-col flex-1 min-h-0 min-w-0 transition-all duration-300 ${isCollapsed ? "!p-5" : ""}`}
               >
-                <div className="flex items-start justify-between gap-4 flex-shrink-0">
-                  <div className="flex items-center gap-3 min-w-0 flex-wrap">
+                <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 min-w-0 flex-shrink-0">
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
                     {(() => {
                       const TierIcon = TIER_ICONS[tierKey];
                       return TierIcon ? (
@@ -140,13 +140,13 @@ export default function ResidentialLayout({
                         </div>
                       ) : null;
                     })()}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-heading text-[16px] font-bold" style={{ color: isEstate ? "#C9A84C" : meta.accent }}>
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                      <h3 className="font-heading text-[16px] font-bold leading-tight" style={{ color: isEstate ? "#C9A84C" : meta.accent }}>
                         {meta.label}
                       </h3>
                       {isRecommended && (
                         <span
-                          className="capitalize text-[9px] font-bold tracking-wider"
+                          className="capitalize text-[9px] font-bold tracking-wider shrink-0"
                           style={{
                             letterSpacing: "0.5px",
                             color: "#0A0A0A",
@@ -160,7 +160,10 @@ export default function ResidentialLayout({
                       )}
                     </div>
                   </div>
-                  <span className="font-hero text-[24px] md:text-[28px] font-bold flex-shrink-0" style={{ color: isEstate ? "#C9A84C" : meta.accent }}>
+                  <span
+                    className="font-hero w-full min-w-0 text-right text-[clamp(1.125rem,0.35rem+2.8vw,1.7rem)] font-bold leading-none tabular-nums sm:w-auto sm:shrink-0"
+                    style={{ color: isEstate ? "#C9A84C" : meta.accent }}
+                  >
                     {fmtPrice(t.price)}
                   </span>
                 </div>
