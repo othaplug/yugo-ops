@@ -61,15 +61,48 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
     : null;
 
   let b2bOneOffPriorCount = 0;
+  let b2bOneOffCohort: {
+    verticalLabel: string | null;
+    combinedRevenue: number;
+    deliveryCount: number;
+  } | null = null;
+
   if (delivery.booking_type === "one_off" && !delivery.organization_id && delivery.contact_email) {
+    const emailNorm = delivery.contact_email.trim();
     const { count } = await db
       .from("deliveries")
       .select("id", { count: "exact", head: true })
       .eq("booking_type", "one_off")
       .is("organization_id", null)
-      .ilike("contact_email", delivery.contact_email.trim())
+      .ilike("contact_email", emailNorm)
       .neq("id", delivery.id);
     b2bOneOffPriorCount = count ?? 0;
+
+    const { data: cohortRows } = await db
+      .from("deliveries")
+      .select("total_price, admin_adjusted_price, base_price")
+      .eq("booking_type", "one_off")
+      .is("organization_id", null)
+      .ilike("contact_email", emailNorm);
+    const cohortList = cohortRows ?? [];
+    const lineRev = (r: { admin_adjusted_price?: number | null; total_price?: number | null; base_price?: number | null }) => {
+      const ap = r.admin_adjusted_price != null ? Number(r.admin_adjusted_price) : null;
+      const tp = r.total_price != null ? Number(r.total_price) : null;
+      const bp = r.base_price != null ? Number(r.base_price) : null;
+      return ap ?? tp ?? bp ?? 0;
+    };
+    const combinedRevenue = cohortList.reduce((s, r) => s + lineRev(r), 0);
+    let verticalLabel: string | null = null;
+    const vCode = delivery.vertical_code as string | null | undefined;
+    if (vCode && String(vCode).trim()) {
+      const { data: vn } = await db.from("delivery_verticals").select("name").eq("code", String(vCode).trim()).maybeSingle();
+      verticalLabel = vn?.name ?? String(vCode).replace(/_/g, " ");
+    }
+    b2bOneOffCohort = {
+      verticalLabel,
+      combinedRevenue,
+      deliveryCount: cohortList.length,
+    };
   }
 
   return (
@@ -84,6 +117,7 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
       isB2BPartner={isB2BPartner}
       linkedProject={linkedProject}
       b2bOneOffPriorCount={b2bOneOffPriorCount}
+      b2bOneOffCohort={b2bOneOffCohort}
     />
   );
 }

@@ -29,9 +29,17 @@ const MIN_HOURS_BY_SIZE: Record<string, number> = {
 
 const OVERHEAD_HOURS = 0.75;
 
+/** Client-facing hours = on-job move only; crew_full_cycle includes multi-leg drive factor + return-to-base time. */
+export type HoursEstimateMode = "client_on_job" | "crew_full_cycle";
+
 export interface LabourOptions {
   /** Actual drive time in minutes (from Mapbox directions). If provided, used instead of distanceKm for drive hours. */
   driveTimeMinutes?: number;
+  /**
+   * client_on_job: one-way loaded route time only (no deadhead / return-to-base in displayed hours).
+   * crew_full_cycle: legacy ops model (drive × 2.5 + long return-to-base add-on).
+   */
+  hoursEstimateMode?: HoursEstimateMode;
   /** Specialty items — heavy items (piano_grand, pool_table, safe_over_300, hot_tub) force crew ≥ 4; any specialty forces crew ≥ 3. */
   specialtyItems?: { type: string; qty: number }[];
   /** Distance from drop-off address to Yugo base (km). Used for return-trip factor. */
@@ -40,6 +48,8 @@ export interface LabourOptions {
   returnDriveMinutes?: number;
   /** White glove wrapping / handling takes ~35% longer than standard blanket prep */
   whiteGloveHoursMultiplier?: boolean;
+  /** When set, truck tier uses this score (items + explicit boxes); hours/crew still use `inventoryScore`. */
+  truckInventoryScore?: number;
 }
 
 export function estimateLabourFromScore(
@@ -85,23 +95,32 @@ export function estimateLabourFromScore(
   const unloadHours = loadHours * 0.75;
   const disassemblyHours = DISASSEMBLY_BY_SIZE[sizeKey] ?? 0.5;
 
-  // Drive time: Section 4C — actual drive minutes × 2.5 (to pickup + loaded drive + 0.5× return)
+  const mode = options?.hoursEstimateMode ?? "crew_full_cycle";
+
+  // Drive time: client quote shows loaded move only; crew_full_cycle uses Section 4C/4E ops model.
   let driveHours: number;
-  if (options?.driveTimeMinutes !== undefined) {
+  if (mode === "client_on_job") {
+    if (options?.driveTimeMinutes !== undefined) {
+      driveHours = options.driveTimeMinutes / 60;
+    } else {
+      driveHours = distanceKm / 40;
+    }
+  } else if (options?.driveTimeMinutes !== undefined) {
     driveHours = (options.driveTimeMinutes * 2.5) / 60;
   } else {
-    // Fallback for callers that only have distance (e.g. InventoryInput live estimate)
     driveHours = distanceKm / 40;
   }
 
   let totalHours =
     OVERHEAD_HOURS + loadHours + driveHours + unloadHours + disassemblyHours;
 
-  // Section 4E: Return trip factor for long drop-offs
-  const dropoffToBaseKm = options?.dropoffToBaseKm ?? 0;
-  const returnDriveMinutes = options?.returnDriveMinutes ?? 0;
-  if (dropoffToBaseKm > 30 && returnDriveMinutes > 0) {
-    totalHours += (returnDriveMinutes / 60) * 0.5;
+  // Section 4E: Return trip factor for long drop-offs (ops / margin only)
+  if (mode === "crew_full_cycle") {
+    const dropoffToBaseKm = options?.dropoffToBaseKm ?? 0;
+    const returnDriveMinutes = options?.returnDriveMinutes ?? 0;
+    if (dropoffToBaseKm > 30 && returnDriveMinutes > 0) {
+      totalHours += (returnDriveMinutes / 60) * 0.5;
+    }
   }
 
   totalHours = Math.round(totalHours * 2) / 2;
@@ -113,11 +132,12 @@ export function estimateLabourFromScore(
   const minHours = MIN_HOURS_BY_SIZE[sizeKey] ?? 3.0;
   totalHours = Math.max(minHours, totalHours);
 
+  const truckScore = options?.truckInventoryScore ?? inventoryScore;
   let truckSize = "16ft";
-  if (inventoryScore > 25) truckSize = "20ft";
-  if (inventoryScore > 50) truckSize = "24ft";
-  if (inventoryScore > 75) truckSize = "26ft";
-  if (inventoryScore > 90) truckSize = "26ft + trailer or 2 trucks";
+  if (truckScore > 25) truckSize = "20ft";
+  if (truckScore > 50) truckSize = "24ft";
+  if (truckScore > 75) truckSize = "26ft";
+  if (truckScore > 90) truckSize = "26ft + trailer or 2 trucks";
 
   // ±7% range rounded to nearest 0.5 h, capped at 1.5 h span
   const roundHalf = (n: number) => Math.round(n * 2) / 2;

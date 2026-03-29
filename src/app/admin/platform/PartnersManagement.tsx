@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import InvitePartnerModal from "./InvitePartnerModal";
+import PartnerVerticalRatesEditor from "./PartnerVerticalRatesEditor";
 import ModalOverlay from "../components/ModalOverlay";
 import { CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
 
@@ -441,6 +442,8 @@ export default function PartnersManagement() {
                           </button>
                         </div>
                       </div>
+
+                      <PartnerVerticalRatesEditor organizationId={partner.id} />
 
                       {partner.portal_users.length === 0 ? (
                         <div className="px-5 pb-4 text-[11px] text-[var(--tx3)]">

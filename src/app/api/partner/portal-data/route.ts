@@ -16,7 +16,7 @@ export async function GET() {
 
   const { data: org } = await admin
     .from("organizations")
-    .select("type, vertical, name")
+    .select("type, vertical, name, address")
     .eq("id", primaryOrgId!)
     .single();
 
@@ -193,6 +193,7 @@ export async function GET() {
 
   return NextResponse.json({
     orgType,
+    orgPickupAddress: (org?.address as string | null | undefined)?.trim() || null,
     deliveriesCount: dels.length,
     movesCount: (recentMoves || []).length,
     completedThisMonth,

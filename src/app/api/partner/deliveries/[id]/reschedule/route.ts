@@ -29,9 +29,9 @@ export async function POST(
 
   const { data: delivery } = await admin
     .from("deliveries")
-    .select("id, delivery_number, scheduled_date, time_slot, partner_id, status")
+    .select("id, delivery_number, scheduled_date, time_slot, organization_id, status")
     .eq("id", id)
-    .eq("partner_id", partnerUser.org_id)
+    .eq("organization_id", partnerUser.org_id)
     .single();
 
   if (!delivery) return NextResponse.json({ error: "Delivery not found" }, { status: 404 });

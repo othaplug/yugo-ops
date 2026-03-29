@@ -27,6 +27,8 @@ type ResourceType =
   | "contact"
   | "pricing"
   | "config"
+  | "delivery_vertical"
+  | "partner_vertical_rates"
   | "user"
   | "system";
 

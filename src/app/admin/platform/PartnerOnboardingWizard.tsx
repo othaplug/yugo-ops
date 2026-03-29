@@ -48,6 +48,26 @@ const WINDOW_OPTIONS = [
   { value: "flexible", label: "Flexible" },
 ];
 
+/** B2B logistics verticals (codes match delivery_verticals). */
+const B2B_DELIVERY_VERTICAL_OPTIONS: { id: string; label: string }[] = [
+  { id: "furniture_retail", label: "Furniture Retail Delivery" },
+  { id: "flooring", label: "Flooring / Building Materials" },
+  { id: "designer", label: "Interior Designer Projects" },
+  { id: "medical_equipment", label: "Medical / Lab Equipment" },
+  { id: "appliance", label: "Appliance Delivery" },
+  { id: "art_gallery", label: "Art & Gallery" },
+  { id: "custom", label: "Custom / Other" },
+];
+
+type B2bVerticalCustomDraft = {
+  base_rate?: string;
+  unit_rate?: string;
+  white_glove?: string;
+  room_of_choice?: string;
+  threshold?: string;
+  stop_rate?: string;
+};
+
 const HOW_FOUND_OPTIONS = [
   { value: "referral", label: "Referral" },
   { value: "cold_outreach", label: "Cold outreach" },
@@ -155,6 +175,10 @@ interface WizardState {
   specialRequirements: string;
   preferredWindows: string;
   pickupLocations: string[];
+  /** delivery_verticals.code values enabled for B2B portal pricing */
+  b2bDeliveryVerticals: string[];
+  b2bVerticalUseDefaults: Record<string, boolean>;
+  b2bVerticalCustom: Record<string, B2bVerticalCustomDraft>;
   // Step 3
   templateSlug: string;
   billingMethod: string;
@@ -205,6 +229,9 @@ const DEFAULT_STATE: WizardState = {
   specialRequirements: "",
   preferredWindows: "",
   pickupLocations: [""],
+  b2bDeliveryVerticals: [],
+  b2bVerticalUseDefaults: {},
+  b2bVerticalCustom: {},
   templateSlug: "",
   billingMethod: "per_delivery",
   paymentTerms: "due_on_receipt",
@@ -282,6 +309,40 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
     }));
   };
 
+  const toggleB2bVertical = (code: string) => {
+    setState((s) => {
+      const has = s.b2bDeliveryVerticals.includes(code);
+      const next = has ? s.b2bDeliveryVerticals.filter((c) => c !== code) : [...s.b2bDeliveryVerticals, code];
+      const useDefaults = { ...s.b2bVerticalUseDefaults };
+      const custom = { ...s.b2bVerticalCustom };
+      if (!has) {
+        useDefaults[code] = true;
+        custom[code] = {};
+      } else {
+        delete useDefaults[code];
+        delete custom[code];
+      }
+      return { ...s, b2bDeliveryVerticals: next, b2bVerticalUseDefaults: useDefaults, b2bVerticalCustom: custom };
+    });
+  };
+
+  const patchB2bVerticalCustom = (code: string, patch: Partial<B2bVerticalCustomDraft>) => {
+    setState((s) => ({
+      ...s,
+      b2bVerticalCustom: {
+        ...s.b2bVerticalCustom,
+        [code]: { ...(s.b2bVerticalCustom[code] || {}), ...patch },
+      },
+    }));
+  };
+
+  const setB2bVerticalUseDefaults = (code: string, useDefaults: boolean) => {
+    setState((s) => ({
+      ...s,
+      b2bVerticalUseDefaults: { ...s.b2bVerticalUseDefaults, [code]: useDefaults },
+    }));
+  };
+
   const patchPmProperty = useCallback((idx: number, patch: Partial<PmPropertyDraft>) => {
     setState((s) => ({
       ...s,
@@ -339,6 +400,34 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
       return;
     }
 
+    const b2b_delivery_verticals = state.b2bDeliveryVerticals.map((code) => {
+      const useDef = state.b2bVerticalUseDefaults[code] !== false;
+      if (useDef) return { vertical_code: code, use_defaults: true };
+      const c = state.b2bVerticalCustom[code] || {};
+      const custom_rates: Record<string, unknown> = {};
+      const numOrSkip = (v: string | undefined) => {
+        const t = (v || "").trim();
+        if (!t) return undefined;
+        const n = Number(t);
+        return Number.isFinite(n) ? n : undefined;
+      };
+      const br = numOrSkip(c.base_rate);
+      const ur = numOrSkip(c.unit_rate);
+      const sr = numOrSkip(c.stop_rate);
+      if (br !== undefined) custom_rates.base_rate = br;
+      if (ur !== undefined) custom_rates.unit_rate = ur;
+      if (sr !== undefined) custom_rates.stop_rate = sr;
+      const hr: Record<string, number> = {};
+      const wg = numOrSkip(c.white_glove);
+      const rc = numOrSkip(c.room_of_choice);
+      const th = numOrSkip(c.threshold);
+      if (wg !== undefined) hr.white_glove = wg;
+      if (rc !== undefined) hr.room_of_choice = rc;
+      if (th !== undefined) hr.threshold = th;
+      if (Object.keys(hr).length) custom_rates.handling_rates = hr;
+      return { vertical_code: code, use_defaults: false, custom_rates };
+    });
+
     setLoading(true);
     try {
       const res = await fetch("/api/invite/partner", {
@@ -382,6 +471,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
           password: state.createPortalLogin ? state.password : undefined,
           activation_mode: state.activationMode,
           send_setup_sms: state.sendSetupSms && !!state.phone,
+          ...(b2b_delivery_verticals.length ? { b2b_delivery_verticals } : {}),
           ...(isPropertyManagementDeliveryVertical(state.type)
             ? {
                 pm_onboarding: {
@@ -530,6 +620,9 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
               state={state}
               update={update}
               toggleDeliveryType={toggleDeliveryType}
+              toggleB2bVertical={toggleB2bVertical}
+              patchB2bVerticalCustom={patchB2bVerticalCustom}
+              setB2bVerticalUseDefaults={setB2bVerticalUseDefaults}
             />
           )}
           {step === 3 && (
@@ -1296,13 +1389,150 @@ function Step2ServicePreferences({
   state,
   update,
   toggleDeliveryType,
+  toggleB2bVertical,
+  patchB2bVerticalCustom,
+  setB2bVerticalUseDefaults,
 }: {
   state: WizardState;
   update: <K extends keyof WizardState>(key: K, val: WizardState[K]) => void;
   toggleDeliveryType: (id: string) => void;
+  toggleB2bVertical: (code: string) => void;
+  patchB2bVerticalCustom: (code: string, patch: Partial<B2bVerticalCustomDraft>) => void;
+  setB2bVerticalUseDefaults: (code: string, useDefaults: boolean) => void;
 }) {
+  const selectedB2bLabels = state.b2bDeliveryVerticals
+    .map((c) => B2B_DELIVERY_VERTICAL_OPTIONS.find((o) => o.id === c)?.label || c)
+    .join(", ");
+
   return (
     <div className="space-y-6">
+      <div>
+        <label className={labelCls}>Delivery verticals (B2B pricing)</label>
+        <p className="text-[11px] text-[var(--tx3)] mb-2">
+          Which delivery categories should use negotiated vertical rates in the partner portal and on quotes?
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {B2B_DELIVERY_VERTICAL_OPTIONS.map((opt) => (
+            <label
+              key={opt.id}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all duration-150 ${
+                state.b2bDeliveryVerticals.includes(opt.id)
+                  ? "border-[var(--gold)]/50 bg-[var(--gold)]/5 text-[var(--tx)]"
+                  : "border-[var(--brd)]/70 text-[var(--tx2)] hover:border-[var(--brd)]"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={state.b2bDeliveryVerticals.includes(opt.id)}
+                onChange={() => toggleB2bVertical(opt.id)}
+                className="accent-[var(--gold)] shrink-0"
+              />
+              <span className="text-[13px] font-medium">{opt.label}</span>
+            </label>
+          ))}
+        </div>
+        {selectedB2bLabels ? (
+          <p className="text-[11px] text-[var(--tx2)] mt-2">
+            Selected: {selectedB2bLabels}
+          </p>
+        ) : null}
+      </div>
+
+      {state.b2bDeliveryVerticals.map((code) => {
+        const label = B2B_DELIVERY_VERTICAL_OPTIONS.find((o) => o.id === code)?.label || code;
+        const useDefaults = state.b2bVerticalUseDefaults[code] !== false;
+        const c = state.b2bVerticalCustom[code] || {};
+        return (
+          <div
+            key={code}
+            className="rounded-xl border border-[var(--brd)]/70 p-4 space-y-3 bg-[var(--bg)]/40"
+          >
+            <p className="text-[12px] font-semibold text-[var(--tx)]">{label} — rate customization</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-[11px] text-[var(--tx3)]">Use default rates?</label>
+              <select
+                value={useDefaults ? "yes" : "custom"}
+                onChange={(e) => setB2bVerticalUseDefaults(code, e.target.value === "yes")}
+                className={inputCls + " max-w-[200px] py-2 text-[12px]"}
+              >
+                <option value="yes">Yes</option>
+                <option value="custom">Customize</option>
+              </select>
+            </div>
+            {!useDefaults && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Base rate ($)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={c.base_rate || ""}
+                    onChange={(e) => patchB2bVerticalCustom(code, { base_rate: e.target.value })}
+                    placeholder="Leave blank for default"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Per piece / unit ($)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={c.unit_rate || ""}
+                    onChange={(e) => patchB2bVerticalCustom(code, { unit_rate: e.target.value })}
+                    placeholder="Leave blank for default"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>White glove ($)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={c.white_glove || ""}
+                    onChange={(e) => patchB2bVerticalCustom(code, { white_glove: e.target.value })}
+                    placeholder="Leave blank for default"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Room of choice ($)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={c.room_of_choice || ""}
+                    onChange={(e) => patchB2bVerticalCustom(code, { room_of_choice: e.target.value })}
+                    placeholder="Leave blank for default"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Threshold ($)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={c.threshold || ""}
+                    onChange={(e) => patchB2bVerticalCustom(code, { threshold: e.target.value })}
+                    placeholder="Leave blank for default"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Stop rate ($)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={c.stop_rate || ""}
+                    onChange={(e) => patchB2bVerticalCustom(code, { stop_rate: e.target.value })}
+                    placeholder="Leave blank for default"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
       <div>
         <label className={labelCls}>Delivery Types Needed</label>
         <div className="grid grid-cols-2 gap-2.5">
@@ -1767,6 +1997,16 @@ function Step5Summary({ state }: { state: WizardState }) {
         <SummaryRow label="Typical Items" value={state.typicalItems} />
         <SummaryRow label="Special Requirements" value={state.specialRequirements} />
         <SummaryRow label="Pickup Locations" value={state.pickupLocations.filter(Boolean).join(", ") || undefined} />
+        <SummaryRow
+          label="B2B delivery verticals"
+          value={
+            state.b2bDeliveryVerticals.length
+              ? state.b2bDeliveryVerticals
+                  .map((c) => B2B_DELIVERY_VERTICAL_OPTIONS.find((o) => o.id === c)?.label || c)
+                  .join(", ")
+              : undefined
+          }
+        />
       </SummarySection>
 
       <SummarySection title="Billing">

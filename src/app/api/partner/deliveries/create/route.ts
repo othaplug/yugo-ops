@@ -40,6 +40,14 @@ export async function POST(req: NextRequest) {
 
     const rateLookup = await getActiveRateCardLookup(primaryOrgId);
 
+    const verticalCode =
+      typeof body.vertical_code === "string" && body.vertical_code.trim()
+        ? body.vertical_code.trim()
+        : null;
+    const b2bLineItems = Array.isArray(body.b2b_line_items)
+      ? body.b2b_line_items.filter((x: unknown) => x && typeof x === "object")
+      : null;
+
     const insertPayload: Record<string, unknown> = {
       delivery_number: deliveryNumber,
       organization_id: primaryOrgId,
@@ -77,6 +85,10 @@ export async function POST(req: NextRequest) {
       total_price: body.total_price ?? body.quoted_price ?? 0,
       services_selected: body.services_selected || [],
       pricing_breakdown: Array.isArray(body.pricing_breakdown) ? body.pricing_breakdown : null,
+      vertical_code: verticalCode,
+      b2b_line_items: b2bLineItems,
+      b2b_assembly_required: !!body.b2b_assembly_required,
+      b2b_debris_removal: !!body.b2b_debris_removal,
       end_customer_name: (body.end_customer_name || customerName).trim() || null,
       end_customer_phone: (body.end_customer_phone || body.customer_phone || "").trim() || null,
       end_customer_email: (body.end_customer_email || body.customer_email || "").trim() || null,

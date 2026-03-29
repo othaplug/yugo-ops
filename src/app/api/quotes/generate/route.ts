@@ -6,7 +6,14 @@ import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
 import { validateInventoryQuantities } from "@/lib/inventory-quantity-validation";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
-import { getDrivingDistance } from "@/lib/mapbox/driving-distance";
+import { getDrivingDistance, getMultiStopDrivingDistance } from "@/lib/mapbox/driving-distance";
+import {
+  calculateB2BDimensionalPrice,
+  lineItemsFromQuotePayload,
+  stopsFromQuotePayload,
+  type B2BDimensionalQuoteInput,
+} from "@/lib/pricing/b2b-dimensional";
+import { loadB2BVerticalPricing } from "@/lib/pricing/b2b-vertical-load";
 import {
   SPECIALTY_EQUIPMENT_DEFAULTS,
   SPECIALTY_PROJECT_BASE_DEFAULTS,
@@ -20,6 +27,7 @@ import {
   estimateTruckCostPerMove,
   expectedInventoryScoreForMoveSize,
 } from "@/lib/pricing/margin-cost-model";
+import { evaluateServiceAreaForQuote } from "@/lib/pricing/service-area";
 // ═══════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════
@@ -102,6 +110,32 @@ interface QuoteInput {
   b2b_special_instructions?: string;
   b2b_payment_method?: "card" | "invoice";
   b2b_retailer_source?: string;
+  /** Dimensional B2B pricing */
+  b2b_vertical_code?: string;
+  b2b_partner_organization_id?: string;
+  b2b_handling_type?: string;
+  b2b_stops?: {
+    address: string;
+    type: "pickup" | "delivery";
+    access?: string;
+    items_at_stop?: string[];
+    time_window?: string;
+  }[];
+  b2b_line_items?: {
+    description: string;
+    quantity: number;
+    weight_category?: "light" | "medium" | "heavy" | "extra_heavy";
+    fragile?: boolean;
+    dimensions?: string;
+  }[];
+  b2b_time_sensitive?: boolean;
+  b2b_assembly_required?: boolean;
+  b2b_debris_removal?: boolean;
+  b2b_stairs_flights?: number;
+  /** Keys matching vertical complexity_premiums (e.g. tv_mounting) */
+  b2b_complexity_addons?: string[];
+  b2b_crew_override?: number;
+  b2b_estimated_hours_override?: number;
   // Event (round-trip venue delivery)
   event_name?: string;
   event_return_date?: string;
@@ -155,6 +189,8 @@ interface QuoteInput {
   truck_type?: string;
   /** When true, logs full residential pricing steps to the server console (also set PRICING_DEBUG=1). */
   debug_pricing?: boolean;
+  /** Coordinator acknowledges out-of-service-area moves (subcontract / remote crew). */
+  service_area_override?: boolean;
   // Client info (used to look up / create a contact)
   client_name?: string;
   client_email?: string;
@@ -884,8 +920,24 @@ async function calcInventoryModifier(
   inventoryItems: InventoryItem[],
   config: Map<string, string>,
   clientBoxCount?: number,
-): Promise<{ modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number; maxModifier?: number; boxCount?: number }> {
-  const noAdj = { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
+): Promise<{
+  modifier: number;
+  inventoryScore: number;
+  benchmarkScore: number;
+  totalItems: number;
+  maxModifier?: number;
+  boxCount?: number;
+  itemScore: number;
+}> {
+  const noAdj = {
+    modifier: 1.0,
+    inventoryScore: 0,
+    benchmarkScore: 0,
+    totalItems: 0,
+    maxModifier: undefined,
+    itemScore: 0,
+    boxCount: 0,
+  };
   if (!inventoryItems || inventoryItems.length === 0) return noAdj;
 
   const { data: bm } = await sb
@@ -907,7 +959,8 @@ async function calcInventoryModifier(
     totalItems += qty;
   }
 
-  const boxCount = clientBoxCount ?? Number(bm.assumed_boxes);
+  const boxCount =
+    typeof clientBoxCount === "number" && !Number.isNaN(clientBoxCount) ? clientBoxCount : 0;
   const boxScore = boxCount * 0.3;
   const inventoryScore = itemScore + boxScore;
   const expectedScore = expectedInventoryScoreForMoveSize(moveSize, config);
@@ -921,6 +974,7 @@ async function calcInventoryModifier(
     totalItems,
     maxModifier: Number(bm.max_modifier),
     boxCount,
+    itemScore,
   };
 }
 
@@ -1000,7 +1054,14 @@ async function calcResidential(
   neighbourhood: { tier: string | null; multiplier: number },
   dateMult: { multiplier: number },
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
-  invResult: { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number },
+  invResult: {
+    modifier: number;
+    inventoryScore: number;
+    benchmarkScore: number;
+    totalItems: number;
+    itemScore?: number;
+    boxCount?: number;
+  },
   labour: LabourEstimate,
   deadheadInfo: { distance_km: number; drive_time_min: number } | null,
   returnInfo: { distance_km: number; drive_time_min: number } | null,
@@ -1120,14 +1181,21 @@ async function calcResidential(
 
   // Step 3: FIXED SURCHARGES — additive, not multiplicative
   const plc = parkingLongCarryLineTotal(config, input, "both");
+  const truckSizingScore =
+    invResult.totalItems > 0
+      ? (invResult.itemScore ?? 0) + (invResult.boxCount ?? 0) * 0.3
+      : invResult.inventoryScore;
   const recTruck = input.truck_type
     ? normalizeTruckType(input.truck_type)
-    : recommendedTruckFromInventoryScore(invResult.inventoryScore);
+    : recommendedTruckFromInventoryScore(truckSizingScore);
   const truckSur = residentialTruckUpgradeSurcharge(config, input.move_size, recTruck);
 
   const deadheadFreeKm = cfgNum(config, "deadhead_free_zone_km", cfgNum(config, "deadhead_free_km", 15));
   const deadheadPerKm  = cfgNum(config, "deadhead_rate_per_km", cfgNum(config, "deadhead_per_km", 3.0));
-  const deadheadKm     = deadheadInfo?.distance_km ?? 0;
+  const deadheadKmRaw = deadheadInfo?.distance_km ?? 0;
+  const maxDeadheadKm = cfgNum(config, "max_deadhead_km", 100);
+  const deadheadKm = Math.min(deadheadKmRaw, maxDeadheadKm);
+  const deadheadCapped = deadheadKmRaw > maxDeadheadKm;
   const deadheadSurcharge = deadheadKm > deadheadFreeKm
     ? Math.round((deadheadKm - deadheadFreeKm) * deadheadPerKm)
     : 0;
@@ -1152,6 +1220,9 @@ async function calcResidential(
     truck_recommended: recTruck,
     truck_surcharge: truckSur,
     deadhead_km: deadheadKm,
+    deadhead_km_actual: deadheadKmRaw,
+    deadhead_capped: deadheadCapped,
+    deadhead_cap_km: maxDeadheadKm,
     deadhead_free_km: deadheadFreeKm,
     deadhead_per_km: deadheadPerKm,
     deadhead_surcharge: deadheadSurcharge,
@@ -1496,6 +1567,9 @@ async function calcResidential(
       labour_delta_estate: tieredLabourDelta.estate,
       deadhead_surcharge: deadheadSurcharge,
       deadhead_km: deadheadKm,
+      deadhead_km_actual: deadheadKmRaw,
+      deadhead_capped: deadheadCapped,
+      deadhead_cap_km: maxDeadheadKm,
       mobilization_fee: mobilizationFee,
       return_km: returnInfo?.distance_km ?? 0,
       inventory_score: invResult.inventoryScore,
@@ -1811,7 +1885,14 @@ async function calcWhiteGlove(
   neighbourhood: { tier: string | null; multiplier: number },
   dateMult: { multiplier: number },
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
-  invResult: { modifier: number; inventoryScore: number; benchmarkScore: number; totalItems: number },
+  invResult: {
+    modifier: number;
+    inventoryScore: number;
+    benchmarkScore: number;
+    totalItems: number;
+    itemScore?: number;
+    boxCount?: number;
+  },
   labour: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null,
   deadheadInfo: { distance_km: number; drive_time_min: number } | null,
   returnInfo: { distance_km: number; drive_time_min: number } | null,
@@ -1999,34 +2080,150 @@ async function calcB2bOneoff(
   distInfo: { distance_km: number; drive_time_min: number } | null,
   addonResult: Awaited<ReturnType<typeof calculateAddons>>,
 ) {
-  const baseFee = cfgNum(config, "b2b_oneoff_base", 350);
   const distKm = distInfo?.distance_km ?? 0;
-  const distanceModifier = getDistanceModifier(config, distKm);
-
   const accessMap = parseJsonConfig<Record<string, number>>(config, "b2b_access_surcharges", {});
-  const weightMap = {
-    ...B2B_WEIGHT_SURCHARGES_FALLBACK,
-    ...parseJsonConfig<Record<string, number>>(config, "b2b_weight_surcharges", {}),
-  };
   const accessKey = (k: string | undefined): string => (k === "no_parking_nearby" ? "no_parking" : (k ?? ""));
   const fromAccess = input.from_access ? (accessMap[accessKey(input.from_access)] ?? 0) : 0;
   const toAccess = input.to_access ? (accessMap[accessKey(input.to_access)] ?? 0) : 0;
   const accessSurcharge = fromAccess + toAccess;
 
+  const plcB2b = parkingLongCarryLineTotal(config, input, "both");
+  const rounding = cfgNum(config, "rounding_nearest", 25);
+  const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
+
+  const loaded = await loadB2BVerticalPricing(
+    sb,
+    input.b2b_vertical_code,
+    input.b2b_partner_organization_id?.trim() || null,
+  );
+
+  if (loaded) {
+    const items = lineItemsFromQuotePayload(input);
+    const stops = stopsFromQuotePayload(input);
+    const dimInput: B2BDimensionalQuoteInput = {
+      vertical_code: loaded.vertical.code,
+      items,
+      handling_type: (input.b2b_handling_type || "threshold").toLowerCase(),
+      stops,
+      crew_override: input.b2b_crew_override,
+      truck_override: input.truck_type || undefined,
+      estimated_hours_override: input.b2b_estimated_hours_override,
+      time_sensitive: !!input.b2b_time_sensitive,
+      assembly_required: !!input.b2b_assembly_required,
+      debris_removal: !!input.b2b_debris_removal,
+      stairs_flights: input.b2b_stairs_flights,
+      addons: input.b2b_complexity_addons,
+    };
+
+    const dim = calculateB2BDimensionalPrice({
+      vertical: loaded.vertical,
+      mergedRates: loaded.mergedRates,
+      input: dimInput,
+      totalDistanceKm: distKm,
+      roundingNearest: rounding,
+      parkingLongCarryTotal: plcB2b.total,
+    });
+
+    const partnerOrgId = input.b2b_partner_organization_id?.trim() || null;
+    let dimStandard: ReturnType<typeof calculateB2BDimensionalPrice> | null = null;
+    if (partnerOrgId) {
+      const listLoaded = await loadB2BVerticalPricing(sb, input.b2b_vertical_code, null);
+      if (listLoaded) {
+        dimStandard = calculateB2BDimensionalPrice({
+          vertical: listLoaded.vertical,
+          mergedRates: listLoaded.mergedRates,
+          input: dimInput,
+          totalDistanceKm: distKm,
+          roundingNearest: rounding,
+          parkingLongCarryTotal: plcB2b.total,
+        });
+      }
+    }
+
+    let price = dim.subtotal + accessSurcharge + addonResult.total;
+    const tax = Math.round(price * taxRate);
+    const deposit = price < 300 ? price : 100;
+
+    const truckKey = normalizeTruckType(dim.truck);
+    const verticalTruckRates =
+      (loaded.mergedRates.truck_rates as Record<string, number> | undefined) || {};
+    const truckSurchargeDim = Number(verticalTruckRates[dim.truck] ?? 0) || 0;
+
+    const b2bFeatures = await fetchTierFeatures(sb, "b2b_delivery", "custom");
+    const includes = [
+      ...dim.includes,
+      ...(b2bFeatures.length > 0 ? b2bFeatures : ["Loading and unloading", "Basic protection"]),
+    ];
+
+    const standardVerticalSubtotal = dimStandard?.subtotal ?? null;
+    const standardPricePreTax =
+      standardVerticalSubtotal != null ? standardVerticalSubtotal + accessSurcharge + addonResult.total : null;
+    const partnerDiscountPct =
+      standardPricePreTax != null && standardPricePreTax > 0
+        ? Math.round((1 - price / standardPricePreTax) * 1000) / 10
+        : null;
+
+    return {
+      custom_price: {
+        price,
+        deposit,
+        tax,
+        total: price + tax,
+        includes,
+      } as TierResult,
+      factors: {
+        b2b_dimensional: true,
+        b2b_vertical_code: loaded.vertical.code,
+        b2b_vertical_name: loaded.vertical.name,
+        item_description: loaded.vertical.name,
+        item_category: loaded.vertical.code,
+        distance_km: distKm,
+        drive_time_min: distInfo?.drive_time_min ?? null,
+        access_surcharge: accessSurcharge,
+        parking_long_carry_total: plcB2b.total,
+        b2b_price_breakdown: dim.breakdown,
+        b2b_standard_price_breakdown: dimStandard?.breakdown ?? null,
+        b2b_list_vertical_subtotal: standardVerticalSubtotal,
+        b2b_standard_price_pre_tax: standardPricePreTax,
+        b2b_partner_discount_percent: partnerDiscountPct,
+        b2b_using_partner_rates: Boolean(partnerOrgId),
+        b2b_partner_organization_id: partnerOrgId,
+        b2b_line_items: items,
+        b2b_stops: stops,
+        b2b_handling_type: dimInput.handling_type,
+        truck_recommended: truckKey,
+        truck_surcharge: truckSurchargeDim,
+        b2b_estimated_hours: dim.estimatedHours,
+        b2b_crew: dim.crew,
+        b2b_business_name: input.b2b_business_name || null,
+        b2b_items: input.b2b_items || null,
+        b2b_payment_method: input.b2b_payment_method ?? "card",
+        b2b_retailer_source: input.b2b_retailer_source?.trim() || null,
+        weight_surcharge: 0,
+        weight_category: input.b2b_weight_category || null,
+        includes,
+      },
+    };
+  }
+
+  // Fallback when delivery_verticals is unavailable (pre-migration)
+  const baseFee = cfgNum(config, "b2b_oneoff_base", 350);
+  const distanceModifier = getDistanceModifier(config, distKm);
+  const weightMap = {
+    ...B2B_WEIGHT_SURCHARGES_FALLBACK,
+    ...parseJsonConfig<Record<string, number>>(config, "b2b_weight_surcharges", {}),
+  };
   const weightCategory = input.b2b_weight_category || "standard";
   const weightSurcharge = weightMap[weightCategory] ?? 0;
 
   let price = Math.round(baseFee * distanceModifier) + accessSurcharge + weightSurcharge;
-  const rounding = cfgNum(config, "rounding_nearest", 50);
   price = roundTo(price, rounding);
   if (price < 200) price = 200;
 
-  const plcB2b = parkingLongCarryLineTotal(config, input, "both");
   const truckB2b = normalizeTruckType(input.truck_type ?? "20ft");
   price += plcB2b.total + truckSurchargeAmount(config, truckB2b);
 
   price += addonResult.total;
-  const taxRate = cfgNum(config, "tax_rate", TAX_RATE_FALLBACK);
   const tax = Math.round(price * taxRate);
 
   let deposit: number;
@@ -2065,6 +2262,7 @@ async function calcB2bOneoff(
       truck_surcharge: truckSurchargeAmount(config, truckB2b),
       b2b_payment_method: input.b2b_payment_method ?? "card",
       b2b_retailer_source: input.b2b_retailer_source?.trim() || null,
+      includes: b2bIncludes,
     },
   };
 }
@@ -2557,6 +2755,22 @@ export async function POST(req: NextRequest) {
     input = { ...input, to_address: input.from_address };
   }
 
+  // B2B multi-stop: normalize primary pickup/delivery for distance + quote row
+  if (
+    (input.service_type === "b2b_delivery" || input.service_type === "b2b_oneoff") &&
+    Array.isArray(input.b2b_stops) &&
+    input.b2b_stops.length >= 2
+  ) {
+    const ordered = input.b2b_stops.map((s) => s.address?.trim()).filter(Boolean);
+    if (ordered.length >= 2) {
+      input = {
+        ...input,
+        from_address: ordered[0]!,
+        to_address: ordered[ordered.length - 1]!,
+      };
+    }
+  }
+
   if (input.service_type === "bin_rental") {
     const sb = createAdminClient();
     const config = await loadConfig(sb);
@@ -2650,6 +2864,25 @@ export async function POST(req: NextRequest) {
   const sb = createAdminClient();
   const config = await loadConfig(sb);
 
+  const serviceAreaCheckedTypes = new Set(["local_move", "long_distance", "white_glove"]);
+  if (serviceAreaCheckedTypes.has(input.service_type) && !input.service_area_override) {
+    const serviceAreaResult = await evaluateServiceAreaForQuote(
+      input.from_address,
+      input.to_address,
+      config,
+    );
+    if (!serviceAreaResult.serviceable && serviceAreaResult.type === "out_of_area") {
+      return NextResponse.json({
+        quote_blocked: true,
+        block_reason: "out_of_service_area",
+        service_area: serviceAreaResult,
+        message:
+          serviceAreaResult.warning ??
+          "This move is outside the standard service area from the Toronto base.",
+      });
+    }
+  }
+
   // Per-leg distances for multi-event (Mapbox)
   let legDistances: ({ distance_km: number; drive_time_min: number } | null)[] | null = null;
   if (isEventMulti) {
@@ -2666,8 +2899,17 @@ export async function POST(req: NextRequest) {
   /** Inventory scoring: local residential + white glove only (not long_distance). */
   const useInventoryScoring = isLocalMove || input.service_type === "white_glove";
   const needsDeadheadReturn = isLocalMove;
+  const b2bMultiStop =
+    (input.service_type === "b2b_delivery" || input.service_type === "b2b_oneoff") &&
+    Array.isArray(input.b2b_stops) &&
+    input.b2b_stops.length >= 2;
+
   const [distInfo, neighbourhood, dateMult, deadheadInfo, returnInfo] = await Promise.all([
-    getDistance(input.from_address, input.to_address),
+    b2bMultiStop
+      ? getMultiStopDrivingDistance(
+          input.b2b_stops!.map((s) => s.address).filter((a) => a?.trim()),
+        ).then((m) => m ?? getDistance(input.from_address, input.to_address))
+      : getDistance(input.from_address, input.to_address),
     getNeighbourhood(sb, input.from_address),
     getDateMultiplier(sb, input.move_date),
     // Section 4D: Yugo base → pickup (deadhead)
@@ -2698,7 +2940,15 @@ export async function POST(req: NextRequest) {
         config,
         input.client_box_count,
       )
-    : { modifier: 1.0, inventoryScore: 0, benchmarkScore: 0, totalItems: 0, maxModifier: undefined };
+    : {
+        modifier: 1.0,
+        inventoryScore: 0,
+        benchmarkScore: 0,
+        totalItems: 0,
+        maxModifier: undefined,
+        itemScore: 0,
+        boxCount: 0,
+      };
 
   // FIX 1: Inventory quantity sanity — flag for coordinator review (don't block quote)
   const inventoryWarnings = validateInventoryQuantities(input.inventory_items ?? []);
@@ -2732,13 +2982,31 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Labour estimate (informational for coordinators); uses adjusted score so specialty items increase crew/hours
-  // Section 4C: pass drive_time_min (actual minutes × 2.5) instead of distanceKm
-  // Section 4E: pass return info for long drop-offs
-  // Section 2: pass specialty items directly so crew is correctly sized
-  let labour: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
+  // Client-facing labour = on-job hours only; ops labour includes return-to-base drive (margin / tier delta).
+  const truckInventoryScoreForLabour =
+    invResult.totalItems > 0
+      ? (invResult.itemScore ?? 0) + ((invResult as { boxCount?: number }).boxCount ?? 0) * 0.3
+      : undefined;
+
+  let labourClient: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
+  let labourOps: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
+
   if (adjustedScore > 0) {
-    labour = estimateLabourFromScore(
+    labourClient = estimateLabourFromScore(
+      adjustedScore,
+      distInfo?.distance_km ?? 0,
+      input.from_access,
+      input.to_access,
+      input.move_size ?? "2br",
+      {
+        driveTimeMinutes: distInfo?.drive_time_min,
+        specialtyItems: input.specialty_items,
+        whiteGloveHoursMultiplier: input.service_type === "white_glove",
+        hoursEstimateMode: "client_on_job",
+        truckInventoryScore: truckInventoryScoreForLabour,
+      },
+    );
+    labourOps = estimateLabourFromScore(
       adjustedScore,
       distInfo?.distance_km ?? 0,
       input.from_access,
@@ -2750,6 +3018,8 @@ export async function POST(req: NextRequest) {
         dropoffToBaseKm: returnInfo?.distance_km,
         returnDriveMinutes: returnInfo?.drive_time_min,
         whiteGloveHoursMultiplier: input.service_type === "white_glove",
+        hoursEstimateMode: "crew_full_cycle",
+        truckInventoryScore: truckInventoryScoreForLabour,
       },
     );
   } else if (isLocalMove || input.service_type === "white_glove") {
@@ -2763,13 +3033,17 @@ export async function POST(req: NextRequest) {
     const truckSize = DEFAULT_TRUCK_BY_SIZE[input.move_size ?? "2br"]?.replace("-ft truck", "ft") ?? "16ft";
     const lo = Math.max(2, Number(estHours) - 0.5);
     const hi = Number(estHours) + 1;
-    labour = {
+    labourClient = {
       crewSize: minCrew,
       estimatedHours: Number(estHours),
       hoursRange: `${lo}–${hi} hours`,
       truckSize,
     };
+    labourOps = labourClient;
   }
+
+  let labour = labourClient;
+  const labourForResidential = labourOps ?? labourClient;
 
   // Global crating calculation (applies to all service types)
   const cratingBySize = parseJsonConfig<Record<string, number>>(config, "crating_prices", {});
@@ -2801,7 +3075,19 @@ export async function POST(req: NextRequest) {
 
   switch (svcType) {
     case "local_move": {
-      const res = await calcResidential(sb, input, config, distInfo, neighbourhood, dateMult, addonResult, invResult, labour, deadheadInfo, returnInfo);
+      const res = await calcResidential(
+        sb,
+        input,
+        config,
+        distInfo,
+        neighbourhood,
+        dateMult,
+        addonResult,
+        invResult,
+        labourForResidential,
+        deadheadInfo,
+        returnInfo,
+      );
       tiers = res.tiers;
       factors = res.factors;
       residentialCratingTotal = res.cratingTotal;
@@ -2839,7 +3125,7 @@ export async function POST(req: NextRequest) {
         dateMult,
         addonResult,
         invResult,
-        labour,
+        labourForResidential,
         deadheadInfo,
         returnInfo,
       );
@@ -2887,6 +3173,15 @@ export async function POST(req: NextRequest) {
     }
     default:
       return NextResponse.json({ error: `Unknown service_type: ${svcType}` }, { status: 400 });
+  }
+
+  if (
+    (svcType === "b2b_delivery" || svcType === "b2b_oneoff") &&
+    factors &&
+    factors.b2b_dimensional === true
+  ) {
+    if (typeof factors.b2b_crew === "number") displayCrew = factors.b2b_crew;
+    if (typeof factors.b2b_estimated_hours === "number") displayHours = factors.b2b_estimated_hours;
   }
 
   if (

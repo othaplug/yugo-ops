@@ -16,14 +16,16 @@ import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
 import PartnersManagement from "./PartnersManagement";
 import PricingControlPanel from "./PricingControlPanel";
+import DeliveryVerticalsPanel from "./DeliveryVerticalsPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
 import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
-import { House, Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText, GasPump } from "@phosphor-icons/react";
+import { House, Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText, GasPump, Package } from "@phosphor-icons/react";
 import { DEFAULT_FUEL_PRICE_DIESEL, DEFAULT_FUEL_PRICE_GAS } from "@/lib/routing/fuel-config";
 
 const TABS = [
   { id: "pricing",        label: "Pricing",        desc: "Rates & service fees",      Icon: CurrencyDollar },
+  { id: "delivery-verticals", label: "Delivery verticals", desc: "B2B dimensional pricing", Icon: Package, ownerOnly: true },
   { id: "rate-templates", label: "Rate Templates",  desc: "Reusable rate cards",       Icon: ListBullets,   ownerOnly: true },
   { id: "crews",          label: "Teams",           desc: "Staff & crew groups",       Icon: UsersThree },
   { id: "devices",        label: "Devices",         desc: "Tablets, trucks & fleet",   Icon: DeviceMobile },
@@ -1587,6 +1589,11 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {activeTab === "pricing" && (
         <div key="pricing" className="tab-content">
           <PricingControlPanel isSuperAdmin={isSuperAdmin} />
+        </div>
+      )}
+      {activeTab === "delivery-verticals" && (
+        <div key="delivery-verticals" className="tab-content">
+          <DeliveryVerticalsPanel />
         </div>
       )}
       {activeTab === "rate-templates" && <div key="rate-templates" className="tab-content"><RateTemplatesPanel /></div>}

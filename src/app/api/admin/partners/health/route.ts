@@ -16,6 +16,8 @@ export interface PartnerHealthRow {
   trend: "increasing" | "stable" | "declining";
   avg_rating: number | null;
   days_since_last: number | null;
+  /** B2B delivery_verticals revenue mix, last 90 days (completed / delivered). */
+  revenue_by_vertical_90d: { code: string; label: string; revenue: number; pct: number }[];
 }
 
 function getHealthStatus(lastDeliveryAt: string | null): PartnerHealthRow["health_status"] {
@@ -108,6 +110,8 @@ export async function GET() {
     }
   }
 
+  const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000).toISOString();
+
   // Deliveries in last 30 days (current period)
   const { data: deliveries30 } = await admin
     .from("deliveries")
@@ -115,6 +119,49 @@ export async function GET() {
     .in("organization_id", orgIds)
     .gte("completed_at", thirtyDaysAgo)
     .in("status", COMPLETED_STATUSES);
+
+  let deliveries90: {
+    organization_id: string;
+    vertical_code?: string | null;
+    base_price?: number | null;
+    total_price?: number | null;
+    admin_adjusted_price?: number | null;
+  }[] = [];
+  const vert90Res = await admin
+    .from("deliveries")
+    .select("organization_id, vertical_code, base_price, total_price, admin_adjusted_price")
+    .in("organization_id", orgIds)
+    .gte("completed_at", ninetyDaysAgo)
+    .in("status", COMPLETED_STATUSES);
+  if (
+    !vert90Res.error &&
+    Array.isArray(vert90Res.data)
+  ) {
+    deliveries90 = vert90Res.data as typeof deliveries90;
+  } else if (
+    vert90Res.error &&
+    !/vertical_code|column|does not exist/i.test(String(vert90Res.error.message || ""))
+  ) {
+    console.warn("[partners/health] deliveries 90d vertical query:", vert90Res.error.message);
+  }
+
+  const { data: verticalNameRows } = await admin.from("delivery_verticals").select("code, name").eq("active", true);
+  const verticalLabel = (code: string | null | undefined): string => {
+    if (!code || !String(code).trim()) return "Other";
+    const c = String(code);
+    const hit = (verticalNameRows ?? []).find((r) => String((r as { code: string }).code) === c);
+    if (hit && (hit as { name?: string }).name) return String((hit as { name: string }).name);
+    return c.replace(/_/g, " ");
+  };
+
+  const verticalRevenueByOrg: Record<string, Record<string, number>> = {};
+  for (const d of deliveries90) {
+    const oid = d.organization_id;
+    if (!oid) continue;
+    const key = d.vertical_code && String(d.vertical_code).trim() ? String(d.vertical_code).trim() : "_other";
+    if (!verticalRevenueByOrg[oid]) verticalRevenueByOrg[oid] = {};
+    verticalRevenueByOrg[oid]![key] = (verticalRevenueByOrg[oid]![key] || 0) + deliveryRevenue(d);
+  }
 
   // Previous 30 days (for trend)
   const { data: deliveriesPrev } = await admin
@@ -165,6 +212,18 @@ export async function GET() {
       (org.type as string) ||
       "";
 
+    const mixRaw = verticalRevenueByOrg[org.id] || {};
+    const mixTotal = Object.values(mixRaw).reduce((a, b) => a + b, 0);
+    const revenue_by_vertical_90d = Object.entries(mixRaw)
+      .map(([code, revenue]) => ({
+        code: code === "_other" ? "" : code,
+        label: code === "_other" ? "Other" : verticalLabel(code),
+        revenue: Math.round(revenue),
+        pct: mixTotal > 0 ? Math.round((revenue / mixTotal) * 1000) / 10 : 0,
+      }))
+      .filter((x) => x.revenue > 0)
+      .sort((a, b) => b.revenue - a.revenue);
+
     return {
       id: org.id,
       name: org.name,
@@ -179,6 +238,7 @@ export async function GET() {
       trend: getTrend(vol, prevVol),
       avg_rating: null,
       days_since_last: daysSince,
+      revenue_by_vertical_90d,
     };
   });
 

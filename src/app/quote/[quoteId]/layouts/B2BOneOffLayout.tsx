@@ -25,7 +25,24 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
   const payInvoice = f?.b2b_payment_method === "invoice";
   const retailer = typeof f?.b2b_retailer_source === "string" ? f.b2b_retailer_source.trim() : "";
   const weightSurcharge = typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0 ? f.weight_surcharge : 0;
-  const truckBreakdown: string | null = null;
+  const dimensional = f?.b2b_dimensional === true;
+  const verticalTitle =
+    typeof f?.b2b_vertical_name === "string" && f.b2b_vertical_name.trim()
+      ? f.b2b_vertical_name.trim()
+      : null;
+  const lineItems = Array.isArray(f?.b2b_line_items)
+    ? (f.b2b_line_items as { description?: string; quantity?: number; fragile?: boolean }[])
+    : [];
+  const legacyItems = Array.isArray(f?.b2b_items) ? (f.b2b_items as string[]) : [];
+  const handlingLabel =
+    typeof f?.b2b_handling_type === "string" ? f.b2b_handling_type.replace(/_/g, " ") : "";
+  const serviceIncludes =
+    (Array.isArray(f?.includes) ? (f.includes as string[]) : null) ??
+    ["Professional handling", "Protective wrapping", "Careful delivery"];
+  const truckBreakdown =
+    typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
+      ? f.truck_breakdown_line.trim()
+      : "";
 
   return (
     <section className="mb-10 space-y-6">
@@ -67,14 +84,14 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
           </div>
           <div>
             <p className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
-              {(f?.item_description as string) ?? "Delivery Service"}
+              {verticalTitle ?? (f?.item_description as string) ?? "Delivery Service"}
             </p>
             {f?.item_category ? (
               <span
                 className="inline-block mt-1 text-[9px] font-bold tracking-wider capitalize px-2.5 py-0.5 rounded-full"
                 style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
               >
-                {toTitleCase(String(f.item_category))}
+                {dimensional ? "Commercial delivery" : toTitleCase(String(f.item_category))}
               </span>
             ) : null}
             {retailer ? (
@@ -84,6 +101,30 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             ) : null}
           </div>
         </div>
+
+        {/* Items (dimensional) */}
+        {dimensional && (lineItems.length > 0 || legacyItems.length > 0) ? (
+          <div className="pt-4 border-t border-[var(--brd)]/30">
+            <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853] mb-2">Items</p>
+            <ul className="space-y-1 text-[12px] font-medium" style={{ color: FOREST }}>
+              {lineItems.length > 0
+                ? lineItems.map((row, i) => (
+                    <li key={i}>
+                      {row.description ?? "Item"}
+                      {row.quantity != null && row.quantity > 1 ? ` ×${row.quantity}` : ""}
+                      {row.fragile ? " (fragile)" : ""}
+                    </li>
+                  ))
+                : legacyItems.map((s, i) => <li key={i}>{s}</li>)}
+            </ul>
+            {handlingLabel ? (
+              <p className="text-[11px] mt-2" style={{ color: `${FOREST}72` }}>
+                <span className="font-semibold" style={{ color: FOREST }}>Handling: </span>
+                {toTitleCase(handlingLabel)}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* Route */}
         <div className="pt-4 border-t border-[var(--brd)]/30">
@@ -123,7 +164,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
         {/* Includes */}
         <div className="pt-4 mt-4 border-t border-[var(--brd)]/30">
           <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-            {["Professional handling", "Protective wrapping", "Careful delivery"].map((item, i) => (
+            {serviceIncludes.map((item, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <Check className="w-3 h-3" style={{ color: GOLD }} />
                 <span className="text-[11px]" style={{ color: FOREST }}>{item}</span>

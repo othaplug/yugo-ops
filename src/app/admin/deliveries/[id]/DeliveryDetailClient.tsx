@@ -183,6 +183,7 @@ export default function DeliveryDetailClient({
   isB2BPartner = false,
   linkedProject = null,
   b2bOneOffPriorCount = 0,
+  b2bOneOffCohort = null,
 }: {
   delivery: any;
   clientEmail?: string | null;
@@ -195,6 +196,8 @@ export default function DeliveryDetailClient({
   linkedProject?: { id: string; project_number: string; project_name: string; phase_name?: string | null } | null;
   /** Count of prior one-off deliveries for same business contact (excludes current). */
   b2bOneOffPriorCount?: number;
+  /** All one-offs for same contact: vertical + combined revenue for partner conversion context. */
+  b2bOneOffCohort?: { verticalLabel: string | null; combinedRevenue: number; deliveryCount: number } | null;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -558,10 +561,31 @@ export default function DeliveryDetailClient({
             <p className="text-[10px] text-[var(--tx3)]">Payment recorded {new Date(delivery.payment_received_at).toLocaleString("en-CA", { timeZone: "America/Toronto" })}</p>
           ) : null}
           {b2bOneOffPriorCount >= 1 ? (
-            <div className="pt-2 border-t border-[var(--brd)] text-[11px] text-[var(--tx2)]">
-              <strong className="text-[var(--tx)]">{delivery.business_name || delivery.contact_email || "This sender"}</strong> has booked{" "}
-              {b2bOneOffPriorCount + 1} one-off deliveries without a partner account.
-              <Link href="/admin/platform?tab=partners" className="ml-1 font-semibold text-[var(--gold)] hover:underline">
+            <div className="pt-2 border-t border-[var(--brd)] text-[11px] text-[var(--tx2)] space-y-2">
+              <p>
+                <strong className="text-[var(--tx)]">{delivery.business_name || delivery.contact_email || "This sender"}</strong> has booked{" "}
+                {b2bOneOffPriorCount + 1} one-off deliveries without a partner account.
+              </p>
+              {b2bOneOffCohort && b2bOneOffCohort.deliveryCount > 0 ? (
+                <ul className="list-disc pl-4 space-y-0.5 text-[var(--tx3)]">
+                  {b2bOneOffCohort.verticalLabel ? (
+                    <li>
+                      <span className="text-[var(--tx)]">Vertical:</span> {b2bOneOffCohort.verticalLabel}
+                    </li>
+                  ) : null}
+                  <li>
+                    <span className="text-[var(--tx)]">Total revenue (all one-offs, this contact):</span>{" "}
+                    {formatCurrency(b2bOneOffCohort.combinedRevenue)}
+                  </li>
+                </ul>
+              ) : null}
+              <p className="text-[10px] text-[var(--tx3)]">
+                When you create the partner, choose default vertical rates or customize them in onboarding — their portal and quotes will then use those negotiated rates automatically.
+              </p>
+              <Link
+                href="/admin/platform?tab=partners"
+                className="inline-flex font-semibold text-[var(--gold)] hover:underline"
+              >
                 Create partner account
               </Link>
             </div>

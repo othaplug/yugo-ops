@@ -273,6 +273,64 @@ interface MoveCalibrationRow {
   completed_at: string | null;
 }
 
+/** B2B / partner delivery completion — feeds calibration_data.vertical_code for vertical tuning. */
+export async function collectB2BDeliveryCalibrationData(deliveryId: string) {
+  const admin = createAdminClient();
+
+  const { data: d } = await admin
+    .from("deliveries")
+    .select(
+      "id, vertical_code, estimated_duration_hours, actual_hours, total_price, admin_adjusted_price, delivery_address, pickup_address, b2b_line_items",
+    )
+    .eq("id", deliveryId)
+    .maybeSingle();
+
+  if (!d) return;
+
+  const dominantHandling = (() => {
+    const raw = (d as { b2b_line_items?: unknown }).b2b_line_items;
+    if (!Array.isArray(raw)) return null;
+    const counts: Record<string, number> = {};
+    for (const row of raw) {
+      if (!row || typeof row !== "object") continue;
+      const h = String((row as { handling?: string }).handling || "").trim();
+      if (!h) continue;
+      counts[h] = (counts[h] || 0) + 1;
+    }
+    const keys = Object.keys(counts);
+    if (keys.length === 0) return null;
+    return keys.sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0))[0] ?? null;
+  })();
+
+  const est =
+    d.estimated_duration_hours != null && d.estimated_duration_hours !== ""
+      ? Number(d.estimated_duration_hours)
+      : null;
+  const act = d.actual_hours != null && d.actual_hours !== "" ? Number(d.actual_hours) : null;
+
+  const revenueRaw = d.admin_adjusted_price ?? d.total_price;
+  const revenue = revenueRaw != null && revenueRaw !== "" ? Number(revenueRaw) : null;
+
+  const { error } = await admin.from("calibration_data").insert({
+    delivery_id: d.id,
+    move_id: null,
+    move_size: d.vertical_code || "b2b",
+    service_type: "b2b_delivery",
+    vertical_code: d.vertical_code ?? null,
+    handling_type: dominantHandling,
+    estimated_hours: Number.isFinite(est as number) ? est : null,
+    actual_hours: Number.isFinite(act as number) ? act : null,
+    distance_km: null,
+    revenue: Number.isFinite(revenue as number) ? revenue : null,
+    from_postal: extractPostal(d.pickup_address),
+    to_postal: extractPostal(d.delivery_address),
+  });
+
+  if (error) {
+    console.error("[learning/engine] calibration_data (delivery) insert failed:", error.message);
+  }
+}
+
 export async function collectCalibrationData(moveId: string) {
   const admin = createAdminClient();
 

@@ -13,18 +13,25 @@ export default async function NewQuotePage() {
   const [{ data: addons }, { data: configRows }, { data: itemWeights }] = await Promise.all([
     db
       .from("addons")
-      .select("id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order")
+      .select(
+        "id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order",
+      )
       .eq("active", true)
       .order("display_order"),
-    db
-      .from("platform_config")
-      .select("key, value"),
+    db.from("platform_config").select("key, value"),
     db
       .from("item_weights")
       .select("slug, item_name, weight_score, category, room, is_common, display_order, active")
       .eq("active", true)
       .order("display_order"),
   ]);
+
+  const dvRes = await db
+    .from("delivery_verticals")
+    .select("code, name, pricing_method, base_rate, default_config")
+    .eq("active", true)
+    .order("sort_order", { ascending: true });
+  const deliveryVerticalRows = dvRes.error ? [] : (dvRes.data ?? []);
 
   const { data: { user } } = await supabase.auth.getUser();
   const { data: pu } = await db
@@ -37,6 +44,17 @@ export default async function NewQuotePage() {
 
   const config: Record<string, string> = {};
   for (const r of configRows ?? []) config[r.key] = r.value;
+
+  const deliveryVerticals = (deliveryVerticalRows ?? []).map((row) => ({
+    code: String(row.code),
+    name: String(row.name),
+    pricing_method: String(row.pricing_method ?? "dimensional"),
+    base_rate: Number(row.base_rate ?? 0),
+    default_config:
+      row.default_config && typeof row.default_config === "object" && !Array.isArray(row.default_config)
+        ? (row.default_config as Record<string, unknown>)
+        : {},
+  }));
 
   const totalBins = Number(config.bin_total_inventory ?? "500") || 500;
   const outOnRental = await sumBinsOutOnRental(db);
@@ -52,6 +70,7 @@ export default async function NewQuotePage() {
         addons={addons ?? []}
         config={config}
         itemWeights={itemWeights ?? []}
+        deliveryVerticals={deliveryVerticals}
         userRole={userRole}
         isSuperAdmin={isSuperAdmin}
         binInventorySnapshot={binInventorySnapshot}

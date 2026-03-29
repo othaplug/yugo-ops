@@ -85,16 +85,21 @@ export async function GET(req: NextRequest) {
 
       const { data: deliveries } = await supabase
         .from("deliveries")
-        .select("id, delivery_number, completed_at, price, item_description, status")
-        .eq("partner_id", partner.id)
-        .eq("status", "completed")
+        .select("id, delivery_number, completed_at, total_price, admin_adjusted_price, items, vertical_code, status")
+        .eq("organization_id", partner.id)
+        .in("status", ["completed", "delivered"])
         .gte("completed_at", periodStart.toISOString().slice(0, 10) + "T00:00:00Z")
         .lte("completed_at", periodEnd.toISOString().slice(0, 10) + "T23:59:59Z")
         .is("statement_id", null);
 
       if (!deliveries || deliveries.length === 0) continue;
 
-      const subtotal = deliveries.reduce((s, d) => s + (Number(d.price) || 0), 0);
+      const linePrice = (d: {
+        admin_adjusted_price?: number | null;
+        total_price?: number | null;
+      }) => Number(d.admin_adjusted_price ?? d.total_price ?? 0) || 0;
+
+      const subtotal = deliveries.reduce((s, d) => s + linePrice(d), 0);
       const hst = Math.round(subtotal * 0.13 * 100) / 100;
       const total = subtotal + hst;
 
@@ -116,13 +121,27 @@ export async function GET(req: NextRequest) {
           statement_number: statementNumber,
           period_start: periodStart.toISOString().slice(0, 10),
           period_end: periodEnd.toISOString().slice(0, 10),
-          deliveries: deliveries.map((d) => ({
-            id: d.id,
-            number: d.delivery_number,
-            date: d.completed_at,
-            price: d.price,
-            description: d.item_description,
-          })),
+          deliveries: deliveries.map((d) => {
+            const items = d.items as unknown;
+            let itemsLabel = "";
+            if (Array.isArray(items) && items.length > 0) {
+              itemsLabel = items
+                .slice(0, 3)
+                .map((x) => String(x))
+                .join("; ");
+              if (items.length > 3) itemsLabel += "…";
+            }
+            const vert = d.vertical_code ? String(d.vertical_code).replace(/_/g, " ") : "";
+            return {
+              id: d.id,
+              number: d.delivery_number,
+              date: d.completed_at,
+              price: linePrice(d),
+              description: itemsLabel || "Delivery",
+              vertical: vert || null,
+              items_label: itemsLabel || null,
+            };
+          }),
           delivery_count: deliveries.length,
           subtotal,
           hst,

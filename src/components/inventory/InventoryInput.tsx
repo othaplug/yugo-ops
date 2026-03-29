@@ -336,7 +336,9 @@ export default function InventoryInput({
 
   const labourEstimate = useMemo(() => {
     if (!showLabourEstimate || labourScore <= 0) return null;
-    return estimateLabourFromScore(labourScore, distanceKm, fromAccess, toAccess, moveSize);
+    return estimateLabourFromScore(labourScore, distanceKm, fromAccess, toAccess, moveSize, {
+      hoursEstimateMode: "client_on_job",
+    });
   }, [showLabourEstimate, labourScore, distanceKm, fromAccess, toAccess, moveSize]);
 
   const internalBoxCount = boxCount ?? 0;

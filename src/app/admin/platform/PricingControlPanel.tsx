@@ -2532,6 +2532,25 @@ function DistanceDeadheadSection() {
             )}
             <p className="text-[9px] text-[var(--tx3)]">Charged per km beyond free zone</p>
           </div>
+          <div className="space-y-1 col-span-2">
+            <label className="text-[11px] font-semibold text-[var(--tx)]">Max deadhead for surcharge (km)</label>
+            {(() => {
+              const row = getRow("max_deadhead_km");
+              const val = getNum("max_deadhead_km", 100);
+              return row ? (
+                <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="w-20" />
+              ) : (
+                <div>
+                  <span className="text-[10px] text-[var(--tx)]">100</span>
+                  <span className="text-[10px] text-[var(--tx3)] ml-1">(default)</span>
+                  <InternalConfigKeyHint isSuperAdmin={isSuperAdmin} configKey="max_deadhead_km" />
+                </div>
+              );
+            })()}
+            <p className="text-[9px] text-[var(--tx3)]">
+              Distance from base beyond this cap still appears on the quote for review; surcharge and mobilization use the capped km.
+            </p>
+          </div>
         </div>
         {/* Deadhead examples */}
         <div className="mt-3 rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3 text-[11px] space-y-0.5">

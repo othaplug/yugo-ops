@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/api-auth";
 import { createPartnerNotification } from "@/lib/notifications";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
+import { collectB2BDeliveryCalibrationData } from "@/lib/learning/engine";
 
 const STATUS_NOTIFICATIONS: Record<string, { title: (label: string) => string; icon: string }> = {
   confirmed: { title: (l) => `Delivery confirmed: ${l}`, icon: "check" },
@@ -66,6 +67,7 @@ export async function PATCH(
     "crew_id", "updated_at", "pickup_access", "delivery_access", "item_weight_category",
     "admin_adjusted_price", "notes",
     "project_id", "phase_id",
+    "vertical_code", "b2b_line_items", "b2b_assembly_required", "b2b_debris_removal",
   ];
 
   const updates: Record<string, unknown> = {};
@@ -182,6 +184,15 @@ export async function PATCH(
           });
       } catch { /* non-fatal */ }
     }
+  }
+
+  if (
+    (newStatus === "completed" || newStatus === "delivered") &&
+    newStatus !== oldStatus
+  ) {
+    collectB2BDeliveryCalibrationData(id).catch((e) =>
+      console.error("[deliveries/patch] B2B calibration collect failed:", e),
+    );
   }
 
   return NextResponse.json({ ok: true, delivery: data });

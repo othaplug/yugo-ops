@@ -7,6 +7,7 @@ import { VERTICAL_LABELS, isPropertyManagementDeliveryVertical } from "@/lib/par
 import { provisionPmPartnerPortfolio, type PmOnboardingInput } from "@/lib/partners/provision-pm-onboarding";
 import { getEmailFrom } from "@/lib/email/send";
 import { squareClient } from "@/lib/square";
+import { upsertPartnerB2BVerticalsFromOnboarding } from "@/lib/partners/partner-b2b-verticals";
 
 async function maybeProvisionPmPortfolio(
   admin: ReturnType<typeof createAdminClient>,
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest) {
       hubspot_contact_id, square_customer_id, square_card_id,
       card_last_four, card_brand, card_on_file,
       pm_onboarding,
+      b2b_delivery_verticals,
     } = body;
 
     if (!email || typeof email !== "string" || !name || typeof name !== "string") {
@@ -211,6 +213,7 @@ export async function POST(req: NextRequest) {
         admin,
       }).catch(() => {});
       await maybeProvisionPmPortfolio(admin, orgId, typeVal, pm_onboarding, isActivating ? "active" : "draft");
+      await upsertPartnerB2BVerticalsFromOnboarding(admin, orgId, b2b_delivery_verticals);
       return NextResponse.json({ ok: true, message: "Partner saved as draft" });
     }
 
@@ -268,6 +271,7 @@ export async function POST(req: NextRequest) {
     }
 
     await maybeProvisionPmPortfolio(admin, orgId, typeVal, pm_onboarding, isActivating ? "active" : "draft");
+    await upsertPartnerB2BVerticalsFromOnboarding(admin, orgId, b2b_delivery_verticals);
 
     // ── Sync to HubSpot / Square if not already linked ─────────────────────
     syncPartnerToExternal({

@@ -210,12 +210,27 @@ const BIN_BUNDLE_OPTIONS: {
   { value: "custom", label: "Custom", detail: "Enter bin count (min 5) at per-bin rate" },
 ];
 
+/** Legacy platform_config weight keys when vertical DB unavailable */
 const B2B_WEIGHT_OPTIONS = [
   { value: "standard", label: "Standard (under 100 lbs)" },
   { value: "heavy", label: "Heavy (100–250 lbs)" },
   { value: "very_heavy", label: "Very Heavy (250–500 lbs)" },
   { value: "oversized_fragile", label: "Oversized / Fragile" },
 ];
+
+const B2B_LINE_WEIGHT_OPTIONS = [
+  { value: "light", label: "Light (under 30 lb)" },
+  { value: "medium", label: "Medium (30–60 lb)" },
+  { value: "heavy", label: "Heavy (60 lb+)" },
+];
+
+export type QuoteDeliveryVertical = {
+  code: string;
+  name: string;
+  pricing_method: string;
+  base_rate: number;
+  default_config: Record<string, unknown>;
+};
 
 const ACCESS_OPTIONS = [
   { value: "", label: "Select…" },
@@ -531,6 +546,7 @@ export default function QuoteFormClient({
   addons: allAddons,
   config,
   itemWeights = [],
+  deliveryVerticals = [],
   userRole = "coordinator",
   isSuperAdmin = false,
   binInventorySnapshot = null,
@@ -538,6 +554,8 @@ export default function QuoteFormClient({
   addons: Addon[];
   config: Record<string, string>;
   itemWeights?: ItemWeight[];
+  /** Active rows from delivery_verticals for B2B dimensional quotes */
+  deliveryVerticals?: QuoteDeliveryVertical[];
   userRole?: string;
   /** Margin/cost preview — super-admin emails only (see isSuperAdminEmail). */
   isSuperAdmin?: boolean;
@@ -590,8 +608,27 @@ export default function QuoteFormClient({
   const [moveSize, setMoveSize] = useState("");
   const moveSizeUserTouchedRef = useRef(false);
   const [clientBoxCount, setClientBoxCount] = useState("");
+  const [serviceAreaBlock, setServiceAreaBlock] = useState<{
+    quote_blocked?: boolean;
+    block_reason?: string;
+    message?: string;
+    service_area?: {
+      type: string;
+      serviceable: boolean;
+      warning?: string;
+      from_prefix: string | null;
+      to_prefix: string | null;
+    };
+  } | null>(null);
+  /** Coordinator confirms subcontract / remote crew for out-of-area moves. */
+  const [serviceAreaOverride, setServiceAreaOverride] = useState(false);
 
   const phoneInput = usePhoneInput(phone, setPhone);
+
+  useEffect(() => {
+    setServiceAreaOverride(false);
+    setServiceAreaBlock(null);
+  }, [fromAddress, toAddress]);
 
   // Specialty items
   const [specialtyItems, setSpecialtyItems] = useState<{ type: string; qty: number }[]>([]);
@@ -718,15 +755,129 @@ export default function QuoteFormClient({
   const [specialtyRouteKm, setSpecialtyRouteKm] = useState<number | null>(null);
   const [specialtyRouteLoading, setSpecialtyRouteLoading] = useState(false);
 
-  // B2B One-Off fields
+  // B2B One-Off fields (dimensional engine)
   const [b2bBusinessName, setB2bBusinessName] = useState("");
-  const [b2bItems, setB2bItems] = useState<{ name: string; qty: number }[]>([]);
-  const [b2bNewItemName, setB2bNewItemName] = useState("");
-  const [b2bNewItemQty, setB2bNewItemQty] = useState(1);
+  const [b2bVerticalCode, setB2bVerticalCode] = useState("custom");
+  const [b2bPartnerOrgId, setB2bPartnerOrgId] = useState("");
+  const [b2bLines, setB2bLines] = useState<
+    { description: string; qty: number; weight_category?: string; fragile?: boolean }[]
+  >([]);
+  const [b2bNewLineDesc, setB2bNewLineDesc] = useState("");
+  const [b2bNewLineQty, setB2bNewLineQty] = useState(1);
+  const [b2bNewLineWeight, setB2bNewLineWeight] = useState("light");
+  const [b2bNewLineFragile, setB2bNewLineFragile] = useState(false);
+  const [b2bHandlingType, setB2bHandlingType] = useState("threshold");
+  const [b2bMultiStop, setB2bMultiStop] = useState(false);
+  const [b2bStops, setB2bStops] = useState<
+    { type: "pickup" | "delivery"; address: string; access: string; time_window: string }[]
+  >([
+    { type: "pickup", address: "", access: "", time_window: "" },
+    { type: "delivery", address: "", access: "", time_window: "" },
+  ]);
+  const [b2bTimeSensitive, setB2bTimeSensitive] = useState(false);
+  const [b2bAssemblyRequired, setB2bAssemblyRequired] = useState(false);
+  const [b2bDebrisRemoval, setB2bDebrisRemoval] = useState(false);
+  const [b2bStairsFlights, setB2bStairsFlights] = useState(0);
+  const [b2bComplexityAddonSet, setB2bComplexityAddonSet] = useState<Set<string>>(new Set());
+  const [b2bPartnersList, setB2bPartnersList] = useState<{ id: string; name: string }[]>([]);
+  const [b2bPartnerVerticals, setB2bPartnerVerticals] = useState<{ code: string; name: string }[]>([]);
   const [b2bWeightCategory, setB2bWeightCategory] = useState("standard");
   const [b2bSpecialInstructions, setB2bSpecialInstructions] = useState("");
   const [b2bPaymentMethod, setB2bPaymentMethod] = useState<"card" | "invoice">("card");
   const [b2bRetailerSource, setB2bRetailerSource] = useState("");
+
+  const selectedB2bVertical = useMemo(
+    () => deliveryVerticals.find((v) => v.code === b2bVerticalCode) ?? null,
+    [deliveryVerticals, b2bVerticalCode],
+  );
+
+  const b2bHandlingOptions = useMemo(() => {
+    const hr = selectedB2bVertical?.default_config?.handling_rates;
+    if (hr && typeof hr === "object" && !Array.isArray(hr)) {
+      return Object.keys(hr as Record<string, number>);
+    }
+    return ["dock_to_dock", "threshold", "room_of_choice", "white_glove", "hand_bomb"];
+  }, [selectedB2bVertical]);
+
+  const b2bComplexityKeys = useMemo(() => {
+    const p = selectedB2bVertical?.default_config?.complexity_premiums;
+    if (!p || typeof p !== "object" || Array.isArray(p)) return [] as string[];
+    return Object.keys(p as Record<string, number>).filter((k) => k !== "stairs_per_flight");
+  }, [selectedB2bVertical]);
+
+  const b2bShowLineWeights = useMemo(() => {
+    const wt = selectedB2bVertical?.default_config?.weight_tiers;
+    return Boolean(wt && typeof wt === "object" && !Array.isArray(wt) && Object.keys(wt as object).length > 0);
+  }, [selectedB2bVertical]);
+
+  const b2bVerticalSelectOptions = useMemo(() => {
+    if (b2bPartnerOrgId.trim() && b2bPartnerVerticals.length > 0) {
+      const allow = new Set(b2bPartnerVerticals.map((v) => v.code));
+      return deliveryVerticals.filter((v) => allow.has(v.code));
+    }
+    return deliveryVerticals;
+  }, [b2bPartnerOrgId, b2bPartnerVerticals, deliveryVerticals]);
+
+  const b2bMultiStopPrev = useRef(false);
+  useEffect(() => {
+    if (serviceType !== "b2b_delivery") return;
+    fetch("/api/admin/partners/b2b-list", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((d) => {
+        const list = Array.isArray(d.partners) ? d.partners : [];
+        setB2bPartnersList(
+          list.map((p: { id: string; name: string }) => ({ id: String(p.id), name: String(p.name || "") })),
+        );
+      })
+      .catch(() => setB2bPartnersList([]));
+  }, [serviceType]);
+
+  useEffect(() => {
+    if (serviceType !== "b2b_delivery") return;
+    const id = b2bPartnerOrgId.trim();
+    if (!id) {
+      setB2bPartnerVerticals([]);
+      return;
+    }
+    fetch(`/api/admin/organizations/${encodeURIComponent(id)}/partner-b2b-verticals`, {
+      credentials: "same-origin",
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        const list = Array.isArray(d.verticals) ? d.verticals : [];
+        setB2bPartnerVerticals(
+          list.map((x: { code: string; name: string }) => ({ code: String(x.code), name: String(x.name || x.code) })),
+        );
+      })
+      .catch(() => setB2bPartnerVerticals([]));
+  }, [serviceType, b2bPartnerOrgId]);
+
+  useEffect(() => {
+    if (serviceType !== "b2b_delivery") return;
+    if (b2bMultiStop && !b2bMultiStopPrev.current) {
+      setB2bStops([
+        { type: "pickup", address: fromAddress, access: fromAccess, time_window: preferredTime || "" },
+        { type: "delivery", address: toAddress, access: toAccess, time_window: arrivalWindow || "" },
+      ]);
+    }
+    b2bMultiStopPrev.current = b2bMultiStop;
+  }, [
+    serviceType,
+    b2bMultiStop,
+    fromAddress,
+    toAddress,
+    fromAccess,
+    toAccess,
+    preferredTime,
+    arrivalWindow,
+  ]);
+
+  useEffect(() => {
+    if (b2bVerticalSelectOptions.length === 0) return;
+    if (!b2bVerticalSelectOptions.some((v) => v.code === b2bVerticalCode)) {
+      setB2bVerticalCode(b2bVerticalSelectOptions[0]!.code);
+    }
+  }, [b2bVerticalSelectOptions, b2bVerticalCode]);
 
   // Labour Only fields
   const [workAddress, setWorkAddress] = useState("");
@@ -1292,7 +1443,7 @@ export default function QuoteFormClient({
     setClientBoxCount("");
     setSpecialtyItems([]);
     setEventItems([]);
-    setB2bItems([]);
+    setB2bLines([]);
     setSqft("");
     setWsCount("");
     setHasIt(false);
@@ -1325,8 +1476,8 @@ export default function QuoteFormClient({
     setEventReturnDate("");
     setEventSetupRequired(false);
     setB2bBusinessName("");
-    setB2bNewItemName("");
-    setB2bNewItemQty(1);
+    setB2bNewLineDesc("");
+    setB2bNewLineQty(1);
     setB2bWeightCategory("standard");
     setCratingRequired(false);
     setCratingItems([]);
@@ -1628,7 +1779,7 @@ export default function QuoteFormClient({
   }, []);
 
   // ── Build API payload ─────────────────────
-  const buildPayload = useCallback(() => {
+  const buildPayload = useCallback((opts?: { serviceAreaOverride?: boolean }) => {
     const clientName = [firstName, lastName].filter(Boolean).join(" ");
     const base: Record<string, unknown> = {
       service_type: serviceType,
@@ -1654,8 +1805,8 @@ export default function QuoteFormClient({
 
     if (serviceType === "local_move" || serviceType === "long_distance") {
       base.move_size = moveSize;
-      // Send box count when user has specified a value (including 0) so API uses it for score/labour
-      if (clientBoxCount !== "" && clientBoxCount != null) base.client_box_count = Number(clientBoxCount);
+      base.client_box_count =
+        clientBoxCount !== "" && clientBoxCount != null ? Number(clientBoxCount) : 0;
       base.specialty_items = specialtyItems.length > 0 ? specialtyItems : undefined;
       if (inventoryItems.length > 0) {
         base.inventory_items = inventoryItems.map((i) => ({
@@ -1717,7 +1868,8 @@ export default function QuoteFormClient({
           fragile: i.fragile,
         }));
       }
-      base.client_box_count = Number(clientBoxCount) || undefined;
+      base.client_box_count =
+        clientBoxCount !== "" && clientBoxCount != null ? Number(clientBoxCount) : 0;
     }
     if (serviceType === "specialty") {
       base.project_type = specialtyType || "other";
@@ -1802,8 +1954,51 @@ export default function QuoteFormClient({
     }
     if (serviceType === "b2b_delivery") {
       base.b2b_business_name = b2bBusinessName.trim() || undefined;
-      base.b2b_items = b2bItems.length > 0 ? b2bItems.map((i) => `${i.name}${i.qty > 1 ? ` ×${i.qty}` : ""}`) : undefined;
-      base.b2b_weight_category = b2bWeightCategory || undefined;
+      base.b2b_vertical_code = b2bVerticalCode || undefined;
+      base.b2b_partner_organization_id = b2bPartnerOrgId.trim() || undefined;
+      base.b2b_handling_type = b2bHandlingType || undefined;
+      base.b2b_line_items =
+        b2bLines.length > 0
+          ? b2bLines.map((l) => ({
+              description: l.description.trim(),
+              quantity: Math.max(1, l.qty),
+              weight_category: (l.weight_category || undefined) as
+                | "light"
+                | "medium"
+                | "heavy"
+                | "extra_heavy"
+                | undefined,
+              fragile: l.fragile ? true : undefined,
+            }))
+          : undefined;
+      base.b2b_items =
+        b2bLines.length > 0
+          ? b2bLines.map((i) => `${i.description.trim()}${i.qty > 1 ? ` ×${i.qty}` : ""}`)
+          : undefined;
+      if (!b2bShowLineWeights && b2bWeightCategory) {
+        base.b2b_weight_category = b2bWeightCategory;
+      }
+      base.b2b_time_sensitive = b2bTimeSensitive || undefined;
+      base.b2b_assembly_required = b2bAssemblyRequired || undefined;
+      base.b2b_debris_removal = b2bDebrisRemoval || undefined;
+      base.b2b_stairs_flights = b2bStairsFlights > 0 ? b2bStairsFlights : undefined;
+      base.b2b_complexity_addons =
+        b2bComplexityAddonSet.size > 0 ? Array.from(b2bComplexityAddonSet) : undefined;
+      if (b2bMultiStop) {
+        const cleaned = b2bStops
+          .map((s) => ({
+            address: s.address.trim(),
+            type: s.type,
+            access: s.access.trim() || undefined,
+            time_window: s.time_window.trim() || undefined,
+          }))
+          .filter((s) => s.address.length > 0);
+        if (cleaned.length >= 2) {
+          base.b2b_stops = cleaned;
+          base.from_address = cleaned[0]!.address;
+          base.to_address = cleaned[cleaned.length - 1]!.address;
+        }
+      }
       base.b2b_special_instructions = b2bSpecialInstructions.trim() || undefined;
       base.b2b_payment_method = b2bPaymentMethod;
       base.b2b_retailer_source = b2bRetailerSource.trim() || undefined;
@@ -1818,10 +2013,11 @@ export default function QuoteFormClient({
       base.bin_delivery_notes = binDeliveryNotes.trim() || undefined;
       base.internal_notes = binInternalNotes.trim() || undefined;
     }
+    if (opts?.serviceAreaOverride || serviceAreaOverride) base.service_area_override = true;
     return base;
   }, [
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
-    selectedAddons, recommendedTier, moveSize, clientBoxCount, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
+    selectedAddons, recommendedTier, moveSize, clientBoxCount, serviceAreaOverride, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
     hasReception, timingPref, itemDescription, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
     numItems, declaredValue, specialtyType, specialtyItemDescription, specialtyWeightClass, specialtyRequirements,
     specialtyNotes, specialtyDimL, specialtyDimW, specialtyDimH,
@@ -1833,14 +2029,30 @@ export default function QuoteFormClient({
     eventSameLocationSingle, eventReturnRateSingle, eventReturnRateCustomSingle,
     workAddress, workAccess, labourDescription, labourCrewSize, labourHours, labourTruckRequired,
     labourVisits, labourSecondVisitDate, labourStorageNeeded, labourStorageWeeks, labourContext,
-    b2bBusinessName, b2bItems, b2bWeightCategory, b2bSpecialInstructions, b2bPaymentMethod, b2bRetailerSource,
+    b2bBusinessName,
+    b2bVerticalCode,
+    b2bPartnerOrgId,
+    b2bLines,
+    b2bHandlingType,
+    b2bMultiStop,
+    b2bStops,
+    b2bTimeSensitive,
+    b2bAssemblyRequired,
+    b2bDebrisRemoval,
+    b2bStairsFlights,
+    b2bComplexityAddonSet,
+    b2bShowLineWeights,
+    b2bWeightCategory,
+    b2bSpecialInstructions,
+    b2bPaymentMethod,
+    b2bRetailerSource,
     singleItemSpecialHandling, specialtyBuildingReqs, specialtyAccessDifficulty,
     binBundleType, binCustomCount, binExtraBins, binPackingPaper, binMaterialDelivery, binLinkedMoveId,
     binDeliveryNotes, binInternalNotes,
   ]);
 
   // ── Generate quote (Step 1: creates quote in DB, returns quote_id) ────────────────────────
-  const handleGenerate = async () => {
+  const handleGenerate = async (opts?: { serviceAreaOverride?: boolean }) => {
     if (serviceType === "event") {
       if (eventMulti) {
         if (eventLegs.length < 2) {
@@ -1876,6 +2088,13 @@ export default function QuoteFormClient({
       }
     } else if (serviceType === "b2b_delivery") {
       const clientName = [firstName, lastName].filter(Boolean).join(" ");
+      if (b2bMultiStop) {
+        const n = b2bStops.filter((s) => s.address.trim()).length;
+        if (n < 2) {
+          toast("Multi-stop route needs at least two addresses in order.", "alertTriangle");
+          return;
+        }
+      }
       if (!b2bBusinessName.trim() || !fromAddress || !toAddress || !moveDate) {
         toast("Please fill Business name, Pickup, Delivery address and Date", "alertTriangle");
         return;
@@ -1925,9 +2144,16 @@ export default function QuoteFormClient({
       const res = await fetch("/api/quotes/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify(buildPayload(opts)),
       });
       const data = await res.json();
+      if (data.quote_blocked) {
+        setServiceAreaBlock(data);
+        toast(data.message || "Outside Yugo service area — quote not generated.", "alertTriangle");
+        return;
+      }
+      setServiceAreaBlock(null);
+      if (opts?.serviceAreaOverride) setServiceAreaOverride(true);
       if (!res.ok) throw new Error(data.error || "Quote generation failed");
       const id = data.quote_id ?? data.quoteId;
       if (!id) throw new Error("Generate did not return a quote_id");
@@ -3986,7 +4212,7 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-              {/* ── B2B One-Off fields ── */}
+              {/* ── B2B One-Off fields (dimensional pricing) ── */}
               {serviceType === "b2b_delivery" && (
                 <div className="space-y-3">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">B2B One-Off</h3>
@@ -4004,6 +4230,63 @@ export default function QuoteFormClient({
                       className={fieldInput}
                     />
                   </Field>
+                  {deliveryVerticals.length > 0 ? (
+                    <Field label="Delivery vertical">
+                      {b2bPartnerOrgId.trim() && b2bPartnerVerticals.length === 0 ? (
+                        <p className="text-[10px] text-amber-700 dark:text-amber-400 rounded-lg border border-amber-500/30 px-3 py-2 mb-2">
+                          This partner has no B2B delivery verticals on file. Add verticals in partner onboarding or Platform → Partners → B2B rates, or clear the partner to use list pricing.
+                        </p>
+                      ) : null}
+                      <select
+                        value={b2bVerticalCode}
+                        onChange={(e) => setB2bVerticalCode(e.target.value)}
+                        className={fieldInput}
+                        disabled={b2bPartnerOrgId.trim() !== "" && b2bVerticalSelectOptions.length === 0}
+                      >
+                        {b2bVerticalSelectOptions.map((v) => (
+                          <option key={v.code} value={v.code}>
+                            {v.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[9px] text-[var(--tx3)] mt-1">
+                        {b2bPartnerOrgId.trim()
+                          ? "Only verticals configured for this partner are shown. Pricing uses their negotiated per-vertical rates where set."
+                          : "Pricing pulls from Platform → Delivery verticals. Add or edit verticals there without a deploy."}
+                      </p>
+                    </Field>
+                  ) : (
+                    <p className="text-[10px] text-amber-700 dark:text-amber-400 rounded-lg border border-amber-500/30 px-3 py-2">
+                      No delivery verticals in the database. Run migration{" "}
+                      <code className="text-[9px]">20260329140000_delivery_verticals_b2b.sql</code> or legacy weight-based pricing applies.
+                    </p>
+                  )}
+                  {b2bPartnersList.length > 0 ? (
+                    <Field label="Partner contract (optional)">
+                      <select
+                        value={b2bPartnerOrgId}
+                        onChange={(e) => setB2bPartnerOrgId(e.target.value)}
+                        className={fieldInput}
+                      >
+                        <option value="">None — list price</option>
+                        {b2bPartnersList.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      {b2bPartnerOrgId.trim() ? (
+                        <p className="text-[10px] font-semibold text-[var(--grn)] mt-1.5 flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 shrink-0 text-[var(--grn)]" weight="bold" aria-hidden />
+                          Partner rates applied — quote compares list vs negotiated totals.
+                        </p>
+                      ) : (
+                        <p className="text-[9px] text-[var(--tx3)] mt-1">
+                          When set, pricing uses partner_vertical_rates for each vertical. Standard list pricing is shown alongside for margin review.
+                        </p>
+                      )}
+                    </Field>
+                  ) : null}
                   <Field label="Retailer / Purchase Source">
                     <input
                       value={b2bRetailerSource}
@@ -4027,30 +4310,115 @@ export default function QuoteFormClient({
                   </Field>
                   <Field label="Items">
                     <div className="space-y-2">
-                      {b2bItems.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="text-[11px] text-[var(--tx2)] flex-1 min-w-0 truncate">{item.name}{item.qty > 1 ? ` ×${item.qty}` : ""}</span>
-                          <button type="button" onClick={() => setB2bItems((p) => p.filter((_, i) => i !== idx))} className="p-1 text-[var(--tx3)] hover:text-red-500" title="Remove">
+                      {b2bLines.map((item, idx) => (
+                        <div key={idx} className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--brd)]/60 px-2 py-1.5">
+                          <span className="text-[11px] text-[var(--tx2)] flex-1 min-w-[120px]">
+                            {item.description}
+                            {item.qty > 1 ? ` ×${item.qty}` : ""}
+                            {item.fragile ? " (fragile)" : ""}
+                          </span>
+                          {b2bShowLineWeights && (
+                            <select
+                              value={item.weight_category || "light"}
+                              onChange={(e) =>
+                                setB2bLines((p) =>
+                                  p.map((x, i) => (i === idx ? { ...x, weight_category: e.target.value } : x)),
+                                )
+                              }
+                              className={`${fieldInput} w-[140px] text-[10px]`}
+                            >
+                              {B2B_LINE_WEIGHT_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setB2bLines((p) => p.filter((_, i) => i !== idx))}
+                            className="p-1 text-[var(--tx3)] hover:text-red-500"
+                            title="Remove"
+                          >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ))}
-                      <div className="flex gap-2 items-end">
+                      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
                         <div className="flex-1 min-w-0">
                           <input
-                            value={b2bNewItemName}
-                            onChange={(e) => setB2bNewItemName(e.target.value)}
-                            placeholder="Item name"
+                            value={b2bNewLineDesc}
+                            onChange={(e) => setB2bNewLineDesc(e.target.value)}
+                            placeholder="Description"
                             className={fieldInput}
-                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), b2bNewItemName.trim() && (setB2bItems((p) => [...p, { name: b2bNewItemName.trim(), qty: b2bNewItemQty }]), setB2bNewItemName(""), setB2bNewItemQty(1)))}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter") return;
+                              e.preventDefault();
+                              if (!b2bNewLineDesc.trim()) return;
+                              setB2bLines((p) => [
+                                ...p,
+                                {
+                                  description: b2bNewLineDesc.trim(),
+                                  qty: b2bNewLineQty,
+                                  weight_category: b2bShowLineWeights ? b2bNewLineWeight : undefined,
+                                  fragile: b2bNewLineFragile,
+                                },
+                              ]);
+                              setB2bNewLineDesc("");
+                              setB2bNewLineQty(1);
+                              setB2bNewLineFragile(false);
+                            }}
                           />
                         </div>
                         <div className="w-16 shrink-0">
-                          <input type="number" min={1} value={b2bNewItemQty} onChange={(e) => setB2bNewItemQty(Number(e.target.value) || 1)} className={fieldInput} title="Qty" />
+                          <input
+                            type="number"
+                            min={1}
+                            value={b2bNewLineQty}
+                            onChange={(e) => setB2bNewLineQty(Number(e.target.value) || 1)}
+                            className={fieldInput}
+                            title="Qty"
+                          />
                         </div>
+                        {b2bShowLineWeights ? (
+                          <select
+                            value={b2bNewLineWeight}
+                            onChange={(e) => setB2bNewLineWeight(e.target.value)}
+                            className={`${fieldInput} w-[150px] text-[10px]`}
+                          >
+                            {B2B_LINE_WEIGHT_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : null}
+                        <label className="flex items-center gap-1 text-[10px] text-[var(--tx2)] whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={b2bNewLineFragile}
+                            onChange={(e) => setB2bNewLineFragile(e.target.checked)}
+                            className="accent-[var(--gold)] w-3.5 h-3.5"
+                          />
+                          Fragile
+                        </label>
                         <button
                           type="button"
-                          onClick={() => b2bNewItemName.trim() && (setB2bItems((p) => [...p, { name: b2bNewItemName.trim(), qty: b2bNewItemQty }]), setB2bNewItemName(""), setB2bNewItemQty(1))}
+                          onClick={() => {
+                            if (!b2bNewLineDesc.trim()) return;
+                            setB2bLines((p) => [
+                              ...p,
+                              {
+                                description: b2bNewLineDesc.trim(),
+                                qty: b2bNewLineQty,
+                                weight_category: b2bShowLineWeights ? b2bNewLineWeight : undefined,
+                                fragile: b2bNewLineFragile,
+                              },
+                            ]);
+                            setB2bNewLineDesc("");
+                            setB2bNewLineQty(1);
+                            setB2bNewLineFragile(false);
+                          }}
                           className="px-2 py-2 rounded-lg border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -4058,17 +4426,183 @@ export default function QuoteFormClient({
                       </div>
                     </div>
                   </Field>
-                  <Field label="Weight Category">
-                    <select value={b2bWeightCategory} onChange={(e) => setB2bWeightCategory(e.target.value)} className={fieldInput}>
-                      {B2B_WEIGHT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {!b2bShowLineWeights ? (
+                    <Field label="Weight category (legacy / single tier)">
+                      <select
+                        value={b2bWeightCategory}
+                        onChange={(e) => setB2bWeightCategory(e.target.value)}
+                        className={fieldInput}
+                      >
+                        {B2B_WEIGHT_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  ) : null}
+                  <Field label="Handling">
+                    <select
+                      value={b2bHandlingType}
+                      onChange={(e) => setB2bHandlingType(e.target.value)}
+                      className={fieldInput}
+                    >
+                      {b2bHandlingOptions.map((k) => (
+                        <option key={k} value={k}>
+                          {k.replace(/_/g, " ")}
+                        </option>
+                      ))}
                     </select>
                   </Field>
+                  <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={b2bMultiStop}
+                      onChange={(e) => setB2bMultiStop(e.target.checked)}
+                      className="accent-[var(--gold)] w-3.5 h-3.5"
+                    />
+                    Multi-stop route (pickups &amp; deliveries in order)
+                  </label>
+                  {b2bMultiStop ? (
+                    <div className="space-y-2 pl-1 border-l-2 border-[var(--gold)]/40">
+                      {b2bStops.map((stop, idx) => (
+                        <div key={idx} className="space-y-1 rounded-lg bg-[var(--bg)]/50 p-2">
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={stop.type}
+                              onChange={(e) =>
+                                setB2bStops((p) =>
+                                  p.map((s, i) =>
+                                    i === idx ? { ...s, type: e.target.value as "pickup" | "delivery" } : s,
+                                  ),
+                                )
+                              }
+                              className={`${fieldInput} w-[120px] text-[10px]`}
+                            >
+                              <option value="pickup">Pickup</option>
+                              <option value="delivery">Delivery</option>
+                            </select>
+                            <button
+                              type="button"
+                              className="text-[10px] text-[var(--tx3)] hover:text-red-500"
+                              onClick={() =>
+                                setB2bStops((p) => (p.length <= 2 ? p : p.filter((_, i) => i !== idx)))
+                              }
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <input
+                            value={stop.address}
+                            onChange={(e) =>
+                              setB2bStops((p) => p.map((s, i) => (i === idx ? { ...s, address: e.target.value } : s)))
+                            }
+                            placeholder="Address"
+                            className={fieldInput}
+                          />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                            <input
+                              value={stop.access}
+                              onChange={(e) =>
+                                setB2bStops((p) =>
+                                  p.map((s, i) => (i === idx ? { ...s, access: e.target.value } : s)),
+                                )
+                              }
+                              placeholder="Access notes"
+                              className={fieldInput}
+                            />
+                            <input
+                              value={stop.time_window}
+                              onChange={(e) =>
+                                setB2bStops((p) =>
+                                  p.map((s, i) => (i === idx ? { ...s, time_window: e.target.value } : s)),
+                                )
+                              }
+                              placeholder="Time window"
+                              className={fieldInput}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setB2bStops((p) => [
+                            ...p,
+                            { type: "pickup", address: "", access: "", time_window: "" },
+                          ])
+                        }
+                        className="text-[11px] font-semibold text-[var(--gold)]"
+                      >
+                        + Add stop
+                      </button>
+                    </div>
+                  ) : null}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Complexity</p>
+                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
+                      <input
+                        type="checkbox"
+                        checked={b2bTimeSensitive}
+                        onChange={(e) => setB2bTimeSensitive(e.target.checked)}
+                        className="accent-[var(--gold)] w-3.5 h-3.5"
+                      />
+                      Time-sensitive
+                    </label>
+                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
+                      <input
+                        type="checkbox"
+                        checked={b2bAssemblyRequired}
+                        onChange={(e) => setB2bAssemblyRequired(e.target.checked)}
+                        className="accent-[var(--gold)] w-3.5 h-3.5"
+                      />
+                      Assembly required
+                    </label>
+                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
+                      <input
+                        type="checkbox"
+                        checked={b2bDebrisRemoval}
+                        onChange={(e) => setB2bDebrisRemoval(e.target.checked)}
+                        className="accent-[var(--gold)] w-3.5 h-3.5"
+                      />
+                      Debris / packaging removal
+                    </label>
+                    {b2bComplexityKeys.map((key) => (
+                      <label key={key} className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
+                        <input
+                          type="checkbox"
+                          checked={b2bComplexityAddonSet.has(key)}
+                          onChange={() =>
+                            setB2bComplexityAddonSet((prev) => {
+                              const n = new Set(prev);
+                              if (n.has(key)) n.delete(key);
+                              else n.add(key);
+                              return n;
+                            })
+                          }
+                          className="accent-[var(--gold)] w-3.5 h-3.5"
+                        />
+                        {key.replace(/_/g, " ")}
+                      </label>
+                    ))}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] text-[var(--tx2)]">Stair flights</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={50}
+                        value={b2bStairsFlights}
+                        onChange={(e) => setB2bStairsFlights(Math.max(0, Number(e.target.value) || 0))}
+                        className={`${fieldInput} w-20`}
+                      />
+                    </div>
+                  </div>
                   <Field label="Special Instructions">
                     <textarea
                       value={b2bSpecialInstructions}
                       onChange={(e) => setB2bSpecialInstructions(e.target.value)}
                       rows={2}
-                      placeholder="Loading dock hours, fragile handling, etc."
+                      placeholder="Loading dock hours, crew notes, client-facing details, etc."
                       className={`${fieldInput} resize-none`}
                     />
                   </Field>
@@ -4374,7 +4908,7 @@ export default function QuoteFormClient({
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={handleGenerate}
+                onClick={() => void handleGenerate()}
                 disabled={generating}
                 className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 flex items-center justify-center gap-2"
               >
@@ -4442,6 +4976,37 @@ export default function QuoteFormClient({
               </div>
 
               <div className="p-5 space-y-4">
+                {serviceAreaBlock?.quote_blocked && (
+                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-3 text-[11px]">
+                    <p className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                      <Warning size={14} className="shrink-0" weight="bold" aria-hidden />
+                      Outside service area
+                    </p>
+                    <p className="text-[var(--tx2)]">{serviceAreaBlock.message}</p>
+                    <p className="text-[10px] text-[var(--tx3)]">
+                      Quote generation is paused. Use override only for subcontracting, partner crews, or another
+                      confirmed arrangement — not for a standard Toronto-base move.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleGenerate({ serviceAreaOverride: true })}
+                        disabled={generating}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                      >
+                        Quote anyway (manual override)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setServiceAreaBlock(null)}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)]"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* ── Official result (after Generate) ── */}
                 {quoteResult ? (
                   <>
@@ -4481,6 +5046,26 @@ export default function QuoteFormClient({
                     />
 
                     {/* FIX 6: Algorithm anomaly warnings for coordinator review */}
+                    {quoteResult.factors && quoteResult.factors.deadhead_capped === true && (
+                      <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1.5 text-[11px] text-[var(--tx2)]">
+                        <p className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                          <Warning size={12} className="shrink-0" weight="bold" aria-hidden />
+                          Deadhead distance capped
+                        </p>
+                        <p>
+                          Pickup is{" "}
+                          <span className="font-medium text-[var(--tx)]">
+                            {Number(quoteResult.factors.deadhead_km_actual ?? 0).toLocaleString()}
+                          </span>{" "}
+                          km from base. Surcharge uses a cap of{" "}
+                          <span className="font-medium text-[var(--tx)]">
+                            {Number(quoteResult.factors.deadhead_cap_km ?? 100)}
+                          </span>{" "}
+                          km. Manual pricing review recommended.
+                        </p>
+                      </div>
+                    )}
+
                     {(quoteResult.inventory_warnings?.length ?? 0) > 0 && (
                       <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-1.5 text-[11px]">
                         <p className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
@@ -5216,6 +5801,17 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
   const accessSurcharge = (factors.access_surcharge as number | undefined) ?? 0;
   const weightSurcharge = (factors.weight_surcharge as number | undefined) ?? 0;
   const weightCategory = factors.weight_category as string | undefined;
+  const dimensional = factors.b2b_dimensional === true;
+  const breakdown = Array.isArray(factors.b2b_price_breakdown)
+    ? (factors.b2b_price_breakdown as { label?: string; amount?: number }[])
+    : [];
+  const standardBreakdown = Array.isArray(factors.b2b_standard_price_breakdown)
+    ? (factors.b2b_standard_price_breakdown as { label?: string; amount?: number }[])
+    : [];
+  const verticalName = (factors.b2b_vertical_name as string) || "";
+  const usingPartnerRates = factors.b2b_using_partner_rates === true;
+  const standardPreTax = factors.b2b_standard_price_pre_tax as number | undefined;
+  const partnerDiscountPct = factors.b2b_partner_discount_percent as number | undefined;
 
   return (
     <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
@@ -5223,37 +5819,90 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
         <span className="text-[13px] font-bold text-[#B8962E]">B2B One-Off</span>
         <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
       </div>
+      {dimensional && verticalName ? (
+        <p className="text-[11px] font-semibold text-[var(--tx2)]">{verticalName}</p>
+      ) : null}
       <div className="space-y-1.5 text-[11px]">
-        {baseFee !== undefined && distMod !== undefined && (
-          <div className="flex justify-between">
-            <span className={PRICE_CARD.muted}>
-              Base ${baseFee} × {distMod.toFixed(2)} (distance)
-            </span>
-            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(Math.round(baseFee * distMod))}</span>
-          </div>
+        {usingPartnerRates && dimensional && verticalName ? (
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#B8962E]/90 pb-1">Partner rate</p>
+        ) : null}
+        {dimensional && breakdown.length > 0 ? (
+          breakdown.map((line, i) => (
+            <div key={i} className="flex justify-between gap-2">
+              <span className={PRICE_CARD.muted}>{line.label ?? "—"}</span>
+              <span className={`font-medium shrink-0 ${PRICE_CARD.body}`}>{fmtPrice(Number(line.amount) || 0)}</span>
+            </div>
+          ))
+        ) : (
+          <>
+            {baseFee !== undefined && distMod !== undefined && (
+              <div className="flex justify-between">
+                <span className={PRICE_CARD.muted}>
+                  Base ${baseFee} × {distMod.toFixed(2)} (distance)
+                </span>
+                <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(Math.round(baseFee * distMod))}</span>
+              </div>
+            )}
+            {accessSurcharge > 0 && (
+              <div className="flex justify-between">
+                <span className={PRICE_CARD.muted}>Access surcharge</span>
+                <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(accessSurcharge)}</span>
+              </div>
+            )}
+            {weightSurcharge > 0 && (
+              <div className="flex justify-between">
+                <span className={PRICE_CARD.muted}>Weight ({weightCategory ?? "-"})</span>
+                <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(weightSurcharge)}</span>
+              </div>
+            )}
+          </>
         )}
-        {accessSurcharge > 0 && (
-          <div className="flex justify-between">
-            <span className={PRICE_CARD.muted}>Access surcharge</span>
-            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(accessSurcharge)}</span>
-          </div>
-        )}
-        {weightSurcharge > 0 && (
-          <div className="flex justify-between">
-            <span className={PRICE_CARD.muted}>Weight ({weightCategory ?? "-"})</span>
-            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(weightSurcharge)}</span>
-          </div>
-        )}
-        {typeof factors.truck_breakdown_line === "string" && factors.truck_breakdown_line.trim().length > 0 ? (
+        {!dimensional &&
+        typeof factors.truck_breakdown_line === "string" &&
+        factors.truck_breakdown_line.trim().length > 0 ? (
           <div className="flex justify-between">
             <span className={PRICE_CARD.muted}>Vehicle</span>
             <span className={`font-medium ${PRICE_CARD.body}`}>{factors.truck_breakdown_line.trim()}</span>
+          </div>
+        ) : null}
+        {dimensional && accessSurcharge > 0 ? (
+          <div className="flex justify-between">
+            <span className={PRICE_CARD.muted}>Access surcharge</span>
+            <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(accessSurcharge)}</span>
           </div>
         ) : null}
         {distKm !== undefined && distKm > 0 && (
           <div className={PRICE_CARD.muted}>{distKm.toFixed(1)} km</div>
         )}
       </div>
+      {usingPartnerRates &&
+      standardPreTax != null &&
+      standardPreTax > 0 &&
+      typeof t.price === "number" &&
+      standardPreTax > t.price ? (
+        <div className="rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/50 px-3 py-2.5 space-y-1.5 text-[10px]">
+          <p className="font-semibold text-[var(--tx2)]">List pricing (same job)</p>
+          {standardBreakdown.length > 0 ? (
+            <div className="space-y-0.5">
+              {standardBreakdown.map((line, i) => (
+                <div key={i} className="flex justify-between gap-2">
+                  <span className={PRICE_CARD.muted}>{line.label ?? "—"}</span>
+                  <span className={`font-medium shrink-0 ${PRICE_CARD.body}`}>{fmtPrice(Number(line.amount) || 0)}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div className="flex justify-between gap-2 pt-1 border-t border-[var(--brd)]/40">
+            <span className={PRICE_CARD.muted}>Subtotal (before HST)</span>
+            <span className={`font-semibold ${PRICE_CARD.body}`}>{fmtPrice(standardPreTax)}</span>
+          </div>
+          {partnerDiscountPct != null && partnerDiscountPct > 0 ? (
+            <p className="text-[var(--grn)] font-medium">
+              Partner discount vs list: {partnerDiscountPct}%
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
         <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
         <span className={`font-bold ${PRICE_CARD.body}`}>Total: {fmtPrice(t.total)}</span>

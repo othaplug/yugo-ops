@@ -71,6 +71,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { data: updated, error } = await db.from("inbound_shipments").update(patch).eq("id", id).select("*").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  let shipmentRow = updated;
+  if (status === "delivery_scheduled" && prev !== "delivery_scheduled" && !updated.delivery_id) {
+    const { ensureDeliveryForInboundShipment } = await import("@/lib/inbound-shipment-delivery");
+    await ensureDeliveryForInboundShipment(db, updated as Record<string, unknown>, 25);
+    const { data: refetched } = await db.from("inbound_shipments").select("*").eq("id", id).single();
+    if (refetched) shipmentRow = refetched;
+  }
+
   await appendInboundShipmentLog(db, id, status, {
     notes: notes ?? null,
     photos: Array.isArray(photos) ? photos : [],
@@ -78,29 +86,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
 
   const row = {
-    id: updated.id,
-    shipment_number: updated.shipment_number,
-    organization_id: updated.organization_id,
-    partner_name: updated.partner_name,
-    partner_contact_email: updated.partner_contact_email,
-    business_email: updated.business_email,
-    business_name: updated.business_name,
-    customer_name: updated.customer_name,
-    customer_email: updated.customer_email,
-    customer_phone: updated.customer_phone,
-    customer_address: updated.customer_address,
-    carrier_name: updated.carrier_name,
-    carrier_tracking_number: updated.carrier_tracking_number,
-    carrier_eta: updated.carrier_eta,
-    items: updated.items,
-    status: updated.status,
-    inspection_notes: updated.inspection_notes,
-    delivery_scheduled_date: updated.delivery_scheduled_date,
-    delivery_window: updated.delivery_window,
+    id: shipmentRow.id,
+    shipment_number: shipmentRow.shipment_number,
+    organization_id: shipmentRow.organization_id,
+    partner_name: shipmentRow.partner_name,
+    partner_contact_email: shipmentRow.partner_contact_email,
+    business_email: shipmentRow.business_email,
+    business_name: shipmentRow.business_name,
+    customer_name: shipmentRow.customer_name,
+    customer_email: shipmentRow.customer_email,
+    customer_phone: shipmentRow.customer_phone,
+    customer_address: shipmentRow.customer_address,
+    carrier_name: shipmentRow.carrier_name,
+    carrier_tracking_number: shipmentRow.carrier_tracking_number,
+    carrier_eta: shipmentRow.carrier_eta,
+    items: shipmentRow.items,
+    status: shipmentRow.status,
+    inspection_notes: shipmentRow.inspection_notes,
+    delivery_scheduled_date: shipmentRow.delivery_scheduled_date,
+    delivery_window: shipmentRow.delivery_window,
   };
 
   const nk = notifyKind(status, prev, patch);
   if (nk) void notifyInboundShipmentStakeholders(row, nk);
 
-  return NextResponse.json({ shipment: updated });
+  return NextResponse.json({ shipment: shipmentRow });
 }

@@ -366,6 +366,19 @@ export default function PartnerHealthClient() {
                       {p.contact_name && (
                         <div className="mt-0.5 text-[11px] text-[var(--tx3)]">{p.contact_name}</div>
                       )}
+                      {p.revenue_by_vertical_90d && p.revenue_by_vertical_90d.length > 0 ? (
+                        <div className="mt-2 text-[10px] text-[var(--tx3)] leading-snug max-w-[220px]">
+                          <span className="font-bold text-[var(--tx2)] uppercase tracking-wide">Revenue by vertical (90d)</span>
+                          <ul className="mt-1 space-y-0.5">
+                            {p.revenue_by_vertical_90d.slice(0, 4).map((row) => (
+                              <li key={row.code || row.label}>
+                                {row.label}: {fmtCurrency(row.revenue)}
+                                {row.pct > 0 ? ` (${row.pct}%)` : ""}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] font-semibold px-2 py-1 rounded-full flex items-center gap-1.5 w-fit ${statusCfg.badgeCls}`}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { X, Check, FloppyDisk, CalendarBlank, Sun, SunHorizon as Sunset, Clock } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
@@ -65,6 +65,20 @@ interface Props {
   onCreated: () => void;
   initialDate?: string;
   initialItems?: string;
+  /** Default warehouse / business pickup when using vertical booking */
+  defaultPickupAddress?: string;
+}
+
+const B2B_HANDLING_OPTIONS = [
+  { value: "white_glove", label: "White Glove" },
+  { value: "room_of_choice", label: "Room of Choice" },
+  { value: "threshold", label: "Threshold" },
+] as const;
+
+function mergeB2bHandling(items: { handling: string }[]): string {
+  if (items.some((i) => i.handling === "white_glove")) return "white_glove";
+  if (items.some((i) => i.handling === "room_of_choice")) return "room_of_choice";
+  return "threshold";
 }
 
 interface PriceResult {
@@ -94,7 +108,15 @@ interface ServiceOption {
   price_unit: string;
 }
 
-export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreated, initialDate = "", initialItems }: Props) {
+export default function PartnerScheduleModal({
+  orgId,
+  orgType,
+  onClose,
+  onCreated,
+  initialDate = "",
+  initialItems,
+  defaultPickupAddress = "",
+}: Props) {
   const [bookingType, setBookingType] = useState<"day_rate" | "per_delivery">("day_rate");
   const [dayRateStep, setDayRateStep] = useState(1);
   const [perDeliveryStep, setPerDeliveryStep] = useState(1);
@@ -161,6 +183,30 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
   const [selectedServices, setSelectedServices] = useState<Record<string, { enabled: boolean; quantity: number }>>({});
   const [stairFlights, setStairFlights] = useState(1);
 
+  const [partnerB2bVerticals, setPartnerB2bVerticals] = useState<{ code: string; name: string }[]>([]);
+  const [b2bVerticalCode, setB2bVerticalCode] = useState("");
+  const [b2bItems, setB2bItems] = useState<
+    { id: string; description: string; quantity: number; handling: string }[]
+  >([{ id: "bi0", description: "", quantity: 1, handling: "threshold" }]);
+  const [b2bAssembly, setB2bAssembly] = useState(false);
+  const [b2bDebris, setB2bDebris] = useState(false);
+  const [b2bPreview, setB2bPreview] = useState<{
+    partner_subtotal: number;
+    standard_subtotal: number;
+    vertical_name: string;
+    breakdown: { label: string; amount: number }[];
+  } | null>(null);
+  const [b2bPreviewLoading, setB2bPreviewLoading] = useState(false);
+  const [useDefaultPickup, setUseDefaultPickup] = useState(true);
+
+  const b2bActive = partnerB2bVerticals.length > 0;
+
+  const pickupResolved = useMemo(() => {
+    const d = (defaultPickupAddress || "").trim();
+    if (useDefaultPickup && d) return d;
+    return (form.pickup_address || "").trim();
+  }, [useDefaultPickup, defaultPickupAddress, form.pickup_address]);
+
   // Pricing
   const [pricing, setPricing] = useState<PriceResult | null>(null);
   const [pricingLoading, setPricingLoading] = useState(false);
@@ -179,6 +225,80 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
       .then((d) => { if (d.services) setAvailableServices(d.services); })
       .catch(() => {});
   }, [orgId]);
+
+  useEffect(() => {
+    fetch("/api/partner/b2b-verticals")
+      .then((r) => r.json())
+      .then((d) => {
+        const v = Array.isArray(d.verticals) ? d.verticals as { code: string; name: string }[] : [];
+        setPartnerB2bVerticals(v);
+        if (v.length > 0) {
+          setB2bVerticalCode((prev) => (prev && v.some((x) => x.code === prev) ? prev : v[0]!.code));
+        }
+      })
+      .catch(() => {});
+  }, [orgId]);
+
+  useEffect(() => {
+    if (!b2bActive || bookingType !== "per_delivery") return;
+    const t = setTimeout(async () => {
+      if (!b2bVerticalCode || !form.delivery_address.trim() || !pickupResolved) {
+        setB2bPreview(null);
+        return;
+      }
+      const lines = b2bItems.filter((i) => i.description.trim());
+      if (lines.length === 0) {
+        setB2bPreview(null);
+        return;
+      }
+      setB2bPreviewLoading(true);
+      try {
+        const res = await fetch("/api/partner/deliveries/b2b-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vertical_code: b2bVerticalCode,
+            pickup_address: pickupResolved,
+            delivery_address: form.delivery_address.trim(),
+            delivery_access: deliveryAccess,
+            handling_type: mergeB2bHandling(lines),
+            items: lines.map((i) => ({
+              description: i.description.trim(),
+              quantity: i.quantity,
+            })),
+            assembly_required: b2bAssembly,
+            debris_removal: b2bDebris,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setB2bPreview(null);
+          return;
+        }
+        setB2bPreview({
+          partner_subtotal: Number(data.partner_subtotal) || 0,
+          standard_subtotal: Number(data.standard_subtotal) || 0,
+          vertical_name: String(data.vertical_name || ""),
+          breakdown: Array.isArray(data.breakdown) ? data.breakdown : [],
+        });
+      } catch {
+        setB2bPreview(null);
+      } finally {
+        setB2bPreviewLoading(false);
+      }
+    }, 450);
+    return () => clearTimeout(t);
+  }, [
+    b2bActive,
+    bookingType,
+    b2bVerticalCode,
+    b2bItems,
+    b2bAssembly,
+    b2bDebris,
+    form.delivery_address,
+    pickupResolved,
+    deliveryAccess,
+  ]);
 
   const fetchPricing = useCallback(async () => {
     setPricingLoading(true);
@@ -216,15 +336,15 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     }
   }, [bookingType, vehicleType, dayType, numStops, deliveryType, zone, selectedServices, stairFlights, isAfterHours, isWeekend, heavyItems, deliveryAccess, itemWeightCategory]);
 
-  // Auto-refresh pricing on step 2 (day rate) or step 1 (per delivery) and review
+  // Auto-refresh pricing on step 2 (day rate) or per-delivery legacy (no B2B verticals)
   useEffect(() => {
     const shouldFetch =
       (bookingType === "day_rate" && dayRateStep === 2) ||
-      (bookingType === "per_delivery" && (perDeliveryStep === 1 || perDeliveryStep === 3));
+      (bookingType === "per_delivery" && !b2bActive && (perDeliveryStep === 1 || perDeliveryStep === 3));
     if (!shouldFetch) return;
     const t = setTimeout(fetchPricing, 400);
     return () => clearTimeout(t);
-  }, [fetchPricing, bookingType, dayRateStep, perDeliveryStep]);
+  }, [fetchPricing, bookingType, dayRateStep, perDeliveryStep, b2bActive]);
 
   const addInventoryItem = () => {
     if (!newItemName.trim()) return;
@@ -254,9 +374,17 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
     setSelectedServices((s) => ({ ...s, [slug]: { enabled: !s[slug]?.enabled, quantity: s[slug]?.quantity || 1 } }));
 
   const buildPayload = (overrides?: Record<string, unknown>) => {
-    const itemsList = inventory.length > 0
-      ? inventory
-      : form.items ? form.items.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+    const b2bLines = b2bActive
+      ? b2bItems.filter((i) => i.description.trim())
+      : [];
+    const itemsList =
+      b2bActive && b2bLines.length > 0
+        ? b2bLines.map((i) => `${i.description.trim()}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`)
+        : inventory.length > 0
+          ? inventory
+          : form.items
+            ? form.items.split("\n").map((l) => l.trim()).filter(Boolean)
+            : [];
     const svcList = Object.entries(selectedServices)
       .filter(([, v]) => v.enabled)
       .map(([slug, v]) => ({ slug, quantity: slug === "stair_carry" ? stairFlights : v.quantity }));
@@ -282,14 +410,27 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
       zone: bookingType === "per_delivery" ? zone : null,
       delivery_access: bookingType === "per_delivery" ? deliveryAccess : null,
       item_weight_category: bookingType === "per_delivery" ? itemWeightCategory : null,
-      base_price: pricing?.basePrice || 0,
-      overage_price: pricing?.overagePrice || 0,
-      services_price: pricing?.servicesPrice || 0,
-      zone_surcharge: pricing?.zoneSurcharge || 0,
-      after_hours_surcharge: pricing?.afterHoursSurcharge || 0,
-      total_price: pricing?.totalPrice || 0,
-      services_selected: svcList,
-      pricing_breakdown: pricing?.breakdown || null,
+      base_price: b2bActive ? (b2bPreview?.partner_subtotal ?? 0) : (pricing?.basePrice || 0),
+      overage_price: b2bActive ? 0 : (pricing?.overagePrice || 0),
+      services_price: b2bActive ? 0 : (pricing?.servicesPrice || 0),
+      zone_surcharge: b2bActive ? 0 : (pricing?.zoneSurcharge || 0),
+      after_hours_surcharge: b2bActive ? 0 : (pricing?.afterHoursSurcharge || 0),
+      total_price: b2bActive ? (b2bPreview?.partner_subtotal ?? 0) : (pricing?.totalPrice || 0),
+      services_selected: b2bActive ? [] : svcList,
+      pricing_breakdown: b2bActive ? (b2bPreview?.breakdown ?? null) : (pricing?.breakdown || null),
+      ...(b2bActive && b2bVerticalCode
+        ? {
+            vertical_code: b2bVerticalCode,
+            b2b_line_items: b2bLines.map((i) => ({
+              description: i.description.trim(),
+              quantity: i.quantity,
+              handling: i.handling,
+            })),
+            b2b_assembly_required: b2bAssembly,
+            b2b_debris_removal: b2bDebris,
+            pickup_address: pickupResolved || null,
+          }
+        : {}),
       ...overrides,
     };
   };
@@ -405,7 +546,18 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
       handleDayRateSubmit();
     } else {
       if (perDeliveryStep < 3) {
-        if (perDeliveryStep === 2) fetchPricing();
+        if (b2bActive && perDeliveryStep === 1) {
+          const lines = b2bItems.filter((i) => i.description.trim());
+          if (lines.length === 0) {
+            setError("Add at least one item with a description.");
+            return;
+          }
+          if (!b2bVerticalCode) {
+            setError("Select a delivery type.");
+            return;
+          }
+        }
+        if (perDeliveryStep === 2 && !b2bActive) fetchPricing();
         setPerDeliveryStep((s) => s + 1);
       } else {
         handleSubmit();
@@ -793,6 +945,147 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {/* ═══ Per Delivery Step 1: Delivery Config ═══ */}
           {bookingType === "per_delivery" && perDeliveryStep === 1 && (
             <div className="space-y-6">
+              {b2bActive ? (
+                <>
+                  <section className="space-y-2">
+                    <SectionLabel>Delivery Type</SectionLabel>
+                    <select
+                      value={b2bVerticalCode}
+                      onChange={(e) => setB2bVerticalCode(e.target.value)}
+                      className={fieldInput}
+                    >
+                      {partnerB2bVerticals.map((v) => (
+                        <option key={v.code} value={v.code}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-[var(--tx3)]">
+                      Only categories configured for your account are shown. Contact your coordinator to add more.
+                    </p>
+                  </section>
+
+                  <section className="space-y-3">
+                    <SectionLabel>Items</SectionLabel>
+                    {b2bItems.map((row, idx) => (
+                      <div key={row.id} className="rounded-lg border border-[var(--brd)] p-3 space-y-2">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[11px] font-semibold text-[var(--tx3)]">Item {idx + 1}</span>
+                          {b2bItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setB2bItems((p) => p.filter((x) => x.id !== row.id))}
+                              className="text-[11px] text-[var(--tx3)] hover:text-red-500"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          value={row.description}
+                          onChange={(e) =>
+                            setB2bItems((p) =>
+                              p.map((x) => (x.id === row.id ? { ...x, description: e.target.value } : x)),
+                            )
+                          }
+                          placeholder="Description"
+                          className={fieldInput}
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] text-[var(--tx3)] mb-1">Quantity</label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={row.quantity}
+                              onChange={(e) =>
+                                setB2bItems((p) =>
+                                  p.map((x) =>
+                                    x.id === row.id ? { ...x, quantity: Math.max(1, parseInt(e.target.value, 10) || 1) } : x,
+                                  ),
+                                )
+                              }
+                              className={fieldInput}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-[var(--tx3)] mb-1">Handling</label>
+                            <select
+                              value={row.handling}
+                              onChange={(e) =>
+                                setB2bItems((p) =>
+                                  p.map((x) => (x.id === row.id ? { ...x, handling: e.target.value } : x)),
+                                )
+                              }
+                              className={fieldInput}
+                            >
+                              {B2B_HANDLING_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setB2bItems((p) => [
+                          ...p,
+                          { id: `bi${Date.now()}`, description: "", quantity: 1, handling: "threshold" },
+                        ])
+                      }
+                      className="flex items-center gap-1.5 text-[12px] font-semibold text-[#C9A962]"
+                    >
+                      <Plus className="w-4 h-4" /> Add item
+                    </button>
+                  </section>
+
+                  <section className="space-y-2">
+                    <SectionLabel>Access at delivery</SectionLabel>
+                    <p className="text-[10px] text-[var(--tx3)] -mt-1">Elevator, stairs, loading dock, etc.</p>
+                    <select value={deliveryAccess} onChange={(e) => setDeliveryAccess(e.target.value)} className={fieldInput}>
+                      <option value="elevator">Elevator</option>
+                      <option value="ground_floor">Ground Floor / Loading Dock</option>
+                      <option value="loading_dock">Loading Dock</option>
+                      <option value="walk_up_2nd">Walk-up (2nd floor)</option>
+                      <option value="walk_up_3rd">Walk-up (3rd floor)</option>
+                      <option value="walk_up_4th_plus">Walk-up (4th+ floor)</option>
+                      <option value="long_carry">Long Carry (50m+)</option>
+                      <option value="narrow_stairs">Narrow Stairs</option>
+                      <option value="no_parking">No Parking Nearby</option>
+                    </select>
+                  </section>
+
+                  <section className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={b2bAssembly}
+                        onChange={(e) => setB2bAssembly(e.target.checked)}
+                        className="rounded border-[var(--brd)] text-[#C9A962]"
+                      />
+                      <span className="text-[13px] text-[var(--tx)]">Assembly required (priced per vertical)</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={b2bDebris}
+                        onChange={(e) => setB2bDebris(e.target.checked)}
+                        className="rounded border-[var(--brd)] text-[#C9A962]"
+                      />
+                      <span className="text-[13px] text-[var(--tx)]">Debris / packaging removal</span>
+                    </label>
+                  </section>
+
+                  {renderB2BPricePreview()}
+                </>
+              ) : null}
+
+              {!b2bActive ? (
+              <>
               <section className="space-y-3">
                 <SectionLabel>Delivery Type</SectionLabel>
                 <div className="grid grid-cols-1 gap-2">
@@ -876,6 +1169,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
               {renderSurcharges()}
               {renderServicesSection()}
               {renderPricePreview()}
+              </>
+              ) : null}
             </div>
           )}
 
@@ -899,9 +1194,40 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
 
               <section className="space-y-3">
                 <SectionLabel>Addresses</SectionLabel>
-                <FormField label="Pickup Address">
-                  <AddressAutocomplete value={form.pickup_address || pickupRaw} onRawChange={setPickupRaw} onChange={(r) => set("pickup_address", r.fullAddress)} placeholder="Warehouse or store" className={fieldInput} />
-                </FormField>
+                {b2bActive ? (
+                  <div className="space-y-2">
+                    <SectionLabel>Pickup</SectionLabel>
+                    {defaultPickupAddress.trim() ? (
+                      <label className="flex items-start gap-2 cursor-pointer text-[13px] text-[var(--tx)]">
+                        <input
+                          type="checkbox"
+                          checked={useDefaultPickup}
+                          onChange={(e) => setUseDefaultPickup(e.target.checked)}
+                          className="rounded border-[var(--brd)] text-[#C9A962] mt-0.5 shrink-0"
+                        />
+                        <span>
+                          Use default warehouse address
+                          <span className="block text-[11px] text-[var(--tx3)] font-normal mt-0.5">{defaultPickupAddress}</span>
+                        </span>
+                      </label>
+                    ) : null}
+                    {(!useDefaultPickup || !defaultPickupAddress.trim()) && (
+                      <FormField label={defaultPickupAddress.trim() ? "Custom pickup address" : "Pickup address"}>
+                        <AddressAutocomplete
+                          value={form.pickup_address || pickupRaw}
+                          onRawChange={setPickupRaw}
+                          onChange={(r) => set("pickup_address", r.fullAddress)}
+                          placeholder="Warehouse or store"
+                          className={fieldInput}
+                        />
+                      </FormField>
+                    )}
+                  </div>
+                ) : (
+                  <FormField label="Pickup Address">
+                    <AddressAutocomplete value={form.pickup_address || pickupRaw} onRawChange={setPickupRaw} onChange={(r) => set("pickup_address", r.fullAddress)} placeholder="Warehouse or store" className={fieldInput} />
+                  </FormField>
+                )}
                 <FormField label="Delivery Address" required>
                   <AddressAutocomplete value={form.delivery_address || deliveryRaw} onRawChange={setDeliveryRaw} onChange={(r) => set("delivery_address", r.fullAddress)} placeholder="Destination" className={fieldInput} />
                 </FormField>
@@ -925,6 +1251,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                 </div>
               </section>
 
+              {!b2bActive ? (
+              <>
               <section className="space-y-3">
                 <SectionLabel>Inventory</SectionLabel>
                 {inventory.length > 0 && (
@@ -969,6 +1297,8 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
                   ))}
                 </div>
               </section>
+              </>
+              ) : null}
 
               <section className="space-y-3">
                 <SectionLabel>Notes</SectionLabel>
@@ -987,39 +1317,91 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           {bookingType === "per_delivery" && perDeliveryStep === 3 && (
             <div className="space-y-5">
               <div className="rounded-xl border border-[var(--brd)] divide-y divide-[var(--brd)]">
-                <div className="px-4 py-3">
-                  <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Delivery</p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
-                    <span className="text-[var(--tx3)]">Type</span>
-                    <span className="font-semibold text-[var(--tx)]">{DELIVERY_TYPES.find((d) => d.value === deliveryType)?.label}</span>
-                    <span className="text-[var(--tx3)]">Zone</span>
-                    <span className="font-semibold text-[var(--tx)]">Zone {zone}</span>
-                    <span className="text-[var(--tx3)]">Access</span>
-                    <span className="font-semibold text-[var(--tx)] capitalize">{deliveryAccess.replace(/_/g, " ")}</span>
-                  </div>
-                </div>
-                <div className="px-4 py-3">
-                  <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Client</p>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
-                    <span className="text-[var(--tx3)]">Name</span>
-                    <span className="font-semibold text-[var(--tx)]">{form.customer_name || "-"}</span>
-                    <span className="text-[var(--tx3)]">Date</span>
-                    <span className="font-semibold text-[var(--tx)]">{form.scheduled_date || "-"}</span>
-                    <span className="text-[var(--tx3)]">Deliver to</span>
-                    <span className="font-semibold text-[var(--tx)] truncate">{form.delivery_address || "-"}</span>
-                  </div>
-                </div>
-                {inventory.length > 0 && (
-                  <div className="px-4 py-3">
-                    <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Items ({inventory.length})</p>
-                    <ul className="space-y-0.5">
-                      {inventory.map((item, i) => <li key={i} className="text-[12px] text-[var(--tx)]">· {item}</li>)}
-                    </ul>
-                  </div>
+                {b2bActive ? (
+                  <>
+                    <div className="px-4 py-3">
+                      <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Delivery type</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
+                        <span className="text-[var(--tx3)]">Vertical</span>
+                        <span className="font-semibold text-[var(--tx)]">
+                          {partnerB2bVerticals.find((v) => v.code === b2bVerticalCode)?.name || b2bVerticalCode || "—"}
+                        </span>
+                        <span className="text-[var(--tx3)]">Access</span>
+                        <span className="font-semibold text-[var(--tx)] capitalize">{deliveryAccess.replace(/_/g, " ")}</span>
+                      </div>
+                    </div>
+                    <div className="px-4 py-3">
+                      <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Client</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
+                        <span className="text-[var(--tx3)]">Name</span>
+                        <span className="font-semibold text-[var(--tx)]">{form.customer_name || "-"}</span>
+                        <span className="text-[var(--tx3)]">Date</span>
+                        <span className="font-semibold text-[var(--tx)]">{form.scheduled_date || "-"}</span>
+                        <span className="text-[var(--tx3)]">Pickup</span>
+                        <span className="font-semibold text-[var(--tx)] truncate">{pickupResolved || "-"}</span>
+                        <span className="text-[var(--tx3)]">Deliver to</span>
+                        <span className="font-semibold text-[var(--tx)] truncate">{form.delivery_address || "-"}</span>
+                      </div>
+                    </div>
+                    {b2bItems.filter((i) => i.description.trim()).length > 0 && (
+                      <div className="px-4 py-3">
+                        <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Items</p>
+                        <ul className="space-y-1">
+                          {b2bItems
+                            .filter((i) => i.description.trim())
+                            .map((row) => (
+                              <li key={row.id} className="text-[12px] text-[var(--tx)]">
+                                · {row.description.trim()}
+                                {row.quantity > 1 ? ` ×${row.quantity}` : ""}
+                                <span className="text-[var(--tx3)]">
+                                  {" "}
+                                  (
+                                  {B2B_HANDLING_OPTIONS.find((o) => o.value === row.handling)?.label || row.handling}
+                                  )
+                                </span>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="px-4 py-3">
+                      <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Delivery</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
+                        <span className="text-[var(--tx3)]">Type</span>
+                        <span className="font-semibold text-[var(--tx)]">{DELIVERY_TYPES.find((d) => d.value === deliveryType)?.label}</span>
+                        <span className="text-[var(--tx3)]">Zone</span>
+                        <span className="font-semibold text-[var(--tx)]">Zone {zone}</span>
+                        <span className="text-[var(--tx3)]">Access</span>
+                        <span className="font-semibold text-[var(--tx)] capitalize">{deliveryAccess.replace(/_/g, " ")}</span>
+                      </div>
+                    </div>
+                    <div className="px-4 py-3">
+                      <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Client</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
+                        <span className="text-[var(--tx3)]">Name</span>
+                        <span className="font-semibold text-[var(--tx)]">{form.customer_name || "-"}</span>
+                        <span className="text-[var(--tx3)]">Date</span>
+                        <span className="font-semibold text-[var(--tx)]">{form.scheduled_date || "-"}</span>
+                        <span className="text-[var(--tx3)]">Deliver to</span>
+                        <span className="font-semibold text-[var(--tx)] truncate">{form.delivery_address || "-"}</span>
+                      </div>
+                    </div>
+                    {inventory.length > 0 && (
+                      <div className="px-4 py-3">
+                        <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-2">Items ({inventory.length})</p>
+                        <ul className="space-y-0.5">
+                          {inventory.map((item, i) => <li key={i} className="text-[12px] text-[var(--tx)]">· {item}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
-              {renderPricePreview()}
+              {b2bActive ? renderB2BPricePreview() : renderPricePreview()}
               <p className="text-[11px] text-[var(--tx3)] text-center">Your rates are locked in per your partnership agreement.</p>
             </div>
           )}
@@ -1136,6 +1518,66 @@ export default function PartnerScheduleModal({ orgId, orgType, onClose, onCreate
           ))}
         </div>
       </section>
+    );
+  }
+
+  function renderB2BPricePreview() {
+    const sub = b2bPreview?.partner_subtotal ?? 0;
+    const hst = calcHST(sub);
+    const totalWithHst = sub + hst;
+    const std = b2bPreview?.standard_subtotal;
+    const vname = b2bPreview?.vertical_name || "";
+    return (
+      <div className="rounded-xl border border-[#C9A962]/30 bg-[var(--gdim)] p-4 space-y-2">
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="text-[12px] font-bold tracking-wider capitalize text-[var(--gold)]">Your rate</h3>
+          {b2bPreviewLoading && <span className="text-[10px] text-[var(--tx3)]">Calculating…</span>}
+        </div>
+        {b2bPreview && vname ? (
+          <p className="text-[11px] font-semibold text-[var(--tx2)]">
+            {vname} — partner rate
+          </p>
+        ) : null}
+        {b2bPreview && b2bPreview.breakdown.length > 0 ? (
+          <div className="space-y-1">
+            {b2bPreview.breakdown.map((line, i) => (
+              <div key={i} className="flex justify-between text-[13px] gap-2">
+                <span className="text-[var(--tx3)]">{line.label}</span>
+                <span className="font-semibold text-[var(--tx)] shrink-0">{fmtCurrency(line.amount)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={`text-[12px] ${b2bPreviewLoading ? "text-[var(--tx3)]" : "text-[var(--tx3)]"}`}>
+            {b2bPreviewLoading
+              ? "Calculating partner pricing…"
+              : "Add items, delivery address, and pickup to see your rate."}
+          </div>
+        )}
+        {b2bPreview ? (
+          <>
+            <div className="border-t border-[#C9A962]/20 pt-2 mt-1 space-y-1">
+              <div className="flex justify-between text-[13px]">
+                <span className="text-[var(--tx3)]">Subtotal</span>
+                <span className="font-semibold text-[var(--tx)]">{fmtCurrency(sub)}</span>
+              </div>
+              <div className="flex justify-between text-[13px]">
+                <span className="text-[var(--tx3)]">HST (13%)</span>
+                <span className="font-semibold text-[var(--tx)]">{fmtCurrency(hst)}</span>
+              </div>
+              <div className="flex justify-between pt-1">
+                <span className="text-[var(--text-base)] font-bold text-[var(--tx)]">Total incl. HST</span>
+                <span className="text-[16px] font-bold text-[#C9A962]">{fmtCurrency(totalWithHst)}</span>
+              </div>
+            </div>
+            {std != null && std > sub ? (
+              <p className="text-[10px] text-[var(--tx3)] pt-1">
+                List pricing for the same job would be about {fmtCurrency(std)} before HST.
+              </p>
+            ) : null}
+          </>
+        ) : null}
+      </div>
     );
   }
 
