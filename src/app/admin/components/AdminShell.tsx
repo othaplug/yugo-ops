@@ -490,25 +490,25 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
 
             {/* Main - .main */}
             <div className="flex-1 flex flex-col min-w-0 min-h-0 max-w-full admin-main-offset">
-              {/* Topbar — min-w-0 + safe horizontal insets so search + actions never clip */}
+              {/* Topbar — flex row; search width capped inside flex-1 wrapper so bell + profile stay visible */}
               <div
-                className={`fixed top-0 right-0 z-30 h-14 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top flex w-full min-w-0 max-w-full items-stretch pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] sm:pl-4 sm:pr-4 ${sidebarCollapsed ? "left-0 md:left-14 md:pl-6 md:pr-6" : "left-0 md:left-[220px] md:pl-6 md:pr-6"}`}
+                className={`fixed top-0 right-0 z-30 h-14 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top flex items-center justify-between gap-2 sm:gap-4 min-w-0 max-w-full pl-3 pr-3 sm:pl-4 sm:pr-4 ${sidebarCollapsed ? "left-0 md:left-14 md:px-6" : "left-0 md:left-[220px] md:px-6"}`}
               >
-                <div className="flex h-full w-full min-w-0 max-w-full flex-1 items-center justify-between gap-1 sm:gap-3">
-                  <button
-                    onClick={() => setSidebarOpen(true)}
-                    className={`size-9 sm:size-10 items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 ${sidebarCollapsed ? "flex md:hidden" : "hidden"}`}
-                    aria-label="Open menu"
-                  >
-                    <List size={20} weight="regular" className="text-current" aria-hidden />
-                  </button>
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className={`size-10 items-center justify-center rounded-lg hover:bg-[var(--card)] active:bg-[var(--gdim)] transition-colors touch-manipulation text-[var(--tx2)] shrink-0 -ml-0.5 ${sidebarCollapsed ? "flex md:hidden" : "hidden"}`}
+                  aria-label="Open menu"
+                >
+                  <List size={20} weight="regular" className="text-current" aria-hidden />
+                </button>
 
+                <div className="flex min-w-0 flex-1 justify-start">
                   <SearchBox />
+                </div>
 
-                  <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-                    <NotificationDropdown />
-                    <ProfileDropdown user={user} />
-                  </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <NotificationDropdown />
+                  <ProfileDropdown user={user} />
                 </div>
               </div>
 

@@ -111,7 +111,7 @@ export default function SearchBox() {
   }, [query, search]);
 
   return (
-    <div ref={ref} className="relative min-w-0 flex-1">
+    <div ref={ref} className="relative w-full min-w-0 max-w-[200px] sm:max-w-[240px] md:max-w-[280px]">
       <div className="flex h-9 w-full min-w-0 items-center gap-1.5 rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2 sm:gap-2 sm:px-3 transition-colors duration-200">
         <span className="text-[var(--tx3)] shrink-0"><Icon name="search" className="w-[14px] h-[14px]" /></span>
         <input
