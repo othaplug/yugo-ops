@@ -2,10 +2,16 @@ export const metadata = { title: "Quotes" };
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import QuotesListClient from "./QuotesListClient";
 
 export default async function QuotesPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isSuperAdmin = isSuperAdminEmail(user?.email);
+
   const db = createAdminClient();
 
   const { data: quotes } = await db
@@ -25,6 +31,7 @@ export default async function QuotesPage() {
 
   return (
     <QuotesListClient
+      isSuperAdmin={isSuperAdmin}
       quotes={(quotes || []).map((q) => ({ ...q, client_name: contactMap[q.contact_id] || "" }))}
     />
   );

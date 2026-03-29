@@ -25,8 +25,7 @@ export default function CalendarHeader({
     <div className="px-3 sm:px-5 pt-4 pb-3 space-y-2 border-b border-[var(--brd)]/50">
       {/* Single row: title · nav · spacer · filters · view toggle · CTA */}
       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-        {/* Title — larger on phones; compact on md+ where the toolbar is dense */}
-        <h1 className="font-hero text-[22px] font-bold text-[var(--tx)] leading-tight shrink-0 md:whitespace-nowrap md:text-[17px] md:leading-none">
+        <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none shrink-0 md:whitespace-nowrap">
           {headerLabel}
         </h1>
 

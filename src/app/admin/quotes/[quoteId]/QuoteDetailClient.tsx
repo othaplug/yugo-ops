@@ -20,6 +20,7 @@ import {
 } from "@phosphor-icons/react";
 import { toTitleCase } from "@/lib/format-text";
 import { formatPhone } from "@/lib/phone";
+import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -43,6 +44,7 @@ interface Props {
   quote: any;
   engagement: EngagementEvent[];
   legacyEvents: LegacyEvent[];
+  isSuperAdmin?: boolean;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -108,7 +110,12 @@ function engagementSignal(events: EngagementEvent[]): { label: string; color: st
   return { label: "No engagement", color: "text-[var(--tx3)]" };
 }
 
-export default function QuoteDetailClient({ quote, engagement, legacyEvents }: Props) {
+export default function QuoteDetailClient({
+  quote,
+  engagement,
+  legacyEvents,
+  isSuperAdmin = false,
+}: Props) {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -140,7 +147,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
   }
   const contact = Array.isArray(quote.contacts) ? quote.contacts[0] : quote.contacts;
 
-  async function handleDeleteDraft() {
+  async function handleDeleteQuote() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/admin/quotes/${quote.id}`, { method: "DELETE" });
@@ -156,6 +163,8 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
       setDeleting(false);
     }
   }
+
+  const canDeleteQuote = quoteStatusAllowsHardDelete(quote.status, isSuperAdmin);
   const factors = quote.factors_applied as Record<string, unknown> | null;
   const signal = engagementSignal(engagement);
 
@@ -243,7 +252,7 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               {recoveringMove ? "Creating…" : "Create Move"}
             </button>
           )}
-          {quote.status === "draft" && !showDeleteConfirm && (
+          {canDeleteQuote && !showDeleteConfirm && (
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
@@ -252,11 +261,11 @@ export default function QuoteDetailClient({ quote, engagement, legacyEvents }: P
               <Trash2 className="w-3 h-3" /> Delete
             </button>
           )}
-          {showDeleteConfirm && (
+          {showDeleteConfirm && canDeleteQuote && (
             <>
               <button
                 type="button"
-                onClick={handleDeleteDraft}
+                onClick={handleDeleteQuote}
                 disabled={deleting}
                 className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--red)] bg-[var(--red)]/10 hover:bg-[var(--red)]/20 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
               >

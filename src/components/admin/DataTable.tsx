@@ -544,6 +544,17 @@ export default function DataTable<T>({
   const pagedKeys = useMemo(() => new Set(paged.map(getKey)), [paged, getKey]);
   const allPageSelected = selectable && pagedKeys.size > 0 && [...pagedKeys].every((k) => selectedKeys.has(k));
   const somePageSelected = selectable && [...pagedKeys].some((k) => selectedKeys.has(k));
+  /** Gmail-style: after selecting the whole page, offer to select every row matching search/sort (all pages). */
+  const canSelectAllInView =
+    selectable &&
+    pagination &&
+    sorted.length > paged.length &&
+    allPageSelected &&
+    selectedKeys.size === pagedKeys.size;
+
+  const selectAllSortedKeys = useCallback(() => {
+    setSelectedKeys(new Set(sorted.map(getKey)));
+  }, [sorted, getKey]);
 
   const toggleAll = useCallback(() => {
     setSelectedKeys((prev) => {
@@ -817,6 +828,15 @@ export default function DataTable<T>({
           <span className="text-[11px] font-semibold text-[var(--tx)] shrink-0">
             {selectedKeys.size} selected
           </span>
+          {canSelectAllInView && (
+            <button
+              type="button"
+              onClick={selectAllSortedKeys}
+              className="text-[11px] font-semibold text-[var(--gold)] hover:underline shrink-0"
+            >
+              Select all {sorted.length} in view
+            </button>
+          )}
           <div className="flex flex-wrap items-center gap-1.5 ml-auto">
             {effectiveBulkActions.map((action) => (
               <button

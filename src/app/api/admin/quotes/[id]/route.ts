@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireStaff } from "@/lib/api-auth";
+import { isSuperAdminEmail, requireStaff } from "@/lib/api-auth";
+import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 
 /**
  * DELETE /api/admin/quotes/[id]
- * Soft-delete or hard-delete a quote by its UUID (quotes.id).
- * Only draft quotes should be deletable; sent/accepted may be restricted.
+ * Hard-delete by UUID (quotes.id). Staff: drafts only. Superadmin: also sent/viewed/expired/declined/superseded.
+ * Never deletes accepted quotes or any quote linked to a move.
  */
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireStaff();
+  const { user, error } = await requireStaff();
   if (error) return error;
 
   const { id } = await params;
@@ -31,10 +32,20 @@ export async function DELETE(
   }
 
   const status = (quote.status as string) || "";
-  if (status !== "draft") {
+  const superAdmin = isSuperAdminEmail(user?.email);
+
+  if (!quoteStatusAllowsHardDelete(status, superAdmin)) {
+    const msg = superAdmin
+      ? "This quote cannot be deleted (e.g. accepted or unknown status)."
+      : "Only draft quotes can be deleted. Superadmin can remove sent quotes that are not accepted.";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
+
+  const { data: moveRow } = await admin.from("moves").select("id").eq("quote_id", id).maybeSingle();
+  if (moveRow) {
     return NextResponse.json(
-      { error: "Only draft quotes can be deleted. Sent or accepted quotes must be cancelled or superseded." },
-      { status: 400 }
+      { error: "Cannot delete a quote that has a linked move. Remove or reassign the move first." },
+      { status: 400 },
     );
   }
 

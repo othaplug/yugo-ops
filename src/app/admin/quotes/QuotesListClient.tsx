@@ -13,6 +13,7 @@ import CreateButton from "../components/CreateButton";
 import { useToast } from "../components/Toast";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
+import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 
 interface Quote {
   id: string;
@@ -102,7 +103,13 @@ function expiryInfo(expiresAt: string | null, status: string): { label: string; 
   return null;
 }
 
-export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
+export default function QuotesListClient({
+  quotes,
+  isSuperAdmin = false,
+}: {
+  quotes: Quote[];
+  isSuperAdmin?: boolean;
+}) {
   const [filter, setFilter] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -132,12 +139,53 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
     [toast, router],
   );
 
+  const runBulkDelete = useCallback(
+    async (ids: string[]) => {
+      if (
+        !window.confirm(
+          `Permanently delete ${ids.length} quote${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
+        )
+      ) {
+        return;
+      }
+      const res = await fetch("/api/admin/quotes/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", ids }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) {
+        const deleted = typeof data.deleted === "number" ? data.deleted : 0;
+        const skipped = typeof data.skipped === "number" ? data.skipped : 0;
+        if (deleted === 0) {
+          toast(
+            typeof data.error === "string"
+              ? data.error
+              : "No quotes were deleted (check permissions, status, or linked moves).",
+            "x",
+          );
+        } else {
+          let msg = `Deleted ${deleted} quote${deleted !== 1 ? "s" : ""}`;
+          if (skipped > 0) {
+            msg += `. ${skipped} skipped (accepted, linked move, or not permitted).`;
+          }
+          toast(msg, "check");
+          router.refresh();
+        }
+      } else {
+        toast("Error: " + (typeof data.error === "string" ? data.error : "Failed"), "x");
+      }
+    },
+    [toast, router],
+  );
+
   const bulkActions: BulkAction[] = useMemo(
     () => [
       { label: "Resend", onClick: (ids) => runBulk("resend", ids) },
       { label: "Mark Expired", onClick: (ids) => runBulk("expire", ids), variant: "danger" as const },
+      { label: "Delete", onClick: (ids) => runBulkDelete(ids), variant: "danger" as const },
     ],
-    [runBulk],
+    [runBulk, runBulkDelete],
   );
 
   const filtered = useMemo(
@@ -309,8 +357,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         align: "right",
         minWidth: "80px",
         render: (q) => {
-          const isDraft = q.status === "draft";
-          if (!isDraft) return null;
+          if (!quoteStatusAllowsHardDelete(q.status, isSuperAdmin)) return null;
           return (
             <div
               className="flex items-center justify-end gap-1.5"
@@ -338,7 +385,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
                 <button
                   type="button"
                   onClick={() => setConfirmId(q.id)}
-                  title="Delete draft"
+                  title={q.status === "draft" ? "Delete draft" : "Delete quote (superadmin)"}
                   className="inline-flex items-center justify-center min-h-[40px] min-w-[40px] rounded-full text-[var(--tx3)] hover:text-[var(--red)] hover:bg-[var(--red)]/10 transition-colors border border-transparent hover:border-[var(--red)]/20"
                 >
                   <Trash2 className="w-[18px] h-[18px]" />
@@ -349,7 +396,7 @@ export default function QuotesListClient({ quotes }: { quotes: Quote[] }) {
         },
       },
     ],
-    [confirmId, deleting, handleDelete],
+    [confirmId, deleting, handleDelete, isSuperAdmin],
   );
 
   const sentCount = quotes.filter((q) => q.status === "sent").length;

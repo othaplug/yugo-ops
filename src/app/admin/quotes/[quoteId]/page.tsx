@@ -1,4 +1,6 @@
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import { redirect } from "next/navigation";
 import QuoteDetailClient from "./QuoteDetailClient";
 
@@ -13,6 +15,10 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function QuoteDetailPage({ params }: Props) {
   const { quoteId } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isSuperAdmin = isSuperAdminEmail(user?.email);
+
   const db = createAdminClient();
 
   const { data: quote } = await db
@@ -41,6 +47,7 @@ export default async function QuoteDetailPage({ params }: Props) {
         quote={quote}
         engagement={engagementRows ?? []}
         legacyEvents={legacyEvents ?? []}
+        isSuperAdmin={isSuperAdmin}
       />
     </div>
   );
