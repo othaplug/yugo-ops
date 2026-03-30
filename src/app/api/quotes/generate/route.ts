@@ -6,12 +6,14 @@ import { logAudit } from "@/lib/audit";
 import { logActivity } from "@/lib/activity";
 import { validateInventoryQuantities } from "@/lib/inventory-quantity-validation";
 import { estimateLabourFromScore } from "@/lib/inventory-labour";
-import { getDrivingDistance, getMultiStopDrivingDistance } from "@/lib/mapbox/driving-distance";
+import { getDrivingDistance, getMultiStopDrivingDistance, straightLineKmFromGtaCore } from "@/lib/mapbox/driving-distance";
 import {
   calculateB2BDimensionalPrice,
+  isMoveDateWeekend,
   lineItemsFromQuotePayload,
   stopsFromQuotePayload,
   type B2BDimensionalQuoteInput,
+  type B2BPricingExtraLine,
 } from "@/lib/pricing/b2b-dimensional";
 import { loadB2BVerticalPricing } from "@/lib/pricing/b2b-vertical-load";
 import {
@@ -35,6 +37,7 @@ import {
   estateScheduleHeadline,
 } from "@/lib/quotes/estate-schedule";
 import { pickupDropoffFactorsFromPayload } from "@/lib/quotes/quote-address-display";
+import { generateNextQuoteId } from "@/lib/quotes/quote-id";
 import { normalizePhone } from "@/lib/phone";
 // ═══════════════════════════════════════════════
 // Types
@@ -144,6 +147,13 @@ interface QuoteInput {
   b2b_complexity_addons?: string[];
   b2b_crew_override?: number;
   b2b_estimated_hours_override?: number;
+  /** Before 8am / after 6pm style delivery (vertical schedule surcharges when using zone pricing) */
+  b2b_after_hours?: boolean;
+  b2b_same_day?: boolean;
+  b2b_skid_count?: number;
+  b2b_total_load_weight_lbs?: number;
+  b2b_haul_away_units?: number;
+  b2b_returns_pickup?: boolean;
   // Event (round-trip venue delivery)
   event_name?: string;
   event_return_date?: string;
@@ -695,44 +705,6 @@ async function calculateAddons(
   }
 
   return { total, breakdown, byTierExclusion };
-}
-
-// ═══════════════════════════════════════════════
-// Quote ID generation
-// ═══════════════════════════════════════════════
-
-/** Max numeric part we treat as "our" sequence (30001, 30002, ...). Larger = legacy HubSpot-style IDs we ignore. */
-const QUOTE_ID_NUMERIC_MAX = 999_999;
-
-async function generateQuoteId(sb: SupabaseAdmin): Promise<string> {
-  const { data: prefixRow } = await sb
-    .from("platform_config")
-    .select("value")
-    .eq("key", "quote_id_prefix")
-    .maybeSingle();
-  const prefix = (prefixRow?.value || "YG-").trim() || "YG-";
-  const likePattern = prefix.replace(/%/g, "\\%").replace(/_/g, "\\_") + "%";
-
-  const { data } = await sb
-    .from("quotes")
-    .select("quote_id")
-    .like("quote_id", likePattern)
-    .order("created_at", { ascending: false })
-    .limit(100);
-
-  let next = 30001;
-  if (data && data.length > 0) {
-    const nums = data
-      .map((row) => {
-        const id = row.quote_id || "";
-        const numPart = id.startsWith(prefix) ? id.slice(prefix.length) : id;
-        return parseInt(numPart, 10);
-      })
-      .filter((n) => !isNaN(n) && n <= QUOTE_ID_NUMERIC_MAX);
-    const max = nums.length > 0 ? Math.max(...nums) : 0;
-    if (max >= 30001) next = max + 1;
-  }
-  return `${prefix}${next}`;
 }
 
 // ═══════════════════════════════════════════════
@@ -2112,6 +2084,42 @@ async function calcSpecialty(
 // B2B ONE-OFF — base + distance modifier + access + weight surcharges
 // ═══════════════════════════════════════════════
 
+/** GTA zone surcharges (straight-line km from core to delivery) + weekend flat fee. */
+async function loadB2bPricingExtras(
+  config: Map<string, string>,
+  moveDate: string,
+  toAddress: string,
+): Promise<{
+  lines: B2BPricingExtraLine[];
+  deliveryKmFromGta: number | null;
+  gtaZone: 1 | 2 | 3 | null;
+  weekendAmount: number;
+}> {
+  const lines: B2BPricingExtraLine[] = [];
+  const deliveryKmFromGta = await straightLineKmFromGtaCore(toAddress.trim());
+  const z2 = cfgNum(config, "b2b_gta_zone2_surcharge", 75);
+  const z3 = cfgNum(config, "b2b_gta_zone3_surcharge", 150);
+  let gtaZone: 1 | 2 | 3 | null = null;
+  if (deliveryKmFromGta != null) {
+    if (deliveryKmFromGta >= 80) {
+      gtaZone = 3;
+      if (z3 > 0) lines.push({ label: "Outside GTA core (zone 3: 80+ km)", amount: z3 });
+    } else if (deliveryKmFromGta >= 40) {
+      gtaZone = 2;
+      if (z2 > 0) lines.push({ label: "Outside GTA core (zone 2: 40–80 km)", amount: z2 });
+    } else {
+      gtaZone = 1;
+    }
+  }
+  const wk = cfgNum(config, "b2b_weekend_surcharge", 40);
+  let weekendAmount = 0;
+  if (isMoveDateWeekend(moveDate) && wk > 0) {
+    weekendAmount = wk;
+    lines.push({ label: "Weekend delivery", amount: wk });
+  }
+  return { lines, deliveryKmFromGta, gtaZone, weekendAmount };
+}
+
 function getDistanceModifier(config: Map<string, string>, distKm: number): number {
   const distUltraShortKm = cfgNum(config, "dist_ultra_short_km", 2);
   const distShortKm = cfgNum(config, "dist_short_km", 5);
@@ -2158,9 +2166,14 @@ async function calcB2bOneoff(
     input.b2b_partner_organization_id?.trim() || null,
   );
 
+  const b2bLocationExtras = await loadB2bPricingExtras(config, input.move_date, input.to_address);
+
   if (loaded) {
     const items = lineItemsFromQuotePayload(input);
     const stops = stopsFromQuotePayload(input);
+    const merged = loaded.mergedRates as Record<string, unknown>;
+    const useVerticalZoneSchedule = String(merged.distance_mode || "") === "zones";
+
     const dimInput: B2BDimensionalQuoteInput = {
       vertical_code: loaded.vertical.code,
       items,
@@ -2174,7 +2187,16 @@ async function calcB2bOneoff(
       debris_removal: !!input.b2b_debris_removal,
       stairs_flights: input.b2b_stairs_flights,
       addons: input.b2b_complexity_addons,
+      weekend: isMoveDateWeekend(input.move_date),
+      after_hours: !!input.b2b_after_hours,
+      same_day: !!input.b2b_same_day,
+      skid_count: input.b2b_skid_count,
+      total_load_weight_lbs: input.b2b_total_load_weight_lbs,
+      haul_away_units: input.b2b_haul_away_units,
+      returns_pickup: !!input.b2b_returns_pickup,
     };
+
+    const b2bExtrasForDim = useVerticalZoneSchedule ? [] : b2bLocationExtras.lines;
 
     const dim = calculateB2BDimensionalPrice({
       vertical: loaded.vertical,
@@ -2183,6 +2205,7 @@ async function calcB2bOneoff(
       totalDistanceKm: distKm,
       roundingNearest: rounding,
       parkingLongCarryTotal: plcB2b.total,
+      pricingExtras: b2bExtrasForDim,
     });
 
     const partnerOrgId = input.b2b_partner_organization_id?.trim() || null;
@@ -2190,6 +2213,8 @@ async function calcB2bOneoff(
     if (partnerOrgId) {
       const listLoaded = await loadB2BVerticalPricing(sb, input.b2b_vertical_code, null);
       if (listLoaded) {
+        const listMerged = listLoaded.mergedRates as Record<string, unknown>;
+        const listUseZones = String(listMerged.distance_mode || "") === "zones";
         dimStandard = calculateB2BDimensionalPrice({
           vertical: listLoaded.vertical,
           mergedRates: listLoaded.mergedRates,
@@ -2197,6 +2222,7 @@ async function calcB2bOneoff(
           totalDistanceKm: distKm,
           roundingNearest: rounding,
           parkingLongCarryTotal: plcB2b.total,
+          pricingExtras: listUseZones ? [] : b2bLocationExtras.lines,
         });
       }
     }
@@ -2263,6 +2289,9 @@ async function calcB2bOneoff(
         weight_surcharge: 0,
         weight_category: input.b2b_weight_category || null,
         includes,
+        b2b_delivery_km_from_gta_core: b2bLocationExtras.deliveryKmFromGta,
+        b2b_gta_zone: b2bLocationExtras.gtaZone,
+        b2b_weekend_surcharge: b2bLocationExtras.weekendAmount,
       },
     };
   }
@@ -2284,6 +2313,7 @@ async function calcB2bOneoff(
   const truckB2b = normalizeTruckType(input.truck_type ?? "20ft");
   price += plcB2b.total + truckSurchargeAmount(config, truckB2b);
 
+  price += b2bLocationExtras.lines.reduce((s, l) => s + l.amount, 0);
   price += addonResult.total;
   const tax = Math.round(price * taxRate);
 
@@ -2324,6 +2354,10 @@ async function calcB2bOneoff(
       b2b_payment_method: input.b2b_payment_method ?? "card",
       b2b_retailer_source: input.b2b_retailer_source?.trim() || null,
       includes: b2bIncludes,
+      b2b_delivery_km_from_gta_core: b2bLocationExtras.deliveryKmFromGta,
+      b2b_gta_zone: b2bLocationExtras.gtaZone,
+      b2b_weekend_surcharge: b2bLocationExtras.weekendAmount,
+      b2b_location_extra_lines: b2bLocationExtras.lines,
     },
   };
 }
@@ -2842,7 +2876,7 @@ export async function POST(req: NextRequest) {
       input,
       isPreview,
       authUser: authUser ? { id: authUser.id, email: authUser.email } : null,
-      generateQuoteId: () => generateQuoteId(sb),
+      generateQuoteId: () => generateNextQuoteId(sb),
       postalPrefix: neighbourhood.postalPrefix,
     });
     return NextResponse.json(result.body, { status: result.status });
@@ -3418,9 +3452,9 @@ export async function POST(req: NextRequest) {
     quoteId = "PREVIEW";
   } else if (isUpdate) {
     const { data: existing } = await sb.from("quotes").select("quote_id").eq("quote_id", input.quote_id!.trim()).maybeSingle();
-    quoteId = existing?.quote_id ?? (await generateQuoteId(sb));
+    quoteId = existing?.quote_id ?? (await generateNextQuoteId(sb));
   } else {
-    quoteId = await generateQuoteId(sb);
+    quoteId = await generateNextQuoteId(sb);
   }
 
   const primaryPrice = tiers ? tiers.essential.price : custom_price!.price;

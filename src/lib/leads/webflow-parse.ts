@@ -55,7 +55,11 @@ export function pickField(flat: Record<string, string>, keys: string[]): string 
 
 /** Returns null when the visitor chose "other" / unsure — caller may infer from message text. */
 export function mapInboundServiceType(raw: string | undefined): string | null {
-  const r = (raw || "").toLowerCase().replace(/[\s-]+/g, "_");
+  const r = (raw || "")
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_")
+    .replace(/\//g, "_")
+    .replace(/_+/g, "_");
   if (!r) return null;
   if (
     r === "other" ||
@@ -68,6 +72,14 @@ export function mapInboundServiceType(raw: string | undefined): string | null {
     return null;
   }
   const map: Record<string, string> = {
+    specialty_transport: "specialty",
+    specialtytransport: "specialty",
+    specialty_delivery: "specialty",
+    commercial_specialty: "specialty",
+    custom_other: "b2b_oneoff",
+    customother: "b2b_oneoff",
+    other_service: "b2b_oneoff",
+    b2b_specialty: "b2b_oneoff",
     residential: "local_move",
     local: "local_move",
     local_move: "local_move",

@@ -9,6 +9,7 @@ import type { ItemWeightLike } from "@/lib/inventory-search";
 import { detectMultipleDates } from "./detect-multiple-dates";
 import { detectServiceTypeFromText } from "./detect-service-type-text";
 import { assessCompleteness } from "./assess-completeness";
+import { parseLeadTextMetrics } from "./parse-text-metrics";
 
 function inferSource(parsed: ReturnType<typeof parseCaptureFormPayload>): LeadSource {
   const h = (parsed.how_heard || "").toLowerCase();
@@ -83,9 +84,32 @@ export async function createLeadFromParsedCapture(
     .filter(Boolean)
     .join("\n");
   const datesDetected = detectMultipleDates(textBlob);
-  const completeness = assessCompleteness(parsedForScoring, inv, {
+  const textMetrics = parseLeadTextMetrics(textBlob);
+  let completeness = assessCompleteness(parsedForScoring, inv, {
     service_inferred: parsed.service_type ? null : detectedSvc,
   });
+
+  const heavyWeight = textMetrics.maxWeightLbs != null && textMetrics.maxWeightLbs > 300;
+  const specialtyService =
+    effectiveService === "specialty" ||
+    effectiveService === "b2b_oneoff" ||
+    (effectiveService === "single_item" && heavyWeight);
+  const requiresSpecialtyQuote = heavyWeight || specialtyService;
+  if (requiresSpecialtyQuote) {
+    completeness = {
+      ...completeness,
+      path: "manual_review",
+      clarifications_needed: [
+        ...completeness.clarifications_needed,
+        ...(heavyWeight
+          ? [`Weight over 300 lb detected (${Math.round(textMetrics.maxWeightLbs!)} lb) — specialty coordinator quote`]
+          : []),
+        ...(specialtyService && !heavyWeight
+          ? ["Specialty or one-off commercial delivery — use Specialty Quote Builder (no auto-quote)"]
+          : []),
+      ],
+    };
+  }
 
   let boxCount = inv.boxCount;
   if (parsed.box_count_estimate) {
@@ -164,6 +188,9 @@ export async function createLeadFromParsedCapture(
     raw_inquiry_text: opts?.raw_inquiry_text?.trim() || null,
     external_platform: opts?.external_platform?.trim() || null,
     external_reference: opts?.external_reference?.trim() || null,
+    parsed_weight_lbs_max: textMetrics.maxWeightLbs,
+    parsed_dimensions_text: textMetrics.dimensionsSnippet,
+    requires_specialty_quote: requiresSpecialtyQuote,
   };
 
   const lead = await createLeadPipeline(sb, input);

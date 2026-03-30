@@ -110,6 +110,11 @@ import { getVisibleAddons, isAddonHiddenForTier, ESTATE_ADDON_UI_LINES } from "@
 import { formatAddressForDisplay } from "@/lib/format-text";
 import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
+import {
+  getB2BQuoteHero,
+  isB2BDeliveryQuoteServiceType,
+  isB2BInvoiceQuote,
+} from "@/lib/quotes/b2b-quote-copy";
 
 /* ═══════════════════════════════════════════════════
    Main Client Component
@@ -528,6 +533,16 @@ export default function QuotePageClient({
   const tax = Math.round((totalBeforeTax - referralDiscountAmt) * TAX_RATE);
   const grandTotal = totalBeforeTax - referralDiscountAmt + tax;
   const deposit = useMemo(() => {
+    const faEarly = quote.factors_applied as Record<string, unknown> | null;
+    if (isB2BInvoiceQuote(faEarly, quote.service_type)) {
+      return 0;
+    }
+    const b2bCardFullPay =
+      isB2BDeliveryQuoteServiceType(quote.service_type) &&
+      !isB2BInvoiceQuote(faEarly, quote.service_type);
+    if (b2bCardFullPay) {
+      return grandTotal;
+    }
     if (quote.service_type === "bin_rental") {
       return grandTotal;
     }
@@ -539,7 +554,15 @@ export default function QuotePageClient({
       return stored;
     }
     return calculateDeposit(quote.service_type, totalBeforeTax);
-  }, [isResidential, selectedTier, quote.service_type, quote.deposit_amount, totalBeforeTax, grandTotal]);
+  }, [
+    isResidential,
+    selectedTier,
+    quote.service_type,
+    quote.deposit_amount,
+    quote.factors_applied,
+    totalBeforeTax,
+    grandTotal,
+  ]);
 
   /* ── Contract data for ContractSign component ── */
   const contractAddonsList = useMemo((): ContractAddon[] => {
@@ -639,6 +662,13 @@ export default function QuotePageClient({
               address: r.address,
               accessLine: accessLabel(r.access),
             })),
+          }
+        : {}),
+      ...(quote.service_type === "b2b_oneoff" || quote.service_type === "b2b_delivery"
+        ? {
+            b2bNet30Invoice:
+              (quote.factors_applied as Record<string, unknown> | null)?.b2b_payment_method ===
+              "invoice",
           }
         : {}),
     };
@@ -783,11 +813,10 @@ export default function QuotePageClient({
   /** Truck surcharge is included in the total; never show as a priced line to clients. */
   const truckBreakdownClientNote = useMemo(() => null as string | null, []);
 
-  const b2bInvoiceBooking = useMemo(() => {
-    const st = quote.service_type;
-    if (st !== "b2b_oneoff" && st !== "b2b_delivery") return false;
-    return factorsApplied?.b2b_payment_method === "invoice";
-  }, [quote.service_type, factorsApplied]);
+  const b2bInvoiceBooking = useMemo(
+    () => isB2BInvoiceQuote(factorsApplied, quote.service_type),
+    [quote.service_type, factorsApplied],
+  );
 
   const binRentalBooking = quote.service_type === "bin_rental";
 
@@ -821,11 +850,27 @@ export default function QuotePageClient({
   }, [quote.quote_id, signedName, contactEmail, selectedTier, selectedAddons]);
 
   /* ── Hero config ── */
-  const hero = HERO_CONFIG[quote.service_type] ?? HERO_CONFIG.local_move;
+  const hero = useMemo(() => {
+    const fa = quote.factors_applied as Record<string, unknown> | null;
+    if (fa?.specialty_b2b_transport === true) {
+      return {
+        headline: "Your Specialty Transport Quote",
+        subtitle:
+          "Custom one-off logistics with coordinator-built pricing. Review scope and confirm to secure your date.",
+      };
+    }
+    const base = HERO_CONFIG[quote.service_type] ?? HERO_CONFIG.local_move;
+    if (isB2BDeliveryQuoteServiceType(quote.service_type)) {
+      const code = typeof fa?.b2b_vertical_code === "string" ? fa.b2b_vertical_code : null;
+      return getB2BQuoteHero(code);
+    }
+    return base;
+  }, [quote.service_type, quote.factors_applied]);
   const dateLabel =
     quote.service_type === "single_item" ||
     quote.service_type === "white_glove" ||
-    quote.service_type === "b2b_oneoff"
+    quote.service_type === "b2b_oneoff" ||
+    quote.service_type === "b2b_delivery"
       ? "Delivery Date"
       : quote.service_type === "office_move"
         ? "Relocation Date"
@@ -1336,16 +1381,18 @@ export default function QuotePageClient({
               <div>
                 <Check className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
                 <p className="text-[13px] font-bold" style={{ color: FOREST }}>
-                  Flat-Rate
+                  Flat-Rate Guarantee
                 </p>
                 <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
-                  No hidden fees, guaranteed
+                  No hidden fees on quoted scope.
                 </p>
               </div>
             </div>
             <div className="mt-4 pt-3 text-center border-t border-[var(--brd)]/30">
               <p className="text-[11px] font-medium" style={{ color: `${FOREST}60` }}>
-                Trusted by leading Toronto businesses &amp; homeowners
+                {isB2BDeliveryQuoteServiceType(quote.service_type)
+                  ? "Trusted By Leading Toronto Businesses"
+                  : "Trusted By Leading Toronto Businesses And Homeowners"}
               </p>
             </div>
           </div>
@@ -1423,14 +1470,16 @@ export default function QuotePageClient({
                   className="font-heading text-[var(--text-base)] font-bold tracking-wider uppercase"
                   style={{ color: FOREST }}
                 >
-                  {b2bInvoiceBooking ? "Invoice (Net 30)" : "Payment"}
+                  {b2bInvoiceBooking ? "INVOICE (NET 30)" : "PAYMENT"}
                 </h2>
                 <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
                   {b2bInvoiceBooking
                     ? "No card required. We will email an invoice; payment is due within 30 days of the invoice date."
                     : binRentalBooking
                       ? "Full payment confirms your rental. Your card stays on file for any late or missing-item fees."
-                      : "Complete your booking with a secure deposit payment"}
+                      : isB2BDeliveryQuoteServiceType(quote.service_type)
+                        ? "Full payment (including HST) is required to confirm this commercial delivery booking."
+                        : "Complete your booking with a secure deposit payment."}
                 </p>
               </div>
               <div className="p-5 md:p-6">
@@ -1480,10 +1529,19 @@ export default function QuotePageClient({
                     selectedTier={selectedTier}
                     selectedAddons={Array.from(selectedAddons.values())}
                     disabled={quoteBookingLocked}
+                    amountHeading={
+                      isB2BDeliveryQuoteServiceType(quote.service_type) && !binRentalBooking
+                        ? "TOTAL DUE NOW"
+                        : binRentalBooking
+                          ? "TOTAL DUE NOW"
+                          : "DEPOSIT AMOUNT"
+                    }
                     submitLabel={
                       binRentalBooking
-                        ? `Pay ${fmtPrice(deposit)} & Book`
-                        : `Pay ${fmtPrice(deposit)} & Book My Move`
+                        ? `PAY ${fmtPrice(deposit)} & BOOK`
+                        : isB2BDeliveryQuoteServiceType(quote.service_type)
+                          ? `PAY ${fmtPrice(deposit)} & CONFIRM DELIVERY`
+                          : `PAY ${fmtPrice(deposit)} & BOOK MY MOVE`
                     }
                     onSuccess={(result) => {
                       setPaymentMoveId(result.move_id);
@@ -1535,13 +1593,22 @@ export default function QuotePageClient({
                     {quote.service_type === "office_move"
                       ? "relocation"
                       : quote.service_type === "b2b_oneoff" ||
+                          quote.service_type === "b2b_delivery" ||
                           quote.service_type === "single_item" ||
                           quote.service_type === "white_glove"
                         ? "delivery"
                         : "move"}{" "}
                     is booked. We&apos;ll send a confirmation email with all the details. Our team will
                     reach out closer to your{" "}
-                    {quote.service_type === "office_move" ? "relocation" : "move"} date.
+                    {quote.service_type === "office_move"
+                      ? "relocation"
+                      : quote.service_type === "b2b_oneoff" ||
+                          quote.service_type === "b2b_delivery" ||
+                          quote.service_type === "single_item" ||
+                          quote.service_type === "white_glove"
+                        ? "delivery"
+                        : "move"}{" "}
+                    date.
                   </>
                 )}
               </p>
@@ -1563,7 +1630,16 @@ export default function QuotePageClient({
                 <p className="text-[12px] mt-4" style={{ color: `${FOREST}60` }}>
                   A confirmation email is on its way.
                   {paymentMoveId
-                    ? ` You can track your ${quote.service_type === "office_move" ? "relocation" : "move"} status anytime.`
+                    ? ` You can track your ${
+                        quote.service_type === "office_move"
+                          ? "relocation"
+                          : quote.service_type === "b2b_oneoff" ||
+                              quote.service_type === "b2b_delivery" ||
+                              quote.service_type === "single_item" ||
+                              quote.service_type === "white_glove"
+                            ? "delivery"
+                            : "move"
+                      } status anytime.`
                     : null}
                 </p>
               )}

@@ -56,6 +56,8 @@ const B2B_DELIVERY_VERTICAL_OPTIONS: { id: string; label: string }[] = [
   { id: "medical_equipment", label: "Medical / Lab Equipment" },
   { id: "appliance", label: "Appliance Delivery" },
   { id: "art_gallery", label: "Art & Gallery" },
+  { id: "restaurant_hospitality", label: "Restaurant / Hospitality" },
+  { id: "ecommerce_bulk", label: "E-Commerce / Bulk Delivery" },
   { id: "custom", label: "Custom / Other" },
 ];
 

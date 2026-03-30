@@ -452,6 +452,19 @@ export async function createMoveFromQuote(
       );
     }
   } else {
+    const specialtyB2b = factors.specialty_b2b_transport === true;
+    const specNotes = specialtyB2b
+      ? [
+          typeof factors.specialty_handling_notes === "string" ? factors.specialty_handling_notes.trim() : "",
+          Array.isArray(factors.specialty_equipment_keys) && (factors.specialty_equipment_keys as string[]).length
+            ? `Equipment flags: ${(factors.specialty_equipment_keys as string[]).join(", ")}`
+            : "",
+          `Specialty B2B transport · Quote ${input.quoteId}`,
+        ]
+          .filter(Boolean)
+          .join("\n\n")
+      : null;
+
     rowsToInsert = [
       {
         ...sharedStatic,
@@ -461,6 +474,16 @@ export async function createMoveFromQuote(
         delivery_address: quote.to_address,
         scheduled_date: quote.move_date,
         distance_km: quote.distance_km ?? null,
+        est_crew_size: (quote.est_crew_size as number) ?? null,
+        est_hours:
+          (typeof factors.est_job_hours === "number" ? factors.est_job_hours : null) ??
+          (quote.est_hours as number) ??
+          null,
+        truck_primary: (quote.truck_primary as string) ?? null,
+        internal_notes: specNotes,
+        complexity_indicators: specialtyB2b
+          ? ["specialty_transport", "heavy_equipment_possible"]
+          : [],
         ...buildFinancialPrimary(),
       },
     ];

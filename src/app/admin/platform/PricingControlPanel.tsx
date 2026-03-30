@@ -3342,6 +3342,7 @@ function ProcessingRecoverySection() {
 function B2BSurchargesSection() {
   const [access, setAccess] = useState<{ key: string; label: string; surcharge: number }[]>([]);
   const [weight, setWeight] = useState<{ key: string; label: string; surcharge: number }[]>([]);
+  const [accessoriesExcludedText, setAccessoriesExcludedText] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -3352,6 +3353,9 @@ function B2BSurchargesSection() {
       .then((d) => {
         if (d.access) setAccess(d.access);
         if (d.weight) setWeight(d.weight);
+        if (Array.isArray(d.accessoriesExcluded)) {
+          setAccessoriesExcludedText(d.accessoriesExcluded.join("\n"));
+        }
       })
       .catch(() => toast("Failed to load B2B surcharges", "x"))
       .finally(() => setLoading(false));
@@ -3360,11 +3364,15 @@ function B2BSurchargesSection() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const accessoriesExcluded = accessoriesExcludedText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
       const res = await fetch("/api/admin/pricing/b2b-surcharges", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ access, weight }),
+        body: JSON.stringify({ access, weight, accessoriesExcluded }),
       });
       const json = await parseJsonOrEmpty(res);
       if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Failed to save");
@@ -3433,6 +3441,21 @@ function B2BSurchargesSection() {
             </tbody>
           </table>
         </div>
+      </div>
+      <div>
+        <h4 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">
+          Accessories excluded from B2B piece count
+        </h4>
+        <p className="text-[10px] text-[var(--tx3)] mb-2">
+          One label per line. Coordinators use this as reference when entering line items; matching is manual today.
+        </p>
+        <textarea
+          value={accessoriesExcludedText}
+          onChange={(e) => setAccessoriesExcludedText(e.target.value)}
+          rows={8}
+          className="w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-3 py-2 text-[12px] font-mono"
+          placeholder="Throw cushions / accent pillows"
+        />
       </div>
       <button type="button" onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50">
         {saving ? "Saving…" : "Save B2B Surcharges"}

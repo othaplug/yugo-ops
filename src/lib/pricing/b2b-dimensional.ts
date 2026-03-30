@@ -35,6 +35,15 @@ export interface B2BDimensionalQuoteInput {
   stairs_flights?: number;
   /** Extra complexity keys present on vertical complexity_premiums (e.g. tv_mounting) */
   addons?: string[];
+  /** Schedule / access add-ons (from quote form) */
+  weekend?: boolean;
+  after_hours?: boolean;
+  same_day?: boolean;
+  skid_count?: number;
+  /** Total load weight for flooring-style verticals */
+  total_load_weight_lbs?: number;
+  haul_away_units?: number;
+  returns_pickup?: boolean;
 }
 
 export interface DeliveryVerticalRow {
@@ -100,11 +109,38 @@ export function mergeVerticalConfig(
   return out;
 }
 
-export function recommendTruckForB2B(_items: B2BQuoteLineItem[], totalUnits: number): string {
-  if (totalUnits <= 5) return "sprinter";
-  if (totalUnits <= 20) return "16ft";
-  if (totalUnits <= 80) return "20ft";
-  return "26ft";
+export function recommendTruckForB2B(
+  _items: B2BQuoteLineItem[],
+  totalUnits: number,
+  rates?: Record<string, unknown>,
+): string {
+  const smu = num(rates?.sprinter_max_units, 5);
+  let rec: string;
+  if (totalUnits <= smu) rec = "sprinter";
+  else if (totalUnits <= 20) rec = "16ft";
+  else if (totalUnits <= 80) rec = "20ft";
+  else rec = "26ft";
+  const minTruck = str(rates?.minimum_truck, "")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  if (minTruck === "16ft" && rec === "sprinter") rec = "16ft";
+  if (minTruck === "20ft" && (rec === "sprinter" || rec === "16ft")) rec = "20ft";
+  if (minTruck === "26ft") rec = "26ft";
+  return rec;
+}
+
+function distanceZoneFee(distKm: number, zones: unknown): number {
+  if (!Array.isArray(zones) || zones.length === 0) return 0;
+  for (const z of zones) {
+    if (typeof z !== "object" || !z) continue;
+    const o = z as Record<string, unknown>;
+    const mn = num(o.min_km, 0);
+    const mx = num(o.max_km, 99999);
+    const fee = num(o.fee, 0);
+    if (distKm >= mn && distKm < mx) return fee;
+  }
+  const last = zones[zones.length - 1] as Record<string, unknown>;
+  return num(last?.fee, 0);
 }
 
 export function estimateB2BHours(input: B2BDimensionalQuoteInput, rates: Record<string, unknown>): number {
@@ -207,6 +243,21 @@ export function stopsFromQuotePayload(input: {
   return synthesizeStopsFromAddresses(input.from_address, input.to_address, input.from_access, input.to_access);
 }
 
+/** Flat surcharges appended to dimensional subtotal (e.g. weekend, outside-GTA zones). */
+export interface B2BPricingExtraLine {
+  label: string;
+  amount: number;
+}
+
+/** True when move_date is Saturday or Sunday (local calendar day). */
+export function isMoveDateWeekend(isoDate: string): boolean {
+  const raw = isoDate?.trim();
+  if (!raw) return false;
+  const d = new Date(`${raw}T12:00:00`);
+  const day = d.getDay();
+  return day === 0 || day === 6;
+}
+
 export function calculateB2BDimensionalPrice(args: {
   vertical: DeliveryVerticalRow;
   mergedRates: Record<string, unknown>;
@@ -214,6 +265,8 @@ export function calculateB2BDimensionalPrice(args: {
   totalDistanceKm: number;
   roundingNearest: number;
   parkingLongCarryTotal?: number;
+  /** Applied before minimum charge / final rounding bucket. */
+  pricingExtras?: B2BPricingExtraLine[];
 }): B2BDimensionalPriceResult {
   const vc = args.mergedRates;
   const method = (args.vertical.pricing_method || "dimensional").toLowerCase();
@@ -233,7 +286,26 @@ export function calculateB2BDimensionalPrice(args: {
 
   const dimOn = method !== "flat" && method !== "hourly";
   const includeUnits = dimOn;
-  if (includeUnits && unitRate > 0 && totalUnits > 0) {
+  const itemsIncludedBase = vc.items_included_in_base;
+  const perItemAfterBase = num(vc.per_item_rate_after_base, NaN);
+  const usesTieredItems =
+    includeUnits &&
+    itemsIncludedBase != null &&
+    typeof itemsIncludedBase === "number" &&
+    Number.isFinite(itemsIncludedBase) &&
+    Number.isFinite(perItemAfterBase);
+
+  if (usesTieredItems) {
+    const extra = Math.max(0, totalUnits - itemsIncludedBase!);
+    if (extra > 0) {
+      const unitCharge = Math.round(extra * perItemAfterBase * 100) / 100;
+      totalPrice += unitCharge;
+      breakdown.push({
+        label: `Additional ${unitLabel}s (${extra} beyond ${itemsIncludedBase}) × ${fmtMoney(perItemAfterBase)}`,
+        amount: unitCharge,
+      });
+    }
+  } else if (includeUnits && unitRate > 0 && totalUnits > 0) {
     const unitCharge = Math.round(totalUnits * unitRate * 100) / 100;
     totalPrice += unitCharge;
     breakdown.push({
@@ -269,8 +341,8 @@ export function calculateB2BDimensionalPrice(args: {
 
   if (!handledPerBox && dimOn) {
     const raw = handlingRates[ht];
-    if (typeof raw === "number" && raw > 0) {
-      if (raw < 10 && ht === "hand_bomb") {
+    if (typeof raw === "number" && raw !== 0) {
+      if (raw > 0 && raw < 10 && ht === "hand_bomb") {
         handlingCharge = Math.round(totalUnits * raw * 100) / 100;
         breakdown.push({
           label: `Hand-bomb: ${totalUnits} × ${fmtMoney(raw)}`,
@@ -287,8 +359,24 @@ export function calculateB2BDimensionalPrice(args: {
   }
   totalPrice += handlingCharge;
 
+  const wlr = vc.weight_line_rates as Record<string, number> | undefined;
+  if (wlr && typeof wlr === "object" && dimOn) {
+    for (const item of items) {
+      const cat = item.weight_category || "light";
+      const tierRate = num(wlr[String(cat)], 0);
+      if (tierRate > 0) {
+        const weightCharge = Math.round(item.quantity * tierRate * 100) / 100;
+        totalPrice += weightCharge;
+        breakdown.push({
+          label: `Weight surcharge (${item.description}): ${item.quantity} × ${fmtMoney(tierRate)}`,
+          amount: weightCharge,
+        });
+      }
+    }
+  }
+
   const weightTiers = vc.weight_tiers as Record<string, number> | undefined;
-  if (weightTiers && dimOn) {
+  if (!wlr && weightTiers && dimOn) {
     for (const item of items) {
       const tierKey =
         item.weight_category === "heavy" || item.weight_category === "extra_heavy"
@@ -308,9 +396,73 @@ export function calculateB2BDimensionalPrice(args: {
     }
   }
 
+  const fl = vc.flooring_load_tiers as Record<string, unknown> | undefined;
+  const loadLbs = args.input.total_load_weight_lbs;
+  if (fl && dimOn && loadLbs != null && loadLbs > 0) {
+    const sm = num(fl.standard_max_lb, 1000);
+    const hm = num(fl.heavy_max_lb, 2500);
+    let loadFee = 0;
+    let loadLabel = "";
+    if (loadLbs > hm) {
+      loadFee = num(fl.extra_fee, 80);
+      loadLabel = `Heavy load (${loadLbs} lbs total)`;
+      if (fl.extra_three_crew === true) {
+        const hr = num(vc.crew_hourly_rate, 75);
+        const extraLabour = Math.round(1 * hr * num(vc.min_hours, 2) * 100) / 100;
+        totalPrice += extraLabour;
+        breakdown.push({ label: "Extra crew (heavy flooring load)", amount: extraLabour });
+      }
+    } else if (loadLbs > sm) {
+      loadFee = num(fl.heavy_fee, 40);
+      loadLabel = `Load weight tier (${loadLbs} lbs total)`;
+    }
+    if (loadFee > 0) {
+      totalPrice += loadFee;
+      breakdown.push({ label: loadLabel, amount: loadFee });
+    }
+  }
+
+  const skidFee = num(vc.skid_handling_fee, 0);
+  const skids = Math.max(0, args.input.skid_count ?? 0);
+  if (dimOn && skidFee > 0 && skids > 0) {
+    const sc = Math.round(skidFee * skids * 100) / 100;
+    totalPrice += sc;
+    breakdown.push({ label: `Skid handling (${skids} skid(s))`, amount: sc });
+  }
+
+  const haulUnits = Math.max(0, args.input.haul_away_units ?? 0);
+  const haulPer = num(vc.haul_away_per_unit, 0);
+  if (dimOn && haulUnits > 0 && haulPer > 0) {
+    const hc = Math.round(haulUnits * haulPer * 100) / 100;
+    totalPrice += hc;
+    breakdown.push({ label: `Haul-away (${haulUnits} unit(s))`, amount: hc });
+  }
+
+  if (dimOn && args.input.returns_pickup && num(vc.returns_pickup_flat, 0) > 0) {
+    const rp = num(vc.returns_pickup_flat, 0);
+    totalPrice += rp;
+    breakdown.push({ label: "Returns pickup", amount: rp });
+  }
+
+  const anyExtraHeavy = items.some((i) => i.weight_category === "extra_heavy");
+  const ehl = vc.extra_heavy_labour as Record<string, unknown> | undefined;
+  if (dimOn && anyExtraHeavy && ehl) {
+    const ec = num(ehl.extra_crew, 0);
+    const hr = num(ehl.hourly_per_extra, 0);
+    const mh = num(ehl.min_hours, 2);
+    if (ec > 0 && hr > 0) {
+      const lab = Math.round(ec * hr * mh * 100) / 100;
+      totalPrice += lab;
+      breakdown.push({
+        label: `Mandatory extra crew (${ec} × ${mh} hr min × ${fmtMoney(hr)})`,
+        amount: lab,
+      });
+    }
+  }
+
   const stops = args.input.stops.filter((s) => s.address.trim().length > 0);
   const totalStops = Math.max(stops.length, 2);
-  const freeStops = num(vc.free_stops, 1);
+  const freeStops = num(vc.stops_included_in_base, num(vc.free_stops, 1));
   const extraStops = Math.max(0, totalStops - freeStops);
   const stopRate = num(vc.stop_rate, 75);
 
@@ -323,7 +475,7 @@ export function calculateB2BDimensionalPrice(args: {
     });
   }
 
-  const recommendedTruck = recommendTruckForB2B(items, totalUnits);
+  const recommendedTruck = recommendTruckForB2B(items, totalUnits, vc);
   const truck = (args.input.truck_override || recommendedTruck).toLowerCase().replace(/\s+/g, "");
   const truckRates = (vc.truck_rates as Record<string, number> | undefined) || {};
   const truckSurcharge = num(truckRates[truck], 0);
@@ -333,17 +485,59 @@ export function calculateB2BDimensionalPrice(args: {
   }
 
   const distKm = Math.max(0, args.totalDistanceKm);
-  const freeKm = num(vc.distance_free_km, 15);
-  const perKm = num(vc.distance_per_km, 3);
-  const chargeableKm = Math.max(0, distKm - freeKm);
+  const dmode = str(vc.distance_mode, "");
+  if (dmode === "zones" && method !== "flat") {
+    const zfee = distanceZoneFee(distKm, vc.distance_zones);
+    if (zfee > 0) {
+      totalPrice += zfee;
+      breakdown.push({
+        label: `Distance zone (${distKm.toFixed(1)} km route)`,
+        amount: zfee,
+      });
+    }
+  } else {
+    const freeKm = num(vc.distance_free_km, 15);
+    const perKm = num(vc.distance_per_km, 3);
+    const chargeableKm = Math.max(0, distKm - freeKm);
 
-  if (chargeableKm > 0 && method !== "flat") {
-    const distanceCharge = Math.round(chargeableKm * perKm);
-    totalPrice += distanceCharge;
-    breakdown.push({
-      label: `Distance: ${chargeableKm.toFixed(1)} km × ${fmtMoney(perKm)}`,
-      amount: distanceCharge,
-    });
+    if (chargeableKm > 0 && method !== "flat") {
+      const distanceCharge = Math.round(chargeableKm * perKm);
+      totalPrice += distanceCharge;
+      breakdown.push({
+        label: `Distance: ${chargeableKm.toFixed(1)} km × ${fmtMoney(perKm)}`,
+        amount: distanceCharge,
+      });
+    }
+  }
+
+  const applyVerticalSchedule = dmode === "zones";
+  const sched = vc.schedule_surcharges as Record<string, number> | undefined;
+  const waiveAh = vc.waive_after_hours_surcharge === true;
+  const medCombo = vc.medical_combined_schedule_surcharge === true;
+  if (dimOn && applyVerticalSchedule && sched) {
+    if (medCombo && num(sched.weekend_or_after_hours_combined, 0) > 0) {
+      if (args.input.weekend || args.input.after_hours) {
+        const a = num(sched.weekend_or_after_hours_combined, 0);
+        totalPrice += a;
+        breakdown.push({ label: "Weekend / after-hours (medical)", amount: a });
+      }
+    } else {
+      if (args.input.weekend && num(sched.weekend, 0) > 0) {
+        const w = num(sched.weekend, 0);
+        totalPrice += w;
+        breakdown.push({ label: "Weekend delivery", amount: w });
+      }
+      if (args.input.after_hours && !waiveAh && num(sched.after_hours, 0) > 0) {
+        const ah = num(sched.after_hours, 0);
+        totalPrice += ah;
+        breakdown.push({ label: "After-hours delivery", amount: ah });
+      }
+    }
+    if (args.input.same_day && num(sched.same_day, 0) > 0) {
+      const sd = num(sched.same_day, 0);
+      totalPrice += sd;
+      breakdown.push({ label: "Same-day delivery", amount: sd });
+    }
   }
 
   const prem = (vc.complexity_premiums as Record<string, number> | undefined) || {};
@@ -364,7 +558,17 @@ export function calculateB2BDimensionalPrice(args: {
 
   if (dimOn) {
     applyPremium("time_sensitive", !!args.input.time_sensitive);
-    applyPremium("assembly_required", !!args.input.assembly_required);
+    if (args.input.assembly_required) {
+      if (vc.assembly_included === true) {
+        /* assembly bundled in base */
+      } else if (num(vc.assembly_addon_flat, 0) > 0) {
+        const af = num(vc.assembly_addon_flat, 0);
+        totalPrice += af;
+        breakdown.push({ label: "Assembly add-on", amount: af });
+      } else {
+        applyPremium("assembly_required", true);
+      }
+    }
     applyPremium("debris_removal", !!args.input.debris_removal);
 
     if (args.input.stairs_flights && args.input.stairs_flights > 0) {
@@ -381,6 +585,7 @@ export function calculateB2BDimensionalPrice(args: {
     if (anyFragile) applyPremium("fragile", true);
 
     for (const key of args.input.addons || []) {
+      if (key === "haul_away_old" && haulUnits > 0) continue;
       applyPremium(key, true);
     }
   }
@@ -404,6 +609,14 @@ export function calculateB2BDimensionalPrice(args: {
     breakdown.push({ label: "Parking / long carry", amount: plc });
   }
 
+  for (const extra of args.pricingExtras ?? []) {
+    const amt = Math.round(extra.amount * 100) / 100;
+    if (amt > 0) {
+      totalPrice += amt;
+      breakdown.push({ label: extra.label, amount: amt });
+    }
+  }
+
   const minCharge = num(vc.min_charge, num(args.vertical.base_rate, 0));
   if (totalPrice < minCharge) {
     const delta = minCharge - totalPrice;
@@ -420,7 +633,12 @@ export function calculateB2BDimensionalPrice(args: {
 
   if (totalPrice < 200) totalPrice = 200;
 
-  const crew = args.input.crew_override ?? num(vc.min_crew, 2);
+  let crew = args.input.crew_override ?? num(vc.min_crew, 2);
+  const th = num(vc.large_job_item_threshold, 0);
+  const lc = num(vc.large_job_min_crew, 0);
+  if (args.input.crew_override == null && th > 0 && lc > 0 && totalUnits >= th) {
+    crew = Math.max(crew, lc);
+  }
   const estimatedHours =
     args.input.estimated_hours_override ?? estimateB2BHours(args.input, vc);
 
@@ -433,6 +651,13 @@ export function calculateB2BDimensionalPrice(args: {
   const includes: string[] = [`${crew}-person crew`, truckLabel, args.vertical.name];
   if (args.input.handling_type) {
     includes.push(`${args.input.handling_type.replace(/_/g, " ")} handling`);
+  }
+  if (vc.auto_quote_disabled === true) {
+    includes.push("Custom scope — coordinator finalizes price (specialty quote builder)");
+  }
+  const vd = vc.volume_discount_tiers;
+  if (Array.isArray(vd) && vd.length > 0) {
+    includes.push("Volume discounts available for qualifying monthly delivery counts");
   }
 
   return {

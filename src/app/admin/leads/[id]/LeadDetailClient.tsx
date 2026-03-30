@@ -148,6 +148,10 @@ export default function LeadDetailClient({
   const tel = telHref(phone);
   const sms = smsHref(phone);
   const quoteHref = `/admin/quotes/new?lead_id=${encodeURIComponent(leadId)}`;
+  const specialtyQuoteHref = `${quoteHref}&specialty_builder=1`;
+  const requiresSpec = Boolean(lead.requires_specialty_quote);
+  const heavyParsed =
+    lead.parsed_weight_lbs_max != null && Number(lead.parsed_weight_lbs_max) > 300;
 
   return (
     <div className="max-w-[720px] mx-auto px-4 md:px-6 py-5 md:py-6">
@@ -170,7 +174,10 @@ export default function LeadDetailClient({
         lead.completeness_path ||
           (Array.isArray(lead.fields_missing) && lead.fields_missing.length > 0) ||
           (Array.isArray(lead.clarifications_needed) && lead.clarifications_needed.length > 0) ||
-          lead.raw_inquiry_text,
+          lead.raw_inquiry_text ||
+          lead.requires_specialty_quote ||
+          lead.parsed_weight_lbs_max != null ||
+          lead.parsed_dimensions_text,
       ) && (
         <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 mb-6 space-y-2 text-[12px] text-[var(--tx2)]">
           <h2 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-2">Completeness</h2>
@@ -211,6 +218,21 @@ export default function LeadDetailClient({
               {new Date(String(lead.follow_up_sent_at)).toLocaleString()}
             </p>
           ) : null}
+          {lead.requires_specialty_quote ? (
+            <p>
+              <span className="text-[var(--tx3)]">Specialty quote:</span> Flagged for coordinator builder (manual review path)
+            </p>
+          ) : null}
+          {lead.parsed_weight_lbs_max != null ? (
+            <p>
+              <span className="text-[var(--tx3)]">Parsed weight (max):</span> {String(lead.parsed_weight_lbs_max)} lb
+            </p>
+          ) : null}
+          {lead.parsed_dimensions_text ? (
+            <p>
+              <span className="text-[var(--tx3)]">Parsed dimensions:</span> {String(lead.parsed_dimensions_text)}
+            </p>
+          ) : null}
           {lead.detected_service_type ? (
             <p>
               <span className="text-[var(--tx3)]">Detected service:</span> {String(lead.detected_service_type)}
@@ -246,6 +268,15 @@ export default function LeadDetailClient({
           Send Quote
           <ArrowRight size={16} weight="bold" aria-hidden />
         </Link>
+        {(requiresSpec || heavyParsed) && (
+          <Link
+            href={specialtyQuoteHref}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--gold)]/50 text-[var(--gold)] text-[12px] font-bold hover:bg-[var(--gold)]/10"
+          >
+            Specialty Quote Builder
+            <ArrowRight size={16} weight="bold" aria-hidden />
+          </Link>
+        )}
         {tel ? (
           <a
             href={tel}

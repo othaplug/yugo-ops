@@ -414,6 +414,61 @@ function VerticalEditForm({
                 />
               </div>
               <Field label="Rate per unit" value={dimForm.unitRate} onChange={(v) => patchDim({ unitRate: v })} />
+              <Field
+                label="Items included in base"
+                value={dimForm.itemsIncludedInBase}
+                onChange={(v) => patchDim({ itemsIncludedInBase: v })}
+                hint="Leave blank to charge rate-per-unit on all items (legacy)."
+              />
+              <Field
+                label="Per-item rate after base"
+                value={dimForm.perItemAfterBase}
+                onChange={(v) => patchDim({ perItemAfterBase: v })}
+                hint="Used with items included; extra pieces only."
+              />
+              <Field label="Skid fee (each)" value={dimForm.skidHandlingFee} onChange={(v) => patchDim({ skidHandlingFee: v })} />
+              <Field
+                label="Sprinter max units"
+                value={dimForm.sprinterMaxUnits}
+                onChange={(v) => patchDim({ sprinterMaxUnits: v })}
+                hint="Before 16 ft truck is recommended."
+              />
+              <label className="col-span-2 flex items-center gap-2 text-[12px] text-[var(--tx2)]">
+                <input
+                  type="checkbox"
+                  checked={dimForm.assemblyIncluded}
+                  onChange={(e) => patchDim({ assemblyIncluded: e.target.checked })}
+                  className="accent-[var(--gold)]"
+                />
+                Assembly included in base (no assembly add-on)
+              </label>
+              <label className="col-span-2 flex items-center gap-2 text-[12px] text-[var(--tx2)]">
+                <input
+                  type="checkbox"
+                  checked={dimForm.useZoneDistance}
+                  onChange={(e) => patchDim({ useZoneDistance: e.target.checked })}
+                  className="accent-[var(--gold)]"
+                />
+                Zone distance fees (40 / 80 km bands on route km)
+              </label>
+              <Field label="Weekend surcharge" value={dimForm.scheduleWeekend} onChange={(v) => patchDim({ scheduleWeekend: v })} />
+              <Field label="After-hours surcharge" value={dimForm.scheduleAfterHours} onChange={(v) => patchDim({ scheduleAfterHours: v })} />
+              <Field label="Same-day surcharge" value={dimForm.scheduleSameDay} onChange={(v) => patchDim({ scheduleSameDay: v })} />
+              <Field
+                label="Medical combined (wknd or after-hrs)"
+                value={dimForm.medicalCombinedSchedule}
+                onChange={(v) => patchDim({ medicalCombinedSchedule: v })}
+                hint="If set, replaces separate weekend/after-hours for medical."
+              />
+              <label className="col-span-2 flex items-center gap-2 text-[12px] text-[var(--tx2)]">
+                <input
+                  type="checkbox"
+                  checked={dimForm.waiveAfterHours}
+                  onChange={(e) => patchDim({ waiveAfterHours: e.target.checked })}
+                  className="accent-[var(--gold)]"
+                />
+                Waive after-hours surcharge (e.g. restaurant)
+              </label>
               <Field label="Minimum crew" value={dimForm.minCrew} onChange={(v) => patchDim({ minCrew: v })} />
               <Field label="Minimum job hours" value={dimForm.minHours} onChange={(v) => patchDim({ minHours: v })} />
               <Field label="Crew hourly (labour model)" value={dimForm.crewHourlyRate} onChange={(v) => patchDim({ crewHourlyRate: v })} />
@@ -452,11 +507,15 @@ function VerticalEditForm({
               <Field label="Debris removal" value={dimForm.premDebris} onChange={(v) => patchDim({ premDebris: v })} />
             </div>
 
-            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-1">Weight surcharges (optional)</p>
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-1">Weight surcharges (per line item)</p>
+            <p className="text-[10px] text-[var(--tx3)] -mt-2">
+              Per-piece surcharges by coordinator line weight (light / medium / heavy / extra heavy). Leave all blank to use legacy per-box tiers only.
+            </p>
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Light (under 30 lb)" value={dimForm.weightLight} onChange={(v) => patchDim({ weightLight: v })} />
-              <Field label="Medium (30–60 lb)" value={dimForm.weightMedium} onChange={(v) => patchDim({ weightMedium: v })} />
-              <Field label="Heavy (over 60 lb)" value={dimForm.weightHeavy} onChange={(v) => patchDim({ weightHeavy: v })} />
+              <Field label="Light tier" value={dimForm.weightLight} onChange={(v) => patchDim({ weightLight: v })} />
+              <Field label="Medium tier" value={dimForm.weightMedium} onChange={(v) => patchDim({ weightMedium: v })} />
+              <Field label="Heavy tier" value={dimForm.weightHeavy} onChange={(v) => patchDim({ weightHeavy: v })} />
+              <Field label="Extra heavy tier" value={dimForm.weightExtraHeavy} onChange={(v) => patchDim({ weightExtraHeavy: v })} />
             </div>
           </div>
         )}

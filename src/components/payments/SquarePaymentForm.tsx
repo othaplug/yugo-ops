@@ -31,6 +31,8 @@ interface SquarePaymentFormProps {
   disabled: boolean;
   /** Optional custom label for the submit button, e.g. "Pay $150 & Book My Move" */
   submitLabel?: string;
+  /** Label above the amount (e.g. DEPOSIT AMOUNT vs TOTAL DUE NOW) */
+  amountHeading?: string;
 }
 
 type SquareCard = {
@@ -71,6 +73,7 @@ export default function SquarePaymentForm({
   onError,
   disabled,
   submitLabel,
+  amountHeading = "DEPOSIT AMOUNT",
 }: SquarePaymentFormProps) {
   const [sdkReady, setSdkReady] = useState(false);
   const [cardReady, setCardReady] = useState(false);
@@ -220,7 +223,7 @@ export default function SquarePaymentForm({
       {/* Amount display */}
       <div className="text-center py-3">
         <p className="text-[11px] font-semibold tracking-wider uppercase" style={{ color: FOREST }}>
-          Deposit Amount
+          {amountHeading}
         </p>
         <p className="font-hero text-[36px] mt-1" style={{ color: WINE }}>
           {fmtPrice(amount)}

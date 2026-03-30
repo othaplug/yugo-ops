@@ -58,6 +58,8 @@ export type LeadRow = {
   clarifications_needed?: unknown;
   detected_dates?: unknown;
   estimated_value?: number | null;
+  requires_specialty_quote?: boolean | null;
+  parsed_weight_lbs_max?: number | null;
 };
 
 type Metrics = {
@@ -330,7 +332,10 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
     const tel = telHref(lead.phone);
     const sms = smsHref(lead.phone);
     const quoteHref = `/admin/quotes/new?lead_id=${encodeURIComponent(lead.id)}`;
+    const specialtyQuoteHref = `${quoteHref}&specialty_builder=1`;
     const path = lead.completeness_path || "manual_review";
+    const heavyParsed =
+      lead.parsed_weight_lbs_max != null && Number(lead.parsed_weight_lbs_max) > 300;
     const { Icon: PathIc, className: pathCls } = pathIcon(path);
     const invN = parsedInvCount(lead);
     const missing = Array.isArray(lead.fields_missing) ? (lead.fields_missing as string[]).slice(0, 3) : [];
@@ -393,6 +398,11 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
                 {LEAD_PRIORITY_LABELS[lead.priority] || lead.priority}
               </span>
             ) : null}
+            {lead.requires_specialty_quote || heavyParsed ? (
+              <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide text-[var(--gold)] border border-[var(--gold)]/40 rounded px-1.5 py-0.5">
+                Specialty quote
+              </span>
+            ) : null}
           </div>
           <Link
             href={`/admin/leads/${lead.id}`}
@@ -409,6 +419,14 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
             Send Quote
             <ArrowRight size={14} weight="bold" aria-hidden />
           </Link>
+          {(lead.requires_specialty_quote || heavyParsed) && (
+            <Link
+              href={specialtyQuoteHref}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--gold)]/50 text-[var(--gold)] text-[11px] font-bold hover:bg-[var(--gold)]/10"
+            >
+              Specialty builder
+            </Link>
+          )}
           {tel ? (
             <a
               href={tel}

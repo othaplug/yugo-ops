@@ -79,7 +79,7 @@ export default function PartnerRealtorTab({
 
             <div className="mt-3 grid grid-cols-2 gap-4 text-[12px]">
               <div>
-                <div className="text-[10px] font-semibold tracking-wider uppercase text-[#4F4B47]">Move Date</div>
+                <div className="text-[10px] font-semibold tracking-wider uppercase text-[#4F4B47]">Delivery Date</div>
                 <div className="text-[#1A1A1A] font-medium mt-0.5">
                   {r.created_at
                     ? new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })

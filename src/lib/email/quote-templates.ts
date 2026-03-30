@@ -5,6 +5,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { TIER_LABELS as DISPLAY_TIER_LABELS, displayLabel } from "@/lib/displayLabels";
+import { getB2BQuoteEmailSubheading } from "@/lib/quotes/b2b-quote-copy";
 
 /* ─── Brand tokens ─── */
 const BG = "#080808";
@@ -177,6 +178,7 @@ export interface QuoteTemplateData {
   // B2B One-Off
   b2bBusinessName?: string | null;
   b2bItems?: string | null;
+  b2bVerticalCode?: string | null;
   // Bin rental
   binBundleLabel?: string | null;
   binDropOffDate?: string | null;
@@ -620,7 +622,7 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("Your Delivery Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Your delivery quote is ready. We will handle your item with the same care and attention we bring to every move, from pickup through final placement.")}
+    ${bodyText("Your delivery quote is ready. We will handle your item with the same care and attention we bring to every job, from pickup through final placement.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     ${price ? priceCard("Flat Price", price, "+ HST &middot; All-inclusive") : ""}
@@ -869,20 +871,22 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
   if (d.b2bBusinessName) rows.push(["Business", d.b2bBusinessName]);
   if (d.b2bItems) rows.push(["Items", d.b2bItems]);
   rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
-  rows.push(["Date", dateDisplay(d.moveDate)]);
+  rows.push(["Delivery Date", dateDisplay(d.moveDate)]);
 
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
+  const scopeLine = getB2BQuoteEmailSubheading(d.b2bVerticalCode ?? undefined);
 
   return quoteEmailLayout(`
-    ${subHeading("Your Delivery Quote")}
+    ${subHeading("COMMERCIAL DELIVERY QUOTE")}
+    <p style="font-size:14px;font-weight:600;color:${GOLD_LIGHT};margin:0 0 20px;line-height:1.5;">${scopeLine}</p>
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
-    ${bodyText("Your commercial delivery quote is ready. A professional crew with everything required, at a single transparent flat rate.")}
+    ${bodyText("Your commercial delivery quote is ready. One transparent flat rate with professional logistics from pickup through delivery.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
-    ${priceCard("Delivery All Inclusive", total, `+${formatCurrency(tax)} HST \u00b7 Full payment at booking`)}
+    ${priceCard("Delivery All Inclusive", total, `+${formatCurrency(tax)} HST \u00b7 Full payment at booking (card) or Net 30 when invoiced`)}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
-    ${ctaButton(d.quoteUrl, "View Quote & Confirm Payment")}
+    ${ctaButton(d.quoteUrl, "VIEW QUOTE & CONFIRM")}
     <p style="font-size:11px;color:${TX3};text-align:center;margin:0 0 20px;line-height:1.6">
       Planning regular deliveries? Our <strong style="color:${TX}">Partner Program</strong> offers priority scheduling, volume pricing, and a dedicated portal.
     </p>

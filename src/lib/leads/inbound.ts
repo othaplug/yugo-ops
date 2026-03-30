@@ -60,6 +60,9 @@ export type InboundLeadInput = {
   detected_dates?: string[] | null;
   external_platform?: string | null;
   external_reference?: string | null;
+  parsed_weight_lbs_max?: number | null;
+  parsed_dimensions_text?: string | null;
+  requires_specialty_quote?: boolean | null;
 };
 
 export async function createLeadPipeline(sb: SupabaseClient, input: InboundLeadInput) {
@@ -134,6 +137,9 @@ export async function createLeadPipeline(sb: SupabaseClient, input: InboundLeadI
     detected_dates: input.detected_dates ?? [],
     external_platform: input.external_platform?.trim() || null,
     external_reference: input.external_reference?.trim() || null,
+    parsed_weight_lbs_max: input.parsed_weight_lbs_max ?? null,
+    parsed_dimensions_text: input.parsed_dimensions_text?.trim() || null,
+    requires_specialty_quote: input.requires_specialty_quote ?? false,
   };
 
   const { data: inserted, error } = await sb.from("leads").insert(row).select("*").single();

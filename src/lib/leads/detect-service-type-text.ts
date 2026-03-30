@@ -9,6 +9,14 @@ export function detectServiceTypeFromText(message: string, inventoryText: string
   if (!text.trim()) return null;
 
   if (
+    /specialty\s*transport|white\s*glove\s*delivery|freight\s*delivery|b2b\s*delivery|commercial\s*delivery|one[-\s]?off\s*delivery/i.test(
+      text,
+    )
+  ) {
+    return { slug: "b2b_oneoff", confidence: 0.82 };
+  }
+
+  if (
     /event|venue|chairs.*rent|temporary|setup.*teardown|after.*event|during.*event|restaurant.*chairs|reception|gala|ceremony/i.test(
       text,
     )
@@ -28,6 +36,13 @@ export function detectServiceTypeFromText(message: string, inventoryText: string
     /office|desk|workstation|cubicle|commercial|business|conference|board.*room|server|it equipment/i.test(text)
   ) {
     return { slug: "office_move", confidence: 0.85 };
+  }
+
+  if (
+    /(^|\b)(transport|delivery)\b.*\b(from|to|pickup|drop)/i.test(text) ||
+    /\b(need|want|looking\s+for)\s+(a\s+)?(transport|delivery|mover)\b/i.test(text)
+  ) {
+    return { slug: "b2b_oneoff", confidence: 0.72 };
   }
 
   if (/single|one item|just.*one|only.*a|deliver.*one|pickup.*one|couch.*only|just.*sofa|one.*piece/i.test(text)) {

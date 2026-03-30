@@ -292,6 +292,7 @@ export async function POST(req: NextRequest) {
         b2bItems: Array.isArray(factors.b2b_items)
           ? (factors.b2b_items as string[]).join(", ")
           : null,
+        b2bVerticalCode: (factors.b2b_vertical_code as string) ?? null,
         binBundleLabel: (factors.bin_bundle_label as string) ?? null,
         binDropOffDate: (factors.bin_drop_off_date as string) ?? null,
         binPickupDate: (factors.bin_pickup_date as string) ?? null,

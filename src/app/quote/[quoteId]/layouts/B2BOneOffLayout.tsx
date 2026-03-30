@@ -6,9 +6,9 @@ import {
   GOLD,
   TAX_RATE,
   fmtPrice,
-  calculateDeposit,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
+import { getB2BDeliveryFeatureList } from "@/lib/quotes/b2b-quote-copy";
 
 interface Props {
   quote: Quote;
@@ -20,8 +20,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
   const f = quote.factors_applied as Record<string, unknown> | null;
   const price = quote.custom_price ?? 0;
   const tax = Math.round(price * TAX_RATE);
-  const deposit = calculateDeposit("b2b_oneoff", price);
-  const isFullPayment = price < 300;
+  const specialtyTransport = f?.specialty_b2b_transport === true;
   const payInvoice = f?.b2b_payment_method === "invoice";
   const retailer = typeof f?.b2b_retailer_source === "string" ? f.b2b_retailer_source.trim() : "";
   const weightSurcharge = typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0 ? f.weight_surcharge : 0;
@@ -30,19 +29,33 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
     typeof f?.b2b_vertical_name === "string" && f.b2b_vertical_name.trim()
       ? f.b2b_vertical_name.trim()
       : null;
+  const verticalCode = typeof f?.b2b_vertical_code === "string" ? f.b2b_vertical_code : null;
+  const crewFromFactors =
+    typeof f?.b2b_crew === "number" && Number.isFinite(f.b2b_crew) ? Math.round(f.b2b_crew as number) : null;
   const lineItems = Array.isArray(f?.b2b_line_items)
     ? (f.b2b_line_items as { description?: string; quantity?: number; fragile?: boolean }[])
     : [];
   const legacyItems = Array.isArray(f?.b2b_items) ? (f.b2b_items as string[]) : [];
   const handlingLabel =
     typeof f?.b2b_handling_type === "string" ? f.b2b_handling_type.replace(/_/g, " ") : "";
+  const coordinatorIncludes =
+    specialtyTransport && Array.isArray(f?.includes) && (f.includes as string[]).length > 0
+      ? (f.includes as string[])
+      : null;
   const serviceIncludes =
-    (Array.isArray(f?.includes) ? (f.includes as string[]) : null) ??
-    ["Professional handling", "Protective wrapping", "Careful delivery"];
+    coordinatorIncludes ?? getB2BDeliveryFeatureList(verticalCode, crewFromFactors ?? quote.est_crew_size);
   const truckBreakdown =
     typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
       ? f.truck_breakdown_line.trim()
       : "";
+  const specialtyNotes =
+    typeof f?.specialty_handling_notes === "string" && f.specialty_handling_notes.trim().length > 0
+      ? f.specialty_handling_notes.trim()
+      : "";
+  const costBreakdown = Array.isArray(f?.specialty_cost_breakdown)
+    ? (f.specialty_cost_breakdown as { label?: string; amount?: number }[])
+    : [];
+  const crewN = typeof f?.specialty_crew_size === "number" ? f.specialty_crew_size : null;
 
   return (
     <section className="mb-10 space-y-6">
@@ -52,10 +65,10 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
           style={{ borderColor: `${FOREST}35`, backgroundColor: `${FOREST}06` }}
         >
           <p className="text-[10px] font-bold tracking-[0.14em] uppercase" style={{ color: `${FOREST}70` }}>
-            Pro forma invoice
+            PRO FORMA INVOICE
           </p>
           <div className="flex justify-between text-[13px] font-semibold" style={{ color: FOREST }}>
-            <span>Delivery service</span>
+            <span>Delivery Service</span>
             <span>{fmtPrice(price)}</span>
           </div>
           <div className="flex justify-between text-[12px]" style={{ color: `${FOREST}75` }}>
@@ -63,7 +76,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             <span>{fmtPrice(tax)}</span>
           </div>
           <div className="flex justify-between pt-2 border-t text-[15px] font-bold" style={{ borderColor: `${FOREST}20`, color: WINE }}>
-            <span>Total due</span>
+            <span>Total Due</span>
             <span>{fmtPrice(price + tax)}</span>
           </div>
           <p className="text-[11px] leading-snug pt-1" style={{ color: `${FOREST}72` }}>
@@ -84,15 +97,35 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
           </div>
           <div>
             <p className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
-              {verticalTitle ?? (f?.item_description as string) ?? "Delivery Service"}
+              {specialtyTransport
+                ? "Specialty Transport"
+                : verticalTitle ?? (f?.item_description as string) ?? "Delivery Service"}
             </p>
-            {f?.item_category ? (
+            {specialtyTransport && typeof f?.item_description === "string" && f.item_description.trim() ? (
+              <p className="text-[12px] mt-1 font-medium leading-snug" style={{ color: `${FOREST}90` }}>
+                {f.item_description.trim()}
+              </p>
+            ) : null}
+            {specialtyTransport ? (
               <span
                 className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
                 style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
               >
-                {dimensional ? "Commercial delivery" : toTitleCase(String(f.item_category))}
+                One-off B2B
               </span>
+            ) : f?.item_category ? (
+              <span
+                className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+                style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
+              >
+                {dimensional ? "COMMERCIAL DELIVERY" : toTitleCase(String(f.item_category))}
+              </span>
+            ) : null}
+            {crewN != null && crewN > 0 ? (
+              <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
+                <span className="font-semibold" style={{ color: FOREST }}>Crew: </span>
+                {crewN} people
+              </p>
             ) : null}
             {retailer ? (
               <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
@@ -105,7 +138,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
         {/* Items (dimensional) */}
         {dimensional && (lineItems.length > 0 || legacyItems.length > 0) ? (
           <div className="pt-4 border-t border-[var(--brd)]/30">
-            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-2">Items</p>
+            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-2">ITEMS</p>
             <ul className="space-y-1 text-[12px] font-medium" style={{ color: FOREST }}>
               {lineItems.length > 0
                 ? lineItems.map((row, i) => (
@@ -126,6 +159,35 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
           </div>
         ) : null}
 
+        {specialtyNotes ? (
+          <div className="pt-4 border-t border-[var(--brd)]/30">
+            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-1">Special handling</p>
+            <p className="text-[12px] leading-snug" style={{ color: FOREST }}>
+              {specialtyNotes}
+            </p>
+          </div>
+        ) : null}
+
+        {specialtyTransport && costBreakdown.length > 0 ? (
+          <div className="pt-4 border-t border-[var(--brd)]/30">
+            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-2">Cost build (reference)</p>
+            <table className="w-full text-[11px]">
+              <tbody>
+                {costBreakdown.map((row, i) => (
+                  <tr key={i} className={i > 0 ? "border-t border-[#E2DDD5]" : ""}>
+                    <td className="py-1" style={{ color: `${FOREST}80` }}>
+                      {row.label ?? "Line"}
+                    </td>
+                    <td className="py-1 text-right font-medium" style={{ color: FOREST }}>
+                      {typeof row.amount === "number" ? fmtPrice(row.amount) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
         {/* Route */}
         <div className="pt-4 border-t border-[var(--brd)]/30">
           <div className="flex items-center gap-3">
@@ -133,7 +195,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
               <div className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: WINE }} />
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Pickup</p>
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">PICKUP</p>
                   <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.from_address}
                   </p>
@@ -144,7 +206,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             <div className="flex-1 min-w-0 text-right">
               <div className="flex items-start gap-2 justify-end">
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Delivery</p>
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">DELIVERY</p>
                   <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.to_address}
                   </p>
@@ -163,6 +225,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
 
         {/* Includes */}
         <div className="pt-4 mt-4 border-t border-[var(--brd)]/30">
+          <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-2">YOUR DELIVERY INCLUDES</p>
           <div className="flex flex-wrap gap-x-5 gap-y-1.5">
             {serviceIncludes.map((item, i) => (
               <div key={i} className="flex items-center gap-1.5">
@@ -208,20 +271,20 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
         >
           {confirmed ? (
             <span className="flex items-center justify-center gap-2">
-              <Check className="w-4 h-4" /> Confirmed
+              <Check className="w-4 h-4" /> CONFIRMED
             </span>
-          ) : isFullPayment ? (
-            `Confirm Delivery \u2014 ${fmtPrice(price + tax)}`
+          ) : payInvoice ? (
+            "CONFIRM BOOKING"
+          ) : specialtyTransport ? (
+            `CONFIRM DELIVERY — ${fmtPrice(price + tax)}`
           ) : (
-            `Confirm Delivery \u2014 ${fmtPrice(deposit)} Deposit`
+            "CONFIRM DELIVERY — FULL PAYMENT"
           )}
         </button>
         <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
           {payInvoice
             ? "Net 30 invoice. No card required. Confirm below after you sign the agreement."
-            : isFullPayment
-              ? "Full payment at confirmation"
-              : `${fmtPrice(deposit)} deposit \u00b7 Balance of ${fmtPrice(price + tax - deposit)} due on delivery`}
+            : "Full payment required to confirm booking."}
         </p>
       </div>
     </section>

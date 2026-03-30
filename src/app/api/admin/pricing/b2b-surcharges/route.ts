@@ -33,12 +33,18 @@ export async function GET() {
   const { data } = await db
     .from("platform_config")
     .select("key, value")
-    .in("key", ["b2b_access_surcharges", "b2b_weight_surcharges"]);
+    .in("key", ["b2b_access_surcharges", "b2b_weight_surcharges", "b2b_accessories_excluded_from_count"]);
 
   const accessMap: Record<string, number> = {};
   const weightMap: Record<string, number> = {};
+  let accessoriesExcluded: string[] = [];
   for (const r of data ?? []) {
     try {
+      if (r.key === "b2b_accessories_excluded_from_count") {
+        const parsed = JSON.parse(r.value || "[]") as unknown;
+        accessoriesExcluded = Array.isArray(parsed) ? parsed.map((x) => String(x)) : [];
+        continue;
+      }
       const parsed = JSON.parse(r.value || "{}") as Record<string, number>;
       if (r.key === "b2b_access_surcharges") Object.assign(accessMap, parsed);
       else if (r.key === "b2b_weight_surcharges") Object.assign(weightMap, parsed);
@@ -50,7 +56,7 @@ export async function GET() {
   const access = ACCESS_KEYS.map((k) => ({ key: k, label: ACCESS_LABELS[k] || k, surcharge: accessMap[k] ?? 0 }));
   const weight = WEIGHT_KEYS.map((k) => ({ key: k, label: WEIGHT_LABELS[k] || k, surcharge: weightMap[k] ?? 0 }));
 
-  return NextResponse.json({ access, weight });
+  return NextResponse.json({ access, weight, accessoriesExcluded });
 }
 
 export async function PUT(req: NextRequest) {
@@ -58,7 +64,11 @@ export async function PUT(req: NextRequest) {
   if (authErr) return authErr;
 
   const body = await req.json();
-  const { access, weight } = body as { access?: { key: string; surcharge: number }[]; weight?: { key: string; surcharge: number }[] };
+  const { access, weight, accessoriesExcluded } = body as {
+    access?: { key: string; surcharge: number }[];
+    weight?: { key: string; surcharge: number }[];
+    accessoriesExcluded?: string[];
+  };
 
   const db = createAdminClient();
 
@@ -80,6 +90,18 @@ export async function PUT(req: NextRequest) {
     await db
       .from("platform_config")
       .upsert({ key: "b2b_weight_surcharges", value: JSON.stringify(weightObj), description: "B2B delivery weight surcharges" }, { onConflict: "key" });
+  }
+
+  if (Array.isArray(accessoriesExcluded)) {
+    const cleaned = accessoriesExcluded.map((s) => String(s).trim()).filter(Boolean);
+    await db.from("platform_config").upsert(
+      {
+        key: "b2b_accessories_excluded_from_count",
+        value: JSON.stringify(cleaned),
+        description: "B2B pieces never counted toward billable item totals (coordinator reference)",
+      },
+      { onConflict: "key" },
+    );
   }
 
   await logAudit({ userId: user?.id, userEmail: user?.email, userRole: role, action: "edit_b2b_surcharges", resourceType: "pricing", details: {} });

@@ -13,6 +13,31 @@ export function mapboxToken(): string {
   );
 }
 
+/** Toronto core reference point for “km from GTA” zone surcharges (straight-line). */
+export const GTA_CORE_LAT = 43.6534817;
+export const GTA_CORE_LNG = -79.3839347;
+
+export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Great-circle km from GTA core to the geocoded delivery address (for zone surcharges). */
+export async function straightLineKmFromGtaCore(address: string): Promise<number | null> {
+  const t = address?.trim();
+  if (!t) return null;
+  const g = await geocode(t);
+  if (!g) return null;
+  return Math.round(haversineKm(GTA_CORE_LAT, GTA_CORE_LNG, g.lat, g.lng) * 10) / 10;
+}
+
 export async function geocode(address: string): Promise<{ lat: number; lng: number } | null> {
   const token = mapboxToken();
   if (!token) return null;

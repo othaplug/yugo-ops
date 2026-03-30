@@ -67,6 +67,8 @@ export interface ContractQuoteData {
   /** Multiple pickups (optional); when more than one stop, replaces single From card. */
   pickupStops?: { address: string; accessLine: string | null }[];
   dropoffStops?: { address: string; accessLine: string | null }[];
+  /** B2B quote settled on Net invoice — no card deposit in this flow */
+  b2bNet30Invoice?: boolean;
 }
 
 interface Props {
@@ -93,7 +95,9 @@ const CANCELLATION_POLICY: Record<string, string> = {
   specialty:
     "Full refund if cancelled 72 or more hours before your scheduled date. Custom crating materials, if already ordered, are non-refundable regardless of cancellation timing.",
   b2b_oneoff:
-    "Full refund if cancelled 24 or more hours before your scheduled delivery. Cancellations within 24 hours: deposit is non-refundable.",
+    "Full refund if cancelled 24 or more hours before your scheduled delivery. Cancellations within 24 hours: amount paid is non-refundable.",
+  b2b_delivery:
+    "Full refund if cancelled 24 or more hours before your scheduled delivery. Cancellations within 24 hours: amount paid is non-refundable.",
   event:
     "Full refund if cancelled 72 or more hours before your first scheduled delivery date. Cancellations within 72 hours: deposit is non-refundable.",
   labour_only:
@@ -110,6 +114,7 @@ const BALANCE_DUE: Record<string, string> = {
   white_glove: "upon delivery",
   specialty: "upon project completion",
   b2b_oneoff: "upon delivery",
+  b2b_delivery: "upon delivery",
   event: "before final return date per quote",
   labour_only: "before service date",
   bin_rental: "included in the amount due at booking (full payment)",
@@ -130,6 +135,8 @@ const SERVICE_DESCRIPTION: Record<string, string> = {
     "Custom specialty service tailored to your specific project requirements and timeline.",
   b2b_oneoff:
     "Professional delivery service with careful handling and timely fulfillment.",
+  b2b_delivery:
+    "Professional commercial delivery with careful handling, documentation, and timely fulfillment.",
   event:
     "Event logistics including round-trip delivery between origin and venue, optional on-site setup, and coordinated return with the same crew.",
   labour_only:
@@ -180,15 +187,19 @@ export default function ContractSign({
   const balanceDue = BALANCE_DUE[q.serviceType] ?? "before service date";
   const serviceDesc = SERVICE_DESCRIPTION[q.serviceType] ?? SERVICE_DESCRIPTION.local_move;
   const isBinRental = q.serviceType === "bin_rental";
+  const isB2BDelivery = q.serviceType === "b2b_oneoff" || q.serviceType === "b2b_delivery";
   const br = q.binRentalSchedule;
   const paidInFullAtBooking = q.grandTotal > 0 && balance <= 0.005;
+  const b2bNet30Invoice = Boolean(q.b2bNet30Invoice);
   const serviceHeading = isBinRental ? "Bin Rental" : toTitleCase(q.serviceType);
   const scheduleSectionTitle =
     isBinRental
       ? "Your rental schedule"
       : q.eventLegs && q.eventLegs.length > 0
         ? "Event logistics"
-        : "Your Move";
+        : isB2BDelivery
+          ? "Your Delivery"
+          : "Your Move";
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTypedName(e.target.value);
@@ -785,11 +796,13 @@ export default function ContractSign({
                   }}
                 >
                   <span className="text-[12px] font-semibold" style={{ color: FOREST }}>
-                    {paidInFullAtBooking
-                      ? isBinRental
-                        ? "Total due at booking"
-                        : "Total due now"
-                      : "Deposit due now"}
+                    {b2bNet30Invoice
+                      ? "Invoice (Net 30)"
+                      : paidInFullAtBooking
+                        ? isBinRental
+                          ? "Total due at booking"
+                          : "Total due now"
+                        : "Deposit due now"}
                   </span>
                   <span
                     className="text-[16px] font-bold"
@@ -801,10 +814,12 @@ export default function ContractSign({
                       WebkitTextFillColor: "transparent",
                     }}
                   >
-                    {fmtPrice(paidInFullAtBooking ? q.grandTotal : q.deposit)}
+                    {fmtPrice(
+                      b2bNet30Invoice ? 0 : paidInFullAtBooking ? q.grandTotal : q.deposit,
+                    )}
                   </span>
                 </div>
-                {!paidInFullAtBooking && (
+                {!paidInFullAtBooking && !b2bNet30Invoice && (
                   <div className="flex justify-between items-baseline px-4">
                     <span className="text-[11px]" style={{ color: `${FOREST}55` }}>
                       Balance due {balanceDue}
@@ -814,10 +829,21 @@ export default function ContractSign({
                     </span>
                   </div>
                 )}
+                {b2bNet30Invoice && (
+                  <p className="text-[10px] px-4 leading-relaxed" style={{ color: `${FOREST}55` }}>
+                    Total {fmtPrice(q.grandTotal)} (incl. HST) per quote. Payment per Net 30 invoice after
+                    confirmation — no card charge on this page.
+                  </p>
+                )}
                 {paidInFullAtBooking && isBinRental && (
                   <p className="text-[10px] px-4 leading-relaxed" style={{ color: `${FOREST}55` }}>
                     Full rental fee (incl. HST) is collected after you sign, unless your coordinator instructs otherwise.
                     A card may stay on file per Sections 3–4 below.
+                  </p>
+                )}
+                {paidInFullAtBooking && isB2BDelivery && !isBinRental && (
+                  <p className="text-[10px] px-4 leading-relaxed" style={{ color: `${FOREST}55` }}>
+                    Full payment (incl. HST) is collected after you sign to confirm this delivery booking.
                   </p>
                 )}
               </div>
@@ -988,7 +1014,8 @@ export default function ContractSign({
                   <p>
                     The total quoted above ({fmtPrice(q.grandTotal)} incl. HST) is a guaranteed flat
                     rate. There are no hidden charges, hourly rates, or surprise fees. The quoted price
-                    is the price you pay, provided the scope of the move remains as described.
+                    is the price you pay, provided the scope of the{" "}
+                    {isB2BDelivery ? "delivery" : "move"} remains as described.
                   </p>
                 </div>
 
@@ -997,20 +1024,46 @@ export default function ContractSign({
                     3. Payment Terms
                   </h3>
                   <p>
-                    A deposit of {fmtPrice(q.deposit)} is due at the time of booking. The remaining
-                    balance of {fmtPrice(balance)} is due {balanceDue}. Payment will be charged to the
-                    card provided.
+                    {b2bNet30Invoice ? (
+                      <>
+                        This delivery is confirmed on Net 30 invoice terms. The total quoted (
+                        {fmtPrice(q.grandTotal)} incl. HST) will appear on your invoice; no card payment is
+                        collected through this booking flow.
+                      </>
+                    ) : paidInFullAtBooking ? (
+                      <>
+                        The full amount of {fmtPrice(q.grandTotal)} (incl. HST) is due at the time of
+                        booking. No balance remains for this quoted scope unless you approve changes in
+                        writing. Payment will be charged to the card provided.
+                      </>
+                    ) : (
+                      <>
+                        A deposit of {fmtPrice(q.deposit)} is due at the time of booking. The remaining
+                        balance of {fmtPrice(balance)} is due {balanceDue}. Payment will be charged to the
+                        card provided.
+                      </>
+                    )}
                   </p>
                 </div>
 
                 <div>
                   <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    4. Card-on-File Authorization
+                    {b2bNet30Invoice ? "4. Invoicing" : "4. Card-on-File Authorization"}
                   </h3>
                   <p>
-                    I authorize {companyLegalName} to securely store my payment card on file using
-                    Square&apos;s PCI-compliant vault and to charge the balance amount per the payment
-                    terms above. No additional charges will be made without prior authorization.
+                    {b2bNet30Invoice ? (
+                      <>
+                        You agree to pay the quoted total per the invoice issued by {companyLegalName},
+                        within the Net 30 terms stated on your quote. Late fees or collection practices, if
+                        any, follow our standard commercial invoice policy as shared with your account.
+                      </>
+                    ) : (
+                      <>
+                        I authorize {companyLegalName} to securely store my payment card on file using
+                        Square&apos;s PCI-compliant vault and to charge the balance amount per the payment
+                        terms above. No additional charges will be made without prior authorization.
+                      </>
+                    )}
                   </p>
                 </div>
 
