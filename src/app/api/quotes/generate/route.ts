@@ -35,6 +35,7 @@ import {
   estateScheduleHeadline,
 } from "@/lib/quotes/estate-schedule";
 import { pickupDropoffFactorsFromPayload } from "@/lib/quotes/quote-address-display";
+import { normalizePhone } from "@/lib/phone";
 // ═══════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════
@@ -823,7 +824,7 @@ async function residentialIncludes(
     "Mattress and TV protection included",
     "Room-of-choice placement throughout the home",
     "Wardrobe box for immediate use",
-    "Debris and packing removal at completion",
+    "Debris and packaging removal at completion",
     "All equipment included",
     "Enhanced valuation coverage",
     "Real-time GPS tracking",
@@ -841,8 +842,8 @@ async function residentialIncludes(
     "White glove handling for furniture, art, and high-value items",
     "Precision placement in every room",
     "Full replacement valuation coverage",
-    "Wardrobe box included",
-    "Debris and packaging removal",
+    "Wardrobe box for immediate use",
+    "Debris and packaging removal at completion",
     "Pre-move inventory planning and oversight",
     "Premium handling for art, antiques, and specialty items",
     "30-day post-move concierge support",
@@ -3451,6 +3452,12 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (existing) {
       contactId = existing.id;
+      if (input.client_phone?.trim()) {
+        const p = normalizePhone(input.client_phone);
+        if (p.length >= 10) {
+          await sb.from("contacts").update({ phone: p }).eq("id", existing.id);
+        }
+      }
     } else {
       const { data: created } = await sb
         .from("contacts")

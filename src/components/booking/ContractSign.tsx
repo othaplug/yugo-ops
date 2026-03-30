@@ -1162,7 +1162,7 @@ export default function ContractSign({
               className="peer sr-only focus:outline-none"
             />
             <span
-              className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-1 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#B8962E] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-white"
+              className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#B8962E] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-white"
               style={{
                 borderColor: agreed ? GOLD : "#D5D0C8",
                 backgroundColor: agreed ? GOLD : "transparent",

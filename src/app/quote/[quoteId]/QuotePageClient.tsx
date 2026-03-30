@@ -151,7 +151,7 @@ const TIER_FEATURES: Record<string, TierFeature[]> = {
     { card: "Mattress and TV protection included", title: "Mattress and TV protection", desc: "Dedicated covers for mattresses and screens", iconName: "Shield" },
     { card: "Room-of-choice placement throughout the home", title: "Room-of-choice placement", desc: "Every piece placed exactly where you want it", iconName: "Compass" },
     { card: "Wardrobe box for immediate use", title: "Wardrobe box for immediate use", desc: "Hang your clothes directly, no folding needed", iconName: "Shirt" },
-    { card: "Debris and packing removal at completion", title: "Debris and packing removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
+    { card: "Debris and packaging removal at completion", title: "Debris and packaging removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
     { card: "All equipment included", title: "All equipment included", desc: "Dollies, straps, tools, nothing extra to rent", iconName: "Toolbox" },
     { card: "Enhanced valuation coverage", title: "Enhanced valuation coverage", desc: "Up to $2,500 per item protection", iconName: "ShieldCheck" },
     { card: "Real-time GPS tracking", title: "Real-time GPS tracking", desc: "Follow your move live from any device", iconName: "MapPin" },
@@ -169,8 +169,8 @@ const TIER_FEATURES: Record<string, TierFeature[]> = {
     { card: "White glove handling for furniture, art, and high-value items", title: "White glove handling", desc: "Specialist-level care for your most valued possessions", iconName: "Star" },
     { card: "Precision placement in every room", title: "Precision placement in every room", desc: "Every piece placed exactly where you want it", iconName: "Compass" },
     { card: "Full replacement valuation coverage", title: "Full replacement valuation coverage", desc: "Maximum protection for your most valuable items", iconName: "ShieldCheck" },
-    { card: "Wardrobe box included", title: "Wardrobe box included", desc: "Hang your clothes directly, no folding needed", iconName: "Shirt" },
-    { card: "Debris and packaging removal", title: "Debris and packaging removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
+    { card: "Wardrobe box for immediate use", title: "Wardrobe box for immediate use", desc: "Hang your clothes directly, no folding needed", iconName: "Shirt" },
+    { card: "Debris and packaging removal at completion", title: "Debris and packaging removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
     { card: "Pre-move inventory planning and oversight", title: "Pre-move inventory planning", desc: "Full inventory documented before and after your move", iconName: "FrameCorners" },
     { card: "Premium handling for art, antiques, and specialty items", title: "Premium art & antique handling", desc: "Art, antiques, and fragile items individually wrapped", iconName: "FrameCorners" },
     { card: "30-day post-move concierge support", title: "30-day concierge support", desc: "Post-move support and questions answered within 30 days", iconName: "Clock" },
@@ -931,30 +931,25 @@ export default function QuotePageClient({
       )}
 
       <div className="max-w-4xl md:max-w-5xl lg:max-w-7xl mx-auto px-5 md:px-6">
-        {/* ═══ GUARANTEED PRICE BADGE (sticky) ═══ */}
+        {/* ═══ GUARANTEED PRICE BADGE ═══ */}
         <div
-          className={`sticky top-0 z-20 mb-8 py-3 ${isResidential && currentStep >= 2 && !booked ? "mt-3" : "mt-4"}`}
+          className={`mb-8 py-3 ${isResidential && currentStep >= 2 && !booked ? "mt-3" : "mt-4"}`}
           style={{ backgroundColor: CREAM }}
         >
-          <div className="flex justify-center">
+          <div className="flex justify-center w-full min-w-0 px-1 sm:px-0">
             <div
-              className="inline-flex items-center gap-3 rounded-xl px-5 py-3 shadow-sm"
+              className="box-border flex w-full min-w-0 max-w-full items-start gap-3 rounded-xl px-4 py-3 shadow-sm sm:inline-flex sm:w-fit sm:max-w-none sm:items-center sm:px-5"
               style={{
                 backgroundColor: "#FFFDF8",
                 border: `1px solid ${GOLD}60`,
               }}
             >
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                style={{ backgroundColor: `${GOLD}18` }}
-              >
-                <Lock className="w-[18px] h-[18px]" style={{ color: GOLD }} />
-              </div>
-              <div>
-                <p className="text-[13px] font-bold tracking-wider uppercase" style={{ color: GOLD }}>
+              <Lock className="w-[18px] h-[18px] shrink-0 mt-0.5 sm:mt-0" style={{ color: GOLD }} aria-hidden />
+              <div className="min-w-0 text-left">
+                <p className="text-[12px] font-bold tracking-wider uppercase sm:text-[13px]" style={{ color: GOLD }}>
                   Guaranteed Price
                 </p>
-                <p className="text-[12px] leading-snug" style={{ color: `${FOREST}90` }}>
+                <p className="text-[11px] leading-snug sm:text-[12px]" style={{ color: `${FOREST}90` }}>
                   The price you see is the price you pay. No hourly surprises. No hidden fees.
                 </p>
               </div>
@@ -2375,9 +2370,7 @@ function ValuationProtectionCard({
 
         {/* Shield badge header */}
         <div className="px-5 py-4 flex items-center gap-3.5" style={{ borderBottom: `1px solid ${FOREST}08` }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}10` }}>
-            <Shield className="w-[18px] h-[18px]" style={{ color: GOLD }} />
-          </div>
+          <Shield className="w-[18px] h-[18px] shrink-0" style={{ color: GOLD }} aria-hidden />
           <div className="flex-1 min-w-0">
             <div className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>{dispActive.shortLabel}</div>
             <div className="text-[11px]" style={{ color: `${FOREST}50` }}>
@@ -2496,9 +2489,11 @@ function ValuationProtectionCard({
         >
           <div className="px-5 py-4">
             <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: upgradeSelected ? `${GOLD}15` : `${WINE}08` }}>
-                <Shield className="w-[18px] h-[18px]" style={{ color: upgradeSelected ? GOLD : WINE }} />
-              </div>
+              <Shield
+                className="w-[18px] h-[18px] shrink-0 mt-0.5"
+                style={{ color: upgradeSelected ? GOLD : WINE }}
+                aria-hidden
+              />
               <div className="flex-1 min-w-0">
                 <div className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: GOLD }}>
                   {upgradeSelected ? "Upgrade Added" : "Upgrade Available"}

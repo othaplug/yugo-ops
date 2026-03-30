@@ -2239,6 +2239,7 @@ export default function QuoteFormClient({
           quoteId,
           quote_id: quoteId,
           email,
+          client_phone: phone?.trim() ? normalizePhone(phone) : undefined,
           client_name: [firstName, lastName].filter(Boolean).join(" "),
           hubspot_deal_id: hubspotDealId || undefined,
           lead_id: leadIdParam || undefined,

@@ -11,6 +11,7 @@ import { getCompanyDisplayName } from "@/lib/config";
 import { sendQuoteLinkSms } from "@/lib/quote-sms";
 import { updateLeadAfterQuoteSent } from "@/lib/leads/update-from-quote";
 import { pickupLocationsFromQuote, dropoffLocationsFromQuote } from "@/lib/quotes/quote-address-display";
+import { normalizePhone } from "@/lib/phone";
 
 const SERVICE_TO_TEMPLATE: Record<string, string> = {
   local_move: "quote-residential",
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
     const quoteId = (body.quoteId ?? body.quote_id) as string | undefined;
     const hubspotDealId = body.hubspot_deal_id ?? body.hubspotDealId;
     const bodyEmail = (body.email ?? body.client_email) as string | undefined;
+    const bodyPhoneRaw = (body.phone ?? body.client_phone) as string | undefined;
     const bodyClientName = (body.client_name ?? body.clientName) as string | undefined;
     const leadIdRaw = body.lead_id ?? body.leadId;
     const leadId = typeof leadIdRaw === "string" && leadIdRaw.length > 0 ? leadIdRaw : undefined;
@@ -114,6 +116,10 @@ export async function POST(req: NextRequest) {
     if (!clientEmail) {
       return NextResponse.json({ error: "Contact has no email address. Enter the client email in the form and try again." }, { status: 400 });
     }
+
+    const phoneFromBody = bodyPhoneRaw?.trim() ? normalizePhone(bodyPhoneRaw) : "";
+    const phoneFromContact = contact?.phone?.trim() ? normalizePhone(contact.phone) : "";
+    const clientPhone = (phoneFromBody || phoneFromContact) || null;
 
     const fullName = (contact?.name?.trim() || bodyClientName?.trim()) || "";
     const firstName = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
@@ -318,7 +324,7 @@ export async function POST(req: NextRequest) {
     }
 
     const smsResult = await sendQuoteLinkSms({
-      phone: contact?.phone,
+      phone: clientPhone,
       quoteId,
       firstName,
       serviceType,
@@ -340,8 +346,11 @@ export async function POST(req: NextRequest) {
       .eq("quote_id", quoteId);
 
     if (quote.contact_id && clientEmail) {
-      const contactUpdate: { email: string; name?: string } = { email: clientEmail.trim() };
+      const contactUpdate: { email: string; name?: string; phone?: string } = { email: clientEmail.trim() };
       if (fullName.trim()) contactUpdate.name = fullName.trim();
+      if (phoneFromBody.length >= 10) {
+        contactUpdate.phone = phoneFromBody;
+      }
       await supabase
         .from("contacts")
         .update(contactUpdate)

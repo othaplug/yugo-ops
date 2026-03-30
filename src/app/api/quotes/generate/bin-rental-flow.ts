@@ -8,6 +8,7 @@ import {
   BIN_RENTAL_BUNDLE_SPECS,
   type BinBundleKey,
 } from "@/lib/pricing/bin-rental";
+import { normalizePhone } from "@/lib/phone";
 
 const TAX_RATE = 0.13;
 
@@ -217,13 +218,19 @@ export async function buildBinRentalQuoteResponse(opts: {
       .maybeSingle();
     if (existing) {
       contactId = existing.id;
+      if (input.client_phone?.trim()) {
+        const p = normalizePhone(input.client_phone);
+        if (p.length >= 10) {
+          await sb.from("contacts").update({ phone: p }).eq("id", existing.id);
+        }
+      }
     } else {
       const { data: created } = await sb
         .from("contacts")
         .insert({
           name: input.client_name?.trim() || null,
           email: input.client_email.trim().toLowerCase(),
-          phone: input.client_phone?.trim() || null,
+          phone: input.client_phone?.trim() ? normalizePhone(input.client_phone) : null,
         })
         .select("id")
         .single();
