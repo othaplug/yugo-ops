@@ -3043,14 +3043,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Client-facing labour = on-job hours only; ops labour includes return-to-base drive (margin / tier delta).
+  // Client-facing labour = on-job hours only (also used for residential tier labour delta).
   const truckInventoryScoreForLabour =
     invResult.totalItems > 0
       ? (invResult.itemScore ?? 0) + ((invResult as { boxCount?: number }).boxCount ?? 0) * 0.3
       : undefined;
 
   let labourClient: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
-  let labourOps: { crewSize: number; estimatedHours: number; hoursRange: string; truckSize: string } | null = null;
 
   if (adjustedScore > 0) {
     labourClient = estimateLabourFromScore(
@@ -3064,22 +3063,6 @@ export async function POST(req: NextRequest) {
         specialtyItems: input.specialty_items,
         whiteGloveHoursMultiplier: input.service_type === "white_glove",
         hoursEstimateMode: "client_on_job",
-        truckInventoryScore: truckInventoryScoreForLabour,
-      },
-    );
-    labourOps = estimateLabourFromScore(
-      adjustedScore,
-      distInfo?.distance_km ?? 0,
-      input.from_access,
-      input.to_access,
-      input.move_size ?? "2br",
-      {
-        driveTimeMinutes: distInfo?.drive_time_min,
-        specialtyItems: input.specialty_items,
-        dropoffToBaseKm: returnInfo?.distance_km,
-        returnDriveMinutes: returnInfo?.drive_time_min,
-        whiteGloveHoursMultiplier: input.service_type === "white_glove",
-        hoursEstimateMode: "crew_full_cycle",
         truckInventoryScore: truckInventoryScoreForLabour,
       },
     );
@@ -3100,11 +3083,13 @@ export async function POST(req: NextRequest) {
       hoursRange: `${lo}–${hi} hours`,
       truckSize,
     };
-    labourOps = labourClient;
   }
 
   let labour = labourClient;
-  const labourForResidential = labourOps ?? labourClient;
+  // Residential tier math must use the same labour model as `labour` in the JSON response
+  // (client on-job hours). A separate ops-only estimate (full cycle / return) inflated preview
+  // and new saves vs the crew/hours line coordinators see.
+  const labourForResidential = labourClient;
 
   // Global crating calculation (applies to all service types)
   const cratingBySize = parseJsonConfig<Record<string, number>>(config, "crating_prices", {});
