@@ -190,7 +190,7 @@ export default function TruckAssignments() {
       {addModalOpen && (
         <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5" data-modal-root aria-modal="true">
           <div
-            className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm modal-overlay"
+            className="fixed inset-0 z-0 bg-black/60 modal-overlay"
             onClick={() => setAddModalOpen(false)}
             aria-hidden="true"
           />
@@ -203,7 +203,7 @@ export default function TruckAssignments() {
             <p className="text-[11px] text-[var(--tx3)] mb-4">{formatDateLabel(date)}</p>
             <form onSubmit={handleAdd} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Truck</label>
+                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck</label>
                 <select
                   value={formTruckId}
                   onChange={(e) => setFormTruckId(e.target.value)}
@@ -231,7 +231,7 @@ export default function TruckAssignments() {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Team</label>
+                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team</label>
                 <select
                   value={formTeamId}
                   onChange={(e) => setFormTeamId(e.target.value)}

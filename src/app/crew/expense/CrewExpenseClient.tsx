@@ -142,14 +142,14 @@ export default function CrewExpenseClient() {
         ← Back
       </button>
       <div className="mt-2">
-        <p className="text-[9px] font-bold tracking-[0.16em] capitalize text-[var(--tx3)]/60 mb-0.5">Crew</p>
+        <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-0.5">Crew</p>
         <h1 className="font-hero text-[26px] font-bold text-[var(--tx)]">Log Expense</h1>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mt-1">Today&apos;s expenses: ${(todayTotal / 100).toFixed(2)}</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-8">
         <div>
-          <label className="block text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Category</label>
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Category</label>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <button
@@ -168,7 +168,7 @@ export default function CrewExpenseClient() {
           </div>
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Amount</label>
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Amount</label>
           <input
             type="number"
             step="0.01"
@@ -180,7 +180,7 @@ export default function CrewExpenseClient() {
           />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Description</label>
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Description</label>
           <input
             type="text"
             value={description}
@@ -190,7 +190,7 @@ export default function CrewExpenseClient() {
           />
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Link to job (optional)</label>
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Link to job (optional)</label>
           <select
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
@@ -206,7 +206,7 @@ export default function CrewExpenseClient() {
           </select>
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Receipt photo (optional)</label>
+          <label className="block text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Receipt photo (optional)</label>
           <div className="flex items-center gap-3">
             <input
               ref={fileInputRef}

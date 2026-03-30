@@ -244,7 +244,7 @@ export default function IntegrationHealthPanel({
       {/* Grouped cards */}
       {categories.map((cat) => (
         <div key={cat}>
-          <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">{cat}</div>
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">{cat}</div>
           <div className="space-y-2">
             {grouped[cat].map((item) => (
               <IntegrationCard key={item.key} item={item} />

@@ -157,7 +157,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <YugoLogo size={18} variant="gold" />
-                  <span className="text-[9px] font-bold tracking-[2px] capitalize text-[var(--gold)]/60 truncate">
+                  <span className="text-[9px] font-bold tracking-[2px] uppercase text-[var(--gold)]/60 truncate">
                     Crew
                   </span>
                 </div>
@@ -299,7 +299,7 @@ export default function CrewShell({ children }: { children: React.ReactNode }) {
                   <List size={20} weight="regular" className="text-current" aria-hidden />
                 </button>
                 {isJobPage && (
-                  <span className="text-[11px] font-semibold text-[var(--gold)] capitalize tracking-[1.5px]">Active Job</span>
+                  <span className="text-[11px] font-semibold text-[var(--gold)] uppercase tracking-[1.5px]">Active Job</span>
                 )}
               </div>
               <div className="flex-shrink-0">

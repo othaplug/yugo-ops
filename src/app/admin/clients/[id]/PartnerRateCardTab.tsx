@@ -418,7 +418,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
   /* ─── Section header ─── */
   const SectionHead = ({ label }: { label: string }) => (
     <div className="flex items-center gap-3 mt-6 mb-2">
-      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">{label}</div>
+      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">{label}</div>
       <div className="flex-1 h-px bg-[var(--brd)]/40" />
     </div>
   );
@@ -432,7 +432,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
   );
 
   const Th = ({ children, right = false }: { children: React.ReactNode; right?: boolean }) => (
-    <th className={`px-3 py-2.5 text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)] bg-[var(--bgsub)] border-b border-[var(--brd)] ${right ? "text-right" : "text-left"}`}>
+    <th className={`px-3 py-2.5 text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)] bg-[var(--bgsub)] border-b border-[var(--brd)] ${right ? "text-right" : "text-left"}`}>
       {children}
     </th>
   );
@@ -447,7 +447,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 mb-2">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60 mb-1">Rate Card</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-1">Rate Card</div>
             <h3 className="font-heading text-[17px] font-bold text-[var(--tx)]">{orgName}</h3>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--tx2)]">
               {isDetached ? (
@@ -660,7 +660,7 @@ export default function PartnerRateCardTab({ orgId, orgName }: { orgId: string; 
                 return (
                   <tr key={r.id} className="hover:bg-[var(--bgsub)]/50 transition-colors">
                     <td className="px-3 py-2.5 text-[11px] font-semibold text-[var(--tx)]">{r.service_name}</td>
-                    <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)] capitalize">{r.price_unit.replace(/_/g, " ")}</td>
+                    <td className="px-3 py-2.5 text-[10px] text-[var(--tx3)] uppercase">{r.price_unit.replace(/_/g, " ")}</td>
                     {pm ? (
                       <RateCell value={pm.value} source={pm.source} override={pm.override} onClick={() => openCell("services", r.id, "price_min", `${r.service_name} Min`, r.price_min)} />
                     ) : (

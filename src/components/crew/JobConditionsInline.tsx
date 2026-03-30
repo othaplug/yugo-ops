@@ -32,7 +32,7 @@ export default function JobConditionsInline({
 
   return (
     <div className={`rounded-xl bg-[var(--bg)]/25 px-2 py-2 sm:px-2.5 sm:py-2.5 space-y-2 ${className}`}>
-      <p className="text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/55 flex items-center gap-1.5">
+      <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/55 flex items-center gap-1.5">
         <Car size={12} className="text-[var(--gold)]/90 shrink-0" weight="duotone" aria-hidden />
         Route &amp; weather
       </p>
@@ -46,7 +46,7 @@ export default function JobConditionsInline({
 
       {brief && (
         <div className="space-y-1 text-[10px] text-[var(--tx2)]">
-          <p className="capitalize text-[var(--tx3)]">{brief.conditionsSummary}</p>
+          <p className="uppercase text-[var(--tx3)]">{brief.conditionsSummary}</p>
           <div className="flex flex-wrap gap-x-2.5 gap-y-1">
             <span className="inline-flex items-center gap-1">
               <Thermometer size={11} className="text-orange-300/85" aria-hidden />

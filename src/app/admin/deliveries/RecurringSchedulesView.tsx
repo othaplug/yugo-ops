@@ -136,14 +136,14 @@ function AdminScheduleModal({
           {/* Partner, read-only on edit, searchable on create */}
           {isEdit ? (
             <div>
-              <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Partner</label>
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Partner</label>
               <div className="w-full text-[13px] bg-[var(--bg)]/50 border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx2)]">
                 {existing.organizations?.name ?? "-"}
               </div>
             </div>
           ) : (
             <div className="relative">
-              <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Partner</label>
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Partner</label>
               <input
                 value={orgSearch || (selectedOrg?.name ?? "")}
                 onChange={(e) => { setOrgSearch(e.target.value); setOrgDropOpen(true); }}
@@ -166,13 +166,13 @@ function AdminScheduleModal({
           )}
 
           <div>
-            <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Schedule Name</label>
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Schedule Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Weekly GTA Deliveries"
               className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none" />
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Frequency</label>
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Frequency</label>
             <div className="flex gap-2">
               {["weekly", "biweekly", "monthly"].map((f) => (
                 <button key={f} type="button" onClick={() => setFrequency(f)}
@@ -184,7 +184,7 @@ function AdminScheduleModal({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Days</label>
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Days</label>
             <div className="flex gap-1.5">
               {DAY_NAMES.map((day, i) => {
                 const dow = i + 1;
@@ -201,7 +201,7 @@ function AdminScheduleModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Booking Type</label>
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Booking Type</label>
               <select value={bookingType} onChange={(e) => setBookingType(e.target.value)}
                 className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 <option value="day_rate">Day Rate</option>
@@ -210,7 +210,7 @@ function AdminScheduleModal({
             </div>
             {bookingType === "day_rate" && (
               <div>
-                <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Vehicle</label>
+                <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Vehicle</label>
                 <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)}
                   className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                   {Object.entries(VEHICLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -221,7 +221,7 @@ function AdminScheduleModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Day Type</label>
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Day Type</label>
               <select value={dayType} onChange={(e) => setDayType(e.target.value)}
                 className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 <option value="full_day">Full Day</option>
@@ -229,14 +229,14 @@ function AdminScheduleModal({
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Default Stops</label>
+              <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Default Stops</label>
               <input type="number" value={numStops} onChange={(e) => setNumStops(e.target.value)} placeholder="e.g. 6" min={1}
                 className="w-full text-[13px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none" />
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold capitalize text-[var(--tx3)] mb-1">Time Window</label>
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Time Window</label>
             <select value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)}
               className="w-full text-[12px] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2.5 text-[var(--tx)] focus:border-[var(--brd)] outline-none">
               {Object.entries(TIME_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -312,7 +312,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-1">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Recurring Schedules</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-2">{schedules.length} schedule{schedules.length !== 1 ? "s" : ""} across all partners</p>
         </div>
@@ -337,7 +337,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
             <thead>
               <tr className="border-b border-[var(--brd)] bg-[var(--bg)]">
                 {["Partner", "Schedule", "Frequency", "Days", "Booking", "Next Run", "Status", "Source", ""].map((h) => (
-                  <th key={h} className="text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2.5 px-3 whitespace-nowrap first:pl-4 last:pr-4">{h}</th>
+                  <th key={h} className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2.5 px-3 whitespace-nowrap first:pl-4 last:pr-4">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -363,7 +363,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                   <tr key={s.id} className="border-b border-[var(--brd)]/50 hover:bg-[var(--bg)]/50 transition-colors">
                     <td className="py-3 px-3 pl-4">
                       <div className="font-semibold text-[var(--tx)]">{s.organizations?.name || "-"}</div>
-                      <div className="text-[10px] text-[var(--tx3)] capitalize">{s.organizations?.type || ""}</div>
+                      <div className="text-[10px] text-[var(--tx3)] uppercase">{s.organizations?.type || ""}</div>
                     </td>
                     <td className="py-3 px-3">
                       <div className="font-medium text-[var(--tx)]">{s.schedule_name}</div>
@@ -397,7 +397,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                       )}
                     </td>
                     <td className="py-3 px-3 text-[var(--tx3)]">
-                      <span className="capitalize">{s.created_by_source?.replace("_", " ") || "-"}</span>
+                      <span className="uppercase">{s.created_by_source?.replace("_", " ") || "-"}</span>
                     </td>
                     <td className="py-3 px-3 pr-4">
                       <div className="flex items-center gap-0.5">

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash, Sparkle } from "@phosphor-icons/react";
+import { Plus, Trash, Sparkle } from "@phosphor-icons/react";
+import BackButton from "@/app/admin/components/BackButton";
+import SectionDivider from "@/components/ui/SectionDivider";
+import AddressAutocomplete, { type AddressResult } from "@/components/ui/AddressAutocomplete";
 
 type Partner = {
   id: string;
@@ -190,20 +192,21 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
   }
 
   return (
-    <div className="max-w-[800px] mx-auto px-3 sm:px-5 py-6">
-      <Link
-        href="/admin/inbound-shipments"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--tx3)] hover:text-[var(--gold)] mb-6"
-      >
-        <ArrowLeft size={16} aria-hidden />
-        Inbound Shipments
-      </Link>
+    <div className="max-w-[900px] mx-auto px-4 sm:px-5 md:px-6 py-5 md:py-6 animate-fade-up">
+      <div className="mb-6">
+        <BackButton label="Inbound Shipments" fallback="/admin/inbound-shipments" />
+      </div>
 
-      <h1 className="text-2xl font-semibold text-[var(--tx)] mb-6">Create inbound shipment</h1>
+      <div className="mb-2">
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">Partners</p>
+        <h1 className="font-hero text-[26px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight leading-none">
+          Create inbound shipment
+        </h1>
+      </div>
 
-      <form onSubmit={onSubmit} className="space-y-8">
-        <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Partner / sender</h2>
+      <form onSubmit={onSubmit}>
+        <SectionDivider label="Partner / sender" />
+        <div className="space-y-4">
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input type="radio" checked={mode === "partner"} onChange={() => setMode("partner")} />
@@ -261,10 +264,10 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
               placeholder="e.g. 1-844-403-0392, option 3"
             />
           </label>
-        </section>
+        </div>
 
-        <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Carrier</h2>
+        <SectionDivider label="Carrier" />
+        <div className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-3">
             <select
               className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
@@ -298,24 +301,27 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
               onChange={(e) => setCarrierEta(e.target.value)}
             />
           </div>
-        </section>
+        </div>
 
-        <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Items</h2>
+        <SectionDivider label="Items" />
+        <div className="space-y-4">
+          <div className="flex justify-end">
             <button
               type="button"
               onClick={() =>
                 setItems((prev) => [...prev, { name: "", boxes: "1", dimensions: "", weight_lbs: "", declared_value: "" }])
               }
-              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--gold)]"
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-[var(--gold)] hover:opacity-80 transition-opacity"
             >
               <Plus size={14} weight="bold" aria-hidden />
               Add item
             </button>
           </div>
           {items.map((it, idx) => (
-            <div key={idx} className="p-4 rounded-lg border border-[var(--brd)]/60 space-y-2 relative">
+            <div
+              key={idx}
+              className={`relative space-y-2 ${idx > 0 ? "pt-6 mt-2 border-t border-[var(--brd)]" : ""}`}
+            >
               {items.length > 1 && (
                 <button
                   type="button"
@@ -376,10 +382,10 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
               </div>
             </div>
           ))}
-        </section>
+        </div>
 
-        <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">End customer</h2>
+        <SectionDivider label="End customer" />
+        <div className="space-y-4">
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={!customerLater} onChange={() => setCustomerLater(false)} />
             Customer details available now
@@ -416,13 +422,19 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
               />
-              <input
-                required={!customerLater}
-                placeholder="Delivery address"
-                className="sm:col-span-2 rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-                value={customerAddress}
-                onChange={(e) => setCustomerAddress(e.target.value)}
-              />
+              <div className="sm:col-span-2">
+                <AddressAutocomplete
+                  required={!customerLater}
+                  placeholder="Delivery address"
+                  value={customerAddress}
+                  onRawChange={setCustomerAddress}
+                  onChange={(r: AddressResult) => {
+                    setCustomerAddress(r.fullAddress);
+                    setCustomerPostal((p) => (!p.trim() && r.postalCode ? r.postalCode : p));
+                  }}
+                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/30"
+                />
+              </div>
               <input
                 placeholder="Postal code"
                 className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
@@ -448,10 +460,10 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
               />
             </div>
           )}
-        </section>
+        </div>
 
-        <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Service requirements</h2>
+        <SectionDivider label="Service requirements" />
+        <div className="space-y-4">
           <select
             className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
             value={serviceLevel}
@@ -514,16 +526,16 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
             value={specialInstructions}
             onChange={(e) => setSpecialInstructions(e.target.value)}
           />
-        </section>
+        </div>
 
-        <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-            <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Pricing</h2>
+        <SectionDivider label="Pricing" />
+        <div className="space-y-4">
+          <div className="flex justify-end">
             <button
               type="button"
               onClick={() => void runSuggest()}
               disabled={suggestLoading}
-              className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-[var(--gold)] text-[var(--gold)] text-xs font-semibold disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-[var(--gold)] text-[var(--gold)] text-[11px] font-bold tracking-wide disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
               <Sparkle size={16} aria-hidden />
               {suggestLoading ? "Calculating…" : "Suggest from address"}
@@ -592,14 +604,16 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
               <option value="split">Split</option>
             </select>
           </label>
-        </section>
+        </div>
 
-        {err ? <p className="text-sm text-red-600">{err}</p> : null}
+        <SectionDivider />
+
+        {err ? <p className="text-sm text-red-400 mb-2">{err}</p> : null}
 
         <button
           type="submit"
           disabled={saving}
-          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#1f5f3f] text-white text-sm font-semibold disabled:opacity-50"
+          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#1f5f3f] text-white text-sm font-semibold disabled:opacity-50 hover:brightness-105 transition-[filter]"
         >
           {saving ? "Creating…" : "Create shipment"}
         </button>

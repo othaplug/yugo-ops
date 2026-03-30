@@ -25,7 +25,7 @@ export default async function SettingsLayout({
     <div className="max-w-[900px] mx-auto px-5 md:px-6 py-6 md:py-8 animate-fade-up">
       <div className="mb-4"><BackButton label="Back" /></div>
       <div className="mb-6">
-        <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Account</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Account</p>
         <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Settings</h1>
       </div>
       <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 sm:items-start">

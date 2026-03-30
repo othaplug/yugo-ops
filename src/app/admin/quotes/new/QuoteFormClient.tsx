@@ -23,6 +23,7 @@ import {
   Users,
   Clock,
   Truck,
+  MapPin,
   Plus,
   Trash as Trash2,
   Warning,
@@ -51,6 +52,14 @@ import {
   moveSizeLabel,
   suggestMoveSizeFromInventory,
 } from "@/lib/pricing/move-size-suggestion";
+import { getVisibleAddons, ESTATE_ADDON_UI_LINES } from "@/lib/quotes/addon-visibility";
+import {
+  buildEstateScheduleLines,
+  calculateEstateDays,
+  estateLoadedLabourCost,
+} from "@/lib/quotes/estate-schedule";
+import { pickupLocationsFromQuote, accessLabel, abbreviateLocationRows, dropoffLocationsFromQuote } from "@/lib/quotes/quote-address-display";
+import { formatAddressForDisplay } from "@/lib/format-text";
 
 const PanelRightClose = PanelRightOpen;
 
@@ -378,7 +387,7 @@ const fieldInput = "field-input-compact w-full";
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-[11px] font-semibold text-[var(--tx3)] capitalize tracking-wide">
+      <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
         {label}
       </label>
       {children}
@@ -498,7 +507,13 @@ function quickEstimate(
   const baseLabour = crew * totalHrs * labourRate * dateMult;
   const curBase = Math.max(roundTo(baseLabour, rounding), minAmt);
   const sig = roundTo(curBase * cfgNum(config, "tier_signature_multiplier", cfgNum(config, "tier_premier_multiplier", 1.50)), rounding);
-  const est = roundTo(curBase * cfgNum(config, "tier_estate_multiplier", 3.15), rounding);
+  const loadedRate = cfgNum(config, "crew_loaded_hourly_rate", cfgNum(config, "labour_rate_per_mover_hour", 28));
+  const estatePlan = calculateEstateDays(moveSize, score);
+  const estateMultiLoaded = estateLoadedLabourCost(estatePlan, loadedRate);
+  const singleLoadedPreview = Math.round(crew * totalHrs * loadedRate);
+  const estateLabourUplift = Math.max(0, estateMultiLoaded - singleLoadedPreview);
+  const est =
+    roundTo(curBase * cfgNum(config, "tier_estate_multiplier", 3.15), rounding) + roundTo(estateLabourUplift, rounding);
 
   return {
     essential: curBase + addonTotal,
@@ -1386,14 +1401,16 @@ export default function QuoteFormClient({
     setLeadInventoryReview((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  // ── Applicable add-ons (popular first) ────
-  const applicableAddons = useMemo(
-    () =>
-      [...allAddons.filter((a) => a.applicable_service_types.includes(serviceType))].sort(
-        (a, b) => (b.is_popular ? 1 : 0) - (a.is_popular ? 1 : 0),
-      ),
-    [allAddons, serviceType],
-  );
+  // ── Applicable add-ons (popular first; tier hides items bundled in Signature/Estate) ────
+  const applicableAddons = useMemo(() => {
+    const base = [...allAddons.filter((a) => a.applicable_service_types.includes(serviceType))].sort(
+      (a, b) => (b.is_popular ? 1 : 0) - (a.is_popular ? 1 : 0),
+    );
+    if (serviceType === "local_move" || serviceType === "long_distance") {
+      return getVisibleAddons(base, recommendedTier);
+    }
+    return base;
+  }, [allAddons, serviceType, recommendedTier]);
   const popularAddons = useMemo(() => applicableAddons.filter((a) => a.is_popular), [applicableAddons]);
   const otherAddons = useMemo(() => applicableAddons.filter((a) => !a.is_popular), [applicableAddons]);
   const [showAllAddons, setShowAllAddons] = useState(false);
@@ -1818,6 +1835,16 @@ export default function QuoteFormClient({
         }));
       }
     }
+    if (serviceType === "local_move" || serviceType === "long_distance" || serviceType === "white_glove") {
+      const extraPick = extraFromStops
+        .map((s) => ({ address: s.address.trim() }))
+        .filter((x) => x.address.length > 0);
+      const extraDrop = extraToStops
+        .map((s) => ({ address: s.address.trim() }))
+        .filter((x) => x.address.length > 0);
+      if (extraPick.length > 0) base.additional_pickup_addresses = extraPick;
+      if (extraDrop.length > 0) base.additional_dropoff_addresses = extraDrop;
+    }
     // Custom crating applies to all service types
     if (cratingRequired && cratingItems.length > 0) {
       base.crating_pieces = cratingItems;
@@ -2018,6 +2045,7 @@ export default function QuoteFormClient({
   }, [
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
     selectedAddons, recommendedTier, moveSize, clientBoxCount, serviceAreaOverride, specialtyItems, inventoryItems, sqft, wsCount, hasIt, hasConf,
+    extraFromStops, extraToStops,
     hasReception, timingPref, itemDescription, itemCategory, itemWeight, assembly, stairCarry, stairFlights,
     numItems, declaredValue, specialtyType, specialtyItemDescription, specialtyWeightClass, specialtyRequirements,
     specialtyNotes, specialtyDimL, specialtyDimW, specialtyDimH,
@@ -2333,7 +2361,7 @@ export default function QuoteFormClient({
                         <span className="text-[var(--tx3)]">No match</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 capitalize text-[var(--tx3)]">{row.confidence || "—"}</td>
+                    <td className="px-4 py-2.5 uppercase text-[var(--tx3)]">{row.confidence || "—"}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex flex-wrap gap-1.5 justify-end">
                         <button
@@ -2367,7 +2395,7 @@ export default function QuoteFormClient({
         <div className={`flex flex-col transition-all duration-300 max-w-4xl w-full ${previewOpen ? "min-[480px]:w-[60%] min-w-0" : "min-[480px]:w-full"}`}>
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-t-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-[var(--brd)]">
-              <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Sales</p>
+              <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
               <h1 className="font-hero text-[22px] font-bold text-[var(--tx)] tracking-tight leading-none">Generate Quote</h1>
               <p className="text-[11px] text-[var(--tx3)] mt-1.5">
                 Fill in the details and generate a quote. The live preview updates as you type.
@@ -2377,7 +2405,7 @@ export default function QuoteFormClient({
             <div className="p-5 space-y-0">
               {/* ── 1. Service type ── */}
               <div>
-                <label className="block text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Service Type</label>
+                <label className="block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Service Type</label>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                   {SERVICE_TYPES.map((card) => {
                     const sel = serviceType === card.value;
@@ -2417,7 +2445,7 @@ export default function QuoteFormClient({
 
               {/* ── 2. Client ── */}
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Client</h3>
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
                 <Field label="Select to auto fill">
                   <div ref={contactDropdownRef} className="relative">
                     <input
@@ -2433,7 +2461,7 @@ export default function QuoteFormClient({
                     />
                     {showContactDropdown && dbContacts.length > 0 && (
                       <div className="absolute z-10 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
-                        <div className="px-3 py-1.5 text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] bg-[var(--bg)]">Contacts</div>
+                        <div className="px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">Contacts</div>
                         {dbContacts.map((c) => (
                           <button
                             key={c.hubspot_id}
@@ -2533,7 +2561,7 @@ export default function QuoteFormClient({
                     <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3.5">
                       <div className="flex items-center gap-2 mb-1.5">
                         <MagnifyingGlass size={16} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
-                        <p className="text-[11px] font-bold tracking-wide capitalize text-[var(--gold)]">
+                        <p className="text-[11px] font-bold tracking-wide uppercase text-[var(--gold)]">
                           Returning Client
                         </p>
                       </div>
@@ -2576,7 +2604,7 @@ export default function QuoteFormClient({
                     <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3.5">
                       <div className="flex items-center gap-2 mb-1.5">
                         <MagnifyingGlass size={16} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
-                        <p className="text-[11px] font-bold tracking-wide capitalize text-[var(--gold)]">
+                        <p className="text-[11px] font-bold tracking-wide uppercase text-[var(--gold)]">
                           Existing Contact Found
                         </p>
                       </div>
@@ -2620,13 +2648,13 @@ export default function QuoteFormClient({
 
               {/* ── Referral Code ── */}
               <div className="border-t border-[var(--brd)]/30 pt-4 pb-1">
-                <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-3">Referral Code</h3>
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Referral Code</h3>
                 <div className="flex gap-2">
                   <input
                     value={referralCode}
                     onChange={(e) => { setReferralCode(e.target.value.toUpperCase()); setReferralStatus("idle"); setReferralMsg(""); }}
                     placeholder="YUGO-NAME-XXXX"
-                    className="flex-1 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] font-mono focus:border-[var(--gold)] outline-none"
+                    className="flex-1 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] font-mono text-[var(--tx)] placeholder:text-[var(--tx2)] focus:border-[var(--gold)] outline-none"
                   />
                   <button
                     type="button"
@@ -2648,7 +2676,7 @@ export default function QuoteFormClient({
 
               {/* ── 3. Addresses ── */}
               <div className="space-y-3">
-                <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
                   {serviceType === "event" && eventMulti
                     ? "Addresses (per event below)"
                     : serviceType === "event"
@@ -2842,7 +2870,7 @@ export default function QuoteFormClient({
               {/* Event and labour_only manage their own date fields */}
               {serviceType !== "event" && (
               <div>
-                <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-3">
+                <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
                   {serviceType === "labour_only" ? "Scheduling" : serviceType === "bin_rental" ? "Move date & rental cycle" : "Move Details"}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -2926,7 +2954,7 @@ export default function QuoteFormClient({
                     <div className="flex items-start gap-3 min-w-0">
                       <Recycle className="w-6 h-6 shrink-0 text-[var(--gold)]" weight="regular" aria-hidden />
                       <div>
-                        <p className="text-[11px] font-bold tracking-wide capitalize text-[var(--gold)]">Add eco-friendly bins</p>
+                        <p className="text-[11px] font-bold tracking-wide uppercase text-[var(--gold)]">Add eco-friendly bins</p>
                         <p className="text-[11px] text-[var(--tx2)] mt-1 leading-snug">
                           Skip the cardboard. Reusable bins delivered 7 days before your move, picked up 5 days after.
                           2 Bedroom: {fmtPrice(cfgNum(config, "bin_bundle_2br", 279))} — delivery is free when coordinated with your move (uncheck material delivery or link the move when booked).
@@ -2963,31 +2991,66 @@ export default function QuoteFormClient({
                   </div>
                 )}
                 {serviceType === "local_move" && (
-                  <div className="col-span-full">
-                    <Field label="Recommend Tier">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <select
-                          value={recommendedTier}
-                          onChange={(e) => setRecommendedTier(e.target.value as "essential" | "signature" | "estate")}
-                          className={`${fieldInput} w-full min-w-[10.5rem] max-w-[16rem] shrink-0`}
-                        >
-                          <option value="essential">Essential</option>
-                          <option value="signature">Signature</option>
-                          <option value="estate">Estate</option>
-                        </select>
-                        {recommendedTier !== "estate" && (
-                          <button
-                            type="button"
-                            onClick={() => setRecommendedTier("estate")}
-                            className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] hover:underline underline-offset-2 transition-colors whitespace-nowrap shrink-0"
+                  <>
+                    <div className="col-span-full">
+                      <Field label="Recommend Tier">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={recommendedTier}
+                            onChange={(e) => setRecommendedTier(e.target.value as "essential" | "signature" | "estate")}
+                            className={`${fieldInput} w-full min-w-[10.5rem] max-w-[16rem] shrink-0`}
                           >
-                            White glove? Estate
-                            <ChevronRight className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
-                          </button>
-                        )}
-                      </div>
-                    </Field>
-                  </div>
+                            <option value="essential">Essential</option>
+                            <option value="signature">Signature</option>
+                            <option value="estate">Estate</option>
+                          </select>
+                          {recommendedTier !== "estate" && (
+                            <button
+                              type="button"
+                              onClick={() => setRecommendedTier("estate")}
+                              className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-[var(--gold)] hover:text-[var(--gold2)] hover:underline underline-offset-2 transition-colors whitespace-nowrap shrink-0"
+                            >
+                              White glove? Estate
+                              <ChevronRight className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
+                            </button>
+                          )}
+                        </div>
+                      </Field>
+                    </div>
+                    {recommendedTier === "estate" &&
+                      ["2br", "3br", "4br", "5br_plus"].includes(moveSize) &&
+                      moveDate.trim() &&
+                      (() => {
+                        const plan = calculateEstateDays(moveSize, inventoryScoreWithBoxes);
+                        if (plan.days <= 1) return null;
+                        const lines = buildEstateScheduleLines(plan, moveDate.trim(), "20ft dedicated moving truck");
+                        return (
+                          <div className="col-span-full rounded-xl border border-[var(--tx)]/[0.08] bg-[#F9F9F8] dark:bg-white/[0.04] dark:border-white/[0.08] px-4 py-3 space-y-2 text-[11px] text-[var(--tx2)]">
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--tx3)]">
+                              Estate schedule preview
+                            </p>
+                            <p className="text-[var(--tx)] font-medium leading-snug">
+                              This move typically needs {plan.days} days. Pack day is usually the day before the move
+                              unless the coordinator arranges otherwise.
+                            </p>
+                            <div className="space-y-2">
+                              {lines.map((ln, i) => (
+                                <p
+                                  key={i}
+                                  className="leading-relaxed pl-2.5 border-l-2 border-[var(--gold)]/40 text-[var(--tx2)]"
+                                >
+                                  {ln}
+                                </p>
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                              Coordinators can adjust timing (for example same weekend only, or pack Thursday and move
+                              Saturday).
+                            </p>
+                          </div>
+                        );
+                      })()}
+                  </>
                   )}
                   {/* Box count moved into InventoryInput when inventory is shown */}
                   {(serviceType === "local_move" || serviceType === "long_distance") && itemWeights.length === 0 && (
@@ -3063,7 +3126,7 @@ export default function QuoteFormClient({
               {/* ── 5. Specialty items ── */}
               {(serviceType === "local_move" || serviceType === "long_distance") && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Specialty Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Items</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {SPECIALTY_ITEM_TYPES.map((type) => {
                       const active = specialtyItems.some((i) => i.type === type);
@@ -3107,7 +3170,7 @@ export default function QuoteFormClient({
               {(serviceType === "local_move" || serviceType === "long_distance" || serviceType === "white_glove" || serviceType === "specialty") && (
                 <div className="space-y-2 mt-3">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Custom Crating</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Custom Crating</h3>
                     <label className="flex items-center gap-1.5 ml-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -3208,7 +3271,7 @@ export default function QuoteFormClient({
               {/* ── Office fields ── */}
               {serviceType === "office_move" && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Office Details</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Office Details</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Field label="Billable hours (crew block)">
                       <input
@@ -3272,9 +3335,9 @@ export default function QuoteFormClient({
               {/* ── Single item fields ── */}
               {serviceType === "single_item" && (
                 <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</h3>
                   <div className="rounded-xl border-2 border-[var(--gold)]/40 bg-[var(--gold)]/8 px-3 py-3 space-y-2">
-                    <p className="text-[10px] font-bold capitalize tracking-wide text-[var(--gold)]">Special handling instructions</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">Special handling instructions</p>
                     <p className="text-[9px] text-[var(--tx3)] leading-snug">
                       Shown on the client quote and to crew, fragile areas, disassembly, narrow access, orientation, etc.
                     </p>
@@ -3315,7 +3378,7 @@ export default function QuoteFormClient({
                       </select>
                     </Field>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold capitalize text-[var(--tx3)] shrink-0">Stair Carry</span>
+                      <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
                       <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                         <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
                       </button>
@@ -3330,7 +3393,7 @@ export default function QuoteFormClient({
               {/* ── White glove fields ── */}
               {serviceType === "white_glove" && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">White Glove, Items</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">White Glove, Items</h3>
                   <Field label="Item description *">
                     <input
                       value={itemDescription}
@@ -3360,7 +3423,7 @@ export default function QuoteFormClient({
                       </select>
                     </Field>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold capitalize text-[var(--tx3)] shrink-0">Stair Carry</span>
+                      <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
                       <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                         <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
                       </button>
@@ -3375,7 +3438,7 @@ export default function QuoteFormClient({
               {/* ── Specialty fields ── */}
               {serviceType === "specialty" && (
                 <div className="space-y-4">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Specialty Move</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Specialty Move</h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Specialty Type">
@@ -3404,7 +3467,7 @@ export default function QuoteFormClient({
                   </Field>
 
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Item Dimensions (optional)</label>
+                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Item Dimensions (optional)</label>
                     <div className="flex items-center gap-2">
                       <input type="text" value={specialtyDimL} onChange={(e) => setSpecialtyDimL(e.target.value)} placeholder="L" className={`${fieldInput} w-16 text-center`} />
                       <span className="text-[var(--tx3)] text-[11px]">×</span>
@@ -3416,7 +3479,7 @@ export default function QuoteFormClient({
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Special Requirements</label>
+                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Special Requirements</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {SPECIALTY_REQUIREMENTS.map((req) => (
                         <label key={req.value} className="flex items-center gap-2 cursor-pointer">
@@ -3435,7 +3498,7 @@ export default function QuoteFormClient({
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Building Requirements</label>
+                    <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Building Requirements</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {SPECIALTY_BUILDING_REQUIREMENTS.map((req) => (
                         <label key={req.value} className="flex items-center gap-2 cursor-pointer">
@@ -3489,7 +3552,7 @@ export default function QuoteFormClient({
               {serviceType === "event" && (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Event Details</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Details</h3>
                     <Field label="Event Name">
                       <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g. L'Oréal Beauty Event" className={fieldInput} />
                     </Field>
@@ -3630,7 +3693,7 @@ export default function QuoteFormClient({
                   {!eventMulti && (
                     <>
                       <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Venue</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Venue</h3>
                         {eventSameLocationSingle ? (
                           <p className="text-[11px] text-[var(--tx2)] rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)]">
                             Venue matches origin, on-site event (no separate venue address).
@@ -3650,7 +3713,7 @@ export default function QuoteFormClient({
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Delivery (Day 1)</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Delivery (Day 1)</h3>
                         <div className="grid grid-cols-2 gap-2">
                           <Field label="Delivery Date *">
                             <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
@@ -3722,7 +3785,7 @@ export default function QuoteFormClient({
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Return (Day 2+)</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Return (Day 2+)</h3>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" checked={eventSameDay} onChange={(e) => setEventSameDay(e.target.checked)} className="accent-[var(--gold)] w-3.5 h-3.5" />
                           <span className="text-[11px] text-[var(--tx2)]">Same Day Event, delivery and return on same day</span>
@@ -3771,7 +3834,7 @@ export default function QuoteFormClient({
                       {eventLegs.map((leg, idx) => (
                         <div key={idx} className="rounded-xl border border-[var(--brd)] p-3 space-y-3 bg-[var(--card)]/30">
                           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[var(--brd)]/50">
-                            <span className="text-[10px] font-bold capitalize tracking-wide text-[var(--gold)]">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">
                               Round trip {idx + 1}
                               {leg.label?.trim() ? <span className="text-[var(--tx2)] font-semibold normal-case">, {leg.label.trim()}</span> : null}
                             </span>
@@ -3966,7 +4029,7 @@ export default function QuoteFormClient({
                       </button>
 
                       <div className="space-y-2">
-                        <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Setup (program)</h3>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Setup (program)</h3>
                         <p className="text-[10px] text-[var(--tx3)]">One setup fee for the bundled program (not per venue).</p>
                         {eventLuxury ? (
                           <div className="rounded-lg border border-[var(--brd)] px-3 py-2.5 bg-[var(--bg)] space-y-2">
@@ -4039,7 +4102,7 @@ export default function QuoteFormClient({
 
                   {/* Event Items */}
                   <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Event Items</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Items</h3>
                     <div className="space-y-1.5">
                       {eventItems.map((item, idx) => (
                         <div key={idx} className="flex items-center gap-2">
@@ -4081,7 +4144,7 @@ export default function QuoteFormClient({
 
                   {/* Additional Services */}
                   <div className="space-y-2">
-                    <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Additional Services</h3>
+                    <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Additional Services</h3>
                     {[
                       "Furniture assembly at venue",
                       "Signage installation",
@@ -4107,7 +4170,7 @@ export default function QuoteFormClient({
               {/* ── Labour Only fields ── */}
               {serviceType === "labour_only" && (
                 <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Labour Only</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Labour Only</h3>
                   <div className="flex flex-col sm:flex-row gap-3 items-start">
                     <div className="flex-1 min-w-0">
                       <MultiStopAddressField
@@ -4215,7 +4278,7 @@ export default function QuoteFormClient({
               {/* ── B2B One-Off fields (dimensional pricing) ── */}
               {serviceType === "b2b_delivery" && (
                 <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">B2B One-Off</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off</h3>
                   <p className="text-[10px] text-[var(--tx3)]">Contact info uses Client name, Email and Phone above.</p>
                   <Field label="Business Name *">
                     <input
@@ -4257,8 +4320,7 @@ export default function QuoteFormClient({
                     </Field>
                   ) : (
                     <p className="text-[10px] text-amber-700 dark:text-amber-400 rounded-lg border border-amber-500/30 px-3 py-2">
-                      No delivery verticals in the database. Run migration{" "}
-                      <code className="text-[9px]">20260329140000_delivery_verticals_b2b.sql</code> or legacy weight-based pricing applies.
+                      No delivery catalog services are set up yet. Add them under Platform settings, or legacy weight-based pricing applies.
                     </p>
                   )}
                   {b2bPartnersList.length > 0 ? (
@@ -4611,7 +4673,7 @@ export default function QuoteFormClient({
 
               {serviceType === "bin_rental" && (
                 <div className="space-y-4">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Bundle & pricing</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Bundle & pricing</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {BIN_BUNDLE_OPTIONS.map((b) => (
                       <button
@@ -4627,7 +4689,7 @@ export default function QuoteFormClient({
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-[12px] font-semibold text-[var(--tx)]">{b.label}</span>
                           {b.popular && (
-                            <span className="text-[8px] font-bold capitalize tracking-wider text-[var(--gold)]">Popular</span>
+                            <span className="text-[8px] font-bold uppercase tracking-wider text-[var(--gold)]">Popular</span>
                           )}
                         </div>
                         <p className="text-[10px] text-[var(--tx3)] mt-0.5">{b.detail}</p>
@@ -4646,7 +4708,7 @@ export default function QuoteFormClient({
                     </Field>
                   )}
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-[10px] font-bold capitalize text-[var(--tx3)]">Extra bins</span>
+                    <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Extra bins</span>
                     <button
                       type="button"
                       className="px-2 py-1 rounded border border-[var(--brd)] text-[11px]"
@@ -4754,11 +4816,13 @@ export default function QuoteFormClient({
               {/* ── 6. Add-ons (popular first, show all expander) ── */}
               {applicableAddons.length > 0 && serviceType !== "bin_rental" && (
                 <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Add-Ons</h3>
+                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Add-Ons</h3>
                   {recommendedTier === "estate" && serviceType === "local_move" && (
-                    <p className="text-[10px] text-[var(--tx3)] bg-[var(--bg)] rounded-lg px-3 py-2 border border-[var(--brd)]">
-                      Packing supplies are included with Estate. The &quot;Packing materials kit&quot; add-on is not needed.
-                    </p>
+                    <div className="text-[10px] text-[var(--tx2)] bg-[var(--bg)] rounded-lg px-3 py-2.5 border border-[var(--brd)] space-y-1.5">
+                      <p className="font-bold tracking-wide text-[var(--tx)]">{ESTATE_ADDON_UI_LINES[0]}</p>
+                      <p className="leading-snug">{ESTATE_ADDON_UI_LINES[1]}</p>
+                      <p className="font-semibold text-[var(--tx)] pt-0.5">{ESTATE_ADDON_UI_LINES[2]}</p>
+                    </div>
                   )}
                   <div className="space-y-2">
                     {popularAddons.map((addon) => {
@@ -4782,7 +4846,7 @@ export default function QuoteFormClient({
                               <div className="flex items-center gap-2">
                                 <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                                 {addon.is_popular && (
-                                  <span className="text-[10px] font-bold capitalize px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
                                 )}
                                 <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                               </div>
@@ -4852,7 +4916,7 @@ export default function QuoteFormClient({
                               <div className="flex items-center gap-2">
                                 <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                                 {addon.is_popular && (
-                                  <span className="text-[10px] font-bold capitalize px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
                                 )}
                                 <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                               </div>
@@ -4949,7 +5013,7 @@ export default function QuoteFormClient({
             title="Show preview"
           >
             <PanelRightOpen className="w-4 h-4" />
-            <span className="text-[9px] font-bold tracking-wider capitalize [writing-mode:vertical-lr]">Preview</span>
+            <span className="text-[9px] font-bold tracking-wider uppercase [writing-mode:vertical-lr]">Preview</span>
           </button>
         )}
 
@@ -5011,7 +5075,15 @@ export default function QuoteFormClient({
                 {quoteResult ? (
                   <>
                     {quoteResult.tiers ? (
-                      <TiersDisplay tiers={quoteResult.tiers} recommendedTier={recommendedTier} />
+                      <TiersDisplay
+                        tiers={quoteResult.tiers}
+                        recommendedTier={recommendedTier}
+                        estateMultiDayUplift={(() => {
+                          const f = quoteResult.factors as Record<string, unknown> | undefined;
+                          const u = f?.estate_multi_day_labour_uplift;
+                          return typeof u === "number" && u > 0 ? u : 0;
+                        })()}
+                      />
                     ) : quoteResult.custom_price && serviceType === "event" ? (
                       <EventPriceDisplay price={quoteResult.custom_price} factors={quoteResult.factors as Record<string, unknown>} />
                     ) : quoteResult.custom_price && serviceType === "bin_rental" ? (
@@ -5026,7 +5098,7 @@ export default function QuoteFormClient({
 
                     {quoteResult.addons && quoteResult.addons.items.length > 0 && (
                       <div className="space-y-1.5">
-                        <h4 className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Add-Ons</h4>
+                        <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Add-Ons</h4>
                         {quoteResult.addons.items.map((item, i) => (
                           <div key={i} className="flex items-center justify-between text-[11px]">
                             <span className="text-[var(--tx2)]">{item.name}</span>
@@ -5035,6 +5107,35 @@ export default function QuoteFormClient({
                         ))}
                       </div>
                     )}
+
+                    {quoteResult.factors &&
+                      serviceType === "local_move" &&
+                      recommendedTier === "estate" &&
+                      (() => {
+                        const f = quoteResult.factors as Record<string, unknown>;
+                        const plan = f.estate_day_plan as { days?: number } | undefined;
+                        const lines = f.estate_schedule_lines as string[] | undefined;
+                        const head = f.estate_schedule_headline as string | undefined;
+                        if (!plan || (plan.days ?? 0) <= 1 || !lines?.length) return null;
+                        return (
+                          <div className="rounded-xl border border-[var(--tx)]/[0.08] bg-[#F9F9F8] dark:bg-white/[0.04] dark:border-white/[0.08] p-3.5 space-y-2 text-[11px] text-[var(--tx2)]">
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--tx3)]">
+                              Estate schedule
+                            </p>
+                            <p className="text-[var(--tx)] font-medium leading-snug">{head}</p>
+                            <div className="space-y-2">
+                              {lines.map((ln, i) => (
+                                <p
+                                  key={i}
+                                  className="leading-relaxed pl-2.5 border-l-2 border-[var(--gold)]/40 text-[var(--tx2)]"
+                                >
+                                  {ln}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                     <FactorsDisplayCollapsible
                       factors={quoteResult.factors}
@@ -5112,7 +5213,7 @@ export default function QuoteFormClient({
                       </div>
                     ) : serviceType === "bin_rental" && binLivePreview && binLivePreview.subtotal != null && !binLivePreview.error ? (
                       <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4 space-y-2">
-                        <p className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Bin rental (estimate)</p>
+                        <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Bin rental (estimate)</p>
                         {binLivePreview.lines.map((l, i) => (
                           <div key={i} className="flex justify-between text-[11px]">
                             <span className="text-[var(--tx2)]">{l.label}</span>
@@ -5136,7 +5237,7 @@ export default function QuoteFormClient({
                     ) : specialtyLivePreview ? (
                       <div className="space-y-2">
                         <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3">
-                          <p className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Suggested Range</p>
+                          <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Suggested Range</p>
                           <p className="text-[18px] font-bold text-[var(--gold)]">
                             {fmtPrice(specialtyLivePreview.min)} – {fmtPrice(specialtyLivePreview.max)}
                           </p>
@@ -5211,6 +5312,69 @@ export default function QuoteFormClient({
                   <span className="text-[var(--tx3)]">Move Date</span>
                   <span className="text-[var(--tx)]">{quoteResult.move_date || "-"}</span>
                 </div>
+                {(serviceType === "local_move" ||
+                  serviceType === "long_distance" ||
+                  serviceType === "white_glove") && (
+                  <div className="pt-2 border-t border-[var(--brd)]/50 space-y-2">
+                    <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Route preview</p>
+                    {(() => {
+                      const fac = quoteResult.factors as Record<string, unknown> | null | undefined;
+                      const pickups = abbreviateLocationRows(
+                        pickupLocationsFromQuote(fac ?? null, fromAddress, fromAccess),
+                      );
+                      const dropoffs = abbreviateLocationRows(
+                        dropoffLocationsFromQuote(fac ?? null, toAddress, toAccess),
+                      );
+                      return (
+                        <>
+                          <div>
+                            <p className="text-[9px] font-semibold text-[var(--tx3)] mb-1">
+                              Pickup{pickups.length > 1 ? ` locations (${pickups.length})` : ""}
+                            </p>
+                            <ul className="space-y-1.5">
+                              {pickups.map((row, i) => (
+                                <li key={i} className="flex gap-2 text-[10px] text-[var(--tx)]">
+                                  <MapPin className="w-3.5 h-3.5 shrink-0 text-[var(--gold)] mt-0.5" aria-hidden />
+                                  <span>
+                                    {formatAddressForDisplay(row.address)}
+                                    {accessLabel(row.access) ? (
+                                      <span className="block text-[var(--tx3)] mt-0.5">
+                                        Access: {accessLabel(row.access)}
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                            {pickups.length > 1 && (
+                              <p className="text-[9px] text-[var(--tx3)] mt-1">
+                                {pickups.length} pickup locations — crew will visit each stop.
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-semibold text-[var(--tx3)] mb-1">Destination</p>
+                            <ul className="space-y-1.5">
+                              {dropoffs.map((row, i) => (
+                                <li key={i} className="flex gap-2 text-[10px] text-[var(--tx)]">
+                                  <MapPin className="w-3.5 h-3.5 shrink-0 text-[var(--gold)] mt-0.5" aria-hidden />
+                                  <span>
+                                    {formatAddressForDisplay(row.address)}
+                                    {accessLabel(row.access) ? (
+                                      <span className="block text-[var(--tx3)] mt-0.5">
+                                        Access: {accessLabel(row.access)}
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
                 {quoteResult.service_type === "event" &&
                   (quoteResult.factors?.event_same_location_onsite === true ||
                     quoteResult.factors?.event_has_on_site_leg === true) && (
@@ -5231,7 +5395,7 @@ export default function QuoteFormClient({
             {/* ── Labour estimate (coordinator-only) ── */}
             {quoteResult?.labour && (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
-                <h4 className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Labour Estimate</h4>
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Labour Estimate</h4>
                 <div className="flex items-center gap-2">
                   <Users className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <span className="text-[var(--tx)]">{quoteResult.labour.crewSize} movers <span className="text-[var(--tx3)]">(recommended)</span></span>
@@ -5266,7 +5430,7 @@ export default function QuoteFormClient({
             {/* ── Fleet allocation (after generate) ── */}
             {quoteResult?.truck?.primary && (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
-                <h4 className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Fleet Allocation</h4>
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Fleet Allocation</h4>
                 <div className="flex items-center gap-2">
                   <Truck className="w-3.5 h-3.5 text-[var(--gold)]" />
                   <div>
@@ -5292,13 +5456,13 @@ export default function QuoteFormClient({
             {/* ── Valuation protection (after generate) ── */}
             {quoteResult?.valuation && (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2.5 text-[11px]">
-                <h4 className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Valuation Protection</h4>
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Valuation Protection</h4>
                 {["essential", "signature", "estate"].map((pkg) => {
                   const included = { essential: "Released Value", signature: "Enhanced Value", estate: "Full Replacement" }[pkg] ?? pkg;
                   const upgrade = quoteResult.valuation?.upgrades?.[pkg];
                   return (
                     <div key={pkg} className="flex items-center justify-between">
-                      <span className="text-[var(--tx3)] capitalize">{pkg}</span>
+                      <span className="text-[var(--tx3)] uppercase">{pkg}</span>
                       <span className="text-[var(--tx)]">
                         {included}
                         {upgrade ? <span className="text-[var(--gold)] ml-1">(+{fmtPrice(upgrade.price)} upgrade)</span> : null}
@@ -5316,8 +5480,8 @@ export default function QuoteFormClient({
                typeof (quoteResult.factors as Record<string, unknown>).estimated_margin_curated === "number") && (
               <div className="bg-[var(--bg2)] border border-[var(--brd)] rounded-xl p-4 space-y-3 text-[11px]">
                 <div className="flex items-center gap-1.5">
-                  <h4 className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Margin Estimate</h4>
-                  <span className="text-[10px] font-bold capitalize tracking-wide bg-[var(--tx3)]/20 text-[var(--tx3)] px-1.5 py-0.5 rounded">Super Admin</span>
+                  <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Margin Estimate</h4>
+                  <span className="text-[10px] font-bold uppercase tracking-wide bg-[var(--tx3)]/20 text-[var(--tx3)] px-1.5 py-0.5 rounded">Super Admin</span>
                 </div>
                 {(() => {
                   const f = quoteResult.factors as Record<string, unknown>;
@@ -5424,7 +5588,7 @@ export default function QuoteFormClient({
                   <div className="flex items-start gap-2.5">
                     <IconCmp size={16} weight="bold" className={`shrink-0 mt-0.5 ${titleCls}`} aria-hidden />
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[11px] font-bold capitalize tracking-wider ${titleCls}`}>
+                      <p className={`text-[11px] font-bold uppercase tracking-wider ${titleCls}`}>
                         {title}
                       </p>
                       <p className={`text-[11px] mt-1 ${isCritical ? "text-red-400/90" : "text-[var(--tx2)]"}`}>
@@ -5449,7 +5613,7 @@ export default function QuoteFormClient({
             {/* ── Live inventory score (before generate) ── */}
             {!quoteResult && inventoryItems.length > 0 && (serviceType === "local_move" || serviceType === "long_distance" || serviceType === "office_move") && (
               <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-2 text-[11px]">
-                <h4 className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Inventory Summary</h4>
+                <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Inventory Summary</h4>
                 <div className="flex items-center justify-between">
                   <span className="text-[var(--tx3)]">Items</span>
                   <span className="text-[var(--tx)] font-medium">{inventoryTotalItems}{clientBoxCountNum > 0 ? ` + ${clientBoxCountNum} boxes` : ""}</span>
@@ -5480,7 +5644,16 @@ const PRICE_CARD = {
   legPanel: "rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/40",
 } as const;
 
-function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<string, TierResult>; recommendedTier?: string }) {
+function TiersDisplay({
+  tiers,
+  recommendedTier = "signature",
+  estateMultiDayUplift = 0,
+}: {
+  tiers: Record<string, TierResult>;
+  recommendedTier?: string;
+  /** Pre-tax amount included in Estate tier for multi-day loaded labour vs single-day baseline (from generate factors). */
+  estateMultiDayUplift?: number;
+}) {
   const tierOrder = ["essential", "signature", "estate"] as const;
   const tierColors: Record<string, { bg: string; border: string; accent: string; muted: string; body: string; list: string }> = {
     essential: {
@@ -5523,13 +5696,19 @@ function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<
               <div className="flex items-center gap-2">
                 <span className={`text-[13px] font-extrabold tracking-tight ${c.accent}`}>{tierLabels[name]}</span>
                 {isRecommended && (
-                  <span className="text-[10px] font-bold capitalize px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
                     Recommended
                   </span>
                 )}
               </div>
               <span className={`text-3xl font-black tabular-nums ${c.accent}`}>{fmtPrice(t.price)}</span>
             </div>
+            {name === "estate" && estateMultiDayUplift > 0 && (
+              <p className={`text-[10px] leading-snug ${c.muted}`}>
+                Includes <span className={`font-semibold ${c.body}`}>{fmtPrice(estateMultiDayUplift)}</span> multi-day
+                loaded labour (pack + move schedule vs single-day baseline). Already in the Estate price above.
+              </p>
+            )}
             <div className={`flex items-center justify-between text-[11px] ${c.muted}`}>
               <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
               <span className={`font-bold ${c.body}`}>Total: {fmtPrice(t.total)}</span>
@@ -5541,7 +5720,7 @@ function TiersDisplay({ tiers, recommendedTier = "signature" }: { tiers: Record<
             {t.includes.length > 0 && (
               <details className="group">
                 <summary
-                  className={`text-[9px] font-bold capitalize cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${c.muted}`}
+                  className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${c.muted}`}
                 >
                   <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
                   What&apos;s included ▾
@@ -5567,7 +5746,7 @@ function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: str
   return (
     <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#B8962E] capitalize">{label}</span>
+        <span className="text-[13px] font-bold text-[#B8962E] uppercase">{label}</span>
         <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
       </div>
       <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
@@ -5581,7 +5760,7 @@ function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: str
       {t.includes.length > 0 && (
         <details className="group">
           <summary
-            className={`text-[9px] font-bold capitalize cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${PRICE_CARD.muted}`}
+            className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${PRICE_CARD.muted}`}
           >
             <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
             What&apos;s included ▾
@@ -5660,7 +5839,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
     t.includes.length > 0 ? (
       <details className="group pt-1">
         <summary
-          className={`text-[9px] font-bold capitalize cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${PRICE_CARD.muted}`}
+          className={`text-[9px] font-bold uppercase cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden ${PRICE_CARD.muted}`}
         >
           <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
           What&apos;s included ▾
@@ -5682,7 +5861,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
         <div className="flex items-center justify-between gap-2">
           <div>
             <span className="text-[13px] font-bold text-[#B8962E]">Event quote</span>
-            <p className={`text-[9px] mt-0.5 font-medium capitalize tracking-wide ${PRICE_CARD.muted}`}>
+            <p className={`text-[9px] mt-0.5 font-medium uppercase tracking-wide ${PRICE_CARD.muted}`}>
               Multi-event bundle, {eventLegs.length} round trip{eventLegs.length === 1 ? "" : "s"}
             </p>
           </div>
@@ -5693,7 +5872,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
         <div className="space-y-3 text-[11px]">
           {eventLegs.map((leg, idx) => (
             <div key={idx} className={`p-3 space-y-2 ${PRICE_CARD.legPanel}`}>
-              <p className="text-[9px] font-bold tracking-wider capitalize text-[#B8962E]">
+              <p className="text-[9px] font-bold tracking-wider uppercase text-[#B8962E]">
                 {leg.label?.trim() || `Event ${idx + 1}`}
               </p>
               {(leg.from_address || leg.to_address) && (
@@ -6069,7 +6248,7 @@ function OptimisticTiers({ est, isLongDistance }: { est: { essential: number; si
   ];
   return (
     <div className="space-y-2">
-      <p className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)]">
+      <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">
         Estimated Pricing{isLongDistance ? " (excl. drive time)" : ""}
       </p>
       {tiers.map((t) => {
@@ -6142,6 +6321,8 @@ function PriceBreakdownResidential({
     typeof factors.truck_breakdown_line === "string" && factors.truck_breakdown_line.trim().length > 0
       ? factors.truck_breakdown_line.trim()
       : null;
+  const truckSurcharge =
+    typeof factors.truck_surcharge === "number" ? factors.truck_surcharge : null;
 
   // Inventory label
   let invLabel = "standard";
@@ -6162,123 +6343,172 @@ function PriceBreakdownResidential({
     else distLabel = "extreme >100km";
   }
 
-  const Row = ({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) => (
-    <div className="flex items-start justify-between gap-2 py-1">
-      <div>
-        <span className="text-[10px] text-[var(--tx2)]">{label}</span>
-        {sub && <p className="text-[9px] text-[var(--tx3)]">{sub}</p>}
+  const Row = ({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) => (
+    <div className="flex items-start justify-between gap-3 px-3 py-2.5">
+      <div className="min-w-0 flex-1">
+        <span className="text-[11px] font-medium text-[var(--tx2)]">{label}</span>
+        {sub != null && sub !== "" && (
+          <div className="mt-0.5 text-[10px] leading-snug text-[var(--tx3)]">{sub}</div>
+        )}
       </div>
-      <span className="text-[10px] text-right shrink-0">{value}</span>
+      <div className="text-[11px] text-right shrink-0 tabular-nums max-w-[55%] pt-0.5">{value}</div>
     </div>
   );
 
-  const Divider = () => <div className="border-t border-[var(--brd)] my-1" />;
+  const BreakdownCard = ({ children }: { children: React.ReactNode }) => (
+    <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)]/40 overflow-hidden divide-y divide-[var(--brd)]/80">
+      {children}
+    </div>
+  );
+
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <p className="text-[10px] font-semibold tracking-wide text-[var(--tx3)] mb-1.5">{children}</p>
+  );
 
   return (
-    <div className="space-y-0.5 text-[10px]">
-      {/* Distance & time */}
-      {distance != null && (
-        <Row label="Distance" value={<span className="text-[var(--tx)] font-medium">{distance} km ({time ?? "-"} min)</span>} />
-      )}
-
-      {/* Multiplicative chain */}
-      <p className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] pt-1">Pricing factors</p>
-      <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] divide-y divide-[var(--brd)]">
-        {baseRate !== null && (
-          <Row
-            label={`Base rate${moveSize ? ` (${moveSize.replace("br", "BR").replace("_plus", "+")})` : ""}`}
-            value={<span className="font-semibold text-[var(--tx)]">{fmtPrice(baseRate)}</span>}
-          />
-        )}
-        {invMod !== null && (
-          <Row
-            label="Inventory modifier"
-            value={fmtMod(invMod)}
-            sub={invScore != null && invBenchmark != null ? `score ${invScore.toFixed(1)} / benchmark ${invBenchmark.toFixed(1)}, ${invLabel}` : invLabel}
-          />
-        )}
-        {distMod !== null && (
-          <Row label="Distance modifier" value={fmtMod(distMod)} sub={distLabel} />
-        )}
-        {dateMult !== null && (
-          <Row label="Date factor" value={fmtMod(dateMult)} />
-        )}
-        {neighMult !== null && (
-          <Row label="Neighbourhood tier" value={fmtMod(neighMult)} sub={neighTier ?? undefined} />
-        )}
-        {subtotalPre !== null && (
-          <>
-            <Divider />
+    <div className="space-y-3 text-[10px]">
+      <div>
+        <SectionTitle>Base &amp; multipliers</SectionTitle>
+        <BreakdownCard>
+          {distance != null && (
             <Row
-              label="Subtotal (multiplied)"
-              value={<span className="font-bold text-[var(--tx)]">{fmtPrice(subtotalPre)}</span>}
+              label="Route"
+              value={<span className="font-medium text-[var(--tx)]">{distance} km</span>}
+              sub={time != null ? `${time} min drive` : undefined}
             />
-          </>
-        )}
+          )}
+          {baseRate !== null && (
+            <Row
+              label={`Base rate${moveSize ? ` (${moveSize.replace("br", "BR").replace("_plus", "+")})` : ""}`}
+              value={<span className="font-semibold text-[var(--tx)]">{fmtPrice(baseRate)}</span>}
+            />
+          )}
+          {invMod !== null && (
+            <Row
+              label="Inventory modifier"
+              value={fmtMod(invMod)}
+              sub={
+                invScore != null && invBenchmark != null
+                  ? `Score ${invScore.toFixed(1)} / benchmark ${invBenchmark.toFixed(1)} · ${invLabel}`
+                  : invLabel
+              }
+            />
+          )}
+          {distMod !== null && <Row label="Distance modifier" value={fmtMod(distMod)} sub={distLabel || undefined} />}
+          {dateMult !== null && <Row label="Date factor" value={fmtMod(dateMult)} />}
+          {neighMult !== null && (
+            <Row label="Neighbourhood tier" value={fmtMod(neighMult)} sub={neighTier ?? undefined} />
+          )}
+          {subtotalPre !== null && (
+            <div className="bg-[var(--gdim)]/40 border-t border-[var(--brd)]">
+              <Row
+                label="Subtotal (multiplied)"
+                value={<span className="font-bold text-[var(--tx)]">{fmtPrice(subtotalPre)}</span>}
+              />
+            </div>
+          )}
+        </BreakdownCard>
       </div>
 
-      {/* Flat additions */}
-      <p className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] pt-2">Flat additions</p>
-      <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] divide-y divide-[var(--brd)]">
-        <Row
-          label="Access surcharge"
-          value={accessSurch > 0
-            ? <span className="font-semibold text-amber-600">+{fmtPrice(accessSurch)}</span>
-            : <span className="text-[var(--tx3)]">$0, no hard access</span>}
-        />
-        {specialtySurch > 0 && (
-          <Row label="Specialty surcharge" value={<span className="font-semibold text-amber-600">+{fmtPrice(specialtySurch)}</span>} />
-        )}
-        <Row
-          label="Parking & long carry"
-          value={
-            parkingLc > 0 ? (
-              <span className="font-semibold text-amber-600">+{fmtPrice(parkingLc)}</span>
-            ) : (
-              <span className="text-[var(--tx3)]">$0</span>
-            )
-          }
-        />
-        {truckLine ? (
-          <Row label="Vehicle surcharge" value={<span className="font-semibold text-[var(--tx)]">{truckLine}</span>} />
-        ) : null}
-        <Row
-          label="Labour delta"
-          value={labourDelta != null && labourDelta > 0
-            ? <span className="font-semibold text-[var(--gold)]">+{fmtPrice(labourDelta)}</span>
-            : <span className="text-[var(--tx3)]">$0, below baseline{labourDelta === 0 && labourMH != null ? ` (${labourMH} extra hr)` : ""}</span>}
-          sub={labourDelta != null && labourDelta > 0 && labourMH != null && labourRate != null
-            ? `${labourMH} extra man-hours × $${labourRate}/hr`
-            : undefined}
-        />
-        <Row
-          label="Deadhead surcharge"
-          value={deadheadSurch > 0
-            ? <span className="font-semibold text-amber-600">+{fmtPrice(deadheadSurch)}</span>
-            : <span className="text-[var(--tx3)]">$0{deadheadKm > 0 ? ` (${deadheadKm.toFixed(1)}km, within free zone)` : ""}</span>}
-        />
-        {cratingTotal > 0 && (
-          <Row label="Custom crating" value={<span className="font-semibold text-amber-600">+{fmtPrice(cratingTotal)}</span>} />
-        )}
-        {packingSupplies != null && packingSupplies > 0 && (
-          <Row label="Packing supplies (Estate)" value={<span className="text-[var(--tx)]">+{fmtPrice(packingSupplies)}</span>} />
-        )}
+      <div>
+        <SectionTitle>Flat additions</SectionTitle>
+        <BreakdownCard>
+          <Row
+            label="Access surcharge"
+            value={
+              accessSurch > 0 ? (
+                <span className="font-semibold text-amber-600 dark:text-amber-400">+{fmtPrice(accessSurch)}</span>
+              ) : (
+                <span className="text-[var(--tx3)]">$0</span>
+              )
+            }
+            sub={accessSurch > 0 ? undefined : "No hard access"}
+          />
+          {specialtySurch > 0 && (
+            <Row label="Specialty surcharge" value={<span className="font-semibold text-amber-600 dark:text-amber-400">+{fmtPrice(specialtySurch)}</span>} />
+          )}
+          <Row
+            label="Parking & long carry"
+            value={
+              parkingLc > 0 ? (
+                <span className="font-semibold text-amber-600 dark:text-amber-400">+{fmtPrice(parkingLc)}</span>
+              ) : (
+                <span className="text-[var(--tx3)]">$0</span>
+              )
+            }
+          />
+          {truckLine ? (
+            <Row
+              label="Vehicle surcharge"
+              value={
+                truckSurcharge != null && truckSurcharge > 0 ? (
+                  <span className="font-semibold text-amber-600 dark:text-amber-400">+{fmtPrice(truckSurcharge)}</span>
+                ) : (
+                  <span className="text-[var(--tx3)]">$0</span>
+                )
+              }
+              sub={
+                <span className="inline-flex items-center gap-1.5">
+                  <Truck size={12} weight="regular" className="shrink-0 opacity-70" aria-hidden />
+                  {truckLine}
+                </span>
+              }
+            />
+          ) : null}
+          <Row
+            label="Labour delta"
+            value={
+              labourDelta != null && labourDelta > 0 ? (
+                <span className="font-semibold text-[var(--gold)]">+{fmtPrice(labourDelta)}</span>
+              ) : (
+                <span className="text-[var(--tx3)]">
+                  $0, below baseline
+                  {labourDelta === 0 && labourMH != null ? ` (${labourMH} extra hr)` : ""}
+                </span>
+              )
+            }
+            sub={
+              labourDelta != null && labourDelta > 0 && labourMH != null && labourRate != null
+                ? `${labourMH} extra man-hours × $${labourRate}/hr`
+                : undefined
+            }
+          />
+          <Row
+            label="Deadhead surcharge"
+            value={
+              deadheadSurch > 0 ? (
+                <span className="font-semibold text-amber-600 dark:text-amber-400">+{fmtPrice(deadheadSurch)}</span>
+              ) : (
+                <span className="text-[var(--tx3)]">$0</span>
+              )
+            }
+            sub={deadheadKm > 0 && deadheadSurch <= 0 ? `${deadheadKm.toFixed(1)} km · within free zone` : undefined}
+          />
+          {cratingTotal > 0 && (
+            <Row label="Custom crating" value={<span className="font-semibold text-amber-600 dark:text-amber-400">+{fmtPrice(cratingTotal)}</span>} />
+          )}
+          {packingSupplies != null && packingSupplies > 0 && (
+            <Row
+              label="Packing supplies (Estate)"
+              value={<span className="font-semibold text-[var(--gold)]">+{fmtPrice(packingSupplies)}</span>}
+            />
+          )}
+        </BreakdownCard>
       </div>
 
-      {/* Tier formula summary */}
       {essentialPrice != null && (
-        <>
-          <p className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] pt-2">Tier prices</p>
-          <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] divide-y divide-[var(--brd)]">
-            <Row label="Essential (×1.0)" value={<span className="font-bold text-[var(--tx)]">{fmtPrice(essentialPrice)}</span>} />
+        <div>
+          <SectionTitle>Tier prices</SectionTitle>
+          <BreakdownCard>
+            <Row label="Essential (×1.0)" value={<span className="font-bold text-[var(--gold)]">{fmtPrice(essentialPrice)}</span>} />
             {signaturePrice != null && (
-              <Row label="Signature (×1.50)" value={<span className="font-bold text-[#B8962E]">{fmtPrice(signaturePrice)}</span>} />
+              <Row label="Signature (×1.50)" value={<span className="font-bold text-[var(--gold)]">{fmtPrice(signaturePrice)}</span>} />
             )}
             {estatePrice != null && (
-              <Row label="Estate (×3.15)" value={<span className="font-bold text-[#C9A84C]">{fmtPrice(estatePrice)}</span>} />
+              <Row label="Estate (×3.15)" value={<span className="font-bold text-[var(--gold)]">{fmtPrice(estatePrice)}</span>} />
             )}
-          </div>
-        </>
+          </BreakdownCard>
+        </div>
       )}
     </div>
   );
@@ -6306,7 +6536,7 @@ function FactorsDisplayCollapsible({
 
   return (
     <details className="pt-3 border-t border-[var(--brd)] group" defaultValue={undefined}>
-      <summary className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
+      <summary className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] cursor-pointer select-none flex items-center gap-1 list-none [&::-webkit-details-marker]:hidden">
         <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 shrink-0" />
         Price Breakdown
       </summary>

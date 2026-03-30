@@ -133,7 +133,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
     URL.revokeObjectURL(url);
   };
 
-  const capitalize = (str: string) =>
+  const uppercase = (str: string) =>
     str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
 
   const byRoom = items.reduce<Record<string, InventoryItem[]>>((acc, item) => {
@@ -184,7 +184,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
 
   const AddExtraModal = () => (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto"
       style={{ minHeight: "100dvh" }}
       onClick={(e) => { if (e.target === e.currentTarget) setAddExtraOpen(false); }}
     >
@@ -206,7 +206,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
         </div>
         <form onSubmit={handleAddExtra} className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold capitalize tracking-wider text-[#4F4B47] mb-1.5">Description *</label>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Description *</label>
             <input
               value={extraDesc}
               onChange={(e) => setExtraDesc(e.target.value)}
@@ -217,7 +217,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold capitalize tracking-wider text-[#4F4B47] mb-1.5">Quantity</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Quantity</label>
               <input
                 type="number"
                 min={1}
@@ -227,7 +227,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold capitalize tracking-wider text-[#4F4B47] mb-1.5">Room</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Room</label>
               <input
                 value={extraRoom}
                 onChange={(e) => setExtraRoom(e.target.value)}
@@ -382,8 +382,8 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                     </colgroup>
                     <thead>
                       <tr style={{ backgroundColor: "#F5F5F3" }}>
-                        <th className="text-[9px] font-bold capitalize tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] min-w-0">Item</th>
-                        <th className="text-[9px] font-bold capitalize tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
+                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] min-w-0">Item</th>
+                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -399,7 +399,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAF8")}
                               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                             >
-                              <td className="px-4 py-3 text-[12.5px] font-medium text-[#2A2A2A] align-middle min-w-0 break-words">{capitalize(r.label)}</td>
+                              <td className="px-4 py-3 text-[12.5px] font-medium text-[#2A2A2A] align-middle min-w-0 break-words">{uppercase(r.label)}</td>
                               <td className="px-4 py-3 align-middle w-14">
                                 <span className="flex items-center justify-end">
                                   <span className="text-[12.5px] font-semibold tabular-nums text-[#555]">{qty}</span>

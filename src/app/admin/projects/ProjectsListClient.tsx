@@ -73,7 +73,7 @@ const projectColumns: ColumnDef<Project>[] = [
     render: (p) => (
       <div>
         <div className="text-[12px] font-medium text-[var(--tx)]">{p.organizations?.name || "-"}</div>
-        <div className="text-[10px] text-[var(--tx3)] capitalize">{p.organizations?.type || ""}</div>
+        <div className="text-[10px] text-[var(--tx3)] uppercase">{p.organizations?.type || ""}</div>
       </div>
     ),
   },
@@ -94,7 +94,7 @@ const projectColumns: ColumnDef<Project>[] = [
     label: "Status",
     accessor: (p) => p.status,
     render: (p) => (
-      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${STATUS_COLORS[p.status] || ""}`}>
+      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${STATUS_COLORS[p.status] || ""}`}>
         {p.status.replace("_", " ")}
       </span>
     ),
@@ -103,7 +103,7 @@ const projectColumns: ColumnDef<Project>[] = [
     id: "phase",
     label: "Phase",
     accessor: (p) => p.active_phase || "",
-    render: (p) => <span className="text-[11px] text-[var(--tx2)] capitalize">{p.active_phase?.replace("_", " ") || "-"}</span>,
+    render: (p) => <span className="text-[11px] text-[var(--tx2)] uppercase">{p.active_phase?.replace("_", " ") || "-"}</span>,
   },
   {
     id: "budget",
@@ -154,7 +154,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
     <div className="px-4 sm:px-6 py-5">
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">All Projects</h1>
         </div>
         <CreateButton href="/admin/projects/new" title="New Project" />
@@ -174,7 +174,7 @@ export default function ProjectsListClient({ projects, partners }: { projects: P
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-md text-[11px] font-semibold capitalize whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-[11px] font-semibold uppercase whitespace-nowrap transition-colors ${
                 statusFilter === s
                   ? "bg-[var(--card)] text-[var(--gold)] shadow-sm"
                   : "text-[var(--tx3)] hover:text-[var(--tx)]"

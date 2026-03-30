@@ -75,7 +75,7 @@ function SectionDivider({ label }: { label?: string }) {
         <div className="w-full border-t border-[var(--brd)]" />
       </div>
       <div className="relative flex justify-start">
-        <span className="bg-[var(--bg)] pr-4 text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 select-none">
+        <span className="bg-[var(--bg)] pr-4 text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 select-none">
           {label}
         </span>
       </div>
@@ -101,7 +101,7 @@ function KpiCard({
 }) {
   const inner = (
     <div className="group cursor-default">
-      <p className="text-[9px] font-bold tracking-[0.16em] capitalize text-[var(--tx3)]/60 mb-2">
+      <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-2">
         {label}
       </p>
       <p
@@ -394,7 +394,7 @@ export default function RevenueClient({
       </div>
       <div className="flex items-end justify-between gap-4 mb-2">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/50 mb-1">
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">
             Financial Overview
           </p>
           <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] leading-none">
@@ -460,7 +460,7 @@ export default function RevenueClient({
               />
             </div>
             <div className="sm:pl-8 pt-4 sm:pt-0 flex flex-col justify-center">
-              <p className="text-[9px] font-bold tracking-[0.16em] capitalize text-[var(--tx3)]/60 mb-1">
+              <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)]/60 mb-1">
                 Combined
               </p>
               <p className="text-[32px] font-bold font-heading text-[var(--tx)] leading-none">
@@ -700,7 +700,7 @@ export default function RevenueClient({
       {selectedType != null && (
         <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4" aria-modal="true">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70"
             onClick={() => setSelectedType(null)}
             aria-hidden="true"
           />
@@ -753,7 +753,7 @@ export default function RevenueClient({
                       </span>
                       <span className="flex-1 text-[var(--tx2)] truncate">{inv.client_name}</span>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[9px] font-bold capitalize tracking-wide shrink-0 ${
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide shrink-0 ${
                           inv.status === "paid"
                             ? "bg-[var(--grn)]/15 text-[var(--grn)]"
                             : inv.status === "overdue"
@@ -777,7 +777,7 @@ export default function RevenueClient({
             {/* Modal footer total */}
             {invoicesByType.length > 0 && (
               <div className="flex items-center justify-between px-5 py-3.5 border-t border-[var(--brd)] shrink-0">
-                <span className="text-[10px] font-bold tracking-wide capitalize text-[var(--tx3)]">
+                <span className="text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
                   {invoicesByType.length} invoice{invoicesByType.length !== 1 ? "s" : ""}
                 </span>
                 <span className="text-[13px] font-bold text-[var(--tx)]">

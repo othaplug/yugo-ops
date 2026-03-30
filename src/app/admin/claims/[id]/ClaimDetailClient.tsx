@@ -205,7 +205,7 @@ export default function ClaimDetailClient({
         <button type="button" onClick={() => router.back()} className="p-1 rounded-md hover:bg-[var(--gdim)] text-[var(--tx3)] shrink-0 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60">Operations · Claim</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Operations · Claim</p>
       </div>
 
       {/* Title + status */}
@@ -247,7 +247,7 @@ export default function ClaimDetailClient({
               <div>
                 <p className="text-[var(--tx3)] mb-0.5">Move</p>
                 <p className="text-[var(--tx)] font-medium">{moveCode || "-"}</p>
-                {moveTier && <p className="text-[11px] text-[var(--tx3)] capitalize">{moveTier}</p>}
+                {moveTier && <p className="text-[11px] text-[var(--tx3)] uppercase">{moveTier}</p>}
               </div>
               <div>
                 <p className="text-[var(--tx3)] mb-0.5">Valuation</p>
@@ -312,7 +312,7 @@ export default function ClaimDetailClient({
 
                   {/* Assessment */}
                   <div className="rounded-lg p-3 bg-[var(--bg)] border border-[var(--brd)] mt-3">
-                    <p className="text-[12px] font-semibold text-[var(--tx3)] capitalize tracking-wide mb-2">Assessment</p>
+                    <p className="text-[12px] font-semibold text-[var(--tx3)] uppercase tracking-wide mb-2">Assessment</p>
                     <p className="text-[12px] text-[var(--tx2)] mb-2">Coverage: {formula} (max {formatCurrency(max)})</p>
                     {!isResolved && (
                       <div className="flex items-center gap-3">
@@ -361,7 +361,7 @@ export default function ClaimDetailClient({
 
               <div className="space-y-3 mb-4">
                 <div>
-                  <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 capitalize">Assessment Notes</label>
+                  <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">Assessment Notes</label>
                   <textarea
                     value={assessmentNotes}
                     onChange={(e) => setAssessmentNotes(e.target.value)}
@@ -372,7 +372,7 @@ export default function ClaimDetailClient({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 capitalize">Resolution Type</label>
+                    <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">Resolution Type</label>
                     <select
                       value={resolutionType}
                       onChange={(e) => setResolutionType(e.target.value)}
@@ -384,7 +384,7 @@ export default function ClaimDetailClient({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 capitalize">Payout Method</label>
+                    <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">Payout Method</label>
                     <select
                       value={payoutMethod}
                       onChange={(e) => setPayoutMethod(e.target.value)}
@@ -397,7 +397,7 @@ export default function ClaimDetailClient({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 capitalize">Resolution Notes (visible to client)</label>
+                  <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">Resolution Notes (visible to client)</label>
                   <textarea
                     value={resolutionNotes}
                     onChange={(e) => setResolutionNotes(e.target.value)}
@@ -434,7 +434,7 @@ export default function ClaimDetailClient({
               <div className="grid grid-cols-2 gap-4 text-[13px]">
                 <div>
                   <p className="text-[var(--tx3)]">Status</p>
-                  <p className="font-medium capitalize">{statusLabel(claim.status)}</p>
+                  <p className="font-medium uppercase">{statusLabel(claim.status)}</p>
                 </div>
                 <div>
                   <p className="text-[var(--tx3)]">Approved Amount</p>
@@ -443,13 +443,13 @@ export default function ClaimDetailClient({
                 {claim.resolution_type && (
                   <div>
                     <p className="text-[var(--tx3)]">Resolution Type</p>
-                    <p className="font-medium capitalize">{claim.resolution_type.replace(/_/g, " ")}</p>
+                    <p className="font-medium uppercase">{claim.resolution_type.replace(/_/g, " ")}</p>
                   </div>
                 )}
                 {claim.payout_method && (
                   <div>
                     <p className="text-[var(--tx3)]">Payout Method</p>
-                    <p className="font-medium capitalize">{claim.payout_method.replace(/_/g, " ")}</p>
+                    <p className="font-medium uppercase">{claim.payout_method.replace(/_/g, " ")}</p>
                   </div>
                 )}
               </div>

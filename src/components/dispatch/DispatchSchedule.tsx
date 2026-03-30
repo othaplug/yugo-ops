@@ -112,7 +112,7 @@ export default function DispatchSchedule({
                 ) : (
                   <ChevronRight className="w-4 h-4 text-[var(--tx3)] group-hover:text-[var(--tx2)] transition-colors" />
                 )}
-                <span className="text-[11px] font-bold tracking-wider capitalize text-[var(--tx3)] group-hover:text-[var(--tx2)] transition-colors">
+                <span className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)] group-hover:text-[var(--tx2)] transition-colors">
                   Completed
                 </span>
               </div>

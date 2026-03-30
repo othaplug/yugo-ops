@@ -187,7 +187,7 @@ export default function InboundShipmentDetailClient({
       {msg ? <p className="text-sm text-[var(--tx3)]">{msg}</p> : null}
 
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-3">
-        <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)]">Status actions</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)]">Status actions</h2>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -263,7 +263,7 @@ export default function InboundShipmentDetailClient({
       </div>
 
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-4">
-        <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)] flex items-center gap-2">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)] flex items-center gap-2">
           <Camera size={18} className="text-[var(--gold)]" aria-hidden />
           Inspection
         </h2>
@@ -336,7 +336,7 @@ export default function InboundShipmentDetailClient({
       </div>
 
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5">
-        <h2 className="text-sm font-bold capitalize tracking-wide text-[var(--tx3)] mb-3">Timeline</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--tx3)] mb-3">Timeline</h2>
         <ul className="space-y-3 text-sm">
           {log.map((row) => (
             <li key={row.id} className="border-b border-[var(--brd)]/40 pb-2">

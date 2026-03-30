@@ -136,7 +136,7 @@ function ReEngageModal({ partner, onClose }: ReEngageModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl max-w-md w-full p-5 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-heading text-[16px] font-bold text-[var(--tx)]">
@@ -148,14 +148,14 @@ function ReEngageModal({ partner, onClose }: ReEngageModalProps) {
         </div>
 
         <div className="mb-4">
-          <p className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Subject</p>
+          <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Subject</p>
           <p className="text-[12px] text-[var(--tx)] bg-[var(--bg)] rounded-lg px-3 py-2 border border-[var(--brd)]">
             {subject}
           </p>
         </div>
 
         <div className="mb-5">
-          <p className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Message</p>
+          <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Message</p>
           <pre className="text-[12px] text-[var(--tx)] bg-[var(--bg)] rounded-lg px-3 py-2 border border-[var(--brd)] whitespace-pre-wrap font-sans leading-relaxed">
             {body}
           </pre>
@@ -263,7 +263,7 @@ export default function PartnerHealthClient() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">
             Partners
           </p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
@@ -334,7 +334,7 @@ export default function PartnerHealthClient() {
                   (h) => (
                     <th
                       key={h}
-                      className="px-4 py-3 text-left text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]"
+                      className="px-4 py-3 text-left text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]"
                     >
                       {h}
                     </th>

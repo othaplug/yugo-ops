@@ -347,7 +347,7 @@ export default function InventoryInput({
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">
+        <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
           {isCommercial ? "Equipment & Furniture" : "Client Inventory"}
         </h3>
         {!addOnlyMode && (value.length > 0 || internalBoxCount > 0) && (
@@ -534,7 +534,7 @@ export default function InventoryInput({
                         <span className="text-amber-600 dark:text-amber-400">No match, add manually from search</span>
                       )}
                       <span className="text-[var(--tx3)] ml-auto">×{row.qty}</span>
-                      <span className="text-[var(--tx3)] capitalize">({row.confidence})</span>
+                      <span className="text-[var(--tx3)] uppercase">({row.confidence})</span>
                     </div>
                   ))}
                   <button
@@ -585,7 +585,7 @@ export default function InventoryInput({
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
             <div className="min-w-0 flex-1">
-              <label className="mb-1 block text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--tx2)]">
                 Item name
               </label>
               <input
@@ -598,7 +598,7 @@ export default function InventoryInput({
               />
             </div>
             <div className="w-full shrink-0 sm:w-32">
-              <label className="mb-1 block text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--tx2)]">
                 Weight
               </label>
               <select
@@ -613,66 +613,72 @@ export default function InventoryInput({
               </select>
             </div>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3 sm:flex-wrap">
+          <div className="flex flex-col gap-2">
             {onBoxCountChange !== undefined && (
-              <div className="min-w-0 flex-1 sm:max-w-md">
-                <label className="mb-1 block text-[10px] font-bold capitalize tracking-wider text-[var(--tx2)]">
-                  Box estimate
-                </label>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <select
-                    value={showCustomBox ? -1 : internalBoxCount}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      if (v === -1) {
-                        setShowCustomBox(true);
-                        setCustomBoxInput(internalBoxCount > 0 ? String(internalBoxCount) : "");
-                      } else {
-                        setShowCustomBox(false);
-                        setCustomBoxInput("");
-                        onBoxCountChange(v);
-                      }
-                    }}
-                    className={`${fieldInput} min-w-[8rem] flex-1 sm:flex-initial sm:min-w-[9rem]`}
-                    aria-label="Estimated number of boxes"
-                  >
-                    {BOX_RANGES.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                  {showCustomBox && (
-                    <>
-                      <input
-                        type="number"
-                        min={1}
-                        max={9999}
-                        value={customBoxInput}
-                        onChange={(e) => {
-                          setCustomBoxInput(e.target.value);
-                          const n = parseInt(e.target.value, 10);
-                          if (!isNaN(n) && n > 0) onBoxCountChange(n);
-                        }}
-                        placeholder="e.g. 120"
-                        className="w-[4.5rem] rounded-md border border-[var(--gold)]/50 bg-[var(--bg)] px-2 py-1.5 text-[11px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
-                        autoFocus
-                      />
-                      <span className="text-[10px] text-[var(--tx2)]">boxes</span>
-                    </>
-                  )}
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--tx2)]">
+                Box estimate
+              </label>
+            )}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3 sm:flex-wrap">
+              {onBoxCountChange !== undefined && (
+                <div className="min-w-0 flex-1 sm:max-w-md">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <select
+                      value={showCustomBox ? -1 : internalBoxCount}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (v === -1) {
+                          setShowCustomBox(true);
+                          setCustomBoxInput(internalBoxCount > 0 ? String(internalBoxCount) : "");
+                        } else {
+                          setShowCustomBox(false);
+                          setCustomBoxInput("");
+                          onBoxCountChange(v);
+                        }
+                      }}
+                      className={`${fieldInput} min-w-[8rem] flex-1 sm:flex-initial sm:min-w-[9rem]`}
+                      aria-label="Estimated number of boxes"
+                    >
+                      {BOX_RANGES.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                    {showCustomBox && (
+                      <>
+                        <input
+                          type="number"
+                          min={1}
+                          max={9999}
+                          value={customBoxInput}
+                          onChange={(e) => {
+                            setCustomBoxInput(e.target.value);
+                            const n = parseInt(e.target.value, 10);
+                            if (!isNaN(n) && n > 0) onBoxCountChange(n);
+                          }}
+                          placeholder="e.g. 120"
+                          className="w-[4.5rem] rounded-md border border-[var(--gold)]/50 bg-[var(--bg)] px-2 py-1.5 text-[11px] text-[var(--tx)] outline-none focus:border-[var(--gold)]"
+                          autoFocus
+                        />
+                        <span className="text-[10px] text-[var(--tx2)]">boxes</span>
+                      </>
+                    )}
+                  </div>
                   {internalBoxCount > 0 && (
-                    <span className="text-[10px] font-mono text-[var(--tx2)] self-center sm:self-auto">+{boxScore.toFixed(1)} score</span>
+                    <span className="mt-1 block text-[10px] font-mono text-[var(--tx2)]">
+                      +{boxScore.toFixed(1)} score
+                    </span>
                   )}
                 </div>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={addCustomItem}
-              disabled={!customName.trim()}
-              className="inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-lg bg-[var(--gold)] px-3 py-2 text-[10px] font-semibold text-[var(--btn-text-on-accent)] shadow-sm transition-[filter,opacity] hover:brightness-105 disabled:opacity-50 sm:w-auto sm:self-end"
-            >
-              <Plus className="size-3.5 shrink-0" weight="bold" /> Add custom item
-            </button>
+              )}
+              <button
+                type="button"
+                onClick={addCustomItem}
+                disabled={!customName.trim()}
+                className="inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-lg bg-[var(--gold)] px-3 py-2 text-[10px] font-semibold text-[var(--btn-text-on-accent)] shadow-sm transition-[filter,opacity] hover:brightness-105 disabled:opacity-50 sm:w-auto"
+              >
+                <Plus className="size-3.5 shrink-0" weight="bold" /> Add custom item
+              </button>
+            </div>
           </div>
         </div>
       </div>

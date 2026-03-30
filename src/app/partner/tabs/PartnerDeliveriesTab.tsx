@@ -375,31 +375,31 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-[13px]">
         {d.time_slot && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Time</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Time</div>
             <div className="text-[var(--tx)] font-medium mt-0.5">{d.time_slot}</div>
           </div>
         )}
         {d.booking_type === "day_rate" && d.num_stops != null && d.num_stops > 0 && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Stops</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Stops</div>
             <div className="text-[var(--tx)] font-medium mt-0.5">{d.num_stops} stop{d.num_stops !== 1 ? "s" : ""}</div>
           </div>
         )}
         {d.booking_type === "day_rate" && d.vehicle_type && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Vehicle</div>
-            <div className="text-[var(--tx)] font-medium mt-0.5 capitalize">{d.vehicle_type.replace(/_/g, " ")}</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Vehicle</div>
+            <div className="text-[var(--tx)] font-medium mt-0.5 uppercase">{d.vehicle_type.replace(/_/g, " ")}</div>
           </div>
         )}
         {d.total_price != null && d.total_price > 0 && (
           <div>
-            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Price</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Price</div>
             <div className="text-[#C9A962] font-bold mt-0.5">${Number(d.total_price).toLocaleString()}</div>
           </div>
         )}
         {itemsDisplay && (
           <div className="col-span-2 sm:col-span-1">
-            <div className="text-[11px] font-semibold tracking-wide capitalize text-[var(--tx3)]">Items</div>
+            <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Items</div>
             <div className="text-[var(--tx)] font-medium mt-0.5 truncate">{itemsDisplay}</div>
           </div>
         )}

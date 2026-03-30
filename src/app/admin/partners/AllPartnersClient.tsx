@@ -313,27 +313,27 @@ export default function AllPartnersClient() {
     <div className="max-w-[1100px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">CRM</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Partners</h1>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <Link
             href="/admin/partners/health"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx3)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
           >
-            <Icon name="activity" className="w-3.5 h-3.5" />
+            <Icon name="activity" className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Partner Health</span>
           </Link>
           <button
             type="button"
             onClick={() => setInviteOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-[var(--btn-text-on-accent)] transition-all active:scale-95
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold text-[var(--btn-text-on-accent)] transition-all active:scale-95
               bg-[var(--gold)]
               shadow-[0_1px_0_rgba(0,0,0,0.1),0_2px_8px_rgba(201,169,98,0.22),inset_0_1px_0_rgba(255,255,255,0.12)]
               hover:shadow-[0_1px_0_rgba(0,0,0,0.12),0_3px_12px_rgba(201,169,98,0.28),inset_0_1px_0_rgba(255,255,255,0.14)]
               hover:brightness-105"
           >
-            <span className="text-[16px] leading-none font-black">+</span>
+            <Icon name="plus" className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Add Partner</span>
           </button>
         </div>

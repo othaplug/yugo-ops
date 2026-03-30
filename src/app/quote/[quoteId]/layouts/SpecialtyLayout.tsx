@@ -127,7 +127,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           </div>
           <div>
             <span
-              className="text-[9px] font-bold tracking-wider capitalize px-2.5 py-0.5 rounded-full"
+              className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
               style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
             >
               {PROJECT_TYPE_LABELS[projectType] ?? toTitleCase(projectType)}
@@ -142,7 +142,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Location</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Location</p>
               <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
             </div>
           </div>
@@ -159,7 +159,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} />
               <div>
-                <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Target Date</p>
+                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Target Date</p>
                 <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                   {new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                     month: "long",
@@ -248,7 +248,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
       <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: GOLD }}>
         <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${GOLD}08` }}>
           <h2
-            className="font-heading text-[13px] font-bold tracking-wider capitalize"
+            className="font-heading text-[13px] font-bold tracking-wider uppercase"
             style={{ color: WINE }}
           >
             Investment Summary

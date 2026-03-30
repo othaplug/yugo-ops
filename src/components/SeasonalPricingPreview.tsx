@@ -58,7 +58,7 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
           border: `1.5px solid ${GOLD}20`,
         }}
       >
-        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "capitalize", color: FOREST, opacity: 0.5, margin: "0 0 8px" }}>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: FOREST, opacity: 0.5, margin: "0 0 8px" }}>
           Price by Month
         </p>
         <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 40 }}>
@@ -114,7 +114,7 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
     <div style={{ background: CREAM, borderRadius: 16, padding: "20px 20px 16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
         <div>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "capitalize", color: FOREST, opacity: 0.5, margin: "0 0 2px" }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: FOREST, opacity: 0.5, margin: "0 0 2px" }}>
             Seasonal Pricing
           </p>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: FOREST, margin: 0 }}>
@@ -123,7 +123,7 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
         </div>
         {cheapestMonth && (
           <div style={{ background: `${GOLD}15`, borderRadius: 8, padding: "4px 10px", textAlign: "center" }}>
-            <p style={{ fontSize: 9, color: GOLD, fontWeight: 700, letterSpacing: "1px", textTransform: "capitalize", margin: "0 0 1px" }}>Cheapest</p>
+            <p style={{ fontSize: 9, color: GOLD, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", margin: "0 0 1px" }}>Cheapest</p>
             <p style={{ fontSize: 13, fontWeight: 700, color: WINE, margin: 0 }}>{MONTH_NAMES[cheapestMonth.month - 1]}</p>
           </div>
         )}

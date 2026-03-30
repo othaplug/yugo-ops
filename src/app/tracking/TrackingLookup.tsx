@@ -97,7 +97,7 @@ export default function TrackingLookup() {
             <button
               type="submit"
               disabled={loading}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-4 py-2 rounded-full text-[11px] font-bold tracking-widest capitalize disabled:opacity-50 transition-all hover:opacity-90 active:scale-95"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-4 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase disabled:opacity-50 transition-all hover:opacity-90 active:scale-95"
               style={{ backgroundColor: WINE, color: "#FAF8F4" }}
             >
               {loading ? (

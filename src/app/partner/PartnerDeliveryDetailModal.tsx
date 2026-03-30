@@ -325,7 +325,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
           {activeSection === "details" && (
             <div className="space-y-4">
               <div className="border-b border-[var(--brd)]/30 pb-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Status</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Status</div>
                 <span className="text-[13px] font-semibold text-[var(--tx)]">
                   {liveStage ? (CREW_STATUS_TO_LABEL[liveStage] || toTitleCase(liveStage)) : toTitleCase(d.status || "")}
                 </span>
@@ -336,7 +336,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   <>
                     {d.pickup_address && (
                       <div>
-                        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
+                        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
                         <div className="text-[13px] text-[var(--tx)]">{d.pickup_address}</div>
                       </div>
                     )}
@@ -344,7 +344,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                       <div className="text-[12px] text-[var(--tx3)]">Loading stops…</div>
                     ) : stops.length > 0 ? (
                       <div>
-                        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1.5">
+                        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">
                           {stops.length} stop{stops.length !== 1 ? "s" : ""}
                         </div>
                         <ul className="space-y-3">
@@ -384,7 +384,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                       </div>
                     ) : (
                       <div>
-                        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
+                        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
                         <div className="text-[13px] text-[var(--tx)]">{d.delivery_address || "-"}</div>
                         {d.num_stops && d.num_stops > 1 && (
                           <div className="text-[11px] text-[var(--tx3)] mt-0.5">{d.num_stops} stops total</div>
@@ -395,19 +395,19 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                 ) : (
                   <>
                     <div>
-                      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Delivery to</div>
                       <div className="text-[13px] text-[var(--tx)]">{d.delivery_address || "-"}</div>
                     </div>
                     {d.pickup_address && (
                       <div>
-                        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
+                        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup from</div>
                         <div className="text-[13px] text-[var(--tx)]">{d.pickup_address}</div>
                       </div>
                     )}
                   </>
                 )}
                 <div>
-                  <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Date & time</div>
+                  <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Date & time</div>
                   <div className="text-[13px] font-semibold text-[var(--tx)]">
                     {d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "-"}
                     {d.time_slot && ` · ${d.time_slot}`}
@@ -421,7 +421,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                     <div className="pt-3 border-t border-[var(--brd)]/20">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">
+                          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
                             {isPending ? "Quoted Price" : "Confirmed Price"}
                           </div>
                           <div className="text-[18px] font-bold text-[#C9A962]">
@@ -434,12 +434,12 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                           </div>
                         </div>
                         {isPending && (
-                          <span className="text-[9px] font-bold capitalize tracking-wider px-2 py-1 rounded-full bg-amber-500/10 text-amber-400">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-500/10 text-amber-400">
                             Awaiting approval
                           </span>
                         )}
                         {!isPending && (
-                          <span className="text-[9px] font-bold capitalize tracking-wider px-2 py-1 rounded-full bg-[#C9A962]/10 text-[#C9A962]">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-[#C9A962]/10 text-[#C9A962]">
                             Confirmed
                           </span>
                         )}
@@ -454,7 +454,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
 
               {itemsDisplay.length > 0 && (
                 <div>
-                  <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1.5">Items</div>
+                  <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1.5">Items</div>
                   <ul className="text-[13px] text-[var(--tx)] space-y-0.5">
                     {itemsDisplay.map((item, i) => (
                       <li key={i} className="flex items-center gap-2">
@@ -546,11 +546,11 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
 
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[var(--brd)]/30">
                     <div>
-                      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Destination</div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Destination</div>
                       <div className="text-[12px] text-[var(--tx)] truncate">{d.delivery_address || "-"}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Progress</div>
+                      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Progress</div>
                       <div className="text-[12px] font-semibold text-[var(--tx)]">{Math.round(progressPercent)}%</div>
                     </div>
                   </div>

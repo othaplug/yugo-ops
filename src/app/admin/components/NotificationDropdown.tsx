@@ -112,7 +112,7 @@ export default function NotificationDropdown() {
                         </div>
                         {tag && (
                           <span
-                            className="shrink-0 text-[10px] font-bold capitalize tracking-wide px-1.5 py-0.5 rounded-full"
+                            className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
                             style={{ color: tag.color, backgroundColor: tag.bg }}
                           >
                             {tag.label}

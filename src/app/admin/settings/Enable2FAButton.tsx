@@ -65,7 +65,7 @@ export default function Enable2FAButton({ enabled }: { enabled?: boolean }) {
       </button>
 
       {showWarning && (
-        <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/60">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowWarning(false)} />
           <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-xl p-5 sm:max-w-sm w-full shadow-xl animate-slide-up sm:animate-none" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}>
             <div className="flex items-start gap-3 mb-4">

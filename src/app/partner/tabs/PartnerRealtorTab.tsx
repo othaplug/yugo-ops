@@ -79,7 +79,7 @@ export default function PartnerRealtorTab({
 
             <div className="mt-3 grid grid-cols-2 gap-4 text-[12px]">
               <div>
-                <div className="text-[10px] font-semibold tracking-wider capitalize text-[#4F4B47]">Move Date</div>
+                <div className="text-[10px] font-semibold tracking-wider uppercase text-[#4F4B47]">Move Date</div>
                 <div className="text-[#1A1A1A] font-medium mt-0.5">
                   {r.created_at
                     ? new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
@@ -88,13 +88,13 @@ export default function PartnerRealtorTab({
               </div>
               {mode === "completed" && (
                 <div>
-                  <div className="text-[10px] font-semibold tracking-wider capitalize text-[#4F4B47]">Total Value</div>
+                  <div className="text-[10px] font-semibold tracking-wider uppercase text-[#4F4B47]">Total Value</div>
                   <div className="text-[#1A1A1A] font-medium mt-0.5">{formatCurrency(r.commission * 10)}</div>
                 </div>
               )}
               {mode === "active" && r.client_email && (
                 <div>
-                  <div className="text-[10px] font-semibold tracking-wider capitalize text-[#4F4B47]">Est. Value</div>
+                  <div className="text-[10px] font-semibold tracking-wider uppercase text-[#4F4B47]">Est. Value</div>
                   <div className="text-[#1A1A1A] font-medium mt-0.5">
                     {r.tier === "luxury" ? "$30,000+" : r.tier === "premium" ? "$12,000+" : "$5,000+"}
                   </div>

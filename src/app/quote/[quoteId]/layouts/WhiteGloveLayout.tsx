@@ -160,7 +160,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
         className="bg-white rounded-2xl border-2 shadow-sm p-6 md:p-8 text-center"
         style={{ borderColor: GOLD }}
       >
-        <p className="text-[11px] font-semibold tracking-wider capitalize mb-2" style={{ color: GOLD }}>
+        <p className="text-[11px] font-semibold tracking-wider uppercase mb-2" style={{ color: GOLD }}>
           White Glove Service
         </p>
         {(weightSurcharge > 0 || truckBreakdown) && (

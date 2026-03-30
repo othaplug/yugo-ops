@@ -43,7 +43,7 @@ export default async function ChangeRequestsPage() {
 
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Change Requests</h1>
         </div>
       </div>

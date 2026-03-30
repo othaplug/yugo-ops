@@ -32,6 +32,7 @@ import {
   Gift,
   House as Home,
   MapPin,
+  Calendar,
   Money as DollarSign,
   TShirt as Shirt,
   ClipboardText as ClipboardCheck,
@@ -99,6 +100,14 @@ import EventLayout from "./layouts/EventLayout";
 import LabourOnlyLayout from "./layouts/LabourOnlyLayout";
 import BinRentalLayout from "./layouts/BinRentalLayout";
 import { abbreviateAddressRegions } from "@/lib/address-abbrev";
+import {
+  pickupLocationsFromQuote,
+  dropoffLocationsFromQuote,
+  abbreviateLocationRows,
+  accessLabel,
+} from "@/lib/quotes/quote-address-display";
+import { getVisibleAddons, isAddonHiddenForTier, ESTATE_ADDON_UI_LINES } from "@/lib/quotes/addon-visibility";
+import { formatAddressForDisplay } from "@/lib/format-text";
 import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
 
@@ -219,6 +228,25 @@ export default function QuotePageClient({
     }),
     [quote],
   );
+
+  const clientPickupRows = useMemo(() => {
+    const fa = quote.factors_applied as Record<string, unknown> | null;
+    return abbreviateLocationRows(
+      pickupLocationsFromQuote(fa, quote.from_address, quote.from_access),
+    );
+  }, [quote.factors_applied, quote.from_address, quote.from_access]);
+
+  const clientDropoffRows = useMemo(() => {
+    const fa = quote.factors_applied as Record<string, unknown> | null;
+    return abbreviateLocationRows(
+      dropoffLocationsFromQuote(fa, quote.to_address, quote.to_access),
+    );
+  }, [quote.factors_applied, quote.to_address, quote.to_access]);
+
+  const recommendedTierNorm = useMemo(() => {
+    const r = (quote.recommended_tier ?? "signature").toString().toLowerCase().trim();
+    return r === "essential" || r === "signature" || r === "estate" ? r : "signature";
+  }, [quote.recommended_tier]);
 
   const quoteBookingLocked = useMemo(() => isQuoteExpiredForBooking(quote), [quote]);
 
@@ -399,18 +427,17 @@ export default function QuotePageClient({
     );
   }, [isResidential, selectedTier, quote.service_type]);
 
-  /* ── Applicable add-ons (exclude those included in tier; Estate includes packing supplies so hide packing materials kit) ── */
+  /* ── Applicable add-ons (tier bundles: Estate/Signature hide kits & included services — see addon-visibility) ── */
   const applicableAddons = useMemo(() => {
-    let list = allAddons;
-    if (selectedTier) {
-      list = list.filter((a) => {
-        if (a.excluded_tiers?.includes(selectedTier)) return false;
-        if (selectedTier === "estate" && a.slug === "packing_materials") return false;
-        return true;
-      });
+    const serviceOk = (a: (typeof allAddons)[number]) =>
+      !a.applicable_service_types?.length || a.applicable_service_types.includes(quote.service_type);
+    const base = allAddons.filter(serviceOk);
+    if (!selectedTier) return base;
+    if (quote.service_type === "local_move" || quote.service_type === "long_distance") {
+      return getVisibleAddons(base, selectedTier);
     }
-    return list;
-  }, [allAddons, selectedTier]);
+    return base.filter((a) => !a.excluded_tiers?.includes(selectedTier));
+  }, [allAddons, selectedTier, quote.service_type]);
 
   /* ── Add-on helpers ── */
   const toggleAddon = useCallback(
@@ -598,6 +625,22 @@ export default function QuotePageClient({
       deposit,
       eventLegs,
       binRentalSchedule,
+      ...(clientPickupRows.length > 1
+        ? {
+            pickupStops: clientPickupRows.map((r) => ({
+              address: r.address,
+              accessLine: accessLabel(r.access),
+            })),
+          }
+        : {}),
+      ...(clientDropoffRows.length > 1
+        ? {
+            dropoffStops: clientDropoffRows.map((r) => ({
+              address: r.address,
+              accessLine: accessLabel(r.access),
+            })),
+          }
+        : {}),
     };
   }, [
     quote.quote_id,
@@ -621,6 +664,8 @@ export default function QuotePageClient({
     tax,
     grandTotal,
     deposit,
+    clientPickupRows,
+    clientDropoffRows,
   ]);
 
   /* ── Handlers ── */
@@ -644,14 +689,21 @@ export default function QuotePageClient({
         for (const [id] of next) {
           const addon = allAddons.find((a) => a.id === id);
           if (addon?.excluded_tiers?.includes(tierKey)) next.delete(id);
-          if (tierKey === "estate" && addon?.slug === "packing_materials") next.delete(id);
+          if (addon && isAddonHiddenForTier(addon.slug, tierKey)) next.delete(id);
         }
         return next;
       });
       trackEvent("tier_selected", { tier: tierKey });
       trackEngagement("tier_clicked", { tier: tierKey });
       if (isResidential) {
-        const hasAddons = allAddons.some((a) => !a.excluded_tiers?.includes(tierKey));
+        const base = allAddons.filter(
+          (a) => !a.applicable_service_types?.length || a.applicable_service_types.includes(quote.service_type),
+        );
+        const visible =
+          quote.service_type === "local_move" || quote.service_type === "long_distance"
+            ? getVisibleAddons(base, tierKey)
+            : base.filter((a) => !a.excluded_tiers?.includes(tierKey));
+        const hasAddons = visible.length > 0 || tierKey === "estate";
         const nextStep = hasAddons ? 2 : 3;
         setCurrentStep(nextStep);
         const targetRef = nextStep === 2 ? addonsRef : protectionRef;
@@ -660,7 +712,7 @@ export default function QuotePageClient({
         scrollToContract();
       }
     },
-    [allAddons, isResidential, scrollToContract, scrollToSection, trackEvent, trackEngagement],
+    [allAddons, isResidential, quote.service_type, scrollToContract, scrollToSection, trackEvent, trackEngagement],
   );
 
   // Sync currentStep when addons section is skipped (no applicable addons)
@@ -833,7 +885,7 @@ export default function QuotePageClient({
           {/* Quote badge */}
           <div className="mt-8 inline-flex items-center gap-4 px-6 py-3 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm">
             <div className="text-left">
-              <p className="text-[9px] font-semibold tracking-widest capitalize text-white/50">
+              <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
                 Your quote
               </p>
               <p className="text-[13px] font-semibold text-white">
@@ -844,7 +896,7 @@ export default function QuotePageClient({
             </div>
             <div className="w-px h-8 bg-white/20" />
             <div className="text-left">
-              <p className="text-[9px] font-semibold tracking-widest capitalize text-white/50">
+              <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
                 {dateLabel}
               </p>
               <p className="text-[13px] font-semibold text-white">
@@ -861,7 +913,7 @@ export default function QuotePageClient({
               <>
                 <div className="w-px h-8 bg-white/20" />
                 <div className="text-left">
-                  <p className="text-[9px] font-semibold tracking-widest capitalize text-white/50">
+                  <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
                     Valid
                   </p>
                   <p className="text-[13px] font-semibold text-white">
@@ -899,7 +951,7 @@ export default function QuotePageClient({
                 <Lock className="w-[18px] h-[18px]" style={{ color: GOLD }} />
               </div>
               <div>
-                <p className="text-[13px] font-bold tracking-wider capitalize" style={{ color: GOLD }}>
+                <p className="text-[13px] font-bold tracking-wider uppercase" style={{ color: GOLD }}>
                   Guaranteed Price
                 </p>
                 <p className="text-[12px] leading-snug" style={{ color: `${FOREST}90` }}>
@@ -938,10 +990,7 @@ export default function QuotePageClient({
               tiers={tiers}
               selectedTier={selectedTier}
               onSelectTier={handleSelectTier}
-              recommendedTier={(() => {
-                const r = (quote.recommended_tier ?? "signature").toString().toLowerCase().trim();
-                return ["essential", "signature", "estate"].includes(r) ? r : "signature";
-              })()}
+              recommendedTier={recommendedTierNorm}
               hasSelection={false}
               tierFeaturesConfig={TIER_FEATURES}
             />
@@ -1102,9 +1151,18 @@ export default function QuotePageClient({
                 </button>
               )}
               {isResidential && selectedTier === "estate" && (
-                <p className="text-[12px] mb-4 px-4 py-2.5 rounded-lg border" style={{ color: FOREST, backgroundColor: `${GOLD}12`, borderColor: `${GOLD}40` }}>
-                  Packing supplies are included with your Estate plan.
-                </p>
+                <div
+                  className="mb-4 rounded-xl border p-4 space-y-1.5 text-[11px] leading-snug"
+                  style={{ color: `${FOREST}90`, backgroundColor: `${GOLD}10`, borderColor: `${GOLD}38` }}
+                >
+                  <p className="font-bold text-[12px]" style={{ color: FOREST }}>
+                    {ESTATE_ADDON_UI_LINES[0]}
+                  </p>
+                  <p>{ESTATE_ADDON_UI_LINES[1]}</p>
+                  <p className="font-semibold pt-0.5" style={{ color: FOREST }}>
+                    {ESTATE_ADDON_UI_LINES[2]}
+                  </p>
+                </div>
               )}
               <AddOnsSection
                 addons={applicableAddons}
@@ -1157,7 +1215,7 @@ export default function QuotePageClient({
               onRemoveDeclaration={(idx) => setDeclarations((prev) => prev.filter((_, i) => i !== idx))}
             />
             {isResidential && currentStep === 3 && (
-              <div className="mt-6 flex flex-col items-center gap-3">
+              <div className="mt-6 pb-10 flex flex-col items-center gap-3">
                 <button
                   type="button"
                   onClick={handleProtectionComplete}
@@ -1203,12 +1261,14 @@ export default function QuotePageClient({
                 isProgressive={isResidential}
                 currentStep={currentStep}
                 selectedAddons={selectedAddons}
+                pickupRows={clientPickupRows}
+                dropoffRows={clientDropoffRows}
               />
             )}
             {/* Referral code, for residential, inside confirm; for non-residential, standalone */}
             {(!isResidential || currentStep >= 4) && (
               <div className="mb-6 rounded-xl p-5 border" style={{ borderColor: `${GOLD}40`, backgroundColor: "#FFFDF8" }}>
-                <p className="text-[12px] font-bold capitalize tracking-wide mb-3" style={{ color: FOREST }}>
+                <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: FOREST }}>
                   Have a referral code?
                 </p>
                 <div className="flex gap-2">
@@ -1217,7 +1277,7 @@ export default function QuotePageClient({
                     onChange={(e) => { setReferralCode(e.target.value.toUpperCase()); setReferralMsg(""); }}
                     placeholder="YUGO-NAME-XXXX"
                     disabled={referralVerified}
-                    className="flex-1 px-3 py-2 rounded-lg border text-[12px] font-mono focus:outline-none"
+                    className="flex-1 px-3 py-2 rounded-lg border text-[12px] font-mono focus:outline-none text-[#2C3E2D] placeholder:text-[#5D6B5E]"
                     style={{ borderColor: referralVerified ? "#2D9F5A" : `${GOLD}60`, background: referralVerified ? "#F0FFF4" : "white" }}
                   />
                   {!referralVerified && (
@@ -1365,7 +1425,7 @@ export default function QuotePageClient({
                 style={{ backgroundColor: `${FOREST}06` }}
               >
                 <h2
-                  className="font-heading text-[var(--text-base)] font-bold tracking-wider capitalize"
+                  className="font-heading text-[var(--text-base)] font-bold tracking-wider uppercase"
                   style={{ color: FOREST }}
                 >
                   {b2bInvoiceBooking ? "Invoice (Net 30)" : "Payment"}
@@ -1959,7 +2019,12 @@ function ConfirmDetailsSection({
   referralDiscountAmt,
   valuationUpgradeSelected,
   includedValuation,
+  onProceedToPayment,
+  isProgressive,
+  currentStep,
   selectedAddons,
+  pickupRows,
+  dropoffRows,
 }: {
   quote: Quote;
   selectedTier: string;
@@ -1978,6 +2043,8 @@ function ConfirmDetailsSection({
   isProgressive: boolean;
   currentStep: number;
   selectedAddons: Map<string, AddonSelection>;
+  pickupRows: { address: string; access: string | null }[];
+  dropoffRows: { address: string; access: string | null }[];
 }) {
   const protectionKey = valuationUpgradeSelected
     ? selectedTier === "essential"
@@ -1994,9 +2061,6 @@ function ConfirmDetailsSection({
   const faConfirm = quote.factors_applied as Record<string, unknown> | null;
   const truckPricingLine: string | null = null;
   const balanceDue = grandTotal - deposit;
-  const fromAbbr = abbreviateAddressRegions(quote.from_address || "");
-  const toAbbr = abbreviateAddressRegions(quote.to_address || "");
-
   return (
     <div className="mb-6">
       <h2 className="font-hero text-[26px] md:text-[30px] mb-4" style={{ color: FOREST }}>
@@ -2007,7 +2071,7 @@ function ConfirmDetailsSection({
         style={{ borderColor: "#E2DDD5", backgroundColor: "white" }}
       >
         <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-2" style={{ color: `${FOREST}50` }}>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
             Move Details
           </p>
           <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
@@ -2017,21 +2081,117 @@ function ConfirmDetailsSection({
                 <> · <strong>Arrival/start:</strong> {quote.preferred_time}</>
               )}
             </p>
-            <p><strong>From:</strong> {fromAbbr}</p>
-            <p><strong>To:</strong> {toAbbr}</p>
+            {selectedTier === "estate" &&
+              (() => {
+                const plan = faConfirm?.estate_day_plan as { days?: number } | undefined;
+                const lines = faConfirm?.estate_schedule_lines as string[] | undefined;
+                const head = faConfirm?.estate_schedule_headline as string | undefined;
+                if (!plan || (plan.days ?? 0) <= 1 || !lines?.length || !head?.trim()) return null;
+                return (
+                  <div
+                    className="rounded-xl border my-3 p-4"
+                    style={{
+                      borderColor: "rgba(44, 62, 45, 0.08)",
+                      backgroundColor: "#F9F9F8",
+                    }}
+                  >
+                    <div className="flex gap-3">
+                      <Calendar
+                        className="w-4 h-4 shrink-0 mt-0.5"
+                        style={{ color: `${FOREST}40` }}
+                        weight="duotone"
+                        aria-hidden
+                      />
+                      <div className="min-w-0 space-y-2.5 flex-1">
+                        <p
+                          className="text-[9px] font-semibold uppercase tracking-[0.14em]"
+                          style={{ color: `${FOREST}45` }}
+                        >
+                          Schedule overview
+                        </p>
+                        <p className="text-[13px] font-semibold leading-snug tracking-tight" style={{ color: FOREST }}>
+                          {head.trim()}
+                        </p>
+                        <div className="space-y-2.5">
+                          {lines.map((ln, i) => (
+                            <p
+                              key={i}
+                              className="text-[12px] leading-relaxed pl-3 border-l-[2px]"
+                              style={{
+                                borderColor: `${GOLD}45`,
+                                color: `${FOREST}88`,
+                              }}
+                            >
+                              {ln}
+                            </p>
+                          ))}
+                        </div>
+                        <p className="text-[10px] leading-snug pt-0.5" style={{ color: `${FOREST}52` }}>
+                          Pack day is usually the day before your move unless your coordinator sets a different plan.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            <div className="space-y-1.5">
+              <p className="font-semibold text-[11px] uppercase tracking-wide" style={{ color: `${FOREST}55` }}>
+                Pickup locations
+              </p>
+              <ul className="space-y-1 pl-0 list-none">
+                {pickupRows.map((row, i) => (
+                  <li key={i} className="flex gap-2">
+                    <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+                    <span>
+                      {formatAddressForDisplay(row.address)}
+                      {accessLabel(row.access) ? (
+                        <span className="block text-[11px] mt-0.5" style={{ color: `${FOREST}65` }}>
+                          Access: {accessLabel(row.access)}
+                        </span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {pickupRows.length > 1 && (
+                <p className="text-[11px]" style={{ color: `${FOREST}65` }}>
+                  {pickupRows.length} pickup locations — crew will visit each stop.
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5 pt-1">
+              <p className="font-semibold text-[11px] uppercase tracking-wide" style={{ color: `${FOREST}55` }}>
+                Destination
+              </p>
+              <ul className="space-y-1 pl-0 list-none">
+                {dropoffRows.map((row, i) => (
+                  <li key={i} className="flex gap-2">
+                    <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+                    <span>
+                      {formatAddressForDisplay(row.address)}
+                      {accessLabel(row.access) ? (
+                        <span className="block text-[11px] mt-0.5" style={{ color: `${FOREST}65` }}>
+                          Access: {accessLabel(row.access)}
+                        </span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
           <InventoryCollapsible quote={quote} selectedTier={selectedTier} selectedAddons={selectedAddons} />
         </div>
 
         <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
-          <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-2" style={{ color: `${FOREST}50` }}>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
             Your plan
           </p>
           <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
             <p className="flex items-center gap-2 flex-wrap">
               <strong>Plan:</strong>
               <span
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold capitalize tracking-wider"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider"
                 style={{
                   backgroundColor: selectedTier === "estate" ? `${WINE}15` : selectedTier === "signature" ? `${GOLD}18` : `${FOREST}15`,
                   color: selectedTier === "estate" ? WINE : selectedTier === "signature" ? "#8B7332" : FOREST,
@@ -2053,7 +2213,7 @@ function ConfirmDetailsSection({
 
         {contractAddonsList.length > 0 && (
           <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
-            <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-2" style={{ color: `${FOREST}50` }}>
+            <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
               Add-ons
             </p>
             <ul className="space-y-1 text-[13px]" style={{ color: FOREST }}>
@@ -2070,7 +2230,7 @@ function ConfirmDetailsSection({
         )}
 
         <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
-          <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-2" style={{ color: `${FOREST}50` }}>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
             Pricing
           </p>
           <div className="space-y-1.5 text-[13px]" style={{ color: FOREST }}>
@@ -2237,24 +2397,24 @@ function ValuationProtectionCard({
             {hasRatePerPound ? (
               <>
                 <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                  <div className="text-[9px] font-bold tracking-[0.1em] capitalize mb-1" style={{ color: `${FOREST}40` }}>Coverage Rate</div>
+                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Coverage Rate</div>
                   <div className="text-[15px] font-bold" style={{ color: FOREST }}>{fmtPricePerLb(displayRatePerPound)}<span className="text-[11px] font-semibold" style={{ color: `${FOREST}50` }}>/lb</span></div>
                 </div>
                 {tierData.deductible === 0 && (
                   <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${GOLD}06` }}>
-                    <div className="text-[9px] font-bold tracking-[0.1em] capitalize mb-1" style={{ color: `${FOREST}40` }}>Deductible</div>
+                    <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Deductible</div>
                     <div className="text-[15px] font-bold" style={{ color: GOLD }}>$0</div>
                   </div>
                 )}
                 {tierData.max_per_item && (
                   <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                    <div className="text-[9px] font-bold tracking-[0.1em] capitalize mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
+                    <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
                     <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item)}</div>
                   </div>
                 )}
                 {tierData.max_per_shipment && (
                   <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                    <div className="text-[9px] font-bold tracking-[0.1em] capitalize mb-1" style={{ color: `${FOREST}40` }}>Per Shipment</div>
+                    <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Shipment</div>
                     <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment)}</div>
                   </div>
                 )}
@@ -2262,15 +2422,15 @@ function ValuationProtectionCard({
             ) : (
               <>
                 <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                  <div className="text-[9px] font-bold tracking-[0.1em] capitalize mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
+                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
                   <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item ?? 10000)}</div>
                 </div>
                 <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                  <div className="text-[9px] font-bold tracking-[0.1em] capitalize mb-1" style={{ color: `${FOREST}40` }}>Per Shipment</div>
+                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Shipment</div>
                   <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment ?? 100000)}</div>
                 </div>
                 <div className="rounded-xl px-3.5 py-3 col-span-2" style={{ backgroundColor: `${GOLD}06` }}>
-                  <div className="text-[9px] font-bold tracking-[0.1em] capitalize mb-1" style={{ color: `${FOREST}40` }}>Deductible</div>
+                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Deductible</div>
                   <div className="text-[15px] font-bold" style={{ color: GOLD }}>$0, Zero deductible</div>
                 </div>
               </>
@@ -2340,7 +2500,7 @@ function ValuationProtectionCard({
                 <Shield className="w-[18px] h-[18px]" style={{ color: upgradeSelected ? GOLD : WINE }} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[9px] font-bold tracking-[0.14em] capitalize mb-1" style={{ color: GOLD }}>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: GOLD }}>
                   {upgradeSelected ? "Upgrade Added" : "Upgrade Available"}
                 </div>
                 <div className="text-[var(--text-base)] font-semibold mb-0.5" style={{ color: FOREST }}>
@@ -2422,7 +2582,7 @@ function ValuationProtectionCard({
           ) : (
             <div className="space-y-3 rounded-xl border p-4" style={{ borderColor: `${FOREST}12` }}>
               <div>
-                <label className="block text-[10px] font-bold tracking-[0.1em] capitalize mb-1.5" style={{ color: `${FOREST}50` }}>Item name</label>
+                <label className="block text-[10px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: `${FOREST}50` }}>Item name</label>
                 <input
                   value={declName}
                   onChange={(e) => setDeclName(e.target.value)}
@@ -2434,7 +2594,7 @@ function ValuationProtectionCard({
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold tracking-[0.1em] capitalize mb-1.5" style={{ color: `${FOREST}50` }}>Estimated value (CAD)</label>
+                <label className="block text-[10px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: `${FOREST}50` }}>Estimated value (CAD)</label>
                 <input
                   value={declValue}
                   onChange={(e) => setDeclValue(e.target.value.replace(/[^0-9.]/g, ""))}
@@ -2638,7 +2798,7 @@ function AddOnsSection({
                     </span>
                     {addon.is_popular && (
                       <span
-                        className="text-[10px] font-bold tracking-wider capitalize px-2 py-0.5 rounded-full"
+                        className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
                         style={{ backgroundColor: `${GOLD}18`, color: GOLD }}
                       >
                         Popular
@@ -2646,7 +2806,7 @@ function AddOnsSection({
                     )}
                     {addon.slug === "packing_materials" && (
                       <span
-                        className="text-[9px] font-bold tracking-wider capitalize px-2 py-0.5 rounded-full border"
+                        className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border"
                         style={{ color: "#2C7A4B", backgroundColor: "#F0FBF4", borderColor: "#A3D9B4" }}
                       >
                         Free Delivery
@@ -2755,7 +2915,7 @@ function AddOnsSection({
         <button
           type="button"
           onClick={() => setShowAll((p) => !p)}
-          className="w-full mt-3 py-2.5 text-[11px] font-semibold tracking-wider capitalize transition-colors rounded-lg hover:bg-[#FAF8F5]"
+          className="w-full mt-3 py-2.5 text-[11px] font-semibold tracking-wider uppercase transition-colors rounded-lg hover:bg-[#FAF8F5]"
           style={{ color: GOLD }}
         >
           {showAll ? "Show less" : `View all ${addons.length} add-ons`}
@@ -2807,7 +2967,7 @@ function AddOnsSection({
       )}
 
       {showContinueButton && onContinue && (
-        <div className="mt-6 flex flex-col items-center gap-3">
+        <div className="mt-6 pb-10 flex flex-col items-center gap-3">
           <button
             type="button"
             onClick={onContinue}

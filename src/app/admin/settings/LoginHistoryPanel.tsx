@@ -47,9 +47,9 @@ export default function LoginHistoryPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Recent Sign-In Activity</div>
+        <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Recent Sign-In Activity</div>
         <div className="border border-[var(--brd)] rounded-lg overflow-hidden">
-          <div className="hidden sm:grid grid-cols-5 gap-2 px-3 py-2 bg-[var(--bg2)] text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">
+          <div className="hidden sm:grid grid-cols-5 gap-2 px-3 py-2 bg-[var(--bg2)] text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
             <div>Date / Time</div>
             <div>Device</div>
             <div>IP Address</div>

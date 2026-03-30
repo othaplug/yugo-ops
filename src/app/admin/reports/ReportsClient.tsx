@@ -401,7 +401,7 @@ export default function ReportsClient({
           <div>
             <div className="flex items-center gap-2 mb-4">
               <CurrencyDollar size={16} className="text-[var(--gold)]" weight="bold" />
-              <h2 className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
                 Revenue by Service Type
               </h2>
             </div>
@@ -436,7 +436,7 @@ export default function ReportsClient({
           <div>
             <div className="flex items-center gap-2 mb-4">
               <TrendUp size={16} className="text-[var(--gold)]" weight="bold" />
-              <h2 className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
                 Monthly Revenue (Last 6 Months)
               </h2>
             </div>
@@ -447,11 +447,11 @@ export default function ReportsClient({
                 <table className="w-full text-[13px]">
                   <thead>
                     <tr className="bg-[var(--bg)]">
-                      <th className="text-left px-4 py-3 text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/50">Month</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/50">Moves</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/50">Deliveries</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/50">Total</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/50">Jobs</th>
+                      <th className="text-left px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Month</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Moves</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Deliveries</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Total</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">Jobs</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -515,7 +515,7 @@ export default function ReportsClient({
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <CheckCircle size={16} className="text-[var(--gold)]" weight="bold" />
-                <h2 className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">
+                <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
                   Move Status Breakdown
                 </h2>
               </div>
@@ -562,7 +562,7 @@ export default function ReportsClient({
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Users size={16} className="text-[var(--gold)]" weight="bold" />
-                <h2 className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">
+                <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
                   Completed Sessions by Team
                 </h2>
               </div>
@@ -604,27 +604,27 @@ export default function ReportsClient({
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Clock size={16} className="text-[var(--gold)]" weight="bold" />
-              <h2 className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
                 Session Performance
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Total Sessions</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Sessions</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--tx)]">{trackingSessions.length}</div>
               </div>
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Completed</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completed</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--grn)]">{completedSessions.length}</div>
               </div>
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Active</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Active</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--gold)]">
                   {trackingSessions.filter((s) => s.status === "active" || s.status === "in_progress").length}
                 </div>
               </div>
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-1">Completion Rate</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Completion Rate</div>
                 <div className="text-[22px] font-bold font-heading text-[var(--tx)]">
                   {trackingSessions.length > 0 ? `${Math.round((completedSessions.length / trackingSessions.length) * 100)}%` : "-"}
                 </div>

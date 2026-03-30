@@ -339,7 +339,7 @@ function OverheadEditor({
     <div className="space-y-5">
       {/* Standard items */}
       <div>
-        <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-2">Fixed Monthly Costs</div>
+        <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Fixed Monthly Costs</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {STANDARD_OVERHEAD_FIELDS.map((f) => (
             <div key={f.key}>
@@ -361,7 +361,7 @@ function OverheadEditor({
       {/* Fleet / Truck costs */}
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)]">Fleet Monthly Costs</div>
+          <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">Fleet Monthly Costs</div>
           <div className="flex items-center gap-1.5 ml-auto">
             <span className="text-[9px] text-[var(--tx3)]">Working days/mo:</span>
             <input
@@ -404,7 +404,7 @@ function OverheadEditor({
       {/* Custom items */}
       {customItems.length > 0 && (
         <div className="space-y-1.5">
-          <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)]">Custom Items</div>
+          <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)]">Custom Items</div>
           {customItems.map((item) => (
             <div key={item.id} className="flex items-center gap-2">
               <input
@@ -732,7 +732,7 @@ export default function ProfitabilityClient() {
   const toggleSort = (key: string) => { if (sortKey === key) setSortAsc(!sortAsc); else { setSortKey(key); setSortAsc(false); } };
 
   const SortHeader = ({ label, field }: { label: string; field: string }) => (
-    <th className="text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 cursor-pointer hover:text-[var(--tx)] select-none whitespace-nowrap" onClick={() => toggleSort(field)}>
+    <th className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 cursor-pointer hover:text-[var(--tx)] select-none whitespace-nowrap" onClick={() => toggleSort(field)}>
       <span className="inline-flex items-center gap-0.5">{label}<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span>
     </th>
   );
@@ -742,7 +742,7 @@ export default function ProfitabilityClient() {
       <table className="w-full text-[11px]">
         <thead><tr>
           {["Type","Jobs","Avg Revenue","Avg Cost","Avg Profit","Margin"].map((h) => (
-            <th key={h} className="text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2">{h}</th>
+            <th key={h} className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">{h}</th>
           ))}
         </tr></thead>
         <tbody>
@@ -768,7 +768,7 @@ export default function ProfitabilityClient() {
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Finance</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Profitability</h1>
           <p className="text-[11px] text-[var(--tx3)] mt-2">Cost, profit, and margin from labour, truck, fuel, and supplies</p>
           <Link href="/admin/finance/forecast" className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[var(--gold)] hover:underline">
@@ -826,11 +826,11 @@ export default function ProfitabilityClient() {
                 <div className="text-left">
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-[18px] font-bold font-heading text-[var(--tx)] leading-none">{marginFlagBreakdown.green.length}</span>
-                    <span className="text-[9px] font-bold tracking-wider capitalize text-emerald-400/80">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-emerald-400/80">
                       {Math.round((marginFlagBreakdown.green.length / marginFlagBreakdown.total) * 100)}%
                     </span>
                   </div>
-                  <div className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mt-0.5">Green · ≥35%</div>
+                  <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">Green · ≥35%</div>
                 </div>
               </button>
 
@@ -846,11 +846,11 @@ export default function ProfitabilityClient() {
                 <div className="text-left">
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-[18px] font-bold font-heading text-[var(--tx)] leading-none">{marginFlagBreakdown.yellow.length}</span>
-                    <span className="text-[9px] font-bold tracking-wider capitalize text-[var(--gold)]/80">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-[var(--gold)]/80">
                       {Math.round((marginFlagBreakdown.yellow.length / marginFlagBreakdown.total) * 100)}%
                     </span>
                   </div>
-                  <div className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mt-0.5">Yellow · 25–34%</div>
+                  <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">Yellow · 25–34%</div>
                 </div>
               </button>
 
@@ -869,12 +869,12 @@ export default function ProfitabilityClient() {
                       {marginFlagBreakdown.red.length}
                     </span>
                     {marginFlagBreakdown.red.length > 0 && (
-                      <span className="text-[9px] font-bold tracking-wider capitalize text-red-400/80">
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-red-400/80">
                         {Math.round((marginFlagBreakdown.red.length / marginFlagBreakdown.total) * 100)}%
                       </span>
                     )}
                   </div>
-                  <div className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mt-0.5">Red · &lt;25%</div>
+                  <div className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mt-0.5">Red · &lt;25%</div>
                 </div>
               </button>
             </div>
@@ -892,17 +892,17 @@ export default function ProfitabilityClient() {
           {(revenueSplit.b2b.count > 0 || revenueSplit.residential.count > 0) && (
             <div className="grid grid-cols-3 gap-3 border-t border-[var(--brd)]/30 pt-5">
               <div className="py-3 space-y-1">
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">Residential Moves</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Residential Moves</div>
                 <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.residential.revenue)}</div>
                 <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.residential.count} moves · {pct(revenueSplit.residential.margin)} margin</div>
               </div>
               <div className="py-3 space-y-1">
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">Partner Deliveries</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Partner Deliveries</div>
                 <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.b2b.revenue)}</div>
                 <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.b2b.count} deliveries · {pct(revenueSplit.b2b.margin)} margin</div>
               </div>
               <div className="py-3 space-y-1">
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">Combined</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">Combined</div>
                 <div className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(revenueSplit.combined.revenue)}</div>
                 <div className="text-[11px] text-[var(--tx3)]">{revenueSplit.combined.count} total · {pct(revenueSplit.combined.margin)} blended</div>
               </div>
@@ -931,13 +931,13 @@ export default function ProfitabilityClient() {
                   <table className="w-full text-[11px]">
                     <thead><tr>
                       {["Tier","Moves","Avg Revenue","Avg Cost","Avg Profit","Margin"].map((h) => (
-                        <th key={h} className="text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2">{h}</th>
+                        <th key={h} className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">{h}</th>
                       ))}
                     </tr></thead>
                     <tbody>
                       {tierBreakdown.map((t) => (
                         <tr key={t.tier} className="border-t border-[var(--brd)]/50">
-                          <td className="py-1.5 px-2 capitalize font-medium text-[var(--tx)]">{t.tier}</td>
+                          <td className="py-1.5 px-2 uppercase font-medium text-[var(--tx)]">{t.tier}</td>
                           <td className="py-1.5 px-2 text-[var(--tx2)]">{t.moves}</td>
                           <td className="py-1.5 px-2 text-[var(--tx2)]">{formatCurrency(t.avgRevenue)}</td>
                           <td className="py-1.5 px-2 text-[var(--tx2)]">{formatCurrency(t.avgCost)}</td>
@@ -996,7 +996,7 @@ export default function ProfitabilityClient() {
                 <table className="w-full text-[11px]">
                   <thead><tr>
                     {["Area (FSA)","Jobs","Avg Revenue","Avg Gross Profit","Margin"].map((h) => (
-                      <th key={h} className="text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2">{h}</th>
+                      <th key={h} className="text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2">{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
@@ -1069,20 +1069,20 @@ export default function ProfitabilityClient() {
                 <thead>
                   <tr className="border-b border-[var(--brd)]/40">
                     {([ 
-                      <th key="id" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("move_code")}><span className="inline-flex items-center gap-0.5">ID<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={0} /></th>,
-                      <th key="date" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("date")}><span className="inline-flex items-center gap-0.5">Date<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={1} /></th>,
-                      <th key="client" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap">Client<ColHandle col={2} /></th>,
-                      <th key="type" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap">Type<ColHandle col={3} /></th>,
-                      <th key="rev" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("revenue")}><span className="inline-flex items-center gap-0.5">Revenue<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={4} /></th>,
-                      <th key="hrs" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap">Hours<ColHandle col={5} /></th>,
-                      <th key="lab" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("labour")}><span className="inline-flex items-center gap-0.5">Labour<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={6} /></th>,
-                      <th key="fuel" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("fuel")}><span className="inline-flex items-center gap-0.5">Fuel<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={7} /></th>,
-                      <th key="truck" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("truck")}><span className="inline-flex items-center gap-0.5">Truck<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={8} /></th>,
-                      tableTab !== "deliveries" ? <th key="sup" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("supplies")}><span className="inline-flex items-center gap-0.5">Supplies<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={9} /></th> : null,
-                      <th key="proc" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("processing")}><span className="inline-flex items-center gap-0.5">Proc.<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={10} /></th>,
-                      <th key="dc" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("totalDirect")}><span className="inline-flex items-center gap-0.5">Direct Cost<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={11} /></th>,
-                      <th key="gp" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("grossProfit")}><span className="inline-flex items-center gap-0.5">Gross Profit<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={12} /></th>,
-                      <th key="mg" className="relative text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("grossMargin")}><span className="inline-flex items-center gap-0.5">Margin<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={13} /></th>,
+                      <th key="id" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("move_code")}><span className="inline-flex items-center gap-0.5">ID<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={0} /></th>,
+                      <th key="date" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("date")}><span className="inline-flex items-center gap-0.5">Date<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={1} /></th>,
+                      <th key="client" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap">Client<ColHandle col={2} /></th>,
+                      <th key="type" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap">Type<ColHandle col={3} /></th>,
+                      <th key="rev" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("revenue")}><span className="inline-flex items-center gap-0.5">Revenue<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={4} /></th>,
+                      <th key="hrs" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap">Hours<ColHandle col={5} /></th>,
+                      <th key="lab" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("labour")}><span className="inline-flex items-center gap-0.5">Labour<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={6} /></th>,
+                      <th key="fuel" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("fuel")}><span className="inline-flex items-center gap-0.5">Fuel<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={7} /></th>,
+                      <th key="truck" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("truck")}><span className="inline-flex items-center gap-0.5">Truck<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={8} /></th>,
+                      tableTab !== "deliveries" ? <th key="sup" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("supplies")}><span className="inline-flex items-center gap-0.5">Supplies<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={9} /></th> : null,
+                      <th key="proc" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("processing")}><span className="inline-flex items-center gap-0.5">Proc.<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={10} /></th>,
+                      <th key="dc" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("totalDirect")}><span className="inline-flex items-center gap-0.5">Direct Cost<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={11} /></th>,
+                      <th key="gp" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("grossProfit")}><span className="inline-flex items-center gap-0.5">Gross Profit<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={12} /></th>,
+                      <th key="mg" className="relative text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2 whitespace-nowrap cursor-pointer hover:text-[var(--tx)] select-none" onClick={() => toggleSort("grossMargin")}><span className="inline-flex items-center gap-0.5">Margin<ArrowUpDown className="w-2.5 h-2.5 opacity-40" /></span><ColHandle col={13} /></th>,
                     ].filter(Boolean))}
                   </tr>
                 </thead>
@@ -1098,7 +1098,7 @@ export default function ProfitabilityClient() {
                           <span className="font-medium text-[var(--tx)] truncate">{r.client}</span>
                           {r.tier && (
                             <span
-                              className="ml-1.5 inline-flex items-center px-1 py-px rounded text-[10px] font-bold leading-none capitalize"
+                              className="ml-1.5 inline-flex items-center px-1 py-px rounded text-[10px] font-bold leading-none uppercase"
                               style={{ color: TIER_COLORS[r.tier] ?? "#C9A962", backgroundColor: `${TIER_COLORS[r.tier] ?? "#C9A962"}22` }}
                             >
                               {r.tier}
@@ -1169,7 +1169,7 @@ function StatCard({ label, value, sub, className, bgClass, icon }: {
   return (
     <div className="py-3">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/60">{label}</span>
+        <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">{label}</span>
         {icon && <span className={className}>{icon}</span>}
       </div>
       <div className={`text-2xl font-heading font-bold ${className}`}>{value}</div>

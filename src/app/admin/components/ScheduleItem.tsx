@@ -48,7 +48,7 @@ export function ScheduleDeliveryItem({
       </div>
       <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: getLineColor(status) }} aria-hidden />
       <div className="flex-1 min-w-0">
-        <div className={`text-[10px] font-bold capitalize tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
+        <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
         <div className="text-[var(--text-base)] font-bold font-heading text-[var(--tx)]">{title}</div>
         <div className="text-[11px] text-[var(--tx3)] mt-0.5">{subtitle}</div>
       </div>
@@ -82,7 +82,7 @@ export function ScheduleMoveItem({
       </div>
       <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: getLineColor(status) }} aria-hidden />
       <div className="flex-1 min-w-0">
-        <div className={`text-[10px] font-bold capitalize tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
+        <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
         <div className="text-[var(--text-base)] font-bold font-heading text-[var(--tx)]">{title}</div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           {price && <span className="text-[13px] font-bold text-[var(--gold)]">{price}</span>}
@@ -125,7 +125,7 @@ export function ScheduleDeliveryButton({
       </div>
       <div className="w-1 rounded-full shrink-0 min-h-[48px]" style={{ backgroundColor: getLineColor(status) }} aria-hidden />
       <div className="flex-1 min-w-0">
-        <div className={`text-[10px] font-bold capitalize tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
+        <div className={`text-[10px] font-bold uppercase tracking-wide mb-0.5 ${getStatusColor(status)}`}>{status}</div>
         <div className="text-[var(--text-base)] font-bold font-heading text-[var(--tx)]">{title}</div>
         <div className="text-[11px] text-[var(--tx3)] mt-0.5">{subtitle}</div>
       </div>

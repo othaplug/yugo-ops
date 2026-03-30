@@ -80,7 +80,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
       {/* Header */}
       <div className="bg-[var(--card)] rounded-2xl p-4 border border-[var(--brd)]">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Day Rate</span>
+          <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Day Rate</span>
           <span className="text-[10px] font-semibold text-[var(--gold)] px-2 py-0.5 rounded-full bg-[var(--gold)]/10">
             {completedCount}/{totalCount} stops
           </span>
@@ -142,12 +142,12 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                         Stop {stop.stop_number} of {totalCount}
                       </span>
                       <span
-                        className="text-[10px] font-bold capitalize px-1.5 py-0.5 rounded-full"
+                        className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full"
                         style={{ background: cfg.bg, color: cfg.color }}
                       >
                         {cfg.label}
                       </span>
-                      <span className="text-[9px] text-[var(--tx3)]/60 capitalize font-semibold">
+                      <span className="text-[9px] text-[var(--tx3)]/60 uppercase font-semibold">
                         {STOP_TYPE_LABELS[stop.stop_type] || "Delivery"}
                       </span>
                     </div>

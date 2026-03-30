@@ -51,7 +51,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
   return (
     <section className="mb-10 space-y-6">
       <div className="text-center space-y-2">
-        <p className="text-[10px] font-bold tracking-[0.2em] capitalize" style={{ color: `${FOREST}70` }}>
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: `${FOREST}70` }}>
           Your bin rental quote
         </p>
         <h2 className="font-hero text-[26px] md:text-[30px]" style={{ color: WINE }}>
@@ -63,7 +63,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
             : "Valid 7 days"}
         </p>
         <div
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide capitalize mx-auto"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide uppercase mx-auto"
           style={{ backgroundColor: `${GOLD}18`, color: FOREST }}
         >
           <SealCheck className="w-4 h-4" weight="fill" aria-hidden />
@@ -80,7 +80,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
             <Recycle className="w-6 h-6" style={{ color: FOREST }} weight="regular" aria-hidden />
           </div>
           <div>
-            <p className="text-[10px] font-bold tracking-wider capitalize" style={{ color: `${FOREST}55` }}>
+            <p className="text-[10px] font-bold tracking-wider uppercase" style={{ color: `${FOREST}55` }}>
               Eco-friendly plastic bins
             </p>
             <p className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>
@@ -90,7 +90,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
         </div>
 
         <div className="rounded-xl bg-white/80 border border-[#E2DDD5] p-4 space-y-3">
-          <p className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]">Your bundle</p>
+          <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Your bundle</p>
           <div className="space-y-2 text-[12px]" style={{ color: FOREST }}>
             {lines.length > 0 ? (
               lines.map((l, i) => (
@@ -123,7 +123,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
       </div>
 
       <div className="rounded-xl border border-[var(--brd)]/50 p-4 space-y-3 bg-white/60">
-        <p className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]">Your schedule</p>
+        <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Your schedule</p>
         <div className="space-y-3 text-[12px]" style={{ color: FOREST }}>
           <div className="flex gap-2">
             <CalendarBlank className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />

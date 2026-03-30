@@ -28,6 +28,13 @@ import {
   expectedInventoryScoreForMoveSize,
 } from "@/lib/pricing/margin-cost-model";
 import { evaluateServiceAreaForQuote } from "@/lib/pricing/service-area";
+import {
+  calculateEstateDays,
+  estateLoadedLabourCost,
+  buildEstateScheduleLines,
+  estateScheduleHeadline,
+} from "@/lib/quotes/estate-schedule";
+import { pickupDropoffFactorsFromPayload } from "@/lib/quotes/quote-address-display";
 // ═══════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════
@@ -187,6 +194,10 @@ interface QuoteInput {
   from_long_carry?: boolean;
   to_long_carry?: boolean;
   truck_type?: string;
+  /** Extra pickup stops after primary `from_address` (local / long distance / white glove). */
+  additional_pickup_addresses?: { address?: string }[];
+  /** Extra drop-off stops after primary `to_address`. */
+  additional_dropoff_addresses?: { address?: string }[];
   /** When true, logs full residential pricing steps to the server console (also set PRICING_DEBUG=1). */
   debug_pricing?: boolean;
   /** Coordinator acknowledges out-of-service-area moves (subcontract / remote crew). */
@@ -1190,6 +1201,19 @@ async function calcResidential(
     : recommendedTruckFromInventoryScore(truckSizingScore);
   const truckSur = residentialTruckUpgradeSurcharge(config, input.move_size, recTruck);
 
+  const estateDayPlan = calculateEstateDays(input.move_size ?? "2br", invResult.inventoryScore);
+  const loadedRateForEstateSchedule = crewLoadedHourlyRate(config);
+  const ESTATE_SCHEDULE_TRUCK_LABELS: Record<string, string> = {
+    sprinter: "Extended Sprinter van",
+    "16ft": "16ft climate-protected truck",
+    "20ft": "20ft dedicated moving truck",
+    "24ft": "24ft full-size moving truck",
+    "26ft": "26ft maximum-capacity truck",
+    none: "dedicated moving truck",
+  };
+  const estateScheduleTruckLabel =
+    ESTATE_SCHEDULE_TRUCK_LABELS[normalizeTruckType(recTruck)] ?? "dedicated moving truck";
+
   const deadheadFreeKm = cfgNum(config, "deadhead_free_zone_km", cfgNum(config, "deadhead_free_km", 15));
   const deadheadPerKm  = cfgNum(config, "deadhead_rate_per_km", cfgNum(config, "deadhead_per_km", 3.0));
   const deadheadKmRaw = deadheadInfo?.distance_km ?? 0;
@@ -1317,6 +1341,21 @@ async function calcResidential(
     pd("Step 6 — labour: skipped (no labour estimate)");
   }
 
+  let estateMultiDayLabourUplift = 0;
+  if (labour && labour.crewSize > 0 && labour.estimatedHours > 0) {
+    const minHoursFloorsEstate = parseJsonConfig<Record<string, number>>(
+      config,
+      "minimum_hours_by_size",
+      { studio: 2, "1br": 3, "2br": 4, "3br": 5.5, "4br": 7, "5br_plus": 8.5, partial: 2 },
+    );
+    const minFloorE = minHoursFloorsEstate[input.move_size ?? "2br"] ?? 3;
+    const effMinE = input.service_type === "white_glove" ? minFloorE + 1 : minFloorE;
+    const effHrsE = Math.max(labour.estimatedHours, effMinE);
+    const singleDayLoadedCost = Math.round(effHrsE * labour.crewSize * loadedRateForEstateSchedule);
+    const estateLoadedTotalForUplift = estateLoadedLabourCost(estateDayPlan, loadedRateForEstateSchedule);
+    estateMultiDayLabourUplift = Math.max(0, estateLoadedTotalForUplift - singleDayLoadedCost);
+  }
+
   const rounding = cfgNum(config, "rounding_nearest", 50);
   const minJob = cfgNum(config, "minimum_job_amount", 549);
   // Support both old and new config key names during transition
@@ -1332,7 +1371,8 @@ async function calcResidential(
   // Step 6: TIERED LABOUR DELTA added after (so premium tiers pay more for overages)
   let curBase = roundTo(subtotal * curatedMult, rounding) + tieredLabourDelta.essential;
   let sigBase = roundTo(subtotal * signatureMult, rounding) + tieredLabourDelta.signature;
-  let estBase = roundTo(subtotal * estateMult, rounding) + tieredLabourDelta.estate;
+  let estBase =
+    roundTo(subtotal * estateMult, rounding) + tieredLabourDelta.estate + estateMultiDayLabourUplift;
 
   pd("Step 7 — tier multipliers & rounding (config):", {
     tier_essential_multiplier: curatedMult,
@@ -1531,13 +1571,15 @@ async function calcResidential(
     : (estHours ?? 4);
   const loadedRate = crewLoadedHourlyRate(config);
   const estLabourCost = Math.round(actualEstHours * (labour?.crewSize ?? minCrew) * loadedRate);
+  const estateLoadedMultiDayCost = estateLoadedLabourCost(estateDayPlan, loadedRate);
   const estTruckCost = estimateTruckCostPerMove(recTruck, config);
   const estFuelCost = estimateFuelCostWithDeadhead(distKm, recTruck, config);
   const estSuppliesCost = estimateOperationalSuppliesCost(input.inventory_items ?? []);
   const estTotalCost = estLabourCost + estTruckCost + estFuelCost + estSuppliesCost;
+  const estTotalCostEstateOps = estTotalCost - estLabourCost + estateLoadedMultiDayCost;
   const estMarginPct  = curPrice > 0 ? Math.round(((curPrice - estTotalCost) / curPrice) * 100) : 0;
   const estSigMarginPct  = sigPrice > 0 ? Math.round(((sigPrice - estTotalCost) / sigPrice) * 100) : 0;
-  const estEstMarginPct  = estPrice > 0 ? Math.round(((estPrice - estTotalCost) / estPrice) * 100) : 0;
+  const estEstMarginPct  = estPrice > 0 ? Math.round(((estPrice - estTotalCostEstateOps) / estPrice) * 100) : 0;
 
   return {
     tiers,
@@ -1599,11 +1641,29 @@ async function calcResidential(
       // Estimated cost / margin (admin only — not shown to clients)
       estimated_cost: {
         labour: estLabourCost,
+        estate_loaded_labour_multi_day: estateLoadedMultiDayCost,
         truck: estTruckCost,
         fuel: estFuelCost,
         supplies: estSuppliesCost,
         total: estTotalCost,
+        total_estate_ops: estTotalCostEstateOps,
       },
+      estate_day_plan: {
+        days: estateDayPlan.days,
+        pack_crew: estateDayPlan.packDay?.crew ?? null,
+        pack_hours: estateDayPlan.packDay?.hours ?? null,
+        move_crew: estateDayPlan.moveDay.crew,
+        move_hours: estateDayPlan.moveDay.hours,
+        unpack_included: estateDayPlan.unpackIncluded,
+      },
+      estate_multi_day_labour_uplift: estateMultiDayLabourUplift,
+      estate_loaded_labour_cost: estateLoadedMultiDayCost,
+      estate_schedule_headline: estateScheduleHeadline(estateDayPlan),
+      estate_schedule_lines: buildEstateScheduleLines(
+        estateDayPlan,
+        input.move_date ?? "",
+        estateScheduleTruckLabel,
+      ),
       estimated_margin_essential:   estMarginPct,
       estimated_margin_signature: estSigMarginPct,
       estimated_margin_estate:    estEstMarginPct,
@@ -3175,6 +3235,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Unknown service_type: ${svcType}` }, { status: 400 });
   }
 
+  if (isLocalMove || isLongDistance || svcType === "white_glove") {
+    const stopFac = pickupDropoffFactorsFromPayload({
+      from_address: input.from_address,
+      to_address: input.to_address,
+      from_access: input.from_access,
+      to_access: input.to_access,
+      additional_pickup_addresses: input.additional_pickup_addresses,
+      additional_dropoff_addresses: input.additional_dropoff_addresses,
+    });
+    factors = {
+      ...factors,
+      ...stopFac,
+      // Redundant with pickup_locations but lets clients merge stops if arrays were ever truncated
+      ...(input.additional_pickup_addresses?.length
+        ? { additional_pickup_addresses: input.additional_pickup_addresses }
+        : {}),
+      ...(input.additional_dropoff_addresses?.length
+        ? { additional_dropoff_addresses: input.additional_dropoff_addresses }
+        : {}),
+    };
+  }
+
   if (
     (svcType === "b2b_delivery" || svcType === "b2b_oneoff") &&
     factors &&
@@ -3294,6 +3376,20 @@ export async function POST(req: NextRequest) {
       }
       const hoursIdx = t.includes.findIndex((s: string) => s.toLowerCase().includes("-hour window"));
       if (hoursIdx >= 0) t.includes[hoursIdx] = hoursLine;
+    }
+  }
+
+  if (svcType === "local_move" && tiers?.estate && factors && typeof factors === "object") {
+    const fObj = factors as Record<string, unknown>;
+    const ep = fObj.estate_day_plan as { days?: number } | undefined;
+    if (ep && typeof ep.days === "number" && ep.days > 1) {
+      const estInc = tiers.estate.includes;
+      const hoursIdx = estInc.findIndex((s: string) => s.toLowerCase().includes("-hour window"));
+      if (hoursIdx >= 0) {
+        const head = fObj.estate_schedule_headline;
+        estInc[hoursIdx] =
+          typeof head === "string" && head.trim() ? head : "Estate · multi-day plan";
+      }
     }
   }
 

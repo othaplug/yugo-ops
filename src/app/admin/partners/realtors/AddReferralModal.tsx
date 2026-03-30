@@ -89,7 +89,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
     <ModalOverlay open={open} onClose={onClose} title="Create Referral" maxWidth="md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Agent Name *</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Agent Name *</label>
           <select
             value={agentId}
             onChange={(e) => setAgentId(e.target.value)}
@@ -109,7 +109,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           )}
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Client Name</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Client Name</label>
           <input
             type="text"
             value={clientName}
@@ -119,7 +119,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Client Email</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Client Email</label>
           <input
             type="email"
             value={clientEmail}
@@ -139,7 +139,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Preferred Method of Communication</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Preferred Method of Communication</label>
           <select
             value={preferredContact}
             onChange={(e) => setPreferredContact(e.target.value)}
@@ -151,7 +151,7 @@ export default function AddReferralModal({ open, onClose, realtors = [] }: AddRe
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Type of Move</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Type of Move</label>
           <select
             value={moveType}
             onChange={(e) => setMoveType(e.target.value)}

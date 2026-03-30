@@ -85,21 +85,21 @@ export default function PartnerProfileSettings() {
       </div>
       <form onSubmit={handleSave} className="px-5 py-5 space-y-4">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Company Name</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Company Name</label>
           <div className="text-[13px] text-[var(--tx2)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-4 py-2.5">
             {profile.name}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-1">Only administrators can change this</p>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Partner Type</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Partner Type</label>
           <div className="text-[13px] text-[var(--tx2)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-4 py-2.5">
             {TYPE_LABELS[profile.type] || profile.type}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-1">Only administrators can change this</p>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Contact Name</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Contact Name</label>
           <input
             type="text"
             value={contactName}
@@ -109,7 +109,7 @@ export default function PartnerProfileSettings() {
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Email</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
           <input
             type="email"
             value={email}
@@ -120,7 +120,7 @@ export default function PartnerProfileSettings() {
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Phone</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
           <input
             ref={phoneInput.ref}
             type="tel"

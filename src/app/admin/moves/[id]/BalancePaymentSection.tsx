@@ -100,21 +100,21 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-4 transition-colors">
-      <h3 className="font-heading text-[10px] font-bold tracking-wide capitalize text-[var(--tx3)] mb-3">Balance Payment</h3>
+      <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-3">Balance Payment</h3>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <div>
-          <span className="text-[10px] font-medium tracking-widest capitalize text-[var(--tx3)]/70">Balance amount</span>
+          <span className="text-[10px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Balance amount</span>
           <div className="text-[15px] font-bold text-[var(--tx)]">{formatCurrency(balanceAmount)}</div>
           {balanceAmount > 0 && <div className="text-[9px] text-[var(--tx3)]">+{formatCurrency(calcHST(balanceAmount))} HST</div>}
         </div>
         <div>
-          <span className="text-[10px] font-medium tracking-widest capitalize text-[var(--tx3)]/70">Payment status</span>
+          <span className="text-[10px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Payment status</span>
           <div className={`text-[13px] font-bold ${status.color}`}>{status.label}</div>
         </div>
         {move.balance_method && (
           <div>
-            <span className="text-[10px] font-medium tracking-widest capitalize text-[var(--tx3)]/70">Method</span>
+            <span className="text-[10px] font-medium tracking-widest uppercase text-[var(--tx3)]/70">Method</span>
             <div className="text-[13px] font-medium text-[var(--tx)]">
               {move.balance_method === "card" ? "Credit Card" : "Admin Override"}
               {move.balance_auto_charged && " (auto)"}
@@ -152,7 +152,7 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
             Use only for exceptional cases, wire transfer, cheque, or a legacy arrangement. All overrides are audit-logged.
           </p>
           <div>
-            <label className="block text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1.5">Reason</label>
+            <label className="block text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">Reason</label>
             <div className="flex flex-col gap-2">
               {OVERRIDE_REASONS.map((r) => (
                 <label key={r.value} className="flex items-center gap-2.5 cursor-pointer">
@@ -171,7 +171,7 @@ export default function BalancePaymentSection({ move, onUpdate }: BalancePayment
           </div>
           {overrideReason === "other" && (
             <div>
-              <label className="block text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1.5">Explanation *</label>
+              <label className="block text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1.5">Explanation *</label>
               <input
                 type="text"
                 value={overrideNote}

@@ -100,7 +100,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
                 }`}
               >
                 <div
-                  className={`text-[9px] font-bold tracking-wider capitalize mb-0.5 ${
+                  className={`text-[9px] font-bold tracking-wider uppercase mb-0.5 ${
                     isToday ? "text-blue-500 dark:text-blue-400" : "text-[var(--tx3)]/50"
                   }`}
                 >
@@ -126,7 +126,7 @@ export default function WeekView({ anchor, todayKey, eventsByDate, onEventClick,
         {hasUnscheduled && (
           <div className="flex border-b border-[var(--brd)] bg-[var(--bg)]/40">
             <div className="w-10 sm:w-14 shrink-0 py-1 flex items-center justify-end pr-1">
-              <span className="text-[7px] font-semibold text-[var(--tx3)]/60 capitalize tracking-wide hidden sm:block">All-day</span>
+              <span className="text-[7px] font-semibold text-[var(--tx3)]/60 uppercase tracking-wide hidden sm:block">All-day</span>
             </div>
             {weekDays.map(({ key }) => {
               const untimedEvents = (eventsByDate[key] || []).filter((ev) => !ev.start);

@@ -51,7 +51,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
           className="rounded-2xl border-2 border-dashed p-5 space-y-3"
           style={{ borderColor: `${FOREST}35`, backgroundColor: `${FOREST}06` }}
         >
-          <p className="text-[10px] font-bold tracking-[0.14em] capitalize" style={{ color: `${FOREST}70` }}>
+          <p className="text-[10px] font-bold tracking-[0.14em] uppercase" style={{ color: `${FOREST}70` }}>
             Pro forma invoice
           </p>
           <div className="flex justify-between text-[13px] font-semibold" style={{ color: FOREST }}>
@@ -88,7 +88,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             </p>
             {f?.item_category ? (
               <span
-                className="inline-block mt-1 text-[9px] font-bold tracking-wider capitalize px-2.5 py-0.5 rounded-full"
+                className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
                 style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
               >
                 {dimensional ? "Commercial delivery" : toTitleCase(String(f.item_category))}
@@ -105,7 +105,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
         {/* Items (dimensional) */}
         {dimensional && (lineItems.length > 0 || legacyItems.length > 0) ? (
           <div className="pt-4 border-t border-[var(--brd)]/30">
-            <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853] mb-2">Items</p>
+            <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853] mb-2">Items</p>
             <ul className="space-y-1 text-[12px] font-medium" style={{ color: FOREST }}>
               {lineItems.length > 0
                 ? lineItems.map((row, i) => (
@@ -133,7 +133,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
               <div className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: WINE }} />
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Pickup</p>
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Pickup</p>
                   <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.from_address}
                   </p>
@@ -144,7 +144,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
             <div className="flex-1 min-w-0 text-right">
               <div className="flex items-start gap-2 justify-end">
                 <div>
-                  <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Delivery</p>
+                  <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Delivery</p>
                   <p className="text-[12px] font-medium" style={{ color: FOREST }}>
                     {quote.to_address}
                   </p>

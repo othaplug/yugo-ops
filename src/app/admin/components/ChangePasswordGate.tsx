@@ -69,7 +69,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
     <>
       {children}
       {showModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/70">
           <div className="w-full max-w-md bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl p-6 animate-fade-up">
             <div className="text-center mb-6">
               <YugoLogo size={22} variant="gold" className="mb-4 inline-block" />
@@ -83,7 +83,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
                 </div>
               )}
               <div>
-                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">New password</label>
+                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New password</label>
                 <input
                   type="password"
                   value={password}
@@ -95,7 +95,7 @@ export default function ChangePasswordGate({ children }: { children: React.React
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Confirm password</label>
+                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Confirm password</label>
                 <input
                   type="password"
                   value={confirm}

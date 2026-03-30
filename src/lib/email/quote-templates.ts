@@ -128,6 +128,9 @@ export interface QuoteTemplateData {
   toAddress?: string;
   fromAccess?: string | null;
   toAccess?: string | null;
+  /** Multi-stop pickup / drop-off (from quote factors); when multiple, email shows every stop. */
+  pickupLocations?: { address: string; access?: string | null }[];
+  dropoffLocations?: { address: string; access?: string | null }[];
   moveDate?: string | null;
   moveSize?: string | null;
   companyName?: string | null;
@@ -206,7 +209,7 @@ function flatRateBadge(): string {
     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;">
       <tr>
         <td style="background-color:${GOLD}1A;border:1px solid ${GOLD}80;padding:5px 14px;">
-          <span style="font-size:9px;font-weight:700;color:${GOLD_LIGHT};letter-spacing:1.4px;text-transform:capitalize;">Guaranteed flat rate</span>
+          <span style="font-size:9px;font-weight:700;color:${GOLD_LIGHT};letter-spacing:1.4px;text-transform:uppercase;">Guaranteed flat rate</span>
         </td>
       </tr>
     </table>
@@ -233,7 +236,7 @@ function ctaButton(url: string, label: string, sub?: string): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 8px;">
       <tr>
         <td align="center">
-          <a href="${url}" style="display:block;background-color:${GOLD};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:capitalize;">
+          <a href="${url}" style="display:block;background-color:${GOLD};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:uppercase;">
             ${label}
           </a>
         </td>
@@ -254,7 +257,7 @@ function whyYugoBlock(): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 0;border-top:1px solid ${CARD_BORDER};">
       <tr>
         <td style="padding-top:22px;">
-          <div style="font-size:8px;font-weight:700;color:${TX3};text-transform:capitalize;letter-spacing:2.4px;margin-bottom:14px;">The Yugo Difference</div>
+          <div style="font-size:8px;font-weight:700;color:${TX3};text-transform:uppercase;letter-spacing:2.4px;margin-bottom:14px;">The Yugo Difference</div>
           <table cellpadding="0" cellspacing="0" border="0" width="100%">
             ${items.map(([strong, rest]) => `
               <tr>
@@ -298,7 +301,7 @@ function detailRow(label: string, value: string, last = false): string {
 function detailsPlain(rows: [string, string][]): string {
   if (rows.length === 0) return "";
   return `
-    <div style="font-size:8px;color:${TX3};text-transform:capitalize;font-weight:700;letter-spacing:2.4px;margin-bottom:10px;">Move Details</div>
+    <div style="font-size:8px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:2.4px;margin-bottom:10px;">Move Details</div>
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border-top:1px solid ${CARD_BORDER};margin-bottom:28px;">
       ${rows.map(([l, v], i) => detailRow(l, v, i === rows.length - 1)).join("")}
     </table>
@@ -355,7 +358,7 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
       const priceSz   = isRec ? "34px" : "22px";
 
       const badge = badgeText
-        ? `<span style="display:inline-block;padding:2px 9px;font-size:7px;font-weight:700;background-color:${isRec ? accent : TIER_TX + "1A"};color:${isRec ? BG : TIER_TX + "88"};margin-left:8px;letter-spacing:1px;text-transform:capitalize;vertical-align:middle;">${badgeText}</span>`
+        ? `<span style="display:inline-block;padding:2px 9px;font-size:7px;font-weight:700;background-color:${isRec ? accent : TIER_TX + "1A"};color:${isRec ? BG : TIER_TX + "88"};margin-left:8px;letter-spacing:1px;text-transform:uppercase;vertical-align:middle;">${badgeText}</span>`
         : "";
 
       /* Checklist only on the recommended card */
@@ -369,7 +372,7 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
         <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${cardBg};border:${borderW} solid ${borderClr};margin-bottom:12px;">
           <tr>
             <td style="padding:${padVal};">
-              <div style="font-size:8px;font-weight:700;color:${accent};text-transform:capitalize;letter-spacing:2px;margin-bottom:10px;">${label}${badge}</div>
+              <div style="font-size:8px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">${label}${badge}</div>
               <div style="font-family:${HERO_FONT};font-size:${priceSz};font-weight:400;color:${TIER_TX};line-height:1;margin-bottom:${isRec ? "16px" : "4px"};">${formatCurrency(t.price)}</div>
               ${includesRows ? `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:4px;">${includesRows}</table>` : ""}
             </td>
@@ -400,7 +403,7 @@ function priceCard(label: string, price: number, note: string): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:28px;">
       <tr>
         <td align="center" style="background-color:${CARD};border:1px solid ${GOLD}40;padding:28px 24px;">
-          <div style="font-size:8px;color:${TX3};text-transform:capitalize;font-weight:700;letter-spacing:2.4px;margin-bottom:10px;">${label}</div>
+          <div style="font-size:8px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:2.4px;margin-bottom:10px;">${label}</div>
           <div style="font-family:${HERO_FONT};font-size:36px;font-weight:400;color:${GOLD_LIGHT};line-height:1;">${formatCurrency(price)}</div>
           <div style="font-size:11px;color:${TX3};margin-top:8px;letter-spacing:0.3px;">${note}</div>
         </td>
@@ -415,7 +418,7 @@ function coordinatorBlock(name?: string | null, phone?: string | null): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:20px 0 24px;border-top:1px solid ${CARD_BORDER};">
       <tr>
         <td style="padding-top:16px;">
-          <div style="font-size:8px;color:${TX3};text-transform:capitalize;font-weight:700;letter-spacing:2.4px;margin-bottom:6px;">Your Coordinator</div>
+          <div style="font-size:8px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:2.4px;margin-bottom:6px;">Your Coordinator</div>
           <div style="font-size:14px;color:${TX};font-weight:500;">${name}</div>
           ${phone ? `<div style="font-size:12px;color:${TX2};margin-top:3px;">${phone}</div>` : ""}
         </td>
@@ -431,7 +434,7 @@ function heading(text: string): string {
 }
 
 function subHeading(text: string): string {
-  return `<div style="font-size:8px;font-weight:700;color:${GOLD};letter-spacing:2.8px;text-transform:capitalize;margin-bottom:12px;">${text}</div>`;
+  return `<div style="font-size:8px;font-weight:700;color:${GOLD};letter-spacing:2.8px;text-transform:uppercase;margin-bottom:12px;">${text}</div>`;
 }
 
 function bodyText(text: string): string {
@@ -477,7 +480,24 @@ function addressRowsWithAccess(
 function residentialTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
-  rows.push(...addressRowsWithAccess("From", d.fromAddress, d.fromAccess, "To", d.toAddress, d.toAccess));
+  const pickups = Array.isArray(d.pickupLocations) ? d.pickupLocations.filter((p) => p.address?.trim()) : [];
+  const dropoffs = Array.isArray(d.dropoffLocations) ? d.dropoffLocations.filter((p) => p.address?.trim()) : [];
+  if (pickups.length > 1 || dropoffs.length > 1) {
+    pickups.forEach((p, i) => {
+      const label = pickups.length > 1 ? `Pickup ${i + 1}` : "From";
+      rows.push([label, p.address]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+    dropoffs.forEach((p, i) => {
+      const label = dropoffs.length > 1 ? `Destination ${i + 1}` : "To";
+      rows.push([label, p.address]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+  } else {
+    rows.push(...addressRowsWithAccess("From", d.fromAddress, d.fromAccess, "To", d.toAddress, d.toAccess));
+  }
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.distance) rows.push(["Distance", d.distance]);
   if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
@@ -503,7 +523,24 @@ function residentialTemplate(d: QuoteTemplateData): string {
 /* Long Distance */
 function longDistanceTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
-  rows.push(...addressRowsWithAccess("Origin", d.fromAddress, d.fromAccess, "Destination", d.toAddress, d.toAccess));
+  const pickups = Array.isArray(d.pickupLocations) ? d.pickupLocations.filter((p) => p.address?.trim()) : [];
+  const dropoffs = Array.isArray(d.dropoffLocations) ? d.dropoffLocations.filter((p) => p.address?.trim()) : [];
+  if (pickups.length > 1 || dropoffs.length > 1) {
+    pickups.forEach((p, i) => {
+      const label = pickups.length > 1 ? `Pickup ${i + 1}` : "Origin";
+      rows.push([label, p.address]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+    dropoffs.forEach((p, i) => {
+      const label = dropoffs.length > 1 ? `Destination ${i + 1}` : "Destination";
+      rows.push([label, p.address]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+  } else {
+    rows.push(...addressRowsWithAccess("Origin", d.fromAddress, d.fromAccess, "Destination", d.toAddress, d.toAccess));
+  }
   if (d.distance) rows.push(["Distance", d.distance]);
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
@@ -556,7 +593,24 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.itemDescription) rows.push(["Item", d.itemDescription]);
   if (d.itemCategory) rows.push(["Category", d.itemCategory]);
-  rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
+  const pickupsSi = Array.isArray(d.pickupLocations) ? d.pickupLocations.filter((p) => p.address?.trim()) : [];
+  const dropoffsSi = Array.isArray(d.dropoffLocations) ? d.dropoffLocations.filter((p) => p.address?.trim()) : [];
+  if (pickupsSi.length > 1 || dropoffsSi.length > 1) {
+    pickupsSi.forEach((p, i) => {
+      const label = pickupsSi.length > 1 ? `Pickup ${i + 1}` : "Pickup";
+      rows.push([label, p.address]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+    dropoffsSi.forEach((p, i) => {
+      const label = dropoffsSi.length > 1 ? `Delivery ${i + 1}` : "Delivery";
+      rows.push([label, p.address]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+  } else {
+    rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
+  }
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
@@ -580,7 +634,24 @@ function singleItemTemplate(d: QuoteTemplateData): string {
 function whiteGloveTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.itemDescription) rows.push(["Item", d.itemDescription]);
-  rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
+  const pickupsWg = Array.isArray(d.pickupLocations) ? d.pickupLocations.filter((p) => p.address?.trim()) : [];
+  const dropoffsWg = Array.isArray(d.dropoffLocations) ? d.dropoffLocations.filter((p) => p.address?.trim()) : [];
+  if (pickupsWg.length > 1 || dropoffsWg.length > 1) {
+    pickupsWg.forEach((p, i) => {
+      const label = pickupsWg.length > 1 ? `Pickup ${i + 1}` : "Pickup";
+      rows.push([label, p.address]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+    dropoffsWg.forEach((p, i) => {
+      const label = dropoffsWg.length > 1 ? `Delivery ${i + 1}` : "Delivery";
+      rows.push([label, p.address]);
+      const pa = formatAccessForDisplay(p.access ?? null);
+      if (pa) rows.push(["Access", pa]);
+    });
+  } else {
+    rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
+  }
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
@@ -645,7 +716,7 @@ function eventTemplate(d: QuoteTemplateData): string {
           .map(
             (leg) => `
     <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid ${CARD_BORDER};text-align:left">
-      <div style="font-size:10px;font-weight:700;color:${GOLD_LIGHT};letter-spacing:1.2px;text-transform:capitalize;margin-bottom:8px">${leg.label}</div>
+      <div style="font-size:10px;font-weight:700;color:${GOLD_LIGHT};letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px">${leg.label}</div>
       <div style="font-size:11px;color:${TX2};line-height:1.7;margin-bottom:6px">
         <strong style="color:${TX}">Delivery:</strong> ${leg.deliveryDay}<br/>
         <strong style="color:${TX}">Return:</strong> ${leg.returnDay}<br/>
@@ -719,7 +790,7 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     <div style="background:${CARD};border:1px solid ${GOLD}33;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
-      <div style="font-size:9px;color:${TX3};text-transform:capitalize;font-weight:700;letter-spacing:1.5px;margin-bottom:8px">Labour Service</div>
+      <div style="font-size:9px;color:${TX3};text-transform:uppercase;font-weight:700;letter-spacing:1.5px;margin-bottom:8px">Labour Service</div>
       ${labourNote ? `<div style="font-size:12px;color:${TX2};margin-bottom:10px">${labourNote}</div>` : ""}
       <div style="font-family:${HERO_FONT};font-size:32px;font-weight:700;color:${GOLD_LIGHT}">${formatCurrency(total)}</div>
       <div style="font-size:11px;color:${TX3};margin-top:6px">+${formatCurrency(tax)} HST &middot; Total ${formatCurrency(total + tax)}</div>
@@ -771,13 +842,13 @@ function binRentalTemplate(d: QuoteTemplateData): string {
     ${subHeading("Your Yugo Bin Rental Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Your eco-friendly bin rental quote is ready.")}
-    <p style="font-size:11px;font-weight:700;color:${TX};text-transform:capitalize;letter-spacing:0.08em;margin:0 0 8px">What&apos;s included</p>
+    <p style="font-size:11px;font-weight:700;color:${TX};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px">What&apos;s included</p>
     ${includeBullets}
     ${expiryNote(d.expiresAt)}
-    <p style="font-size:11px;font-weight:700;color:${TX};text-transform:capitalize;letter-spacing:0.08em;margin:0 0 8px">Your schedule</p>
+    <p style="font-size:11px;font-weight:700;color:${TX};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px">Your schedule</p>
     ${detailsPlain(rows)}
     <div style="text-align:left;margin:16px 0">
-      <p style="font-size:11px;font-weight:700;color:${TX};text-transform:capitalize;letter-spacing:0.08em;margin:0 0 8px">Quote</p>
+      <p style="font-size:11px;font-weight:700;color:${TX};text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px">Quote</p>
       <table cellpadding="0" cellspacing="0" border="0" width="100%" style="font-size:12px;color:${TX2}">
         ${quoteLines}
         <tr><td style="padding:8px 0;font-weight:600;color:${TX}">Subtotal</td><td style="padding:8px 0;text-align:right">${formatCurrency(subtotal)}</td></tr>

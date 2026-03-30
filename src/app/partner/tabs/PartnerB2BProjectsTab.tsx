@@ -657,7 +657,7 @@ export default function PartnerB2BProjectsTab({
   // ── Modals ────────────────────────────────────────────────────────────────
 
   const NewProjectModal = showNewProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5" onClick={() => setShowNewProject(false)}>
+    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => setShowNewProject(false)}>
       <div
         className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
@@ -671,17 +671,17 @@ export default function PartnerB2BProjectsTab({
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 min-h-0">
           {npError && <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{npError}</div>}
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Project Name *</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
             <input value={npName} onChange={(e) => setNpName(e.target.value)} placeholder="e.g. Wilson Residence"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
           </div>
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Client Name</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Client Name</label>
             <input value={npClientName} onChange={(e) => setNpClientName(e.target.value)} placeholder="Sarah & James Wilson"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
           <div className="relative">
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Site Address</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
             <input value={npAddress} onChange={(e) => { setNpAddress(e.target.value); fetchAddressSuggestions(e.target.value); }}
               placeholder="Start typing address…"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
@@ -698,12 +698,12 @@ export default function PartnerB2BProjectsTab({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Start Date</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Start Date</label>
               <input type="date" value={npStartDate} onChange={(e) => setNpStartDate(e.target.value)}
                 className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
             <div>
-              <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Target End Date</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Target End Date</label>
               <input type="date" value={npEndDate} onChange={(e) => setNpEndDate(e.target.value)}
                 className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
@@ -723,7 +723,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const EditProjectModal = showEditProject && selectedProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5" onClick={() => setShowEditProject(false)}>
+    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => setShowEditProject(false)}>
       <div
         className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
@@ -737,17 +737,17 @@ export default function PartnerB2BProjectsTab({
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 min-h-0">
           {epError && <div className="px-3 py-2.5 rounded-lg bg-red-50 border border-red-200 text-[13px] text-red-700">{epError}</div>}
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Project Name *</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
             <input value={epName} onChange={(e) => setEpName(e.target.value)} placeholder="e.g. Wilson Residence"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
           </div>
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Client Name</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Client Name</label>
             <input value={epClientName} onChange={(e) => setEpClientName(e.target.value)} placeholder="Sarah & James Wilson"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
           <div className="relative">
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Site Address</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
             <input value={epAddress} onChange={(e) => { setEpAddress(e.target.value); fetchAddressSuggestions(e.target.value); }}
               placeholder="Start typing address…"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
@@ -763,18 +763,18 @@ export default function PartnerB2BProjectsTab({
             )}
           </div>
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Description</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Description</label>
             <textarea value={epDescription} onChange={(e) => setEpDescription(e.target.value)} placeholder="Project description"
               rows={2} className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Start Date</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Start Date</label>
               <input type="date" value={epStartDate} onChange={(e) => setEpStartDate(e.target.value)}
                 className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
             <div>
-              <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Target End Date</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Target End Date</label>
               <input type="date" value={epEndDate} onChange={(e) => setEpEndDate(e.target.value)}
                 className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
@@ -794,7 +794,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const AddItemModal = showAddItem && selectedProject && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5" onClick={() => { setShowAddItem(false); resetAddItem(); }}>
+    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => { setShowAddItem(false); resetAddItem(); }}>
       <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] flex items-center justify-between px-5 py-4 shrink-0 z-10">
           <h3 className="font-hero text-[20px] sm:text-[22px] font-bold text-[#1A1A1A]">Add Item</h3>
@@ -807,7 +807,7 @@ export default function PartnerB2BProjectsTab({
           {/* Item name + qty */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A]">Item Name *</label>
+              <label className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Item Name *</label>
               <button type="button" onClick={addItemRow}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C9A962] hover:underline">
                 <Plus className="w-3.5 h-3.5" /> Add item
@@ -853,7 +853,7 @@ export default function PartnerB2BProjectsTab({
           {/* Vendor */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A]">Vendor *</label>
+              <label className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Vendor *</label>
               <button type="button" onClick={() => setAiShowContact(!aiShowContact)}
                 className="text-[11px] text-[#C9A962] hover:underline">
                 {aiShowContact ? "– Hide contact details" : "+ Add vendor contact"}
@@ -867,28 +867,28 @@ export default function PartnerB2BProjectsTab({
             <div className="space-y-3 p-4 bg-[#F5F3F0] rounded-xl border border-[#E8E4DF]">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold capitalize tracking-wide text-[#454545] mb-1">Contact Name</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Contact Name</label>
                   <input value={aiContactName} onChange={(e) => setAiContactName(e.target.value)} placeholder="Sales rep name"
                     className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold capitalize tracking-wide text-[#454545] mb-1">Phone</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Phone</label>
                   <input value={aiContactPhone} onChange={(e) => setAiContactPhone(e.target.value)} placeholder="+1 (647) …"
                     className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-bold capitalize tracking-wide text-[#454545] mb-1">Email</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Email</label>
                 <input value={aiContactEmail} onChange={(e) => setAiContactEmail(e.target.value)} placeholder="vendor@example.com"
                   className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold capitalize tracking-wide text-[#454545] mb-1">Pickup Address</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Pickup Address</label>
                 <input value={aiPickupAddr} onChange={(e) => setAiPickupAddr(e.target.value)} placeholder="200 King St W, Toronto"
                   className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold capitalize tracking-wide text-[#454545] mb-1">Pickup Window</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Pickup Window</label>
                 <input value={aiPickupWindow} onChange={(e) => setAiPickupWindow(e.target.value)} placeholder="Mon–Fri 9am–4pm, loading dock"
                   className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
               </div>
@@ -898,12 +898,12 @@ export default function PartnerB2BProjectsTab({
           {/* Order # + Room */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Order Number</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Order Number</label>
               <input value={aiOrderNum} onChange={(e) => setAiOrderNum(e.target.value)} placeholder="PF-4521"
                 className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
             </div>
             <div>
-              <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Room Destination</label>
+              <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Room Destination</label>
               <select value={aiRoom} onChange={(e) => setAiRoom(e.target.value)}
                 className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
                 <option value="">Select room…</option>
@@ -914,7 +914,7 @@ export default function PartnerB2BProjectsTab({
 
           {/* Delivery method */}
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Delivery Method</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Delivery Method</label>
             <select value={aiDeliveryMethod} onChange={(e) => setAiDeliveryMethod(e.target.value)}
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
               {Object.entries(DELIVERY_METHOD_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -923,14 +923,14 @@ export default function PartnerB2BProjectsTab({
 
           {/* Declared Value */}
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Declared Value ($)</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Declared Value ($)</label>
             <input type="number" min="0" value={aiValue} onChange={(e) => setAiValue(e.target.value)} placeholder="8,200"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
 
           {/* Special handling */}
           <div className="space-y-2">
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A]">Special Handling</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Special Handling</label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={aiCrating} onChange={(e) => setAiCrating(e.target.checked)} className="w-4 h-4 accent-[#C9A962]" />
               <span className="text-[13px] text-[#444]">Crating required</span>
@@ -946,7 +946,7 @@ export default function PartnerB2BProjectsTab({
 
           {/* Photo */}
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">
               <Camera className="inline w-3.5 h-3.5 mr-1 -mt-0.5" />
               Reference Photo (optional)
             </label>
@@ -981,7 +981,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const StatusUpdateModal = statusItem && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-5" onClick={() => setStatusItem(null)}>
+    <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => setStatusItem(null)}>
       <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E4DF] shrink-0">
           <div>
@@ -994,7 +994,7 @@ export default function PartnerB2BProjectsTab({
         </div>
         <div className="px-5 py-4 space-y-4">
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-2">New Status</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-2">New Status</label>
             <div className="grid grid-cols-2 gap-1.5">
               {ALL_ITEM_STATUSES.map((s) => {
                 const cfg = statusCfg(s);
@@ -1012,7 +1012,7 @@ export default function PartnerB2BProjectsTab({
             </div>
           </div>
           <div>
-            <label className="block text-[12px] font-bold tracking-wider capitalize text-[#1A1A1A] mb-1">Notes (optional)</label>
+            <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Notes (optional)</label>
             <textarea value={statusNotes} onChange={(e) => setStatusNotes(e.target.value)} rows={2}
               placeholder="e.g. Received in perfect condition"
               className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none resize-none" />
@@ -1032,7 +1032,7 @@ export default function PartnerB2BProjectsTab({
   ) : null;
 
   const SchedulePromptModal = scheduleItem && typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setScheduleItem(null)}>
+    <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/50 p-4" onClick={() => setScheduleItem(null)}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-[380px] p-6 text-center" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">
           {scheduleMode === "pickup" ? "Ready for pickup!" : "Schedule delivery?"}
@@ -1072,7 +1072,7 @@ export default function PartnerB2BProjectsTab({
 
   // Photo lightbox
   const PhotoLightbox = viewPhotos && viewPhotos.length > 0 ? (
-    <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setViewPhotos(null)}>
+    <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/60" onClick={() => setViewPhotos(null)}>
       <button
         type="button"
         className="absolute top-4 right-4 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
@@ -1312,7 +1312,7 @@ export default function PartnerB2BProjectsTab({
             className="w-full flex items-center justify-between px-4 py-3 bg-[var(--card)] hover:bg-[var(--bg)] transition-colors">
             <div className="flex items-center gap-2.5 min-w-0">
               {isCollapsed ? <ChevronRight className="w-4 h-4 text-[var(--tx3)] shrink-0" /> : <ChevronDown className="w-4 h-4 text-[var(--tx3)] shrink-0" />}
-              <span className="text-[12px] font-bold text-[var(--tx)] capitalize tracking-wide truncate">{group.name}</span>
+              <span className="text-[12px] font-bold text-[var(--tx)] uppercase tracking-wide truncate">{group.name}</span>
               <span className="text-[11px] text-[var(--tx3)] shrink-0">({group.items.length})</span>
             </div>
             <div className="flex items-center gap-2 text-[10px] font-semibold shrink-0 ml-2">
@@ -1532,7 +1532,7 @@ export default function PartnerB2BProjectsTab({
           {/* Vendor Status, compact summary */}
           {inv.length > 0 && (
             <div className="mb-4 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-              <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-3">Vendor Status</div>
+              <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Vendor Status</div>
               <VendorStatusCompactTable inventory={inv} />
             </div>
           )}
@@ -1550,7 +1550,7 @@ export default function PartnerB2BProjectsTab({
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-3 text-center">
                   <div className={`text-[18px] font-bold ${color}`}>{value}</div>
-                  <div className="text-[9px] font-semibold capitalize tracking-wide text-[var(--tx3)] mt-0.5">{label}</div>
+                  <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--tx3)] mt-0.5">{label}</div>
                 </div>
               ))}
             </div>
@@ -1683,7 +1683,7 @@ export default function PartnerB2BProjectsTab({
                   {groups.map((g) => (
                     <div key={g.name}>
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-[11px] font-bold capitalize tracking-wide text-[var(--tx3)]">{g.name}</h3>
+                        <h3 className="text-[11px] font-bold uppercase tracking-wide text-[var(--tx3)]">{g.name}</h3>
                         <span className="text-[10px] text-[var(--tx3)]">({g.items.length})</span>
                       </div>
                       <div className="space-y-2">{g.items.map(renderItemCard)}</div>

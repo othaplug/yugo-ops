@@ -172,7 +172,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
   const panelContent = (
     <>
-      <div className="fixed inset-0 z-[99998] bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="fixed inset-0 z-[99998] bg-black/45" onClick={onClose} />
       <div
         className="fixed top-0 right-0 z-[99999] h-full w-full max-w-[400px] bg-[var(--card,#fff)] border-l border-[var(--brd,#E8E4DF)] shadow-2xl flex flex-col drawer-card"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
@@ -200,7 +200,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
             <div className="p-5 space-y-5">
               {/* Account */}
               <div>
-                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#524D47)] mb-3">Account</div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#524D47)] mb-3">Account</div>
                 <div className="rounded-xl border border-[var(--brd,#E8E4DF)] overflow-hidden">
                   <div className="px-4 py-3.5 flex items-center gap-3 bg-[var(--card,#fff)]">
                     <div className="w-10 h-10 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[13px] font-bold flex-shrink-0">
@@ -213,7 +213,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   </div>
                   <div className="border-t border-[var(--brd,#E8E4DF)] px-4 py-2.5 flex items-center justify-between">
                     <span className="text-[12px] text-[var(--tx3,#524D47)]">{orgName}</span>
-                    <span className="text-[11px] font-semibold text-[#C9A962] capitalize tracking-wide">
+                    <span className="text-[11px] font-semibold text-[#C9A962] uppercase tracking-wide">
                       {VERTICAL_LABELS[orgType] || orgType.replace(/_/g, " ")}
                     </span>
                   </div>
@@ -222,7 +222,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Theme */}
               <div>
-                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#524D47)] mb-3">Theme</div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#524D47)] mb-3">Theme</div>
                 <div className="flex gap-2">
                   {([
                     { key: "light" as Theme, label: "Light", PhIcon: Sun },
@@ -247,7 +247,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Menu items */}
               <div>
-                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#524D47)] mb-3">Manage</div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#524D47)] mb-3">Manage</div>
                 <div className="space-y-1">
                   {[
                     { key: "profile" as const, PhIcon: UserCircle, label: "Edit Profile", desc: "Name, email, phone" },
@@ -274,7 +274,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
 
               {/* Quick links */}
               <div>
-                <div className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3,#524D47)] mb-3">Quick Links</div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#524D47)] mb-3">Quick Links</div>
                 <div className="space-y-1">
                   <a
                     href="/update-password"
@@ -325,7 +325,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
           {section === "profile" && (
             <div className="p-5 space-y-4">
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Contact Name</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] uppercase tracking-wider block mb-1.5">Contact Name</label>
                 <input
                   value={profile.contact_name}
                   onChange={(e) => setProfile((p) => ({ ...p, contact_name: e.target.value }))}
@@ -333,7 +333,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Business Email</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] uppercase tracking-wider block mb-1.5">Business Email</label>
                 <input
                   value={profile.email}
                   onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
@@ -342,7 +342,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Phone</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] uppercase tracking-wider block mb-1.5">Phone</label>
                 <input
                   value={profile.phone}
                   onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
@@ -352,7 +352,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               </div>
               <div className="pt-2">
                 <div className="rounded-xl bg-[var(--hover,#F5F3F0)] border border-[var(--brd,#E8E4DF)] px-4 py-3">
-                  <div className="text-[10px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider mb-0.5">Organization</div>
+                  <div className="text-[10px] font-semibold text-[var(--tx3,#524D47)] uppercase tracking-wider mb-0.5">Organization</div>
                   <div className="text-[var(--text-base)] font-semibold text-[var(--tx,#1A1A1A)]">{orgName}</div>
                   <div className="text-[12px] text-[var(--tx3,#524D47)]">
                     {VERTICAL_LABELS[orgType] || orgType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} · {userEmail}
@@ -442,7 +442,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
             <div className="p-5 space-y-4">
               <p className="text-[12px] text-[var(--tx3,#524D47)]">Set defaults used when scheduling new deliveries.</p>
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Default Time Slot</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] uppercase tracking-wider block mb-1.5">Default Time Slot</label>
                 <select
                   value={deliveryPrefs.default_time_slot}
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_time_slot: e.target.value }))}
@@ -486,7 +486,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               </div>
               {deliveryPrefs.customer_notifications && (
                 <div>
-                  <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Custom notification message</label>
+                  <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] uppercase tracking-wider block mb-1.5">Custom notification message</label>
                   <input
                     type="text"
                     value={deliveryPrefs.notification_message || ""}
@@ -497,7 +497,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 </div>
               )}
               <div>
-                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] capitalize tracking-wider block mb-1.5">Default Special Handling Note</label>
+                <label className="text-[11px] font-semibold text-[var(--tx3,#524D47)] uppercase tracking-wider block mb-1.5">Default Special Handling Note</label>
                 <textarea
                   value={deliveryPrefs.default_special_handling}
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_special_handling: e.target.value }))}

@@ -48,13 +48,13 @@ function isDeliveryInProgress(status: string | null | undefined, stage: string |
   return IN_PROGRESS_STATUSES.includes(s) || IN_PROGRESS_STATUSES.includes(st);
 }
 const selectCls = `${inputCls} appearance-none`;
-const labelCls = "block text-[9px] font-bold tracking-[0.1em] capitalize text-[var(--tx3)] mb-1.5";
+const labelCls = "block text-[9px] font-bold tracking-[0.1em] uppercase text-[var(--tx3)] mb-1.5";
 
 function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
     <div className="flex items-center gap-2 pb-2 border-b border-[var(--brd)]/30 mb-3">
       <Icon className="w-3.5 h-3.5 text-[var(--gold)]" />
-      <span className="text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx2)]">{label}</span>
+      <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx2)]">{label}</span>
     </div>
   );
 }

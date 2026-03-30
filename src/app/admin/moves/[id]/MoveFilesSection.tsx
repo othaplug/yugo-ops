@@ -101,7 +101,7 @@ function FileGroup({
         ) : (
           <ChevronRight className="w-[13px] h-[13px] text-[var(--tx3)] shrink-0" />
         )}
-        <span className="text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]">
+        <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]">
           {label}
         </span>
         <span className="text-[9px] text-[var(--tx3)] ml-1">({files.length})</span>
@@ -346,7 +346,7 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
       {/* Header */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <h3 className="font-heading text-[11px] font-bold tracking-wide capitalize text-[var(--tx3)]">
+        <h3 className="font-heading text-[11px] font-bold tracking-wide uppercase text-[var(--tx3)]">
           Files & Media
         </h3>
         <div className="flex items-center gap-2">

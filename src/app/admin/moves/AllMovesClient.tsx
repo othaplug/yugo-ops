@@ -532,7 +532,7 @@ export default function AllMovesClient({
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">All Moves</h1>
         </div>
         <div className="hidden sm:flex items-center gap-2">
@@ -670,7 +670,7 @@ export default function AllMovesClient({
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span className="text-[10px] font-mono text-[var(--tx3)]">{q.quote_id}</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold capitalize tracking-wide ${badge.bg} ${badge.text}`}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${badge.bg} ${badge.text}`}
                     >
                       {toTitleCase(q.status)}
                     </span>

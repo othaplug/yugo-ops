@@ -112,7 +112,7 @@ function AddItemForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-[var(--bg)] rounded-xl p-4 border border-[var(--brd)]/50 space-y-3">
-      <div className="text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/60 mb-2">Add Item</div>
+      <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 mb-2">Add Item</div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
@@ -258,7 +258,7 @@ function ConditionReportForm({
 
   return (
     <div className="mt-3 bg-[var(--bg)] rounded-xl p-3 border border-[var(--brd)]/40 space-y-3">
-      <div className="text-[10px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/60">
+      <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60">
         {phase === "pre" ? "Pre-Transport Condition" : "Post-Transport Condition"}
       </div>
       <div className="flex flex-wrap gap-2">
@@ -341,7 +341,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Artwork Items</div>
+          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Artwork Items</div>
           <div className="flex items-center gap-2 text-[11px] text-[var(--tx3)]">
             <span>{items.length} item{items.length !== 1 ? "s" : ""}</span>
             {conditionedCount > 0 && (
@@ -441,25 +441,25 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
                       {item.insurance_value && (
                         <div>
-                          <p className="text-[9px] font-bold capitalize text-[var(--tx3)]/60">Insurance Value</p>
+                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/60">Insurance Value</p>
                           <p className="font-semibold text-[var(--tx)]">{item.insurance_value}</p>
                         </div>
                       )}
                       {item.serial_number && (
                         <div>
-                          <p className="text-[9px] font-bold capitalize text-[var(--tx3)]/60">Serial / Reg #</p>
+                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/60">Serial / Reg #</p>
                           <p className="font-semibold text-[var(--tx)]">{item.serial_number}</p>
                         </div>
                       )}
                       {item.weight_kg != null && (
                         <div>
-                          <p className="text-[9px] font-bold capitalize text-[var(--tx3)]/60">Weight</p>
+                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/60">Weight</p>
                           <p className="font-semibold text-[var(--tx)]">{item.weight_kg} kg</p>
                         </div>
                       )}
                       {item.handling_notes && (
                         <div className="col-span-2 sm:col-span-3">
-                          <p className="text-[9px] font-bold capitalize text-[var(--tx3)]/60">Handling Notes</p>
+                          <p className="text-[9px] font-bold uppercase text-[var(--tx3)]/60">Handling Notes</p>
                           <p className="text-[var(--tx2)]">{item.handling_notes}</p>
                         </div>
                       )}
@@ -468,7 +468,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                     {/* Condition report summary */}
                     <div className="flex flex-wrap gap-2 pt-1">
                       <div className="flex-1 min-w-[160px] bg-[var(--bg)] rounded-lg p-3">
-                        <div className="text-[9px] font-bold capitalize text-[var(--tx3)]/60 mb-1">Pre-Transport</div>
+                        <div className="text-[9px] font-bold uppercase text-[var(--tx3)]/60 mb-1">Pre-Transport</div>
                         {item.pre_condition ? (
                           <>
                             <ConditionDot rating={item.pre_condition} />
@@ -490,7 +490,7 @@ export default function GalleryItemsPanel({ projectId }: { projectId: string }) 
                         </button>
                       </div>
                       <div className="flex-1 min-w-[160px] bg-[var(--bg)] rounded-lg p-3">
-                        <div className="text-[9px] font-bold capitalize text-[var(--tx3)]/60 mb-1">Post-Transport</div>
+                        <div className="text-[9px] font-bold uppercase text-[var(--tx3)]/60 mb-1">Post-Transport</div>
                         {item.post_condition ? (
                           <>
                             <ConditionDot rating={item.post_condition} />

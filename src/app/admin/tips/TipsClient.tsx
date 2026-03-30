@@ -97,7 +97,7 @@ export default function TipsClient({
 
   return (
     <div className="max-w-[1000px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
-      <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Finance</p>
+      <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
       <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none mb-8">Tips</h1>
 
       <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
@@ -134,15 +134,15 @@ export default function TipsClient({
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
                     <p className="text-[15px] font-bold text-[var(--gold)]">{formatCurrency(crew.total)}</p>
-                    <p className="text-[9px] text-[var(--tx3)] capitalize tracking-wide">Total</p>
+                    <p className="text-[9px] text-[var(--tx3)] uppercase tracking-wide">Total</p>
                   </div>
                   <div>
                     <p className="text-[15px] font-bold text-[var(--tx)]">{formatCurrency(crew.avg)}</p>
-                    <p className="text-[9px] text-[var(--tx3)] capitalize tracking-wide">Avg</p>
+                    <p className="text-[9px] text-[var(--tx3)] uppercase tracking-wide">Avg</p>
                   </div>
                   <div>
                     <p className="text-[15px] font-bold text-[#22c55e]">{formatCurrency(crew.highest)}</p>
-                    <p className="text-[9px] text-[var(--tx3)] capitalize tracking-wide">Best</p>
+                    <p className="text-[9px] text-[var(--tx3)] uppercase tracking-wide">Best</p>
                   </div>
                 </div>
                 {/* Proportion bar */}

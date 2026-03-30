@@ -56,7 +56,7 @@ function OpenNavFromQuery({ setNavOpen }: { setNavOpen: Dispatch<SetStateAction<
 
 function CrewLocationStatusPill({ locationPermission }: { locationPermission: GeoPermissionState }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--brd)]/50 bg-[var(--card)]/35 px-2.5 py-0.5 text-[10px] font-bold capitalize tracking-[0.06em] text-[var(--tx3)]/75">
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--brd)]/50 bg-[var(--card)]/35 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--tx3)]/75">
       <span className="shrink-0">Location</span>
       <span className="h-2.5 w-px shrink-0 bg-[var(--brd)]/55" aria-hidden />
       <span
@@ -489,7 +489,7 @@ export default function CrewJobPage({
             <CaretLeft size={15} weight="regular" />
             Jobs
           </Link>
-          <span className="text-[10px] font-bold capitalize tracking-wider px-2 py-0.5 rounded-full" style={{ background: "#0D948820", color: "#0D9488" }}>
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "#0D948820", color: "#0D9488" }}>
             Day Rate
           </span>
         </div>
@@ -607,7 +607,7 @@ export default function CrewJobPage({
       <div className="mb-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0">
-            <p className="text-[9px] font-bold tracking-[0.15em] capitalize text-[var(--tx3)]/60 mb-0.5">{job.jobTypeLabel}</p>
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/60 mb-0.5">{job.jobTypeLabel}</p>
             <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] leading-tight truncate">{job.clientName}</h1>
             <p className="text-[10px] text-[var(--tx3)] mt-0.5 font-mono tracking-wide">{job.jobId}</p>
           </div>
@@ -634,7 +634,7 @@ export default function CrewJobPage({
             {/* Address column */}
             <div className="flex flex-col justify-between min-w-0 flex-1 gap-3">
               <div className="min-w-0">
-                <p className="text-[9px] font-semibold tracking-[0.12em] capitalize text-[var(--tx3)]/50 mb-0.5">Pickup</p>
+                <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup</p>
                 <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.fromAddress}</p>
                 {fromAccessDisplay && (
                   <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
@@ -644,7 +644,7 @@ export default function CrewJobPage({
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-[9px] font-semibold tracking-[0.12em] capitalize text-[var(--tx3)]/50 mb-0.5">Drop-off</p>
+                <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Drop-off</p>
                 <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.toAddress}</p>
                 {toAccessDisplay && (
                   <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
@@ -664,7 +664,7 @@ export default function CrewJobPage({
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`relative flex-1 px-3 py-2.5 text-[11px] font-bold tracking-[0.10em] capitalize transition-colors duration-150 whitespace-nowrap touch-manipulation ${
+            className={`relative flex-1 px-3 py-2.5 text-[11px] font-bold tracking-[0.10em] uppercase transition-colors duration-150 whitespace-nowrap touch-manipulation ${
               activeTab === t.id
                 ? "text-[var(--gold)]"
                 : "text-[var(--tx3)]/45 hover:text-[var(--tx3)]"
@@ -760,7 +760,7 @@ export default function CrewJobPage({
           {/* Optional note — attached to noteInputRef; sent with the next checkpoint API call */}
           {session?.isActive && !isCompleted && (
             <div className="px-2 space-y-1.5">
-              <label htmlFor="crew-checkpoint-note" className="block text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/50">
+              <label htmlFor="crew-checkpoint-note" className="block text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/50">
                 Note for next update (optional)
               </label>
               <input
@@ -854,7 +854,7 @@ export default function CrewJobPage({
           <div>
             {/* Header */}
             <div className="flex items-center justify-between pb-2">
-              <p className="text-[9px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/50">Timeline</p>
+              <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50">Timeline</p>
               {session?.startedAt && (
                 <span className="text-[9px] text-[var(--tx3)]/50 tabular-nums">
                   Started {formatTime(session.startedAt, { hour: "numeric", minute: "2-digit" })}
@@ -963,7 +963,7 @@ export default function CrewJobPage({
                             {getStatusLabel(s)}
                           </span>
                           {state === "act" && (
-                            <span className="text-[9px] font-bold text-[var(--gold)]/70 capitalize tracking-widest block mt-0.5">Now</span>
+                            <span className="text-[9px] font-bold text-[var(--gold)]/70 uppercase tracking-widest block mt-0.5">Now</span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -993,7 +993,7 @@ export default function CrewJobPage({
           {/* Dispatch notes */}
           {job.internalNotes && (
             <div className="rounded-2xl bg-[var(--gold)]/5 p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] capitalize text-[var(--gold)]/60 mb-2">Dispatch Notes</p>
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--gold)]/60 mb-2">Dispatch Notes</p>
               <p className="text-[12px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.internalNotes}</p>
             </div>
           )}
@@ -1042,7 +1042,7 @@ export default function CrewJobPage({
           {/* Project context banner */}
           {job.projectContext && (
             <div className="mx-0 mb-4 px-4 py-3 rounded-2xl border border-[var(--gold)]/20 bg-[var(--gold)]/5">
-              <p className="text-[9px] font-bold tracking-[0.15em] capitalize text-[var(--gold)]/60 mb-0.5">Part of Project</p>
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--gold)]/60 mb-0.5">Part of Project</p>
               <p className="text-[13px] font-semibold text-[var(--tx)]">
                 {job.projectContext.projectNumber}, {job.projectContext.projectName}
               </p>
@@ -1053,7 +1053,7 @@ export default function CrewJobPage({
           )}
           {(job.scheduledDate || job.arrivalWindow) && (
             <div className="p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] capitalize text-[var(--tx3)]/50 mb-2">Schedule</p>
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-2">Schedule</p>
               {job.scheduledDate && (
                 <p className="text-[var(--text-base)] font-semibold text-[var(--tx)]">
                   {formatDate(job.scheduledDate + "T12:00:00", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
@@ -1064,24 +1064,24 @@ export default function CrewJobPage({
             </div>
           )}
           <div className="p-4">
-            <p className="text-[9px] font-bold tracking-[0.15em] capitalize text-[var(--tx3)]/50 mb-1.5">Pickup</p>
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">Pickup</p>
             <p className="text-[13px] font-semibold text-[var(--tx)]">{job.fromAddress}</p>
             {fromAccessDisplay && <p className="text-[11px] text-[var(--tx3)] mt-1">Access: {fromAccessDisplay}</p>}
           </div>
           <div className="p-4">
-            <p className="text-[9px] font-bold tracking-[0.15em] capitalize text-[var(--tx3)]/50 mb-1.5">Drop-off</p>
+            <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">Drop-off</p>
             <p className="text-[13px] font-semibold text-[var(--tx)]">{job.toAddress}</p>
             {toAccessDisplay && <p className="text-[11px] text-[var(--tx3)] mt-1">Access: {toAccessDisplay}</p>}
           </div>
           {job.accessNotes && (
             <div className="p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] capitalize text-[var(--tx3)]/50 mb-1.5">Access Notes</p>
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-1.5">Access Notes</p>
               <p className="text-[12px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.accessNotes}</p>
             </div>
           )}
           {job.crewMembers && job.crewMembers.length > 0 && (
             <div className="p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] capitalize text-[var(--tx3)]/50 mb-3">Crew ({job.crewMembers.length})</p>
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50 mb-3">Crew ({job.crewMembers.length})</p>
               <div className="space-y-2.5">
                 {job.crewMembers.map((m, i) => (
                   <div key={i} className="flex items-center gap-2.5">
@@ -1275,7 +1275,7 @@ export default function CrewJobPage({
             ) : (
               <>
                 <div className="mb-4">
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] capitalize tracking-wider mb-1">Issue type</label>
+                  <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">Issue type</label>
                   <select
                     value={reportType}
                     onChange={(e) => setReportType(e.target.value)}
@@ -1289,7 +1289,7 @@ export default function CrewJobPage({
                   </select>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] capitalize tracking-wider mb-1">Description</label>
+                  <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">Description</label>
                   <textarea
                     value={reportDesc}
                     onChange={(e) => setReportDesc(e.target.value)}

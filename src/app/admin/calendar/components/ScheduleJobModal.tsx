@@ -41,7 +41,7 @@ const BLOCK_REASONS = [
 const inputCls =
   "w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--brd)]/70 rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)]/60 focus:ring-2 focus:ring-[var(--gold)]/10 outline-none transition-all duration-150";
 const labelCls =
-  "flex items-center gap-1.5 text-[11px] font-semibold tracking-widest capitalize text-[var(--tx3)] mb-2";
+  "flex items-center gap-1.5 text-[11px] font-semibold tracking-widest uppercase text-[var(--tx2)] mb-2";
 
 export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDate, prefillCrewId, prefillStart, crews }: Props) {
   const [jobType, setJobType] = useState<JobType>("move");
@@ -152,7 +152,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
       aria-labelledby="schedule-job-title"
     >
       <div
-        className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm modal-overlay"
+        className="fixed inset-0 z-0 bg-black/60 modal-overlay"
         aria-hidden
         onClick={onClose}
       />
@@ -165,13 +165,13 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
         <div className="px-7 pt-7 pb-6 border-b border-[var(--brd)]/60 shrink-0">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[11px] font-semibold tracking-widest capitalize text-[var(--gold)] mb-1.5">
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--gold)] mb-1.5">
                 Calendar
               </p>
               <h2 id="schedule-job-title" className="font-heading text-[22px] font-bold text-[var(--tx)] leading-tight">
                 Schedule Job
               </h2>
-              <p className="text-[13px] text-[var(--tx3)] mt-1">
+              <p className="text-[13px] text-[var(--tx2)] mt-1">
                 Assign a job or block time for a crew
               </p>
             </div>
@@ -204,10 +204,12 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
                       : "border-[var(--brd)]/70 hover:border-[var(--brd)] hover:bg-[var(--bg)]/40"
                   }`}
                 >
-                  <p className={`text-[13px] font-semibold mb-0.5 ${jobType === opt.id ? "text-[var(--tx)]" : "text-[var(--tx2)]"}`}>
+                  <p className="text-[13px] font-semibold mb-0.5 text-[var(--tx)]">
                     {opt.label}
                   </p>
-                  <p className="text-[10px] text-[var(--tx3)] leading-tight">{opt.description}</p>
+                  <p className="text-[11px] leading-snug text-[var(--tx2)]">
+                    {opt.description}
+                  </p>
                 </button>
               ))}
             </div>

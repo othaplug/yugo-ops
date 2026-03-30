@@ -6,6 +6,7 @@ import { isMoveIdUuid } from "@/lib/move-code";
 import { isFeatureEnabled, getFeatureConfig } from "@/lib/platform-settings";
 import { parseDateOnly } from "@/lib/date-format";
 import TrackMoveClient from "./TrackMoveClient";
+import { pickupLocationsFromQuote, abbreviateLocationRows } from "@/lib/quotes/quote-address-display";
 
 export const metadata: Metadata = {
   title: "Track Your Move",
@@ -143,6 +144,22 @@ export default async function TrackMovePage({
   const pendingInventoryCr = pendingIcRows?.[0] ?? null;
   const crewChangeRequest = crewPendingRows?.[0] ?? null;
 
+  let quotePickupStops: { address: string; access: string | null }[] | null = null;
+  if (move.quote_id) {
+    const { data: originQuote } = await supabase
+      .from("quotes")
+      .select("factors_applied, from_address, from_access")
+      .eq("id", move.quote_id)
+      .maybeSingle();
+    if (originQuote) {
+      const fac = originQuote.factors_applied as Record<string, unknown> | null;
+      const rows = abbreviateLocationRows(
+        pickupLocationsFromQuote(fac, originQuote.from_address, originQuote.from_access),
+      );
+      if (rows.length > 1) quotePickupStops = rows;
+    }
+  }
+
   const st = String(move.status || "").toLowerCase();
   // minH=0 means no time restriction (migration sets this to 0)
   const minH = parseInt(icCfg.change_request_min_hours_before_move, 10);
@@ -199,6 +216,7 @@ export default async function TrackMovePage({
         client_response: string | null;
       } | null}
       binOrder={binOrder}
+      quotePickupStops={quotePickupStops}
     />
   );
 }

@@ -66,7 +66,7 @@ export default function EquipmentDashboard() {
       </div>
       <div className="p-4 space-y-6">
         <div>
-          <p className="text-[10px] font-bold capitalize tracking-widest text-[var(--tx3)] mb-2">Fleet overview</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--tx3)] mb-2">Fleet overview</p>
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
@@ -110,7 +110,7 @@ export default function EquipmentDashboard() {
         </div>
 
         <div>
-          <p className="text-[10px] font-bold capitalize tracking-widest text-[var(--tx3)] mb-2">Items below assigned qty (all trucks)</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--tx3)] mb-2">Items below assigned qty (all trucks)</p>
           <ul className="space-y-1 text-[12px] text-[var(--tx)]">
             {restock.length === 0 ? (
               <li className="text-[var(--tx3)]">None flagged.</li>
@@ -126,7 +126,7 @@ export default function EquipmentDashboard() {
         </div>
 
         <div>
-          <p className="text-[10px] font-bold capitalize tracking-widest text-[var(--tx3)] mb-2">Loss history (30 days)</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--tx3)] mb-2">Loss history (30 days)</p>
           <p className="text-[12px] text-[var(--tx2)] mb-2">
             Total estimated: <span className="font-semibold text-[var(--tx)]">${lossTotal.toFixed(2)}</span>
             {avgCostPerJob != null && checks30d != null && checks30d > 0 ? (

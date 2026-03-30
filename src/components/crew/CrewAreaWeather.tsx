@@ -47,7 +47,7 @@ export default function CrewAreaWeather() {
       <div className="rounded-2xl bg-[var(--bg)]/30 px-4 py-3">
         <div className="flex items-center gap-2 mb-1">
           <CloudSun size={18} className="text-[var(--gold)]" weight="duotone" aria-hidden />
-          <p className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/70">Today&apos;s outlook</p>
+          <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/70">Today&apos;s outlook</p>
         </div>
         <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
           Forecast isn&apos;t available right now. When you have jobs on the schedule, you&apos;ll see conditions for each stop here too.
@@ -63,7 +63,7 @@ export default function CrewAreaWeather() {
       <div className="px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <CloudSun size={18} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
-          <p className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/70 truncate">Today&apos;s outlook</p>
+          <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/70 truncate">Today&apos;s outlook</p>
         </div>
         <span className="text-[9px] font-medium text-[var(--tx3)] truncate max-w-[140px]" title={label}>
           {label}
@@ -79,7 +79,7 @@ export default function CrewAreaWeather() {
             <p className="text-[10px] text-[var(--tx2)] leading-snug">{alert}</p>
           </div>
         )}
-        <p className="capitalize text-[11px] text-[var(--tx3)] mb-2">{brief.conditionsSummary}</p>
+        <p className="uppercase text-[11px] text-[var(--tx3)] mb-2">{brief.conditionsSummary}</p>
         <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[10px] text-[var(--tx2)]">
           <span className="inline-flex items-center gap-1">
             <Thermometer size={12} className="text-orange-300/90" aria-hidden />

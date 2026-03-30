@@ -220,7 +220,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           This person will be able to log in to the Crew Portal (tablet/phone) with their phone and PIN. Select from roster members who don&apos;t yet have access.
         </p>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Team member</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team member</label>
           <select
             value={name}
             onChange={(e) => {
@@ -241,7 +241,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           )}
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Phone (for login)</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone (for login)</label>
           <input
             ref={phoneInput.ref}
             type="tel"
@@ -270,7 +270,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           )}
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">PIN (6 digits)</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">PIN (6 digits)</label>
           <input
             type="password"
             inputMode="numeric"
@@ -282,7 +282,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Team</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team</label>
           <select
             value={teamId}
             onChange={(e) => setTeamId(e.target.value)}
@@ -295,7 +295,7 @@ export default function AddPortalAccessModal({ open, onClose, teams, crewPortalM
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Role</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Role</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as "lead" | "specialist" | "driver")}

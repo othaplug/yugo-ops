@@ -189,7 +189,7 @@ export default function TrackTipClient({
   if (success) {
     if (asModal) {
       return (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/45">
           <div className="rounded-2xl bg-white shadow-2xl border p-6 max-w-sm w-full" style={{ borderColor: `${FOREST}15` }}>
             {successContent}
           </div>
@@ -303,7 +303,7 @@ export default function TrackTipClient({
           onError={() => setError("Failed to load payment SDK. Please refresh.")}
         />
         <div
-          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/50 backdrop-blur-md"
+          className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/55"
           onClick={(e) => e.target === e.currentTarget && onClose?.()}
         >
           <div

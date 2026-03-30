@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowsClockwise as RefreshCw, PaperPlaneTilt as Send, CheckCircle, CircleNotch as Loader2, TrendUp as TrendingUp, Warning } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
+import { getVisibleAddons, ESTATE_ADDON_UI_LINES } from "@/lib/quotes/addon-visibility";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -74,7 +75,7 @@ function formatCurrency(n: number): string {
 
 function SectionDivider({ label }: { label: string }) {
   return (
-    <div className="text-[10px] font-semibold text-[var(--tx3)] tracking-widest capitalize border-t border-[var(--brd)] pt-4 mt-1">
+    <div className="text-[10px] font-semibold text-[var(--tx3)] tracking-widest uppercase border-t border-[var(--brd)] pt-4 mt-1">
       {label}
     </div>
   );
@@ -237,11 +238,21 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   // Resolve previous quote price: essential (current) or curated/essentials (legacy) tier, or custom_price for non-tiered
   const oldPrice = oq.tiers?.essential?.price ?? oq.tiers?.curated?.price ?? oq.tiers?.essentials?.price ?? (typeof oq.custom_price === "number" ? oq.custom_price : null) ?? 0;
 
+  const tierForAddons = useMemo(() => {
+    const r = (oq.recommended_tier ?? "signature").toString().toLowerCase().trim();
+    return r === "essential" || r === "signature" || r === "estate" ? r : "signature";
+  }, [oq.recommended_tier]);
+
   // ── Addon helpers ─────────────────────────────────────────
-  const applicableAddons = useMemo(
-    () => allAddons.filter((a) => !a.applicable_service_types?.length || a.applicable_service_types.includes(serviceType)),
-    [allAddons, serviceType],
-  );
+  const applicableAddons = useMemo(() => {
+    const base = allAddons.filter(
+      (a) => !a.applicable_service_types?.length || a.applicable_service_types.includes(serviceType),
+    );
+    if (serviceType === "local_move" || serviceType === "long_distance") {
+      return getVisibleAddons(base, tierForAddons);
+    }
+    return base;
+  }, [allAddons, serviceType, tierForAddons]);
   const popularAddons = useMemo(() => applicableAddons.filter((a) => a.is_popular), [applicableAddons]);
   const otherAddons = useMemo(() => applicableAddons.filter((a) => !a.is_popular), [applicableAddons]);
 
@@ -329,6 +340,16 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
       }
       if (clientBoxCount !== "" && clientBoxCount != null) payload.client_box_count = Number(clientBoxCount);
     }
+    if (serviceType === "local_move" || serviceType === "long_distance" || serviceType === "white_glove") {
+      const extraPick = extraFromStops
+        .map((s) => ({ address: s.address.trim() }))
+        .filter((x) => x.address.length > 0);
+      const extraDrop = extraToStops
+        .map((s) => ({ address: s.address.trim() }))
+        .filter((x) => x.address.length > 0);
+      if (extraPick.length > 0) payload.additional_pickup_addresses = extraPick;
+      if (extraDrop.length > 0) payload.additional_dropoff_addresses = extraDrop;
+    }
 
     if (serviceType === "office_move" && inventoryItems.length > 0) {
       payload.inventory_items = inventoryItems.map((i) => ({
@@ -349,7 +370,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
     itemCategory, itemWeightClass, assemblyNeeded, stairCarry, stairFlights, declaredValue,
     projectType, timelineHours, customCratingPieces, climateControl, specialtyItems,
     inventoryItems, clientBoxCount, selectedAddons,
-    contact, oq, factors,
+    contact, oq, factors, extraFromStops, extraToStops,
   ]);
 
   // ── Debounced live preview ────────────────────────────────
@@ -459,7 +480,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const livePrice = livePreview?.tiers?.essential?.price ?? livePreview?.tiers?.curated?.price ?? livePreview?.tiers?.essentials?.price ?? livePreview?.custom_price?.price ?? null;
 
   const inputClass = "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
-  const labelClass = "block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1";
+  const labelClass = "block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1";
 
   if (done) {
     return (
@@ -494,7 +515,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
           <ArrowLeft size={18} weight="regular" />
         </button>
         <div>
-          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest capitalize">Re-Quote</div>
+          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">Re-Quote</div>
           <h1 className="text-lg font-bold text-[var(--tx)]">
             Edit Quote {oq.quote_id}
             <span className="text-sm font-normal text-[var(--tx3)] ml-2">v{oq.version || 1}</span>
@@ -507,7 +528,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
       {/* Current quote summary */}
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 mb-5">
-        <div className="text-[9px] font-bold text-[var(--tx3)] tracking-widest capitalize mb-3">Current Quote</div>
+        <div className="text-[9px] font-bold text-[var(--tx3)] tracking-widest uppercase mb-3">Current Quote</div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <div className="text-[var(--tx3)] text-[11px]">Client</div>
@@ -523,7 +544,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
           </div>
           <div>
             <div className="text-[var(--tx3)] text-[11px]">Status</div>
-            <div className="text-[var(--tx)] font-medium capitalize">{oq.status}</div>
+            <div className="text-[var(--tx)] font-medium uppercase">{oq.status}</div>
           </div>
         </div>
       </div>
@@ -536,7 +557,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
               ? <Loader2 size={13} className="animate-spin text-[var(--gold)]" />
               : <TrendingUp size={13} className="text-[var(--gold)]" />
             }
-            <span className="text-[10px] font-bold text-[var(--gold)] tracking-widest capitalize">
+            <span className="text-[10px] font-bold text-[var(--gold)] tracking-widest uppercase">
               {previewLoading ? "Recalculating…" : "Live Price Preview"}
             </span>
             {livePreview?.distance_km && !previewLoading && (
@@ -556,7 +577,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                     const isEssential = tier === "essential";
                     return (
                       <div key={tier} className={`rounded-lg p-3 text-center border ${isEssential ? "border-[var(--gold)]/40 bg-[var(--gold)]/8" : "border-[var(--brd)] bg-[var(--bg)]"}`}>
-                        <div className="text-[9px] text-[var(--gold)] font-semibold capitalize mb-0.5">{tier}</div>
+                        <div className="text-[9px] text-[var(--gold)] font-semibold uppercase mb-0.5">{tier}</div>
                         <div className="text-[16px] font-bold text-[var(--tx)]">{formatCurrency(t.price)}</div>
                         <div className="text-[9px] text-[var(--tx3)] mt-0.5">+{formatCurrency(t.tax)} HST</div>
                       </div>
@@ -626,7 +647,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
       {/* Edit fields */}
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 mb-6 space-y-5">
-        <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest capitalize">Update Details</div>
+        <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase">Update Details</div>
 
         {/* ── Core fields ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -793,7 +814,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                 </select>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-bold capitalize text-[var(--tx3)] shrink-0">Stair Carry</span>
+                <span className="text-[9px] font-bold uppercase text-[var(--tx3)] shrink-0">Stair Carry</span>
                 <button type="button" role="switch" aria-checked={stairCarry} onClick={() => setStairCarry(!stairCarry)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${stairCarry ? "bg-[var(--gold)]" : "bg-[var(--brd)]"}`}>
                   <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${stairCarry ? "translate-x-4" : ""}`} />
                 </button>
@@ -851,7 +872,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                 const qty = existing?.qty ?? 0;
                 return (
                   <div key={type} className="flex items-center justify-between rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]">
-                    <span className="text-[11px] text-[var(--tx)] capitalize">{type.replace(/_/g, " ")}</span>
+                    <span className="text-[11px] text-[var(--tx)] uppercase">{type.replace(/_/g, " ")}</span>
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
@@ -917,6 +938,13 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
         {applicableAddons.length > 0 && (
           <div>
             <SectionDivider label="Add-Ons" />
+            {tierForAddons === "estate" && (serviceType === "local_move" || serviceType === "long_distance") && (
+              <div className="mt-2 mb-3 rounded-lg border border-[var(--gold)]/25 bg-[var(--gold)]/5 p-3 text-[10px] text-[var(--tx2)] space-y-1">
+                <p className="font-bold tracking-wide text-[var(--tx)]">{ESTATE_ADDON_UI_LINES[0]}</p>
+                <p className="leading-snug">{ESTATE_ADDON_UI_LINES[1]}</p>
+                <p className="font-semibold text-[var(--tx)] pt-0.5">{ESTATE_ADDON_UI_LINES[2]}</p>
+              </div>
+            )}
             <div className="mt-3 space-y-2">
               {popularAddons.map((addon) => {
                 const sel = selectedAddons.get(addon.id);
@@ -939,7 +967,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                         <div className="flex items-center gap-2">
                           <span className="text-[12px] font-medium text-[var(--tx)] group-hover:text-[var(--gold)] transition-colors">{addon.name}</span>
                           {addon.is_popular && (
-                            <span className="text-[10px] font-bold capitalize px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
+                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">Popular</span>
                           )}
                           <span className="text-[11px] text-[var(--tx3)] ml-auto shrink-0">{displayPrice}</span>
                         </div>
@@ -1078,7 +1106,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
       {/* Generated result */}
       {newQuoteResult && (
         <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-5 mb-6 mt-6">
-          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest capitalize mb-3">New Quote Generated</div>
+          <div className="text-[9px] font-bold text-[var(--gold)] tracking-widest uppercase mb-3">New Quote Generated</div>
           <div className="flex items-center gap-6 mb-4 flex-wrap">
             <div>
               <div className="text-[11px] text-[var(--tx3)]">Quote ID</div>
@@ -1103,7 +1131,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
                 if (!t) return null;
                 return (
                   <div key={tier} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3 text-center">
-                    <div className="text-[10px] text-[var(--gold)] font-semibold capitalize">{t.label || tier}</div>
+                    <div className="text-[10px] text-[var(--gold)] font-semibold uppercase">{t.label || tier}</div>
                     <div className="text-lg font-bold text-[var(--tx)] mt-1">{formatCurrency(t.price)}</div>
                   </div>
                 );
@@ -1126,7 +1154,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
           {newQuoteResult.addons?.items?.length > 0 && (
             <div className="mb-4 space-y-1">
-              <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]">Add-Ons</div>
+              <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Add-Ons</div>
               {newQuoteResult.addons.items.map((item: any, i: number) => (
                 <div key={i} className="flex items-center justify-between text-[11px]">
                   <span className="text-[var(--tx2)]">{item.name}</span>

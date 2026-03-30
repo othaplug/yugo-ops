@@ -193,7 +193,7 @@ export default function InventoryChangeRequestModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100001] flex items-center justify-center backdrop-blur-md bg-black/40 p-3">
+    <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/50 p-3">
       <div
         className="w-full max-w-md rounded-2xl border bg-white shadow-xl flex flex-col"
         style={{ borderColor: `${FOREST}18`, maxHeight: "min(92dvh, 640px)" }}
@@ -238,7 +238,7 @@ export default function InventoryChangeRequestModal({
                 </ul>
               )}
               <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: `${GOLD}30`, backgroundColor: `${GOLD}08` }}>
-                <div className="text-[9px] font-bold capitalize tracking-wider opacity-60" style={{ color: FOREST }}>
+                <div className="text-[9px] font-bold uppercase tracking-wider opacity-60" style={{ color: FOREST }}>
                   Can&apos;t find your item?
                 </div>
                 <input
@@ -271,7 +271,7 @@ export default function InventoryChangeRequestModal({
               </div>
               {added.length > 0 && (
                 <div>
-                  <div className="text-[9px] font-bold capitalize tracking-wider opacity-50 mb-2" style={{ color: FOREST }}>
+                  <div className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-2" style={{ color: FOREST }}>
                     Adding
                   </div>
                   <ul className="space-y-2">

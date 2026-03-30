@@ -91,7 +91,7 @@ export default function MoveClientsTableBody({ clients }: { clients: MoveClient[
               })()}
             </div>
           </td>
-          <td className="px-3 py-2 text-[10px] capitalize border-b border-[var(--brd)]">{c.move_type === "office" ? "Commercial" : "Residential"}</td>
+          <td className="px-3 py-2 text-[10px] uppercase border-b border-[var(--brd)]">{c.move_type === "office" ? "Commercial" : "Residential"}</td>
           <td className="hidden sm:table-cell px-3 py-2 border-b border-[var(--brd)]">
             <div className="text-[9px]">{c.contact_name}</div>
             <div className="text-[9px] text-[var(--tx3)]">{c.email}</div>

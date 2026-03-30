@@ -56,7 +56,7 @@ export default function ConfirmDialog({
       aria-labelledby="confirm-title"
     >
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm modal-overlay"
+        className="fixed inset-0 bg-black/60 modal-overlay"
         aria-hidden="true"
         onClick={onCancel}
       />

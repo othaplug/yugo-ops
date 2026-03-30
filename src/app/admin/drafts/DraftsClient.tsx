@@ -85,22 +85,20 @@ export default function DraftsClient() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y divide-[var(--brd)]/50">
           {drafts.map((draft) => (
             <div
               key={draft.id}
-              className="group flex items-center gap-4 p-4 rounded-xl border border-[var(--brd)] bg-[var(--card)] hover:border-[var(--gold)]/40 transition-colors"
+              className="flex items-center gap-3 py-3"
             >
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--gdim)] shrink-0">
-                <ClockCounterClockwise size={16} className="text-[var(--gold)]" />
-              </div>
+              <ClockCounterClockwise size={18} className="text-[var(--gold)] shrink-0" aria-hidden />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-[13px] font-semibold text-[var(--tx)] truncate">
                     {draft.title}
                   </span>
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold capitalize tracking-wide ${TYPE_COLORS[draft.formType] ?? "bg-[var(--bg)] text-[var(--tx3)]"}`}>
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${TYPE_COLORS[draft.formType] ?? "bg-[var(--bg)] text-[var(--tx3)]"}`}>
                     {getDraftLabel(draft.formType)}
                   </span>
                 </div>
@@ -109,7 +107,7 @@ export default function DraftsClient() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => handleDelete(draft.id)}
                   className="p-2 rounded-lg text-[var(--tx3)] hover:text-[var(--red)] hover:bg-red-500/10 transition-colors"

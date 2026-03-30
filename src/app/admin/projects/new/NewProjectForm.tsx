@@ -153,7 +153,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
       {step === 0 && (
         <div className="space-y-5">
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Partner *</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Partner *</label>
             <select value={partnerId} onChange={(e) => setPartnerId(e.target.value)} className={fieldInput}>
               <option value="">Select partner...</option>
               {partners.map((p) => (
@@ -163,38 +163,38 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
           </div>
 
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Project Name *</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Project Name *</label>
             <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Chen Residence, Full Furnishing" className={fieldInput} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">End Client Name</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">End Client Name</label>
               <input value={endClientName} onChange={(e) => setEndClientName(e.target.value)} placeholder="Mr. & Mrs. Chen" className={fieldInput} />
             </div>
             <div>
-              <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Client Contact</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Client Contact</label>
               <input value={endClientContact} onChange={(e) => setEndClientContact(e.target.value)} placeholder="Phone or email" className={fieldInput} />
             </div>
           </div>
 
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Site Address</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Site Address</label>
             <AddressAutocomplete value={siteAddress} onChange={(addr) => setSiteAddress(addr.fullAddress)} placeholder="Primary delivery location" className={fieldInput} />
           </div>
 
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Description</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Description</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Complete home furnishing. 6 vendor shipments expected..." rows={3} className={fieldInput} />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Start Date</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Start Date</label>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={fieldInput} />
             </div>
             <div>
-              <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Target End Date</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Target End Date</label>
               <input type="date" value={targetEndDate} onChange={(e) => setTargetEndDate(e.target.value)} className={fieldInput} />
             </div>
           </div>
@@ -209,7 +209,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
           {phases.map((phase, i) => (
             <div key={i} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Phase {i + 1}</span>
+                <span className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Phase {i + 1}</span>
                 {phases.length > 1 && (
                   <button onClick={() => removePhase(i)} className="p-1 rounded hover:bg-red-500/10 text-[var(--tx3)] hover:text-red-500 transition-colors">
                     <Trash2 size={14} />
@@ -226,11 +226,11 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1 block">Target Date</label>
+                  <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Target Date</label>
                   <input type="date" value={phase.scheduled_date} onChange={(e) => updatePhase(i, "scheduled_date", e.target.value)} className={fieldInput} />
                 </div>
                 <div>
-                  <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1 block">Items Expected</label>
+                  <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Items Expected</label>
                   <input value={phase.items_expected} onChange={(e) => updatePhase(i, "items_expected", e.target.value)} placeholder="Sofa, chairs, bed..." className={fieldInput} />
                 </div>
               </div>
@@ -252,7 +252,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
         <div className="space-y-5">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-4">
             <div>
-              <div className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)]">Initial Estimate</div>
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Initial Estimate</div>
               <p className="text-[11px] text-[var(--tx3)] mt-1">This is a rough starting estimate. The actual project cost will update automatically as deliveries are created and priced.</p>
             </div>
 
@@ -260,12 +260,12 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
               <div className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
                 <span>Partner:</span>
                 <span className="font-semibold text-[var(--tx)]">{selectedPartner.name}</span>
-                <span className="text-[var(--tx3)] capitalize">({selectedPartner.type})</span>
+                <span className="text-[var(--tx3)] uppercase">({selectedPartner.type})</span>
               </div>
             )}
 
             <div>
-              <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1 block">Estimated Delivery & Logistics Cost</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Estimated Delivery & Logistics Cost</label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--tx3)]">$</span>
                 <input
@@ -280,7 +280,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             </div>
 
             <div>
-              <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1 block">Project Management Fee</label>
+              <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1 block">Project Management Fee</label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--tx3)]">$</span>
                 <input
@@ -320,7 +320,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
       {step === 3 && (
         <div className="space-y-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-3">
-            <div className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)] mb-2">Summary</div>
+            <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Summary</div>
 
             <Row label="Partner" value={selectedPartner?.name || "-"} />
             <Row label="Project Name" value={projectName} />
@@ -330,7 +330,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             <Row label="Dates" value={`${startDate || "TBD"} → ${targetEndDate || "TBD"}`} />
 
             <div className="border-t border-[var(--brd)] pt-3 mt-3">
-              <div className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)] mb-2">Phases</div>
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Phases</div>
               {phases.filter((p) => p.phase_name.trim()).map((p, i) => (
                 <div key={i} className="flex items-center justify-between py-1.5 text-[12px]">
                   <span className="text-[var(--tx)] font-medium">{p.phase_name}</span>
@@ -340,7 +340,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             </div>
 
             <div className="border-t border-[var(--brd)] pt-3 mt-3">
-              <div className="text-[12px] font-bold tracking-wider capitalize text-[var(--tx)] mb-2">Initial Estimate</div>
+              <div className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Initial Estimate</div>
               <Row label="Logistics Cost" value={estimatedBudget ? formatCurrency(parseFloat(estimatedBudget)) : "-"} />
               <Row label="Mgmt Fee" value={projectMgmtFee ? formatCurrency(parseFloat(projectMgmtFee)) : "$0"} />
               <Row label="HST (13%)" value={formatCurrency(hst)} />

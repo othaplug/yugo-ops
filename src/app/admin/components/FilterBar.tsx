@@ -25,7 +25,7 @@ export default function FilterBar({ filters, onClear, hasActiveFilters, classNam
     <div className={`flex flex-wrap items-center gap-2 py-3 px-4 bg-[var(--bg)]/50 border-b border-[var(--brd)] ${className}`}>
       {filters.map((f) => (
         <div key={f.key} className="flex items-center gap-1.5">
-          <label className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] shrink-0">
+          <label className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] shrink-0">
             {f.label}
           </label>
           <select
@@ -70,7 +70,7 @@ export function SortableHeader({
   const isActive = currentSort === sortKey;
   return (
     <th
-      className={`text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)] cursor-pointer hover:text-[var(--gold)] transition-colors select-none ${className}`}
+      className={`text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-3 py-2 border-b border-[var(--brd)] cursor-pointer hover:text-[var(--gold)] transition-colors select-none ${className}`}
       onClick={() => onSort(sortKey)}
     >
       <span className="inline-flex items-center gap-1">

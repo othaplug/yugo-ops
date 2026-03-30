@@ -210,7 +210,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
               >
                 <div className="flex items-start gap-3">
                   <span
-                    className={`shrink-0 text-[10px] font-bold capitalize tracking-wide px-2 py-0.5 rounded ${
+                    className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${
                       isActive
                         ? "bg-[#2D9F5A] text-white"
                         : index === 0

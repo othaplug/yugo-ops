@@ -268,7 +268,7 @@ export default function FleetVehiclesManager() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-[9px] font-semibold px-2 py-0.5 rounded capitalize ${statusCls}`}>{v.status}</span>
+                    <span className={`text-[9px] font-semibold px-2 py-0.5 rounded uppercase ${statusCls}`}>{v.status}</span>
                     <CaretDown weight="regular" className={`w-4 h-4 text-[var(--tx3)] transition-transform ${isExpanded ? "rotate-180" : ""}`} aria-hidden />
                   </div>
                 </div>
@@ -313,7 +313,7 @@ export default function FleetVehiclesManager() {
                   {/* Maintenance log */}
                   {logs.length > 0 && (
                     <div>
-                      <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">Maintenance History</div>
+                      <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Maintenance History</div>
                       <div className="space-y-1">
                         {logs.sort((a, b) => b.maintenance_date.localeCompare(a.maintenance_date)).map((log) => (
                           <div key={log.id} className="flex items-center justify-between px-2.5 py-1.5 rounded bg-[var(--card)] border border-[var(--brd)] text-[11px]">
@@ -343,7 +343,7 @@ export default function FleetVehiclesManager() {
       <ModalOverlay open={addOpen} onClose={() => setAddOpen(false)} title="Add Vehicle" maxWidth="sm">
         <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleAdd(); }}>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Vehicle Type</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vehicle Type</label>
             <select value={formType} onChange={(e) => { setFormType(e.target.value); setFormName(TYPE_LABELS[e.target.value]?.label || ""); }} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
               {Object.entries(TYPE_LABELS).map(([key, val]) => (
                 <option key={key} value={key}>{val.label} ({val.cuft} cu ft)</option>
@@ -351,20 +351,20 @@ export default function FleetVehiclesManager() {
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">License Plate</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">License Plate</label>
             <input type="text" value={formPlate} onChange={(e) => setFormPlate(e.target.value.toUpperCase())} placeholder="e.g. SPR786" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Display Name</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
             <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Mileage (km)</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Mileage (km)</label>
               <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} placeholder="0" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Status</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
               <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 <option value="active">Active</option>
                 <option value="maintenance">Maintenance</option>
@@ -374,7 +374,7 @@ export default function FleetVehiclesManager() {
           </div>
           {teams.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Assigned Team</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assigned Team</label>
               <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 <option value="">None</option>
                 {teams.map((t) => (
@@ -384,7 +384,7 @@ export default function FleetVehiclesManager() {
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Notes</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
             <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div className="flex gap-2 pt-2">
@@ -398,16 +398,16 @@ export default function FleetVehiclesManager() {
       <ModalOverlay open={!!editVehicle} onClose={() => setEditVehicle(null)} title={`Edit ${editVehicle?.display_name ?? "Vehicle"}`} maxWidth="sm">
         <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleUpdate(); }}>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Display Name</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
             <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Mileage (km)</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Mileage (km)</label>
               <input type="number" value={formMileage} onChange={(e) => setFormMileage(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Status</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Status</label>
               <select value={formStatus} onChange={(e) => setFormStatus(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 <option value="active">Active</option>
                 <option value="maintenance">Maintenance</option>
@@ -417,7 +417,7 @@ export default function FleetVehiclesManager() {
           </div>
           {teams.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Assigned Team</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Assigned Team</label>
               <select value={formTeam} onChange={(e) => setFormTeam(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 <option value="">None</option>
                 {teams.map((t) => (
@@ -427,7 +427,7 @@ export default function FleetVehiclesManager() {
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Notes</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
             <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div className="flex gap-2 pt-2">
@@ -442,22 +442,22 @@ export default function FleetVehiclesManager() {
         <form className="p-5 space-y-4" onSubmit={(e) => { e.preventDefault(); handleAddMaintenance(); }}>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Type</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Type</label>
               <select value={maintType} onChange={(e) => setMaintType(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none">
                 {MAINT_TYPES.map((t) => <option key={t} value={t}>{MAINT_LABELS[t]}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Date</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Date</label>
               <input type="date" value={maintDate} onChange={(e) => setMaintDate(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Cost ($)</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Cost ($)</label>
             <input type="number" step="0.01" value={maintCost} onChange={(e) => setMaintCost(e.target.value)} placeholder="0.00" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Notes</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Notes</label>
             <input type="text" value={maintNotes} onChange={(e) => setMaintNotes(e.target.value)} placeholder="Optional" className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
           <div className="flex gap-2 pt-2">

@@ -46,7 +46,7 @@ export function ModalDialogFrame({
       aria-labelledby={ariaLabelledBy}
     >
       <div
-        className={`fixed inset-0 z-0 backdrop-blur-sm modal-overlay ${backdropClassName}`.trim()}
+        className={`fixed inset-0 z-0 modal-overlay ${backdropClassName}`.trim()}
         aria-hidden
         onClick={onBackdropClick}
       />

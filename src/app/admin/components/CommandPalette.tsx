@@ -30,12 +30,13 @@ const QUICK_NAV: { group: string; items: { name: string; href: string; Icon: () 
     ],
   },
   {
-    group: "Partners",
+    group: "B2B",
     items: [
-      { name: "Partners", href: "/admin/partners", Icon: Icons.users },
+      { name: "All Partners", href: "/admin/partners", Icon: Icons.users },
       { name: "Partner Health", href: "/admin/partners/health", Icon: Icons.barChart },
       { name: "Referral Partners", href: "/admin/partners/realtors", Icon: Icons.handshake },
       { name: "Jobs", href: "/admin/deliveries", Icon: Icons.briefcase },
+      { name: "Inbound Shipments", href: "/admin/inbound-shipments", Icon: Icons.shippingContainer },
     ],
   },
   {
@@ -190,7 +191,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
       aria-label="Command palette"
     >
       <div
-        className="fixed inset-0 z-0 bg-black/55 backdrop-blur-[4px] modal-overlay"
+        className="fixed inset-0 z-0 bg-black/55 modal-overlay"
         aria-hidden
         onClick={onClose}
       />
@@ -246,7 +247,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                     {r.sub && <div className="text-[10px] text-[var(--tx3)] truncate">{r.sub}</div>}
                   </div>
                   <span
-                    className="shrink-0 text-[9px] font-bold capitalize tracking-wide px-1.5 py-0.5 rounded-full"
+                    className="shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
                     style={{ color: TYPE_COLORS[r.type] ?? "var(--tx3)", backgroundColor: `${TYPE_COLORS[r.type] ?? "var(--tx3)"}18` }}
                   >
                     {r.type}
@@ -263,7 +264,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
             <div className="p-2">
               {QUICK_NAV.map((group) => (
                 <div key={group.group} className="mb-3 last:mb-1">
-                  <div className="px-2 py-1 text-[9px] font-bold tracking-[1.2px] capitalize text-[var(--tx3)]">
+                  <div className="px-2 py-1 text-[9px] font-bold tracking-[1.2px] uppercase text-[var(--tx3)]">
                     {group.group}
                   </div>
                   {group.items.map((item) => {

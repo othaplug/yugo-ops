@@ -75,7 +75,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           </div>
           <div>
             <span
-              className="text-[9px] font-bold tracking-wider capitalize px-2.5 py-0.5 rounded-full"
+              className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
               style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
             >
               Labour Service
@@ -91,7 +91,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
             <div>
-              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Work Address</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Work Address</p>
               <p className="text-[12px] font-medium" style={{ color: FOREST }}>{quote.from_address}</p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             <div className="flex items-start gap-2">
               <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} />
               <div>
-                <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Date</p>
+                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Date</p>
                 <p className="text-[12px] font-medium" style={{ color: FOREST }}>{fmtDate(quote.move_date)}</p>
               </div>
             </div>
@@ -131,19 +131,19 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
         <div className="p-4 rounded-xl text-center" style={{ backgroundColor: `${WINE}06`, border: `1px solid ${WINE}15` }}>
           <Users className="w-5 h-5 mx-auto mb-1.5" style={{ color: WINE }} />
           <p className="text-[22px] font-bold tabular-nums" style={{ color: WINE }}>{crewSize}</p>
-          <p className="text-[9px] font-bold capitalize tracking-wider mt-0.5" style={{ color: `${WINE}60` }}>Movers</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: `${WINE}60` }}>Movers</p>
         </div>
         <div className="p-4 rounded-xl text-center" style={{ backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}20` }}>
           <Clock className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
           <p className="text-[22px] font-bold tabular-nums" style={{ color: GOLD }}>{hours}</p>
-          <p className="text-[9px] font-bold capitalize tracking-wider mt-0.5" style={{ color: `${GOLD}80` }}>Hours</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: `${GOLD}80` }}>Hours</p>
         </div>
         <div className="p-4 rounded-xl text-center" style={{ backgroundColor: truckFee > 0 ? `${FOREST}06` : `${FOREST}03`, border: `1px solid ${FOREST}15` }}>
           <Truck className="w-5 h-5 mx-auto mb-1.5" style={{ color: truckFee > 0 ? FOREST : `${FOREST}40` }} />
           <p className="text-[11px] font-bold tabular-nums" style={{ color: truckFee > 0 ? FOREST : `${FOREST}40` }}>
             {truckFee > 0 ? "Included" : "No Truck"}
           </p>
-          <p className="text-[9px] font-bold capitalize tracking-wider mt-0.5" style={{ color: `${FOREST}50` }}>Truck</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: `${FOREST}50` }}>Truck</p>
         </div>
       </div>
 

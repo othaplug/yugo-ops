@@ -33,6 +33,11 @@ interface BinRentalSchedulePdf {
   cycle_days: number;
 }
 
+interface ContractStopPdf {
+  address: string;
+  access_line: string | null;
+}
+
 interface ContractData {
   service_type: string;
   package_label: string;
@@ -47,6 +52,9 @@ interface ContractData {
   grand_total: number;
   deposit: number;
   bin_rental_schedule?: BinRentalSchedulePdf;
+  /** When present with length > 1, PDF lists each pickup instead of a single From line. */
+  pickup_stops?: ContractStopPdf[];
+  dropoff_stops?: ContractStopPdf[];
 }
 
 interface ContractSignPayload {
@@ -156,6 +164,8 @@ function generateContractPdf(
     .replace(/\b\w/g, (c: string) => c.toUpperCase());
 
   const brs = cd.bin_rental_schedule;
+  const multiPick = cd.pickup_stops && cd.pickup_stops.length > 1;
+  const multiDrop = cd.dropoff_stops && cd.dropoff_stops.length > 1;
   const summaryLines =
     cd.service_type === "bin_rental" && brs
       ? [
@@ -172,8 +182,18 @@ function generateContractPdf(
         ]
       : [
           `Service: ${svcLabel} \u2014 ${cd.package_label}`,
-          `From: ${cd.from_address}`,
-          `To: ${cd.to_address}`,
+          ...(multiPick
+            ? cd.pickup_stops!.flatMap((s, i) => {
+                const acc = s.access_line ? ` (Access: ${s.access_line})` : "";
+                return [`Pickup ${i + 1}: ${s.address}${acc}`];
+              })
+            : [`From: ${cd.from_address}`]),
+          ...(multiDrop
+            ? cd.dropoff_stops!.flatMap((s, i) => {
+                const acc = s.access_line ? ` (Access: ${s.access_line})` : "";
+                return [`Destination ${i + 1}: ${s.address}${acc}`];
+              })
+            : [`To: ${cd.to_address}`]),
           ...(cd.move_date
             ? [
                 `Date: ${new Date(cd.move_date + "T00:00:00").toLocaleDateString("en-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,

@@ -307,7 +307,7 @@ export default function JobInventory({
             })}
             className="w-full flex items-center justify-between gap-2 bg-[var(--bg)]/80 px-3 py-2.5 text-left hover:bg-[var(--bg)] transition-colors cursor-pointer group"
           >
-            <span className="text-[11px] font-bold capitalize tracking-wider text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{r.room}</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{r.room}</span>
             <span className="flex items-center gap-1.5">
               <span className="text-[10px] font-medium text-[var(--tx3)]">{items.length} item{items.length !== 1 ? "s" : ""}</span>
               <ChevronDown className={`w-[14px] h-[14px] text-[var(--tx3)] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
@@ -389,7 +389,7 @@ export default function JobInventory({
         </>
       )}
       {addExtraOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] animate-fade-in">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[99999] animate-fade-in">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 max-w-[340px] w-full shadow-xl animate-fade-in">
             <h3 className="font-hero text-[26px] font-bold text-[var(--tx)] mb-4">Add Extra Item</h3>
             <p className="text-[11px] text-[var(--tx3)] mb-4">Submitted items require admin approval before they appear in the list.</p>

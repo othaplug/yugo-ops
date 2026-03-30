@@ -781,7 +781,7 @@ export default function ClientSignOffPage({
                       {done ? <CheckMark size={9} /> : step}
                     </div>
                     <span
-                      className="text-[9px] mt-1 font-bold tracking-wide capitalize"
+                      className="text-[9px] mt-1 font-bold tracking-wide uppercase"
                       style={{ color: active ? INK : "#BBB6AD" }}
                     >
                       {label}
@@ -803,7 +803,7 @@ export default function ClientSignOffPage({
         {phase === 1 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
                 Step 1 of 4
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
@@ -824,7 +824,7 @@ export default function ClientSignOffPage({
                 {itemConditions.map((ic, idx) => (
                   <div key={idx} className="p-4 rounded-2xl border bg-white" style={{ borderColor: ic.condition === "new_damage" ? "#FCA5A5" : BORDER }}>
                     <div className="text-[13px] font-semibold mb-2.5" style={{ color: INK }}>{ic.item_name}</div>
-                    <div className="text-[10px] font-bold capitalize tracking-widest mb-2" style={{ color: MUTED }}>Condition at delivery</div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: MUTED }}>Condition at delivery</div>
                     <div className="grid grid-cols-2 gap-1.5 mb-2">
                       {CONDITION_OPTIONS.map((opt) => (
                         <button
@@ -892,7 +892,7 @@ export default function ClientSignOffPage({
         {phase === 2 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
                 Step 2 of 5
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
@@ -906,7 +906,7 @@ export default function ClientSignOffPage({
             {/* Photo gallery */}
             {!photosLoading && jobPhotos.length > 0 && (
               <div className="mb-5">
-                <p className="text-[10px] font-bold capitalize tracking-widest mb-2.5" style={{ color: MUTED }}>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: MUTED }}>
                   Crew Photos ({jobPhotos.length})
                 </p>
                 <div className="grid grid-cols-3 gap-1.5 mb-3">
@@ -988,7 +988,7 @@ export default function ClientSignOffPage({
         {phase === 3 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
                 Step 3 of 5
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
@@ -1001,7 +1001,7 @@ export default function ClientSignOffPage({
 
             {/* Star rating */}
             <div className="mb-6">
-              <p className="text-[10px] font-bold capitalize tracking-widest mb-3" style={{ color: MUTED }}>Overall Rating</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>Overall Rating</p>
               <div className="flex justify-center gap-3 mb-2.5">
                 {[1, 2, 3, 4, 5].map((n) => {
                   const isFilled = rating != null && n <= rating;
@@ -1065,7 +1065,7 @@ export default function ClientSignOffPage({
 
             {/* Confirmation checkboxes */}
             <div className="mb-5">
-              <p className="text-[10px] font-bold capitalize tracking-widest mb-3" style={{ color: MUTED }}>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>
                 Please confirm the following
               </p>
               <p className="text-[11px] mb-3" style={{ color: MUTED }}>
@@ -1157,7 +1157,7 @@ export default function ClientSignOffPage({
         {phase === 4 && !equipmentCheckDone && (
           <div className="phase-enter">
             <div className="mb-6">
-              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
                 Step 4 of 5
               </p>
               <h1 className="font-hero text-[26px] font-semibold leading-tight" style={{ color: INK }}>
@@ -1187,7 +1187,7 @@ export default function ClientSignOffPage({
                   if (!inCat.length) return null;
                   return (
                     <div key={cat} className="rounded-2xl border bg-white overflow-hidden" style={{ borderColor: BORDER }}>
-                      <div className="px-3 py-2 text-[9px] font-bold capitalize tracking-widest" style={{ backgroundColor: NOTE_FILL, color: MUTED }}>
+                      <div className="px-3 py-2 text-[9px] font-bold uppercase tracking-widest" style={{ backgroundColor: NOTE_FILL, color: MUTED }}>
                         {cat}
                       </div>
                       <div className="divide-y" style={{ borderColor: BORDER }}>
@@ -1294,7 +1294,7 @@ export default function ClientSignOffPage({
             </button>
             {eqSkipOpen ? (
               <div className="mt-4 p-4 rounded-2xl border space-y-3" style={{ borderColor: BORDER, backgroundColor: NOTE_FILL }}>
-                <p className="text-[11px] font-bold capitalize tracking-widest" style={{ color: MUTED }}>Skip reason</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>Skip reason</p>
                 <label className="flex items-center gap-2 text-[12px]">
                   <input type="radio" name="eqskip" checked={eqSkipChoice === "labour_only"} onChange={() => setEqSkipChoice("labour_only")} className="accent-[#C9A962]" />
                   No equipment used (labour-only job)
@@ -1338,7 +1338,7 @@ export default function ClientSignOffPage({
         {phase === 5 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] capitalize mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
                 Step 5 of 5
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
@@ -1350,7 +1350,7 @@ export default function ClientSignOffPage({
             </div>
 
             <div className="mb-5">
-              <label className="block text-[10px] font-bold capitalize tracking-widest mb-2" style={{ color: MUTED }}>
+              <label className="block text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: MUTED }}>
                 Your full name
               </label>
               <input
@@ -1366,7 +1366,7 @@ export default function ClientSignOffPage({
             {/* Signature canvas, ink-on-paper look */}
             <div className="mb-5">
               <div className="flex justify-between items-center mb-2">
-                <label className="flex items-center gap-1.5 text-[10px] font-bold capitalize tracking-widest" style={{ color: MUTED }}>
+                <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>
                   <PenLine size={11} /> Signature
                 </label>
                 <button
@@ -1511,7 +1511,7 @@ export default function ClientSignOffPage({
             </div>
 
             <div className="space-y-2.5 mb-5">
-              <label className="block text-[10px] font-bold capitalize tracking-widest mb-3" style={{ color: MUTED }}>
+              <label className="block text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: MUTED }}>
                 Reason
               </label>
               {SKIP_REASONS.map((r) => (

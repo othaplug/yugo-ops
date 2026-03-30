@@ -57,7 +57,7 @@ export default function AddRealtorModal({ open, onClose }: AddRealtorModalProps)
     <ModalOverlay open={open} onClose={onClose} title="Add Realtor" maxWidth="md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Agent Name *</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Agent Name *</label>
           <input
             type="text"
             value={agentName}
@@ -68,7 +68,7 @@ export default function AddRealtorModal({ open, onClose }: AddRealtorModalProps)
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Email</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
           <input
             type="email"
             value={email}
@@ -78,7 +78,7 @@ export default function AddRealtorModal({ open, onClose }: AddRealtorModalProps)
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Brokerage</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Brokerage</label>
           <input
             type="text"
             value={brokerage}

@@ -112,7 +112,7 @@ export default function RetailClient({
       <div className="pt-6 border-t border-[var(--brd)]/30">
         {activeTab === "deliveries" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Deliveries</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Deliveries</div>
             {/* Filter bar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
               <div className="relative flex-1">
@@ -171,7 +171,7 @@ export default function RetailClient({
                             <span className="text-[10px] text-[var(--tx3)]">
                               {Array.isArray(d.items) ? d.items.length : 0} items
                             </span>
-                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize tracking-wide ${badgeClass}`}>
+                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}>
                               {statusLabel}
                             </span>
                             <CaretRight size={14} weight="regular" className="flex-shrink-0 text-[var(--tx3)]" />
@@ -195,7 +195,7 @@ export default function RetailClient({
 
         {activeTab === "partners" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
 
             <div className="divide-y divide-[var(--brd)]/30">
             {clients.length === 0 ? (

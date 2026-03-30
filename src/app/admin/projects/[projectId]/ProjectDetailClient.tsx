@@ -221,49 +221,49 @@ function EditProjectModal({ open, onClose, data, onSaved }: { open: boolean; onC
     <ModalOverlay open={open} onClose={onClose} title="Edit Project" maxWidth="md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
         <div>
-          <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Project Name *</label>
+          <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Project Name *</label>
           <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Project name" required className={fieldInput} />
         </div>
         <div>
-          <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Description</label>
+          <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Description</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Project description" rows={3} className={fieldInput} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">End Client</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">End Client</label>
             <input type="text" value={endClientName} onChange={(e) => setEndClientName(e.target.value)} placeholder="Client name" className={fieldInput} />
           </div>
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Contact</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Contact</label>
             <input type="text" value={endClientContact} onChange={(e) => setEndClientContact(e.target.value)} placeholder="Contact info" className={fieldInput} />
           </div>
         </div>
         <div>
-          <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Site Address</label>
+          <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Site Address</label>
           <AddressAutocomplete value={siteAddress} onChange={(r) => setSiteAddress(r.fullAddress)} placeholder="Primary delivery location" className={fieldInput} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Start Date</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Start Date</label>
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={fieldInput} />
           </div>
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Target End Date</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Target End Date</label>
             <input type="date" value={targetEndDate} onChange={(e) => setTargetEndDate(e.target.value)} className={fieldInput} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Estimated Budget</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Estimated Budget</label>
             <input type="number" step="0.01" min="0" value={estimatedBudget} onChange={(e) => setEstimatedBudget(e.target.value)} placeholder="0" className={fieldInput} />
           </div>
           <div>
-            <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Mgmt Fee</label>
+            <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Mgmt Fee</label>
             <input type="number" step="0.01" min="0" value={projectMgmtFee} onChange={(e) => setProjectMgmtFee(e.target.value)} placeholder="0" className={fieldInput} />
           </div>
         </div>
         <div>
-          <label className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1.5 block">Notes</label>
+          <label className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1.5 block">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes" rows={2} className={fieldInput} />
         </div>
         <div className="flex gap-2 pt-2">
@@ -370,19 +370,19 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
 
       {/* Header */}
       <div className="mt-4 mb-6">
-        <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-2">B2B Operations · Project</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-2">B2B Operations · Project</p>
         <div className="flex flex-wrap items-center gap-3 mb-2">
           <h1 className="font-hero text-[20px] font-bold text-[var(--tx)]">
             {data.project_number} · {data.project_name}
           </h1>
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold capitalize ${STATUS_COLORS[data.status] || ""}`}>
+          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${STATUS_COLORS[data.status] || ""}`}>
             {data.status.replace("_", " ")}
           </span>
         </div>
         <div className="flex flex-wrap gap-4 text-[12px] text-[var(--tx3)]">
           <span>Partner: <span className="text-[var(--tx)] font-medium">{data.organizations?.name}</span></span>
           {data.end_client_name && <span>Client: <span className="text-[var(--tx)] font-medium">{data.end_client_name}</span></span>}
-          {data.active_phase && <span>Phase: <span className="text-[var(--tx)] font-medium capitalize">{data.active_phase}</span></span>}
+          {data.active_phase && <span>Phase: <span className="text-[var(--tx)] font-medium uppercase">{data.active_phase}</span></span>}
           <span>Estimate: <span className="text-[var(--tx)] font-medium">{formatCurrency(projectEstimate)}{estimateFromDeliveries ? "" : " (initial)"}</span></span>
         </div>
 
@@ -502,7 +502,7 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
         {/* Progress */}
         <section className="py-5 first:pt-0">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-          <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-3">Progress</div>
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Progress</div>
           <div className="relative h-3 bg-[var(--bg)] rounded-full overflow-hidden mb-2">
             <div className="absolute inset-y-0 left-0 bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
           </div>
@@ -516,7 +516,7 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
         {/* Project Details */}
         <section className="py-5">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-2">
-          <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Details</div>
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Details</div>
           {data.description && <InfoRow label="Description" value={data.description} />}
           <InfoRow label="Partner" value={`${data.organizations?.name || "-"} (${data.organizations?.type || ""})`} />
           {data.end_client_name && <InfoRow label="End Client" value={data.end_client_name} />}
@@ -530,7 +530,7 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
         {/* Vendor Status, compact table */}
         {data.inventory.length > 0 && (
           <section className="py-5">
-            <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-3">Vendor Status</div>
+            <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Vendor Status</div>
             <VendorStatusCompactTable inventory={data.inventory} />
           </section>
         )}
@@ -539,7 +539,7 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
       <div className="divide-y divide-[var(--brd)]/50 border-t lg:border-t-0 lg:border-l border-[var(--brd)]/50 pt-5 lg:pt-0 pl-0 lg:pl-6">
         {/* Estimate */}
         <section className="py-5 first:pt-0">
-          <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-3">Project Estimate</div>
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Project Estimate</div>
           <div className="text-[28px] font-bold text-[var(--tx)] font-hero">{formatCurrency(projectEstimate)}</div>
           <div className="text-[12px] text-[var(--tx3)] mt-1">
             {estimateFromDeliveries
@@ -568,7 +568,7 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
 
         {/* Recent Activity */}
         <section className="py-5 last:pb-0">
-          <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-3">Recent Activity</div>
+          <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Recent Activity</div>
           {data.timeline.slice(0, 5).map((e) => (
             <div key={e.id} className="flex gap-3 py-2 text-[12px]">
               <TimelineIcon type={e.event_type} />
@@ -724,7 +724,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
               <Icon size={14} className={cfg.text} />
               <div className="text-left">
                 <div className="text-[11px] font-semibold text-[var(--tx)] whitespace-nowrap">{phase.phase_name}</div>
-                <div className="text-[9px] text-[var(--tx3)] capitalize">{phase.status}{phase.scheduled_date ? ` · ${new Date(phase.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}{phase.address ? ` · ${phase.address.split(",")[0]}` : ""}</div>
+                <div className="text-[9px] text-[var(--tx3)] uppercase">{phase.status}{phase.scheduled_date ? ` · ${new Date(phase.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}{phase.address ? ` · ${phase.address.split(",")[0]}` : ""}</div>
               </div>
               {i < data.phases.length - 1 && <span className="text-[var(--tx3)] ml-1">→</span>}
             </button>
@@ -778,7 +778,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
                   <thead>
                     <tr className="border-b border-[var(--brd)]">
                       {["Item", "Vendor", "Status", "Received", "Condition", "Storage"].map((h) => (
-                        <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]/50">{h}</th>
+                        <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -805,7 +805,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
             {/* Linked deliveries */}
             {phaseDeliveries.length > 0 && (
               <div>
-                <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Deliveries</div>
+                <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Deliveries</div>
                 {phaseDeliveries.map((d) => (
                   <Link key={d.id} href={`/admin/deliveries/${d.id}`} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-[var(--bg)] transition-colors">
                     <div className="flex items-center gap-2">
@@ -813,7 +813,7 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
                       <span className="text-[12px] font-medium text-[var(--tx)]">{d.delivery_number || "Delivery"}</span>
                       <span className="text-[10px] text-[var(--tx3)]">{d.scheduled_date ? new Date(d.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD"}</span>
                     </div>
-                    <span className="text-[10px] font-semibold capitalize text-[var(--tx3)]">{d.status}</span>
+                    <span className="text-[10px] font-semibold uppercase text-[var(--tx3)]">{d.status}</span>
                   </Link>
                 ))}
               </div>
@@ -1202,7 +1202,7 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
             <thead>
               <tr className="border-b border-[var(--brd)]">
                 {["Item", "Vendor", "Handled By", "Status", "Tracking", "Received", "Actions"].map((h) => (
-                  <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]/50">{h === "Actions" ? "" : h}</th>
+                  <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">{h === "Actions" ? "" : h}</th>
                 ))}
               </tr>
             </thead>
@@ -1415,7 +1415,7 @@ function DeliveriesTab({ data, projectId, onRefresh }: { data: ProjectData; proj
             <thead>
               <tr className="border-b border-[var(--brd)]">
                 {["DLV #", "Phase", "Date", "Items", "Price", "Status"].map((h) => (
-                  <th key={h} className="px-3 py-2 text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]/50">{h}</th>
+                  <th key={h} className="px-3 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1568,13 +1568,13 @@ function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string 
     <div className="divide-y divide-[var(--brd)]/50">
       <section className="py-5 first:pt-0">
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
-        <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-4">Project Invoice</div>
+        <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-4">Project Invoice</div>
 
         <table className="w-full text-left mb-4">
           <thead>
             <tr className="border-b border-[var(--brd)]">
               {["Line", "Description", "Amount"].map((h) => (
-                <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]/50">{h}</th>
+                <th key={h} className="px-2 py-2 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/50">{h}</th>
               ))}
             </tr>
           </thead>
@@ -1587,7 +1587,7 @@ function InvoiceTab({ data, projectId }: { data: ProjectData; projectId: string 
                   <td className="px-2 py-2.5 text-[12px] text-[var(--gold)] font-medium">{d.delivery_number}</td>
                   <td className="px-2 py-2.5 text-[12px] text-[var(--tx)]">
                     {phase ? `${phase.phase_name} delivery` : "Delivery"}
-                    {!isCompleted && <span className="ml-1.5 text-[9px] font-semibold capitalize text-[var(--tx3)] opacity-60">({d.status})</span>}
+                    {!isCompleted && <span className="ml-1.5 text-[9px] font-semibold uppercase text-[var(--tx3)] opacity-60">({d.status})</span>}
                   </td>
                   <td className="px-2 py-2.5 text-[12px] font-medium text-[var(--tx)]">{d.total_price ? formatCurrency(d.total_price) : "-"}</td>
                 </tr>
@@ -1843,7 +1843,7 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
       {/* Row 2: Tracking */}
       {isYugo ? (
         <div className="flex items-center gap-2">
-          <span className="text-[9px] font-semibold capitalize tracking-wide text-[var(--gold)]">Yugo Job</span>
+          <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--gold)]">Yugo Job</span>
           {linkedDelivery ? (
             <Link
               href={getDeliveryDetailPath(linkedDelivery)}
@@ -1864,7 +1864,7 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
       ) : (isCarrier || isVendorDirect) ? (
         <div className="flex items-end gap-2">
           <div className="shrink-0" style={{ width: "5.5rem" }}>
-            <label className="text-[9px] font-semibold capitalize tracking-wide text-purple-400 block mb-0.5">Carrier</label>
+            <label className="text-[9px] font-semibold uppercase tracking-wide text-purple-400 block mb-0.5">Carrier</label>
             <input
               value={carrier}
               onChange={(e) => handleCarrier(e.target.value)}
@@ -1873,7 +1873,7 @@ function VtItemCard({ item, projectId, deliveries, onRefresh }: { item: Inventor
             />
           </div>
           <div className="flex-1 min-w-0">
-            <label className="text-[9px] font-semibold capitalize tracking-wide text-purple-400 block mb-0.5">Tracking #</label>
+            <label className="text-[9px] font-semibold uppercase tracking-wide text-purple-400 block mb-0.5">Tracking #</label>
             <input
               value={trackingNum}
               onChange={(e) => handleTrackingNum(e.target.value)}
@@ -1990,7 +1990,7 @@ function VendorTrackerTab({ data, projectId, onRefresh }: { data: ProjectData; p
         ].map(({ label, value, color }) => (
           <div key={label} className="text-center py-2">
             <div className={`text-[20px] font-bold ${color}`}>{value}</div>
-            <div className="text-[9px] font-semibold capitalize tracking-wide text-[var(--tx3)] mt-0.5">{label}</div>
+            <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--tx3)] mt-0.5">{label}</div>
           </div>
         ))}
       </div>
@@ -2039,7 +2039,7 @@ function VendorTrackerTab({ data, projectId, onRefresh }: { data: ProjectData; p
           <button
             key={mode}
             onClick={() => setViewMode(mode)}
-            className={`px-4 py-2 rounded-lg text-[11px] font-semibold transition-all duration-200 capitalize ${
+            className={`px-4 py-2 rounded-lg text-[11px] font-semibold transition-all duration-200 uppercase ${
               viewMode === mode
                 ? "text-[var(--tx)] bg-[var(--card)] shadow-sm border border-[var(--brd)]/50"
                 : "text-[var(--tx3)] hover:text-[var(--tx2)] hover:bg-[var(--bg)]/50"
@@ -2071,7 +2071,7 @@ function VendorTrackerTab({ data, projectId, onRefresh }: { data: ProjectData; p
           <button
             key={mode}
             onClick={() => setGroupBy(mode)}
-            className={`px-4 py-2 rounded-lg text-[11px] font-semibold transition-all duration-200 capitalize ${
+            className={`px-4 py-2 rounded-lg text-[11px] font-semibold transition-all duration-200 uppercase ${
               groupBy === mode
                 ? "text-[var(--tx)] bg-[var(--card)] shadow-sm border border-[var(--brd)]/50"
                 : "text-[var(--tx3)] hover:text-[var(--tx2)] hover:bg-[var(--bg)]/50"
@@ -2107,7 +2107,7 @@ function VendorTrackerTab({ data, projectId, onRefresh }: { data: ProjectData; p
                     {isCollapsed
                       ? <ChevronRight size={14} className="text-[var(--tx3)]" />
                       : <ChevronDown size={14} className="text-[var(--tx3)]" />}
-                    <span className={`text-[12px] font-bold capitalize tracking-wide ${group.meta || "text-[var(--tx)]"}`}>{group.name}</span>
+                    <span className={`text-[12px] font-bold uppercase tracking-wide ${group.meta || "text-[var(--tx)]"}`}>{group.name}</span>
                     <span className="text-[11px] text-[var(--tx3)]">({group.items.length})</span>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] font-semibold">
@@ -2151,7 +2151,7 @@ function VendorTrackerTab({ data, projectId, onRefresh }: { data: ProjectData; p
       <section className="py-5 last:pb-0">
       <div className="py-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-bold capitalize tracking-wide text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
             <Lock size={11} /> Internal Notes (Admin Only)
           </span>
           {savingNote && <span className="text-[10px] text-[var(--tx3)]">Saving…</span>}
@@ -2184,7 +2184,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div>
-      <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]">{label}</div>
+      <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">{label}</div>
       <div className="text-[24px] font-bold text-[var(--tx)] mt-1 font-hero">{value}</div>
       <div className="text-[11px] text-[var(--tx3)]">{sub}</div>
     </div>

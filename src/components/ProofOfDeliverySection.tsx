@@ -125,7 +125,7 @@ export default function ProofOfDeliverySection({
       {/* Item conditions */}
       {itemConditions.length > 0 && (
         <div>
-          <div className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Item Conditions</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Item Conditions</div>
           <div className="space-y-1.5">
             {itemConditions.map((ic, i) => {
               const c = CONDITION_COLORS[ic.condition] || CONDITION_COLORS.pristine;
@@ -147,7 +147,7 @@ export default function ProofOfDeliverySection({
 
       {/* Signature */}
       <div className="border-t border-[var(--brd)]/30 pt-4">
-        <div className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Customer Signature</div>
+        <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Customer Signature</div>
         {pod.signature_data && (
           <div className="w-[180px] h-[60px] rounded-lg overflow-hidden border border-[var(--brd)]/30 bg-white mb-2">
             <img src={pod.signature_data} alt="Signature" className="w-full h-full object-contain" />
@@ -166,7 +166,7 @@ export default function ProofOfDeliverySection({
       {/* Satisfaction */}
       {pod.satisfaction_rating != null && (
         <div className="border-t border-[var(--brd)]/30 pt-4">
-          <div className="text-[9px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Customer Satisfaction</div>
+          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Customer Satisfaction</div>
           <div className="flex items-center gap-1.5">
             {[1, 2, 3, 4, 5].map((n) => (
               <Star

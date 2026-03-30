@@ -77,7 +77,7 @@ export default function CrewEndOfDayPage() {
         ← Back to Dashboard
       </Link>
       <div className="mt-1">
-        <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1">Crew</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1">Crew</p>
         <h1 className="font-heading text-[22px] sm:text-[26px] font-bold text-[var(--tx)] tracking-tight leading-none">
           End of day report
         </h1>

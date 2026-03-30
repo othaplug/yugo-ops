@@ -147,7 +147,7 @@ export default function UpdatePasswordPage() {
 
               <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "capitalize" as const, color: muted, marginBottom: 6 }}>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" as const, color: muted, marginBottom: 6 }}>
                     New Password
                   </label>
                   <div style={{ position: "relative" }}>
@@ -185,7 +185,7 @@ export default function UpdatePasswordPage() {
                   </div>
                 </div>
                 <div style={{ marginBottom: 24 }}>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "capitalize" as const, color: muted, marginBottom: 6 }}>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" as const, color: muted, marginBottom: 6 }}>
                     Confirm Password
                   </label>
                   <input
@@ -227,7 +227,7 @@ export default function UpdatePasswordPage() {
                     })}
                   </div>
                   <div style={{ fontSize: 10, color: muted }}>
-                    Use 8+ characters with capitalize, numbers, and symbols for a strong password
+                    Use 8+ characters with uppercase, numbers, and symbols for a strong password
                   </div>
                 </div>
 

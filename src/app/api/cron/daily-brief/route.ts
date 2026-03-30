@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
 <body style="background:#0d0b08;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:24px 16px;">
     <div style="border-bottom:1px solid #2a2318;padding-bottom:16px;margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:2px;text-transform:capitalize;color:#C9A962;margin:0 0 4px;">Yugo</p>
+      <p style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#C9A962;margin:0 0 4px;">Yugo</p>
       <h1 style="font-size:22px;font-weight:700;color:#e8e0d0;margin:0;">Daily Brief</h1>
       <p style="font-size:12px;color:#9c9489;margin:4px 0 0;">${dateLabel}</p>
     </div>
@@ -213,21 +213,21 @@ export async function GET(req: NextRequest) {
     <div style="display:flex;gap:12px;margin-bottom:20px;">
       <div style="flex:1;background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;text-align:center;">
         <div style="font-size:24px;font-weight:700;color:#C9A962;">${jobs.length}</div>
-        <div style="font-size:10px;color:#9c9489;text-transform:capitalize;letter-spacing:1px;">Jobs</div>
+        <div style="font-size:10px;color:#9c9489;text-transform:uppercase;letter-spacing:1px;">Jobs</div>
       </div>
       <div style="flex:1;background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;text-align:center;">
         <div style="font-size:24px;font-weight:700;color:#C9A962;">$${revenue.toLocaleString()}</div>
-        <div style="font-size:10px;color:#9c9489;text-transform:capitalize;letter-spacing:1px;">Revenue</div>
+        <div style="font-size:10px;color:#9c9489;text-transform:uppercase;letter-spacing:1px;">Revenue</div>
       </div>
       <div style="flex:1;background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;text-align:center;">
         <div style="font-size:24px;font-weight:700;color:${unassigned.length > 0 ? "#ef4444" : "#22c55e"};">${unassigned.length}</div>
-        <div style="font-size:10px;color:#9c9489;text-transform:capitalize;letter-spacing:1px;">Unassigned</div>
+        <div style="font-size:10px;color:#9c9489;text-transform:uppercase;letter-spacing:1px;">Unassigned</div>
       </div>
     </div>
 
     <!-- Leads -->
     <div style="margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:1.5px;text-transform:capitalize;color:#9c9489;margin:0 0 10px;">Leads</p>
+      <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9c9489;margin:0 0 10px;">Leads</p>
       <div style="background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;">
         <p style="margin:0 0 8px;font-size:12px;color:#e8e0d0;">${leadBriefMailSvg}<span style="vertical-align:middle;">${leadYesterdayLine}</span></p>
         ${
@@ -242,15 +242,15 @@ export async function GET(req: NextRequest) {
     ${
       jobs.length > 0
         ? `<div style="margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:1.5px;text-transform:capitalize;color:#9c9489;margin:0 0 10px;">Today's Schedule</p>
+      <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9c9489;margin:0 0 10px;">Today's Schedule</p>
       <table style="width:100%;border-collapse:collapse;background:#1a1510;border:1px solid #2a2318;border-radius:10px;overflow:hidden;">
         <thead>
           <tr style="background:#211d13;">
-            <th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:capitalize;letter-spacing:1px;color:#9c9489;">Code</th>
-            <th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:capitalize;letter-spacing:1px;color:#9c9489;">Client</th>
-            <th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:capitalize;letter-spacing:1px;color:#9c9489;">Type</th>
-            <th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:capitalize;letter-spacing:1px;color:#9c9489;">Window</th>
-            <th style="padding:8px 12px;text-align:right;font-size:10px;text-transform:capitalize;letter-spacing:1px;color:#9c9489;">Crew</th>
+            <th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#9c9489;">Code</th>
+            <th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#9c9489;">Client</th>
+            <th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#9c9489;">Type</th>
+            <th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#9c9489;">Window</th>
+            <th style="padding:8px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#9c9489;">Crew</th>
           </tr>
         </thead>
         <tbody>${jobRows}</tbody>
@@ -261,7 +261,7 @@ export async function GET(req: NextRequest) {
 
     <!-- Alerts -->
     <div style="margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:1.5px;text-transform:capitalize;color:#9c9489;margin:0 0 10px;">Alerts</p>
+      <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9c9489;margin:0 0 10px;">Alerts</p>
       <div style="background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;">
         <ul style="margin:0;padding-left:18px;">${alertRows}</ul>
       </div>
@@ -270,7 +270,7 @@ export async function GET(req: NextRequest) {
     ${
       weatherAlerts.length
         ? `<div style="margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:1.5px;text-transform:capitalize;color:#9c9489;margin:0 0 10px;">Weather</p>
+      <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9c9489;margin:0 0 10px;">Weather</p>
       <div style="background:#0f1c2e;border:1px solid #1e3a5f;border-radius:10px;padding:14px;">
         <ul style="margin:0;padding-left:18px;">${weatherRows}</ul>
       </div>
@@ -280,7 +280,7 @@ export async function GET(req: NextRequest) {
 
     <!-- Expiring quotes -->
     <div style="margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:1.5px;text-transform:capitalize;color:#9c9489;margin:0 0 10px;">Quotes Expiring Today (${expiring.length})</p>
+      <p style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9c9489;margin:0 0 10px;">Quotes Expiring Today (${expiring.length})</p>
       <div style="background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;">
         <ul style="margin:0;padding-left:18px;">${quoteRows}</ul>
       </div>

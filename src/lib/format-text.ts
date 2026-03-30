@@ -86,7 +86,7 @@ const KNOWN_ACRONYMS = new Set(
 
 /**
  * Sentence case for short UI phrases:
- * - First word with letters: capitalize only its first letter; other words lowercased.
+ * - First word with letters: uppercase only its first letter; other words lowercased.
  * - Tokens that are all A–Z in the source (2–6 letters) stay ALL CAPS (ETA, NYC, US).
  * - Tokens in KNOWN_ACRONYMS render ALL CAPS even if source was mixed/lower case (eta → ETA).
  * - Leading non-letters before the first word are kept ("5 paid" → "5 Paid").

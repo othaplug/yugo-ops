@@ -15,7 +15,7 @@ const NAV = [
     { name: "Calendar", icon: "calendar", href: "/admin/calendar" },
     { name: "Tracking", icon: "mapPin", href: "/admin/crew" },
   ]},
-  { label: "Partners", items: [
+  { label: "B2B", items: [
     { name: "Jobs", icon: "mapPin", href: "/admin/deliveries", badge: "pending_deliveries" },
     { name: "Retail", icon: "sofa", href: "/admin/partners/retail" },
     { name: "Designers", icon: "palette", href: "/admin/partners/designers" },
@@ -89,7 +89,7 @@ export default function Sidebar() {
       {/* Nav Sections */}
       {NAV.map((section) => (
         <div key={section.label} className="py-2">
-          <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] px-4 py-1">
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] px-4 py-1">
             {section.label}
           </div>
           {section.items.map((item) => {

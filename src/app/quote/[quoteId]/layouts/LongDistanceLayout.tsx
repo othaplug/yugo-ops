@@ -67,7 +67,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
       {/* Route visual */}
       <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7">
         <h2
-          className="font-heading text-[13px] font-bold tracking-wider capitalize mb-5"
+          className="font-heading text-[13px] font-bold tracking-wider uppercase mb-5"
           style={{ color: FOREST }}
         >
           Your Route
@@ -77,7 +77,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: WINE }} />
               <div>
-                <p className="text-[10px] font-semibold tracking-wider capitalize" style={{ color: `${FOREST}80` }}>
+                <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
                   Origin
                 </p>
                 <p className="text-[13px] font-medium" style={{ color: FOREST }}>
@@ -110,7 +110,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
           <div className="flex-1 min-w-0 text-right">
             <div className="flex items-start gap-2 justify-end">
               <div>
-                <p className="text-[10px] font-semibold tracking-wider capitalize" style={{ color: `${FOREST}80` }}>
+                <p className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: `${FOREST}80` }}>
                   Destination
                 </p>
                 <p className="text-[13px] font-medium" style={{ color: FOREST }}>
@@ -175,7 +175,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
       {/* What&apos;s included */}
       <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7">
         <h2
-          className="font-heading text-[13px] font-bold tracking-wider capitalize mb-4"
+          className="font-heading text-[13px] font-bold tracking-wider uppercase mb-4"
           style={{ color: FOREST }}
         >
           What&apos;s Included
@@ -195,7 +195,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
       {/* Timeline */}
       <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm p-5 md:p-7">
         <h2
-          className="font-heading text-[13px] font-bold tracking-wider capitalize mb-6"
+          className="font-heading text-[13px] font-bold tracking-wider uppercase mb-6"
           style={{ color: FOREST }}
         >
           Move Timeline

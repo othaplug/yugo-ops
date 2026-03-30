@@ -35,7 +35,7 @@ export default function TrackingAgreementModal() {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex min-h-0 items-center justify-center p-4 sm:p-5 z-[99990]"
+      className="fixed inset-0 bg-black/60 flex min-h-0 items-center justify-center p-4 sm:p-5 z-[99990]"
     >
       <div
         className="rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[480px] shadow-2xl overflow-hidden"
@@ -67,7 +67,7 @@ export default function TrackingAgreementModal() {
               color: FOREST,
             }}
           >
-            <h4 className="font-bold text-[11px] capitalize tracking-wider mb-2" style={{ color: GOLD }}>
+            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
               Terms of Use
             </h4>
             <p className="mb-3">
@@ -76,7 +76,7 @@ export default function TrackingAgreementModal() {
               inventory details, and move status.
             </p>
 
-            <h4 className="font-bold text-[11px] capitalize tracking-wider mb-2" style={{ color: GOLD }}>
+            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
               Privacy &amp; Data
             </h4>
             <p className="mb-3">
@@ -86,7 +86,7 @@ export default function TrackingAgreementModal() {
               your preferences and maintain your session.
             </p>
 
-            <h4 className="font-bold text-[11px] capitalize tracking-wider mb-2" style={{ color: GOLD }}>
+            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
               Tracking &amp; Location
             </h4>
             <p className="mb-3">
@@ -95,7 +95,7 @@ export default function TrackingAgreementModal() {
               only during active moves and is not stored permanently.
             </p>
 
-            <h4 className="font-bold text-[11px] capitalize tracking-wider mb-2" style={{ color: GOLD }}>
+            <h4 className="font-bold text-[11px] uppercase tracking-wider mb-2" style={{ color: GOLD }}>
               Claims &amp; Liability
             </h4>
             <p>

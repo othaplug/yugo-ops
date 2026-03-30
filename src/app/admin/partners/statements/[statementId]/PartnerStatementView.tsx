@@ -107,7 +107,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Invoice size={16} color="var(--gold)" />
-            <span className="text-[11px] font-bold tracking-widest capitalize text-[var(--gold)]">
+            <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--gold)]">
               Statement
             </span>
           </div>
@@ -122,7 +122,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
           )}
         </div>
         <span
-          className="px-3 py-1.5 rounded-full text-[11px] font-bold capitalize tracking-wider"
+          className="px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider"
           style={{ color: statusCfg.color, background: statusCfg.bg }}
         >
           {statusCfg.label}
@@ -135,19 +135,19 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
           <div className="text-[22px] font-bold text-[var(--gold)]">
             {deliveries.length}
           </div>
-          <div className="text-[10px] text-[var(--tx3)] capitalize tracking-wider mt-1">Deliveries</div>
+          <div className="text-[10px] text-[var(--tx3)] uppercase tracking-wider mt-1">Deliveries</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 text-center">
           <div className="text-[22px] font-bold text-[var(--tx)]">
             ${Number(statement.subtotal).toFixed(2)}
           </div>
-          <div className="text-[10px] text-[var(--tx3)] capitalize tracking-wider mt-1">Subtotal</div>
+          <div className="text-[10px] text-[var(--tx3)] uppercase tracking-wider mt-1">Subtotal</div>
         </div>
         <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl p-4 text-center">
           <div className="text-[22px] font-bold text-[var(--gold)]">
             ${Number(statement.total).toFixed(2)}
           </div>
-          <div className="text-[10px] text-[var(--tx3)] capitalize tracking-wider mt-1">Total</div>
+          <div className="text-[10px] text-[var(--tx3)] uppercase tracking-wider mt-1">Total</div>
         </div>
       </div>
 
@@ -184,23 +184,23 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
       {/* Deliveries */}
       {deliveries.length > 0 && (
         <div>
-          <h3 className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-3">
+          <h3 className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-3">
             Deliveries ({deliveries.length})
           </h3>
           <div className="bg-[var(--card)] border border-[var(--brd)]/40 rounded-xl overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[var(--brd)]/30">
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold capitalize tracking-wider text-[var(--tx3)]">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">
                     Delivery
                   </th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold capitalize tracking-wider text-[var(--tx3)]">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">
                     Date
                   </th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold capitalize tracking-wider text-[var(--tx3)]">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">
                     Description
                   </th>
-                  <th className="px-4 py-2.5 text-right text-[10px] font-semibold capitalize tracking-wider text-[var(--tx3)]">
+                  <th className="px-4 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]">
                     Price
                   </th>
                 </tr>

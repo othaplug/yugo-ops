@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { Check, CaretDown as ChevronDown, CaretUp as ChevronUp, FileText, Shield, Calendar, MapPin, Ruler, Clock } from "@phosphor-icons/react";
-import { toTitleCase, formatAccessForDisplay } from "@/lib/format-text";
+import { toTitleCase, formatAccessForDisplay, formatAddressForDisplay } from "@/lib/format-text";
 
 const WINE = "#5C1A33";
 const FOREST = "#2C3E2D";
@@ -64,6 +64,9 @@ export interface ContractQuoteData {
     pickupAddress: string;
     cycleDays: number;
   };
+  /** Multiple pickups (optional); when more than one stop, replaces single From card. */
+  pickupStops?: { address: string; accessLine: string | null }[];
+  dropoffStops?: { address: string; accessLine: string | null }[];
 }
 
 interface Props {
@@ -234,6 +237,22 @@ export default function ContractSign({
                   },
                 }
               : {}),
+            ...(q.pickupStops && q.pickupStops.length > 1
+              ? {
+                  pickup_stops: q.pickupStops.map((s) => ({
+                    address: s.address,
+                    access_line: s.accessLine,
+                  })),
+                }
+              : {}),
+            ...(q.dropoffStops && q.dropoffStops.length > 1
+              ? {
+                  dropoff_stops: q.dropoffStops.map((s) => ({
+                    address: s.address,
+                    access_line: s.accessLine,
+                  })),
+                }
+              : {}),
           },
         }),
       });
@@ -314,7 +333,7 @@ export default function ContractSign({
           <FileText className="w-[18px] h-[18px]" style={{ color: FOREST }} />
           <div>
             <h2
-              className="font-heading text-[var(--text-base)] font-bold tracking-wider capitalize"
+              className="font-heading text-[var(--text-base)] font-bold tracking-wider uppercase"
               style={{ color: FOREST }}
             >
               {isBinRental ? "Bin Rental Agreement" : "Service Agreement"}
@@ -354,7 +373,7 @@ export default function ContractSign({
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p
-                    className="text-[9px] font-bold tracking-[0.18em] capitalize mb-1"
+                    className="text-[9px] font-bold tracking-[0.18em] uppercase mb-1"
                     style={{ color: `${GOLD}CC` }}
                   >
                     Your Service
@@ -364,7 +383,7 @@ export default function ContractSign({
                   </h3>
                 </div>
                 <span
-                  className="inline-flex items-center rounded-full px-3.5 py-1.5 text-[10px] font-bold tracking-[0.08em] capitalize shrink-0"
+                  className="inline-flex items-center rounded-full px-3.5 py-1.5 text-[10px] font-bold tracking-[0.08em] uppercase shrink-0"
                   style={{
                     color: GOLD,
                     backgroundColor: "rgba(255,255,255,0.12)",
@@ -384,7 +403,7 @@ export default function ContractSign({
           >
             <div className="px-5 py-5 md:px-6 md:py-6">
               <p
-                className="text-[9px] font-bold tracking-[0.16em] capitalize mb-5"
+                className="text-[9px] font-bold tracking-[0.16em] uppercase mb-5"
                 style={{ color: `${FOREST}50` }}
               >
                 {scheduleSectionTitle}
@@ -396,7 +415,7 @@ export default function ContractSign({
                     className="rounded-xl px-4 py-3 text-left"
                     style={{ backgroundColor: `${WINE}04`, border: `1px solid ${WINE}15` }}
                   >
-                    <p className="text-[10px] font-bold capitalize tracking-wide mb-1.5" style={{ color: WINE }}>
+                    <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: WINE }}>
                       Bin delivery
                     </p>
                     <p className="text-[12px] font-semibold leading-snug" style={{ color: FOREST }}>
@@ -411,7 +430,7 @@ export default function ContractSign({
                     className="rounded-xl px-4 py-3 text-left"
                     style={{ backgroundColor: `${GOLD}05`, border: `1px solid ${GOLD}18` }}
                   >
-                    <p className="text-[10px] font-bold capitalize tracking-wide mb-1.5" style={{ color: GOLD }}>
+                    <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: GOLD }}>
                       Your move day (reference)
                     </p>
                     <p className="text-[12px] font-semibold leading-snug" style={{ color: FOREST }}>
@@ -425,7 +444,7 @@ export default function ContractSign({
                     className="rounded-xl px-4 py-3 text-left"
                     style={{ backgroundColor: `${WINE}04`, border: `1px solid ${WINE}15` }}
                   >
-                    <p className="text-[10px] font-bold capitalize tracking-wide mb-1.5" style={{ color: WINE }}>
+                    <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: WINE }}>
                       Bin pickup
                     </p>
                     <p className="text-[12px] font-semibold leading-snug" style={{ color: FOREST }}>
@@ -445,6 +464,75 @@ export default function ContractSign({
                     additional charges (your quote and Section 3–5 below apply).
                   </p>
                 </div>
+              ) : q.pickupStops && q.pickupStops.length > 1 ? (
+                <div className="space-y-5 text-left">
+                  <div>
+                    <p className="text-[9px] font-bold tracking-[0.16em] uppercase mb-2" style={{ color: `${FOREST}55` }}>
+                      Pickup locations
+                    </p>
+                    <div className="space-y-3">
+                      {q.pickupStops.map((s, idx) => (
+                        <div
+                          key={idx}
+                          className="rounded-xl px-4 py-3"
+                          style={{ backgroundColor: `${WINE}04`, border: `1px solid ${WINE}10` }}
+                        >
+                          <span
+                            className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
+                            style={{ color: WINE }}
+                          >
+                            <MapPin className="w-3 h-3" />
+                            {q.pickupStops!.length > 1 ? `Pickup ${idx + 1}` : "Pickup"}
+                          </span>
+                          <p className="text-[13px] md:text-[var(--text-base)] leading-snug font-semibold" style={{ color: FOREST }}>
+                            {formatAddressForDisplay(s.address)}
+                          </p>
+                          {s.accessLine ? (
+                            <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
+                              Access: {s.accessLine}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] mt-2" style={{ color: `${FOREST}55` }}>
+                      {q.pickupStops.length} pickup locations — crew will visit each stop.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold tracking-[0.16em] uppercase mb-2" style={{ color: `${FOREST}55` }}>
+                      Destination
+                    </p>
+                    <div className="space-y-3">
+                      {(q.dropoffStops && q.dropoffStops.length > 0
+                        ? q.dropoffStops
+                        : [{ address: q.toAddress, accessLine: formatAccessForDisplay(q.toAccess) }]
+                      ).map((s, idx) => (
+                        <div
+                          key={idx}
+                          className="rounded-xl px-4 py-3"
+                          style={{ backgroundColor: `${GOLD}05`, border: `1px solid ${GOLD}12` }}
+                        >
+                          <span
+                            className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
+                            style={{ color: GOLD }}
+                          >
+                            <MapPin className="w-3 h-3" />
+                            {(q.dropoffStops?.length ?? 0) > 1 ? `Destination ${idx + 1}` : "To"}
+                          </span>
+                          <p className="text-[13px] md:text-[var(--text-base)] leading-snug font-semibold" style={{ color: FOREST }}>
+                            {formatAddressForDisplay(s.address)}
+                          </p>
+                          {s.accessLine ? (
+                            <p className="text-[10px] mt-1" style={{ color: `${FOREST}55` }}>
+                              Access: {s.accessLine}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               ) : q.eventLegs && q.eventLegs.length > 0 ? (
                 <div className="space-y-3">
                   {q.eventLegs.map((leg, idx) => (
@@ -453,7 +541,7 @@ export default function ContractSign({
                       className="rounded-xl px-4 py-3 text-left"
                       style={{ backgroundColor: `${WINE}04`, border: `1px solid ${WINE}15` }}
                     >
-                      <p className="text-[10px] font-bold capitalize tracking-wide mb-1.5" style={{ color: WINE }}>
+                      <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: WINE }}>
                         {leg.label}
                       </p>
                       <p className="text-[12px] font-semibold leading-snug" style={{ color: FOREST }}>
@@ -496,7 +584,7 @@ export default function ContractSign({
                       style={{ backgroundColor: `${WINE}04`, border: `1px solid ${WINE}10` }}
                     >
                       <span
-                        className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] capitalize mb-1"
+                        className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
                         style={{ color: WINE }}
                       >
                         <MapPin className="w-3 h-3" />
@@ -517,7 +605,7 @@ export default function ContractSign({
                       style={{ backgroundColor: `${GOLD}05`, border: `1px solid ${GOLD}12` }}
                     >
                       <span
-                        className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] capitalize mb-1"
+                        className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
                         style={{ color: GOLD }}
                       >
                         <MapPin className="w-3 h-3" />
@@ -623,7 +711,7 @@ export default function ContractSign({
             {/* ─── Pricing section ─── */}
             <div className="px-5 py-5 md:px-6 md:py-6">
               <p
-                className="text-[9px] font-bold tracking-[0.18em] capitalize mb-3"
+                className="text-[9px] font-bold tracking-[0.18em] uppercase mb-3"
                 style={{ color: `${FOREST}55` }}
               >
                 Investment Summary
@@ -764,14 +852,14 @@ export default function ContractSign({
             {isBinRental ? (
               <>
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     1. Bin rental service
                   </h3>
                   <p>{serviceDesc}</p>
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     2. Quoted fee &amp; scope
                   </h3>
                   <p>
@@ -784,7 +872,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     3. Delivery, pickup &amp; rental period
                   </h3>
                   <p>
@@ -806,7 +894,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     4. Payment
                   </h3>
                   <p>
@@ -817,7 +905,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     5. Card on file
                   </h3>
                   <p>
@@ -829,14 +917,14 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     6. Cancellation
                   </h3>
                   <p>{cancellation}</p>
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     7. Care of bins &amp; equipment
                   </h3>
                   <p>
@@ -848,7 +936,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     8. Liability &amp; insurance
                   </h3>
                   <p>
@@ -860,7 +948,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     9. Access &amp; your responsibilities
                   </h3>
                   <p>
@@ -873,7 +961,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     10. Delays &amp; rescheduling
                   </h3>
                   <p>
@@ -887,14 +975,14 @@ export default function ContractSign({
             ) : (
               <>
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     1. Service Description
                   </h3>
                   <p>{serviceDesc}</p>
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     2. Flat-Rate Guarantee
                   </h3>
                   <p>
@@ -905,7 +993,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     3. Payment Terms
                   </h3>
                   <p>
@@ -916,7 +1004,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     4. Card-on-File Authorization
                   </h3>
                   <p>
@@ -927,14 +1015,14 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     5. Cancellation Policy
                   </h3>
                   <p>{cancellation}</p>
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     6. Liability &amp; Insurance
                   </h3>
                   <p>
@@ -945,7 +1033,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     7. Scope Changes
                   </h3>
                   <p>
@@ -956,7 +1044,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     8. Claims &amp; Damage Reporting
                   </h3>
                   <p>
@@ -968,7 +1056,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     9. Client Responsibilities
                   </h3>
                   <p>
@@ -983,7 +1071,7 @@ export default function ContractSign({
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-[12px] mb-1 capitalize tracking-wider">
+                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
                     10. Delays &amp; Force Majeure
                   </h3>
                   <p>
@@ -1046,7 +1134,7 @@ export default function ContractSign({
           {/* Typed name input */}
           <div>
             <label
-              className="block text-[11px] font-semibold tracking-wider capitalize mb-1.5"
+              className="block text-[11px] font-semibold tracking-wider uppercase mb-1.5"
               style={{ color: FOREST }}
             >
               Type Your Full Legal Name
@@ -1065,22 +1153,25 @@ export default function ContractSign({
             />
           </div>
 
-          {/* Agreement checkbox */}
-          <label className="flex items-start gap-3 cursor-pointer group">
-            <div
-              className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors"
+          {/* Agreement checkbox — real input inside label so the box and text both toggle */}
+          <label className="flex items-start gap-3 cursor-pointer select-none rounded-md">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="peer sr-only focus:outline-none"
+            />
+            <span
+              className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-1 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#B8962E] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-white"
               style={{
                 borderColor: agreed ? GOLD : "#D5D0C8",
                 backgroundColor: agreed ? GOLD : "transparent",
               }}
+              aria-hidden
             >
-              {agreed && <Check className="w-3.5 h-3.5 text-white" />}
-            </div>
-            <span
-              className="text-[12px] leading-snug"
-              style={{ color: FOREST }}
-              onClick={() => setAgreed(!agreed)}
-            >
+              {agreed && <Check className="w-3.5 h-3.5 text-white" weight="bold" aria-hidden />}
+            </span>
+            <span className="text-[12px] leading-snug flex-1 min-w-0 pt-0.5" style={{ color: FOREST }}>
               {isBinRental ? (
                 <>
                   I have read and agree to the <b>Bin Rental Agreement</b> above, including payment,
@@ -1098,7 +1189,7 @@ export default function ContractSign({
           </label>
 
           {/* Auto-populated date */}
-          <p className="text-[11px]" style={{ color: `${FOREST}50` }}>
+          <p className="text-[11px] pl-8" style={{ color: "#5A655C" }}>
             Date:{" "}
             {new Date().toLocaleDateString("en-CA", {
               weekday: "long",
@@ -1122,29 +1213,31 @@ export default function ContractSign({
             </div>
           )}
 
-          {/* Sign button */}
-          <button
-            type="button"
-            onClick={handleSign}
-            disabled={!canSign}
-            className="w-full py-4 rounded-xl text-[var(--text-base)] font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: canSign ? GOLD : `${GOLD}60` }}
-          >
-            {signing ? (
-              <span className="flex items-center justify-center gap-2">
-                <span
-                  className="w-4 h-4 border-2 rounded-full animate-spin"
-                  style={{
-                    borderColor: "rgba(255,255,255,0.3)",
-                    borderTopColor: "#fff",
-                  }}
-                />
-                Processing&hellip;
-              </span>
-            ) : (
-              "Sign & Continue to Payment"
-            )}
-          </button>
+          {/* Sign button — width-capped so it reads as a control, not a full-width slab */}
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={handleSign}
+              disabled={!canSign}
+              className="w-full max-w-[17.5rem] py-2.5 px-5 rounded-lg text-[13px] font-semibold text-white transition-[opacity,transform] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+              style={{ backgroundColor: canSign ? GOLD : `${GOLD}60` }}
+            >
+              {signing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span
+                    className="w-3.5 h-3.5 border-2 rounded-full animate-spin"
+                    style={{
+                      borderColor: "rgba(255,255,255,0.3)",
+                      borderTopColor: "#fff",
+                    }}
+                  />
+                  Processing&hellip;
+                </span>
+              ) : (
+                "Sign & Continue to Payment"
+              )}
+            </button>
+          </div>
 
           <p className="text-center text-[10px]" style={{ color: `${FOREST}40` }}>
             Your electronic signature is legally binding under the Ontario Electronic Commerce

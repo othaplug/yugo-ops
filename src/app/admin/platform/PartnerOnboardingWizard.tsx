@@ -259,7 +259,7 @@ interface PartnerOnboardingWizardProps {
 
 const inputCls =
   "w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--brd)]/70 rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)]/60 focus:ring-2 focus:ring-[var(--gold)]/10 outline-none transition-all duration-150";
-const labelCls = "block text-[11px] font-semibold tracking-widest capitalize text-[var(--tx3)] mb-2";
+const labelCls = "block text-[11px] font-semibold tracking-widest uppercase text-[var(--tx3)] mb-2";
 
 export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboardingWizardProps) {
   const { toast } = useToast();
@@ -542,7 +542,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
         <div className="px-7 pt-7 pb-6 border-b border-[var(--brd)]/60 shrink-0">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <p className="text-[11px] font-semibold tracking-widest capitalize text-[var(--gold)] mb-1.5">
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-[var(--gold)] mb-1.5">
                 Partner Onboarding
               </p>
               <h2 className="font-heading text-[22px] font-bold text-[var(--tx)] leading-tight">
@@ -1036,7 +1036,7 @@ function Step1BusinessDetails({
               <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Icon name="search" className="w-4 h-4 shrink-0 text-[var(--gold)] stroke-[1.75]" aria-hidden />
-                  <p className="text-[12px] font-bold tracking-wide capitalize text-[var(--gold)]">
+                  <p className="text-[12px] font-bold tracking-wide uppercase text-[var(--gold)]">
                     Existing Contact Found
                   </p>
                 </div>
@@ -1797,7 +1797,7 @@ function Step3RateCardBilling({
                   onChange={() => update("insuranceCertRequired", v === "yes")}
                   className="accent-[var(--gold)]"
                 />
-                <span className="text-[13px] font-medium text-[var(--tx)] capitalize">{v}</span>
+                <span className="text-[13px] font-medium text-[var(--tx)] uppercase">{v}</span>
               </label>
             ))}
           </div>
@@ -1852,7 +1852,7 @@ function Step4PortalAccess({
                 className="accent-[var(--gold)]"
               />
               <div>
-                <p className="text-[var(--text-base)] font-medium text-[var(--tx)] capitalize">{v}</p>
+                <p className="text-[var(--text-base)] font-medium text-[var(--tx)] uppercase">{v}</p>
                 <p className="text-[11px] text-[var(--tx3)]">
                   {v === "yes" ? "Send invitation email" : "Add access later"}
                 </p>
@@ -1966,7 +1966,7 @@ function SummarySection({ title, children }: { title: string; children: React.Re
   return (
     <div className="rounded-2xl border border-[var(--brd)]/60 overflow-hidden">
       <div className="px-5 py-3 border-b border-[var(--brd)]/40 bg-[var(--bg)]/40">
-        <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)]">{title}</p>
+        <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)]">{title}</p>
       </div>
       <div className="px-5 py-1">{children}</div>
     </div>

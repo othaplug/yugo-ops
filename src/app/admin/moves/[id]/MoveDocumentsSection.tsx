@@ -200,7 +200,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
 
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
-      <h3 className="font-heading text-[10px] font-bold tracking-wide capitalize text-[var(--tx3)] mb-2">
+      <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)] mb-2">
         Documents & Invoices
       </h3>
       {loading ? (
@@ -280,7 +280,7 @@ export default function MoveDocumentsSection({ moveId }: { moveId: string }) {
                     <div className="min-w-0 flex-1 flex items-center gap-2">
                       <FileText className="w-[11px] h-[11px] text-[var(--tx3)] shrink-0" />
                       <span className="text-[11px] text-[var(--tx)] truncate">{d.title}</span>
-                      <span className="ml-1 text-[9px] text-[var(--tx3)] capitalize shrink-0">({d.type})</span>
+                      <span className="ml-1 text-[9px] text-[var(--tx3)] uppercase shrink-0">({d.type})</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {d.view_url && (

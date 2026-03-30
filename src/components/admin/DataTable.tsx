@@ -1024,7 +1024,7 @@ export default function DataTable<T>({
                     >
                       {col.render
                         ? col.render(row)
-                        : <span className="capitalize text-[var(--tx)]">{String(col.accessor(row) ?? "-")}</span>}
+                        : <span className="uppercase text-[var(--tx)]">{String(col.accessor(row) ?? "-")}</span>}
                     </td>
                   ))}
                   {/* Spacer cell fills remaining width */}
@@ -1057,7 +1057,7 @@ export default function DataTable<T>({
                 return col.render ? (
                   col.render(row)
                 ) : (
-                  <span className="capitalize">{String(col.accessor(row) ?? "-")}</span>
+                  <span className="uppercase">{String(col.accessor(row) ?? "-")}</span>
                 );
               };
 

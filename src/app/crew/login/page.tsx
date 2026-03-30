@@ -776,7 +776,7 @@ export default function CrewLoginPage() {
                 </div>
               ) : (
                 <div style={{ marginBottom: 28 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "capitalize", color: "#666", marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", color: "#666", marginBottom: 12 }}>
                     Select crew member
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
@@ -876,7 +876,7 @@ export default function CrewLoginPage() {
                     fontSize: 11,
                     fontWeight: 600,
                     letterSpacing: 0.5,
-                    textTransform: "capitalize",
+                    textTransform: "uppercase",
                     color: "#666",
                     marginBottom: 10,
                   }}
@@ -1034,7 +1034,7 @@ function CrewPhoneLoginFields({
           fontSize: 11,
           fontWeight: 600,
           letterSpacing: 0.5,
-          textTransform: "capitalize",
+          textTransform: "uppercase",
           color: "#666",
           marginBottom: 10,
         }}
@@ -1073,7 +1073,7 @@ function CrewPhoneLoginFields({
             fontSize: 11,
             fontWeight: 600,
             letterSpacing: 0.5,
-            textTransform: "capitalize",
+            textTransform: "uppercase",
             color: "#666",
             marginBottom: 10,
           }}

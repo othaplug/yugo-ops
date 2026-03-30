@@ -211,7 +211,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
               Set a new temporary password for <strong>{resetUser.name || resetUser.email}</strong>. They will receive an email with the new password and login link.
             </p>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">New temporary password *</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New temporary password *</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -245,7 +245,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
             Invite someone at {orgName} to log in and view their deliveries.
           </p>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Email *</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
             <input
               type="email"
               value={email}
@@ -256,7 +256,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Name</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
             <input
               type="text"
               value={name}
@@ -266,7 +266,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Temporary Password *</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Temporary Password *</label>
             <div className="flex gap-2">
               <input
                 type="text"

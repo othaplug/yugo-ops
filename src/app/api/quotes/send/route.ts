@@ -10,6 +10,7 @@ import { logActivity } from "@/lib/activity";
 import { getCompanyDisplayName } from "@/lib/config";
 import { sendQuoteLinkSms } from "@/lib/quote-sms";
 import { updateLeadAfterQuoteSent } from "@/lib/leads/update-from-quote";
+import { pickupLocationsFromQuote, dropoffLocationsFromQuote } from "@/lib/quotes/quote-address-display";
 
 const SERVICE_TO_TEMPLATE: Record<string, string> = {
   local_move: "quote-residential",
@@ -129,6 +130,8 @@ export async function POST(req: NextRequest) {
     const quoteUrl = `${baseUrl}/quote/${quoteId}`;
 
     const factors = (quote.factors_applied ?? {}) as Record<string, unknown>;
+    const pickupLocations = pickupLocationsFromQuote(factors, quote.from_address, quote.from_access);
+    const dropoffLocations = dropoffLocationsFromQuote(factors, quote.to_address, quote.to_access);
 
     const binLineItemsRaw = Array.isArray(factors.bin_line_items)
       ? (factors.bin_line_items as { label?: string; amount?: number }[])
@@ -247,6 +250,8 @@ export async function POST(req: NextRequest) {
         toAddress: quote.to_address,
         fromAccess: quote.from_access ?? null,
         toAccess: quote.to_access ?? null,
+        pickupLocations,
+        dropoffLocations,
         moveDate: quote.move_date,
         moveSize,
         companyName: (factors.company_name as string) ?? platformCompanyName,

@@ -59,11 +59,11 @@ export default function AgentDetailModal({
           </div>
         )}
         <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]">Total commission</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Total commission</span>
             <span className="text-[16px] font-bold text-[var(--gold)]">{formatCurrency(totalCommission)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]">Referrals brought in</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Referrals brought in</span>
             <span className="text-[13px] font-semibold text-[var(--tx)]">{referrals.length}</span>
           </div>
 

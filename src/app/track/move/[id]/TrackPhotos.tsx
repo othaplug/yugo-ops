@@ -196,7 +196,7 @@ export default function TrackPhotos({
               >
                 <img src={p.url} alt={label} className="w-full h-full object-cover" />
                 <div className="absolute bottom-0 left-0 right-0 bg-white/95 px-3 py-2 flex items-center justify-between">
-                  <span className="text-[10px] font-bold capitalize tracking-wider text-[#454545]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#454545]">
                     {label} {dateStr && `\u2022 ${dateStr}`}
                   </span>
                   {isClient && (

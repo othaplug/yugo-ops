@@ -72,8 +72,11 @@ export default function InboundShipmentsClient() {
     <div className="max-w-[1400px] mx-auto px-3 sm:px-5 md:px-6 py-5 md:py-6 w-full">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--tx)] tracking-tight">Inbound Shipments</h1>
-          <p className="text-sm text-[var(--tx3)] mt-1">Receive, inspect, store & deliver (RISSD)</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] text-[var(--tx3)]/60 mb-1.5">B2B</p>
+          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+            Inbound Shipments
+          </h1>
+          <p className="text-sm text-[var(--tx3)] mt-2">Receive, inspect, store & deliver (RISSD)</p>
         </div>
         <Link
           href="/admin/inbound-shipments/new"
@@ -119,7 +122,7 @@ export default function InboundShipmentsClient() {
             >
               <Icon className="text-[var(--gold)] shrink-0" size={22} aria-hidden />
               <div>
-                <div className="text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)]">{label}</div>
+                <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">{label}</div>
                 <div className="text-xl font-semibold text-[var(--tx)]">{value}</div>
               </div>
             </div>
@@ -131,7 +134,7 @@ export default function InboundShipmentsClient() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--brd)] text-left text-[var(--tx3)] text-xs capitalize tracking-wide">
+              <tr className="border-b border-[var(--brd)] text-left text-[var(--tx3)] text-xs uppercase tracking-wide">
                 <th className="px-4 py-3 font-semibold">Reference</th>
                 <th className="px-4 py-3 font-semibold">Item</th>
                 <th className="px-4 py-3 font-semibold">Status</th>

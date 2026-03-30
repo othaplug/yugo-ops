@@ -83,7 +83,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
 
   return (
     <div>
-      <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Email Address</label>
+      <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email Address</label>
       <div className="flex gap-2">
         <input
           type="email"
@@ -119,7 +119,7 @@ export default function EditableEmailSection({ currentEmail }: { currentEmail: s
           ) : (
             <form onSubmit={handleConfirm} className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Verification code</label>
+                <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Verification code</label>
                 <input
                   type="text"
                   value={code}

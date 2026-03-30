@@ -79,12 +79,12 @@ export default function RescheduleDeliveryModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md bg-[var(--bg)] border border-[var(--brd)]/40 rounded-2xl overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)]/30">
           <div>
-            <p className="text-[9px] font-bold tracking-widest capitalize text-[var(--gold)]">
+            <p className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]">
               Reschedule Delivery
             </p>
             <h2 className="admin-section-h2">
@@ -118,14 +118,14 @@ export default function RescheduleDeliveryModal({
                   <CalendarBlank size={13} />
                   Currently: <span className="font-semibold text-[var(--tx)]">{formatDate(currentDate)}</span>
                   {currentWindow && (
-                    <span className="capitalize">{currentWindow}</span>
+                    <span className="uppercase">{currentWindow}</span>
                   )}
                 </div>
               )}
 
               {/* Date picker */}
               <div>
-                <label className="block text-[11px] font-semibold tracking-widest capitalize text-[var(--tx3)] mb-2">
+                <label className="block text-[11px] font-semibold tracking-widest uppercase text-[var(--tx3)] mb-2">
                   New Date
                 </label>
                 <input
@@ -140,7 +140,7 @@ export default function RescheduleDeliveryModal({
 
               {/* Window picker */}
               <div>
-                <label className="block text-[11px] font-semibold tracking-widest capitalize text-[var(--tx3)] mb-2">
+                <label className="block text-[11px] font-semibold tracking-widest uppercase text-[var(--tx3)] mb-2">
                   Delivery Window
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -185,7 +185,7 @@ export default function RescheduleDeliveryModal({
                         <span className="text-[12px] font-semibold text-[var(--tx)]">
                           {formatDate(alt.date)}
                         </span>
-                        <span className="text-[11px] text-[var(--tx3)] capitalize">{alt.window}</span>
+                        <span className="text-[11px] text-[var(--tx3)] uppercase">{alt.window}</span>
                       </button>
                     ))}
                   </div>

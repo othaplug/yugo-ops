@@ -118,7 +118,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
   const inputClass = selectClass;
 
   return (
-    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/60">
       <div className="relative w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl border border-[var(--brd)] bg-[var(--card)] shadow-2xl animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <button
           onClick={onClose}
@@ -148,7 +148,7 @@ export default function CancelMoveModal({ move, open, onClose, onCancelled }: Ca
           ) : (
             <>
               <div className="mb-6">
-                <div className="text-[9px] font-bold text-[var(--red)] tracking-widest capitalize mb-1">Cancel Move</div>
+                <div className="text-[9px] font-bold text-[var(--red)] tracking-widest uppercase mb-1">Cancel Move</div>
                 <h2 className="text-lg font-bold text-[var(--tx)]">
                   Cancel move for {move.client_name || "this client"}?
                 </h2>

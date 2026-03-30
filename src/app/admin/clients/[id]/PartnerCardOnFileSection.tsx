@@ -144,7 +144,7 @@ export default function PartnerCardOnFileSection({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon name="creditCard" className="w-4 h-4 text-[var(--gold)]" />
-          <h3 className="text-[11px] font-bold tracking-wider capitalize text-[var(--tx3)]">Payment Method</h3>
+          <h3 className="text-[11px] font-bold tracking-wider uppercase text-[var(--tx3)]">Payment Method</h3>
         </div>
       </div>
 

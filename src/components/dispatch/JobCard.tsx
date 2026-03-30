@@ -127,7 +127,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <StatusIcon className={`w-4 h-4 shrink-0 ${statusInfo.color}`} />
-          <span className={`text-[9px] font-bold tracking-wider capitalize ${statusInfo.color}`}>
+          <span className={`text-[9px] font-bold tracking-wider uppercase ${statusInfo.color}`}>
             {statusInfo.label}
           </span>
           <span className="text-[11px] font-mono text-[var(--tx2)]">{job.label}</span>
@@ -136,7 +136,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
           )}
         </div>
         <span
-          className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded capitalize tracking-wide ${
+          className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
             job.type === "move"
               ? "bg-[#3B82F6]/15 text-[#3B82F6]"
               : "bg-[#A855F7]/15 text-[#A855F7]"
@@ -151,7 +151,7 @@ export default function JobCard({ job, onReassign, onContact, onAddNote: _onAddN
         <User className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0" />
         <span className="text-[12px] font-semibold text-[var(--tx)]">{job.client}</span>
         {job.tier && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--tx3)] capitalize">
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--gdim)] text-[var(--tx3)] uppercase">
             {job.tier}
           </span>
         )}

@@ -37,10 +37,10 @@ export function VendorStatusCompactTable({ inventory }: { inventory: VendorStatu
       <table className="w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-[var(--brd)]/50">
-            <th className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2.5 pr-4">Vendor</th>
-            <th className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2.5 pr-4">Items</th>
-            <th className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2.5 pr-4">Status</th>
-            <th className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2.5 text-right">ETA</th>
+            <th className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2.5 pr-4">Vendor</th>
+            <th className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2.5 pr-4">Items</th>
+            <th className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2.5 pr-4">Status</th>
+            <th className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2.5 text-right">ETA</th>
           </tr>
         </thead>
         <tbody>

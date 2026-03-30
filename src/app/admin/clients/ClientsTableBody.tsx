@@ -85,7 +85,7 @@ export default function ClientsTableBody({ clients }: { clients: Client[] }) {
               })()}
             </div>
           </td>
-          <td className="px-3 py-2 text-[10px] capitalize border-b border-[var(--brd)]">{c.type === "b2c" ? "Move" : c.type}</td>
+          <td className="px-3 py-2 text-[10px] uppercase border-b border-[var(--brd)]">{c.type === "b2c" ? "Move" : c.type}</td>
           <td className="hidden sm:table-cell px-3 py-2 border-b border-[var(--brd)]">
             <div className="text-[9px]">{c.contact_name}</div>
             <div className="text-[9px] text-[var(--tx3)]">{c.email}</div>

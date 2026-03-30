@@ -318,7 +318,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
         {addr && <div className="text-[11px] text-[#454545] mt-0.5 truncate">→ {addr}</div>}
         <div className="mt-1.5">
           <span
-            className="inline-block text-[9px] font-bold px-2 py-0.5 rounded-full capitalize"
+            className="inline-block text-[9px] font-bold px-2 py-0.5 rounded-full uppercase"
             style={{ backgroundColor: style.bg, color: style.text, border: `1px solid ${style.border}30` }}
           >
             {fmtDeliveryStatus(d.status || "pending")}
@@ -352,7 +352,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
               <button
                 key={m}
                 onClick={() => setView(m)}
-                className={`px-2.5 py-1 rounded-md text-[10px] font-semibold capitalize transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase transition-colors ${
                   view === m
                     ? "bg-white dark:bg-[var(--card)] text-[#2C3E2D] dark:text-[var(--gold)] shadow-sm"
                     : "text-[#4F4B47] dark:text-[var(--tx3)] hover:text-[#1A1A1A] dark:hover:text-[var(--tx)]"
@@ -405,7 +405,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
     return (
       <div className="grid grid-cols-7 gap-px bg-[#E8E4DF] dark:bg-[var(--brd)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-xl overflow-hidden">
         {DAY_NAMES.map((d) => (
-          <div key={d} className="bg-[#F9F7F4] dark:bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-wider capitalize text-[#5C5853] dark:text-[var(--tx3)]/50">{d}</div>
+          <div key={d} className="bg-[#F9F7F4] dark:bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-wider uppercase text-[#5C5853] dark:text-[var(--tx3)]/50">{d}</div>
         ))}
         {cells.map((day, i) => {
           if (day === null) return <div key={`e-${i}`} className="bg-white dark:bg-[var(--card)] min-h-[90px]" />;
@@ -726,7 +726,7 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             const count = delCount + projCount;
             return (
               <button key={key} type="button" onClick={() => switchToDay(key)} className={`flex-1 py-2 text-center border-l border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 transition-colors ${isToday ? "bg-[#C9A962]/5" : ""}`}>
-                <div className={`text-[9px] font-bold capitalize ${isToday ? "text-[#C9A962]" : "text-[#5C5853] dark:text-[var(--tx3)]/50"}`}>{DAY_NAMES[i]} {date.getDate()}</div>
+                <div className={`text-[9px] font-bold uppercase ${isToday ? "text-[#C9A962]" : "text-[#5C5853] dark:text-[var(--tx3)]/50"}`}>{DAY_NAMES[i]} {date.getDate()}</div>
                 {count > 0 && <div className="text-[7px] text-[#2C3E2D] dark:text-[var(--gold)] font-semibold">{delCount > 0 && `${delCount} del${delCount > 1 ? "s" : ""}`}{delCount > 0 && projCount > 0 ? " · " : ""}{projCount > 0 && `${projCount} proj`}</div>}
               </button>
             );

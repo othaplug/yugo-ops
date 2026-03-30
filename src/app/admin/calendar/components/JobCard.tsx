@@ -112,7 +112,7 @@ export default function JobCard({ event, compact, onClick, onDragStart }: Props)
       >
         <span className="truncate">{toTitleCase(event.description)}</span>
         {event.eventPhase && (
-          <span className="shrink-0 text-[8px] font-bold capitalize px-1.5 py-0.5 rounded-full bg-black/15 text-slate-900">
+          <span className="shrink-0 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-black/15 text-slate-900">
             {event.eventPhase === "delivery" ? "Deliver" : event.eventPhase === "return" ? "Return" : event.eventPhase}
           </span>
         )}

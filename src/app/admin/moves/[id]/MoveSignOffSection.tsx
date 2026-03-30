@@ -98,7 +98,7 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
       {/* Escalation banner */}
       {signOff?.escalation_triggered && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-[11px] font-bold text-red-700 capitalize mb-1">Escalation Triggered</p>
+          <p className="text-[11px] font-bold text-red-700 uppercase mb-1">Escalation Triggered</p>
           <p className="text-[11px] text-red-600">{signOff.escalation_reason}</p>
         </div>
       )}
@@ -106,7 +106,7 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
       {/* Discrepancy flags */}
       {signOff?.discrepancy_flags && signOff.discrepancy_flags.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <p className="text-[11px] font-bold text-amber-700 capitalize mb-1">Discrepancy Flags</p>
+          <p className="text-[11px] font-bold text-amber-700 uppercase mb-1">Discrepancy Flags</p>
           {signOff.discrepancy_flags.map((f, i) => (
             <p key={i} className="text-[11px] text-amber-600">• {f}</p>
           ))}
@@ -116,7 +116,7 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
       {signOff && (
         <div className="bg-[var(--card)] border border-[var(--brd)]/50 rounded-lg p-3">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-heading text-[10px] font-bold tracking-wide capitalize text-[var(--tx3)]">
+            <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-[var(--tx3)]">
               Client Sign-Off
             </h3>
             <a
@@ -156,7 +156,7 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
 
           {/* Confirmations grid */}
           <div className="mt-2 pt-2 border-t border-[var(--brd)]">
-            <p className="text-[10px] font-bold capitalize text-[var(--tx3)] mb-1.5">Confirmations</p>
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-1.5">Confirmations</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
               <div><span className="text-[var(--tx3)]">All items received:</span> <YesNo value={signOff.all_items_received} /></div>
               <div><span className="text-[var(--tx3)]">Condition accepted:</span> <YesNo value={signOff.condition_accepted} /></div>
@@ -197,7 +197,7 @@ export default function MoveSignOffSection({ moveId }: { moveId: string }) {
       {/* Skip records */}
       {skips.length > 0 && (
         <div className="bg-amber-50/50 border border-amber-200/50 rounded-lg p-3">
-          <h3 className="font-heading text-[10px] font-bold tracking-wide capitalize text-amber-700 mb-2">
+          <h3 className="font-heading text-[10px] font-bold tracking-wide uppercase text-amber-700 mb-2">
             Skip History ({skips.length})
           </h3>
           {skips.map((s) => (

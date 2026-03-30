@@ -115,7 +115,7 @@ export default function AppearanceSettings() {
                   <div className="w-6 h-1.5 rounded bg-[#3a3a3e]" />
                 </div>
               )}
-              <span className={`text-[11px] font-semibold capitalize ${theme === t ? "text-[var(--gold)]" : "text-[var(--tx2)]"}`}>
+              <span className={`text-[11px] font-semibold uppercase ${theme === t ? "text-[var(--gold)]" : "text-[var(--tx2)]"}`}>
                 {t} Mode
               </span>
               {theme === t && (

@@ -204,7 +204,7 @@ export default function QuoteDetailClient({
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60">Sales · Quote</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">Sales · Quote</p>
         </div>
 
         {/* Row 2: title + status badge */}
@@ -212,7 +212,7 @@ export default function QuoteDetailClient({
           <h1 className="font-hero text-[26px] sm:text-[30px] font-bold text-[var(--tx)] tracking-tight leading-none">
             {quote.quote_id}
           </h1>
-          <span className={`text-[10px] font-bold tracking-wider capitalize px-2.5 py-1 rounded-full shrink-0 ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}>
+          <span className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full shrink-0 ${STATUS_COLORS[quote.status] ?? STATUS_COLORS.draft}`}>
             {toTitleCase(quote.status)}
           </span>
         </div>
@@ -292,7 +292,7 @@ export default function QuoteDetailClient({
             <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
               {/* Client */}
               <div>
-                <p className="text-[9px] font-bold tracking-[0.2em] capitalize text-[var(--tx3)]/50 mb-1.5">Client</p>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Client</p>
                 <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">{contact?.name ?? "-"}</p>
                 <p className="text-[12px] text-[var(--tx3)] mt-0.5">{contact?.email ?? "-"}</p>
                 {contact?.phone && (
@@ -301,7 +301,7 @@ export default function QuoteDetailClient({
               </div>
               {/* Move Date */}
               <div>
-                <p className="text-[9px] font-bold tracking-[0.2em] capitalize text-[var(--tx3)]/50 mb-1.5">Move Date</p>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Move Date</p>
                 <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">
                   {quote.move_date
                     ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
@@ -315,7 +315,7 @@ export default function QuoteDetailClient({
               </div>
               {/* Route */}
               <div>
-                <p className="text-[9px] font-bold tracking-[0.2em] capitalize text-[var(--tx3)]/50 mb-1.5">Route</p>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Route</p>
                 <p className="text-[12px] font-medium text-[var(--tx)] leading-snug">{quote.from_address}</p>
                 <p className="text-[12px] text-[var(--tx3)] leading-snug">→ {quote.to_address}</p>
                 {quote.distance_km && (
@@ -324,7 +324,7 @@ export default function QuoteDetailClient({
               </div>
               {/* Amount */}
               <div>
-                <p className="text-[9px] font-bold tracking-[0.2em] capitalize text-[var(--tx3)]/50 mb-1.5">Amount</p>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Amount</p>
                 {(() => {
                   const HST = 0.13;
                   if (quote.tiers) {
@@ -363,7 +363,7 @@ export default function QuoteDetailClient({
               <div className="mt-3 flex flex-wrap gap-4">
                 {quote.truck_primary && (
                   <div>
-                    <span className="text-[10px] font-semibold tracking-widest capitalize text-[var(--tx3)]/70">
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                       Vehicle
                     </span>
                     <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
@@ -374,7 +374,7 @@ export default function QuoteDetailClient({
                 )}
                 {(quote.est_crew_size ?? factors?.est_crew_size) && (
                   <div>
-                    <span className="text-[10px] font-semibold tracking-widest capitalize text-[var(--tx3)]/70">
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                       Crew
                     </span>
                     <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
@@ -384,7 +384,7 @@ export default function QuoteDetailClient({
                 )}
                 {quote.est_hours && (
                   <div>
-                    <span className="text-[10px] font-semibold tracking-widest capitalize text-[var(--tx3)]/70">
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--tx3)]/70">
                       Est. Hours
                     </span>
                     <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
@@ -650,7 +650,7 @@ export default function QuoteDetailClient({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Device</span>
-                  <span className="text-[var(--tx)] font-medium capitalize">
+                  <span className="text-[var(--tx)] font-medium uppercase">
                     {engagement.find((e) => e.device_type)?.device_type ?? "-"}
                   </span>
                 </div>

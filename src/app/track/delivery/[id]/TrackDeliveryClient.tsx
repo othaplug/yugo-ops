@@ -399,7 +399,7 @@ export default function TrackDeliveryClient({
 
         {/* Header */}
         <div className="mb-6 anim-slide-up anim-delay-1">
-          <div className="text-[9px] font-bold tracking-[0.18em] capitalize mb-1.5" style={{ color: WINE }}>
+          <div className="text-[9px] font-bold tracking-[0.18em] uppercase mb-1.5" style={{ color: WINE }}>
             {b2bAudience === "recipient" && b2bCoBrand
               ? `${b2bCoBrand} · Yugo`
               : b2bAudience === "business"
@@ -418,7 +418,7 @@ export default function TrackDeliveryClient({
           ) : null}
           {b2bAudience ? (
             <p className="text-[12px] mt-3 font-semibold" style={{ color: FOREST }}>
-              <span className="text-[10px] font-bold capitalize tracking-widest mr-2" style={{ color: `${FOREST}45` }}>Status</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest mr-2" style={{ color: `${FOREST}45` }}>Status</span>
               {(() => {
                 const st = (delivery.status || "").toLowerCase().replace(/-/g, "_");
                 if (isCompleted || st === "delivered") return "Delivered";
@@ -554,7 +554,7 @@ export default function TrackDeliveryClient({
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[9px] font-bold tracking-[0.14em] capitalize mb-0.5" style={{ color: `${FOREST}50` }}>Pickup from</div>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase mb-0.5" style={{ color: `${FOREST}50` }}>Pickup from</div>
                 <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{pickupAddr}</div>
               </div>
             </div>
@@ -579,7 +579,7 @@ export default function TrackDeliveryClient({
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[9px] font-bold tracking-[0.14em] capitalize mb-0.5" style={{ color: `${FOREST}50` }}>Deliver to</div>
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase mb-0.5" style={{ color: `${FOREST}50` }}>Deliver to</div>
                 <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{dropoffAddr}</div>
               </div>
             </div>
@@ -591,7 +591,7 @@ export default function TrackDeliveryClient({
           <div className="rounded-2xl border px-4 py-3.5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
             <div className="flex items-center gap-2 mb-1.5">
               <CalendarBlank size={13} color={GOLD} aria-hidden />
-              <span className="text-[9px] font-bold tracking-[0.12em] capitalize" style={{ color: `${FOREST}50` }}>Date</span>
+              <span className="text-[9px] font-bold tracking-[0.12em] uppercase" style={{ color: `${FOREST}50` }}>Date</span>
             </div>
             <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
               {scheduledDate || delivery.scheduled_date || "TBD"}
@@ -600,7 +600,7 @@ export default function TrackDeliveryClient({
           <div className="rounded-2xl border px-4 py-3.5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
             <div className="flex items-center gap-2 mb-1.5">
               <Clock size={13} color={GOLD} aria-hidden />
-              <span className="text-[9px] font-bold tracking-[0.12em] capitalize" style={{ color: `${FOREST}50` }}>Window</span>
+              <span className="text-[9px] font-bold tracking-[0.12em] uppercase" style={{ color: `${FOREST}50` }}>Window</span>
             </div>
             <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
               {timeWindow || "Flexible"}
@@ -609,7 +609,7 @@ export default function TrackDeliveryClient({
           <div className="rounded-2xl border px-4 py-3.5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
             <div className="flex items-center gap-2 mb-1.5">
               <Truck size={13} color={GOLD} aria-hidden />
-              <span className="text-[9px] font-bold tracking-[0.12em] capitalize" style={{ color: `${FOREST}50` }}>Items</span>
+              <span className="text-[9px] font-bold tracking-[0.12em] uppercase" style={{ color: `${FOREST}50` }}>Items</span>
             </div>
             <div className="text-[13px] font-semibold" style={{ color: FOREST }}>
               {itemsCount} item{itemsCount !== 1 ? "s" : ""}
@@ -618,7 +618,7 @@ export default function TrackDeliveryClient({
           <div className="rounded-2xl border px-4 py-3.5" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
             <div className="flex items-center gap-2 mb-1.5">
               <Lightning size={13} color={GOLD} aria-hidden />
-              <span className="text-[9px] font-bold tracking-[0.12em] capitalize" style={{ color: `${FOREST}50` }}>
+              <span className="text-[9px] font-bold tracking-[0.12em] uppercase" style={{ color: `${FOREST}50` }}>
                 {displayEta != null ? "ETA" : "Status"}
               </span>
             </div>
@@ -680,7 +680,7 @@ export default function TrackDeliveryClient({
           return (
             <div className="rounded-2xl border overflow-hidden mb-5 anim-slide-up anim-delay-4" style={{ borderColor: `${FOREST}08`, backgroundColor: "white" }}>
               <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: `${FOREST}06` }}>
-                <div className="text-[9px] font-bold tracking-[0.16em] capitalize" style={{ color: `${FOREST}40` }}>Items</div>
+                <div className="text-[9px] font-bold tracking-[0.16em] uppercase" style={{ color: `${FOREST}40` }}>Items</div>
                 <div
                   className="text-[9px] font-semibold tabular-nums px-2 py-0.5 rounded-full"
                   style={{ backgroundColor: `${FOREST}06`, color: `${FOREST}50` }}
@@ -693,7 +693,7 @@ export default function TrackDeliveryClient({
                 {rooms.map((room) => (
                   <div key={room} className="px-5 py-3.5">
                     <div
-                      className="text-[9px] font-bold tracking-[0.12em] capitalize mb-2.5"
+                      className="text-[9px] font-bold tracking-[0.12em] uppercase mb-2.5"
                       style={{ color: GOLD }}
                     >
                       {room}
@@ -723,7 +723,7 @@ export default function TrackDeliveryClient({
             className="rounded-2xl border px-5 py-4 mb-5 anim-slide-up anim-delay-3"
             style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}
           >
-            <div className="text-[9px] font-bold tracking-[0.16em] capitalize mb-3" style={{ color: `${FOREST}45` }}>
+            <div className="text-[9px] font-bold tracking-[0.16em] uppercase mb-3" style={{ color: `${FOREST}45` }}>
               Service includes
             </div>
             <ul className="space-y-2 text-[13px]" style={{ color: FOREST }}>
@@ -910,7 +910,7 @@ export default function TrackDeliveryClient({
 
         {isCompleted && b2bPodImageUrl ? (
           <div className="rounded-2xl border overflow-hidden mb-5 anim-slide-up anim-delay-5" style={{ borderColor: `${FOREST}12`, backgroundColor: "white" }}>
-            <div className="px-5 py-3 border-b text-[11px] font-bold capitalize tracking-widest" style={{ borderColor: `${FOREST}08`, color: `${FOREST}50` }}>
+            <div className="px-5 py-3 border-b text-[11px] font-bold uppercase tracking-widest" style={{ borderColor: `${FOREST}08`, color: `${FOREST}50` }}>
               Delivery photo
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}

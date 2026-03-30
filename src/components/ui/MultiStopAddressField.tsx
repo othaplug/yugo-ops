@@ -81,7 +81,7 @@ export default function MultiStopAddressField({
 
   return (
     <div className="space-y-1.5">
-      <label className="block text-[11px] font-semibold text-[var(--tx3)] capitalize tracking-wide">
+      <label className="block text-[11px] font-semibold text-[var(--tx3)] uppercase tracking-wide">
         {label}
       </label>
 

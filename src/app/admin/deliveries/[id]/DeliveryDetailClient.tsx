@@ -129,7 +129,7 @@ function MetricPill({ icon: Icon, label, value, accent }: { icon: React.ElementT
         <Icon className={`w-3.5 h-3.5 ${accent ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`} />
       </div>
       <div className="min-w-0">
-        <div className="text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/60 leading-none">{label}</div>
+        <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 leading-none">{label}</div>
         <div className={`text-[12px] font-semibold mt-0.5 truncate ${accent ? "text-[var(--gold)]" : "text-[var(--tx)]"}`}>{value}</div>
       </div>
     </div>
@@ -414,7 +414,7 @@ export default function DeliveryDetailClient({
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 animate-fade-up">
       <div className="flex items-center gap-2 mb-1">
         <BackButton label="Back" />
-        <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60">B2B Operations · Delivery</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">B2B Operations · Delivery</p>
       </div>
 
       {/* ─── PROJECT CONTEXT BANNER ─── */}
@@ -425,7 +425,7 @@ export default function DeliveryDetailClient({
         >
           <Folder size={14} weight="regular" className="shrink-0 text-[var(--gold)]" />
           <div className="flex-1 min-w-0">
-            <span className="text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--gold)]/60">Part of Project</span>
+            <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/60">Part of Project</span>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[12px] font-semibold text-[var(--tx)]">{linkedProject.project_number}, {linkedProject.project_name}</span>
               {linkedProject.phase_name && (
@@ -452,30 +452,30 @@ export default function DeliveryDetailClient({
               <div className="rounded-lg bg-[var(--card)] border border-[var(--brd)]/50 p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
                 {delivery.booking_type && (
                   <div>
-                    <span className="text-[var(--tx3)] block text-[9px] capitalize tracking-wider font-semibold">Type</span>
+                    <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Type</span>
                     <span className="font-medium text-[var(--tx)]">{delivery.booking_type === "day_rate" ? "Day Rate" : "Per Delivery"}</span>
                   </div>
                 )}
                 {delivery.base_price > 0 && (
                   <div>
-                    <span className="text-[var(--tx3)] block text-[9px] capitalize tracking-wider font-semibold">Base</span>
+                    <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Base</span>
                     <span className="font-medium text-[var(--tx)]">{formatCurrency(delivery.base_price)}</span>
                   </div>
                 )}
                 {(delivery.services_price > 0 || delivery.overage_price > 0) && (
                   <div>
-                    <span className="text-[var(--tx3)] block text-[9px] capitalize tracking-wider font-semibold">Add-ons</span>
+                    <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Add-ons</span>
                     <span className="font-medium text-[var(--tx)]">{formatCurrency((delivery.services_price || 0) + (delivery.overage_price || 0))}</span>
                   </div>
                 )}
                 <div>
-                  <span className="text-[var(--tx3)] block text-[9px] capitalize tracking-wider font-semibold">Total</span>
+                  <span className="text-[var(--tx3)] block text-[9px] uppercase tracking-wider font-semibold">Total</span>
                   <span className="font-bold text-[var(--gold)]">{formatCurrency(delivery.total_price)}</span>
                 </div>
               </div>
               {Array.isArray(delivery.pricing_breakdown) && delivery.pricing_breakdown.length > 0 && (
                 <div className="rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/30 p-3 text-[11px]">
-                  <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)]/70 mb-2">Price breakdown</div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/70 mb-2">Price breakdown</div>
                   <div className="space-y-1">
                     {delivery.pricing_breakdown.map((b: { label: string; amount: number; detail?: string }, i: number) => (
                       <div key={i} className="flex justify-between text-[var(--tx)]">
@@ -491,7 +491,7 @@ export default function DeliveryDetailClient({
 
           <div className="flex flex-col sm:flex-row sm:items-end gap-3">
             <div className="flex-1">
-              <label className="block text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)] mb-1">Adjust price (optional)</label>
+              <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)] mb-1">Adjust price (optional)</label>
               <input
                 type="number"
                 step="0.01"
@@ -740,7 +740,7 @@ export default function DeliveryDetailClient({
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--brd)]/30">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-heading text-[11px] font-bold tracking-wide capitalize text-[var(--tx)]">Live Tracking</span>
+                  <span className="font-heading text-[11px] font-bold tracking-wide uppercase text-[var(--tx)]">Live Tracking</span>
                 </div>
                 {delivery.crew_id ? (
                   <div className="flex items-center gap-2">
@@ -787,7 +787,7 @@ export default function DeliveryDetailClient({
 
             {/* Route / Day rate stops */}
             <div className="pb-5">
-              <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
                 {delivery.booking_type === "day_rate" && stops && stops.length > 0 ? `Route · ${stops.length} stop${stops.length !== 1 ? "s" : ""}` : "Route"}
               </div>
               <div className="space-y-0">
@@ -798,7 +798,7 @@ export default function DeliveryDetailClient({
                     <div className="w-px h-full min-h-[32px] bg-[var(--brd)]/30" />
                   </div>
                   <div className="flex-1 min-w-0 pb-4">
-                    <div className="text-[9px] font-bold tracking-[0.12em] capitalize text-emerald-500/70 mb-0.5">Pickup</div>
+                    <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-emerald-500/70 mb-0.5">Pickup</div>
                     <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{delivery.pickup_address || "Not set"}</div>
                     {delivery.pickup_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.pickup_access}</div>}
                   </div>
@@ -822,14 +822,14 @@ export default function DeliveryDetailClient({
                         </div>
                         <div className="flex-1 min-w-0 pb-4">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <div className="text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--gold)]/70 flex items-center gap-1">
+                            <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 flex items-center gap-1">
                               {statusIcon === "done" && <Check size={9} color="#22C55E" weight="bold" />}
                               {statusIcon === "active" && <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />}
                               {statusIcon === "pending" && <span className="w-2 h-2 rounded-full border border-[var(--brd)] inline-block" />}
                               Stop {stop.stop_number}
                             </div>
                             {stop.stop_type && (
-                              <span className="text-[9px] capitalize font-semibold text-[var(--tx3)]/60">
+                              <span className="text-[9px] uppercase font-semibold text-[var(--tx3)]/60">
                                 {stop.stop_type}
                               </span>
                             )}
@@ -855,7 +855,7 @@ export default function DeliveryDetailClient({
                       <div className="w-3 h-3 rounded-full border-2 border-[var(--gold)] bg-[var(--gold)]/20" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--gold)]/70 mb-0.5">Drop-off</div>
+                      <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--gold)]/70 mb-0.5">Drop-off</div>
                       <div className="text-[13px] font-semibold text-[var(--tx)] leading-snug">{delivery.delivery_address || "Not set"}</div>
                       {delivery.delivery_access && <div className="text-[10px] text-[var(--tx3)] mt-0.5">Access: {delivery.delivery_access}</div>}
                     </div>
@@ -868,7 +868,7 @@ export default function DeliveryDetailClient({
             {itemsDisplay.length > 0 && (
               <div className="border-t border-[var(--brd)]/30 py-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Items</span>
+                  <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Items</span>
                   <span className="text-[10px] font-semibold text-[var(--gold)]">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="space-y-1.5">
@@ -894,21 +894,21 @@ export default function DeliveryDetailClient({
 
             {/* Crew photos (actual photos taken by crew) */}
             <div className="border-t border-[var(--brd)]/30 pt-5">
-              <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-3">Crew Photos</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Crew Photos</div>
               <DeliveryCrewPhotosSection deliveryId={delivery.id} />
             </div>
 
             {/* Proof of Delivery */}
             {isDone(delivery.status) && (
               <div className="border-t border-[var(--brd)]/30 pt-5">
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-3">Proof of Delivery</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Proof of Delivery</div>
                 <ProofOfDeliverySection jobId={delivery.id} jobType="delivery" />
               </div>
             )}
 
             {/* Instructions, seamless */}
             <div className="border-t border-[var(--brd)]/30 py-5">
-              <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Instructions & Notes</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Instructions & Notes</div>
               <p className="text-[11px] text-[var(--tx2)] leading-relaxed whitespace-pre-wrap">
                 {delivery.instructions || delivery.notes || "No instructions added."}
               </p>
@@ -923,7 +923,7 @@ export default function DeliveryDetailClient({
 
             {/* Schedule */}
             <div className="pb-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
-              <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-3 pt-3">Schedule</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3 pt-3">Schedule</div>
               <div className="space-y-1.5 text-[12px]">
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)] text-[11px]">Date</span>
@@ -947,7 +947,7 @@ export default function DeliveryDetailClient({
             {/* Crew */}
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Crew</span>
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Crew</span>
                 {!deliveryInProgress && (
                   <button type="button" onClick={() => setCrewModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">
                     {delivery.crew_id ? "Change" : "Assign"}
@@ -978,7 +978,7 @@ export default function DeliveryDetailClient({
             {/* Customer */}
             <div className="border-t border-[var(--brd)]/30 py-5 -mx-3 px-3 rounded-lg hover:bg-[var(--bg)]/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Customer</span>
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Customer</span>
                 <button type="button" onClick={() => setContactModalOpen(true)} className="text-[9px] font-semibold text-[var(--gold)] hover:underline">Details</button>
               </div>
               <div className="text-[13px] font-semibold text-[var(--tx)]">{delivery.customer_name || "-"}</div>
@@ -999,7 +999,7 @@ export default function DeliveryDetailClient({
 
           {/* Pricing, keeps card treatment (hero/actionable) */}
           <div className={`mt-5 rounded-xl p-4 ${price > 0 ? "bg-gradient-to-br from-[var(--gold)]/8 to-transparent border border-[var(--gold)]/20" : ""}`}>
-            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--gold)]/60 mb-1.5">
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-1.5">
               {delivery.quoted_price ? "Quoted Price" : "Pricing"}
             </div>
             {price > 0 ? (

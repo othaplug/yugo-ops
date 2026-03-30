@@ -127,7 +127,7 @@ export default function AdminNotificationsPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Admin</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Admin</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Notifications</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-2">
             {total} total{unreadOnPage > 0 ? ` · ${unreadOnPage} unread on this page` : ""}
@@ -250,7 +250,7 @@ export default function AdminNotificationsPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       {notif.source_type && tag && (
                         <span
-                          className="text-[9px] font-bold capitalize tracking-wide px-2 py-0.5 rounded-full"
+                          className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
                           style={{ color: tag.color, backgroundColor: tag.bg }}
                         >
                           {notif.source_type}

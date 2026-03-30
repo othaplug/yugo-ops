@@ -260,7 +260,7 @@ function useSection(section: string) {
 
 /* ────────── Table wrapper ────────── */
 const tbl = "w-full text-[12px]";
-const th = "text-left text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] py-2 px-2";
+const th = "text-left text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] py-2 px-2";
 const td = "py-1.5 px-2 border-t border-[var(--brd)]/50";
 
 function SaveBar({
@@ -331,7 +331,7 @@ function AnalyticsDashboard() {
           key={m.label}
           className="flex-1 min-w-[100px] bg-[var(--card)] px-4 py-3 flex flex-col gap-1"
         >
-          <div className="text-[10px] font-semibold tracking-[0.1em] capitalize text-[var(--tx3)] leading-none">
+          <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[var(--tx3)] leading-none">
             {m.label}
           </div>
           <div className="text-[18px] font-bold font-heading text-[var(--tx)] leading-tight break-words">
@@ -498,7 +498,7 @@ function TierMultipliersSection() {
           if (!row) return null;
           return (
             <div key={c.key} className="bg-[var(--bg)] rounded-lg p-3">
-              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
               <EditCell value={c.val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[var(--text-base)] font-bold text-[var(--tx)]" />
             </div>
           );
@@ -625,7 +625,7 @@ function DateFactorsSection() {
 
   const renderGroup = (title: string, type: string) => (
     <div>
-      <h4 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">{title}</h4>
+      <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">{title}</h4>
       <table className={tbl}>
         <thead><tr><th className={th}>Condition</th><th className={th}>Multiplier</th></tr></thead>
         <tbody>
@@ -748,7 +748,7 @@ function SingleItemSection() {
           if (!row) return null;
           return (
             <div key={c.key} className="bg-[var(--bg)] rounded-lg p-3">
-              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{c.label}</div>
               <EditCell value={row.value as string} onChange={(v) => configSection.updateRow(String(row.id), "value", v)} type="number" className="text-[var(--text-base)] font-bold text-[var(--tx)]" />
             </div>
           );
@@ -1125,7 +1125,7 @@ function ExcludedTiersSelect({ selected, onChange }: { selected: string[] | null
           key={t}
           type="button"
           onClick={() => onChange(vals.includes(t) ? vals.filter((v) => v !== t) : [...vals, t])}
-          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border capitalize transition-colors ${
+          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border uppercase transition-colors ${
             vals.includes(t)
               ? "bg-[var(--gold)]/20 text-[var(--gold)] border-[var(--gold)]"
               : "bg-[var(--bg)] text-[var(--tx3)] border-[var(--brd)] hover:border-[var(--gold)]/40"
@@ -1349,7 +1349,7 @@ function InventoryVolumeSection() {
     <div className="space-y-6">
       {/* ── Volume Benchmarks ── */}
       <div>
-        <h4 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Volume Benchmarks by Move Size</h4>
+        <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Volume Benchmarks by Move Size</h4>
         <p className="text-[9px] text-[var(--tx3)] mb-3">
           These benchmarks define the &quot;standard&quot; inventory for each move size. The algorithm compares the client&apos;s actual inventory score to the benchmark.
         </p>
@@ -1421,7 +1421,7 @@ function InventoryVolumeSection() {
       {/* ── Item Weight Scores ── */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Item Weight Scores</h4>
+          <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Item Weight Scores</h4>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1.5 text-[10px] text-[var(--tx3)] cursor-pointer">
               <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="accent-[var(--gold)]" />
@@ -1611,7 +1611,7 @@ function CustomItemsUsedSection({ onAddToMaster }: { onAddToMaster?: () => void 
 
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6">
-      <h4 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Custom Items Used in Quotes/Moves</h4>
+      <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Custom Items Used in Quotes/Moves</h4>
       <p className="text-[9px] text-[var(--tx3)] mb-3">
         Items coordinators entered that are not in the master list. Add popular ones to item_weights.
       </p>
@@ -1765,7 +1765,7 @@ function FleetVehiclesSection() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Vehicle Types</h4>
+          <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Vehicle Types</h4>
           <button type="button" onClick={() => fleet.add({ vehicle_type: `custom-${Date.now()}`, display_name: "New Vehicle", cargo_cubic_ft: 0, capacity_lbs: 0, is_available: true, display_order: 99 })} className="text-[10px] font-bold text-[var(--gold)] hover:text-[var(--gold)]/80 flex items-center gap-0.5">+ Add Vehicle</button>
         </div>
         {fleet.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
@@ -1806,7 +1806,7 @@ function FleetVehiclesSection() {
       </div>
 
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <h4 className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Allocation Rules</h4>
+        <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Allocation Rules</h4>
         <p className="text-[9px] text-[var(--tx3)] mb-3">Maps move size + inventory level to recommended vehicle(s).</p>
         {rules.loading ? <p className="text-[11px] text-[var(--tx3)]">Loading…</p> : (
           <>
@@ -2097,7 +2097,7 @@ function TierFeaturesSection() {
             <div key={tier} className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] overflow-hidden">
               {/* Tier header */}
               <div className={`px-3 py-2 border-b border-[var(--brd)] flex items-center justify-between`}>
-                <span className={`text-[10px] font-bold tracking-wider capitalize ${TIER_COLOR[tier]?.split(" ")[0] ?? "text-[var(--tx2)]"}`}>
+                <span className={`text-[10px] font-bold tracking-wider uppercase ${TIER_COLOR[tier]?.split(" ")[0] ?? "text-[var(--tx2)]"}`}>
                   {TIER_LABEL[tier] ?? tier}
                 </span>
                 <span className="text-[10px] text-[var(--tx3)]">{features.filter((f) => f.active).length} items</span>
@@ -2600,7 +2600,7 @@ function WhiteGlovePricingSection() {
           const val = Number(row?.value ?? (key.includes("threshold") ? 5000 : key.includes("premium") ? 50 : 250));
           return (
             <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
-              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
               <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
               {row ? (
                 <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[15px] font-bold text-[var(--gold)]" />
@@ -2634,7 +2634,7 @@ function B2BOneOffPricingSection() {
       </p>
       {row ? (
         <div className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-4 max-w-xs">
-          <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-2">Base fee ($)</div>
+          <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">Base fee ($)</div>
           <EditCell
             value={Number(row.value ?? 350)}
             onChange={(v) => updateRow(String(row.id), "value", v)}
@@ -2702,7 +2702,7 @@ function EventPricingSection() {
               const val = Number(row?.value ?? 0);
               return (
                 <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
-                  <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
                   {row ? (
                     <EditCell
                       value={val}
@@ -2810,7 +2810,7 @@ function SpecialtyPricingSection() {
           const val = Number(row?.value ?? scalarFallbacks[key] ?? 0);
           return (
             <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
-              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
               {row ? (
                 <EditCell
                   value={val}
@@ -2959,7 +2959,7 @@ function LabourOnlyPricingSection() {
           const val = Number(row?.value ?? fallback);
           return (
             <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
-              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
               <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
               {row ? (
                 <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} type="number" className="text-[15px] font-bold text-[var(--gold)]" />
@@ -3055,7 +3055,7 @@ function EngineConfigSection() {
           const val = String(row?.value ?? "");
           return (
             <div key={key} className={`rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3 ${type === "json" ? "md:col-span-2" : ""}`}>
-              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
               <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
               {row ? (
                 type === "json" ? (
@@ -3117,7 +3117,7 @@ function BinRentalPricingSection() {
           const row = rows.find((r) => r.key === key);
           return (
             <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
-              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
               <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
               {row ? (
                 <EditCell
@@ -3319,7 +3319,7 @@ function ProcessingRecoverySection() {
           const val = String(row?.value ?? "");
           return (
             <div key={key} className="rounded-lg bg-[var(--bg)] border border-[var(--brd)] p-3">
-              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-1">{label}</div>
+              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-1">{label}</div>
               <p className="text-[10px] text-[var(--tx3)] mb-2">{hint}</p>
               {row ? (
                 <EditCell value={val} onChange={(v) => updateRow(String(row.id), "value", v)} className="text-[15px] font-bold text-[var(--gold)]" />
@@ -3392,7 +3392,7 @@ function B2BSurchargesSection() {
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h4 className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-3">B2B Access Surcharges</h4>
+          <h4 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">B2B Access Surcharges</h4>
           <table className="w-full text-[12px]">
             <thead>
               <tr className="border-b border-[var(--brd)]">
@@ -3413,7 +3413,7 @@ function B2BSurchargesSection() {
           </table>
         </div>
         <div>
-          <h4 className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-3">B2B Weight Surcharges</h4>
+          <h4 className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">B2B Weight Surcharges</h4>
           <table className="w-full text-[12px]">
             <thead>
               <tr className="border-b border-[var(--brd)]">
@@ -3558,13 +3558,13 @@ function CalibrationSection() {
         <table className="w-full text-[12px]">
           <thead>
             <tr className="border-b border-[var(--brd)] bg-[var(--bg)]/40">
-              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] capitalize tracking-wider text-[10px]">Type</th>
-              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] capitalize tracking-wider text-[10px]">Move Size</th>
-              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] capitalize tracking-wider text-[10px]">Current</th>
-              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] capitalize tracking-wider text-[10px]">Suggested</th>
-              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] capitalize tracking-wider text-[10px]">Confidence</th>
-              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] capitalize tracking-wider text-[10px]">Sample</th>
-              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] capitalize tracking-wider text-[10px]">Reason</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Type</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Move Size</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Current</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Suggested</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Confidence</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Sample</th>
+              <th className="text-left py-3 px-4 font-semibold text-[var(--tx3)] uppercase tracking-wider text-[10px]">Reason</th>
               <th className="py-3 px-4" />
             </tr>
           </thead>
@@ -3618,7 +3618,7 @@ function CalibrationSection() {
 
       {/* Dismiss reason modal */}
       {dismissModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <h3 className="text-[15px] font-bold text-[var(--tx)] mb-2">Dismiss suggestion</h3>
             <p className="text-[12px] text-[var(--tx3)] mb-4">Optional: add a reason so the system learns what to ignore.</p>

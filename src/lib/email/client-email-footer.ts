@@ -125,7 +125,7 @@ function hrRow(): string {
 }
 
 function navLink(href: string, label: string): string {
-  return `<a href="${href}" style="color:${FOOTER_TEXT};font-family:${FOOTER_NAV_FONT};font-size:11px;font-weight:400;letter-spacing:0.12em;text-transform:capitalize;text-decoration:none;border-bottom:1px solid ${FOOTER_TEXT};padding-bottom:2px;">${label}</a>`;
+  return `<a href="${href}" style="color:${FOOTER_TEXT};font-family:${FOOTER_NAV_FONT};font-size:11px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid ${FOOTER_TEXT};padding-bottom:2px;">${label}</a>`;
 }
 
 /** Full-width table rows: optional REFER A FRIEND band (no GET APP). */
@@ -136,7 +136,7 @@ function buildReferFriendTopRows(params: {
 }): string {
   const { includeReferFriend, referFriendUrl, showMarketingTopRow } = params;
   if (!showMarketingTopRow || !includeReferFriend) return "";
-  const link = `<a href="${escapeHtml(referFriendUrl)}" style="color:${FOOTER_TEXT};font-family:${FOOTER_NAV_FONT};font-size:12px;font-weight:400;letter-spacing:0.14em;text-transform:capitalize;text-decoration:none;border-bottom:1px solid ${FOOTER_TEXT};padding-bottom:3px;">REFER A FRIEND</a>`;
+  const link = `<a href="${escapeHtml(referFriendUrl)}" style="color:${FOOTER_TEXT};font-family:${FOOTER_NAV_FONT};font-size:12px;font-weight:400;letter-spacing:0.14em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid ${FOOTER_TEXT};padding-bottom:3px;">REFER A FRIEND</a>`;
   return `
     ${hrRow()}
     <tr>

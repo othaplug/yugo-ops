@@ -98,7 +98,7 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
 
   return (
     <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
-      <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Sales</p>
+      <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
       <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none mb-8">Widget Leads</h1>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
@@ -152,13 +152,13 @@ export default function WidgetLeadsClient({ leads }: { leads: Lead[] }) {
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-[var(--brd)]">
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] capitalize tracking-wider">Lead #</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] capitalize tracking-wider">Name</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] capitalize tracking-wider">Email</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] capitalize tracking-wider">Size</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] capitalize tracking-wider">From → To</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] capitalize tracking-wider">Estimate</th>
-                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] capitalize tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Lead #</th>
+                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Name</th>
+                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Email</th>
+                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Size</th>
+                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">From → To</th>
+                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Estimate</th>
+                <th className="text-left px-4 py-3 font-semibold text-[var(--tx3)] text-[11px] uppercase tracking-wider">Status</th>
               </tr>
             </thead>
             <tbody>

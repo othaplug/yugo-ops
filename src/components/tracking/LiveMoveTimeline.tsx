@@ -89,7 +89,7 @@ export default function LiveMoveTimeline({ moveId, token, currentStatus, initial
         style={{ background: `linear-gradient(135deg, ${GOLD}0C, ${GOLD}06)` }}
       >
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] capitalize mb-1" style={{ color: GOLD }}>
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1" style={{ color: GOLD }}>
             {isLive ? "Live" : "Move"} Timeline
           </p>
           <h3 className="text-[15px] font-bold" style={{ color: FOREST }}>Your Move, Step by Step</h3>

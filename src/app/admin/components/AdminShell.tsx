@@ -63,7 +63,7 @@ const SIDEBAR_SECTIONS_FULL: { label: string; items: SidebarItem[] }[] = [
     ],
   },
   {
-    label: "Partners",
+    label: "B2B",
     items: [
       { href: "/admin/partners", label: "All Partners", Icon: Icons.handshake, minRole: "coordinator" },
       { href: "/admin/partners/health", label: "Partner Health", Icon: Icons.barChart, minRole: "coordinator" },
@@ -244,6 +244,14 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
   const quickActionsRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
+  const isPlatformRoute = pathname.startsWith("/admin/platform");
+  const platformTopbarLeft = isPlatformRoute
+    ? sidebarCollapsed
+      ? "left-0 sm:left-[calc(3.5rem+200px+1.25rem+1.5rem)] md:left-[calc(3.5rem+200px+1.5rem+1.5rem)] lg:left-[calc(3.5rem+200px+1.5rem+2rem)]"
+      : "left-0 sm:left-[calc(220px+200px+1.25rem+1.5rem)] md:left-[calc(220px+200px+1.5rem+1.5rem)] lg:left-[calc(220px+200px+1.5rem+2rem)]"
+    : sidebarCollapsed
+      ? "left-0 md:left-14"
+      : "left-0 md:left-[220px]";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -419,7 +427,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                       <button
                         type="button"
                         onClick={() => setCollapsedSections((prev) => ({ ...prev, [section.label]: !prev[section.label] }))}
-                        className="sidebar-nav-lift w-full flex items-center justify-between text-[11px] font-bold tracking-wide capitalize text-[var(--tx2)] px-4 py-2.5 mx-2 rounded-lg font-heading hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] active:bg-[var(--gdim)] transition-colors min-h-[40px]"
+                        className="sidebar-nav-lift w-full flex items-center justify-between text-[11px] font-bold tracking-wide normal-case text-[var(--tx2)] px-4 py-2.5 mx-2 rounded-lg font-heading hover:bg-[var(--gdim)]/60 hover:text-[var(--tx)] active:bg-[var(--gdim)] transition-colors min-h-[40px]"
                         aria-expanded={!isCollapsed}
                       >
                         {section.label}
@@ -492,7 +500,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
             <div className="flex-1 flex flex-col min-w-0 min-h-0 max-w-full admin-main-offset">
               {/* Topbar — flex row; search width capped inside flex-1 wrapper so bell + profile stay visible */}
               <div
-                className={`fixed top-0 right-0 z-30 h-14 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top flex items-center justify-between gap-2 sm:gap-4 min-w-0 max-w-full pl-3 pr-3 sm:pl-4 sm:pr-4 ${sidebarCollapsed ? "left-0 md:left-14 md:px-6" : "left-0 md:left-[220px] md:px-6"}`}
+                className={`fixed top-0 right-0 z-30 h-14 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top flex items-center justify-between gap-2 sm:gap-4 min-w-0 max-w-full pl-3 pr-3 sm:pl-4 sm:pr-4 md:px-6 ${platformTopbarLeft}`}
               >
                 <button
                   onClick={() => setSidebarOpen(true)}
@@ -554,7 +562,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
               {quickActionsOpen && (
                 <div className="fixed inset-0 z-[70]" aria-hidden="true">
                   <div
-                    className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+                    className="absolute inset-0 bg-black/50 animate-fade-in"
                     onClick={() => setQuickActionsOpen(false)}
                   />
                   <div
@@ -562,7 +570,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                     style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1) both" }}
                   >
                     <div className="px-4 pt-4 pb-1">
-                      <p className="text-[10px] font-bold tracking-[1.4px] capitalize text-[var(--tx3)]">Quick Create</p>
+                      <p className="text-[10px] font-bold tracking-[1.4px] uppercase text-[var(--tx3)]">Quick Create</p>
                     </div>
                     <div className="grid grid-cols-3 gap-px p-2">
                       {QUICK_ACTIONS.map((action) => (
@@ -618,7 +626,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                             className="shrink-0 text-current"
                             aria-hidden
                           />
-                          <span className="text-[11px] font-bold tracking-wide capitalize leading-none">{item.label}</span>
+                          <span className="text-[11px] font-bold tracking-wide uppercase leading-none">{item.label}</span>
                         </Link>
                       );
                     })}
@@ -642,7 +650,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                         <Plus size={20} weight="bold" color="#fff" aria-hidden />
                       )}
                     </button>
-                    <span className="mt-1 text-[11px] font-bold tracking-wide capitalize leading-none text-[var(--tx2)]">Create</span>
+                    <span className="mt-1 text-[11px] font-bold tracking-wide uppercase leading-none text-[var(--tx2)]">Create</span>
                   </div>
 
                   {/* Right tab(s) + More */}
@@ -664,7 +672,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                             className="shrink-0 text-current"
                             aria-hidden
                           />
-                          <span className="text-[11px] font-bold tracking-wide capitalize leading-none">{item.label}</span>
+                          <span className="text-[11px] font-bold tracking-wide uppercase leading-none">{item.label}</span>
                         </Link>
                       );
                     })}
@@ -675,7 +683,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
                       className="flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] px-1 py-1 touch-manipulation text-[var(--tx2)]"
                     >
                       <SquaresFour size={26} weight="regular" className="shrink-0 text-current" aria-hidden />
-                      <span className="text-[11px] font-bold tracking-wide capitalize leading-none">More</span>
+                      <span className="text-[11px] font-bold tracking-wide uppercase leading-none">More</span>
                     </button>
                   </div>
                 </div>

@@ -145,7 +145,7 @@ export default function CrewSetupPage() {
                   fontSize: 11,
                   fontWeight: 600,
                   letterSpacing: 0.5,
-                  textTransform: "capitalize",
+                  textTransform: "uppercase",
                   color: "#666",
                   marginBottom: 6,
                 }}
@@ -184,7 +184,7 @@ export default function CrewSetupPage() {
                   fontSize: 11,
                   fontWeight: 600,
                   letterSpacing: 0.5,
-                  textTransform: "capitalize",
+                  textTransform: "uppercase",
                   color: "#666",
                   marginBottom: 6,
                 }}

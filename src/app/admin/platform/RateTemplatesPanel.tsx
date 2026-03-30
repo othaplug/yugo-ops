@@ -156,7 +156,7 @@ function TemplateRateEditor({
   ];
 
   const Th = ({ children }: { children: React.ReactNode }) => (
-    <th className="px-2 py-2.5 text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)] bg-[var(--bgsub)] border-b border-[var(--brd)] text-left whitespace-nowrap">
+    <th className="px-2 py-2.5 text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)] bg-[var(--bgsub)] border-b border-[var(--brd)] text-left whitespace-nowrap">
       {children}
     </th>
   );
@@ -200,7 +200,7 @@ function TemplateRateEditor({
                   {data.dayRates.map((r) => (
                     <tr key={r.id}>
                       <td className="px-2 py-2 text-[11px] font-semibold text-[var(--tx)]">{VEHICLE_LABELS[r.vehicle_type] || r.vehicle_type}</td>
-                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] capitalize">{r.pricing_tier}</td>
+                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] uppercase">{r.pricing_tier}</td>
                       <EditableCell table="day_rates" id={r.id} field="full_day_price" original={r.full_day_price} />
                       <EditableCell table="day_rates" id={r.id} field="half_day_price" original={r.half_day_price} />
                       <td className="px-2 py-2 text-[11px] text-[var(--tx3)] text-center">{r.stops_included_full}</td>
@@ -223,7 +223,7 @@ function TemplateRateEditor({
                   {data.deliveryRates.map((r) => (
                     <tr key={r.id}>
                       <td className="px-2 py-2 text-[11px] font-semibold text-[var(--tx)]">{DELIVERY_TYPE_LABELS[r.delivery_type] ?? (r.delivery_type as string).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</td>
-                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] capitalize">{r.pricing_tier}</td>
+                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] uppercase">{r.pricing_tier}</td>
                       <td className="px-2 py-2 text-[10px] text-[var(--tx3)]">Z{r.zone}</td>
                       <EditableCell table="delivery_rates" id={r.id} field="price_min" original={r.price_min} />
                       {r.price_max != null ? (
@@ -249,8 +249,8 @@ function TemplateRateEditor({
                   {data.services.map((r) => (
                     <tr key={r.id}>
                       <td className="px-2 py-2 text-[11px] font-semibold text-[var(--tx)]">{r.service_name}</td>
-                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] capitalize">{r.pricing_tier}</td>
-                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] capitalize">{r.price_unit.replace(/_/g, " ")}</td>
+                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] uppercase">{r.pricing_tier}</td>
+                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] uppercase">{r.price_unit.replace(/_/g, " ")}</td>
                       {r.price_unit === "percentage" ? (
                         <>
                           <EditableCell table="services" id={r.id} field="price_min" original={r.price_min} isPercent />
@@ -284,7 +284,7 @@ function TemplateRateEditor({
                   {data.overages.map((r) => (
                     <tr key={r.id}>
                       <td className="px-2 py-2 text-[11px] font-semibold text-[var(--tx)]">{OVERAGE_LABELS[r.overage_tier] || r.overage_tier}</td>
-                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] capitalize">{r.pricing_tier}</td>
+                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] uppercase">{r.pricing_tier}</td>
                       <EditableCell table="overages" id={r.id} field="price_per_stop" original={r.price_per_stop} />
                     </tr>
                   ))}
@@ -305,7 +305,7 @@ function TemplateRateEditor({
                     <tr key={r.id}>
                       <td className="px-2 py-2 text-[11px] font-semibold text-[var(--tx)]">Zone {r.zone_number}</td>
                       <td className="px-2 py-2 text-[11px] text-[var(--tx2)]">{r.zone_name}</td>
-                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] capitalize">{r.pricing_tier}</td>
+                      <td className="px-2 py-2 text-[10px] text-[var(--tx3)] uppercase">{r.pricing_tier}</td>
                       <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">{r.distance_min_km}</td>
                       <td className="px-2 py-2 text-[11px] text-[var(--tx3)]">{r.distance_max_km ?? "∞"}</td>
                       {r.surcharge > 0 ? (
@@ -614,7 +614,7 @@ function ViewPartnersModal({ templateName, partners, onClose }: { templateName: 
               <a key={p.id} href={`/admin/clients/${p.id}`} className="flex items-center justify-between py-3 first:pt-0 hover:text-[var(--gold)] transition-colors">
                 <div>
                   <div className="text-[12px] font-semibold text-[var(--tx)]">{p.name}</div>
-                  <div className="text-[10px] text-[var(--tx3)] capitalize">{p.type || "Partner"}</div>
+                  <div className="text-[10px] text-[var(--tx3)] uppercase">{p.type || "Partner"}</div>
                 </div>
                 <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${p.pricing_tier === "partner" ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--bgsub)] text-[var(--tx3)]"}`}>
                   {p.pricing_tier === "partner" ? "Partner ✦" : "Standard"}
@@ -630,7 +630,8 @@ function ViewPartnersModal({ templateName, partners, onClose }: { templateName: 
 
 /* ─── Main Panel ─── */
 
-export default function RateTemplatesPanel() {
+export default function RateTemplatesPanel({ isSuperAdmin = false }: { isSuperAdmin?: boolean } = {}) {
+  void isSuperAdmin;
   const { toast } = useToast();
   const [templates, setTemplates] = useState<RateTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -768,7 +769,7 @@ export default function RateTemplatesPanel() {
             {t.verticals_covered && t.verticals_covered.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-[var(--brd)]/30 overflow-hidden">
                 {t.verticals_covered.map((v) => (
-                  <span key={v} className="px-2 py-0.5 rounded bg-[var(--bgsub)] text-[9px] text-[var(--tx3)] font-medium capitalize">
+                  <span key={v} className="px-2 py-0.5 rounded bg-[var(--bgsub)] text-[9px] text-[var(--tx3)] font-medium uppercase">
                     {v.replace(/_/g, " ")}
                   </span>
                 ))}

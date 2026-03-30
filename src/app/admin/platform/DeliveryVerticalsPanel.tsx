@@ -1,8 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useToast } from "../components/Toast";
 import { Package, Plus, PencilSimple } from "@phosphor-icons/react";
+import {
+  applyDimensionalFormToConfig,
+  configToDimensionalForm,
+  defaultDimensionalForm,
+  type DimensionalConfigForm,
+} from "@/lib/admin/delivery-vertical-config-ui";
 
 type Vertical = {
   id: string;
@@ -23,13 +29,39 @@ const METHOD_OPTIONS = [
   { value: "per_item", label: "Per item" },
   { value: "hourly", label: "Hourly" },
   { value: "flat", label: "Flat" },
-];
+] as const;
 
-function stringifyConfig(c: Record<string, unknown>) {
-  return JSON.stringify(c, null, 2);
+function pricingModelLabel(method: string): string {
+  const m = method.toLowerCase();
+  const hit = METHOD_OPTIONS.find((o) => o.value === m);
+  return hit?.label ?? method.replace(/_/g, " ");
 }
 
-export default function DeliveryVerticalsPanel() {
+/** Stable storage id derived from display name (create only; never shown in UI). */
+function slugFromDisplayName(name: string): string {
+  const s = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gi, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+  return s || "service";
+}
+
+function coalesceNum(raw: string, fallback: unknown): number {
+  const t = raw.trim();
+  if (t !== "") {
+    const n = Number(t);
+    if (Number.isFinite(n)) return n;
+  }
+  const p = typeof fallback === "number" ? fallback : Number(fallback);
+  return Number.isFinite(p) ? p : 0;
+}
+
+const DIM_METHODS = new Set(["dimensional", "per_unit", "per_item"]);
+
+export default function DeliveryVerticalsPanel({ isSuperAdmin = false }: { isSuperAdmin?: boolean } = {}) {
+  void isSuperAdmin;
   const { toast } = useToast();
   const [rows, setRows] = useState<Vertical[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +77,7 @@ export default function DeliveryVerticalsPanel() {
       setRows(Array.isArray(d.verticals) ? d.verticals : []);
     } catch {
       setRows([]);
-      toast("Could not load delivery verticals (run DB migration?)", "x");
+      toast("Could not load delivery verticals.", "x");
     } finally {
       setLoading(false);
     }
@@ -56,6 +88,7 @@ export default function DeliveryVerticalsPanel() {
   }, [load]);
 
   const openNew = () => {
+    const dim = defaultDimensionalForm();
     setModal({
       id: "",
       code: "",
@@ -64,36 +97,35 @@ export default function DeliveryVerticalsPanel() {
       icon: "",
       base_rate: 350,
       pricing_method: "dimensional",
-      default_config: {
-        unit_label: "item",
-        unit_rate: 40,
-        min_crew: 2,
-        crew_hourly_rate: 80,
-        stop_rate: 100,
-        free_stops: 1,
-        distance_free_km: 15,
-        distance_per_km: 3,
-        handling_rates: { threshold: 75, room_of_choice: 125 },
-        truck_rates: { sprinter: 0, "16ft": 50, "20ft": 100, "26ft": 150 },
-        complexity_premiums: { time_sensitive: 100, fragile: 75, stairs_per_flight: 50 },
-      },
+      default_config: applyDimensionalFormToConfig({}, dim),
       active: true,
       sort_order: 0,
     });
   };
 
   const saveModal = async (v: Vertical) => {
+    const isNew = !v.id;
+    const nameTrim = v.name.trim();
+    if (!nameTrim) {
+      toast("Enter a display name for this service.", "x");
+      return;
+    }
     setSaving(true);
     try {
-      const isNew = !v.id;
+      const codePayload = isNew
+        ? slugFromDisplayName(nameTrim)
+        : String(v.code || "")
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, "_");
       const res = await fetch("/api/admin/delivery-verticals", {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
         body: JSON.stringify({
           ...(isNew ? {} : { id: v.id }),
-          code: v.code.trim().toLowerCase().replace(/\s+/g, "_"),
-          name: v.name.trim(),
+          code: codePayload,
+          name: nameTrim,
           description: v.description?.trim() || null,
           icon: v.icon?.trim() || null,
           base_rate: v.base_rate,
@@ -125,7 +157,7 @@ export default function DeliveryVerticalsPanel() {
             Delivery verticals
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-1">
-            B2B one-off quotes use these profiles. Coordinators pick a vertical on the quote form; rates are JSON so you can tune handling, stops, truck, and distance without code deploys.
+            B2B one-off quotes use these catalog services. Coordinators pick a service on the quote form; dimensional options below tune pricing without a code deploy.
           </p>
         </div>
         <button
@@ -142,17 +174,17 @@ export default function DeliveryVerticalsPanel() {
         <p className="text-[12px] text-[var(--tx3)] py-6">Loading…</p>
       ) : rows.length === 0 ? (
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-6 text-[13px] text-[var(--tx2)]">
-          No verticals found. Apply migration <code className="text-[11px]">20260329140000_delivery_verticals_b2b.sql</code> or create one above.
+          No delivery verticals yet. Create one with the button above, or ask an administrator if this list should already be populated.
         </div>
       ) : (
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
           <table className="w-full text-[12px]">
             <thead>
               <tr className="border-b border-[var(--brd)] bg-[var(--bg2)]/60 text-left text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">
-                <th className="px-4 py-2">Vertical</th>
-                <th className="px-4 py-2">Base</th>
-                <th className="px-4 py-2">Pricing</th>
-                <th className="px-4 py-2">Active</th>
+                <th className="px-4 py-2">Service</th>
+                <th className="px-4 py-2">Starting price</th>
+                <th className="px-4 py-2">Pricing model</th>
+                <th className="px-4 py-2">On list</th>
                 <th className="px-4 py-2 w-24" />
               </tr>
             </thead>
@@ -161,10 +193,9 @@ export default function DeliveryVerticalsPanel() {
                 <tr key={r.id} className="border-b border-[var(--brd)]/50 last:border-0">
                   <td className="px-4 py-2.5">
                     <span className="font-semibold text-[var(--tx)]">{r.name}</span>
-                    <div className="text-[10px] text-[var(--tx3)] font-mono">{r.code}</div>
                   </td>
                   <td className="px-4 py-2.5 tabular-nums">${Number(r.base_rate).toFixed(0)}</td>
-                  <td className="px-4 py-2.5 capitalize text-[var(--tx2)]">{r.pricing_method.replace(/_/g, " ")}</td>
+                  <td className="px-4 py-2.5 text-[var(--tx2)]">{pricingModelLabel(r.pricing_method)}</td>
                   <td className="px-4 py-2.5">{r.active ? "Yes" : "No"}</td>
                   <td className="px-4 py-2.5">
                     <button
@@ -184,11 +215,18 @@ export default function DeliveryVerticalsPanel() {
       )}
 
       {modal && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50" role="dialog">
-          <div className="bg-[var(--card)] border border-[var(--brd)] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl p-5 space-y-3">
-            <h3 className="text-[15px] font-bold text-[var(--tx)]">
-              {modal.id ? "Edit vertical" : "Create vertical"}
-            </h3>
+        <div
+          className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-contain bg-black/60 p-4 sm:p-5"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delivery-vertical-modal-title"
+        >
+          <div className="relative my-auto flex min-h-0 w-full max-w-lg flex-col rounded-2xl border border-[var(--brd)] bg-[var(--card)] shadow-xl max-h-[min(90dvh,calc(100dvh-2rem))]">
+            <div className="shrink-0 border-b border-[var(--brd)]/60 px-5 py-4">
+              <h3 id="delivery-vertical-modal-title" className="text-[15px] font-bold text-[var(--tx)]">
+                {modal.id ? "Edit vertical" : "Create vertical"}
+              </h3>
+            </div>
             <VerticalEditForm
               initial={modal}
               onCancel={() => setModal(null)}
@@ -202,6 +240,10 @@ export default function DeliveryVerticalsPanel() {
   );
 }
 
+function numInputCls() {
+  return "w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]";
+}
+
 function VerticalEditForm({
   initial,
   onCancel,
@@ -213,7 +255,6 @@ function VerticalEditForm({
   onSave: (v: Vertical) => void;
   saving: boolean;
 }) {
-  const [code, setCode] = useState(initial.code);
   const [name, setName] = useState(initial.name);
   const [description, setDescription] = useState(initial.description || "");
   const [icon, setIcon] = useState(initial.icon || "");
@@ -221,21 +262,45 @@ function VerticalEditForm({
   const [pricingMethod, setPricingMethod] = useState(initial.pricing_method);
   const [sortOrder, setSortOrder] = useState(String(initial.sort_order));
   const [active, setActive] = useState(initial.active);
-  const [configStr, setConfigStr] = useState(stringifyConfig(initial.default_config || {}));
-  const [jsonErr, setJsonErr] = useState<string | null>(null);
+  const [dimForm, setDimForm] = useState<DimensionalConfigForm>(() => configToDimensionalForm(initial.default_config || {}));
+
+  const showDimensionalBlock = DIM_METHODS.has(pricingMethod.toLowerCase());
+  const showHourlyLabour = pricingMethod.toLowerCase() === "hourly";
+  const showFlatNote = pricingMethod.toLowerCase() === "flat";
+
+  useEffect(() => {
+    setName(initial.name);
+    setDescription(initial.description || "");
+    setIcon(initial.icon || "");
+    setBaseRate(String(initial.base_rate));
+    setPricingMethod(initial.pricing_method);
+    setSortOrder(String(initial.sort_order));
+    setActive(initial.active);
+    setDimForm(configToDimensionalForm(initial.default_config || {}));
+  }, [initial]);
+
+  const buildDefaultConfig = useCallback((): Record<string, unknown> => {
+    const prev = initial.default_config || {};
+    const pm = pricingMethod.toLowerCase();
+    if (DIM_METHODS.has(pm)) {
+      return applyDimensionalFormToConfig(prev, dimForm);
+    }
+    if (pm === "hourly") {
+      return {
+        ...prev,
+        min_crew: coalesceNum(dimForm.minCrew, prev.min_crew),
+        min_hours: coalesceNum(dimForm.minHours, prev.min_hours),
+        crew_hourly_rate: coalesceNum(dimForm.crewHourlyRate, prev.crew_hourly_rate),
+        stop_rate: coalesceNum(dimForm.stopRate, prev.stop_rate),
+        free_stops: coalesceNum(dimForm.freeStops, prev.free_stops),
+      };
+    }
+    return { ...prev };
+  }, [dimForm, initial.default_config, pricingMethod]);
 
   const handleSave = () => {
-    let default_config: Record<string, unknown>;
-    try {
-      default_config = JSON.parse(configStr) as Record<string, unknown>;
-      setJsonErr(null);
-    } catch {
-      setJsonErr("Invalid JSON");
-      return;
-    }
     onSave({
       ...initial,
-      code,
       name,
       description: description || null,
       icon: icon || null,
@@ -243,84 +308,161 @@ function VerticalEditForm({
       pricing_method: pricingMethod,
       sort_order: Number(sortOrder) || 0,
       active,
-      default_config,
+      default_config: buildDefaultConfig(),
     });
   };
 
+  const patchDim = useCallback((patch: Partial<DimensionalConfigForm>) => {
+    setDimForm((f) => ({ ...f, ...patch }));
+  }, []);
+
   return (
     <>
-      <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Code (slug)</label>
-      <input
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        disabled={Boolean(initial.id)}
-        className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px] disabled:opacity-60"
-        placeholder="rug_delivery"
-      />
-      <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Name</label>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
-      />
-      <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Description</label>
-      <input
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
-      />
-      <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Icon hint</label>
-      <input
-        value={icon}
-        onChange={(e) => setIcon(e.target.value)}
-        className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
-        placeholder="Phosphor name e.g. Package"
-      />
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Base rate</label>
-          <input
-            value={baseRate}
-            onChange={(e) => setBaseRate(e.target.value)}
-            type="number"
-            className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
-          />
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-3">
+        <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Display name</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+        />
+
+        <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Short description</label>
+        <input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+        />
+
+        <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Icon hint</label>
+        <input
+          value={icon}
+          onChange={(e) => setIcon(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          placeholder="Phosphor icon name, e.g. Armchair"
+        />
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Starting price</label>
+            <input
+              value={baseRate}
+              onChange={(e) => setBaseRate(e.target.value)}
+              type="number"
+              className={numInputCls()}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Sort order</label>
+            <input
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              type="number"
+              className={numInputCls()}
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Sort</label>
-          <input
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            type="number"
-            className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
-          />
-        </div>
+
+        <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Pricing model</label>
+        <select
+          value={pricingMethod}
+          onChange={(e) => setPricingMethod(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+        >
+          {METHOD_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+
+        <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="accent-[var(--gold)]" />
+          Show on quote list
+        </label>
+
+        {showFlatNote && (
+          <p className="text-[11px] text-[var(--tx3)] rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/40 px-3 py-2">
+            Flat pricing uses the starting price only. Other rate options stay stored but are not applied for this model.
+          </p>
+        )}
+
+        {showHourlyLabour && (
+          <div className="space-y-3 rounded-xl border border-[var(--brd)]/60 bg-[var(--bg)]/20 p-3">
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)]">Labour and stops</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Crew size (min)" value={dimForm.minCrew} onChange={(v) => patchDim({ minCrew: v })} />
+              <Field label="Minimum hours" value={dimForm.minHours} onChange={(v) => patchDim({ minHours: v })} />
+              <Field label="Hourly rate (per person)" value={dimForm.crewHourlyRate} onChange={(v) => patchDim({ crewHourlyRate: v })} />
+              <Field label="Extra stop fee" value={dimForm.stopRate} onChange={(v) => patchDim({ stopRate: v })} />
+              <Field label="Stops included" value={dimForm.freeStops} onChange={(v) => patchDim({ freeStops: v })} />
+            </div>
+          </div>
+        )}
+
+        {showDimensionalBlock && (
+          <div className="space-y-4 rounded-xl border border-[var(--brd)]/60 bg-[var(--bg)]/20 p-3">
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)]">Dimensional pricing options</p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="col-span-2 sm:col-span-1">
+                <label className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">Unit label</label>
+                <input
+                  value={dimForm.unitLabel}
+                  onChange={(e) => patchDim({ unitLabel: e.target.value })}
+                  className={numInputCls()}
+                  placeholder="piece, carton, item…"
+                />
+              </div>
+              <Field label="Rate per unit" value={dimForm.unitRate} onChange={(v) => patchDim({ unitRate: v })} />
+              <Field label="Minimum crew" value={dimForm.minCrew} onChange={(v) => patchDim({ minCrew: v })} />
+              <Field label="Minimum job hours" value={dimForm.minHours} onChange={(v) => patchDim({ minHours: v })} />
+              <Field label="Crew hourly (labour model)" value={dimForm.crewHourlyRate} onChange={(v) => patchDim({ crewHourlyRate: v })} />
+              <Field label="Extra stop fee" value={dimForm.stopRate} onChange={(v) => patchDim({ stopRate: v })} />
+              <Field label="Stops included" value={dimForm.freeStops} onChange={(v) => patchDim({ freeStops: v })} />
+              <Field label="Included distance (km)" value={dimForm.distanceFreeKm} onChange={(v) => patchDim({ distanceFreeKm: v })} />
+              <Field label="Per km after included" value={dimForm.distancePerKm} onChange={(v) => patchDim({ distancePerKm: v })} />
+              <div className="col-span-2">
+                <Field label="Minimum charge (optional)" value={dimForm.minCharge} onChange={(v) => patchDim({ minCharge: v })} hint="Leave blank to use starting price as the floor." />
+              </div>
+            </div>
+
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-1">Handling (flat fees)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Threshold / dock pickup" value={dimForm.handlingThreshold} onChange={(v) => patchDim({ handlingThreshold: v })} />
+              <Field label="Room of choice" value={dimForm.handlingRoomOfChoice} onChange={(v) => patchDim({ handlingRoomOfChoice: v })} />
+              <Field label="Dock to dock" value={dimForm.handlingDockToDock} onChange={(v) => patchDim({ handlingDockToDock: v })} />
+              <Field label="White glove" value={dimForm.handlingWhiteGlove} onChange={(v) => patchDim({ handlingWhiteGlove: v })} />
+              <Field label="Hand-bomb (flat)" value={dimForm.handlingHandBomb} onChange={(v) => patchDim({ handlingHandBomb: v })} />
+            </div>
+
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-1">Truck surcharges</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Sprinter van" value={dimForm.truckSprinter} onChange={(v) => patchDim({ truckSprinter: v })} />
+              <Field label="16 ft truck" value={dimForm.truck16ft} onChange={(v) => patchDim({ truck16ft: v })} />
+              <Field label="20 ft truck" value={dimForm.truck20ft} onChange={(v) => patchDim({ truck20ft: v })} />
+              <Field label="26 ft truck" value={dimForm.truck26ft} onChange={(v) => patchDim({ truck26ft: v })} />
+            </div>
+
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-1">Add-ons</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Time-sensitive" value={dimForm.premTimeSensitive} onChange={(v) => patchDim({ premTimeSensitive: v })} />
+              <Field label="Fragile items" value={dimForm.premFragile} onChange={(v) => patchDim({ premFragile: v })} />
+              <Field label="Per flight of stairs" value={dimForm.premStairsPerFlight} onChange={(v) => patchDim({ premStairsPerFlight: v })} />
+              <Field label="Assembly required" value={dimForm.premAssembly} onChange={(v) => patchDim({ premAssembly: v })} />
+              <Field label="Debris removal" value={dimForm.premDebris} onChange={(v) => patchDim({ premDebris: v })} />
+            </div>
+
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-1">Weight surcharges (optional)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Light (under 30 lb)" value={dimForm.weightLight} onChange={(v) => patchDim({ weightLight: v })} />
+              <Field label="Medium (30–60 lb)" value={dimForm.weightMedium} onChange={(v) => patchDim({ weightMedium: v })} />
+              <Field label="Heavy (over 60 lb)" value={dimForm.weightHeavy} onChange={(v) => patchDim({ weightHeavy: v })} />
+            </div>
+          </div>
+        )}
       </div>
-      <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">Pricing method</label>
-      <select
-        value={pricingMethod}
-        onChange={(e) => setPricingMethod(e.target.value)}
-        className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
-      >
-        {METHOD_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
-        <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="accent-[var(--gold)]" />
-        Active
-      </label>
-      <label className="block text-[10px] font-bold uppercase text-[var(--tx3)]">default_config (JSON)</label>
-      <textarea
-        value={configStr}
-        onChange={(e) => setConfigStr(e.target.value)}
-        rows={12}
-        className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[11px] font-mono"
-      />
-      {jsonErr && <p className="text-[11px] text-red-500">{jsonErr}</p>}
-      <div className="flex justify-end gap-2 pt-2">
+
+      <div className="shrink-0 flex justify-end gap-2 border-t border-[var(--brd)]/60 px-5 py-3">
         <button type="button" onClick={onCancel} className="px-3 py-2 rounded-lg text-[11px] border border-[var(--brd)]">
           Cancel
         </button>
@@ -334,5 +476,28 @@ function VerticalEditForm({
         </button>
       </div>
     </>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+}) {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id} className="block text-[10px] font-bold uppercase text-[var(--tx3)] mb-1">
+        {label}
+      </label>
+      <input id={id} value={value} onChange={(e) => onChange(e.target.value)} type="text" inputMode="decimal" className={numInputCls()} />
+      {hint ? <p className="text-[10px] text-[var(--tx3)] mt-0.5">{hint}</p> : null}
+    </div>
   );
 }

@@ -219,7 +219,7 @@ export default function ClaimsListClient({ claims: initialClaims, stats: initial
     <div className="p-4 sm:p-6 max-w-[1200px] mx-auto">
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">Operations</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Claims</h1>
         </div>
         <CreateButton href="/admin/claims/new" title="New Claim" />

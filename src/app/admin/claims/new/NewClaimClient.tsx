@@ -215,7 +215,7 @@ export default function NewClaimClient({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 capitalize">
+            <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">
               Name <span className="text-[var(--red)]">*</span>
             </label>
             <input
@@ -227,7 +227,7 @@ export default function NewClaimClient({
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 capitalize">
+            <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">
               Email <span className="text-[var(--red)]">*</span>
             </label>
             <input
@@ -239,7 +239,7 @@ export default function NewClaimClient({
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 capitalize">Phone</label>
+            <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">Phone</label>
             <input
               ref={phoneInput.ref}
               type="tel"
@@ -250,7 +250,7 @@ export default function NewClaimClient({
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 capitalize">Valuation Tier</label>
+            <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">Valuation Tier</label>
             <select
               value={valuationTier}
               onChange={(e) => setValuationTier(e.target.value)}
@@ -264,7 +264,7 @@ export default function NewClaimClient({
         </div>
 
         <div className="mt-3">
-          <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 capitalize">Claim Description</label>
+          <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1 uppercase">Claim Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -306,7 +306,7 @@ export default function NewClaimClient({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 capitalize">
+                  <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 uppercase">
                     Item Name <span className="text-[var(--red)]">*</span>
                   </label>
                   <input
@@ -318,7 +318,7 @@ export default function NewClaimClient({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 capitalize">Description</label>
+                  <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 uppercase">Description</label>
                   <input
                     type="text"
                     value={item.description}
@@ -330,7 +330,7 @@ export default function NewClaimClient({
               </div>
 
               <div className="mb-3">
-                <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 capitalize">Damage Description</label>
+                <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 uppercase">Damage Description</label>
                 <input
                   type="text"
                   value={item.damage_description}
@@ -342,7 +342,7 @@ export default function NewClaimClient({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 capitalize">Declared Value ($)</label>
+                  <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 uppercase">Declared Value ($)</label>
                   <input
                     type="number"
                     value={item.declared_value || ""}
@@ -352,7 +352,7 @@ export default function NewClaimClient({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 capitalize">Weight (lbs)</label>
+                  <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1 uppercase">Weight (lbs)</label>
                   <input
                     type="number"
                     value={item.weight_lbs || ""}

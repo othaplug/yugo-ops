@@ -82,7 +82,7 @@ export default function ProfileDropdown({ user }: { user: any }) {
                 )}
                 Appearance
               </span>
-              <span className="text-[9px] font-semibold text-[var(--tx3)] bg-[var(--bg)] px-2 py-0.5 rounded-full capitalize">{theme}</span>
+              <span className="text-[9px] font-semibold text-[var(--tx3)] bg-[var(--bg)] px-2 py-0.5 rounded-full uppercase">{theme}</span>
             </button>
           </div>
 

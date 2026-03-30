@@ -103,7 +103,7 @@ export default function PartnerVerticalRatesEditor({ organizationId }: { organiz
     >
       <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">B2B quote rate overrides</p>
       <p className="text-[10px] text-[var(--tx3)] leading-snug">
-        Merges into the selected delivery vertical&apos;s <code className="text-[9px]">default_config</code> when this partner is chosen on a B2B one-off quote.
+        When this partner is on a B2B quote, these values layer on top of the catalog service you selected. Wrong numbers will change live pricing.
       </p>
       <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
         <div className="flex-1 min-w-0">
@@ -129,13 +129,22 @@ export default function PartnerVerticalRatesEditor({ organizationId }: { organiz
           {saving ? "Saving…" : "Save overrides"}
         </button>
       </div>
-      <textarea
-        value={jsonStr}
-        onChange={(e) => setJsonStr(e.target.value)}
-        rows={8}
-        className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[11px] font-mono text-[var(--tx)]"
-        spellCheck={false}
-      />
+      <details className="rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/30 p-3">
+        <summary className="cursor-pointer text-[11px] font-semibold text-[var(--tx2)] hover:text-[var(--gold)]">
+          Advanced: edit override data
+        </summary>
+        <p className="text-[10px] text-[var(--tx3)] mt-2 mb-2 leading-snug">
+          For specialist use only. The app checks the format on save; if you are unsure, adjust catalog services under Platform instead.
+        </p>
+        <textarea
+          value={jsonStr}
+          onChange={(e) => setJsonStr(e.target.value)}
+          rows={8}
+          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[11px] font-mono text-[var(--tx)]"
+          spellCheck={false}
+          aria-label="Partner rate override data"
+        />
+      </details>
     </div>
   );
 }

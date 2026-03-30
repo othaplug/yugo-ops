@@ -88,7 +88,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
     <ModalOverlay open={open} onClose={onClose} title="Create Invoice" maxWidth="md">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
         <div>
-          <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
             Client or Partner
           </label>
           <select
@@ -105,7 +105,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
           </select>
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
             Name
           </label>
           <input
@@ -119,7 +119,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
               Amount ($)
             </label>
             <input
@@ -134,7 +134,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
             />
           </div>
           <div>
-            <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
               Due Date
             </label>
             <input
@@ -146,7 +146,7 @@ export default function CreateInvoiceModal({ open, onClose, onCreated }: CreateI
           </div>
         </div>
         <div>
-          <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
             Invoice PDF (optional)
           </label>
           <input

@@ -396,7 +396,7 @@ export default function PartnersManagement() {
                           {partner.name}
                         </span>
                         <span
-                          className={`inline-flex shrink-0 items-center rounded-md px-2.5 py-1 text-[9px] font-bold capitalize tracking-wider !whitespace-nowrap ${typeColor}`}
+                          className={`inline-flex shrink-0 items-center rounded-md px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider !whitespace-nowrap ${typeColor}`}
                         >
                           {TYPE_LABELS[partner.type] || (partner.type === "b2b" ? "Other partner" : partner.type.replace(/_/g, " "))}
                         </span>
@@ -423,7 +423,7 @@ export default function PartnersManagement() {
                   {isExpanded && (
                     <div className="bg-[var(--bg)]/40 border-t border-[var(--brd)]">
                       <div className="px-5 py-3 flex items-center justify-between">
-                        <span className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)]">Portal Users</span>
+                        <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Portal Users</span>
                         <div className="flex gap-2">
                           <Link
                             href={`/admin/clients/${partner.id}`}
@@ -528,7 +528,7 @@ export default function PartnersManagement() {
               Set a new temporary password for <strong>{resetTarget.user.name || resetTarget.user.email}</strong>. They will receive an email with the new password and login link.
             </p>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">New Temporary Password *</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">New Temporary Password *</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -678,7 +678,7 @@ export default function PartnersManagement() {
               Invite someone at <strong>{addUserOrg.name}</strong> to access the partner portal.
             </p>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Email *</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>
               <input
                 type="email"
                 value={addEmail}
@@ -689,7 +689,7 @@ export default function PartnersManagement() {
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Name</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Name</label>
               <input
                 type="text"
                 value={addName}
@@ -699,7 +699,7 @@ export default function PartnersManagement() {
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Temporary Password *</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Temporary Password *</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -734,7 +734,7 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
   return (
     <div className="flex items-center gap-2">
       <span className="text-[16px] font-bold font-heading" style={color ? { color } : undefined}>{value}</span>
-      <span className="text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)]">{label}</span>
+      <span className="text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">{label}</span>
     </div>
   );
 }

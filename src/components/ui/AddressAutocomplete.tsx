@@ -223,42 +223,48 @@ export default function AddressAutocomplete({
     isInternalUpdate.current = false;
   }, [value]);
 
-  useEffect(() => {
-    const handle = () => {
+  useEffect(
+    () => () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      const raw = inputRef.current?.value?.trim() ?? "";
+    },
+    []
+  );
+
+  const scheduleFetchFromInput = useCallback(
+    (openAfter: boolean) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      const raw = inputRef.current?.value ?? "";
       onRawChangeRef.current?.(raw);
-      if (raw.length < 2) {
+      const q = raw.trim();
+      if (q.length < 2) {
         setSuggestions([]);
         setOpen(false);
         return;
       }
       debounceRef.current = setTimeout(() => {
-        fetchSuggestions(raw);
-        setOpen(true);
         debounceRef.current = null;
+        void fetchSuggestions(q);
+        if (openAfter) setOpen(true);
       }, DEBOUNCE_MS);
-    };
+    },
+    [fetchSuggestions]
+  );
 
-    const input = inputRef.current;
-    if (!input) return;
-    input.addEventListener("input", handle);
-    input.addEventListener("focus", () => suggestions.length > 0 && setOpen(true));
-    return () => {
-      input.removeEventListener("input", handle);
-      input.removeEventListener("focus", () => {});
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [fetchSuggestions, suggestions.length]);
+  const handleInput = () => {
+    scheduleFetchFromInput(true);
+  };
 
-  useEffect(() => {
-    const onBlur = () => {
-      setTimeout(() => setOpen(false), 180);
-    };
-    const input = inputRef.current;
-    input?.addEventListener("blur", onBlur);
-    return () => input?.removeEventListener("blur", onBlur);
-  }, []);
+  const handleFocus = () => {
+    const q = inputRef.current?.value?.trim() ?? "";
+    if (q.length >= 2) {
+      void fetchSuggestions(q);
+      setOpen(true);
+    }
+  };
+
+  const handleBlur = () => {
+    setTimeout(() => setOpen(false), 180);
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -308,7 +314,7 @@ export default function AddressAutocomplete({
   return (
     <div ref={containerRef} className="w-full relative">
       {label && (
-        <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">
+        <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">
           {label}
           {required && <span className="text-[var(--red)] ml-0.5">*</span>}
         </label>
@@ -317,6 +323,9 @@ export default function AddressAutocomplete({
         ref={inputRef}
         type="text"
         defaultValue={value}
+        onInput={handleInput}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
         required={required}

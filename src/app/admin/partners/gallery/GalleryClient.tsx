@@ -117,7 +117,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
         {/* ── Projects Tab ── */}
         {activeTab === "projects" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Projects</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Projects</div>
 
             {/* Search + filter */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pb-4 mb-4 border-b border-[var(--brd)]/30">
@@ -182,7 +182,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                         <div className="flex items-center gap-2">
                           <span className="text-[13px] font-semibold text-[var(--tx)] truncate">{p.name}</span>
                           {p.project_type && (
-                            <span className="text-[9px] font-bold capitalize tracking-wider px-2 py-0.5 rounded bg-[var(--bg)] text-[var(--tx3)] flex-shrink-0">
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--bg)] text-[var(--tx3)] flex-shrink-0">
                               {toTitleCase(p.project_type)}
                             </span>
                           )}
@@ -207,13 +207,13 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                         <div className="flex items-center gap-4 mt-3">
                           {p.start_date && (
                             <div>
-                              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-0.5">Dates</div>
+                              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-0.5">Dates</div>
                               <div className="text-[11px] text-[var(--tx)]">{formatDate(p.start_date)}{p.end_date ? ` – ${formatDate(p.end_date)}` : ""}</div>
                             </div>
                           )}
                           {p.insurance_value && (
                             <div>
-                              <div className="text-[9px] font-bold capitalize tracking-wider text-[var(--tx3)] mb-0.5">Estimate</div>
+                              <div className="text-[9px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-0.5">Estimate</div>
                               <div className="text-[11px] font-semibold text-[var(--gold)]">{p.insurance_value}</div>
                             </div>
                           )}
@@ -246,7 +246,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
         {/* ── Partners Tab ── */}
         {activeTab === "partners" && (
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Partners</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Partners</div>
             <div className="divide-y divide-[var(--brd)]/30">
               {galleryPartners.length === 0 ? (
                 <div className="px-4 py-10 text-center">
@@ -281,8 +281,8 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
 
       {/* Project detail modal */}
       {projectDetail && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" aria-modal="true">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setProjectDetail(null)} aria-hidden="true" />
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60" aria-modal="true">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setProjectDetail(null)} aria-hidden="true" />
           <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-xl w-full max-w-md p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-3 mb-4">
               <h3 className="font-heading text-[15px] font-bold text-[var(--tx)]">Project details</h3>
@@ -290,40 +290,40 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
             </div>
             <div className="space-y-3 text-[12px]">
               <div>
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Name</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Name</div>
                 <div className="text-[var(--tx)] font-semibold">{projectDetail.name}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Gallery</div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Gallery</div>
                 <div className="text-[var(--tx)]">{projectDetail.gallery || "-"}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Type</div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Type</div>
                 <div className="text-[var(--tx)]">{toTitleCase(projectDetail.project_type || "-")}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Address</div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Address</div>
                 <div className="text-[var(--tx)]">{projectDetail.address || "-"}</div>
               </div>
               <div>
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Location</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Location</div>
                 <div className="text-[var(--tx)]">{projectDetail.location || "-"}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Dates</div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Dates</div>
                 <div className="text-[var(--tx)]">{formatDate(projectDetail.start_date)} – {formatDate(projectDetail.end_date)}</div>
               </div>
               <div>
-                <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Estimate</div>
+                <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Estimate</div>
                 <div className="text-[var(--gold)] font-semibold">{projectDetail.insurance_value || "-"}</div>
               </div>
               <div>
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Status</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Status</div>
                 <Badge status={projectDetail.status} />
               </div>
               {(projectDetail.white_glove || projectDetail.crating_required || projectDetail.climate_controlled) && (
                 <div>
-                  <div className="text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">Handling</div>
+                  <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">Handling</div>
                   <div className="text-[var(--tx2)]">
                     {[
                       projectDetail.white_glove && "White-glove",
@@ -334,7 +334,7 @@ export default function GalleryClient({ galleryPartners = [] }: { galleryPartner
                 </div>
               )}
               <div>
-                <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-0.5">Details</div>
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Details</div>
                 <p className="text-[var(--tx2)] leading-relaxed">{projectDetail.details || "-"}</p>
               </div>
             </div>

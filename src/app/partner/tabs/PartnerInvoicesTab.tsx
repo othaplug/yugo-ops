@@ -80,18 +80,18 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
     <div>
       {/* Summary stats */}
       <div className="border-t border-[var(--brd)]/30 pt-6 mb-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Summary</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Summary</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8">
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Total Invoices</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Invoices</div>
             <div className="text-[20px] font-bold text-[var(--tx)] mt-0.5">{invoices.length}</div>
           </div>
           <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Outstanding</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Outstanding</div>
             <div className="text-[20px] font-bold text-red-500 mt-0.5">{formatCurrency(totalOutstanding)}</div>
           </div>
           <div className="hidden sm:block">
-            <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Total Paid</div>
+            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Total Paid</div>
             <div className="text-[20px] font-bold text-emerald-500 mt-0.5">{formatCurrency(totalPaid)}</div>
           </div>
         </div>
@@ -130,17 +130,17 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
 
       {/* Table */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Invoices</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Invoices</div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[var(--brd)]/30">
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Invoice</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)] hidden sm:table-cell">Date</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Due</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Amount</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)]">Status</th>
-                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider capitalize text-[var(--tx3)] hidden sm:table-cell"></th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Invoice</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] hidden sm:table-cell">Date</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Due</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Amount</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Status</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase text-[var(--tx3)] hidden sm:table-cell"></th>
               </tr>
             </thead>
             <tbody>
@@ -166,7 +166,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                       {formatCurrency(inv.amount)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize ${badgeClass}`}>
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase ${badgeClass}`}>
                         {getDisplayLabel(inv.status, "payment")}
                       </span>
                     </td>

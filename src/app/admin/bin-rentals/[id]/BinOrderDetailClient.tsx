@@ -388,7 +388,7 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-[var(--gold)]">{icon}</span>
-        <h3 className="text-[11px] font-bold tracking-widest capitalize text-[var(--tx3)]">{title}</h3>
+        <h3 className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">{title}</h3>
       </div>
       <div className="space-y-2.5">{children}</div>
     </div>
@@ -416,7 +416,7 @@ function InfoRow({
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative bg-[var(--card)] border border-[var(--brd)] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
         <h3 className="text-[16px] font-bold text-[var(--tx)] mb-1">{title}</h3>
         {children}

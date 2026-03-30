@@ -244,14 +244,14 @@ function CrewListAndModal({
 
                 {stageInsight && (
                   <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)]/50 border border-[var(--brd)]/60">
-                    <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-0.5">What&apos;s happening</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-0.5">What&apos;s happening</div>
                     <div className="text-[13px] text-[var(--tx)]">{stageInsight}</div>
                   </div>
                 )}
 
                 {activeProject && (
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Project stage</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Project stage</div>
                     <div className="flex items-center gap-1">
                       {PROJECT_STAGES.map((s, i) => {
                         const isActive = currentStageIdx === i;
@@ -283,7 +283,7 @@ function CrewListAndModal({
 
                 {isEnRoute && (
                   <div>
-                    <div className="flex justify-between text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+                    <div className="flex justify-between text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
                       <span>Job progress</span>
                       <span className="text-[var(--grn)]">{progress}%</span>
                     </div>
@@ -301,13 +301,13 @@ function CrewListAndModal({
 
                 {!activeProject && selectedCrew.current_job && (
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Current activity</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current activity</div>
                     <div className="text-[13px] text-[var(--tx)]">{selectedCrew.current_job}</div>
                   </div>
                 )}
                 {activeProject && (
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Current project</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Current project</div>
                     <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] space-y-1.5">
                       <div className="text-[12px] font-semibold text-[var(--tx)]">{activeProject.delivery_number || "Delivery"}</div>
                       {(activeProject.pickup_address || activeProject.delivery_address) && (
@@ -341,7 +341,7 @@ function CrewListAndModal({
 
                 {nextProject && (
                   <div>
-                    <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1">Up next</div>
+                    <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1">Up next</div>
                     <div className="px-3 py-2.5 rounded-lg bg-[var(--bg)]/60 border border-[var(--brd)]/80">
                       <div className="text-[12px] font-semibold text-[var(--tx)]">{nextProject.delivery_number || "Delivery"}</div>
                       {nextProject.delivery_address && <div className="text-[11px] text-[var(--tx2)] mt-0.5 truncate">{nextProject.delivery_address}</div>}
@@ -361,7 +361,7 @@ function CrewListAndModal({
                 )}
 
                 <div>
-                  <div className="text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Team members</div>
+                  <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Team members</div>
                   <div className="flex flex-wrap gap-2">
                     {(selectedCrew.members || []).map((m) => (
                       <span key={m} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)]">

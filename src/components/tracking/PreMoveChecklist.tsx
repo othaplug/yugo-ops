@@ -142,7 +142,7 @@ export default function PreMoveChecklist({
         }}
       >
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] capitalize text-[var(--gold)] mb-1">
+          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--gold)] mb-1">
             Move Day Prep
           </p>
           <h3 className="text-[15px] font-bold text-[var(--tx)]">Get Ready for Your Move</h3>
@@ -157,7 +157,7 @@ export default function PreMoveChecklist({
           >
             {completedCount}/{totalCount}
           </div>
-          <div className="text-[9px] text-[var(--tx3)] capitalize tracking-wider">Complete</div>
+          <div className="text-[9px] text-[var(--tx3)] uppercase tracking-wider">Complete</div>
         </div>
       </div>
 

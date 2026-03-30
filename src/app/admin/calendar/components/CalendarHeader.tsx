@@ -113,7 +113,7 @@ export default function CalendarHeader({
               key={mode}
               type="button"
               onClick={() => onViewChange(mode)}
-              className={`flex-1 sm:flex-none min-h-[40px] sm:min-h-0 px-2 py-2 sm:py-0.5 rounded-md sm:rounded text-xs sm:text-[10px] font-semibold capitalize transition-colors ${
+              className={`flex-1 sm:flex-none min-h-[40px] sm:min-h-0 px-2 py-2 sm:py-0.5 rounded-md sm:rounded text-xs sm:text-[10px] font-semibold uppercase transition-colors ${
                 view === mode
                   ? "bg-[var(--card)] text-[var(--gold)] shadow-sm"
                   : "text-[var(--tx2)] hover:text-[var(--tx)]"

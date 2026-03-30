@@ -274,7 +274,7 @@ export default function ChangeRequestsClient({
 
       {/* Content */}
       <div className="border-t border-[var(--brd)]/30 pt-6">
-        <div className="text-[10px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-4">Change requests</div>
+        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">Change requests</div>
         <DataTable
           data={filtered}
           columns={columns}

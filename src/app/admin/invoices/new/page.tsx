@@ -80,7 +80,7 @@ export default function NewInvoicePage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
             Client or Partner
           </label>
           <select
@@ -98,7 +98,7 @@ export default function NewInvoicePage() {
         </div>
 
         <div>
-          <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
             Name
           </label>
           <input
@@ -113,7 +113,7 @@ export default function NewInvoicePage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
               Amount ($)
             </label>
             <input
@@ -128,7 +128,7 @@ export default function NewInvoicePage() {
             />
           </div>
           <div>
-            <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+            <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
               Due Date
             </label>
             <input
@@ -141,7 +141,7 @@ export default function NewInvoicePage() {
         </div>
 
         <div>
-          <label className="block text-[9px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-1.5">
+          <label className="block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
             Invoice PDF (optional)
           </label>
           <input

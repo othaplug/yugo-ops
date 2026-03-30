@@ -62,7 +62,7 @@ export default function GlobalModal({
     >
       {/* Dimmed backdrop */}
       <div
-        className="fixed inset-0 z-0 bg-black/60 backdrop-blur-sm modal-overlay"
+        className="fixed inset-0 z-0 bg-black/60 modal-overlay"
         onClick={onClose}
         aria-hidden="true"
       />

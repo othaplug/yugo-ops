@@ -403,7 +403,7 @@ export default function DeviceSetupCodes() {
         >
           <form onSubmit={handleUpdateTruck} className="space-y-5">
             <div>
-              <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Truck name</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck name</label>
               <input
                 type="text"
                 value={editTruckName}
@@ -442,7 +442,7 @@ export default function DeviceSetupCodes() {
       >
         <form onSubmit={handleCreateCode} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Truck (optional)</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck (optional)</label>
             <div className="flex gap-2">
               <select
                 value={formTruckId}
@@ -464,7 +464,7 @@ export default function DeviceSetupCodes() {
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Default Team (optional)</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Default Team (optional)</label>
             <select
               value={formTeamId}
               onChange={(e) => setFormTeamId(e.target.value)}
@@ -478,7 +478,7 @@ export default function DeviceSetupCodes() {
             <p className="text-[10px] text-[var(--tx3)] mt-1">At least one of Truck or Team is required</p>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Device Name (optional)</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Device Name (optional)</label>
             <input
               type="text"
               value={formDeviceName}
@@ -488,7 +488,7 @@ export default function DeviceSetupCodes() {
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Expires in</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Expires in</label>
             <select
               value={formExpiresInHours}
               onChange={(e) => setFormExpiresInHours(Number(e.target.value))}
@@ -529,7 +529,7 @@ export default function DeviceSetupCodes() {
       >
         <form onSubmit={handleAddTruck} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Truck name</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck name</label>
             <input
               type="text"
               value={newTruckName}

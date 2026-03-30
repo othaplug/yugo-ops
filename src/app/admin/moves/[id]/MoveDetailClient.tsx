@@ -200,7 +200,7 @@ function BinOrderPickupBlock({
 
   return (
     <div className="mt-2 pt-2 border-t border-[var(--brd)]/40 space-y-2">
-      <p className="text-[10px] font-bold capitalize tracking-wide text-[var(--tx3)]">Pickup checklist</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">Pickup checklist</p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
         <label className="text-[10px] text-[var(--tx3)]">
           Bins returned
@@ -434,7 +434,7 @@ export default function MoveDetailClient({
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <div className="flex items-center gap-2 mb-1">
         <BackButton label="Back" />
-        <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60">
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">
           Operations ·{" "}
           {String(move.service_type || "").toLowerCase() === "bin_rental"
             ? "Bin Rental"
@@ -498,7 +498,7 @@ export default function MoveDetailClient({
         <div className="mt-4 pt-4 border-t border-[var(--brd)]/40">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="text-[9px] font-semibold tracking-widest capitalize text-[var(--tx3)]/80 shrink-0">Status</span>
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">Status</span>
               {isCompleted ? (
                 <>
                   <span className="inline-flex items-center gap-1.5">
@@ -608,7 +608,7 @@ export default function MoveDetailClient({
             </div>
 
             <div className="group/card relative flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="inline-flex items-center gap-1.5 text-[9px] font-semibold tracking-widest capitalize text-[var(--tx3)]/80 shrink-0">
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
                 <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#22C55E]" />
@@ -621,7 +621,7 @@ export default function MoveDetailClient({
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 pt-2 sm:pt-0 sm:pl-6 sm:border-l sm:border-[var(--brd)]/50">
-              <span className="text-[9px] font-semibold tracking-widest capitalize text-[var(--tx3)]/80">Last updated</span>
+              <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80">Last updated</span>
               <span className="text-[12px] tabular-nums text-[var(--tx2)]">{lastUpdatedRelative}</span>
             </div>
           </div>
@@ -716,7 +716,7 @@ export default function MoveDetailClient({
             </div>
             {(reviewRequest.client_rating != null && reviewRequest.client_rating <= 3) || (reviewRequest.client_feedback && reviewRequest.client_feedback.trim()) ? (
               <div className="pt-3 border-t border-[var(--brd)]">
-                <p className="text-[10px] font-bold tracking-widest capitalize text-[var(--tx3)] mb-1.5">Client feedback (from review link)</p>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-1.5">Client feedback (from review link)</p>
                 <div className="text-[12px] text-[var(--tx2)]">
                   {reviewRequest.client_rating != null && reviewRequest.client_rating <= 5 && (
                     <p className="mb-1"><span className="text-[var(--tx3)]">Rating:</span> {reviewRequest.client_rating}★</p>
@@ -792,7 +792,7 @@ export default function MoveDetailClient({
             </p>
           )}
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Select Crew</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Select Crew</label>
             <select
               value={move.crew_id || ""}
               disabled={moveInProgress}
@@ -873,7 +873,7 @@ export default function MoveDetailClient({
       <ModalOverlay open={vehicleModalOpen} onClose={() => setVehicleModalOpen(false)} title="Assign Vehicle" maxWidth="sm">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Primary Vehicle</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Primary Vehicle</label>
             <select
               value={move.truck_primary || ""}
               onChange={async (e) => {
@@ -892,7 +892,7 @@ export default function MoveDetailClient({
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Secondary Vehicle (Optional)</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Secondary Vehicle (Optional)</label>
             <select
               value={move.truck_secondary || ""}
               onChange={async (e) => {
@@ -910,7 +910,7 @@ export default function MoveDetailClient({
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold tracking-wider capitalize text-[var(--tx3)] mb-2">Vehicle Notes</label>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Vehicle Notes</label>
             <textarea
               defaultValue={move.truck_notes || ""}
               onBlur={async (e) => {
@@ -1104,14 +1104,14 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Time & Intelligence</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Date</span><div className="text-[13px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Time Window</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.arrival_window || "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Job duration</span><div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Completed at</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.completed_at ? new Date(move.completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Date</span><div className="text-[13px] font-medium text-[var(--tx)]">{formatMoveDate(move.scheduled_date)}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Time Window</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.arrival_window || "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Job duration</span><div className="text-[13px] font-medium text-[var(--tx)] tabular-nums">{jobDurationStr ?? "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Completed at</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.completed_at ? new Date(move.completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "-"}</div></div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Days Left</span>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Days Left</span>
               <div className={`text-[13px] font-bold tabular-nums ${
                 daysUntil === null || daysUntil === undefined
                   ? "text-[var(--tx3)]"
@@ -1144,15 +1144,15 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Addresses</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Addresses</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <div>
-              <span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">From</span>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">From</span>
               <div className="text-[13px] font-medium text-[var(--tx)]">{move.from_address || "-"}</div>
               {formatAccessForDisplay(move.from_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.from_access)}</div>}
             </div>
             <div>
-              <span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">To</span>
+              <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">To</span>
               <div className="text-[13px] font-medium text-[var(--tx)]">{move.to_address || move.delivery_address || "-"}</div>
               {formatAccessForDisplay(move.to_access) && <div className="text-[9px] text-[var(--tx3)] mt-0.5">{formatAccessForDisplay(move.to_access)}</div>}
             </div>
@@ -1170,14 +1170,14 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Crew</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Crew</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{displayCrewName || "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Coordinator</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.coordinator_name || "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Crew</span><div className="text-[13px] font-medium text-[var(--tx)]">{displayCrewName || "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Coordinator</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.coordinator_name || "-"}</div></div>
             {isCompleted ? (
-              <div><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
+              <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></div>
             ) : (
-              <button type="button" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`} title={moveInProgress ? "Cannot reassign job in progress" : undefined}><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
+              <button type="button" onClick={() => !moveInProgress && setCrewModalOpen(true)} disabled={moveInProgress} className={`text-left hover:opacity-90 transition-opacity ${moveInProgress ? "opacity-60 cursor-not-allowed" : ""}`} title={moveInProgress ? "Cannot reassign job in progress" : undefined}><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Assigned</span><div className="text-[13px] font-medium text-[var(--gold)]">{assignedMembers.size} members</div></button>
             )}
           </div>
         </div>
@@ -1193,34 +1193,34 @@ export default function MoveDetailClient({
               <Lock className="w-[11px] h-[11px]" />
             </span>
           )}
-          <div className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Vehicle</div>
+          <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Vehicle</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-            <div><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Primary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "-"}</div></div>
-            <div><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Secondary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "-"}</div></div>
-            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Primary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_primary ? VEHICLE_LABELS[move.truck_primary] || move.truck_primary : "-"}</div></div>
+            <div><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Secondary</span><div className="text-[13px] font-medium text-[var(--tx)]">{move.truck_secondary ? VEHICLE_LABELS[move.truck_secondary] || move.truck_secondary : "-"}</div></div>
+            {move.truck_notes && <div className="col-span-2 sm:col-span-1"><span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Notes</span><div className="text-[10px] text-[var(--tx3)]">{move.truck_notes}</div></div>}
           </div>
         </div>
 
         {/* Valuation Protection */}
         {(move.valuation_tier || move.valuation_upgrade_cost || move.declaration_total) && (
           <div className="border-t border-[var(--brd)]/30 py-4">
-            <div className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Valuation Protection</div>
+            <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Valuation Protection</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
               <div>
-                <span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Tier</span>
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Tier</span>
                 <div className="text-[13px] font-medium text-[var(--tx)]">
                   {move.valuation_tier === "full_replacement" ? "Full Replacement" : move.valuation_tier === "enhanced" ? "Enhanced Value" : "Released Value"}
                 </div>
               </div>
               {(move.valuation_upgrade_cost ?? 0) > 0 && (
                 <div>
-                  <span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Upgrade Cost</span>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Upgrade Cost</span>
                   <div className="text-[13px] font-medium text-[var(--gold)]">{formatCurrency(move.valuation_upgrade_cost)}</div>
                 </div>
               )}
               {(move.declaration_total ?? 0) > 0 && (
                 <div>
-                  <span className="text-[9px] font-semibold tracking-wider capitalize text-[var(--tx3)]/70">Declarations</span>
+                  <span className="text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]/70">Declarations</span>
                   <div className="text-[13px] font-medium text-[var(--gold)]">{formatCurrency(move.declaration_total)}</div>
                 </div>
               )}
@@ -1251,7 +1251,7 @@ export default function MoveDetailClient({
           <div className="rounded-2xl border border-[var(--brd)]/60 bg-[var(--card)] overflow-hidden">
             {/* Header strip */}
             <div className="flex items-center justify-between px-5 pt-4 pb-0">
-              <span className="text-[11px] font-bold tracking-[0.15em] capitalize text-[var(--tx3)]/50">Payments</span>
+              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/50">Payments</span>
               <div className="flex items-center gap-1.5">
                 {(() => {
                   const label = tierDisplayLabel(move.tier_selected);
@@ -1320,7 +1320,7 @@ export default function MoveDetailClient({
 
             {paymentLedger.length > 0 && (
               <div className="px-5 py-3 border-t border-[var(--brd)]/40">
-                <div className="text-[9px] font-bold tracking-[0.12em] capitalize text-[var(--tx3)]/60 mb-2">Payment transactions</div>
+                <div className="text-[9px] font-bold tracking-[0.12em] uppercase text-[var(--tx3)]/60 mb-2">Payment transactions</div>
                 <ul className="space-y-2">
                   {paymentLedger.map((row) => {
                     const lineTotal = Number(row.pre_tax_amount) + Number(row.hst_amount);
@@ -1439,7 +1439,7 @@ export default function MoveDetailClient({
                       <Recycle className="w-4 h-4 text-[var(--gold)] shrink-0" weight="regular" aria-hidden />
                       {String(b.order_number ?? "Bin order")}
                     </span>
-                    <span className="text-[10px] font-semibold capitalize tracking-wide text-[var(--tx3)]">{stLabel}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tx3)]">{stLabel}</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-[var(--tx2)]">
                     <p>
@@ -1486,7 +1486,7 @@ export default function MoveDetailClient({
         <div className="rounded-xl border border-[var(--brd)]/50 bg-[var(--bg)]/60 px-4 py-3 flex items-start gap-3">
           <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${move.walkthrough_skipped ? "bg-amber-400" : "bg-[#22C55E]"}`} />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-[var(--tx)] capitalize tracking-wider">
+            <p className="text-[11px] font-bold text-[var(--tx)] uppercase tracking-wider">
               Inventory Walkthrough {move.walkthrough_skipped ? "Skipped" : "Completed"}
             </p>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
@@ -1532,7 +1532,7 @@ export default function MoveDetailClient({
             <Lock className="w-[11px] h-[11px]" />
           </span>
         )}
-        <div className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50 mb-2">Internal Notes</div>
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-2">Internal Notes</div>
         <p className="text-[11px] text-[var(--tx2)] leading-snug whitespace-pre-wrap">
           {stripClientMessagesFromNotes(move.internal_notes) || "No internal notes. Click edit to add."}
         </p>
@@ -1662,7 +1662,7 @@ function MoveProfitCard({ move }: { move: any }) {
   return (
     <div className="border-t border-[var(--brd)]/30 py-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="text-[11px] font-bold tracking-[0.14em] capitalize text-[var(--tx3)]/50">Profitability</div>
+        <div className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Profitability</div>
         <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 font-medium">Owner Only</span>
       </div>
       <div className="space-y-1.5 text-[11px]">

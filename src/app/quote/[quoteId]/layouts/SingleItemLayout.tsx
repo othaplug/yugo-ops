@@ -52,14 +52,14 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <span
-                className="text-[9px] font-bold tracking-wider capitalize px-2.5 py-0.5 rounded-full"
+                className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
                 style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
               >
                 {category}
               </span>
               {weight && (
                 <span
-                  className="text-[9px] font-bold tracking-wider capitalize px-2.5 py-0.5 rounded-full"
+                  className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
                   style={{ backgroundColor: `${FOREST}10`, color: FOREST }}
                 >
                   {weight}
@@ -81,14 +81,14 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
         <div className="mt-4 pt-4 border-t border-[var(--brd)]/30">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Pickup</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Pickup</p>
               <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
                 {quote.from_address}
               </p>
             </div>
             <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-[9px] font-bold tracking-[0.14em] capitalize text-[#5C5853]">Delivery</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Delivery</p>
               <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
                 {quote.to_address}
               </p>
@@ -107,7 +107,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
           className="rounded-xl border-2 p-4 mt-4"
           style={{ borderColor: `${GOLD}55`, backgroundColor: `${GOLD}08` }}
         >
-          <p className="text-[9px] font-bold tracking-[0.14em] capitalize mb-1.5" style={{ color: WINE }}>
+          <p className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1.5" style={{ color: WINE }}>
             Special handling instructions
           </p>
           <p className="text-[13px] leading-relaxed font-medium" style={{ color: FOREST }}>

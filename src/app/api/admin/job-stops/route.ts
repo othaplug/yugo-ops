@@ -61,6 +61,64 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: dbErr.message }, { status: 500 });
     }
 
+    if (job_type === "quote") {
+      const { data: q } = await admin
+        .from("quotes")
+        .select("factors_applied, from_address, to_address, from_access, to_access")
+        .eq("quote_id", job_id)
+        .maybeSingle();
+      if (q) {
+        const { data: allStops } = await admin
+          .from("job_stops")
+          .select("stop_type, address, sort_order")
+          .eq("job_type", "quote")
+          .eq("job_id", job_id)
+          .order("sort_order", { ascending: true });
+        const pickups = (allStops ?? [])
+          .filter((s) => s.stop_type === "pickup")
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        const dropoffs = (allStops ?? [])
+          .filter((s) => s.stop_type === "dropoff")
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        const pickup_locations = [
+          {
+            address: String(q.from_address ?? "").trim(),
+            access: q.from_access != null && String(q.from_access).trim() ? String(q.from_access).trim() : null,
+          },
+          ...pickups.map((s) => ({
+            address: String(s.address ?? "").trim(),
+            access: null as string | null,
+          })),
+        ].filter((r) => r.address.length > 0);
+        const dropoff_locations = [
+          {
+            address: String(q.to_address ?? "").trim(),
+            access: q.to_access != null && String(q.to_access).trim() ? String(q.to_access).trim() : null,
+          },
+          ...dropoffs.map((s) => ({
+            address: String(s.address ?? "").trim(),
+            access: null as string | null,
+          })),
+        ].filter((r) => r.address.length > 0);
+        const prev =
+          q.factors_applied && typeof q.factors_applied === "object" && !Array.isArray(q.factors_applied)
+            ? (q.factors_applied as Record<string, unknown>)
+            : {};
+        await admin
+          .from("quotes")
+          .update({
+            factors_applied: {
+              ...prev,
+              pickup_locations,
+              dropoff_locations,
+              multi_pickup: pickup_locations.length > 1,
+              multi_dropoff: dropoff_locations.length > 1,
+            },
+          })
+          .eq("quote_id", job_id);
+      }
+    }
+
     return NextResponse.json({ inserted: data?.length ?? 0 });
   } catch (err: unknown) {
     return NextResponse.json(

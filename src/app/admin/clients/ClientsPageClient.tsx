@@ -99,7 +99,7 @@ export default function ClientsPageClient({
     {
       id: "move_type", label: "Type",
       accessor: (c) => c.move_type,
-      render: (c) => <span className="text-[11px] capitalize text-[var(--tx2)]">{c.move_type === "office" ? "Commercial" : "Residential"}</span>,
+      render: (c) => <span className="text-[11px] uppercase text-[var(--tx2)]">{c.move_type === "office" ? "Commercial" : "Residential"}</span>,
     },
     {
       id: "contact", label: "Contact",
@@ -156,7 +156,7 @@ export default function ClientsPageClient({
 
       <div className="flex items-center justify-between gap-3 mb-6">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] capitalize text-[var(--tx3)]/60 mb-1.5">CRM</p>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
           <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Contacts</h1>
         </div>
         <div className="flex gap-1.5 shrink-0">
