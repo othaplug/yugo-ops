@@ -9,6 +9,11 @@ import { isQuoteExpiredForBooking, quoteExpiryBlockedStatuses } from "@/lib/quot
 import { squareThrownErrorMessage } from "@/lib/square-payment-errors";
 import { logActivity } from "@/lib/activity";
 import { notifyAllAdmins } from "@/lib/notifications";
+import {
+  expectedB2BCardGrandTotalCad,
+  isB2BInvoiceQuote,
+  isB2BDeliveryQuoteServiceType,
+} from "@/lib/quotes/b2b-quote-copy";
 
 export async function POST(req: Request) {
   try {
@@ -70,6 +75,28 @@ export async function POST(req: Request) {
         { error: "This quote has expired. Request a new quote from your coordinator." },
         { status: 410 },
       );
+    }
+
+    const factors = quote.factors_applied as Record<string, unknown> | null | undefined;
+    const svc = String(quote.service_type ?? "");
+    const selAddons = quote.selected_addons;
+    const noQuoteAddons =
+      selAddons == null || (Array.isArray(selAddons) && selAddons.length === 0);
+    if (
+      isB2BDeliveryQuoteServiceType(svc) &&
+      !isB2BInvoiceQuote(factors, svc) &&
+      noQuoteAddons
+    ) {
+      const expected = expectedB2BCardGrandTotalCad({
+        custom_price: quote.custom_price != null ? Number(quote.custom_price) : null,
+        service_type: svc,
+      });
+      if (expected != null && Math.abs(Number(amount) - expected) > 1.5) {
+        return NextResponse.json(
+          { error: "Payment amount does not match the quoted total. Refresh the page or contact your coordinator." },
+          { status: 400 },
+        );
+      }
     }
 
     const amountCents = Math.round(amount * 100);

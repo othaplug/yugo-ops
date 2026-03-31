@@ -136,6 +136,7 @@ interface QuoteInput {
     description: string;
     quantity: number;
     weight_category?: "light" | "medium" | "heavy" | "extra_heavy";
+    weight_lbs?: number;
     fragile?: boolean;
     dimensions?: string;
   }[];
@@ -154,6 +155,15 @@ interface QuoteInput {
   b2b_total_load_weight_lbs?: number;
   b2b_haul_away_units?: number;
   b2b_returns_pickup?: boolean;
+  /** Estimated monthly delivery count for volume tier discount (B2B). */
+  b2b_monthly_delivery_volume_estimate?: number;
+  b2b_art_hanging_count?: number;
+  b2b_crating_pieces?: number;
+  /** When set, replaces dimensional engine subtotal (pre-tax); access + add-ons still apply. */
+  b2b_subtotal_override?: number;
+  b2b_subtotal_override_reason?: string;
+  /** When set, replaces full pre-tax total (includes access + add-ons). Mutually exclusive with `b2b_subtotal_override`. */
+  b2b_full_pre_tax_override?: number;
   // Event (round-trip venue delivery)
   event_name?: string;
   event_return_date?: string;
@@ -282,6 +292,14 @@ async function loadConfig(sb: SupabaseAdmin): Promise<Map<string, string>> {
 function cfgNum(config: Map<string, string>, key: string, fallback: number): number {
   const v = config.get(key);
   return v !== undefined ? Number(v) : fallback;
+}
+
+/** Positive finite pre-tax dollar amount from JSON body, or undefined if absent/invalid. */
+function parsePositivePreTaxOverride(v: unknown): number | undefined {
+  if (v === undefined || v === null) return undefined;
+  const n = typeof v === "number" ? v : Number(String(v).trim());
+  if (!Number.isFinite(n) || n <= 0) return undefined;
+  return n;
 }
 
 function cfgStr(config: Map<string, string>, key: string, fallback: string): string {
@@ -2194,6 +2212,9 @@ async function calcB2bOneoff(
       total_load_weight_lbs: input.b2b_total_load_weight_lbs,
       haul_away_units: input.b2b_haul_away_units,
       returns_pickup: !!input.b2b_returns_pickup,
+      monthly_delivery_volume: input.b2b_monthly_delivery_volume_estimate,
+      art_hanging_count: input.b2b_art_hanging_count,
+      crating_pieces: input.b2b_crating_pieces,
     };
 
     const b2bExtrasForDim = useVerticalZoneSchedule ? [] : b2bLocationExtras.lines;
@@ -2227,7 +2248,17 @@ async function calcB2bOneoff(
       }
     }
 
-    let price = dim.subtotal + accessSurcharge + addonResult.total;
+    const engineSubtotal = dim.subtotal;
+    const ovr = parsePositivePreTaxOverride(input.b2b_subtotal_override);
+    const useSubtotalOverride = ovr !== undefined;
+    const b2bSubtotalAfterOverride = useSubtotalOverride ? Math.round(ovr) : engineSubtotal;
+    let price = b2bSubtotalAfterOverride + accessSurcharge + addonResult.total;
+    const calculatedPreTaxBeforeFullOverride = price;
+    const fullOv = parsePositivePreTaxOverride(input.b2b_full_pre_tax_override);
+    const useFullPreTaxOverride = fullOv !== undefined;
+    if (useFullPreTaxOverride) {
+      price = roundTo(fullOv, rounding);
+    }
     const tax = Math.round(price * taxRate);
     const deposit = price < 300 ? price : 100;
 
@@ -2292,6 +2323,16 @@ async function calcB2bOneoff(
         b2b_delivery_km_from_gta_core: b2bLocationExtras.deliveryKmFromGta,
         b2b_gta_zone: b2bLocationExtras.gtaZone,
         b2b_weekend_surcharge: b2bLocationExtras.weekendAmount,
+        b2b_engine_subtotal: engineSubtotal,
+        b2b_subtotal_override: useSubtotalOverride ? b2bSubtotalAfterOverride : null,
+        b2b_subtotal_override_reason:
+          useSubtotalOverride || useFullPreTaxOverride
+            ? (input.b2b_subtotal_override_reason?.trim() || null)
+            : null,
+        b2b_calculated_pre_tax: calculatedPreTaxBeforeFullOverride,
+        b2b_full_pre_tax_override_applied: useFullPreTaxOverride,
+        b2b_full_pre_tax_override: useFullPreTaxOverride ? fullOv : null,
+        b2b_monthly_volume_estimate: input.b2b_monthly_delivery_volume_estimate ?? null,
       },
     };
   }
@@ -2863,6 +2904,24 @@ export async function POST(req: NextRequest) {
         from_address: ordered[0]!,
         to_address: ordered[ordered.length - 1]!,
       };
+    }
+  }
+
+  if (input.service_type === "b2b_delivery" || input.service_type === "b2b_oneoff") {
+    const subO = parsePositivePreTaxOverride(input.b2b_subtotal_override);
+    const fullO = parsePositivePreTaxOverride(input.b2b_full_pre_tax_override);
+    if (subO !== undefined && fullO !== undefined) {
+      return NextResponse.json(
+        { error: "Use either dimensional subtotal override or full pre-tax override, not both" },
+        { status: 400 },
+      );
+    }
+    const reason = String(input.b2b_subtotal_override_reason || "").trim();
+    if ((subO !== undefined || fullO !== undefined) && reason.length < 3) {
+      return NextResponse.json(
+        { error: "Price override requires a reason (at least 3 characters)" },
+        { status: 400 },
+      );
     }
   }
 

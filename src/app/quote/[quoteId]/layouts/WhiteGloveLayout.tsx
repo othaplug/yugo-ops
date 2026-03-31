@@ -27,7 +27,7 @@ const PROTOCOL_STEPS = [
     icon: Truck,
     title: "Climate-Controlled Loading",
     description:
-      "Air-ride suspension truck with climate control. Secure mounting and strapping for zero-movement transit.",
+      "Air-ride suspension delivery vehicle with climate control. Secure mounting and strapping for zero-shift transit.",
   },
   {
     icon: Shield,
@@ -161,7 +161,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
         style={{ borderColor: GOLD }}
       >
         <p className="text-[11px] font-semibold tracking-wider uppercase mb-2" style={{ color: GOLD }}>
-          White Glove Service
+          WHITE GLOVE SERVICE
         </p>
         {(weightSurcharge > 0 || truckBreakdown) && (
           <div className="text-left text-[11px] space-y-1 mb-4 pb-4 border-b max-w-md mx-auto" style={{ borderColor: "#E2DDD5", color: `${FOREST}75` }}>
@@ -195,14 +195,18 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
         >
           {confirmed ? (
             <span className="flex items-center justify-center gap-2">
-              <Check className="w-4 h-4" /> Selected
+              <Check className="w-4 h-4" /> SELECTED
             </span>
+          ) : price < 500 ? (
+            `CONFIRM DELIVERY — ${fmtPrice(price + tax)}`
           ) : (
-            `Proceed \u2014 ${fmtPrice(deposit)} Deposit`
+            `CONFIRM DELIVERY — ${fmtPrice(deposit)} DEPOSIT`
           )}
         </button>
         <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
-          Balance of {fmtPrice(price + tax - deposit)} due on delivery
+          {price < 500
+            ? "Full payment required to confirm booking."
+            : `Deposit due now; balance of ${fmtPrice(price + tax - deposit)} due on delivery.`}
         </p>
       </div>
     </section>

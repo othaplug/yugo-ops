@@ -8,6 +8,24 @@ import { buildFuelConfigMap, resolveNavigationFuelPriceCadPerLitre, NAV_FUEL_KEY
 import { normalizeCrewTruckType } from "@/lib/routing/truck-profile";
 import { CREW_JOB_UUID_RE, normalizeCrewJobId, selectDeliveryByJobId } from "@/lib/resolve-delivery-by-job-id";
 
+const COMPLEXITY_BADGE_LABELS: Record<string, string> = {
+  specialty_transport: "Specialty transport",
+  heavy_equipment_possible: "Heavy equipment",
+  long_carry: "Long carry",
+  stairs_heavy: "Stair carry",
+};
+
+function complexityBadgeLabels(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const x of raw) {
+    if (typeof x !== "string" || !x.trim()) continue;
+    const label = COMPLEXITY_BADGE_LABELS[x] ?? null;
+    if (label && !out.includes(label)) out.push(label);
+  }
+  return out;
+}
+
 const MAPBOX_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN ||
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
@@ -243,5 +261,8 @@ export async function GET(
     toLng,
     truckType: normalizeCrewTruckType(m.truck_primary as string | null),
     fuelPriceCadPerLitre,
+    estCrewSize: m.est_crew_size != null ? Number(m.est_crew_size) : null,
+    serviceType: (m.service_type as string | null) || (m.move_type as string | null) || null,
+    complexityBadges: complexityBadgeLabels(m.complexity_indicators),
   });
 }

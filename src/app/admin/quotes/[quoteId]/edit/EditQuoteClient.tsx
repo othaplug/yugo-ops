@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowsClockwise as RefreshCw, PaperPlaneTilt as Send, CheckC
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import { getVisibleAddons, ESTATE_ADDON_UI_LINES } from "@/lib/quotes/addon-visibility";
+import { quoteDetailDateLabel, quoteFormServiceDateLabel } from "@/lib/quotes/quote-field-labels";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -539,7 +540,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
             <div className="text-[var(--gold)] font-bold">{formatCurrency(Number(oldPrice))}</div>
           </div>
           <div>
-            <div className="text-[var(--tx3)] text-[11px]">Move Date</div>
+            <div className="text-[var(--tx3)] text-[11px]">{quoteDetailDateLabel(serviceType)}</div>
             <div className="text-[var(--tx)] font-medium">{oq.move_date || "TBD"}</div>
           </div>
           <div>
@@ -704,7 +705,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
             </select>
           </div>
           <div>
-            <label className={labelClass}>Move Date</label>
+            <label className={labelClass}>{quoteFormServiceDateLabel(serviceType).replace(" *", "")}</label>
             <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} className={inputClass} />
           </div>
           {(serviceType === "local_move" || serviceType === "long_distance") && (

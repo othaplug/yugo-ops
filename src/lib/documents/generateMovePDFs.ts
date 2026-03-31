@@ -29,6 +29,7 @@ import {
   SUB_SECTION_GAP,
   drawInfoBox,
 } from "@/lib/pdf-brand";
+import { isMoveRowLogisticsDelivery } from "@/lib/quotes/b2b-quote-copy";
 
 const BUCKET = "move-documents";
 
@@ -41,10 +42,15 @@ const TIER_FEATURES: Record<string, string> = {
   premium: "Premium crew, premium truck, white-glove handling, priority support.",
 };
 
+const LOGISTICS_INCLUDED_FALLBACK =
+  "Licensed, insured logistics professionals, vehicle, equipment, and delivery handling as agreed.";
+
 type MoveRow = {
   id: string;
   move_code: string | null;
   move_number?: string | null;
+  service_type?: string | null;
+  move_type?: string | null;
   client_name: string | null;
   client_email: string | null;
   client_phone: string | null;
@@ -121,6 +127,7 @@ function generateMoveSummaryPDF(
   logoBase64: string,
   footerLine: string,
 ): Buffer {
+  const logistics = isMoveRowLogisticsDelivery(move);
   const doc = new jsPDF("p", "pt", "letter");
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 50;
@@ -130,7 +137,7 @@ function generateMoveSummaryPDF(
   drawTopAccentBar(doc, true);
   y = pdfHeader(doc, 24, centerX, logoBase64);
   setHeroTitle(doc, 16);
-  doc.text("Move Summary", centerX, y, { align: "center" });
+  doc.text(logistics ? "Delivery Summary" : "Move Summary", centerX, y, { align: "center" });
   y += SECTION_GAP + 8;
 
   // ─── Move details (Yugo info block) ───
@@ -138,9 +145,13 @@ function generateMoveSummaryPDF(
   const boxH = 52;
   drawInfoBox(doc, { x: margin, y, width: boxW, height: boxH });
   setSectionLabel(doc, 8);
-  doc.text("MOVE DETAILS", margin + 6, y + 10);
+  doc.text(logistics ? "JOB DETAILS" : "MOVE DETAILS", margin + 6, y + 10);
   setBodyText(doc, 9);
-  doc.text(`Move ID: ${moveDisplayId(move)}`, margin + 6, y + 22);
+  doc.text(
+    logistics ? `Job Ref: ${moveDisplayId(move)}` : `Move ID: ${moveDisplayId(move)}`,
+    margin + 6,
+    y + 22,
+  );
   doc.setTextColor(...GRAY);
   doc.setFontSize(8);
   doc.text(`Date: ${formatDate(move.completed_at || move.scheduled_date)}`, pageWidth - margin - 6, y + 22, { align: "right" });
@@ -164,10 +175,14 @@ function generateMoveSummaryPDF(
     ? (crew.members as string[]).join(", ")
     : crew?.name || "-";
   const crewCount = Array.isArray(crew?.members) ? (crew.members as string[]).length : 0;
-  doc.text(`Crew: ${crewNames} · ${crewCount || "N"} movers`, margin, y);
+  doc.text(
+    `Crew: ${crewNames} · ${crewCount || "N"} ${logistics ? "logistics professionals" : "movers"}`,
+    margin,
+    y,
+  );
   y += 6;
   const truck = move.truck_primary || move.truck_secondary || "-";
-  doc.text(`Truck: ${truck}`, margin, y);
+  doc.text(`${logistics ? "Vehicle" : "Truck"}: ${truck}`, margin, y);
   y += 6;
   const hours = move.actual_hours ?? move.est_hours;
   doc.text(`Duration: ${hours != null ? `${hours} hours` : "-"}`, margin, y);
@@ -204,7 +219,10 @@ function generateMoveSummaryPDF(
   y += SUB_SECTION_GAP;
   setBodyText(doc, 8);
   const tierKey = (move.tier_selected || "").toLowerCase().replace(/\s+/g, "_");
-  doc.text(TIER_FEATURES[tierKey] || TIER_FEATURES.essential || "Moving service as agreed.", margin, y);
+  const includedLine = logistics
+    ? LOGISTICS_INCLUDED_FALLBACK
+    : TIER_FEATURES[tierKey] || TIER_FEATURES.essential || "Moving service as agreed.";
+  doc.text(includedLine, margin, y);
   y += SECTION_GAP;
 
   setSectionLabel(doc, 9);
@@ -228,6 +246,7 @@ function generateInvoicePDF(
   brandDisplay: string,
   companyLegal: string,
 ): Buffer {
+  const logistics = isMoveRowLogisticsDelivery(move);
   const doc = new jsPDF("p", "pt", "letter");
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 50;
@@ -305,7 +324,13 @@ function generateInvoicePDF(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...GRAY);
-  doc.text(`Thank you for choosing ${brandDisplay}.`, margin, y);
+  doc.text(
+    logistics
+      ? `Thank you for choosing ${brandDisplay} for your delivery.`
+      : `Thank you for choosing ${brandDisplay}.`,
+    margin,
+    y,
+  );
   y += 5;
   doc.text(`${companyLegal}, Toronto ON`, margin, y);
 
@@ -325,6 +350,7 @@ function generateReceiptPDF(
   brandDisplay: string,
   cardLast4?: string | null,
 ): Buffer {
+  const logistics = isMoveRowLogisticsDelivery(move);
   const doc = new jsPDF("p", "pt", "letter");
   const margin = 50;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -347,21 +373,31 @@ function generateReceiptPDF(
   doc.text(`Client: ${move.client_name || "-"}`, margin, y);
   y += 6;
   doc.setTextColor(...GRAY);
-  doc.text(`Move: ${move.from_address || "-"} → ${move.to_address || "-"}`, margin, y);
+  doc.text(
+    `${logistics ? "Route" : "Move"}: ${move.from_address || "-"} → ${move.to_address || "-"}`,
+    margin,
+    y,
+  );
   y += 14;
 
   const totalPaid = depositPaid + balancePaid;
   const cardSuffix = cardLast4 ? `Card ending ${cardLast4}` : "Card";
+  const jobNoun = logistics ? "delivery" : "move";
 
   const tableBody: (string | number)[][] = [
-    [formatDate(move.deposit_paid_at), `Deposit ${tierLabel} move`, cardSuffix, formatCurrency(depositPaid)],
-    [formatDate(move.balance_paid_at || move.completed_at), `Balance ${tierLabel} move`, cardSuffix, formatCurrency(balancePaid)],
+    [formatDate(move.deposit_paid_at), `Deposit ${tierLabel} ${jobNoun}`, cardSuffix, formatCurrency(depositPaid)],
+    [
+      formatDate(move.balance_paid_at || move.completed_at),
+      `Balance ${tierLabel} ${jobNoun}`,
+      cardSuffix,
+      formatCurrency(balancePaid),
+    ],
     ["", "Total Paid", "", formatCurrency(totalPaid)],
   ];
   const headStyles = getTableHeadStyles(true);
   autoTable(doc, {
     startY: y,
-    head: [["Date", "Description", "Method", "Amount"]],
+    head: [["DATE", "DESCRIPTION", "METHOD", "AMOUNT"]],
     body: tableBody,
     theme: "plain",
     headStyles: { ...headStyles, fillColor: CREAM_BG, textColor: WINE },
@@ -379,7 +415,11 @@ function generateReceiptPDF(
 
   doc.setFontSize(9);
   doc.setTextColor(...GRAY);
-  doc.text(`This receipt confirms full payment for your ${brandDisplay} move.`, margin, y);
+  doc.text(
+    `This receipt confirms full payment for your ${brandDisplay} ${jobNoun}.`,
+    margin,
+    y,
+  );
 
   pdfFooter(doc, footerLine);
   drawBottomAccentBar(doc, true);

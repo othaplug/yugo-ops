@@ -5,7 +5,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { TIER_LABELS as DISPLAY_TIER_LABELS, displayLabel } from "@/lib/displayLabels";
-import { getB2BQuoteEmailSubheading } from "@/lib/quotes/b2b-quote-copy";
+import { getB2BQuoteEmailSubheading, quoteEmailCrewLine } from "@/lib/quotes/b2b-quote-copy";
 
 /* ─── Brand tokens ─── */
 const BG = "#080808";
@@ -613,8 +613,9 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   } else {
     rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
   }
-  rows.push(["Date", dateDisplay(d.moveDate)]);
-  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  rows.push(["Delivery Date", dateDisplay(d.moveDate)]);
+  if (d.estCrewSize != null && d.estCrewSize > 0)
+    rows.push(["Crew", quoteEmailCrewLine(d.estCrewSize, "single_item")]);
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
 
   const price = d.customPrice ?? d.tiers?.essential?.price ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
@@ -654,8 +655,9 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
   } else {
     rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
   }
-  rows.push(["Date", dateDisplay(d.moveDate)]);
-  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  rows.push(["Delivery Date", dateDisplay(d.moveDate)]);
+  if (d.estCrewSize != null && d.estCrewSize > 0)
+    rows.push(["Crew", quoteEmailCrewLine(d.estCrewSize, "white_glove")]);
   if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
 
   const price = d.customPrice ?? d.tiers?.essential?.price ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;

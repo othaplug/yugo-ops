@@ -6,6 +6,8 @@ import { generateNextQuoteId } from "@/lib/quotes/quote-id";
 import {
   buildSpecialtyCostLines,
   hstOnPrice,
+  mergeSpecialtyNonProcessingOverrides,
+  SPECIALTY_COST_LINE_OVERRIDE_KEYS,
   weightSurchargeDollars,
   ZONE_FEES,
   ZONE_LABELS,
@@ -104,9 +106,30 @@ export async function POST(req: NextRequest) {
   };
 
   const built = buildSpecialtyCostLines(costInput);
+
+  let costLineOverrides: Record<string, number> | undefined;
+  if (body.cost_line_overrides != null && typeof body.cost_line_overrides === "object" && !Array.isArray(body.cost_line_overrides)) {
+    const raw = body.cost_line_overrides as Record<string, unknown>;
+    costLineOverrides = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (!SPECIALTY_COST_LINE_OVERRIDE_KEYS.has(k)) {
+        return NextResponse.json({ error: `Invalid cost line key: ${k}` }, { status: 400 });
+      }
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0) {
+        return NextResponse.json({ error: `Invalid amount for ${k}` }, { status: 400 });
+      }
+      costLineOverrides[k] = n;
+    }
+    if (Object.keys(costLineOverrides).length === 0) costLineOverrides = undefined;
+  }
+
+  const costMerged = mergeSpecialtyNonProcessingOverrides(built, costLineOverrides);
+  const effectiveSubtotal = costMerged.subtotal;
+
   const marginPct = Math.min(50, Math.max(25, Number(body.margin_percent) ?? 40));
   const marginFrac = marginPct / 100;
-  const calculatedPrice = built.subtotal / (1 - marginFrac);
+  const calculatedPrice = effectiveSubtotal / (1 - marginFrac);
   const clientPricePreTax = Math.max(0, Number(body.client_price_pre_tax));
   if (!Number.isFinite(clientPricePreTax) || clientPricePreTax <= 0) {
     return NextResponse.json({ error: "Client price (pre-tax) is required" }, { status: 400 });
@@ -119,7 +142,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Override reason is required when overriding price" }, { status: 400 });
   }
 
-  if (clientPricePreTax + 1e-6 < built.subtotal && !priceOverride) {
+  if (clientPricePreTax + 1e-6 < effectiveSubtotal && !priceOverride) {
     return NextResponse.json(
       { error: "Price is below calculated cost — enable override and add a reason, or raise the price" },
       { status: 400 },
@@ -184,8 +207,10 @@ export async function POST(req: NextRequest) {
     specialty_crew_size: crewCount,
     est_job_hours: jobHours,
     specialty_equipment_keys: equipmentKeys,
-    specialty_cost_breakdown: built.lines,
-    specialty_subtotal: built.subtotal,
+    specialty_cost_breakdown: costMerged.lines,
+    specialty_subtotal: effectiveSubtotal,
+    specialty_subtotal_model: costMerged.subtotal_model,
+    specialty_cost_line_overrides: costLineOverrides ?? null,
     specialty_margin_percent: marginPct,
     specialty_calculated_price: Math.round(calculatedPrice * 100) / 100,
     specialty_price_override: priceOverride,
@@ -251,6 +276,6 @@ export async function POST(req: NextRequest) {
     quote_id: quoteRow.quote_id,
     quote_uuid: quoteRow.id,
     grand_total: grandTotal,
-    subtotal: built.subtotal,
+    subtotal: effectiveSubtotal,
   });
 }

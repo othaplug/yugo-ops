@@ -21,6 +21,7 @@ import {
 import { toTitleCase } from "@/lib/format-text";
 import { formatPhone } from "@/lib/phone";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
+import { quoteDetailDateLabel } from "@/lib/quotes/quote-field-labels";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -378,7 +379,7 @@ export default function QuoteDetailClient({
                       Crew
                     </span>
                     <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
-                      {quote.est_crew_size ?? factors?.est_crew_size} movers
+                      {quote.est_crew_size ?? factors?.est_crew_size}-person crew
                     </p>
                   </div>
                 )}
@@ -599,7 +600,7 @@ export default function QuoteDetailClient({
               {(quote.est_crew_size ?? (factors as any)?.est_crew_size) && (
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Crew</span>
-                  <span className="text-[var(--tx)] font-medium">{quote.est_crew_size ?? (factors as any)?.est_crew_size} movers</span>
+                  <span className="text-[var(--tx)] font-medium">{quote.est_crew_size ?? (factors as any)?.est_crew_size}-person crew</span>
                 </div>
               )}
               {quote.est_hours && (

@@ -138,6 +138,9 @@ interface JobDetail {
   toLng?: number | null;
   truckType?: string | null;
   fuelPriceCadPerLitre?: number | null;
+  estCrewSize?: number | null;
+  serviceType?: string | null;
+  complexityBadges?: string[];
 }
 
 interface Session {
@@ -610,6 +613,36 @@ export default function CrewJobPage({
             <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--tx3)]/60 mb-0.5">{job.jobTypeLabel}</p>
             <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] leading-tight truncate">{job.clientName}</h1>
             <p className="text-[10px] text-[var(--tx3)] mt-0.5 font-mono tracking-wide">{job.jobId}</p>
+            {(() => {
+              const n = job.estCrewSize != null && Number.isFinite(job.estCrewSize) ? Math.max(0, Math.round(job.estCrewSize)) : null;
+              const badges = Array.isArray(job.complexityBadges) ? job.complexityBadges : [];
+              const showCrew = n != null && n >= 3;
+              const st = (job.serviceType || "").toLowerCase();
+              const b2b = st === "b2b_delivery" || st === "b2b_oneoff";
+              if (!showCrew && badges.length === 0 && !b2b) return null;
+              return (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {b2b ? (
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--gold)]/35 bg-[var(--gold)]/10 text-[var(--gold)]">
+                      B2B delivery
+                    </span>
+                  ) : null}
+                  {showCrew ? (
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--brd)] bg-[var(--card)] text-[var(--tx2)]">
+                      {n}-person crew planned
+                    </span>
+                  ) : null}
+                  {badges.map((b) => (
+                    <span
+                      key={b}
+                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-500/35 bg-amber-500/10 text-amber-200/90"
+                    >
+                      {b}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
           {isCompleted && (
             <span className="shrink-0 px-2.5 py-1 rounded-lg bg-[#22C55E]/12 border border-[#22C55E]/30 text-[10px] font-bold text-[#22C55E]">Complete</span>
@@ -703,7 +736,9 @@ export default function CrewJobPage({
             )}
 
             <p className="text-[10px] text-[var(--tx3)]/80 text-center leading-snug">
-              Keep your device charged during moves for uninterrupted tracking.
+              {jobType === "delivery"
+                ? "Keep your device charged during deliveries for uninterrupted tracking."
+                : "Keep your device charged during moves for uninterrupted tracking."}
             </p>
           </div>
 

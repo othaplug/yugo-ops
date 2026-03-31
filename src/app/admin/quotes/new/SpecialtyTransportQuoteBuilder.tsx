@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   buildSpecialtyCostLines,
   defaultRoundedClientPrice,
   EQUIPMENT_RATES,
   hstOnPrice,
+  mergeSpecialtyNonProcessingOverrides,
   priceFromMargin,
   suggestCrewSize,
   suggestJobHours,
@@ -88,6 +90,7 @@ export default function SpecialtyTransportQuoteBuilder({
   const [priceOverride, setPriceOverride] = useState(false);
   const [overrideReason, setOverrideReason] = useState("");
   const [notes, setNotes] = useState("");
+  const [lineOverrides, setLineOverrides] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!open) return;
@@ -99,6 +102,7 @@ export default function SpecialtyTransportQuoteBuilder({
     setPriceTouched(false);
     setPriceOverride(false);
     setOverrideReason("");
+    setLineOverrides({});
   }, [open, itemWeightLbs, itemDescription, dimensionsText]);
 
   useEffect(() => {
@@ -195,9 +199,14 @@ export default function SpecialtyTransportQuoteBuilder({
     stairFlights,
   ]);
 
+  const costMerged = useMemo(
+    () => mergeSpecialtyNonProcessingOverrides(costBuilt, lineOverrides),
+    [costBuilt, lineOverrides],
+  );
+
   const suggestedRaw = useMemo(
-    () => priceFromMargin(costBuilt.subtotal, marginPct / 100),
-    [costBuilt.subtotal, marginPct],
+    () => priceFromMargin(costMerged.subtotal, marginPct / 100),
+    [costMerged.subtotal, marginPct],
   );
 
   const suggestedRounded = useMemo(() => defaultRoundedClientPrice(suggestedRaw), [suggestedRaw]);
@@ -216,7 +225,7 @@ export default function SpecialtyTransportQuoteBuilder({
 
   const submit = useCallback(async () => {
     if (!notes.trim() || notes.trim().length < 4) {
-      toast("Special handling notes are required", "warningCircle");
+      toast("Special handling notes are required", "alertTriangle");
       return;
     }
     if (!email.trim()) {
@@ -258,6 +267,7 @@ export default function SpecialtyTransportQuoteBuilder({
           zone_tier: zoneTier,
           zone_fee_override: zoneFeeOverrideNum != null && Number.isFinite(zoneFeeOverrideNum) ? zoneFeeOverrideNum : null,
           margin_percent: marginPct,
+          cost_line_overrides: Object.keys(lineOverrides).length > 0 ? lineOverrides : undefined,
           client_price_pre_tax: clientPrice,
           price_override: priceOverride,
           override_reason: priceOverride ? overrideReason.trim() : null,
@@ -304,6 +314,7 @@ export default function SpecialtyTransportQuoteBuilder({
     zoneTier,
     zoneFeeOverrideNum,
     marginPct,
+    lineOverrides,
     clientPrice,
     leadId,
     toast,
@@ -311,14 +322,46 @@ export default function SpecialtyTransportQuoteBuilder({
     onClose,
   ]);
 
-  if (!open) return null;
+  const onEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose],
+  );
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onEscape);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onEscape);
+    };
+  }, [open, onEscape]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  const modal = (
+    <div
+      data-modal-root
+      className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="specialty-builder-title"
+    >
       <div
-        className="bg-[var(--card)] border border-[var(--brd)] rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-3xl max-h-[min(92vh,900px)] overflow-hidden flex flex-col"
-        role="dialog"
-        aria-labelledby="specialty-builder-title"
+        className="fixed inset-0 z-0 bg-black/60 modal-overlay"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className="relative z-10 w-full max-w-3xl flex flex-col bg-[var(--card)] border border-[var(--brd)] rounded-2xl shadow-xl overflow-hidden modal-card pointer-events-auto"
+        style={{
+          maxHeight: "min(90dvh, min(92vh, 900px))",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)] shrink-0">
           <div className="flex items-center gap-2">
@@ -527,17 +570,54 @@ export default function SpecialtyTransportQuoteBuilder({
           </div>
 
           <div className="rounded-xl border border-[var(--brd)] overflow-hidden">
+            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--brd)] bg-[var(--bg)]">
+              <span className="text-[10px] font-bold uppercase text-[var(--tx3)]">Cost lines</span>
+              <button
+                type="button"
+                disabled={Object.keys(lineOverrides).length === 0}
+                onClick={() => setLineOverrides({})}
+                className="text-[10px] font-semibold text-[var(--gold)] disabled:opacity-40 disabled:pointer-events-none"
+              >
+                Reset line amounts
+              </button>
+            </div>
             <table className="w-full text-[11px]">
               <tbody>
-                {costBuilt.lines.map((row) => (
+                {costMerged.lines.map((row) => (
                   <tr key={row.key} className="border-t border-[var(--brd)] first:border-t-0">
-                    <td className="px-3 py-1.5">{row.label}</td>
-                    <td className="px-3 py-1.5 text-right font-mono tabular-nums">{fmt(row.amount)}</td>
+                    <td className="px-3 py-1.5">
+                      {row.label}
+                      {row.key === "processing" ? (
+                        <span className="block text-[9px] text-[var(--tx3)] font-normal mt-0.5">
+                          Recalculated from lines above
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-3 py-1.5 text-right w-[1%] whitespace-nowrap">
+                      {row.key === "processing" ? (
+                        <span className="font-mono tabular-nums">{fmt(row.amount)}</span>
+                      ) : (
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={lineOverrides[row.key] ?? row.amount}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            setLineOverrides((prev) => ({
+                              ...prev,
+                              [row.key]: Number.isFinite(v) && v >= 0 ? Math.round(v * 100) / 100 : 0,
+                            }));
+                          }}
+                          className="field-input-compact w-[7.5rem] text-right font-mono tabular-nums"
+                        />
+                      )}
+                    </td>
                   </tr>
                 ))}
                 <tr className="border-t-2 border-[var(--brd)] bg-[var(--bg)]">
                   <td className="px-3 py-2 font-bold text-[var(--tx)]">Subtotal (cost build)</td>
-                  <td className="px-3 py-2 text-right font-bold font-mono text-[var(--tx)]">{fmt(costBuilt.subtotal)}</td>
+                  <td className="px-3 py-2 text-right font-bold font-mono text-[var(--tx)]">{fmt(costMerged.subtotal)}</td>
                 </tr>
               </tbody>
             </table>
@@ -631,4 +711,6 @@ export default function SpecialtyTransportQuoteBuilder({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

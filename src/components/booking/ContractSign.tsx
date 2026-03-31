@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { Check, CaretDown as ChevronDown, CaretUp as ChevronUp, FileText, Shield, Calendar, MapPin, Ruler, Clock } from "@phosphor-icons/react";
 import { toTitleCase, formatAccessForDisplay, formatAddressForDisplay } from "@/lib/format-text";
+import { isClientLogisticsDeliveryServiceType } from "@/lib/quotes/b2b-quote-copy";
 
 const WINE = "#5C1A33";
 const FOREST = "#2C3E2D";
@@ -130,7 +131,7 @@ const SERVICE_DESCRIPTION: Record<string, string> = {
   single_item:
     "Professional single item pickup and delivery with full protection and careful handling.",
   white_glove:
-    "Premium gloves handling with enhanced protection, photo documentation, and dedicated care.",
+    "Premium white glove handling with enhanced protection, photo documentation, and dedicated care.",
   specialty:
     "Custom specialty service tailored to your specific project requirements and timeline.",
   b2b_oneoff:
@@ -188,16 +189,18 @@ export default function ContractSign({
   const serviceDesc = SERVICE_DESCRIPTION[q.serviceType] ?? SERVICE_DESCRIPTION.local_move;
   const isBinRental = q.serviceType === "bin_rental";
   const isB2BDelivery = q.serviceType === "b2b_oneoff" || q.serviceType === "b2b_delivery";
+  const isLogisticsDeliveryCopy = isClientLogisticsDeliveryServiceType(q.serviceType);
   const br = q.binRentalSchedule;
-  const paidInFullAtBooking = q.grandTotal > 0 && balance <= 0.005;
   const b2bNet30Invoice = Boolean(q.b2bNet30Invoice);
+  const paidInFullAtBooking =
+    !b2bNet30Invoice && q.grandTotal > 0 && balance <= 0.005;
   const serviceHeading = isBinRental ? "Bin Rental" : toTitleCase(q.serviceType);
   const scheduleSectionTitle =
     isBinRental
       ? "Your rental schedule"
       : q.eventLegs && q.eventLegs.length > 0
         ? "Event logistics"
-        : isB2BDelivery
+        : isLogisticsDeliveryCopy
           ? "Your Delivery"
           : "Your Move";
 
@@ -841,7 +844,7 @@ export default function ContractSign({
                     A card may stay on file per Sections 3–4 below.
                   </p>
                 )}
-                {paidInFullAtBooking && isB2BDelivery && !isBinRental && (
+                {paidInFullAtBooking && isLogisticsDeliveryCopy && !isBinRental && (
                   <p className="text-[10px] px-4 leading-relaxed" style={{ color: `${FOREST}55` }}>
                     Full payment (incl. HST) is collected after you sign to confirm this delivery booking.
                   </p>
@@ -1015,7 +1018,7 @@ export default function ContractSign({
                     The total quoted above ({fmtPrice(q.grandTotal)} incl. HST) is a guaranteed flat
                     rate. There are no hidden charges, hourly rates, or surprise fees. The quoted price
                     is the price you pay, provided the scope of the{" "}
-                    {isB2BDelivery ? "delivery" : "move"} remains as described.
+                    {isLogisticsDeliveryCopy ? "delivery" : "move"} remains as described.
                   </p>
                 </div>
 

@@ -11,6 +11,7 @@ import {
   LEAD_SOURCE_LABELS,
   LEAD_STATUS_LABELS,
 } from "@/lib/leads/admin-labels";
+import LeadResponseSlaCountdown from "./LeadResponseSlaCountdown";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 import {
@@ -47,6 +48,7 @@ export type LeadRow = {
   priority: string;
   created_at: string;
   first_response_at: string | null;
+  response_sla_target_at?: string | null;
   quote_uuid: string | null;
   completeness_path?: string | null;
   completeness_score?: number | null;
@@ -353,6 +355,14 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
               </span>
               <Clock size={16} className="text-[var(--tx3)] shrink-0" aria-hidden />
               <LeadElapsedTimer createdAt={lead.created_at} />
+              <span className="text-[var(--tx3)]" aria-hidden>
+                |
+              </span>
+              <LeadResponseSlaCountdown
+                createdAt={lead.created_at}
+                responseSlaTargetAt={lead.response_sla_target_at}
+                firstResponseAt={lead.first_response_at}
+              />
               <span className="text-[13px] font-bold text-[var(--tx)] truncate">
                 {lead.lead_number} — {name}
               </span>
@@ -644,6 +654,7 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
                     <th className="px-3 py-2 font-semibold">Path</th>
                     <th className="px-3 py-2 font-semibold">Status</th>
                     <th className="px-3 py-2 font-semibold">Created</th>
+                    <th className="px-3 py-2 font-semibold whitespace-nowrap">5 min SLA</th>
                     <th className="px-3 py-2 font-semibold" />
                   </tr>
                 </thead>
@@ -673,6 +684,14 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
                       <td className="px-3 py-2">{LEAD_STATUS_LABELS[lead.status] || lead.status}</td>
                       <td className="px-3 py-2 tabular-nums text-[var(--tx3)]">
                         {new Date(lead.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <LeadResponseSlaCountdown
+                          compact
+                          createdAt={lead.created_at}
+                          responseSlaTargetAt={lead.response_sla_target_at}
+                          firstResponseAt={lead.first_response_at}
+                        />
                       </td>
                       <td className="px-3 py-2">
                         <Link href={`/admin/leads/${lead.id}`} className="text-[var(--gold)] font-semibold hover:underline">

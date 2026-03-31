@@ -1,4 +1,4 @@
-import { MapPin, ArrowRight, OfficeChair, Check } from "@phosphor-icons/react";
+import { ArrowRight, OfficeChair, Check } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
@@ -16,6 +16,13 @@ interface Props {
   confirmed: boolean;
 }
 
+const DEFAULT_INCLUDES = [
+  "Professional Handling And Transport",
+  "Protective Blanket Wrapping For All Items",
+  "Careful Loading And Unloading",
+  "Floor And Entryway Protection At Both Locations",
+];
+
 export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props) {
   const f = quote.factors_applied as Record<string, unknown> | null;
   const price = quote.custom_price ?? 0;
@@ -31,12 +38,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
       : null;
   const weightSurcharge = typeof f?.weight_surcharge === "number" && f.weight_surcharge > 0 ? f.weight_surcharge : 0;
   const truckBreakdown: string | null = null;
-  const includes = (f?.includes as string[] | undefined) ?? [
-    "Professional handling & transport",
-    "Protective blanket wrapping",
-    "Careful loading & unloading",
-    "Floor protection at both locations",
-  ];
+  const includes = (f?.includes as string[] | undefined) ?? DEFAULT_INCLUDES;
 
   return (
     <section className="mb-10 space-y-6">
@@ -71,7 +73,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
             </p>
             {f?.assembly_surcharge != null && (
               <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
-                Assembly / disassembly included
+                Full assembly included where quoted.
               </p>
             )}
           </div>
@@ -81,14 +83,14 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
         <div className="mt-4 pt-4 border-t border-[var(--brd)]/30">
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Pickup</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">PICKUP</p>
               <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
                 {quote.from_address}
               </p>
             </div>
             <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Delivery</p>
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">DELIVERY</p>
               <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
                 {quote.to_address}
               </p>
@@ -108,7 +110,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
           style={{ borderColor: `${GOLD}55`, backgroundColor: `${GOLD}08` }}
         >
           <p className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1.5" style={{ color: WINE }}>
-            Special handling instructions
+            SPECIAL HANDLING INSTRUCTIONS
           </p>
           <p className="text-[13px] leading-relaxed font-medium" style={{ color: FOREST }}>
             {specialHandling}
@@ -119,7 +121,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
       {/* Service includes */}
       <div className="pt-6 border-t border-[var(--brd)]/30">
         <h2 className="admin-section-h2 mb-3">
-          Service Includes
+          Your Delivery Includes
         </h2>
         <div className="space-y-2">
           {includes.map((item, i) => (
@@ -165,18 +167,18 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
         >
           {confirmed ? (
             <span className="flex items-center justify-center gap-2">
-              <Check className="w-4 h-4" /> Selected
+              <Check className="w-4 h-4" /> SELECTED
             </span>
           ) : isFullPayment ? (
-            `Book Now \u2014 ${fmtPrice(price + tax)}`
+            `CONFIRM DELIVERY — ${fmtPrice(price + tax)}`
           ) : (
-            `Book Now \u2014 ${fmtPrice(deposit)} Deposit`
+            `CONFIRM DELIVERY — ${fmtPrice(deposit)} DEPOSIT`
           )}
         </button>
         <p className="text-[10px] mt-2" style={{ color: `${FOREST}50` }}>
           {isFullPayment
-            ? "Full payment at booking"
-            : `${fmtPrice(deposit)} deposit \u00b7 Balance of ${fmtPrice(price + tax - deposit)} due on delivery`}
+            ? "Full payment required to confirm booking."
+            : "Deposit due now; remaining balance due on delivery per your quote."}
         </p>
       </div>
     </section>

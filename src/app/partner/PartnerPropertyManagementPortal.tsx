@@ -86,7 +86,7 @@ type Summary = {
 };
 
 const CONTRACT_LABELS: Record<string, string> = {
-  per_move: "Per move",
+  per_move: "Per Job",
   fixed_rate: "Fixed rate",
   day_rate_retainer: "Day-rate retainer",
 };
@@ -191,7 +191,7 @@ export default function PartnerPropertyManagementPortal({
             {(
               [
                 { id: "dash" as const, label: "Dashboard" },
-                { id: "book" as const, label: "Book move" },
+                { id: "book" as const, label: "Book Delivery" },
                 { id: "programs" as const, label: "Programs" },
               ] as const
             ).map((t) => (
@@ -218,7 +218,7 @@ export default function PartnerPropertyManagementPortal({
               <>
                 <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
                   <h1 className="text-[18px] font-bold text-[var(--tx)]">Property dashboard</h1>
-                  <p className="text-[12px] text-[var(--tx3)] mt-1">Contract moves, buildings, and upcoming work.</p>
+                  <p className="text-[12px] text-[var(--tx3)] mt-1">Contract service, buildings, and upcoming work.</p>
                 </div>
 
                 {summary.contract ? (
@@ -245,7 +245,7 @@ export default function PartnerPropertyManagementPortal({
                   <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3">
                     <p className="text-[10px] text-[var(--tx3)] uppercase font-bold">This month</p>
                     <p className="text-[20px] font-bold text-[var(--tx)]">{summary.stats.movesThisMonth}</p>
-                    <p className="text-[10px] text-[var(--tx3)]">Moves scheduled</p>
+                    <p className="text-[10px] text-[var(--tx3)]">Jobs scheduled</p>
                   </div>
                   <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3">
                     <p className="text-[10px] text-[var(--tx3)] uppercase font-bold">Completed</p>
@@ -265,7 +265,7 @@ export default function PartnerPropertyManagementPortal({
                     onClick={() => setTab("book")}
                     className="px-4 py-2 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
                   >
-                    Book a move
+                    Book A Delivery
                   </button>
                 </div>
 
@@ -314,24 +314,24 @@ export default function PartnerPropertyManagementPortal({
                 )}
 
                 <div>
-                  <h2 className="text-[12px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">Upcoming moves</h2>
+                  <h2 className="text-[12px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">UPCOMING SERVICE</h2>
                   <div className="rounded-xl border border-[var(--brd)] overflow-hidden bg-[var(--card)]">
                     <table className="w-full text-[11px]">
                       <thead className="bg-[var(--bg)] text-[var(--tx3)] text-left">
                         <tr>
-                          <th className="p-2">Date</th>
-                          <th className="p-2">Building</th>
-                          <th className="p-2">Unit</th>
-                          <th className="p-2">Type</th>
-                          <th className="p-2">Tenant</th>
-                          <th className="p-2">Status</th>
+                          <th className="p-2">DATE</th>
+                          <th className="p-2">BUILDING</th>
+                          <th className="p-2">UNIT</th>
+                          <th className="p-2">TYPE</th>
+                          <th className="p-2">TENANT</th>
+                          <th className="p-2">STATUS</th>
                         </tr>
                       </thead>
                       <tbody>
                         {summary.upcomingMoves.length === 0 ? (
                           <tr>
                             <td colSpan={6} className="p-4 text-center text-[var(--tx3)]">
-                              No upcoming contract moves
+                              No upcoming scheduled service
                             </td>
                           </tr>
                         ) : (
@@ -364,10 +364,10 @@ export default function PartnerPropertyManagementPortal({
                       <table className="w-full text-[11px]">
                         <thead className="bg-[var(--bg)] text-[var(--tx3)] text-left">
                           <tr>
-                            <th className="p-2">Date</th>
-                            <th className="p-2">Unit</th>
-                            <th className="p-2">Type</th>
-                            <th className="p-2">Amount</th>
+                            <th className="p-2">DATE</th>
+                            <th className="p-2">UNIT</th>
+                            <th className="p-2">TYPE</th>
+                            <th className="p-2">AMOUNT</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -593,7 +593,7 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
       return;
     }
     if (needsReturn && !returnDate) {
-      toast("Return move date is required for this move type.", "x");
+      toast("Return service date is required for this job type.", "x");
       return;
     }
     setSaving(true);
@@ -645,7 +645,7 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
 
   return (
     <form onSubmit={submit} className="space-y-4 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-      <h2 className="text-[16px] font-bold text-[var(--tx)]">Book a move</h2>
+      <h2 className="text-[16px] font-bold text-[var(--tx)]">Book A Delivery</h2>
 
       <div>
         <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Property</label>
@@ -729,7 +729,7 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
             onChange={(e) => setPmProjectId(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
           >
-            <option value="">None — standalone move</option>
+            <option value="">None — standalone job</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.project_name}
@@ -829,7 +829,7 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
 
       {needsReturn && (
         <div>
-          <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Return move date</label>
+          <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Return Date</label>
           <input
             type="date"
             value={returnDate}

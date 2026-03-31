@@ -1,3 +1,5 @@
+import { isClientLogisticsDeliveryServiceType } from "@/lib/quotes/b2b-quote-copy";
+
 /**
  * SMS copy when a quote link is sent. Keep in sync with brand voice.
  * Blank lines between paragraphs for readability on phones.
@@ -24,7 +26,7 @@ export function buildQuoteSmsBody(params: {
     ].join("\n\n");
   }
 
-  if (st === "single_item") {
+  if (isClientLogisticsDeliveryServiceType(st)) {
     return [
       greet,
       `Your delivery quote from Yugo is ready.`,
@@ -73,10 +75,13 @@ export function buildQuoteFollowupSmsBody(params: {
       `View quote:\n${url}`,
     ].join("\n\n");
   }
+  const deliveryFollowup = isClientLogisticsDeliveryServiceType(params.serviceType);
   return [
     `Hi ${name},`,
     `A gentle reminder that your Yugo quote expires tomorrow.`,
-    `We would love to take care of your move.`,
+    deliveryFollowup
+      ? `We would love to complete your delivery.`
+      : `We would love to take care of your move.`,
     `View quote:\n${url}`,
   ].join("\n\n");
 }

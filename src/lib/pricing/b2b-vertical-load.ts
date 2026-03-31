@@ -1,4 +1,5 @@
 import type { createAdminClient } from "@/lib/supabase/admin";
+import { overlayDeliveryVerticalDbColumns } from "@/lib/admin/delivery-vertical-column-sync";
 import {
   type DeliveryVerticalRow,
   mergeVerticalConfig,
@@ -52,6 +53,7 @@ export async function loadB2BVerticalPricing(
 
   let vertical = mapVerticalRow(row as Record<string, unknown>);
   let mergedRates: Record<string, unknown> = { ...vertical.default_config };
+  overlayDeliveryVerticalDbColumns(row as Record<string, unknown>, mergedRates);
 
   if (partnerOrganizationId) {
     const { data: pr } = await sb

@@ -18,6 +18,7 @@ import {
   getStatusLabel,
 } from "@/lib/move-status";
 import { getDisplayLabel } from "@/lib/displayLabels";
+import { isMoveRowLogisticsDelivery } from "@/lib/quotes/b2b-quote-copy";
 import { SafeText } from "@/components/SafeText";
 import { formatMoveDate, parseDateOnly } from "@/lib/date-format";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
@@ -779,6 +780,10 @@ export default function TrackMoveClient({
   const serviceType = (move.service_type || move.move_type || "residential") as string;
   const isB2BOneOff = serviceType === "b2b_oneoff" || serviceType === "b2b_delivery";
   const isSingleItem = serviceType === "single_item";
+  const isLogisticsDeliveryTrack = isMoveRowLogisticsDelivery({
+    service_type: move.service_type,
+    move_type: move.move_type,
+  });
   const tabs: { key: TabKey; label: string }[] = [
     { key: "dash", label: "Dashboard" },
     { key: "track" as TabKey, label: "Live Tracking" },
@@ -884,7 +889,9 @@ export default function TrackMoveClient({
             </div>
             <h2 className="text-[13px] font-semibold" style={{ color: WINE }}>Payment received</h2>
             <p className="text-[11px] mt-1 opacity-60" style={{ color: FOREST }}>
-              Thank you. See you on move day.
+              {isLogisticsDeliveryTrack
+                ? "Thank you. See you on delivery day."
+                : "Thank you. See you on move day."}
             </p>
             <button
               type="button"
@@ -898,7 +905,9 @@ export default function TrackMoveClient({
         )}
         {fromNotify && !showPaymentSuccess && showNotifyBanner && (
           <div className="mb-4 text-[11px] font-medium opacity-60 transition-opacity" style={{ color: FOREST }}>
-            Your move status was recently updated.
+            {isLogisticsDeliveryTrack
+              ? "Your delivery status was recently updated."
+              : "Your move status was recently updated."}
           </div>
         )}
 
@@ -954,7 +963,11 @@ export default function TrackMoveClient({
                 const isOffice = serviceType === "office_move";
                 const isWhiteGlove = serviceType === "white_glove";
                 const isSpecialty = serviceType === "specialty";
-                const label = isOffice
+                const label = isB2BOneOff
+                  ? "Commercial Delivery"
+                  : serviceType === "single_item"
+                    ? "Delivery"
+                  : isOffice
                   ? "Commercial Move"
                   : isWhiteGlove
                     ? "White Glove Service"
@@ -984,12 +997,50 @@ export default function TrackMoveClient({
           </span>
         </div>
 
+        {(() => {
+          const estRaw = move.est_crew_size;
+          const est =
+            estRaw != null && Number.isFinite(Number(estRaw)) ? Math.max(0, Math.round(Number(estRaw))) : null;
+          const rawInd = move.complexity_indicators;
+          const ind = Array.isArray(rawInd) ? rawInd.filter((x): x is string => typeof x === "string") : [];
+          const complexityLabels: Record<string, string> = {
+            specialty_transport: "Specialty transport handling",
+            heavy_equipment_possible: "Heavy equipment may be used",
+            long_carry: "Long carry at pickup or delivery",
+            stairs_heavy: "Significant stair carry",
+          };
+          const hints = ind.map((k) => complexityLabels[k]).filter(Boolean) as string[];
+          if ((est == null || est < 3) && hints.length === 0) return null;
+          return (
+            <div
+              className="mb-4 rounded-2xl px-4 py-3 border"
+              style={{ backgroundColor: `${FOREST}08`, borderColor: `${FOREST}20` }}
+            >
+              <p className="text-[11px] font-semibold" style={{ color: WINE }}>
+                Scheduling note
+              </p>
+              <ul className="mt-1.5 text-[11px] space-y-0.5 list-disc pl-4" style={{ color: FOREST, opacity: 0.9 }}>
+                {est != null && est >= 3 ? (
+                  <li>
+                    {isLogisticsDeliveryTrack
+                      ? `Your delivery is planned with a ${est}-person crew for heavier or technical handling.`
+                      : `Your move is planned with a ${est}-person crew for heavier or technical handling.`}
+                  </li>
+                ) : null}
+                {hints.map((h) => (
+                  <li key={h}>{h}.</li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
+
         {/* Countdown / hero, hidden for completed moves; perks hub renders instead */}
         {!isCompleted && (<div className="py-3 sm:py-5 mb-2">
           {isCompleted ? (
             <div className="text-center">
               <div className="font-hero text-[26px] sm:text-[30px] leading-tight font-semibold" style={{ color: WINE }}>
-                Move Complete
+                {isLogisticsDeliveryTrack ? "Delivery Complete" : "Move Complete"}
               </div>
             </div>
           ) : daysUntil === 0 ? (
@@ -1039,10 +1090,12 @@ export default function TrackMoveClient({
           ) : daysUntil != null && daysUntil < 0 && !isInProgress ? (
             <div className="text-center">
               <div className="font-hero text-[24px] sm:text-[26px] leading-tight font-semibold" style={{ color: WINE }}>
-                Move day has passed
+                {isLogisticsDeliveryTrack ? "Scheduled day has passed" : "Move day has passed"}
               </div>
               <p className="mt-1 text-[11px] font-sans opacity-60" style={{ color: FOREST }}>
-                Your move will be marked complete soon.
+                {isLogisticsDeliveryTrack
+                  ? "Your delivery will be marked complete soon."
+                  : "Your move will be marked complete soon."}
               </p>
             </div>
           ) : (
@@ -1050,7 +1103,9 @@ export default function TrackMoveClient({
               <div className="font-hero text-[56px] sm:text-[64px] leading-none font-semibold tracking-tight" style={{ color: GOLD }}>
                 {daysUntil ?? "-"}
               </div>
-              <div className="mt-1 text-[11px] font-sans opacity-60" style={{ color: FOREST }}>days until move day</div>
+              <div className="mt-1 text-[11px] font-sans opacity-60" style={{ color: FOREST }}>
+                {isLogisticsDeliveryTrack ? "days until delivery day" : "days until move day"}
+              </div>
             </div>
           )}
         </div>)}
@@ -1102,7 +1157,9 @@ export default function TrackMoveClient({
                     <Receipt size={18} weight="duotone" color={FOREST} aria-hidden />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[12px] font-semibold mb-0.5" style={{ color: FOREST }}>Move Details</div>
+                    <div className="text-[12px] font-semibold mb-0.5" style={{ color: FOREST }}>
+                      {isLogisticsDeliveryTrack ? "Delivery Details" : "Move Details"}
+                    </div>
                     <div className="text-[10px] flex items-center gap-1.5 flex-wrap" style={{ color: `${FOREST}55` }}>
                       <span>{displayCode}</span>
                       {scheduledDate && <><span>·</span><span>{formatMoveDate(scheduledDate)}</span></>}
@@ -2116,6 +2173,7 @@ export default function TrackMoveClient({
                   crewName={crewMembers.length > 0 ? crewMembers.slice(0, 2).join(" & ") : undefined}
                   arrivalWindow={arrivalWindow || undefined}
                   moveDateStr={move.scheduled_date || undefined}
+                  copyVariant={isLogisticsDeliveryTrack ? "delivery" : "move"}
                 />
               </div>
             )}
@@ -2138,6 +2196,7 @@ export default function TrackMoveClient({
                   moveId={move.id}
                   token={token}
                   currentStatus={move.status || ""}
+                  useDeliveryCopy={isLogisticsDeliveryTrack}
                 />
               </div>
             )}
@@ -2556,7 +2615,7 @@ export default function TrackMoveClient({
 
                 <div className="rounded-xl border p-4 mb-4" style={{ borderColor: `${FOREST}15`, backgroundColor: `${"#FAF7F2"}` }}>
                   <div className="flex justify-between text-[13px] mb-1.5" style={{ color: FOREST }}>
-                    <span className="opacity-70">Move balance</span>
+                    <span className="opacity-70">{isLogisticsDeliveryTrack ? "Balance due" : "Move balance"}</span>
                     <span className="font-semibold">{formatCurrency(totalBalance)}</span>
                   </div>
                   <div className="flex justify-between text-[13px] mb-1.5" style={{ color: FOREST }}>

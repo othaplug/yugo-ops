@@ -145,6 +145,44 @@ export function buildSpecialtyCostLines(input: CostLineInput): {
   return { lines, subtotalBeforeProcessing, processingFee, subtotal };
 }
 
+/** Keys coordinators may override in the builder; processing is always recomputed from these lines. */
+export const SPECIALTY_COST_LINE_OVERRIDE_KEYS = new Set([
+  "labour",
+  "vehicle",
+  "fuel",
+  "equipment",
+  "wrapping",
+  "zone",
+  "stairs",
+]);
+
+/**
+ * Apply per-line $ overrides for non-processing rows; recompute processing fee from the adjusted subtotal.
+ */
+export function mergeSpecialtyNonProcessingOverrides(
+  built: ReturnType<typeof buildSpecialtyCostLines>,
+  overrides: Record<string, number> | null | undefined,
+): { lines: CostLineDetail[]; subtotal: number; subtotal_model: number } {
+  const procTemplate = built.lines.find((l) => l.key === "processing");
+  if (!procTemplate) {
+    return { lines: built.lines, subtotal: built.subtotal, subtotal_model: built.subtotal };
+  }
+
+  const nonProc = built.lines.filter((l) => l.key !== "processing");
+  const mergedNonProc = nonProc.map((l) => {
+    const o = overrides?.[l.key];
+    if (o != null && Number.isFinite(o) && o >= 0) {
+      return { ...l, amount: Math.round(o * 100) / 100 };
+    }
+    return l;
+  });
+  const subBefore = Math.round(mergedNonProc.reduce((s, x) => s + x.amount, 0) * 100) / 100;
+  const procAmount = processingFeeDollars(subBefore);
+  const lines = [...mergedNonProc, { ...procTemplate, amount: procAmount }];
+  const subtotal = Math.round((subBefore + procAmount) * 100) / 100;
+  return { lines, subtotal, subtotal_model: built.subtotal };
+}
+
 export function priceFromMargin(subtotal: number, marginFraction: number): number {
   const m = Math.min(0.5, Math.max(0.25, marginFraction));
   if (subtotal <= 0) return 0;

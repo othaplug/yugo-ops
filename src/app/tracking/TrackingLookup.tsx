@@ -61,7 +61,7 @@ export default function TrackingLookup() {
             className="font-hero text-[30px] md:text-[38px] leading-tight mb-4"
             style={{ color: WINE }}
           >
-            Track Your Move<br />or Delivery
+            Track Your Service
           </h1>
           <p className="text-[13px] leading-relaxed opacity-65" style={{ color: FOREST }}>
             Enter your tracking number to see real-time status, live crew location, and delivery details.

@@ -28,11 +28,30 @@ export const STATUS_TO_TIMELINE: Record<
   completed: { label: "Move complete", icon: "CheckCircle" },
 };
 
+/** Client-facing labels when the job is logistics / delivery (not a residential move). */
+export const STATUS_TO_TIMELINE_DELIVERY: Record<
+  string,
+  { label: string; icon: string }
+> = {
+  confirmed: { label: "Delivery confirmed", icon: "CheckCircle" },
+  dispatched: { label: "Crew dispatched", icon: "Truck" },
+  en_route_to_pickup: { label: "Crew en route to pickup", icon: "Truck" },
+  arrived_at_pickup: { label: "Crew arrived at pickup", icon: "MapPin" },
+  walkthrough_complete: { label: "Walkthrough complete", icon: "ClipboardText" },
+  loading: { label: "Loading started", icon: "stack" },
+  en_route_to_destination: { label: "En route to drop-off", icon: "Truck" },
+  arrived_at_destination: { label: "Arrived at drop-off", icon: "MapPin" },
+  unloading: { label: "Unloading started", icon: "stack" },
+  completed: { label: "Delivery complete", icon: "CheckCircle" },
+};
+
 interface Props {
   moveId: string;
   token: string;
   currentStatus: string;
   initialEntries?: TimelineEntry[];
+  /** Use delivery-focused timeline headings (logistics / B2B / single-item / white glove). */
+  useDeliveryCopy?: boolean;
 }
 
 function formatTime(isoOrTime: string): string {
@@ -50,7 +69,13 @@ function formatTime(isoOrTime: string): string {
   }
 }
 
-export default function LiveMoveTimeline({ moveId, token, currentStatus, initialEntries }: Props) {
+export default function LiveMoveTimeline({
+  moveId,
+  token,
+  currentStatus,
+  initialEntries,
+  useDeliveryCopy = false,
+}: Props) {
   const [entries, setEntries] = useState<TimelineEntry[]>(initialEntries || []);
 
   const fetchTimeline = useCallback(async () => {
@@ -90,9 +115,11 @@ export default function LiveMoveTimeline({ moveId, token, currentStatus, initial
       >
         <div>
           <p className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1" style={{ color: GOLD }}>
-            {isLive ? "Live" : "Move"} Timeline
+            {isLive ? "Live" : useDeliveryCopy ? "Delivery" : "Move"} Timeline
           </p>
-          <h3 className="text-[15px] font-bold" style={{ color: FOREST }}>Your Move, Step by Step</h3>
+          <h3 className="text-[15px] font-bold" style={{ color: FOREST }}>
+            {useDeliveryCopy ? "Your Delivery, Step by Step" : "Your Move, Step by Step"}
+          </h3>
         </div>
         {isLive && (
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: `${GREEN}14`, border: `1px solid ${GREEN}30` }}>

@@ -8,6 +8,8 @@ import {
   configToDimensionalForm,
   defaultDimensionalForm,
   type DimensionalConfigForm,
+  type DistanceZoneRow,
+  type VolumeDiscountTierRow,
 } from "@/lib/admin/delivery-vertical-config-ui";
 
 type Vertical = {
@@ -221,7 +223,7 @@ export default function DeliveryVerticalsPanel({ isSuperAdmin = false }: { isSup
           aria-modal="true"
           aria-labelledby="delivery-vertical-modal-title"
         >
-          <div className="relative my-auto flex min-h-0 w-full max-w-lg flex-col rounded-2xl border border-[var(--brd)] bg-[var(--card)] shadow-xl max-h-[min(90dvh,calc(100dvh-2rem))]">
+          <div className="relative my-auto flex min-h-0 w-full max-w-2xl flex-col rounded-2xl border border-[var(--brd)] bg-[var(--card)] shadow-xl max-h-[min(90dvh,calc(100dvh-2rem))]">
             <div className="shrink-0 border-b border-[var(--brd)]/60 px-5 py-4">
               <h3 id="delivery-vertical-modal-title" className="text-[15px] font-bold text-[var(--tx)]">
                 {modal.id ? "Edit vertical" : "Create vertical"}
@@ -295,6 +297,19 @@ function VerticalEditForm({
         free_stops: coalesceNum(dimForm.freeStops, prev.free_stops),
       };
     }
+    if (pm === "flat") {
+      const o = { ...prev };
+      const tRaw = dimForm.targetMarginPercentDefault.trim();
+      const tmg = tRaw === "" ? undefined : Number(tRaw);
+      if (tmg !== undefined && Number.isFinite(tmg) && tmg > 0 && tmg <= 100) {
+        o.target_margin_percent_default = tmg;
+      } else {
+        delete o.target_margin_percent_default;
+      }
+      if (dimForm.autoQuoteDisabled) o.auto_quote_disabled = true;
+      else delete o.auto_quote_disabled;
+      return o;
+    }
     return { ...prev };
   }, [dimForm, initial.default_config, pricingMethod]);
 
@@ -314,6 +329,48 @@ function VerticalEditForm({
 
   const patchDim = useCallback((patch: Partial<DimensionalConfigForm>) => {
     setDimForm((f) => ({ ...f, ...patch }));
+  }, []);
+
+  const patchZoneRow = useCallback((idx: number, patch: Partial<DistanceZoneRow>) => {
+    setDimForm((f) => ({
+      ...f,
+      distanceZones: f.distanceZones.map((z, i) => (i === idx ? { ...z, ...patch } : z)),
+    }));
+  }, []);
+
+  const addZoneRow = useCallback(() => {
+    setDimForm((f) => ({
+      ...f,
+      distanceZones: [...f.distanceZones, { minKm: "", maxKm: "", fee: "" }],
+    }));
+  }, []);
+
+  const removeZoneRow = useCallback((idx: number) => {
+    setDimForm((f) => ({
+      ...f,
+      distanceZones: f.distanceZones.filter((_, i) => i !== idx),
+    }));
+  }, []);
+
+  const patchVolumeTierRow = useCallback((idx: number, patch: Partial<VolumeDiscountTierRow>) => {
+    setDimForm((f) => ({
+      ...f,
+      volumeDiscountTiers: f.volumeDiscountTiers.map((t, i) => (i === idx ? { ...t, ...patch } : t)),
+    }));
+  }, []);
+
+  const addVolumeTierRow = useCallback(() => {
+    setDimForm((f) => ({
+      ...f,
+      volumeDiscountTiers: [...f.volumeDiscountTiers, { minMonthly: "", percentOff: "" }],
+    }));
+  }, []);
+
+  const removeVolumeTierRow = useCallback((idx: number) => {
+    setDimForm((f) => ({
+      ...f,
+      volumeDiscountTiers: f.volumeDiscountTiers.filter((_, i) => i !== idx),
+    }));
   }, []);
 
   return (
@@ -384,6 +441,27 @@ function VerticalEditForm({
           <p className="text-[11px] text-[var(--tx3)] rounded-lg border border-[var(--brd)]/60 bg-[var(--bg)]/40 px-3 py-2">
             Flat pricing uses the starting price only. Other rate options stay stored but are not applied for this model.
           </p>
+        )}
+
+        {showFlatNote && (
+          <div className="space-y-3 rounded-xl border border-[var(--brd)]/60 bg-[var(--bg)]/20 p-3">
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)]">Specialty / flat vertical</p>
+            <Field
+              label="Target margin % (default)"
+              value={dimForm.targetMarginPercentDefault}
+              onChange={(v) => patchDim({ targetMarginPercentDefault: v })}
+              hint="Cost-plus specialty quotes (1–100)."
+            />
+            <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
+              <input
+                type="checkbox"
+                checked={dimForm.autoQuoteDisabled}
+                onChange={(e) => patchDim({ autoQuoteDisabled: e.target.checked })}
+                className="accent-[var(--gold)]"
+              />
+              Disable auto-quote (coordinator manual scope only)
+            </label>
+          </div>
         )}
 
         {showHourlyLabour && (
@@ -505,6 +583,16 @@ function VerticalEditForm({
               <Field label="Per flight of stairs" value={dimForm.premStairsPerFlight} onChange={(v) => patchDim({ premStairsPerFlight: v })} />
               <Field label="Assembly required" value={dimForm.premAssembly} onChange={(v) => patchDim({ premAssembly: v })} />
               <Field label="Debris removal" value={dimForm.premDebris} onChange={(v) => patchDim({ premDebris: v })} />
+              <Field
+                label="Art hanging (per piece)"
+                value={dimForm.premArtHanging}
+                onChange={(v) => patchDim({ premArtHanging: v })}
+              />
+              <Field
+                label="Crating (per piece)"
+                value={dimForm.premCrating}
+                onChange={(v) => patchDim({ premCrating: v })}
+              />
             </div>
 
             <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-1">Weight surcharges (per line item)</p>
@@ -517,6 +605,138 @@ function VerticalEditForm({
               <Field label="Heavy tier" value={dimForm.weightHeavy} onChange={(v) => patchDim({ weightHeavy: v })} />
               <Field label="Extra heavy tier" value={dimForm.weightExtraHeavy} onChange={(v) => patchDim({ weightExtraHeavy: v })} />
             </div>
+
+            {dimForm.useZoneDistance && (
+              <>
+                <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-2">Distance zones (route km)</p>
+                <p className="text-[10px] text-[var(--tx3)] -mt-1">Each band adds its fee once when distance falls in range.</p>
+                <div className="space-y-2">
+                  {dimForm.distanceZones.map((z, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
+                      <Field label="Min km" value={z.minKm} onChange={(v) => patchZoneRow(i, { minKm: v })} />
+                      <Field label="Max km" value={z.maxKm} onChange={(v) => patchZoneRow(i, { maxKm: v })} />
+                      <Field label="Fee ($)" value={z.fee} onChange={(v) => patchZoneRow(i, { fee: v })} />
+                      <button
+                        type="button"
+                        onClick={() => removeZoneRow(i)}
+                        disabled={dimForm.distanceZones.length <= 1}
+                        className="mb-0.5 px-2 py-2 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] disabled:opacity-40"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addZoneRow}
+                    className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
+                  >
+                    + Add zone
+                  </button>
+                </div>
+              </>
+            )}
+
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-2">Volume discounts (monthly)</p>
+            <p className="text-[10px] text-[var(--tx3)] -mt-1">Percent off when partner hits minimum deliveries per month. Leave empty for none.</p>
+            <div className="space-y-2">
+              {dimForm.volumeDiscountTiers.length === 0 ? (
+                <p className="text-[10px] text-[var(--tx3)]">No tiers — model uses list price only.</p>
+              ) : (
+                dimForm.volumeDiscountTiers.map((t, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                    <Field
+                      label="Min deliveries / mo"
+                      value={t.minMonthly}
+                      onChange={(v) => patchVolumeTierRow(i, { minMonthly: v })}
+                    />
+                    <Field label="Percent off" value={t.percentOff} onChange={(v) => patchVolumeTierRow(i, { percentOff: v })} />
+                    <button
+                      type="button"
+                      onClick={() => removeVolumeTierRow(i)}
+                      className="mb-0.5 px-2 py-2 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))
+              )}
+              <button type="button" onClick={addVolumeTierRow} className="text-[10px] font-semibold text-[var(--gold)] hover:underline">
+                + Add volume tier
+              </button>
+            </div>
+
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-2">Large jobs (optional)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field
+                label="Min crew at item count ≥"
+                value={dimForm.largeJobItemThreshold}
+                onChange={(v) => patchDim({ largeJobItemThreshold: v })}
+                hint="e.g. 12 items → use min crew below."
+              />
+              <Field
+                label="Crew size for large jobs"
+                value={dimForm.largeJobMinCrew}
+                onChange={(v) => patchDim({ largeJobMinCrew: v })}
+                hint="e.g. 3"
+              />
+            </div>
+
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-2">Extra-heavy labour (400+ lb lines)</p>
+            <p className="text-[10px] text-[var(--tx3)] -mt-1">Applied when any line is extra-heavy. Clear all three to remove.</p>
+            <div className="grid grid-cols-3 gap-2">
+              <Field label="Extra crew count" value={dimForm.extraHeavyExtraCrew} onChange={(v) => patchDim({ extraHeavyExtraCrew: v })} />
+              <Field label="$/hr per extra" value={dimForm.extraHeavyHourlyPerExtra} onChange={(v) => patchDim({ extraHeavyHourlyPerExtra: v })} />
+              <Field label="Min hours" value={dimForm.extraHeavyMinHours} onChange={(v) => patchDim({ extraHeavyMinHours: v })} />
+            </div>
+
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-2">Flooring-style load weight (optional)</p>
+            <p className="text-[10px] text-[var(--tx3)] -mt-1">Uses total load lbs on the quote. Clear fields and uncheck to remove.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field
+                label="Standard max lb (no fee)"
+                value={dimForm.flooringStandardMaxLb}
+                onChange={(v) => patchDim({ flooringStandardMaxLb: v })}
+              />
+              <Field
+                label="Heavy max lb (upper band)"
+                value={dimForm.flooringHeavyMaxLb}
+                onChange={(v) => patchDim({ flooringHeavyMaxLb: v })}
+              />
+              <Field label="Heavy band fee ($)" value={dimForm.flooringHeavyFee} onChange={(v) => patchDim({ flooringHeavyFee: v })} />
+              <Field label="Extra-heavy band fee ($)" value={dimForm.flooringExtraFee} onChange={(v) => patchDim({ flooringExtraFee: v })} />
+            </div>
+            <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
+              <input
+                type="checkbox"
+                checked={dimForm.flooringExtraThreeCrew}
+                onChange={(e) => patchDim({ flooringExtraThreeCrew: e.target.checked })}
+                className="accent-[var(--gold)]"
+              />
+              Extra-heavy flooring load adds third crew (labour charge)
+            </label>
+
+            <p className="text-[10px] font-bold uppercase text-[var(--tx3)] pt-2">Specialty defaults (non-flat)</p>
+            <p className="text-[10px] text-[var(--tx3)] -mt-1">
+              For dimensional verticals that still use cost-plus or manual flows (optional).
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field
+                label="Target margin % (default)"
+                value={dimForm.targetMarginPercentDefault}
+                onChange={(v) => patchDim({ targetMarginPercentDefault: v })}
+                hint="1–100; used where vertical references margin."
+              />
+            </div>
+            <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
+              <input
+                type="checkbox"
+                checked={dimForm.autoQuoteDisabled}
+                onChange={(e) => patchDim({ autoQuoteDisabled: e.target.checked })}
+                className="accent-[var(--gold)]"
+              />
+              Disable auto-quote (coordinator manual scope only)
+            </label>
           </div>
         )}
       </div>

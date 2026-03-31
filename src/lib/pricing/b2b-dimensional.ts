@@ -3,12 +3,17 @@
  * Distance is supplied by caller (Mapbox multi-stop or point-to-point).
  */
 
+import { extractMaxWeightLbsFromText } from "@/lib/leads/parse-text-metrics";
+import { inferB2bWeightCategoryFromLbs } from "./b2b-weight-helpers";
+
 export type B2BWeightCategory = "light" | "medium" | "heavy" | "extra_heavy";
 
 export interface B2BQuoteLineItem {
   description: string;
   quantity: number;
   weight_category?: B2BWeightCategory;
+  /** Per-line weight when known (medical crew rules, parsing). */
+  weight_lbs?: number;
   fragile?: boolean;
   dimensions?: string;
 }
@@ -44,6 +49,12 @@ export interface B2BDimensionalQuoteInput {
   total_load_weight_lbs?: number;
   haul_away_units?: number;
   returns_pickup?: boolean;
+  /** Estimated monthly deliveries for this account — applies volume_discount_tiers from vertical config. */
+  monthly_delivery_volume?: number;
+  /** Art & gallery: pieces to hang (× art_hanging_per_piece from complexity_premiums). */
+  art_hanging_count?: number;
+  /** Art & gallery / specialty: crated pieces (× crating_per_piece when set on vertical). */
+  crating_pieces?: number;
 }
 
 export interface DeliveryVerticalRow {
@@ -143,6 +154,18 @@ function distanceZoneFee(distKm: number, zones: unknown): number {
   return num(last?.fee, 0);
 }
 
+/** Pick best volume tier (highest qualifying min_monthly_deliveries). Returns percent 0–100. */
+export function volumeDiscountPercentForCount(monthlyCount: number, tiers: unknown): number {
+  if (!Array.isArray(tiers) || monthlyCount <= 0) return 0;
+  type Row = { min_monthly_deliveries?: number; percent_off?: number };
+  const rows = tiers
+    .filter((t): t is Row => t != null && typeof t === "object")
+    .map((t) => ({ m: num(t.min_monthly_deliveries, -1), p: num(t.percent_off, 0) }))
+    .filter((r) => r.m >= 0 && r.p > 0 && monthlyCount >= r.m)
+    .sort((a, b) => b.m - a.m);
+  return rows[0]?.p ?? 0;
+}
+
 export function estimateB2BHours(input: B2BDimensionalQuoteInput, rates: Record<string, unknown>): number {
   const totalUnits = input.items.reduce((s, i) => s + Math.max(0, i.quantity), 0);
   const stops = input.stops.length;
@@ -201,25 +224,54 @@ function mapLegacyWeightCategory(cat: string | undefined): B2BWeightCategory | u
   return undefined;
 }
 
+function enrichB2bLineItems(
+  lines: B2BQuoteLineItem[],
+  verticalCode: string,
+  legacyWc?: B2BWeightCategory,
+): B2BQuoteLineItem[] {
+  const vcode = verticalCode.trim().toLowerCase() || "furniture_retail";
+  const wcGlobal = legacyWc;
+  return lines.map((i) => {
+    const q = Math.max(1, i.quantity || 1);
+    let weight_lbs = i.weight_lbs;
+    if (weight_lbs == null || !Number.isFinite(weight_lbs)) {
+      const fromText = extractMaxWeightLbsFromText(i.description);
+      if (fromText != null) weight_lbs = Math.round(fromText);
+    }
+    let wc = i.weight_category ?? wcGlobal;
+    if (!wc && weight_lbs != null && weight_lbs > 0) {
+      wc = inferB2bWeightCategoryFromLbs(weight_lbs, vcode);
+    }
+    return {
+      ...i,
+      quantity: q,
+      weight_category: wc,
+      weight_lbs: weight_lbs != null && Number.isFinite(weight_lbs) ? weight_lbs : undefined,
+    };
+  });
+}
+
 export function lineItemsFromQuotePayload(input: {
   b2b_line_items?: B2BQuoteLineItem[];
   b2b_items?: string[];
   b2b_weight_category?: string;
+  b2b_vertical_code?: string;
 }): B2BQuoteLineItem[] {
+  const vcode = (input.b2b_vertical_code || "furniture_retail").trim() || "furniture_retail";
   if (input.b2b_line_items && input.b2b_line_items.length > 0) {
     const wc = mapLegacyWeightCategory(input.b2b_weight_category);
-    return input.b2b_line_items.map((i) => ({
-      ...i,
-      quantity: Math.max(1, i.quantity || 1),
-      weight_category: i.weight_category ?? wc,
-    }));
+    return enrichB2bLineItems(input.b2b_line_items, vcode, wc);
   }
   if (input.b2b_items && input.b2b_items.length > 0) {
     const parsed = parseLegacyB2bItemStrings(input.b2b_items);
     const wc = mapLegacyWeightCategory(input.b2b_weight_category);
-    return parsed.map((p) => ({ ...p, weight_category: wc }));
+    return enrichB2bLineItems(parsed, vcode, wc);
   }
-  return [{ description: "Delivery", quantity: 1, weight_category: mapLegacyWeightCategory(input.b2b_weight_category) }];
+  return enrichB2bLineItems(
+    [{ description: "Delivery", quantity: 1 }],
+    vcode,
+    mapLegacyWeightCategory(input.b2b_weight_category),
+  );
 }
 
 export function stopsFromQuotePayload(input: {
@@ -444,6 +496,16 @@ export function calculateB2BDimensionalPrice(args: {
     breakdown.push({ label: "Returns pickup", amount: rp });
   }
 
+  const medicalNeedsThreeCrew =
+    args.vertical.code === "medical_equipment" && items.some((i) => (i.weight_lbs ?? 0) > 300);
+  if (dimOn && medicalNeedsThreeCrew) {
+    const hr = num(vc.crew_hourly_rate, 95);
+    const mh = num(vc.min_hours, 3);
+    const add = Math.round(1 * hr * mh * 100) / 100;
+    totalPrice += add;
+    breakdown.push({ label: "Third crew member (unit over 300 lb)", amount: add });
+  }
+
   const anyExtraHeavy = items.some((i) => i.weight_category === "extra_heavy");
   const ehl = vc.extra_heavy_labour as Record<string, unknown> | undefined;
   if (dimOn && anyExtraHeavy && ehl) {
@@ -588,6 +650,21 @@ export function calculateB2BDimensionalPrice(args: {
       if (key === "haul_away_old" && haulUnits > 0) continue;
       applyPremium(key, true);
     }
+
+    const hangRate = num(prem.art_hanging_per_piece, 0);
+    const hangN = Math.max(0, args.input.art_hanging_count ?? 0);
+    if (hangN > 0 && hangRate > 0) {
+      const h = Math.round(hangN * hangRate * 100) / 100;
+      totalPrice += h;
+      breakdown.push({ label: `Art hanging (${hangN} piece(s))`, amount: h });
+    }
+    const crateRate = num(prem.crating_per_piece, 0);
+    const crateN = Math.max(0, args.input.crating_pieces ?? 0);
+    if (crateN > 0 && crateRate > 0) {
+      const c = Math.round(crateN * crateRate * 100) / 100;
+      totalPrice += c;
+      breakdown.push({ label: `Crating (${crateN} piece(s))`, amount: c });
+    }
   }
 
   if (method === "hourly") {
@@ -617,6 +694,19 @@ export function calculateB2BDimensionalPrice(args: {
     }
   }
 
+  const volN = args.input.monthly_delivery_volume ?? 0;
+  const volPct = volumeDiscountPercentForCount(volN, vc.volume_discount_tiers);
+  if (dimOn && volN > 0 && volPct > 0) {
+    const disc = Math.round(totalPrice * (volPct / 100) * 100) / 100;
+    if (disc > 0) {
+      totalPrice -= disc;
+      breakdown.push({
+        label: `Volume discount (${volPct}% at ${volN}+ deliveries/mo est.)`,
+        amount: -disc,
+      });
+    }
+  }
+
   const minCharge = num(vc.min_charge, num(args.vertical.base_rate, 0));
   if (totalPrice < minCharge) {
     const delta = minCharge - totalPrice;
@@ -639,6 +729,9 @@ export function calculateB2BDimensionalPrice(args: {
   if (args.input.crew_override == null && th > 0 && lc > 0 && totalUnits >= th) {
     crew = Math.max(crew, lc);
   }
+  if (args.input.crew_override == null && medicalNeedsThreeCrew) {
+    crew = Math.max(crew, 3);
+  }
   const estimatedHours =
     args.input.estimated_hours_override ?? estimateB2BHours(args.input, vc);
 
@@ -657,7 +750,11 @@ export function calculateB2BDimensionalPrice(args: {
   }
   const vd = vc.volume_discount_tiers;
   if (Array.isArray(vd) && vd.length > 0) {
-    includes.push("Volume discounts available for qualifying monthly delivery counts");
+    if (volN > 0 && volPct > 0) {
+      includes.push(`Volume discount ${volPct}% applied (${volN}/mo est.)`);
+    } else {
+      includes.push("Volume discounts available for qualifying monthly delivery counts");
+    }
   }
 
   return {

@@ -74,6 +74,8 @@ interface Props {
   crewName?: string;
   arrivalWindow?: string;
   moveDateStr?: string;
+  /** Delivery / logistics jobs: swap “move” wording for prep copy. */
+  copyVariant?: "move" | "delivery";
 }
 
 export default function PreMoveChecklist({
@@ -83,6 +85,7 @@ export default function PreMoveChecklist({
   crewName,
   arrivalWindow,
   moveDateStr,
+  copyVariant = "move",
 }: Props) {
   const [checked, setChecked] = useState<Record<string, boolean>>(initialChecked || {});
   const [saving, setSaving] = useState<string | null>(null);
@@ -109,13 +112,27 @@ export default function PreMoveChecklist({
   );
 
   const items = PRE_MOVE_CHECKLIST.map((item) => {
-    if (item.id === "crew_info" && (crewName || arrivalWindow)) {
+    let out = item;
+    if (copyVariant === "delivery") {
+      if (item.id === "appliances") {
+        out = {
+          ...item,
+          detail: "Unplug and defrost fridge at least 24 hours before delivery",
+        };
+      } else if (item.id === "elevator") {
+        out = {
+          ...item,
+          detail: "Most condos require 48-hour notice for delivery or move bookings",
+        };
+      }
+    }
+    if (out.id === "crew_info" && (crewName || arrivalWindow)) {
       return {
-        ...item,
+        ...out,
         detail: [crewName, arrivalWindow].filter(Boolean).join(" · "),
       };
     }
-    return item;
+    return out;
   });
 
   const completedCount = items.filter((i) => checked[i.id]).length;
@@ -128,7 +145,9 @@ export default function PreMoveChecklist({
         month: "long",
         day: "numeric",
       })
-    : "move day";
+    : copyVariant === "delivery"
+      ? "delivery day"
+      : "move day";
 
   return (
     <div className="rounded-2xl border border-[var(--brd)]/40 overflow-hidden">
@@ -143,9 +162,11 @@ export default function PreMoveChecklist({
       >
         <div>
           <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--gold)] mb-1">
-            Move Day Prep
+            {copyVariant === "delivery" ? "Delivery Day Prep" : "Move Day Prep"}
           </p>
-          <h3 className="text-[15px] font-bold text-[var(--tx)]">Get Ready for Your Move</h3>
+          <h3 className="text-[15px] font-bold text-[var(--tx)]">
+            {copyVariant === "delivery" ? "Get Ready for Your Delivery" : "Get Ready for Your Move"}
+          </h3>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">
             Complete before {moveDate}
           </p>

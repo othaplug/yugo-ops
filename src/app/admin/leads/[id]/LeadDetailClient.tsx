@@ -15,6 +15,7 @@ import {
 } from "@/lib/leads/admin-labels";
 import { ArrowRight, Phone } from "@phosphor-icons/react";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import LeadResponseSlaCountdown from "../LeadResponseSlaCountdown";
 
 type Lead = Record<string, unknown>;
 type Activity = {
@@ -167,6 +168,14 @@ export default function LeadDetailClient({
         <p className="text-[12px] text-[var(--tx3)] mt-1">
           {LEAD_STATUS_LABELS[String(lead.status)] || String(lead.status)} ·{" "}
           {LEAD_PRIORITY_LABELS[String(lead.priority)] || String(lead.priority)}
+        </p>
+        <p className="text-[11px] text-[var(--tx2)] mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-[var(--tx3)]">First response target (5 min):</span>
+          <LeadResponseSlaCountdown
+            createdAt={String(lead.created_at || "")}
+            responseSlaTargetAt={lead.response_sla_target_at != null ? String(lead.response_sla_target_at) : null}
+            firstResponseAt={lead.first_response_at != null ? String(lead.first_response_at) : null}
+          />
         </p>
       </header>
 

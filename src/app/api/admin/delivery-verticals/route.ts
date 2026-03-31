@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOwner } from "@/lib/auth/check-role";
 import { requireAdmin } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
+import { deliveryVerticalColumnsFromDefaultConfig } from "@/lib/admin/delivery-vertical-column-sync";
 
 const METHODS = new Set(["flat", "per_item", "per_unit", "hourly", "dimensional"]);
 
@@ -56,6 +57,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const columnSync = deliveryVerticalColumnsFromDefaultConfig(default_config);
+
   const db = createAdminClient();
   const { data, error } = await db
     .from("delivery_verticals")
@@ -69,6 +72,7 @@ export async function POST(req: NextRequest) {
       default_config,
       active: body.active !== false,
       sort_order: Number(body.sort_order) || 0,
+      ...columnSync,
     })
     .select("*")
     .single();
@@ -126,6 +130,13 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: "default_config must be valid JSON" }, { status: 400 });
       }
     }
+  }
+
+  if (updates.default_config && typeof updates.default_config === "object" && !Array.isArray(updates.default_config)) {
+    Object.assign(
+      updates,
+      deliveryVerticalColumnsFromDefaultConfig(updates.default_config as Record<string, unknown>),
+    );
   }
 
   if (Object.keys(updates).length === 0) {

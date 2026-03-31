@@ -38,43 +38,57 @@ export async function GET(req: NextRequest) {
 
   const { data: quotes } = await supabase
     .from("quotes")
-    .select("id, quote_number, client_name, client_email, client_phone, essential_price, move_date, from_address, to_address, expires_at")
+    .select("id, quote_id, custom_price, essential_price, move_date, expires_at, contact_id")
     .eq("status", "expired")
     .gte("expires_at", fourDaysAgo.toISOString())
     .lte("expires_at", threeDaysAgo.toISOString())
     .is("reengagement_sent", null);
 
+  const contactIds = [...new Set((quotes ?? []).map((q) => q.contact_id).filter(Boolean))] as string[];
+  let contactsById: Record<string, { name: string | null; email: string | null; phone: string | null }> = {};
+  if (contactIds.length > 0) {
+    const { data: contacts } = await supabase
+      .from("contacts")
+      .select("id, name, email, phone")
+      .in("id", contactIds);
+    contactsById = Object.fromEntries((contacts ?? []).map((c) => [c.id, c]));
+  }
+
   const results = { sent: 0, errors: [] as string[] };
 
   for (const quote of quotes ?? []) {
     try {
-      // Extend quote expiry by 48 hours
+      // Extend quote expiry by 48 hours from now
       const newExpiry = new Date();
-      newExpiry.setDate(newExpiry.getDate() + 2);
+      newExpiry.setTime(newExpiry.getTime() + 48 * 3600_000);
 
       await supabase
         .from("quotes")
         .update({
           status: "reactivated",
-          expires_at: newExpiry.toISOString().slice(0, 10),
+          expires_at: newExpiry.toISOString(),
           reengagement_sent: new Date().toISOString(),
         })
         .eq("id", quote.id);
 
-      if (!quote.client_email) continue;
+      const contact = quote.contact_id ? contactsById[quote.contact_id] : undefined;
+      const clientEmail = contact?.email?.trim() || null;
+      if (!clientEmail) continue;
 
-      const firstName = (quote.client_name || "").split(" ")[0] || "there";
-      const quoteUrl = `${baseUrl}/quote/${quote.id}`;
+      const firstName = (contact?.name || "").split(" ")[0] || "there";
+      const quoteSlug = quote.quote_id || quote.id;
+      const quoteUrl = `${baseUrl}/quote/${encodeURIComponent(quoteSlug)}`;
+      const pricePreTax = Number(quote.custom_price ?? quote.essential_price ?? 0);
       const html = buildReengagementEmail({
         firstName,
-        quoteNumber: quote.quote_number || quote.id,
-        price: Number(quote.essential_price || 0),
+        quoteNumber: quoteSlug,
+        price: pricePreTax,
         moveDate: quote.move_date,
         quoteUrl,
       });
 
       const result = await sendEmail({
-        to: quote.client_email,
+        to: clientEmail,
         subject: `Your Yugo quote is available for 48 more hours`,
         html,
       });
@@ -82,9 +96,10 @@ export async function GET(req: NextRequest) {
       if (result.success) {
         results.sent++;
         // SMS follow-up
-        if (quote.client_phone) {
+        const clientPhone = contact?.phone?.trim();
+        if (clientPhone) {
           await sendSMS(
-            quote.client_phone,
+            clientPhone,
             [
               `Hi ${firstName},`,
               `Your Yugo moving quote is still available for 48 hours at the original price.`,
@@ -93,10 +108,11 @@ export async function GET(req: NextRequest) {
           ).catch(() => {});
         }
       } else {
-        results.errors.push(`${quote.quote_number}: ${result.error}`);
+        results.errors.push(`${quoteSlug}: ${result.error}`);
       }
     } catch (err) {
-      results.errors.push(`${quote.quote_number}: ${err instanceof Error ? err.message : String(err)}`);
+      const slug = quote.quote_id || quote.id;
+      results.errors.push(`${slug}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 

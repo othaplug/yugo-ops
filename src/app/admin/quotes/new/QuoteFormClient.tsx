@@ -49,11 +49,13 @@ import { calculateBinRentalPrice, BIN_RENTAL_BUNDLE_SPECS } from "@/lib/pricing/
 import {
   calculateB2BDimensionalPrice,
   isMoveDateWeekend,
+  lineItemsFromQuotePayload,
   synthesizeStopsFromAddresses,
   type B2BDimensionalQuoteInput,
   type B2BWeightCategory,
   type DeliveryVerticalRow,
 } from "@/lib/pricing/b2b-dimensional";
+import { suggestB2bWeightTierFromDescription } from "@/lib/pricing/b2b-weight-helpers";
 import { QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 import { mapSpecialtyToQuoteTypes, type SpecialtyDetected } from "@/lib/leads/specialty-detect";
@@ -70,6 +72,11 @@ import {
 } from "@/lib/quotes/estate-schedule";
 import { pickupLocationsFromQuote, accessLabel, abbreviateLocationRows, dropoffLocationsFromQuote } from "@/lib/quotes/quote-address-display";
 import { formatAddressForDisplay } from "@/lib/format-text";
+import {
+  quoteDetailDateLabel,
+  quoteFormSchedulingSectionTitle,
+  quoteFormServiceDateLabel,
+} from "@/lib/quotes/quote-field-labels";
 
 const PanelRightClose = PanelRightOpen;
 
@@ -469,7 +476,13 @@ function parseB2bQuoteFormFields(v: QuoteDeliveryVertical | null): B2bQuoteFormF
   return [];
 }
 
-type B2bLineRow = { description: string; qty: number; weight_category?: string; fragile?: boolean };
+type B2bLineRow = {
+  description: string;
+  qty: number;
+  weight_category?: string;
+  weight_lbs?: number;
+  fragile?: boolean;
+};
 
 function getEffectiveB2bLines(
   lines: B2bLineRow[],
@@ -485,6 +498,44 @@ function getEffectiveB2bLines(
 
 function parseCfgJson<T>(config: Record<string, string>, key: string, fallback: T): T {
   try { const v = config[key]; return v ? (JSON.parse(v) as T) : fallback; } catch { return fallback; }
+}
+
+function parsePositivePreTaxOverride(raw: string): number | undefined {
+  const t = String(raw).trim().replace(/,/g, "");
+  if (t === "") return undefined;
+  const n = Number(t);
+  if (!Number.isFinite(n) || n <= 0) return undefined;
+  return n;
+}
+
+function b2bAccessSurchargeFromConfig(
+  config: Record<string, string>,
+  fromAccess: string,
+  toAccess: string,
+): number {
+  const accessMap = parseCfgJson<Record<string, number>>(config, "b2b_access_surcharges", {});
+  const accessKey = (k: string | undefined): string => (k === "no_parking_nearby" ? "no_parking" : (k ?? ""));
+  const fa = fromAccess ? (accessMap[accessKey(fromAccess)] ?? 0) : 0;
+  const ta = toAccess ? (accessMap[accessKey(toAccess)] ?? 0) : 0;
+  return fa + ta;
+}
+
+function b2bParkingLongCarryTotalFromConfig(
+  config: Record<string, string>,
+  fromParking: string,
+  toParking: string,
+  fromLongCarry: boolean,
+  toLongCarry: boolean,
+): number {
+  const parkingRates = parseCfgJson<Record<string, number>>(config, "parking_surcharges", {
+    dedicated: 0,
+    street: 0,
+    no_dedicated: 75,
+  });
+  const lc = cfgNum(config, "long_carry_surcharge", 75);
+  const fp = parkingRates[fromParking] ?? 0;
+  const tp = parkingRates[toParking] ?? 0;
+  return fp + tp + (fromLongCarry ? lc : 0) + (toLongCarry ? lc : 0);
 }
 
 const CRATING_SIZE_LABELS: Record<string, string> = {
@@ -858,13 +909,12 @@ export default function QuoteFormClient({
   const [b2bBusinessName, setB2bBusinessName] = useState("");
   const [b2bVerticalCode, setB2bVerticalCode] = useState("custom");
   const [b2bPartnerOrgId, setB2bPartnerOrgId] = useState("");
-  const [b2bLines, setB2bLines] = useState<
-    { description: string; qty: number; weight_category?: string; fragile?: boolean }[]
-  >([]);
+  const [b2bLines, setB2bLines] = useState<B2bLineRow[]>([]);
   const [b2bNewLineDesc, setB2bNewLineDesc] = useState("");
   const [b2bNewLineQty, setB2bNewLineQty] = useState(1);
   const [b2bNewLineWeight, setB2bNewLineWeight] = useState("light");
   const [b2bNewLineFragile, setB2bNewLineFragile] = useState(false);
+  const [b2bNewLineWeightLbs, setB2bNewLineWeightLbs] = useState("");
   const [b2bHandlingType, setB2bHandlingType] = useState("threshold");
   const [b2bMultiStop, setB2bMultiStop] = useState(false);
   const [b2bStops, setB2bStops] = useState<
@@ -890,6 +940,12 @@ export default function QuoteFormClient({
   const [b2bSpecialInstructions, setB2bSpecialInstructions] = useState("");
   const [b2bPaymentMethod, setB2bPaymentMethod] = useState<"card" | "invoice">("card");
   const [b2bRetailerSource, setB2bRetailerSource] = useState("");
+  const [b2bMonthlyVolumeEstimate, setB2bMonthlyVolumeEstimate] = useState("");
+  const [b2bSubtotalOverride, setB2bSubtotalOverride] = useState("");
+  const [b2bFullPreTaxOverride, setB2bFullPreTaxOverride] = useState("");
+  const [b2bOverrideReason, setB2bOverrideReason] = useState("");
+  const [b2bArtHangingCount, setB2bArtHangingCount] = useState("");
+  const [b2bCratingPieces, setB2bCratingPieces] = useState("");
   const [b2bPreviewDistanceKm, setB2bPreviewDistanceKm] = useState<number | null>(null);
   const [b2bPreviewDriveMin, setB2bPreviewDriveMin] = useState<number | null>(null);
   const [b2bDeliveryKmFromGta, setB2bDeliveryKmFromGta] = useState<number | null>(null);
@@ -923,6 +979,19 @@ export default function QuoteFormClient({
     if (wlr && typeof wlr === "object" && !Array.isArray(wlr) && Object.keys(wlr as object).length > 0) return true;
     const wt = dc.weight_tiers;
     return Boolean(wt && typeof wt === "object" && !Array.isArray(wt) && Object.keys(wt as object).length > 0);
+  }, [selectedB2bVertical]);
+
+  const b2bShowArtCratingFields = useMemo(() => {
+    if (!selectedB2bVertical) return false;
+    if (selectedB2bVertical.code === "art_gallery") return true;
+    const p = selectedB2bVertical.default_config?.complexity_premiums;
+    if (p && typeof p === "object" && !Array.isArray(p)) {
+      const pr = p as Record<string, unknown>;
+      const hang = Number(pr.art_hanging_per_piece);
+      const cr = Number(pr.crating_per_piece);
+      return (Number.isFinite(hang) && hang > 0) || (Number.isFinite(cr) && cr > 0);
+    }
+    return false;
   }, [selectedB2bVertical]);
 
   const b2bVerticalSelectOptions = useMemo(() => {
@@ -1979,14 +2048,22 @@ export default function QuoteFormClient({
     if (serviceType !== "b2b_delivery" || !selectedB2bVertical) return null;
     const merged = selectedB2bVertical.default_config as Record<string, unknown>;
     const useVerticalZoneSchedule = String(merged.distance_mode || "") === "zones";
-    const items = effectiveB2bLines
-      .filter((l) => l.description.trim() && l.qty >= 1)
-      .map((l) => ({
-        description: l.description.trim(),
-        quantity: l.qty,
-        weight_category: l.weight_category as B2BWeightCategory | undefined,
-        fragile: l.fragile,
-      }));
+    const items = lineItemsFromQuotePayload({
+      b2b_vertical_code: selectedB2bVertical.code,
+      b2b_weight_category: b2bShowLineWeights ? undefined : b2bWeightCategory,
+      b2b_line_items: effectiveB2bLines
+        .filter((l) => l.description.trim() && l.qty >= 1)
+        .map((l) => ({
+          description: l.description.trim(),
+          quantity: l.qty,
+          weight_category: l.weight_category as B2BWeightCategory | undefined,
+          weight_lbs:
+            typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
+              ? l.weight_lbs
+              : undefined,
+          fragile: l.fragile,
+        })),
+    });
     const stops: B2BDimensionalQuoteInput["stops"] = b2bMultiStop
       ? b2bStops
           .filter((s) => s.address.trim())
@@ -1998,6 +2075,9 @@ export default function QuoteFormClient({
           }))
       : synthesizeStopsFromAddresses(fromAddress, toAddress, fromAccess, toAccess);
     const loadLbs = parseInt(String(b2bTotalLoadWeightLbs).trim(), 10);
+    const monthlyVol = parseInt(String(b2bMonthlyVolumeEstimate).trim(), 10);
+    const artN = parseInt(String(b2bArtHangingCount).trim(), 10);
+    const crateN = parseInt(String(b2bCratingPieces).trim(), 10);
     const dimInput: B2BDimensionalQuoteInput = {
       vertical_code: selectedB2bVertical.code,
       items,
@@ -2015,27 +2095,53 @@ export default function QuoteFormClient({
       total_load_weight_lbs: Number.isFinite(loadLbs) && loadLbs > 0 ? loadLbs : undefined,
       haul_away_units: b2bHaulAwayUnits > 0 ? b2bHaulAwayUnits : undefined,
       returns_pickup: b2bReturnsPickup,
+      monthly_delivery_volume: Number.isFinite(monthlyVol) && monthlyVol > 0 ? monthlyVol : undefined,
+      art_hanging_count: Number.isFinite(artN) && artN > 0 ? artN : undefined,
+      crating_pieces: Number.isFinite(crateN) && crateN > 0 ? crateN : undefined,
     };
     const distKm = b2bPreviewDistanceKm ?? 0;
+    const plcTotal = b2bParkingLongCarryTotalFromConfig(
+      config,
+      fromParking,
+      toParking,
+      fromLongCarry,
+      toLongCarry,
+    );
+    const rounding = cfgNum(config, "rounding_nearest", 25);
     const dim = calculateB2BDimensionalPrice({
       vertical: toDeliveryVerticalRow(selectedB2bVertical),
       mergedRates: merged,
       input: dimInput,
       totalDistanceKm: distKm,
-      roundingNearest: cfgNum(config, "rounding_nearest", 25),
+      roundingNearest: rounding,
+      parkingLongCarryTotal: plcTotal,
       pricingExtras: useVerticalZoneSchedule ? [] : b2bGtaZoneExtras.lines,
     });
     const taxRate = cfgNum(config, "tax_rate", TAX_RATE);
-    const preAddon = dim.subtotal;
-    const withAddons = preAddon + addonSubtotal;
-    const tax = Math.round(withAddons * taxRate);
+    const access = b2bAccessSurchargeFromConfig(config, fromAccess, toAccess);
+    const engineSubtotal = dim.subtotal;
+    const subOv = parsePositivePreTaxOverride(b2bSubtotalOverride);
+    const fullOv = parsePositivePreTaxOverride(b2bFullPreTaxOverride);
+    const dimensionalPreTax = subOv !== undefined ? Math.round(subOv) : engineSubtotal;
+    let preTaxTotal: number;
+    let fullOverrideApplied = false;
+    if (fullOv !== undefined) {
+      preTaxTotal = roundTo(fullOv, rounding);
+      fullOverrideApplied = true;
+    } else {
+      preTaxTotal = dimensionalPreTax + access + addonSubtotal;
+    }
+    const tax = Math.round(preTaxTotal * taxRate);
     return {
       dim,
-      preAddon,
-      withAddons,
+      access,
+      engineSubtotal,
+      dimensionalPreTax,
+      preTaxTotal,
       tax,
-      total: withAddons + tax,
+      total: preTaxTotal + tax,
       hasRealItems: items.length > 0,
+      fullOverrideApplied,
     };
   }, [
     serviceType,
@@ -2062,6 +2168,17 @@ export default function QuoteFormClient({
     b2bTotalLoadWeightLbs,
     b2bHaulAwayUnits,
     b2bReturnsPickup,
+    b2bMonthlyVolumeEstimate,
+    b2bArtHangingCount,
+    b2bCratingPieces,
+    b2bSubtotalOverride,
+    b2bFullPreTaxOverride,
+    b2bShowLineWeights,
+    b2bWeightCategory,
+    fromParking,
+    toParking,
+    fromLongCarry,
+    toLongCarry,
     config,
     addonSubtotal,
   ]);
@@ -2374,6 +2491,10 @@ export default function QuoteFormClient({
                 | "heavy"
                 | "extra_heavy"
                 | undefined,
+              weight_lbs:
+                typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
+                  ? Math.round(l.weight_lbs)
+                  : undefined,
               fragile: l.fragile ? true : undefined,
             }))
           : undefined;
@@ -2416,6 +2537,33 @@ export default function QuoteFormClient({
       base.b2b_special_instructions = b2bSpecialInstructions.trim() || undefined;
       base.b2b_payment_method = b2bPaymentMethod;
       base.b2b_retailer_source = b2bRetailerSource.trim() || undefined;
+      const monthlyVol = parseInt(String(b2bMonthlyVolumeEstimate).trim(), 10);
+      if (Number.isFinite(monthlyVol) && monthlyVol > 0) {
+        base.b2b_monthly_delivery_volume_estimate = monthlyVol;
+      }
+      const artHangN = parseInt(String(b2bArtHangingCount).trim(), 10);
+      if (Number.isFinite(artHangN) && artHangN > 0) {
+        base.b2b_art_hanging_count = artHangN;
+      }
+      const cratePiecesN = parseInt(String(b2bCratingPieces).trim(), 10);
+      if (Number.isFinite(cratePiecesN) && cratePiecesN > 0) {
+        base.b2b_crating_pieces = cratePiecesN;
+      }
+      const subOv = Number(String(b2bSubtotalOverride).trim().replace(/,/g, ""));
+      if (Number.isFinite(subOv) && subOv > 0) {
+        base.b2b_subtotal_override = subOv;
+      }
+      const fullOv = Number(String(b2bFullPreTaxOverride).trim().replace(/,/g, ""));
+      if (Number.isFinite(fullOv) && fullOv > 0) {
+        base.b2b_full_pre_tax_override = fullOv;
+      }
+      const ovReason = b2bOverrideReason.trim();
+      if (
+        ovReason.length >= 3 &&
+        ((Number.isFinite(subOv) && subOv > 0) || (Number.isFinite(fullOv) && fullOv > 0))
+      ) {
+        base.b2b_subtotal_override_reason = ovReason;
+      }
     }
     if (serviceType === "bin_rental") {
       base.bin_bundle_type = binBundleType;
@@ -2462,6 +2610,12 @@ export default function QuoteFormClient({
     b2bSpecialInstructions,
     b2bPaymentMethod,
     b2bRetailerSource,
+    b2bMonthlyVolumeEstimate,
+    b2bArtHangingCount,
+    b2bCratingPieces,
+    b2bSubtotalOverride,
+    b2bFullPreTaxOverride,
+    b2bOverrideReason,
     singleItemSpecialHandling, specialtyBuildingReqs, specialtyAccessDifficulty,
     binBundleType, binCustomCount, binExtraBins, binPackingPaper, binMaterialDelivery, binLinkedMoveId,
     binDeliveryNotes, binInternalNotes,
@@ -2499,7 +2653,10 @@ export default function QuoteFormClient({
       }
     } else if (serviceType === "labour_only") {
       if (!workAddress || !moveDate) {
-        toast("Please fill Work address and Move date", "alertTriangle");
+        toast(
+          `Please fill work address and ${quoteDetailDateLabel(serviceType).toLowerCase()}`,
+          "alertTriangle",
+        );
         return;
       }
     } else if (serviceType === "b2b_delivery") {
@@ -2518,6 +2675,18 @@ export default function QuoteFormClient({
       if (!phone?.trim()) errs.phone = "Contact phone is required.";
       const hasItem = effectiveB2bLines.some((l) => l.description.trim() && l.qty >= 1);
       if (!hasItem) errs.items = "Add at least one line item (or use vertical box count when shown).";
+      const subOvN = Number(String(b2bSubtotalOverride).trim().replace(/,/g, ""));
+      const fullOvN = Number(String(b2bFullPreTaxOverride).trim().replace(/,/g, ""));
+      const hasSubOv = Number.isFinite(subOvN) && subOvN > 0;
+      const hasFullOv = Number.isFinite(fullOvN) && fullOvN > 0;
+      if (hasSubOv && hasFullOv) {
+        toast("Use either dimensional subtotal override or full pre-tax total, not both.", "alertTriangle");
+        return;
+      }
+      if ((hasSubOv || hasFullOv) && b2bOverrideReason.trim().length < 3) {
+        toast("Price override needs a reason (at least 3 characters).", "alertTriangle");
+        return;
+      }
       if (Object.keys(errs).length > 0) {
         setB2bSubmitErrors(errs);
         toast("Fix the highlighted fields below.", "alertTriangle");
@@ -2533,7 +2702,10 @@ export default function QuoteFormClient({
     } else if (serviceType === "bin_rental") {
       const clientName = [firstName, lastName].filter(Boolean).join(" ");
       if (!toAddress.trim() || !moveDate) {
-        toast("Please fill delivery address and move date", "alertTriangle");
+        toast(
+          `Please fill delivery address and ${quoteDetailDateLabel(serviceType).toLowerCase()}`,
+          "alertTriangle",
+        );
         return;
       }
       if (!binPickupSameAsDelivery && !fromAddress.trim()) {
@@ -2549,7 +2721,10 @@ export default function QuoteFormClient({
         return;
       }
     } else if (!fromAddress || !toAddress || !moveDate) {
-      toast("Please fill addresses and move date", "alertTriangle");
+      toast(
+        `Please fill addresses and ${quoteDetailDateLabel(serviceType).toLowerCase()}`,
+        "alertTriangle",
+      );
       return;
     }
     if (
@@ -3327,7 +3502,7 @@ export default function QuoteFormClient({
               {serviceType !== "event" && (
               <div>
                 <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
-                  {serviceType === "labour_only" ? "Scheduling" : serviceType === "bin_rental" ? "Move date & rental cycle" : "Move Details"}
+                  {quoteFormSchedulingSectionTitle(serviceType)}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div
@@ -3335,7 +3510,7 @@ export default function QuoteFormClient({
                     className={`space-y-1 ${serviceType === "b2b_delivery" && b2bSubmitErrors.date ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <Field label={serviceType === "labour_only" ? "Date *" : serviceType === "bin_rental" ? "Move date *" : "Move Date *"}>
+                      <Field label={quoteFormServiceDateLabel(serviceType)}>
                         <input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} required className={fieldInput} />
                       </Field>
                       {serviceType === "b2b_delivery" && moveDate.trim() && isMoveDateWeekend(moveDate) ? (
@@ -4675,10 +4850,10 @@ export default function QuoteFormClient({
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <Field label="Crew Size">
                       <select value={labourCrewSize} onChange={(e) => setLabourCrewSize(Number(e.target.value))} className={fieldInput}>
-                        <option value={2}>2 movers</option>
-                        <option value={3}>3 movers</option>
-                        <option value={4}>4 movers</option>
-                        <option value={5}>5 movers</option>
+                        <option value={2}>2-Person Crew</option>
+                        <option value={3}>3-Person Crew</option>
+                        <option value={4}>4-Person Crew</option>
+                        <option value={5}>5-Person Crew</option>
                       </select>
                     </Field>
                     <Field label="Estimated Hours">
@@ -4888,6 +5063,77 @@ export default function QuoteFormClient({
                       Invoice: client confirms on the quote page without card; booking is flagged for accounts receivable.
                     </p>
                   </Field>
+                  <Field label="Estimated monthly deliveries (volume discount)">
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="e.g. 20 — applies vertical volume tiers when set"
+                      value={b2bMonthlyVolumeEstimate}
+                      onChange={(e) => setB2bMonthlyVolumeEstimate(e.target.value)}
+                      className={fieldInput}
+                    />
+                  </Field>
+                  {b2bShowArtCratingFields ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Field label="Art hanging (pieces)">
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="Uses vertical art_hanging_per_piece when set"
+                          value={b2bArtHangingCount}
+                          onChange={(e) => setB2bArtHangingCount(e.target.value)}
+                          className={fieldInput}
+                        />
+                      </Field>
+                      <Field label="Crating (pieces)">
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="Uses vertical crating_per_piece when set"
+                          value={b2bCratingPieces}
+                          onChange={(e) => setB2bCratingPieces(e.target.value)}
+                          className={fieldInput}
+                        />
+                      </Field>
+                    </div>
+                  ) : null}
+                  <div className="rounded-lg border border-[var(--brd)]/70 bg-[var(--bg)]/30 px-3 py-3 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">
+                      Price overrides (optional)
+                    </p>
+                    <p className="text-[10px] text-[var(--tx3)] leading-snug">
+                      Subtotal override replaces the dimensional engine subtotal only; access surcharges and add-ons still apply. Full pre-tax override replaces the entire pre-tax total (including access and add-ons). Reason is required if either override is set.
+                    </p>
+                    <Field label="Dimensional subtotal override ($)">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Leave blank for model price"
+                        value={b2bSubtotalOverride}
+                        onChange={(e) => setB2bSubtotalOverride(e.target.value)}
+                        className={fieldInput}
+                      />
+                    </Field>
+                    <Field label="Full pre-tax total override ($)">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Mutually exclusive with subtotal override"
+                        value={b2bFullPreTaxOverride}
+                        onChange={(e) => setB2bFullPreTaxOverride(e.target.value)}
+                        className={fieldInput}
+                      />
+                    </Field>
+                    <Field label="Override reason (required if overriding)">
+                      <input
+                        type="text"
+                        placeholder="e.g. Matched competitor, partner exception, manual scope"
+                        value={b2bOverrideReason}
+                        onChange={(e) => setB2bOverrideReason(e.target.value)}
+                        className={fieldInput}
+                      />
+                    </Field>
+                  </div>
                   <div
                     id="b2b-err-items"
                     className={b2bSubmitErrors.items ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5 space-y-2" : "space-y-2"}
@@ -4924,6 +5170,51 @@ export default function QuoteFormClient({
                                       ))}
                                     </select>
                                   </>
+                                ) : null}
+                                <label className="flex flex-col gap-0.5 text-[9px] text-[var(--tx3)] min-w-0">
+                                  <span className="font-semibold uppercase tracking-wide">Lb</span>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    placeholder="—"
+                                    value={
+                                      item.weight_lbs != null && item.weight_lbs > 0 ? String(item.weight_lbs) : ""
+                                    }
+                                    onChange={(e) => {
+                                      const v = e.target.value.trim();
+                                      const n = v === "" ? undefined : Number(v);
+                                      setB2bLines((p) =>
+                                        p.map((x, i) =>
+                                          i === idx
+                                            ? {
+                                                ...x,
+                                                weight_lbs:
+                                                  n !== undefined && Number.isFinite(n) && n > 0
+                                                    ? Math.round(n)
+                                                    : undefined,
+                                              }
+                                            : x,
+                                        ),
+                                      );
+                                    }}
+                                    className={`${fieldInput} w-[4.5rem] text-center text-[10px]`}
+                                    aria-label={`Weight in pounds for ${item.description}`}
+                                  />
+                                </label>
+                                {itemWeights.length > 0 && b2bShowLineWeights ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const t = suggestB2bWeightTierFromDescription(item.description, itemWeights);
+                                      if (!t) return;
+                                      setB2bLines((p) =>
+                                        p.map((x, i) => (i === idx ? { ...x, weight_category: t } : x)),
+                                      );
+                                    }}
+                                    className="text-[10px] font-semibold text-[var(--gold)] hover:underline self-end sm:self-center px-1 py-1"
+                                  >
+                                    Match catalog
+                                  </button>
                                 ) : null}
                                 <label className="flex items-center gap-1 text-[10px] text-[var(--tx2)]">
                                   <span className="sm:hidden">Qty</span>
@@ -4978,17 +5269,22 @@ export default function QuoteFormClient({
                                   e.preventDefault();
                                   if (!b2bNewLineDesc.trim()) return;
                                   const q = Math.max(1, b2bNewLineQty || 1);
+                                  const lbsNew = parseInt(String(b2bNewLineWeightLbs).trim(), 10);
+                                  const wl =
+                                    Number.isFinite(lbsNew) && lbsNew > 0 ? lbsNew : undefined;
                                   setB2bLines((p) => [
                                     ...p,
                                     {
                                       description: b2bNewLineDesc.trim(),
                                       qty: q,
                                       weight_category: b2bShowLineWeights ? b2bNewLineWeight : undefined,
+                                      weight_lbs: wl,
                                       fragile: b2bNewLineFragile,
                                     },
                                   ]);
                                   setB2bNewLineDesc("");
                                   setB2bNewLineQty(1);
+                                  setB2bNewLineWeightLbs("");
                                   setB2bNewLineFragile(false);
                                 }}
                               />
@@ -5032,17 +5328,22 @@ export default function QuoteFormClient({
                             onClick={() => {
                               if (!b2bNewLineDesc.trim()) return;
                               const q = Math.max(1, b2bNewLineQty || 1);
+                              const lbsNew = parseInt(String(b2bNewLineWeightLbs).trim(), 10);
+                              const wl =
+                                Number.isFinite(lbsNew) && lbsNew > 0 ? lbsNew : undefined;
                               setB2bLines((p) => [
                                 ...p,
                                 {
                                   description: b2bNewLineDesc.trim(),
                                   qty: q,
                                   weight_category: b2bShowLineWeights ? b2bNewLineWeight : undefined,
+                                  weight_lbs: wl,
                                   fragile: b2bNewLineFragile,
                                 },
                               ]);
                               setB2bNewLineDesc("");
                               setB2bNewLineQty(1);
+                              setB2bNewLineWeightLbs("");
                               setB2bNewLineFragile(false);
                             }}
                             className="w-full min-h-[44px] rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors flex items-center justify-center gap-2"
@@ -5945,15 +6246,29 @@ export default function QuoteFormClient({
                             <span className="text-[var(--tx)] font-medium shrink-0">{fmtPrice(l.amount)}</span>
                           </div>
                         ))}
-                        {addonSubtotal > 0 ? (
+                        {b2bDimensionalPreview.access > 0 && !b2bDimensionalPreview.fullOverrideApplied ? (
+                          <div className="flex justify-between text-[11px] gap-2">
+                            <span className="text-[var(--tx2)]">Access surcharge</span>
+                            <span className="text-[var(--tx)] font-medium shrink-0">
+                              {fmtPrice(b2bDimensionalPreview.access)}
+                            </span>
+                          </div>
+                        ) : null}
+                        {addonSubtotal > 0 && !b2bDimensionalPreview.fullOverrideApplied ? (
                           <div className="flex justify-between text-[11px] pt-1 border-t border-[var(--brd)]/40">
                             <span className="text-[var(--tx3)]">Add-ons (selected)</span>
                             <span className="text-[var(--tx)] font-medium">{fmtPrice(addonSubtotal)}</span>
                           </div>
                         ) : null}
+                        {b2bDimensionalPreview.fullOverrideApplied ? (
+                          <p className="text-[10px] text-[var(--tx3)] pt-1 leading-snug">
+                            Model breakdown above; subtotal uses full coordinator pre-tax override (access and add-ons not
+                            added on top).
+                          </p>
+                        ) : null}
                         <div className="flex justify-between text-[11px] pt-1 border-t border-[var(--brd)]/40">
                           <span className="text-[var(--tx3)]">Subtotal (pre-tax)</span>
-                          <span className="font-semibold">{fmtPrice(b2bDimensionalPreview.withAddons)}</span>
+                          <span className="font-semibold">{fmtPrice(b2bDimensionalPreview.preTaxTotal)}</span>
                         </div>
                         <div className="flex justify-between text-[11px]">
                           <span className="text-[var(--tx3)]">HST</span>
@@ -6049,7 +6364,7 @@ export default function QuoteFormClient({
                   <span className="text-[var(--tx)]">{quoteResult.drive_time_min ? `${quoteResult.drive_time_min} min` : "-"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[var(--tx3)]">Move Date</span>
+                  <span className="text-[var(--tx3)]">{quoteDetailDateLabel(serviceType)}</span>
                   <span className="text-[var(--tx)]">{quoteResult.move_date || "-"}</span>
                 </div>
                 {(serviceType === "local_move" ||
@@ -6138,7 +6453,7 @@ export default function QuoteFormClient({
                 <h4 className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">Labour Estimate</h4>
                 <div className="flex items-center gap-2">
                   <Users className="w-3.5 h-3.5 text-[var(--gold)]" />
-                  <span className="text-[var(--tx)]">{quoteResult.labour.crewSize} movers <span className="text-[var(--tx3)]">(recommended)</span></span>
+                  <span className="text-[var(--tx)]">{quoteResult.labour.crewSize}-person crew <span className="text-[var(--tx3)]">(recommended)</span></span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-[var(--gold)]" />
@@ -6651,7 +6966,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
                 <span className={PRICE_CARD.muted}>
                   Delivery ({fmtShortEventAdmin(leg.delivery_date)})
                   {leg.event_crew && leg.event_hours ? (
-                    <span className="ml-1 opacity-75">{leg.event_crew} movers, {leg.event_hours}hr</span>
+                    <span className="ml-1 opacity-75">{leg.event_crew}-person crew, {leg.event_hours}hr</span>
                   ) : null}
                 </span>
                 <span className={`font-medium tabular-nums shrink-0 ${PRICE_CARD.body}`}>
@@ -6703,7 +7018,7 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
             <span className={PRICE_CARD.muted}>
               Delivery ({deliveryDate ?? "TBD"})
               {eventCrew && eventHours ? (
-                <span className="ml-1 opacity-75">{eventCrew} movers, {eventHours}hr</span>
+                <span className="ml-1 opacity-75">{eventCrew}-person crew, {eventHours}hr</span>
               ) : null}
             </span>
             <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(deliveryCharge)}</span>
@@ -6751,6 +7066,13 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
   const usingPartnerRates = factors.b2b_using_partner_rates === true;
   const standardPreTax = factors.b2b_standard_price_pre_tax as number | undefined;
   const partnerDiscountPct = factors.b2b_partner_discount_percent as number | undefined;
+  const engineSub = factors.b2b_engine_subtotal as number | undefined;
+  const subOvr = factors.b2b_subtotal_override as number | null | undefined;
+  const ovrReason =
+    typeof factors.b2b_subtotal_override_reason === "string"
+      ? factors.b2b_subtotal_override_reason.trim()
+      : "";
+  const fullOverrideApplied = factors.b2b_full_pre_tax_override_applied === true;
 
   return (
     <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
@@ -6947,7 +7269,7 @@ function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; fact
         {crewSize && hours && labourRate && (
           <div className="flex justify-between">
             <span className={PRICE_CARD.muted}>
-              {crewSize} movers × {hours}hr × ${labourRate}/hr
+              {crewSize}-person crew × {hours}hr × ${labourRate}/hr
             </span>
             <span className={`font-medium ${PRICE_CARD.body}`}>{fmtPrice(crewSize * hours * labourRate)}</span>
           </div>

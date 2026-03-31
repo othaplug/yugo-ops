@@ -3,7 +3,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isMoveIdUuid } from "@/lib/move-code";
 import type { TimelineEntry } from "@/components/tracking/LiveMoveTimeline";
-import { STATUS_TO_TIMELINE } from "@/components/tracking/LiveMoveTimeline";
+import {
+  STATUS_TO_TIMELINE,
+  STATUS_TO_TIMELINE_DELIVERY,
+} from "@/components/tracking/LiveMoveTimeline";
+import { isMoveRowLogisticsDelivery } from "@/lib/quotes/b2b-quote-copy";
 
 const MOVE_STATUS_ORDER = [
   "confirmed",
@@ -36,14 +40,27 @@ export async function GET(
   const supabase = createAdminClient();
 
   const byUuid = isMoveIdUuid(slug);
+  const moveSelect =
+    "id, status, move_code, crew_id, estimated_hours, service_type, move_type";
   const { data: move } = byUuid
-    ? await supabase.from("moves").select("id, status, move_code, crew_id, estimated_hours").eq("id", slug).single()
-    : await supabase.from("moves").select("id, status, move_code, crew_id, estimated_hours").ilike("move_code", slug.replace(/^#/, "").toUpperCase()).single();
+    ? await supabase.from("moves").select(moveSelect).eq("id", slug).single()
+    : await supabase
+        .from("moves")
+        .select(moveSelect)
+        .ilike("move_code", slug.replace(/^#/, "").toUpperCase())
+        .single();
 
   if (!move) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (!verifyTrackToken("move", move.id, token)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const statusLabels = isMoveRowLogisticsDelivery({
+    service_type: move.service_type,
+    move_type: move.move_type,
+  })
+    ? STATUS_TO_TIMELINE_DELIVERY
+    : STATUS_TO_TIMELINE;
 
   // Fetch stored timeline events
   const { data: storedEvents } = await supabase
@@ -90,8 +107,8 @@ export async function GET(
     // Build from current status
     for (let i = 0; i <= currentStatusIdx; i++) {
       const s = MOVE_STATUS_ORDER[i];
-      if (!s || !STATUS_TO_TIMELINE[s]) continue;
-      const info = STATUS_TO_TIMELINE[s]!;
+      if (!s || !statusLabels[s]) continue;
+      const info = statusLabels[s]!;
       const isLast = i === currentStatusIdx;
 
       entries.push({
