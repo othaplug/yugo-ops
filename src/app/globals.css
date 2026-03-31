@@ -155,8 +155,8 @@ body {
 
 /**
  * Global section heading for <h2> — use instead of 9px micro-labels.
+ * Casing comes from markup (sentence / title case); not forced uppercase.
  * Pair with utilities: flex items-center gap-2.5, mb-4, border-t, etc.
- * Padding-bottom keeps body copy from crowding the heading; adjust here for all uses.
  */
 .admin-section-h2 {
   margin: 0;
@@ -164,8 +164,7 @@ body {
   font-size: 15px;
   font-weight: 600;
   color: var(--tx);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   line-height: 1.3;
   font-family: var(--font-heading);
 }
@@ -245,8 +244,7 @@ body {
 .admin-kpi-label {
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   line-height: 1;
   margin-bottom: 0.25rem;
@@ -270,8 +268,7 @@ body {
   gap: 0.25rem;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--gold);
   text-decoration: none;
   line-height: 1.2;

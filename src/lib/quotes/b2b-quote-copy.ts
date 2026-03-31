@@ -107,10 +107,6 @@ export function getB2BQuoteHero(verticalCode: string | null | undefined): {
       headline: "Last-Mile Delivery",
       subtitle: "Photo proof and same-day options when available.",
     },
-    office_furniture: {
-      headline: "Commercial Furniture Delivery",
-      subtitle: "Business-grade handling, assembly, and placement.",
-    },
     custom: {
       headline: "Specialty Transport",
       subtitle: "Custom-scoped logistics for unique requirements.",

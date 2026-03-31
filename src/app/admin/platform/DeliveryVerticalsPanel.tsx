@@ -156,10 +156,10 @@ export default function DeliveryVerticalsPanel({ isSuperAdmin = false }: { isSup
         <div>
           <h2 className="admin-section-h2 flex items-center gap-2">
             <Package className="w-4 h-4 text-[var(--gold)]" weight="duotone" />
-            Delivery verticals
+            B2B verticals
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-1">
-            B2B one-off quotes use these catalog services. Coordinators pick a service on the quote form; dimensional options below tune pricing without a code deploy.
+            One-off B2B quotes pull base rates, item tiers, zone and schedule surcharges, per-line weight tiers, and volume discounts from here. Global accessory types that never count as billable pieces are edited under Pricing → B2B surcharges.
           </p>
         </div>
         <button

@@ -148,7 +148,7 @@ export function configToDimensionalForm(config: Record<string, unknown>): Dimens
     minHours: numStr(config.min_hours, "1.5"),
     crewHourlyRate: numStr(config.crew_hourly_rate, "75"),
     stopRate: numStr(config.stop_rate, "100"),
-    freeStops: numStr(config.free_stops, "1"),
+    freeStops: numStr(config.free_stops, "2"),
     distanceFreeKm: numStr(config.distance_free_km, "15"),
     distancePerKm: numStr(config.distance_per_km, "3"),
     minCharge: numStr(config.min_charge, ""),
@@ -317,6 +317,8 @@ export function applyDimensionalFormToConfig(
   patchPr("stairs_per_flight", form.premStairsPerFlight);
   patchPr("assembly_required", form.premAssembly);
   patchPr("debris_removal", form.premDebris);
+  patchPr("art_hanging_per_piece", form.premArtHanging);
+  patchPr("crating_per_piece", form.premCrating);
   out.complexity_premiums = prPrev;
 
   const wtPrev = { ...((previous.weight_tiers as Record<string, unknown>) || {}) };
@@ -424,7 +426,7 @@ export function defaultDimensionalForm(): DimensionalConfigForm {
     min_hours: 2,
     crew_hourly_rate: 80,
     stop_rate: 100,
-    free_stops: 1,
+    free_stops: 2,
     distance_free_km: 15,
     distance_per_km: 3,
     handling_rates: { threshold: 75, room_of_choice: 125 },

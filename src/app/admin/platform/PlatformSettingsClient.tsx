@@ -25,7 +25,7 @@ import { DEFAULT_FUEL_PRICE_DIESEL, DEFAULT_FUEL_PRICE_GAS } from "@/lib/routing
 
 const TABS = [
   { id: "pricing",        label: "Pricing",        desc: "Rates & service fees",      Icon: CurrencyDollar },
-  { id: "delivery-verticals", label: "Delivery verticals", desc: "B2B dimensional pricing", Icon: Package, ownerOnly: true },
+  { id: "delivery-verticals", label: "B2B verticals", desc: "Rates, surcharges, weight tiers, volume discounts", Icon: Package, ownerOnly: true },
   { id: "rate-templates", label: "Rate Templates",  desc: "Reusable rate cards",       Icon: ListBullets,   ownerOnly: true },
   { id: "crews",          label: "Teams",           desc: "Staff & crew groups",       Icon: UsersThree },
   { id: "devices",        label: "Devices",         desc: "Tablets, trucks & fleet",   Icon: DeviceMobile },
