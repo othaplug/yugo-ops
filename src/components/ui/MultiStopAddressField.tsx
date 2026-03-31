@@ -34,6 +34,8 @@ interface Props {
   maxStops?: number;
   disabled?: boolean;
   inputClassName?: string;
+  /** Overrides default “Add another …” link text */
+  addStopButtonText?: string;
 }
 
 export default function MultiStopAddressField({
@@ -44,6 +46,7 @@ export default function MultiStopAddressField({
   maxStops = 5,
   disabled = false,
   inputClassName,
+  addStopButtonText,
 }: Props) {
   const updateStop = useCallback(
     (index: number, result: AddressResult) => {
@@ -90,7 +93,7 @@ export default function MultiStopAddressField({
           <div className="flex-1 relative">
             {index > 0 && (
               <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                <span className="text-[10px] font-bold text-[#C9A962]">+{index}</span>
+                <span className="text-[10px] font-bold text-[#492A1D]">+{index}</span>
               </div>
             )}
             <AddressAutocomplete
@@ -124,10 +127,10 @@ export default function MultiStopAddressField({
         <button
           type="button"
           onClick={addStop}
-          className="flex items-center gap-1 text-[11px] text-[#C9A962] hover:text-[#b8953d] font-semibold transition-colors mt-0.5"
+          className="flex items-center gap-1 text-[11px] text-[#492A1D] hover:underline font-medium transition-colors mt-0.5"
         >
           <Plus size={11} weight="bold" />
-          Add another {label.toLowerCase()} address
+          {addStopButtonText ?? `Add another ${label.toLowerCase()} address`}
         </button>
       )}
     </div>

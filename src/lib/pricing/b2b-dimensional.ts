@@ -16,6 +16,16 @@ export interface B2BQuoteLineItem {
   weight_lbs?: number;
   fragile?: boolean;
   dimensions?: string;
+  /** Per-line handling (dimensional engine); falls back to quote-level handling_type. */
+  handling_type?: string;
+  /** Flooring accessories bundled with order — excluded from tiered "items in base" counts only. */
+  bundled?: boolean;
+  assembly_required?: boolean;
+  debris_removal?: boolean;
+  /** Appliance vertical: haul-away per unit. */
+  haul_away?: boolean;
+  /** Skid / pallet line — contributes to skid handling count. */
+  is_skid?: boolean;
 }
 
 export interface B2BStopInput {
@@ -310,6 +320,61 @@ export function isMoveDateWeekend(isoDate: string): boolean {
   return day === 0 || day === 6;
 }
 
+function normalizeHandlingKey(ht: string): string {
+  const h = ht.trim().toLowerCase();
+  if (h === "room_of_choice") return "room_placement";
+  return h;
+}
+
+/** One handling tier / group (subset of items) — returns charge added. */
+function handlingChargeForType(
+  htRaw: string,
+  units: number,
+  dimOn: boolean,
+  handlingRates: Record<string, number>,
+  breakdown: PriceBreakdownLine[],
+): number {
+  if (!dimOn || units <= 0) return 0;
+  const ht = normalizeHandlingKey(htRaw);
+
+  const perBoxKeys: { key: string; label: string; rateKey: string }[] = [
+    { key: "hand_bomb", label: "Hand-bomb", rateKey: "hand_bomb_per_box" },
+    { key: "carry_in", label: "Carry-in", rateKey: "carry_in_per_box" },
+    { key: "room_placement", label: "Room placement", rateKey: "room_placement" },
+  ];
+  for (const row of perBoxKeys) {
+    if (ht === row.key && handlingRates[row.rateKey] != null) {
+      const r = num(handlingRates[row.rateKey], 0);
+      const charge = Math.round(units * r * 100) / 100;
+      if (charge !== 0) {
+        breakdown.push({
+          label: `${row.label}: ${units} × ${fmtMoney(r)}`,
+          amount: charge,
+        });
+      }
+      return charge;
+    }
+  }
+
+  const raw = handlingRates[ht] ?? handlingRates[htRaw];
+  if (typeof raw === "number" && raw !== 0) {
+    if (raw > 0 && raw < 10 && ht === "hand_bomb") {
+      const charge = Math.round(units * raw * 100) / 100;
+      breakdown.push({
+        label: `Hand-bomb: ${units} × ${fmtMoney(raw)}`,
+        amount: charge,
+      });
+      return charge;
+    }
+    breakdown.push({
+      label: `${ht.replace(/_/g, " ")} handling`,
+      amount: raw,
+    });
+    return raw;
+  }
+  return 0;
+}
+
 export function calculateB2BDimensionalPrice(args: {
   vertical: DeliveryVerticalRow;
   mergedRates: Record<string, unknown>;
@@ -332,6 +397,9 @@ export function calculateB2BDimensionalPrice(args: {
 
   const items = args.input.items.filter((i) => i.quantity > 0 && i.description.trim());
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+  const tierBillableUnits = items
+    .filter((i) => !i.bundled)
+    .reduce((s, i) => s + i.quantity, 0);
 
   const unitLabel = str(vc.unit_label, "item");
   const unitRate = num(vc.unit_rate, 0);
@@ -348,7 +416,7 @@ export function calculateB2BDimensionalPrice(args: {
     Number.isFinite(perItemAfterBase);
 
   if (usesTieredItems) {
-    const extra = Math.max(0, totalUnits - itemsIncludedBase!);
+    const extra = Math.max(0, tierBillableUnits - itemsIncludedBase!);
     if (extra > 0) {
       const unitCharge = Math.round(extra * perItemAfterBase * 100) / 100;
       totalPrice += unitCharge;
@@ -357,57 +425,26 @@ export function calculateB2BDimensionalPrice(args: {
         amount: unitCharge,
       });
     }
-  } else if (includeUnits && unitRate > 0 && totalUnits > 0) {
-    const unitCharge = Math.round(totalUnits * unitRate * 100) / 100;
+  } else if (includeUnits && unitRate > 0 && tierBillableUnits > 0) {
+    const unitCharge = Math.round(tierBillableUnits * unitRate * 100) / 100;
     totalPrice += unitCharge;
     breakdown.push({
-      label: `${totalUnits} ${unitLabel}(s) × ${fmtMoney(unitRate)}`,
+      label: `${tierBillableUnits} ${unitLabel}(s) × ${fmtMoney(unitRate)}`,
       amount: unitCharge,
     });
   }
 
   const handlingRates = (vc.handling_rates as Record<string, number> | undefined) || {};
-  const ht = args.input.handling_type || "threshold";
-  let handlingCharge = 0;
-
-  const perBoxKeys: { key: string; label: string; rateKey: string }[] = [
-    { key: "hand_bomb", label: "Hand-bomb", rateKey: "hand_bomb_per_box" },
-    { key: "carry_in", label: "Carry-in", rateKey: "carry_in_per_box" },
-    { key: "room_placement", label: "Room placement", rateKey: "room_placement" },
-  ];
-  let handledPerBox = false;
-  if (dimOn) {
-    for (const row of perBoxKeys) {
-      if (ht === row.key && handlingRates[row.rateKey] != null) {
-        const r = num(handlingRates[row.rateKey], 0);
-        handlingCharge = Math.round(totalUnits * r * 100) / 100;
-        breakdown.push({
-          label: `${row.label}: ${totalUnits} × ${fmtMoney(r)}`,
-          amount: handlingCharge,
-        });
-        handledPerBox = true;
-        break;
-      }
-    }
+  const defaultHt = (args.input.handling_type || "threshold").toLowerCase();
+  const handlingGroups = new Map<string, number>();
+  for (const item of items) {
+    const lineHt = (item.handling_type || defaultHt).toLowerCase();
+    if (lineHt === "skid_drop") continue;
+    handlingGroups.set(lineHt, (handlingGroups.get(lineHt) ?? 0) + item.quantity);
   }
-
-  if (!handledPerBox && dimOn) {
-    const raw = handlingRates[ht];
-    if (typeof raw === "number" && raw !== 0) {
-      if (raw > 0 && raw < 10 && ht === "hand_bomb") {
-        handlingCharge = Math.round(totalUnits * raw * 100) / 100;
-        breakdown.push({
-          label: `Hand-bomb: ${totalUnits} × ${fmtMoney(raw)}`,
-          amount: handlingCharge,
-        });
-      } else {
-        handlingCharge = raw;
-        breakdown.push({
-          label: `${ht.replace(/_/g, " ")} handling`,
-          amount: handlingCharge,
-        });
-      }
-    }
+  let handlingCharge = 0;
+  for (const [ht, units] of handlingGroups) {
+    handlingCharge += handlingChargeForType(ht, units, dimOn, handlingRates, breakdown);
   }
   totalPrice += handlingCharge;
 
@@ -448,8 +485,18 @@ export function calculateB2BDimensionalPrice(args: {
     }
   }
 
+  const summedLineLbs = items.reduce((s, i) => {
+    const w = i.weight_lbs;
+    if (w != null && Number.isFinite(w) && w > 0) return s + w * i.quantity;
+    return s;
+  }, 0);
   const fl = vc.flooring_load_tiers as Record<string, unknown> | undefined;
-  const loadLbs = args.input.total_load_weight_lbs;
+  const loadLbs =
+    args.input.total_load_weight_lbs != null && args.input.total_load_weight_lbs > 0
+      ? args.input.total_load_weight_lbs
+      : summedLineLbs > 0
+        ? summedLineLbs
+        : undefined;
   if (fl && dimOn && loadLbs != null && loadLbs > 0) {
     const sm = num(fl.standard_max_lb, 1000);
     const hm = num(fl.heavy_max_lb, 2500);
@@ -475,14 +522,21 @@ export function calculateB2BDimensionalPrice(args: {
   }
 
   const skidFee = num(vc.skid_handling_fee, 0);
-  const skids = Math.max(0, args.input.skid_count ?? 0);
+  const skidsFromLines = items.reduce((s, i) => {
+    if (i.is_skid) return s + i.quantity;
+    const d = i.description.trim().toLowerCase();
+    if (/\bskid\b/.test(d) || /\bpallet\b/.test(d)) return s + i.quantity;
+    return s;
+  }, 0);
+  const skids = Math.max(0, args.input.skid_count ?? 0, skidsFromLines);
   if (dimOn && skidFee > 0 && skids > 0) {
     const sc = Math.round(skidFee * skids * 100) / 100;
     totalPrice += sc;
     breakdown.push({ label: `Skid handling (${skids} skid(s))`, amount: sc });
   }
 
-  const haulUnits = Math.max(0, args.input.haul_away_units ?? 0);
+  const haulFromLines = items.reduce((s, i) => (i.haul_away ? s + i.quantity : s), 0);
+  const haulUnits = Math.max(0, args.input.haul_away_units ?? 0, haulFromLines);
   const haulPer = num(vc.haul_away_per_unit, 0);
   if (dimOn && haulUnits > 0 && haulPer > 0) {
     const hc = Math.round(haulUnits * haulPer * 100) / 100;
@@ -496,14 +550,21 @@ export function calculateB2BDimensionalPrice(args: {
     breakdown.push({ label: "Returns pickup", amount: rp });
   }
 
-  const medicalNeedsThreeCrew =
-    args.vertical.code === "medical_equipment" && items.some((i) => (i.weight_lbs ?? 0) > 300);
+  const unitOver300Lb = items.some((i) => (i.weight_lbs ?? 0) > 300);
+  const medicalNeedsThreeCrew = args.vertical.code === "medical_equipment" && unitOver300Lb;
+  const heavyItemNeedsThreeCrew = unitOver300Lb && args.vertical.code !== "medical_equipment";
   if (dimOn && medicalNeedsThreeCrew) {
     const hr = num(vc.crew_hourly_rate, 95);
     const mh = num(vc.min_hours, 3);
     const add = Math.round(1 * hr * mh * 100) / 100;
     totalPrice += add;
     breakdown.push({ label: "Third crew member (unit over 300 lb)", amount: add });
+  } else if (dimOn && heavyItemNeedsThreeCrew) {
+    const hr = num(vc.crew_hourly_rate, 75);
+    const mh = num(vc.min_hours, 2);
+    const add = Math.round(1 * hr * mh * 100) / 100;
+    totalPrice += add;
+    breakdown.push({ label: "Third crew member (item over 300 lb)", amount: add });
   }
 
   const anyExtraHeavy = items.some((i) => i.weight_category === "extra_heavy");
@@ -618,9 +679,12 @@ export function calculateB2BDimensionalPrice(args: {
     breakdown.push({ label: key.replace(/_/g, " "), amount: raw });
   };
 
+  const assemblyAny = !!args.input.assembly_required || items.some((i) => i.assembly_required);
+  const debrisAny = !!args.input.debris_removal || items.some((i) => i.debris_removal);
+
   if (dimOn) {
     applyPremium("time_sensitive", !!args.input.time_sensitive);
-    if (args.input.assembly_required) {
+    if (assemblyAny) {
       if (vc.assembly_included === true) {
         /* assembly bundled in base */
       } else if (num(vc.assembly_addon_flat, 0) > 0) {
@@ -631,7 +695,7 @@ export function calculateB2BDimensionalPrice(args: {
         applyPremium("assembly_required", true);
       }
     }
-    applyPremium("debris_removal", !!args.input.debris_removal);
+    applyPremium("debris_removal", debrisAny);
 
     if (args.input.stairs_flights && args.input.stairs_flights > 0) {
       const stairRate = num(prem.stairs_per_flight, 50);
@@ -729,7 +793,7 @@ export function calculateB2BDimensionalPrice(args: {
   if (args.input.crew_override == null && th > 0 && lc > 0 && totalUnits >= th) {
     crew = Math.max(crew, lc);
   }
-  if (args.input.crew_override == null && medicalNeedsThreeCrew) {
+  if (args.input.crew_override == null && (medicalNeedsThreeCrew || heavyItemNeedsThreeCrew)) {
     crew = Math.max(crew, 3);
   }
   const estimatedHours =

@@ -139,6 +139,14 @@ interface QuoteInput {
     weight_lbs?: number;
     fragile?: boolean;
     dimensions?: string;
+    /** Per-line handling (threshold, room_placement, white_glove, carry_in_per_box, skid_drop, etc.) */
+    handling_type?: string;
+    /** Flooring accessory lines excluded from billable unit tier counts */
+    bundled?: boolean;
+    assembly_required?: boolean;
+    debris_removal?: boolean;
+    haul_away?: boolean;
+    is_skid?: boolean;
   }[];
   b2b_time_sensitive?: boolean;
   b2b_assembly_required?: boolean;

@@ -44,6 +44,24 @@ import {
   Wrench,
   type IconProps,
 } from "@phosphor-icons/react";
+import {
+  B2B_ONEOFF_CSS,
+  B2B_ACCESS_PILLS,
+  B2B_PARKING_PILLS,
+  B2B_PREVIEW_HEADER_BY_CODE,
+  B2B_VERTICAL_DROPDOWN_LABEL,
+  B2B_OFFICE_VERTICAL_CODES,
+  B2bAddItemCircle,
+  B2bFieldLabel,
+  B2bItemRowView,
+  B2bPill,
+  B2bSectionTitle,
+  b2bInputStyleProps,
+  b2bItemCatalogForVertical,
+  isFlooringBundledAccessory,
+  isMoveDateTodayToronto,
+  isSkidCatalogLabel,
+} from "./b2b-one-off-ui";
 import SpecialtyTransportQuoteBuilder from "./SpecialtyTransportQuoteBuilder";
 import { calculateBinRentalPrice, BIN_RENTAL_BUNDLE_SPECS } from "@/lib/pricing/bin-rental";
 import {
@@ -248,6 +266,7 @@ const B2B_LINE_WEIGHT_OPTIONS = [
   { value: "light", label: "Light (under 30 lb)" },
   { value: "medium", label: "Medium (30–60 lb)" },
   { value: "heavy", label: "Heavy (60 lb+)" },
+  { value: "extra_heavy", label: "Extra Heavy (300+ lb)" },
 ];
 
 export type QuoteDeliveryVertical = {
@@ -485,7 +504,69 @@ type B2bLineRow = {
   weight_category?: string;
   weight_lbs?: number;
   fragile?: boolean;
+  handling_type?: string;
+  assembly_required?: boolean;
+  debris_removal?: boolean;
+  haul_away?: boolean;
+  bundled?: boolean;
+  is_skid?: boolean;
 };
+
+function b2bRouteAddressesFromForm(
+  fromAddress: string,
+  toAddress: string,
+  extraFrom: StopEntry[],
+  extraTo: StopEntry[],
+): string[] {
+  const pickups = [fromAddress, ...extraFrom.map((s) => s.address)]
+    .map((a) => a.trim())
+    .filter(Boolean);
+  const drops = [toAddress, ...extraTo.map((s) => s.address)]
+    .map((a) => a.trim())
+    .filter(Boolean);
+  return [...pickups, ...drops];
+}
+
+function b2bDimensionalStopsFromForm(
+  fromAddress: string,
+  toAddress: string,
+  fromAccess: string,
+  toAccess: string,
+  extraFrom: StopEntry[],
+  extraTo: StopEntry[],
+): B2BDimensionalQuoteInput["stops"] {
+  const pickups = [fromAddress, ...extraFrom.map((s) => s.address)]
+    .map((a) => a.trim())
+    .filter(Boolean);
+  const drops = [toAddress, ...extraTo.map((s) => s.address)]
+    .map((a) => a.trim())
+    .filter(Boolean);
+  if (pickups.length >= 1 && drops.length >= 1 && pickups.length + drops.length === 2) {
+    return synthesizeStopsFromAddresses(pickups[0]!, drops[0]!, fromAccess, toAccess);
+  }
+  if (pickups.length + drops.length < 2) {
+    return synthesizeStopsFromAddresses(fromAddress, toAddress, fromAccess, toAccess);
+  }
+  return [
+    ...pickups.map((address) => ({
+      type: "pickup" as const,
+      address,
+      access: fromAccess.trim() || undefined,
+    })),
+    ...drops.map((address) => ({
+      type: "delivery" as const,
+      address,
+      access: toAccess.trim() || undefined,
+    })),
+  ];
+}
+
+function b2bMasterHandlingType(lines: B2bLineRow[]): string {
+  const row = lines.find((l) => l.description.trim());
+  const h = row?.handling_type?.trim();
+  if (h) return h.toLowerCase();
+  return "threshold";
+}
 
 function getEffectiveB2bLines(
   lines: B2bLineRow[],
@@ -924,39 +1005,14 @@ export default function QuoteFormClient({
   const [b2bVerticalCode, setB2bVerticalCode] = useState("custom");
   const [b2bPartnerOrgId, setB2bPartnerOrgId] = useState("");
   const [b2bLines, setB2bLines] = useState<B2bLineRow[]>([]);
-  const [b2bNewLineDesc, setB2bNewLineDesc] = useState("");
-  const [b2bNewLineQty, setB2bNewLineQty] = useState(1);
-  const [b2bNewLineWeight, setB2bNewLineWeight] = useState("light");
-  const [b2bNewLineFragile, setB2bNewLineFragile] = useState(false);
-  const [b2bNewLineWeightLbs, setB2bNewLineWeightLbs] = useState("");
-  const [b2bHandlingType, setB2bHandlingType] = useState("threshold");
-  const [b2bMultiStop, setB2bMultiStop] = useState(false);
-  const [b2bStops, setB2bStops] = useState<
-    { type: "pickup" | "delivery"; address: string; access: string; time_window: string }[]
-  >([
-    { type: "pickup", address: "", access: "", time_window: "" },
-    { type: "delivery", address: "", access: "", time_window: "" },
-  ]);
-  const [b2bTimeSensitive, setB2bTimeSensitive] = useState(false);
-  const [b2bAssemblyRequired, setB2bAssemblyRequired] = useState(false);
-  const [b2bDebrisRemoval, setB2bDebrisRemoval] = useState(false);
-  const [b2bStairsFlights, setB2bStairsFlights] = useState(0);
-  const [b2bAfterHours, setB2bAfterHours] = useState(false);
-  const [b2bSameDay, setB2bSameDay] = useState(false);
-  const [b2bSkidCount, setB2bSkidCount] = useState(0);
-  const [b2bTotalLoadWeightLbs, setB2bTotalLoadWeightLbs] = useState("");
-  const [b2bHaulAwayUnits, setB2bHaulAwayUnits] = useState(0);
-  const [b2bReturnsPickup, setB2bReturnsPickup] = useState(false);
-  const [b2bComplexityAddonSet, setB2bComplexityAddonSet] = useState<Set<string>>(new Set());
+  const [b2bTimeBand, setB2bTimeBand] = useState<"morning" | "afternoon" | "after_hours">("morning");
+  const [b2bCatalogOpenIdx, setB2bCatalogOpenIdx] = useState<number | null>(null);
+  const [b2bPriceOverrideOn, setB2bPriceOverrideOn] = useState(false);
+  const [b2bPreTaxOverrideAmount, setB2bPreTaxOverrideAmount] = useState("");
   const [b2bPartnersList, setB2bPartnersList] = useState<{ id: string; name: string }[]>([]);
   const [b2bPartnerVerticals, setB2bPartnerVerticals] = useState<{ code: string; name: string }[]>([]);
   const [b2bWeightCategory, setB2bWeightCategory] = useState("standard");
   const [b2bSpecialInstructions, setB2bSpecialInstructions] = useState("");
-  const [b2bPaymentMethod, setB2bPaymentMethod] = useState<"card" | "invoice">("card");
-  const [b2bRetailerSource, setB2bRetailerSource] = useState("");
-  const [b2bMonthlyVolumeEstimate, setB2bMonthlyVolumeEstimate] = useState("");
-  const [b2bSubtotalOverride, setB2bSubtotalOverride] = useState("");
-  const [b2bFullPreTaxOverride, setB2bFullPreTaxOverride] = useState("");
   const [b2bOverrideReason, setB2bOverrideReason] = useState("");
   const [b2bArtHangingCount, setB2bArtHangingCount] = useState("");
   const [b2bCratingPieces, setB2bCratingPieces] = useState("");
@@ -972,28 +1028,28 @@ export default function QuoteFormClient({
     [deliveryVerticals, b2bVerticalCode],
   );
 
-  const b2bHandlingOptions = useMemo(() => {
-    const hr = selectedB2bVertical?.default_config?.handling_rates;
-    if (hr && typeof hr === "object" && !Array.isArray(hr)) {
-      return Object.keys(hr as Record<string, number>);
-    }
-    return ["dock_to_dock", "threshold", "room_of_choice", "white_glove", "hand_bomb"];
+  const b2bAfterHoursDerived = b2bTimeBand === "after_hours";
+
+  const b2bLivePreviewTitle = useMemo(() => {
+    if (!selectedB2bVertical) return "B2B Delivery";
+    return B2B_PREVIEW_HEADER_BY_CODE[selectedB2bVertical.code] ?? selectedB2bVertical.name;
   }, [selectedB2bVertical]);
+
+  const b2bAutoSameDay = useMemo(() => {
+    if (serviceType !== "b2b_delivery" || !selectedB2bVertical || !moveDate.trim()) return false;
+    if (!isMoveDateTodayToronto(moveDate)) return false;
+    const merged = selectedB2bVertical.default_config as Record<string, unknown>;
+    const sched = (merged.schedule_surcharges || {}) as Record<string, unknown>;
+    const sd = typeof sched.same_day === "number" ? sched.same_day : Number(sched.same_day);
+    return Number.isFinite(sd) && sd > 0;
+  }, [serviceType, selectedB2bVertical, moveDate]);
 
   useEffect(() => {
     if (serviceType !== "b2b_delivery") return;
-    const opts = b2bHandlingOptions;
-    if (opts.length === 0) return;
-    if (!opts.includes(b2bHandlingType)) {
-      setB2bHandlingType(opts[0]!);
-    }
-  }, [serviceType, b2bHandlingOptions, b2bHandlingType]);
-
-  const b2bComplexityKeys = useMemo(() => {
-    const p = selectedB2bVertical?.default_config?.complexity_premiums;
-    if (!p || typeof p !== "object" || Array.isArray(p)) return [] as string[];
-    return Object.keys(p as Record<string, number>).filter((k) => k !== "stairs_per_flight");
-  }, [selectedB2bVertical]);
+    if (b2bTimeBand === "morning") setPreferredTime("09:00");
+    else if (b2bTimeBand === "afternoon") setPreferredTime("13:00");
+    else setPreferredTime("18:00");
+  }, [serviceType, b2bTimeBand]);
 
   const b2bShowLineWeights = useMemo(() => {
     const dc = selectedB2bVertical?.default_config;
@@ -1018,11 +1074,13 @@ export default function QuoteFormClient({
   }, [selectedB2bVertical]);
 
   const b2bVerticalSelectOptions = useMemo(() => {
+    const noOffice = (v: QuoteDeliveryVertical) =>
+      !B2B_OFFICE_VERTICAL_CODES.has(v.code.trim().toLowerCase());
     if (b2bPartnerOrgId.trim() && b2bPartnerVerticals.length > 0) {
       const allow = new Set(b2bPartnerVerticals.map((v) => v.code));
-      return deliveryVerticals.filter((v) => allow.has(v.code));
+      return deliveryVerticals.filter((v) => allow.has(v.code) && noOffice(v));
     }
-    return deliveryVerticals;
+    return deliveryVerticals.filter(noOffice);
   }, [b2bPartnerOrgId, b2bPartnerVerticals, deliveryVerticals]);
 
   useEffect(() => {
@@ -1746,8 +1804,10 @@ export default function QuoteFormClient({
     setEventReturnDate("");
     setEventSetupRequired(false);
     setB2bBusinessName("");
-    setB2bNewLineDesc("");
-    setB2bNewLineQty(1);
+    setB2bTimeBand("morning");
+    setB2bPriceOverrideOn(false);
+    setB2bPreTaxOverrideAmount("");
+    setB2bCatalogOpenIdx(null);
     setB2bWeightCategory("standard");
     setCratingRequired(false);
     setCratingItems([]);
@@ -1976,27 +2036,27 @@ export default function QuoteFormClient({
     const handle = window.setTimeout(() => {
       const run = async () => {
         let body: Record<string, unknown>;
-        if (b2bMultiStop) {
-          const addrs = b2bStops.map((s) => s.address.trim()).filter(Boolean);
-          if (addrs.length < 2) {
-            setB2bPreviewDistanceKm(null);
-            setB2bPreviewDriveMin(null);
-            setB2bDeliveryKmFromGta(null);
-            setB2bRouteLoading(false);
-            return;
-          }
-          body = { b2b_stops: addrs };
+        const route = b2bRouteAddressesFromForm(fromAddress, toAddress, extraFromStops, extraToStops);
+        if (route.length >= 2) {
+          body = route.length > 2 ? { b2b_stops: route } : { from_address: route[0], to_address: route[route.length - 1] };
         } else {
-          const f = fromAddress.trim();
-          const t = toAddress.trim();
-          if (f.length < 8 || t.length < 8) {
+          setB2bPreviewDistanceKm(null);
+          setB2bPreviewDriveMin(null);
+          setB2bDeliveryKmFromGta(null);
+          setB2bRouteLoading(false);
+          return;
+        }
+        const minLen = 8;
+        if (route.length === 2) {
+          const f = String(route[0] ?? "").trim();
+          const t = String(route[route.length - 1] ?? "").trim();
+          if (f.length < minLen || t.length < minLen) {
             setB2bPreviewDistanceKm(null);
             setB2bPreviewDriveMin(null);
             setB2bDeliveryKmFromGta(null);
             setB2bRouteLoading(false);
             return;
           }
-          body = { from_address: f, to_address: t };
         }
         setB2bRouteLoading(true);
         try {
@@ -2035,13 +2095,7 @@ export default function QuoteFormClient({
       void run();
     }, 300);
     return () => clearTimeout(handle);
-  }, [
-    serviceType,
-    b2bMultiStop,
-    b2bStops,
-    fromAddress,
-    toAddress,
-  ]);
+  }, [serviceType, fromAddress, toAddress, extraFromStops, extraToStops]);
 
   const effectiveB2bLines = useMemo(
     () => getEffectiveB2bLines(b2bLines, selectedB2bVertical, b2bVerticalExtras),
@@ -2105,49 +2159,50 @@ export default function QuoteFormClient({
       b2b_weight_category: b2bShowLineWeights ? undefined : b2bWeightCategory,
       b2b_line_items: effectiveB2bLinesPreview
         .filter((l) => l.description.trim() && l.qty >= 1)
-        .map((l) => ({
-          description: l.description.trim(),
-          quantity: l.qty,
-          weight_category: l.weight_category as B2BWeightCategory | undefined,
-          weight_lbs:
-            typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
-              ? l.weight_lbs
-              : undefined,
-          fragile: l.fragile,
-        })),
+        .map((l) => {
+          const desc = l.description.trim();
+          const bundled =
+            l.bundled ??
+            (selectedB2bVertical.code === "flooring"
+              ? isFlooringBundledAccessory(desc, selectedB2bVertical.code)
+              : false);
+          const is_skid = l.is_skid ?? isSkidCatalogLabel(desc);
+          return {
+            description: desc,
+            quantity: l.qty,
+            weight_category: l.weight_category as B2BWeightCategory | undefined,
+            weight_lbs:
+              typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
+                ? l.weight_lbs
+                : undefined,
+            fragile: l.fragile,
+            handling_type: l.handling_type?.trim() || undefined,
+            bundled: bundled || undefined,
+            assembly_required: l.assembly_required || undefined,
+            debris_removal: l.debris_removal || undefined,
+            haul_away: l.haul_away || undefined,
+            is_skid: is_skid || undefined,
+          };
+        }),
     });
-    const stops: B2BDimensionalQuoteInput["stops"] = b2bMultiStop
-      ? b2bStops
-          .filter((s) => s.address.trim())
-          .map((s) => ({
-            type: s.type,
-            address: s.address.trim(),
-            access: s.access,
-            time_window: s.time_window,
-          }))
-      : synthesizeStopsFromAddresses(fromAddress, toAddress, fromAccess, toAccess);
-    const loadLbs = parseInt(String(b2bTotalLoadWeightLbs).trim(), 10);
-    const monthlyVol = parseInt(String(b2bMonthlyVolumeEstimate).trim(), 10);
+    const stops: B2BDimensionalQuoteInput["stops"] = b2bDimensionalStopsFromForm(
+      fromAddress,
+      toAddress,
+      fromAccess,
+      toAccess,
+      extraFromStops,
+      extraToStops,
+    );
     const artN = parseInt(String(b2bArtHangingCount).trim(), 10);
     const crateN = parseInt(String(b2bCratingPieces).trim(), 10);
     const dimInput: B2BDimensionalQuoteInput = {
       vertical_code: selectedB2bVertical.code,
       items,
-      handling_type: (b2bHandlingType || "threshold").toLowerCase(),
+      handling_type: b2bMasterHandlingType(effectiveB2bLinesPreview),
       stops,
-      time_sensitive: b2bTimeSensitive,
-      assembly_required: b2bAssemblyRequired,
-      debris_removal: b2bDebrisRemoval,
-      stairs_flights: b2bStairsFlights,
-      addons: Array.from(b2bComplexityAddonSet),
       weekend: isMoveDateWeekend(moveDate),
-      after_hours: b2bAfterHours,
-      same_day: b2bSameDay,
-      skid_count: b2bSkidCount > 0 ? b2bSkidCount : undefined,
-      total_load_weight_lbs: Number.isFinite(loadLbs) && loadLbs > 0 ? loadLbs : undefined,
-      haul_away_units: b2bHaulAwayUnits > 0 ? b2bHaulAwayUnits : undefined,
-      returns_pickup: b2bReturnsPickup,
-      monthly_delivery_volume: Number.isFinite(monthlyVol) && monthlyVol > 0 ? monthlyVol : undefined,
+      after_hours: b2bAfterHoursDerived,
+      same_day: b2bAutoSameDay,
       art_hanging_count: Number.isFinite(artN) && artN > 0 ? artN : undefined,
       crating_pieces: Number.isFinite(crateN) && crateN > 0 ? crateN : undefined,
     };
@@ -2172,9 +2227,8 @@ export default function QuoteFormClient({
     const taxRate = cfgNum(config, "tax_rate", TAX_RATE);
     const access = b2bAccessSurchargeFromConfig(config, fromAccess, toAccess);
     const engineSubtotal = dim.subtotal;
-    const subOv = parsePositivePreTaxOverride(b2bSubtotalOverride);
-    const fullOv = parsePositivePreTaxOverride(b2bFullPreTaxOverride);
-    const dimensionalPreTax = subOv !== undefined ? Math.round(subOv) : engineSubtotal;
+    const fullOv = b2bPriceOverrideOn ? parsePositivePreTaxOverride(b2bPreTaxOverrideAmount) : undefined;
+    const dimensionalPreTax = engineSubtotal;
     let preTaxTotal: number;
     let fullOverrideApplied = false;
     if (fullOv !== undefined) {
@@ -2194,38 +2248,31 @@ export default function QuoteFormClient({
       total: preTaxTotal + tax,
       hasRealItems: items.length > 0,
       fullOverrideApplied,
+      overrideReason:
+        fullOverrideApplied && b2bOverrideReason.trim().length >= 3 ? b2bOverrideReason.trim() : "",
+      calculatedPreTaxBeforeOverride: dimensionalPreTax + access + addonSubtotal,
     };
   }, [
     serviceType,
     selectedB2bVertical,
-    b2bHandlingType,
-    b2bMultiStop,
-    b2bStops,
     fromAddress,
     toAddress,
     fromAccess,
     toAccess,
-    b2bTimeSensitive,
-    b2bAssemblyRequired,
-    b2bDebrisRemoval,
-    b2bStairsFlights,
-    b2bComplexityAddonSet,
+    extraFromStops,
+    extraToStops,
     b2bPreviewDistanceKm,
     b2bPlatformGtaZoneLines,
     b2bPlatformWeekendLine,
     effectiveB2bLinesPreview,
     moveDate,
-    b2bAfterHours,
-    b2bSameDay,
-    b2bSkidCount,
-    b2bTotalLoadWeightLbs,
-    b2bHaulAwayUnits,
-    b2bReturnsPickup,
-    b2bMonthlyVolumeEstimate,
+    b2bAfterHoursDerived,
+    b2bAutoSameDay,
     b2bArtHangingCount,
     b2bCratingPieces,
-    b2bSubtotalOverride,
-    b2bFullPreTaxOverride,
+    b2bPriceOverrideOn,
+    b2bPreTaxOverrideAmount,
+    b2bOverrideReason,
     b2bShowLineWeights,
     b2bWeightCategory,
     fromParking,
@@ -2239,12 +2286,11 @@ export default function QuoteFormClient({
   const b2bPreviewDistanceLabel = useMemo(() => {
     if (serviceType !== "b2b_delivery") return "";
     const minChars = 8;
-    if (b2bMultiStop) {
-      const n = b2bStops.filter((s) => s.address.trim()).length;
-      if (n < 2) return "Distance: Calculating…";
-    } else {
-      const f = fromAddress.trim();
-      const t = toAddress.trim();
+    const route = b2bRouteAddressesFromForm(fromAddress, toAddress, extraFromStops, extraToStops);
+    if (route.length < 2) return "Distance: Calculating…";
+    if (route.length === 2) {
+      const f = String(route[0] ?? "").trim();
+      const t = String(route[1] ?? "").trim();
       if (f.length < minChars || t.length < minChars) return "Distance: Calculating…";
     }
     if (b2bRouteLoading) return "Distance: Calculating…";
@@ -2252,10 +2298,10 @@ export default function QuoteFormClient({
     return "Distance: Calculating…";
   }, [
     serviceType,
-    b2bMultiStop,
-    b2bStops,
     fromAddress,
     toAddress,
+    extraFromStops,
+    extraToStops,
     b2bRouteLoading,
     b2bPreviewDistanceKm,
   ]);
@@ -2264,17 +2310,14 @@ export default function QuoteFormClient({
     if (serviceType !== "b2b_delivery") return true;
     const clientName = [firstName, lastName].filter(Boolean).join(" ");
     const hasItem = effectiveB2bLines.some((l) => l.description.trim() && l.qty >= 1);
-    if (b2bMultiStop) {
-      const n = b2bStops.filter((s) => s.address.trim()).length;
-      if (n < 2) return false;
-    } else {
-      if (!fromAddress.trim() || !toAddress.trim()) return false;
-    }
+    const emailOk = Boolean(email?.trim()) && email.includes("@");
+    if (!fromAddress.trim() || !toAddress.trim()) return false;
     return (
       Boolean(b2bBusinessName.trim()) &&
       Boolean(moveDate.trim()) &&
       Boolean(clientName.trim()) &&
       Boolean(phone?.trim()) &&
+      emailOk &&
       hasItem
     );
   }, [
@@ -2286,9 +2329,8 @@ export default function QuoteFormClient({
     firstName,
     lastName,
     phone,
+    email,
     effectiveB2bLines,
-    b2bMultiStop,
-    b2bStops,
   ]);
 
   const binSchedulePreview = useMemo(() => {
@@ -2556,24 +2598,37 @@ export default function QuoteFormClient({
       base.b2b_business_name = b2bBusinessName.trim() || undefined;
       base.b2b_vertical_code = b2bVerticalCode || undefined;
       base.b2b_partner_organization_id = b2bPartnerOrgId.trim() || undefined;
-      base.b2b_handling_type = b2bHandlingType || undefined;
+      base.b2b_handling_type = b2bMasterHandlingType(effectiveB2bLines) || undefined;
       base.b2b_line_items =
         effectiveB2bLines.length > 0
-          ? effectiveB2bLines.map((l) => ({
-              description: l.description.trim(),
-              quantity: Math.max(1, l.qty),
-              weight_category: (l.weight_category || undefined) as
-                | "light"
-                | "medium"
-                | "heavy"
-                | "extra_heavy"
-                | undefined,
-              weight_lbs:
-                typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
-                  ? Math.round(l.weight_lbs)
-                  : undefined,
-              fragile: l.fragile ? true : undefined,
-            }))
+          ? effectiveB2bLines.map((l) => {
+              const desc = l.description.trim();
+              const vcode = selectedB2bVertical?.code ?? "";
+              const bundled =
+                l.bundled ?? (vcode === "flooring" ? isFlooringBundledAccessory(desc, vcode) : false);
+              const is_skid = l.is_skid ?? isSkidCatalogLabel(desc);
+              return {
+                description: desc,
+                quantity: Math.max(1, l.qty),
+                weight_category: (l.weight_category || undefined) as
+                  | "light"
+                  | "medium"
+                  | "heavy"
+                  | "extra_heavy"
+                  | undefined,
+                weight_lbs:
+                  typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
+                    ? Math.round(l.weight_lbs)
+                    : undefined,
+                fragile: l.fragile ? true : undefined,
+                handling_type: l.handling_type?.trim() || undefined,
+                bundled: bundled ? true : undefined,
+                assembly_required: l.assembly_required ? true : undefined,
+                debris_removal: l.debris_removal ? true : undefined,
+                haul_away: l.haul_away ? true : undefined,
+                is_skid: is_skid ? true : undefined,
+              };
+            })
           : undefined;
       base.b2b_items =
         effectiveB2bLines.length > 0
@@ -2582,42 +2637,25 @@ export default function QuoteFormClient({
       if (!b2bShowLineWeights && b2bWeightCategory) {
         base.b2b_weight_category = b2bWeightCategory;
       }
-      base.b2b_time_sensitive = b2bTimeSensitive || undefined;
-      base.b2b_assembly_required = b2bAssemblyRequired || undefined;
-      base.b2b_debris_removal = b2bDebrisRemoval || undefined;
-      base.b2b_stairs_flights = b2bStairsFlights > 0 ? b2bStairsFlights : undefined;
-      base.b2b_after_hours = b2bAfterHours || undefined;
-      base.b2b_same_day = b2bSameDay || undefined;
-      base.b2b_skid_count = b2bSkidCount > 0 ? b2bSkidCount : undefined;
-      const loadLbs = parseInt(String(b2bTotalLoadWeightLbs).trim(), 10);
-      base.b2b_total_load_weight_lbs =
-        Number.isFinite(loadLbs) && loadLbs > 0 ? loadLbs : undefined;
-      base.b2b_haul_away_units = b2bHaulAwayUnits > 0 ? b2bHaulAwayUnits : undefined;
-      base.b2b_returns_pickup = b2bReturnsPickup || undefined;
-      base.b2b_complexity_addons =
-        b2bComplexityAddonSet.size > 0 ? Array.from(b2bComplexityAddonSet) : undefined;
-      if (b2bMultiStop) {
-        const cleaned = b2bStops
-          .map((s) => ({
-            address: s.address.trim(),
-            type: s.type,
-            access: s.access.trim() || undefined,
-            time_window: s.time_window.trim() || undefined,
-          }))
-          .filter((s) => s.address.length > 0);
-        if (cleaned.length >= 2) {
-          base.b2b_stops = cleaned;
-          base.from_address = cleaned[0]!.address;
-          base.to_address = cleaned[cleaned.length - 1]!.address;
-        }
+      base.b2b_after_hours = b2bAfterHoursDerived || undefined;
+      base.b2b_same_day = b2bAutoSameDay || undefined;
+      const multiStops = b2bDimensionalStopsFromForm(
+        fromAddress,
+        toAddress,
+        fromAccess,
+        toAccess,
+        extraFromStops,
+        extraToStops,
+      );
+      if (multiStops.length > 2) {
+        base.b2b_stops = multiStops.map((s) => ({
+          address: s.address.trim(),
+          type: s.type,
+          access: s.access?.trim() || undefined,
+          time_window: s.time_window?.trim() || undefined,
+        }));
       }
       base.b2b_special_instructions = b2bSpecialInstructions.trim() || undefined;
-      base.b2b_payment_method = b2bPaymentMethod;
-      base.b2b_retailer_source = b2bRetailerSource.trim() || undefined;
-      const monthlyVol = parseInt(String(b2bMonthlyVolumeEstimate).trim(), 10);
-      if (Number.isFinite(monthlyVol) && monthlyVol > 0) {
-        base.b2b_monthly_delivery_volume_estimate = monthlyVol;
-      }
       const artHangN = parseInt(String(b2bArtHangingCount).trim(), 10);
       if (Number.isFinite(artHangN) && artHangN > 0) {
         base.b2b_art_hanging_count = artHangN;
@@ -2626,19 +2664,12 @@ export default function QuoteFormClient({
       if (Number.isFinite(cratePiecesN) && cratePiecesN > 0) {
         base.b2b_crating_pieces = cratePiecesN;
       }
-      const subOv = Number(String(b2bSubtotalOverride).trim().replace(/,/g, ""));
-      if (Number.isFinite(subOv) && subOv > 0) {
-        base.b2b_subtotal_override = subOv;
-      }
-      const fullOv = Number(String(b2bFullPreTaxOverride).trim().replace(/,/g, ""));
-      if (Number.isFinite(fullOv) && fullOv > 0) {
+      const fullOv = Number(String(b2bPreTaxOverrideAmount).trim().replace(/,/g, ""));
+      if (b2bPriceOverrideOn && Number.isFinite(fullOv) && fullOv > 0) {
         base.b2b_full_pre_tax_override = fullOv;
       }
       const ovReason = b2bOverrideReason.trim();
-      if (
-        ovReason.length >= 3 &&
-        ((Number.isFinite(subOv) && subOv > 0) || (Number.isFinite(fullOv) && fullOv > 0))
-      ) {
+      if (ovReason.length >= 3 && b2bPriceOverrideOn && Number.isFinite(fullOv) && fullOv > 0) {
         base.b2b_subtotal_override_reason = ovReason;
       }
     }
@@ -2674,24 +2705,16 @@ export default function QuoteFormClient({
     b2bPartnerOrgId,
     b2bLines,
     effectiveB2bLines,
-    b2bHandlingType,
-    b2bMultiStop,
-    b2bStops,
-    b2bTimeSensitive,
-    b2bAssemblyRequired,
-    b2bDebrisRemoval,
-    b2bStairsFlights,
-    b2bComplexityAddonSet,
+    selectedB2bVertical,
     b2bShowLineWeights,
     b2bWeightCategory,
     b2bSpecialInstructions,
-    b2bPaymentMethod,
-    b2bRetailerSource,
-    b2bMonthlyVolumeEstimate,
     b2bArtHangingCount,
     b2bCratingPieces,
-    b2bSubtotalOverride,
-    b2bFullPreTaxOverride,
+    b2bAfterHoursDerived,
+    b2bAutoSameDay,
+    b2bPriceOverrideOn,
+    b2bPreTaxOverrideAmount,
     b2bOverrideReason,
     singleItemSpecialHandling, specialtyBuildingReqs, specialtyAccessDifficulty,
     binBundleType, binCustomCount, binExtraBins, binPackingPaper, binMaterialDelivery, binLinkedMoveId,
@@ -2740,35 +2763,25 @@ export default function QuoteFormClient({
       setB2bSubmitErrors({});
       const clientName = [firstName, lastName].filter(Boolean).join(" ");
       const errs: Record<string, string> = {};
-      if (b2bMultiStop) {
-        const n = b2bStops.filter((s) => s.address.trim()).length;
-        if (n < 2) errs.stops = "Multi-stop route needs at least two addresses in order.";
-      } else {
-        if (!fromAddress.trim()) errs.pickup = "Pickup address is required.";
-        if (!toAddress.trim()) errs.delivery = "Delivery address is required.";
-      }
+      if (!fromAddress.trim()) errs.pickup = "Pickup address is required.";
+      if (!toAddress.trim()) errs.delivery = "Delivery address is required.";
       if (!b2bBusinessName.trim()) errs.business = "Business name is required.";
       if (!moveDate.trim()) errs.date = "Delivery date is required.";
       if (!clientName.trim()) errs.contact = "Contact name (first and last) is required.";
       if (!phone?.trim()) errs.phone = "Contact phone is required.";
+      if (!email?.trim() || !email.includes("@")) errs.email = "Valid email is required.";
       const hasItem = effectiveB2bLines.some((l) => l.description.trim() && l.qty >= 1);
-      if (!hasItem) errs.items = "Add at least one line item (or use vertical box count when shown).";
-      const subOvN = Number(String(b2bSubtotalOverride).trim().replace(/,/g, ""));
-      const fullOvN = Number(String(b2bFullPreTaxOverride).trim().replace(/,/g, ""));
-      const hasSubOv = Number.isFinite(subOvN) && subOvN > 0;
-      const hasFullOv = Number.isFinite(fullOvN) && fullOvN > 0;
-      if (hasSubOv && hasFullOv) {
-        toast("Use either dimensional subtotal override or full pre-tax total, not both.", "alertTriangle");
-        return;
-      }
-      if ((hasSubOv || hasFullOv) && b2bOverrideReason.trim().length < 3) {
+      if (!hasItem) errs.items = "Add at least one line item.";
+      const fullOvN = Number(String(b2bPreTaxOverrideAmount).trim().replace(/,/g, ""));
+      const hasFullOv = b2bPriceOverrideOn && Number.isFinite(fullOvN) && fullOvN > 0;
+      if (hasFullOv && b2bOverrideReason.trim().length < 3) {
         toast("Price override needs a reason (at least 3 characters).", "alertTriangle");
         return;
       }
       if (Object.keys(errs).length > 0) {
         setB2bSubmitErrors(errs);
         toast("Fix the highlighted fields below.", "alertTriangle");
-        const order = ["business", "stops", "pickup", "delivery", "items", "date", "contact", "phone"];
+        const order = ["business", "pickup", "delivery", "items", "date", "contact", "phone", "email"];
         window.setTimeout(() => {
           for (const k of order) {
             if (errs[k]) {
@@ -3127,6 +3140,7 @@ export default function QuoteFormClient({
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 2. Client ── */}
+              {serviceType !== "b2b_delivery" && (
               <div className="space-y-3">
                 <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
                 <Field label="Select to auto fill">
@@ -3344,8 +3358,10 @@ export default function QuoteFormClient({
                   )
                 )}
               </div>
+              )}
 
               {/* ── Referral Code ── */}
+              {serviceType !== "b2b_delivery" && (
               <div className="border-t border-[var(--brd)]/30 pt-4 pb-1">
                 <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Referral Code</h3>
                 <div className="flex gap-2">
@@ -3370,21 +3386,21 @@ export default function QuoteFormClient({
                   </p>
                 )}
               </div>
+              )}
 
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 3. Addresses ── */}
+              {serviceType !== "b2b_delivery" && (
               <div className="space-y-3">
                 <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
                   {serviceType === "event" && eventMulti
                     ? "Addresses (per event below)"
                     : serviceType === "event"
                       ? "Origin"
-                      : serviceType === "labour_only"
+                        : serviceType === "labour_only"
                         ? "Work Location"
-                        : serviceType === "b2b_delivery"
-                          ? "Pickup & Delivery"
-                          : serviceType === "bin_rental"
+                        : serviceType === "bin_rental"
                             ? "Delivery & pickup"
                             : "Addresses"}
                 </h3>
@@ -3392,120 +3408,6 @@ export default function QuoteFormClient({
                   <p className="text-[11px] text-[var(--tx2)] -mt-1 mb-1">
                     Each event has its own origin and venue in the Event section.
                   </p>
-                )}
-
-                {serviceType === "b2b_delivery" && (
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={b2bMultiStop}
-                        onChange={(e) => {
-                          const on = e.target.checked;
-                          setB2bMultiStop(on);
-                          if (on) {
-                            setB2bStops([
-                              {
-                                type: "pickup",
-                                address: fromAddress,
-                                access: fromAccess,
-                                time_window: preferredTime || "",
-                              },
-                              {
-                                type: "delivery",
-                                address: toAddress,
-                                access: toAccess,
-                                time_window: arrivalWindow || "",
-                              },
-                            ]);
-                          }
-                        }}
-                        className="accent-[var(--gold)] w-3.5 h-3.5"
-                      />
-                      <span>Multi-stop route (pickups and deliveries in order)</span>
-                    </label>
-                    {b2bMultiStop ? (
-                      <div
-                        id="b2b-err-stops"
-                        className={`space-y-2 pl-3 border-l-2 border-[var(--gold)]/40 ${b2bSubmitErrors.stops ? "rounded-r-lg border-red-500/50 pr-2" : ""}`}
-                      >
-                        {b2bSubmitErrors.stops ? (
-                          <p className="text-[10px] text-red-600 dark:text-red-400 pl-1">{b2bSubmitErrors.stops}</p>
-                        ) : null}
-                        {b2bStops.map((stop, idx) => (
-                          <div key={idx} className="space-y-1 rounded-lg bg-[var(--bg)]/50 p-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <select
-                                value={stop.type}
-                                onChange={(e) =>
-                                  setB2bStops((p) =>
-                                    p.map((s, i) =>
-                                      i === idx ? { ...s, type: e.target.value as "pickup" | "delivery" } : s,
-                                    ),
-                                  )
-                                }
-                                className={`${fieldInput} w-[120px] text-[10px]`}
-                              >
-                                <option value="pickup">Pickup</option>
-                                <option value="delivery">Delivery</option>
-                              </select>
-                              <button
-                                type="button"
-                                className="text-[10px] text-[var(--tx3)] hover:text-red-500 min-h-[44px] px-2"
-                                onClick={() =>
-                                  setB2bStops((p) => (p.length <= 2 ? p : p.filter((_, i) => i !== idx)))
-                                }
-                              >
-                                Remove
-                              </button>
-                            </div>
-                            <input
-                              value={stop.address}
-                              onChange={(e) =>
-                                setB2bStops((p) => p.map((s, i) => (i === idx ? { ...s, address: e.target.value } : s)))
-                              }
-                              placeholder="Address"
-                              className={fieldInput}
-                            />
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                              <input
-                                value={stop.access}
-                                onChange={(e) =>
-                                  setB2bStops((p) =>
-                                    p.map((s, i) => (i === idx ? { ...s, access: e.target.value } : s)),
-                                  )
-                                }
-                                placeholder="Access notes"
-                                className={fieldInput}
-                              />
-                              <input
-                                value={stop.time_window}
-                                onChange={(e) =>
-                                  setB2bStops((p) =>
-                                    p.map((s, i) => (i === idx ? { ...s, time_window: e.target.value } : s)),
-                                  )
-                                }
-                                placeholder="Time window"
-                                className={fieldInput}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setB2bStops((p) => [
-                              ...p,
-                              { type: "pickup", address: "", access: "", time_window: "" },
-                            ])
-                          }
-                          className="w-full min-h-[44px] rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--gold)] hover:border-[var(--gold)]/60 transition-colors"
-                        >
-                          Add stop
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
                 )}
 
                 {serviceType === "bin_rental" && (
@@ -3587,16 +3489,12 @@ export default function QuoteFormClient({
                 {/* Event single: origin here; multi: per-leg below. Labour Only: own section. */}
                 {serviceType !== "labour_only" &&
                   !(serviceType === "event" && eventMulti) &&
-                  serviceType !== "bin_rental" &&
-                  !(serviceType === "b2b_delivery" && b2bMultiStop) && (
-                <div
-                  id={serviceType === "b2b_delivery" ? "b2b-err-pickup" : undefined}
-                  className={`flex flex-col sm:flex-row gap-3 items-start ${serviceType === "b2b_delivery" && b2bSubmitErrors.pickup ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}
-                >
+                  serviceType !== "bin_rental" && (
+                <div className="flex flex-col sm:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <MultiStopAddressField
-                      label={serviceType === "event" ? "Origin Address *" : serviceType === "b2b_delivery" ? "Pickup *" : "From"}
-                      placeholder={serviceType === "event" ? "Where items come from (office/warehouse/home)" : serviceType === "b2b_delivery" ? "Pickup address" : "Origin address"}
+                      label={serviceType === "event" ? "Origin Address *" : "From"}
+                      placeholder={serviceType === "event" ? "Where items come from (office/warehouse/home)" : "Origin address"}
                       stops={[{ address: fromAddress }, ...extraFromStops]}
                       onChange={(stops) => {
                         setFromAddress(stops[0]?.address ?? "");
@@ -3612,22 +3510,15 @@ export default function QuoteFormClient({
                       </select>
                     </Field>
                   </div>
-                  {serviceType === "b2b_delivery" && b2bSubmitErrors.pickup ? (
-                    <p className="text-[10px] text-red-600 dark:text-red-400 w-full basis-full">{b2bSubmitErrors.pickup}</p>
-                  ) : null}
                 </div>
                 )}
                 {serviceType !== "event" &&
                   serviceType !== "labour_only" &&
-                  serviceType !== "bin_rental" &&
-                  !(serviceType === "b2b_delivery" && b2bMultiStop) && (
-                <div
-                  id={serviceType === "b2b_delivery" ? "b2b-err-delivery" : undefined}
-                  className={`flex flex-wrap flex-col sm:flex-row gap-3 items-start ${serviceType === "b2b_delivery" && b2bSubmitErrors.delivery ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}
-                >
+                  serviceType !== "bin_rental" && (
+                <div className="flex flex-wrap flex-col sm:flex-row gap-3 items-start">
                   <div className="flex-1 min-w-0 w-full max-w-2xl">
                     <MultiStopAddressField
-                      label={serviceType === "b2b_delivery" ? "Delivery *" : "To"}
+                      label="To"
                       placeholder="Destination address"
                       stops={[{ address: toAddress }, ...extraToStops]}
                       onChange={(stops) => {
@@ -3644,9 +3535,6 @@ export default function QuoteFormClient({
                       </select>
                     </Field>
                   </div>
-                  {serviceType === "b2b_delivery" && b2bSubmitErrors.delivery ? (
-                    <p className="text-[10px] text-red-600 dark:text-red-400 w-full basis-full">{b2bSubmitErrors.delivery}</p>
-                  ) : null}
                 </div>
                 )}
                 {serviceType !== "labour_only" && serviceType !== "bin_rental" && (
@@ -3694,12 +3582,13 @@ export default function QuoteFormClient({
                   </div>
                 )}
               </div>
+              )}
 
               <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
               {/* ── 4. Move details ── */}
               {/* Event and labour_only manage their own date fields */}
-              {serviceType !== "event" && (
+              {serviceType !== "event" && serviceType !== "b2b_delivery" && (
               <div>
                 <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
                   {quoteFormSchedulingSectionTitle(serviceType)}
@@ -5121,16 +5010,155 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-              {/* ── B2B One-Off fields (dimensional pricing) ── */}
+              {/* ── B2B One-Off (rebuilt) ── */}
               {serviceType === "b2b_delivery" && (
-                <div className="space-y-3">
-                  <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off</h3>
-                  <p className="text-[10px] text-[var(--tx3)]">Contact info uses Client name, Email and Phone above.</p>
+                <div className="max-w-[800px] mx-auto w-full space-y-6" style={B2B_ONEOFF_CSS}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <h2 className="text-[18px] font-bold tracking-tight" style={{ color: "var(--yugo-wine, #2B0416)" }}>
+                      B2B One-Off Delivery
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.querySelector<HTMLInputElement>("[data-b2b-client-search]");
+                        el?.focus();
+                      }}
+                      className="px-4 py-2 rounded-lg text-[13px] font-semibold border transition-colors shrink-0"
+                      style={{
+                        borderColor: "var(--yugo-wine, #2B0416)",
+                        color: "var(--yugo-wine, #2B0416)",
+                        backgroundColor: "transparent",
+                      }}
+                    >
+                      Select Client To Auto-Fill
+                    </button>
+                  </div>
+
+                  <B2bSectionTitle>Client</B2bSectionTitle>
+                  <div ref={contactDropdownRef} className="relative mb-2">
+                    <B2bFieldLabel>Select Client To Auto-Fill</B2bFieldLabel>
+                    <input
+                      data-b2b-client-search
+                      type="text"
+                      value={contactSearch}
+                      onChange={(e) => {
+                        setContactSearch(e.target.value);
+                        setShowContactDropdown(true);
+                      }}
+                      onFocus={() => setShowContactDropdown(true)}
+                      placeholder="Search By Name, Email, Or Phone…"
+                      className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
+                      style={b2bInputStyleProps()}
+                    />
+                    {showContactDropdown && dbContacts.length > 0 && (
+                      <div className="absolute z-10 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
+                        <div className="px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">
+                          Contacts
+                        </div>
+                        {dbContacts.map((c) => (
+                          <button
+                            key={c.hubspot_id}
+                            type="button"
+                            onClick={() => {
+                              const parts = (c.name || "").trim().split(/\s+/);
+                              setFirstName(parts[0] || "");
+                              setLastName(parts.slice(1).join(" ") || "");
+                              setEmail(c.email || "");
+                              setPhone(c.phone ? formatPhone(c.phone) : "");
+                              if (c.address) setFromAddress(c.address);
+                              setContactSearch("");
+                              setShowContactDropdown(false);
+                              setDbContacts([]);
+                            }}
+                            className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
+                          >
+                            {c.name}
+                            {c.email && <span className="text-[var(--tx3)] ml-1">- {c.email}</span>}
+                            {c.phone && <span className="text-[var(--tx3)] ml-1">- {formatPhone(c.phone)}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div
-                    id="b2b-err-business"
-                    className={b2bSubmitErrors.business ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5 space-y-1" : ""}
+                    id="b2b-err-contact"
+                    className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${b2bSubmitErrors.contact ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}
                   >
-                    <Field label="Business Name *">
+                    <div>
+                      <B2bFieldLabel>First Name *</B2bFieldLabel>
+                      <input
+                        value={firstName}
+                        onChange={(e) => {
+                          setFirstName(e.target.value);
+                          setClientDedupResult(null);
+                          setClientBannerDismissed(false);
+                        }}
+                        onBlur={handleClientDedupBlur}
+                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
+                        style={b2bInputStyleProps()}
+                      />
+                    </div>
+                    <div>
+                      <B2bFieldLabel>Last Name *</B2bFieldLabel>
+                      <input
+                        value={lastName}
+                        onChange={(e) => {
+                          setLastName(e.target.value);
+                          setClientDedupResult(null);
+                          setClientBannerDismissed(false);
+                        }}
+                        onBlur={handleClientDedupBlur}
+                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
+                        style={b2bInputStyleProps()}
+                      />
+                    </div>
+                    {b2bSubmitErrors.contact ? (
+                      <p className="text-[10px] text-red-600 dark:text-red-400 sm:col-span-2">{b2bSubmitErrors.contact}</p>
+                    ) : null}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div id="b2b-err-email" className={b2bSubmitErrors.email ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}>
+                      <B2bFieldLabel>Email *</B2bFieldLabel>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setClientDedupResult(null);
+                          setClientBannerDismissed(false);
+                        }}
+                        onBlur={handleClientDedupBlur}
+                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
+                        style={b2bInputStyleProps()}
+                      />
+                      {b2bSubmitErrors.email ? (
+                        <p className="text-[10px] text-red-600 dark:text-red-400 mt-1">{b2bSubmitErrors.email}</p>
+                      ) : null}
+                    </div>
+                    <div id="b2b-err-phone" className={b2bSubmitErrors.phone ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}>
+                      <B2bFieldLabel>Phone *</B2bFieldLabel>
+                      <input
+                        ref={phoneInput.ref}
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => {
+                          phoneInput.onChange(e);
+                          setClientDedupResult(null);
+                          setClientBannerDismissed(false);
+                        }}
+                        onBlur={handleClientDedupBlur}
+                        placeholder={PHONE_PLACEHOLDER}
+                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
+                        style={b2bInputStyleProps()}
+                      />
+                      {b2bSubmitErrors.phone ? (
+                        <p className="text-[10px] text-red-600 dark:text-red-400 mt-1">{b2bSubmitErrors.phone}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div id="b2b-err-business" className={b2bSubmitErrors.business ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5 space-y-1" : ""}>
+                      <B2bFieldLabel>Business Name *</B2bFieldLabel>
                       <input
                         value={b2bBusinessName}
                         onChange={(e) => {
@@ -5139,447 +5167,403 @@ export default function QuoteFormClient({
                           setClientBannerDismissed(false);
                         }}
                         onBlur={handleClientDedupBlur}
-                        placeholder="Acme Corp"
-                        className={fieldInput}
+                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
+                        style={b2bInputStyleProps()}
                       />
-                    </Field>
-                    {b2bSubmitErrors.business ? (
-                      <p className="text-[10px] text-red-600 dark:text-red-400">{b2bSubmitErrors.business}</p>
-                    ) : null}
-                  </div>
-                  {deliveryVerticals.length > 0 ? (
-                    <Field label="Delivery vertical">
-                      {b2bPartnerOrgId.trim() && b2bPartnerVerticals.length === 0 ? (
-                        <p className="text-[10px] text-amber-700 dark:text-amber-400 rounded-lg border border-amber-500/30 px-3 py-2 mb-2">
-                          This partner has no B2B delivery verticals on file. Add verticals in partner onboarding or Platform → Partners → B2B rates, or clear the partner to use list pricing.
-                        </p>
+                      {b2bSubmitErrors.business ? (
+                        <p className="text-[10px] text-red-600 dark:text-red-400">{b2bSubmitErrors.business}</p>
                       ) : null}
-                      <select
-                        value={b2bVerticalCode}
-                        onChange={(e) => setB2bVerticalCode(e.target.value)}
-                        className={fieldInput}
-                        disabled={b2bPartnerOrgId.trim() !== "" && b2bVerticalSelectOptions.length === 0}
-                      >
-                        {b2bVerticalSelectOptions.map((v) => (
-                          <option key={v.code} value={v.code}>
-                            {v.name}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-[9px] text-[var(--tx3)] mt-1">
-                        {b2bPartnerOrgId.trim()
-                          ? "Only verticals configured for this partner are shown. Pricing uses their negotiated per-vertical rates where set."
-                          : "Pricing pulls from Platform → Delivery verticals. Add or edit verticals there without a deploy."}
-                      </p>
-                    </Field>
-                  ) : (
-                    <p className="text-[10px] text-amber-700 dark:text-amber-400 rounded-lg border border-amber-500/30 px-3 py-2">
-                      No delivery catalog services are set up yet. Add them under Platform settings, or legacy weight-based pricing applies.
-                    </p>
-                  )}
-                  {parseB2bQuoteFormFields(selectedB2bVertical).map((f) => (
-                    <Field key={f.id} label={f.label}>
-                      <input
-                        type="number"
-                        min={f.min ?? 1}
-                        placeholder={f.placeholder}
-                        value={b2bVerticalExtras[f.id] ?? ""}
-                        onChange={(e) => {
-                          const raw = e.target.value;
-                          setB2bVerticalExtras((prev) => {
-                            const next = { ...prev };
-                            if (raw === "") {
-                              delete next[f.id];
-                              return next;
-                            }
-                            const n = Number(raw);
-                            if (!Number.isFinite(n)) return prev;
-                            next[f.id] = n;
-                            return next;
-                          });
-                        }}
-                        onBlur={() => {
-                          const v = b2bVerticalExtras[f.id];
-                          if (v === undefined) return;
-                          const lo = f.min ?? 1;
-                          if (!Number.isFinite(v) || v < lo) {
-                            setB2bVerticalExtras((prev) => ({ ...prev, [f.id]: lo }));
-                          }
-                        }}
-                        className={fieldInput}
-                      />
-                      {f.help ? <p className="text-[9px] text-[var(--tx3)] mt-1">{f.help}</p> : null}
-                    </Field>
-                  ))}
-                  {b2bPartnerOrgId.trim() ? (
-                    <p className="text-[9px] text-[var(--tx3)]">
-                      Live preview uses list vertical rates. Generate applies partner rates when a partner is selected.
-                    </p>
-                  ) : null}
+                    </div>
+                    <div>
+                      <B2bFieldLabel>Delivery Vertical *</B2bFieldLabel>
+                      {deliveryVerticals.length > 0 ? (
+                        <>
+                          {b2bPartnerOrgId.trim() && b2bPartnerVerticals.length === 0 ? (
+                            <p className="text-[10px] text-amber-700 dark:text-amber-400 rounded-lg border border-amber-500/30 px-3 py-2 mb-2">
+                              This Partner Has No B2B Delivery Verticals On File.
+                            </p>
+                          ) : null}
+                          <select
+                            value={b2bVerticalCode}
+                            onChange={(e) => setB2bVerticalCode(e.target.value)}
+                            disabled={b2bPartnerOrgId.trim() !== "" && b2bVerticalSelectOptions.length === 0}
+                            className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
+                            style={b2bInputStyleProps()}
+                          >
+                            {b2bVerticalSelectOptions.map((v) => (
+                              <option key={v.code} value={v.code}>
+                                {B2B_VERTICAL_DROPDOWN_LABEL[v.code] ?? v.name}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      ) : (
+                        <p className="text-[10px] text-amber-700 dark:text-amber-400 rounded-lg border border-amber-500/30 px-3 py-2">
+                          No Delivery Verticals Configured.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                   {b2bPartnersList.length > 0 ? (
-                    <Field label="Partner contract (optional)">
+                    <div>
+                      <B2bFieldLabel>Partner Contract (Optional)</B2bFieldLabel>
                       <select
                         value={b2bPartnerOrgId}
                         onChange={(e) => setB2bPartnerOrgId(e.target.value)}
-                        className={fieldInput}
+                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
+                        style={b2bInputStyleProps()}
                       >
-                        <option value="">None — list price</option>
+                        <option value="">None — List Price</option>
                         {b2bPartnersList.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.name}
                           </option>
                         ))}
                       </select>
-                      {b2bPartnerOrgId.trim() ? (
-                        <p className="text-[10px] font-semibold text-[var(--grn)] mt-1.5 flex items-center gap-1.5">
-                          <Check className="w-3.5 h-3.5 shrink-0 text-[var(--grn)]" weight="bold" aria-hidden />
-                          Partner rates applied — quote compares list vs negotiated totals.
-                        </p>
-                      ) : (
-                        <p className="text-[9px] text-[var(--tx3)] mt-1">
-                          When set, pricing uses partner_vertical_rates for each vertical. Standard list pricing is shown alongside for margin review.
-                        </p>
-                      )}
-                    </Field>
-                  ) : null}
-                  <Field label="Retailer / Purchase Source">
-                    <input
-                      value={b2bRetailerSource}
-                      onChange={(e) => setB2bRetailerSource(e.target.value)}
-                      placeholder="Where the client purchased (store, brand, PO reference)"
-                      className={fieldInput}
-                    />
-                  </Field>
-                  <Field label="Payment method">
-                    <select
-                      value={b2bPaymentMethod}
-                      onChange={(e) => setB2bPaymentMethod(e.target.value as "card" | "invoice")}
-                      className={fieldInput}
-                    >
-                      <option value="card">Card at booking (default)</option>
-                      <option value="invoice">Invoice (Net 30)</option>
-                    </select>
-                    <p className="text-[9px] text-[var(--tx3)] mt-1">
-                      Invoice: client confirms on the quote page without card; booking is flagged for accounts receivable.
-                    </p>
-                  </Field>
-                  <Field label="Estimated monthly deliveries (volume discount)">
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="e.g. 20 — applies vertical volume tiers when set"
-                      value={b2bMonthlyVolumeEstimate}
-                      onChange={(e) => setB2bMonthlyVolumeEstimate(e.target.value)}
-                      className={fieldInput}
-                    />
-                  </Field>
-                  {b2bShowArtCratingFields ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <Field label="Art hanging (pieces)">
-                        <input
-                          type="number"
-                          min={0}
-                          placeholder="Uses vertical art_hanging_per_piece when set"
-                          value={b2bArtHangingCount}
-                          onChange={(e) => setB2bArtHangingCount(e.target.value)}
-                          className={fieldInput}
-                        />
-                      </Field>
-                      <Field label="Crating (pieces)">
-                        <input
-                          type="number"
-                          min={0}
-                          placeholder="Uses vertical crating_per_piece when set"
-                          value={b2bCratingPieces}
-                          onChange={(e) => setB2bCratingPieces(e.target.value)}
-                          className={fieldInput}
-                        />
-                      </Field>
                     </div>
                   ) : null}
-                  <div className="rounded-lg border border-[var(--brd)]/70 bg-[var(--bg)]/30 px-3 py-3 space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">
-                      Price overrides (optional)
-                    </p>
-                    <p className="text-[10px] text-[var(--tx3)] leading-snug">
-                      Subtotal override replaces the dimensional engine subtotal only; access surcharges and add-ons still apply. Full pre-tax override replaces the entire pre-tax total (including access and add-ons). Reason is required if either override is set.
-                    </p>
-                    <Field label="Dimensional subtotal override ($)">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="Leave blank for model price"
-                        value={b2bSubtotalOverride}
-                        onChange={(e) => setB2bSubtotalOverride(e.target.value)}
-                        className={fieldInput}
+
+                  <B2bSectionTitle>Route</B2bSectionTitle>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div id="b2b-err-pickup" className={`space-y-3 ${b2bSubmitErrors.pickup ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}>
+                      <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--yugo-leather, #492A1D)" }}>
+                        Pickup
+                      </p>
+                      <MultiStopAddressField
+                        label="Address *"
+                        placeholder="Pickup Address"
+                        addStopButtonText="+ Add Stop"
+                        stops={[{ address: fromAddress }, ...extraFromStops]}
+                        onChange={(stops) => {
+                          setFromAddress(stops[0]?.address ?? "");
+                          setExtraFromStops(stops.slice(1));
+                        }}
+                        inputClassName="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
                       />
-                    </Field>
-                    <Field label="Full pre-tax total override ($)">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="Mutually exclusive with subtotal override"
-                        value={b2bFullPreTaxOverride}
-                        onChange={(e) => setB2bFullPreTaxOverride(e.target.value)}
-                        className={fieldInput}
-                      />
-                    </Field>
-                    <Field label="Override reason (required if overriding)">
-                      <input
-                        type="text"
-                        placeholder="e.g. Matched competitor, partner exception, manual scope"
-                        value={b2bOverrideReason}
-                        onChange={(e) => setB2bOverrideReason(e.target.value)}
-                        className={fieldInput}
-                      />
-                    </Field>
-                  </div>
-                  <div
-                    id="b2b-err-items"
-                    className={b2bSubmitErrors.items ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5 space-y-2" : "space-y-2"}
-                  >
-                    <Field label="Items *">
-                      <div className="space-y-2">
-                        {b2bLines.map((item, idx) => (
-                          <div
-                            key={idx}
-                            className="flex flex-col gap-3 md:flex-row md:items-start md:gap-3 rounded-lg border border-[var(--brd)]/60 px-3 py-2.5 w-full"
+                      <B2bFieldLabel>Access</B2bFieldLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {B2B_ACCESS_PILLS.map((p) => (
+                          <B2bPill
+                            key={p.value}
+                            selected={fromAccess === p.value}
+                            onClick={() => setFromAccess(p.value)}
                           >
-                            <div className="flex flex-1 min-w-0 flex-col gap-2">
-                              <span className="text-[11px] text-[var(--tx2)] font-medium break-words w-full">
-                                {item.description}
-                              </span>
-                              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3 w-full">
-                                <div className="flex flex-row flex-wrap items-center gap-2 md:justify-end md:order-2">
-                                  {b2bShowLineWeights ? (
-                                    <select
-                                      value={item.weight_category || "light"}
-                                      onChange={(e) =>
-                                        setB2bLines((p) =>
-                                          p.map((x, i) => (i === idx ? { ...x, weight_category: e.target.value } : x)),
-                                        )
-                                      }
-                                      className={`${fieldInput} w-full min-[380px]:w-[148px] text-[10px]`}
-                                      aria-label={`Weight tier for ${item.description}`}
-                                    >
-                                      {B2B_LINE_WEIGHT_OPTIONS.map((o) => (
-                                        <option key={o.value} value={o.value}>
-                                          {o.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  ) : null}
-                                  {item.fragile ? (
-                                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/25 whitespace-nowrap">
-                                      Fragile
-                                    </span>
-                                  ) : null}
-                                  <label className="flex items-center gap-1.5 text-[10px] text-[var(--tx2)] ml-auto md:ml-0">
-                                    <span className="font-semibold uppercase tracking-wide text-[var(--tx3)]">Qty</span>
-                                    <input
-                                      type="number"
-                                      min={1}
-                                      step={1}
-                                      value={item.qty}
-                                      onChange={(e) => {
-                                        const raw = e.target.value;
-                                        if (raw === "") {
-                                          setB2bLines((p) =>
-                                            p.map((x, i) => (i === idx ? { ...x, qty: 1 } : x)),
-                                          );
-                                          return;
-                                        }
-                                        const n = Number(raw);
-                                        const q = Number.isFinite(n) ? Math.max(1, Math.floor(n)) : 1;
-                                        setB2bLines((p) =>
-                                          p.map((x, i) => (i === idx ? { ...x, qty: q } : x)),
-                                        );
-                                      }}
-                                      onBlur={() =>
-                                        setB2bLines((p) =>
-                                          p.map((x, i) =>
-                                            i === idx
-                                              ? { ...x, qty: !Number.isFinite(x.qty) || x.qty < 1 ? 1 : x.qty }
-                                              : x,
-                                          ),
-                                        )
-                                      }
-                                      className={`${fieldInput} w-[4.25rem] text-center tabular-nums`}
-                                      title="Quantity"
-                                    />
-                                  </label>
-                                </div>
-                                <div className="flex flex-wrap items-end gap-2 md:order-1 md:flex-1">
-                                  <label className="flex flex-col gap-0.5 text-[9px] text-[var(--tx3)]">
-                                    <span className="font-semibold uppercase tracking-wide">Lb</span>
-                                    <input
-                                      type="number"
-                                      min={1}
-                                      placeholder="—"
-                                      value={
-                                        item.weight_lbs != null && item.weight_lbs > 0 ? String(item.weight_lbs) : ""
-                                      }
-                                      onChange={(e) => {
-                                        const v = e.target.value.trim();
-                                        const n = v === "" ? undefined : Number(v);
-                                        setB2bLines((p) =>
-                                          p.map((x, i) =>
-                                            i === idx
-                                              ? {
-                                                  ...x,
-                                                  weight_lbs:
-                                                    n !== undefined && Number.isFinite(n) && n > 0
-                                                      ? Math.round(n)
-                                                      : undefined,
-                                                }
-                                              : x,
-                                          ),
-                                        );
-                                      }}
-                                      className={`${fieldInput} w-[4.5rem] text-center text-[10px]`}
-                                      aria-label={`Weight in pounds for ${item.description}`}
-                                    />
-                                  </label>
-                                  {itemWeights.length > 0 && b2bShowLineWeights ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const t = suggestB2bWeightTierFromDescription(item.description, itemWeights);
-                                        if (!t) return;
-                                        setB2bLines((p) =>
-                                          p.map((x, i) => (i === idx ? { ...x, weight_category: t } : x)),
-                                        );
-                                      }}
-                                      className="text-[10px] font-semibold text-[var(--gold)] hover:underline px-1 py-1 min-h-[44px] md:min-h-0"
-                                    >
-                                      Match catalog
-                                    </button>
-                                  ) : null}
-                                </div>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setB2bLines((p) => p.filter((_, i) => i !== idx))}
-                              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-[var(--tx3)] hover:text-red-500 self-end md:self-start shrink-0"
-                              title="Remove"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                            {p.label}
+                          </B2bPill>
                         ))}
-                        <div className="flex flex-col gap-2 w-full">
-                          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
-                            <div className="flex-1 min-w-0 w-full">
-                              <input
-                                value={b2bNewLineDesc}
-                                onChange={(e) => setB2bNewLineDesc(e.target.value)}
-                                placeholder="Description"
-                                className={fieldInput}
-                                onKeyDown={(e) => {
-                                  if (e.key !== "Enter") return;
-                                  e.preventDefault();
-                                  if (!b2bNewLineDesc.trim()) return;
-                                  const q = Math.max(1, b2bNewLineQty || 1);
-                                  const lbsNew = parseInt(String(b2bNewLineWeightLbs).trim(), 10);
-                                  const wl =
-                                    Number.isFinite(lbsNew) && lbsNew > 0 ? lbsNew : undefined;
-                                  setB2bLines((p) => [
-                                    ...p,
-                                    {
-                                      description: b2bNewLineDesc.trim(),
-                                      qty: q,
-                                      weight_category: b2bShowLineWeights ? b2bNewLineWeight : undefined,
-                                      weight_lbs: wl,
-                                      fragile: b2bNewLineFragile,
-                                    },
-                                  ]);
-                                  setB2bNewLineDesc("");
-                                  setB2bNewLineQty(1);
-                                  setB2bNewLineWeightLbs("");
-                                  setB2bNewLineFragile(false);
-                                }}
-                              />
-                            </div>
-                            <div className="w-full sm:w-20 shrink-0">
-                              <input
-                                type="number"
-                                min={1}
-                                step={1}
-                                value={b2bNewLineQty}
-                                onChange={(e) => {
-                                  const n = Number(e.target.value);
-                                  setB2bNewLineQty(Number.isFinite(n) ? Math.max(1, Math.floor(n)) : 1);
-                                }}
-                                onBlur={() => setB2bNewLineQty((q) => (!Number.isFinite(q) || q < 1 ? 1 : q))}
-                                className={fieldInput}
-                                title="Qty"
-                              />
-                            </div>
-                            {b2bShowLineWeights ? (
-                              <select
-                                value={b2bNewLineWeight}
-                                onChange={(e) => setB2bNewLineWeight(e.target.value)}
-                                className={`${fieldInput} w-full sm:w-[150px] text-[10px]`}
-                              >
-                                {B2B_LINE_WEIGHT_OPTIONS.map((o) => (
-                                  <option key={o.value} value={o.value}>
-                                    {o.label}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : null}
-                            <label className="flex items-center gap-1 text-[10px] text-[var(--tx2)] whitespace-nowrap min-h-[44px]">
-                              <input
-                                type="checkbox"
-                                checked={b2bNewLineFragile}
-                                onChange={(e) => setB2bNewLineFragile(e.target.checked)}
-                                className="accent-[var(--gold)] w-3.5 h-3.5"
-                              />
-                              Fragile
-                            </label>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!b2bNewLineDesc.trim()) return;
-                              const q = Math.max(1, b2bNewLineQty || 1);
-                              const lbsNew = parseInt(String(b2bNewLineWeightLbs).trim(), 10);
-                              const wl =
-                                Number.isFinite(lbsNew) && lbsNew > 0 ? lbsNew : undefined;
-                              setB2bLines((p) => [
-                                ...p,
-                                {
-                                  description: b2bNewLineDesc.trim(),
-                                  qty: q,
-                                  weight_category: b2bShowLineWeights ? b2bNewLineWeight : undefined,
-                                  weight_lbs: wl,
-                                  fragile: b2bNewLineFragile,
-                                },
-                              ]);
-                              setB2bNewLineDesc("");
-                              setB2bNewLineQty(1);
-                              setB2bNewLineWeightLbs("");
-                              setB2bNewLineFragile(false);
-                            }}
-                            className="w-full min-h-[44px] rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors flex items-center justify-center gap-2"
-                          >
-                            <Plus className="w-4 h-4" weight="bold" />
-                            Add item
-                          </button>
-                        </div>
                       </div>
-                    </Field>
+                      <B2bFieldLabel>Parking</B2bFieldLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {B2B_PARKING_PILLS.map((p) => (
+                          <B2bPill
+                            key={`fp-${p.value}`}
+                            selected={fromParking === p.value}
+                            onClick={() => setFromParking(p.value as "dedicated" | "street" | "no_dedicated")}
+                          >
+                            {p.label}
+                          </B2bPill>
+                        ))}
+                      </div>
+                      <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: "var(--yugo-leather, #492A1D)" }}>
+                        <input
+                          type="checkbox"
+                          checked={fromLongCarry}
+                          onChange={(e) => setFromLongCarry(e.target.checked)}
+                          className="rounded border-[var(--yugo-border)]"
+                        />
+                        Long Carry (+$75)
+                      </label>
+                      {b2bSubmitErrors.pickup ? (
+                        <p className="text-[10px] text-red-600 dark:text-red-400">{b2bSubmitErrors.pickup}</p>
+                      ) : null}
+                    </div>
+                    <div id="b2b-err-delivery" className={`space-y-3 ${b2bSubmitErrors.delivery ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}>
+                      <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--yugo-leather, #492A1D)" }}>
+                        Delivery
+                      </p>
+                      <MultiStopAddressField
+                        label="Address *"
+                        placeholder="Delivery Address"
+                        addStopButtonText="+ Add Stop"
+                        stops={[{ address: toAddress }, ...extraToStops]}
+                        onChange={(stops) => {
+                          setToAddress(stops[0]?.address ?? "");
+                          setExtraToStops(stops.slice(1));
+                        }}
+                        inputClassName="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
+                      />
+                      <B2bFieldLabel>Access</B2bFieldLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {B2B_ACCESS_PILLS.map((p) => (
+                          <B2bPill
+                            key={`ta-${p.value}`}
+                            selected={toAccess === p.value}
+                            onClick={() => setToAccess(p.value)}
+                          >
+                            {p.label}
+                          </B2bPill>
+                        ))}
+                      </div>
+                      <B2bFieldLabel>Parking</B2bFieldLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {B2B_PARKING_PILLS.map((p) => (
+                          <B2bPill
+                            key={`tp-${p.value}`}
+                            selected={toParking === p.value}
+                            onClick={() => setToParking(p.value as "dedicated" | "street" | "no_dedicated")}
+                          >
+                            {p.label}
+                          </B2bPill>
+                        ))}
+                      </div>
+                      <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: "var(--yugo-leather, #492A1D)" }}>
+                        <input
+                          type="checkbox"
+                          checked={toLongCarry}
+                          onChange={(e) => setToLongCarry(e.target.checked)}
+                          className="rounded border-[var(--yugo-border)]"
+                        />
+                        Long Carry (+$75)
+                      </label>
+                      {b2bSubmitErrors.delivery ? (
+                        <p className="text-[10px] text-red-600 dark:text-red-400">{b2bSubmitErrors.delivery}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-[13px]" style={{ color: "var(--yugo-leather, #492A1D)" }}>
+                    {b2bRouteLoading ? (
+                      <span>Calculating Route…</span>
+                    ) : b2bPreviewDistanceKm != null ? (
+                      <>
+                        <span className="font-medium">
+                          {b2bPreviewDistanceKm} Km · ~{b2bPreviewDriveMin ?? "—"} Min Drive
+                        </span>
+                        {b2bDeliveryKmFromGta != null && b2bDeliveryKmFromGta >= 80 ? (
+                          <span
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-full text-white"
+                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
+                          >
+                            Zone 3 (+$150)
+                          </span>
+                        ) : b2bDeliveryKmFromGta != null && b2bDeliveryKmFromGta >= 40 ? (
+                          <span
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-full text-white"
+                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
+                          >
+                            Zone 2 (+$75)
+                          </span>
+                        ) : (
+                          <span
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-full text-white"
+                            style={{ backgroundColor: "var(--yugo-green, #2B3927)" }}
+                          >
+                            Gta Core
+                          </span>
+                        )}
+                        {(fromAccess.startsWith("walk_up") || toAccess.startsWith("walk_up")) ? (
+                          <span
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
+                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
+                          >
+                            Stair Carry +{fmtPrice(cfgNum(config, "b2b_stair_carry_flat", 35))}
+                          </span>
+                        ) : null}
+                        {fromParking === "no_dedicated" || toParking === "no_dedicated" ? (
+                          <span
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
+                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
+                          >
+                            No Parking +{fmtPrice(parseCfgJson<Record<string, number>>(config, "parking_surcharges", { no_dedicated: 75 }).no_dedicated ?? 75)}
+                          </span>
+                        ) : null}
+                        {fromLongCarry || toLongCarry ? (
+                          <span
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
+                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
+                          >
+                            Long Carry +{fmtPrice(cfgNum(config, "long_carry_surcharge", 75))}
+                          </span>
+                        ) : null}
+                      </>
+                    ) : (
+                      <span>Enter Addresses For Distance</span>
+                    )}
+                  </div>
+
+                  <B2bSectionTitle>Delivery Details</B2bSectionTitle>
+                  <div
+                    id="b2b-err-date"
+                    className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${b2bSubmitErrors.date ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}
+                  >
+                    <div>
+                      <B2bFieldLabel>Delivery Date *</B2bFieldLabel>
+                      <input
+                        type="date"
+                        value={moveDate}
+                        onChange={(e) => setMoveDate(e.target.value)}
+                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
+                        style={b2bInputStyleProps()}
+                      />
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {isMoveDateWeekend(moveDate) ? (
+                          <span
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
+                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
+                          >
+                            Weekend +{fmtPrice(cfgNum(config, "b2b_weekend_surcharge", 40))}
+                          </span>
+                        ) : null}
+                        {b2bAfterHoursDerived ? (
+                          <span
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
+                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
+                          >
+                            After-Hours +{fmtPrice(cfgNum(config, "b2b_after_hours_flat", 60))}
+                          </span>
+                        ) : null}
+                        {b2bAutoSameDay ? (
+                          <span
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
+                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
+                          >
+                            Same-Day +{fmtPrice(cfgNum(config, "b2b_same_day_flat", 60))}
+                          </span>
+                        ) : null}
+                      </div>
+                      {b2bSubmitErrors.date ? (
+                        <p className="text-[10px] text-red-600 dark:text-red-400 mt-1">{b2bSubmitErrors.date}</p>
+                      ) : null}
+                    </div>
+                    <div>
+                      <B2bFieldLabel>Preferred Time</B2bFieldLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {(
+                          [
+                            { k: "morning" as const, label: "Morning" },
+                            { k: "afternoon" as const, label: "Afternoon" },
+                            { k: "after_hours" as const, label: "After-Hours" },
+                          ] as const
+                        ).map((t) => (
+                          <B2bPill
+                            key={t.k}
+                            selected={b2bTimeBand === t.k}
+                            onClick={() => setB2bTimeBand(t.k)}
+                          >
+                            {t.label}
+                          </B2bPill>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <B2bFieldLabel>Special Instructions</B2bFieldLabel>
+                    <textarea
+                      value={b2bSpecialInstructions}
+                      onChange={(e) => setB2bSpecialInstructions(e.target.value)}
+                      rows={3}
+                      placeholder="Special Handling, Access Notes, Delivery Instructions…"
+                      className="w-full rounded-lg border px-3 py-2 text-[15px] bg-[var(--card)] resize-none outline-none focus:border-[#2B0416]"
+                      style={b2bInputStyleProps()}
+                    />
+                  </div>
+                  {b2bShowArtCratingFields ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <B2bFieldLabel>Art Hanging (Pieces)</B2bFieldLabel>
+                        <input
+                          type="number"
+                          min={0}
+                          value={b2bArtHangingCount}
+                          onChange={(e) => setB2bArtHangingCount(e.target.value)}
+                          className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
+                          style={b2bInputStyleProps()}
+                        />
+                      </div>
+                      <div>
+                        <B2bFieldLabel>Crating (Pieces)</B2bFieldLabel>
+                        <input
+                          type="number"
+                          min={0}
+                          value={b2bCratingPieces}
+                          onChange={(e) => setB2bCratingPieces(e.target.value)}
+                          className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
+                          style={b2bInputStyleProps()}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div
+                    className="flex items-center justify-between gap-2 pb-2 mb-4 border-b"
+                    style={{ borderColor: "var(--yugo-border, rgba(73,42,29,0.25))" }}
+                  >
+                    <h3 className="text-[16px] font-bold" style={{ color: "var(--yugo-wine, #2B0416)" }}>
+                      Items
+                    </h3>
+                    <B2bAddItemCircle
+                      wine="#2B0416"
+                      onClick={() =>
+                        setB2bLines((p) => [
+                          ...p,
+                          {
+                            description: "",
+                            qty: 1,
+                            weight_category: b2bShowLineWeights ? "light" : undefined,
+                            handling_type: "threshold",
+                          },
+                        ])
+                      }
+                    />
+                  </div>
+                  <div id="b2b-err-items" className={b2bSubmitErrors.items ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5 space-y-2" : "space-y-3"}>
+                    {b2bLines.map((row, idx) => {
+                      const cat = b2bItemCatalogForVertical(b2bVerticalCode);
+                      const q = (row.description || "").trim().toLowerCase();
+                      const suggestions =
+                        cat && q.length > 0
+                          ? cat.filter((c) => c.toLowerCase().includes(q)).slice(0, 8)
+                          : [];
+                      return (
+                        <B2bItemRowView
+                          key={idx}
+                          idx={idx}
+                          row={{
+                            ...row,
+                            bundled:
+                              row.bundled ??
+                              (b2bVerticalCode === "flooring"
+                                ? isFlooringBundledAccessory(row.description, b2bVerticalCode)
+                                : false),
+                          }}
+                          verticalCode={b2bVerticalCode}
+                          showCarryInPerBox={b2bVerticalCode === "flooring"}
+                          showHaulAwayFlag={b2bVerticalCode === "appliance"}
+                          catalogOpen={b2bCatalogOpenIdx}
+                          setCatalogOpen={setB2bCatalogOpenIdx}
+                          suggestions={suggestions}
+                          wine="#2B0416"
+                          leather="#492A1D"
+                          rose="#66143D"
+                          green="#2B3927"
+                          onChange={(i, patch) =>
+                            setB2bLines((prev) => prev.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+                          }
+                          onRemove={(i) => setB2bLines((prev) => prev.filter((_, j) => j !== i))}
+                        />
+                      );
+                    })}
                     {b2bSubmitErrors.items ? (
                       <p className="text-[10px] text-red-600 dark:text-red-400">{b2bSubmitErrors.items}</p>
                     ) : null}
                   </div>
                   {!b2bShowLineWeights ? (
-                    <Field label="Weight category (legacy / single tier)">
+                    <div>
+                      <B2bFieldLabel>Weight Category (Legacy)</B2bFieldLabel>
                       <select
                         value={b2bWeightCategory}
                         onChange={(e) => setB2bWeightCategory(e.target.value)}
-                        className={fieldInput}
+                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
+                        style={b2bInputStyleProps()}
                       >
                         {B2B_WEIGHT_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -5587,157 +5571,45 @@ export default function QuoteFormClient({
                           </option>
                         ))}
                       </select>
-                    </Field>
+                    </div>
                   ) : null}
-                  <Field label="Handling">
-                    <select
-                      value={b2bHandlingType}
-                      onChange={(e) => setB2bHandlingType(e.target.value)}
-                      className={fieldInput}
-                    >
-                      {b2bHandlingOptions.map((k) => (
-                        <option key={k} value={k}>
-                          {k.replace(/_/g, " ")}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Complexity</p>
-                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
-                      <input
-                        type="checkbox"
-                        checked={b2bTimeSensitive}
-                        onChange={(e) => setB2bTimeSensitive(e.target.checked)}
-                        className="accent-[var(--gold)] w-3.5 h-3.5"
-                      />
-                      Time-sensitive
-                    </label>
-                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
-                      <input
-                        type="checkbox"
-                        checked={b2bAssemblyRequired}
-                        onChange={(e) => setB2bAssemblyRequired(e.target.checked)}
-                        className="accent-[var(--gold)] w-3.5 h-3.5"
-                      />
-                      Assembly required
-                    </label>
-                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
-                      <input
-                        type="checkbox"
-                        checked={b2bDebrisRemoval}
-                        onChange={(e) => setB2bDebrisRemoval(e.target.checked)}
-                        className="accent-[var(--gold)] w-3.5 h-3.5"
-                      />
-                      Debris / packaging removal
-                    </label>
-                    {b2bComplexityKeys.map((key) => (
-                      <label key={key} className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
-                        <input
-                          type="checkbox"
-                          checked={b2bComplexityAddonSet.has(key)}
-                          onChange={() =>
-                            setB2bComplexityAddonSet((prev) => {
-                              const n = new Set(prev);
-                              if (n.has(key)) n.delete(key);
-                              else n.add(key);
-                              return n;
-                            })
-                          }
-                          className="accent-[var(--gold)] w-3.5 h-3.5"
-                        />
-                        {key.replace(/_/g, " ")}
-                      </label>
-                    ))}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] text-[var(--tx2)]">Stair flights</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={50}
-                        value={b2bStairsFlights}
-                        onChange={(e) => setB2bStairsFlights(Math.max(0, Number(e.target.value) || 0))}
-                        className={`${fieldInput} w-20`}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2 rounded-lg border border-[var(--brd)]/50 bg-[var(--bg)]/30 p-3">
-                    <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Schedule & load</p>
-                    <p className="text-[9px] text-[var(--tx3)]">
-                      Weekend follows move date. Zone fees use route distance when the vertical uses zone pricing.
-                    </p>
-                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
-                      <input
-                        type="checkbox"
-                        checked={b2bAfterHours}
-                        onChange={(e) => setB2bAfterHours(e.target.checked)}
-                        className="accent-[var(--gold)] w-3.5 h-3.5"
-                      />
-                      After-hours window (before 8am / after 6pm)
-                    </label>
-                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
-                      <input
-                        type="checkbox"
-                        checked={b2bSameDay}
-                        onChange={(e) => setB2bSameDay(e.target.checked)}
-                        className="accent-[var(--gold)] w-3.5 h-3.5"
-                      />
-                      Same-day delivery (e-commerce surcharge where configured)
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <Field label="Skid count (flooring)">
-                        <input
-                          type="number"
-                          min={0}
-                          value={b2bSkidCount || ""}
-                          onChange={(e) => setB2bSkidCount(Math.max(0, Number(e.target.value) || 0))}
-                          className={fieldInput}
-                          placeholder="0"
-                        />
-                      </Field>
-                      <Field label="Total load weight (lbs, flooring)">
-                        <input
-                          type="number"
-                          min={0}
-                          value={b2bTotalLoadWeightLbs}
-                          onChange={(e) => setB2bTotalLoadWeightLbs(e.target.value)}
-                          className={fieldInput}
-                          placeholder="Optional"
-                        />
-                      </Field>
-                      <Field label="Haul-away units (appliance)">
-                        <input
-                          type="number"
-                          min={0}
-                          value={b2bHaulAwayUnits || ""}
-                          onChange={(e) => setB2bHaulAwayUnits(Math.max(0, Number(e.target.value) || 0))}
-                          className={fieldInput}
-                          placeholder="0"
-                        />
-                      </Field>
-                    </div>
-                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx2)]">
-                      <input
-                        type="checkbox"
-                        checked={b2bReturnsPickup}
-                        onChange={(e) => setB2bReturnsPickup(e.target.checked)}
-                        className="accent-[var(--gold)] w-3.5 h-3.5"
-                      />
-                      Returns pickup (e-commerce flat where configured)
-                    </label>
-                  </div>
-                  <Field label="Special Instructions">
-                    <textarea
-                      value={b2bSpecialInstructions}
-                      onChange={(e) => setB2bSpecialInstructions(e.target.value)}
-                      rows={2}
-                      placeholder="Loading dock hours, crew notes, client-facing details, etc."
-                      className={`${fieldInput} resize-none`}
+
+                  <label className="flex items-center gap-2 text-[13px] font-medium cursor-pointer" style={{ color: "var(--yugo-leather, #492A1D)" }}>
+                    <input
+                      type="checkbox"
+                      checked={b2bPriceOverrideOn}
+                      onChange={(e) => setB2bPriceOverrideOn(e.target.checked)}
+                      className="rounded border-[var(--yugo-border)]"
                     />
-                  </Field>
+                    Override Price
+                  </label>
+                  {b2bPriceOverrideOn ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-1">
+                      <div>
+                        <B2bFieldLabel>Override Amount ($)</B2bFieldLabel>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={b2bPreTaxOverrideAmount}
+                          onChange={(e) => setB2bPreTaxOverrideAmount(e.target.value)}
+                          className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
+                          style={b2bInputStyleProps()}
+                        />
+                      </div>
+                      <div>
+                        <B2bFieldLabel>Reason (Required)</B2bFieldLabel>
+                        <input
+                          type="text"
+                          value={b2bOverrideReason}
+                          onChange={(e) => setB2bOverrideReason(e.target.value)}
+                          className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
+                          style={b2bInputStyleProps()}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               )}
-
               {serviceType === "bin_rental" && (
                 <div className="space-y-4">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Bundle & pricing</h3>
@@ -6041,7 +5913,18 @@ export default function QuoteFormClient({
                 type="button"
                 onClick={() => void handleGenerate()}
                 disabled={generating || (serviceType === "b2b_delivery" && !b2bGenerateValid)}
-                className="flex-1 py-2.5 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 flex items-center justify-center gap-2"
+                className={`flex-1 py-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-2 ${
+                  serviceType === "b2b_delivery"
+                    ? b2bGenerateValid
+                      ? "text-[#F9EDE4] hover:opacity-95"
+                      : "bg-[#492A1D]/35 text-[#492A1D]/70 cursor-not-allowed"
+                    : "bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
+                } disabled:opacity-50`}
+                style={
+                  serviceType === "b2b_delivery" && b2bGenerateValid
+                    ? { backgroundColor: "#2B0416" }
+                    : undefined
+                }
               >
                 {generating ? (
                   <>
@@ -6051,6 +5934,8 @@ export default function QuoteFormClient({
                   "Complete Required Fields"
                 ) : quoteId ? (
                   "Regenerate"
+                ) : serviceType === "b2b_delivery" ? (
+                  "GENERATE QUOTE"
                 ) : (
                   "Generate Quote"
                 )}
@@ -6335,23 +6220,33 @@ export default function QuoteFormClient({
                         <p className="text-[9px] text-[var(--tx3)]">Generate for live inventory and final totals.</p>
                       </div>
                     ) : serviceType === "b2b_delivery" && b2bDimensionalPreview ? (
-                      <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4 space-y-2">
-                        <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">B2B delivery (estimate)</p>
-                        <p className="text-[10px] text-[var(--tx2)]">
-                          {b2bPreviewDistanceLabel}
-                          {b2bPreviewDistanceKm != null && b2bPreviewDriveMin != null
-                            ? ` · ~${b2bPreviewDriveMin} min drive`
-                            : ""}
+                      <div className="rounded-xl border border-[#2B0416]/25 bg-[#2B0416]/[0.06] p-4 space-y-2">
+                        <p className="text-[11px] font-bold tracking-wide text-[#2B0416]">{b2bLivePreviewTitle}</p>
+                        <p className="text-[10px] text-[var(--tx2)] uppercase tracking-wide">
+                          {b2bPreviewDistanceKm != null
+                            ? `${b2bPreviewDistanceKm} Km · ~${b2bPreviewDriveMin ?? "—"} Min Drive`
+                            : b2bPreviewDistanceLabel}
                         </p>
                         {b2bDeliveryKmFromGta != null ? (
                           <p className="text-[10px] text-[var(--tx3)]">
-                            {b2bDeliveryKmFromGta.toFixed(1)} km from GTA core (straight-line) — used for outside-GTA surcharges.
+                            {b2bDeliveryKmFromGta.toFixed(1)} Km From GTA Core (Straight-Line).
                           </p>
+                        ) : null}
+                        {effectiveB2bLinesPreview.some((l) => l.description.trim()) ? (
+                          <ul className="text-[11px] text-[var(--tx2)] space-y-0.5 list-disc pl-4">
+                            {effectiveB2bLinesPreview
+                              .filter((l) => l.description.trim() && l.qty >= 1)
+                              .map((l, i) => (
+                                <li key={i}>
+                                  {l.qty}× {l.description.trim()}
+                                </li>
+                              ))}
+                          </ul>
                         ) : null}
                         {!b2bDimensionalPreview.hasRealItems ? (
                           <p className="text-[10px] text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
                             <Warning className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
-                            Add line items or use the vertical box count field to include unit pricing in this preview.
+                            Add Line Items To Include Unit Pricing In This Preview.
                           </p>
                         ) : null}
                         {b2bDimensionalPreview.dim.breakdown
@@ -6364,7 +6259,7 @@ export default function QuoteFormClient({
                           ))}
                         {b2bDimensionalPreview.access > 0 && !b2bDimensionalPreview.fullOverrideApplied ? (
                           <div className="flex justify-between text-[11px] gap-2">
-                            <span className="text-[var(--tx2)]">Access surcharge</span>
+                            <span className="text-[var(--tx2)]">Access Surcharge</span>
                             <span className="text-[var(--tx)] font-medium shrink-0">
                               {fmtPrice(b2bDimensionalPreview.access)}
                             </span>
@@ -6372,18 +6267,26 @@ export default function QuoteFormClient({
                         ) : null}
                         {addonSubtotal > 0 && !b2bDimensionalPreview.fullOverrideApplied ? (
                           <div className="flex justify-between text-[11px] pt-1 border-t border-[var(--brd)]/40">
-                            <span className="text-[var(--tx3)]">Add-ons (selected)</span>
+                            <span className="text-[var(--tx3)]">Add-Ons (Selected)</span>
                             <span className="text-[var(--tx)] font-medium">{fmtPrice(addonSubtotal)}</span>
                           </div>
                         ) : null}
                         {b2bDimensionalPreview.fullOverrideApplied ? (
-                          <p className="text-[10px] text-[var(--tx3)] pt-1 leading-snug">
-                            Model breakdown above; subtotal uses full coordinator pre-tax override (access and add-ons not
-                            added on top).
-                          </p>
+                          <div className="pt-1 space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-[#2B0416]">
+                              Price Override: {fmtPrice(b2bDimensionalPreview.preTaxTotal)}
+                            </p>
+                            {b2bDimensionalPreview.overrideReason ? (
+                              <p className="text-[9px] text-[var(--tx3)]">{b2bDimensionalPreview.overrideReason}</p>
+                            ) : null}
+                            <p className="text-[10px] text-[var(--tx3)] line-through">
+                              Calculated Pre-Tax:{" "}
+                              {fmtPrice(b2bDimensionalPreview.calculatedPreTaxBeforeOverride ?? b2bDimensionalPreview.engineSubtotal)}
+                            </p>
+                          </div>
                         ) : null}
                         <div className="flex justify-between text-[11px] pt-1 border-t border-[var(--brd)]/40">
-                          <span className="text-[var(--tx3)]">Subtotal (pre-tax)</span>
+                          <span className="text-[var(--tx3)]">Subtotal (Pre-Tax)</span>
                           <span className="font-semibold">{fmtPrice(b2bDimensionalPreview.preTaxTotal)}</span>
                         </div>
                         <div className="flex justify-between text-[11px]">
@@ -6392,10 +6295,10 @@ export default function QuoteFormClient({
                         </div>
                         <div className="flex justify-between text-[12px] font-bold">
                           <span>Total</span>
-                          <span className="text-[var(--gold)]">{fmtPrice(b2bDimensionalPreview.total)}</span>
+                          <span style={{ color: "#2B0416" }}>{fmtPrice(b2bDimensionalPreview.total)}</span>
                         </div>
                         <p className="text-[9px] text-[var(--tx3)] leading-snug">
-                          Generate for server pricing, partner rates, and final breakdown.
+                          Generate For Server Pricing, Partner Rates, And Final Breakdown.
                         </p>
                       </div>
                     ) : serviceType === "b2b_delivery" ? (
@@ -7191,17 +7094,17 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
   const fullOverrideApplied = factors.b2b_full_pre_tax_override_applied === true;
 
   return (
-    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+    <div className="rounded-xl border-2 border-[#2B0416]/35 bg-[#F9EDE4]/40 dark:bg-[#2A2520] p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#B8962E]">B2B One-Off</span>
-        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
+        <span className="text-[13px] font-bold text-[#2B0416]">B2B One-Off</span>
+        <span className="text-3xl font-black tabular-nums text-[#2B0416]">{fmtPrice(t.price)}</span>
       </div>
       {dimensional && verticalName ? (
         <p className="text-[11px] font-semibold text-[var(--tx2)]">{verticalName}</p>
       ) : null}
       <div className="space-y-1.5 text-[11px]">
         {usingPartnerRates && dimensional && verticalName ? (
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#B8962E]/90 pb-1">Partner rate</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#66143D] pb-1">Partner Rate</p>
         ) : null}
         {dimensional && breakdown.length > 0 ? (
           breakdown.map((line, i) => (
