@@ -11,7 +11,7 @@ export type B2bBundleRules = {
 
 export type B2bItemConfigShape = {
   label?: string;
-  quickAdd?: { name: string; weight?: string; fragile?: boolean; unit?: string }[];
+  quickAdd?: { name: string; weight?: string; fragile?: boolean; unit?: string; icon?: string }[];
   showFields?: string[];
   bundleRules?: B2bBundleRules;
 };

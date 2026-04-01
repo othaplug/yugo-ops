@@ -22,6 +22,7 @@ import {
 import { parseB2BJobsFieldVisibility, b2bJobsFieldVisible } from "@/lib/b2b-jobs-field-visibility";
 import { b2bJobsDimensionalStops } from "@/lib/b2b-jobs-route-helpers";
 import { parseB2bItemConfigShape } from "@/lib/b2b-bundle-line-items";
+import { B2bQuickAddIcon } from "@/components/admin/b2b/b2b-quick-add-icon";
 
 const fieldInput = "field-input-compact w-full";
 
@@ -196,6 +197,7 @@ export default function B2BJobsDeliveryForm({
   const [partnerOrgId, setPartnerOrgId] = useState("");
 
   const [verticalCode, setVerticalCode] = useState(() => verticals[0]?.code ?? "");
+  const lastVerticalForItemsRef = useRef<string | null>(null);
 
   const [hsLookupState, setHsLookupState] = useState<"idle" | "loading" | "found" | "not_found">("idle");
   const [hsDuplicate, setHsDuplicate] = useState<{ type: "contact" | "company"; label: string } | null>(null);
@@ -438,6 +440,11 @@ export default function B2BJobsDeliveryForm({
     setNewCratingRequired(false);
     setNewLineAssemblyRequired(false);
     setNewUnitType("box");
+    if (lastVerticalForItemsRef.current !== null && lastVerticalForItemsRef.current !== verticalCode) {
+      setLines([]);
+      setBoxCount("");
+    }
+    lastVerticalForItemsRef.current = verticalCode;
   }, [verticalCode]);
 
   const [pickupAddress, setPickupAddress] = useState("");
@@ -536,13 +543,18 @@ export default function B2BJobsDeliveryForm({
     showItemField("assembly_required");
 
   const runPricingPreview = useCallback(async () => {
-    if (!verticalCode.trim() || !pickupAddress.trim() || !deliveryAddress.trim()) {
+    const effLines = buildEffectiveLines();
+    if (
+      !verticalCode.trim() ||
+      !pickupAddress.trim() ||
+      !deliveryAddress.trim() ||
+      effLines.length === 0
+    ) {
       setPreview(null);
       return;
     }
     setPreviewLoading(true);
     try {
-      const effLines = buildEffectiveLines();
       const res = await fetch("/api/admin/b2b-delivery/pricing-preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1063,7 +1075,7 @@ export default function B2BJobsDeliveryForm({
   };
 
   const addQuickPreset = useCallback(
-    (p: { name: string; weight?: string; fragile?: boolean; unit?: string }) => {
+    (p: { name: string; weight?: string; fragile?: boolean; unit?: string; icon?: string }) => {
       const wcRaw = (p.weight || "medium").toLowerCase();
       const wc = LINE_WEIGHT_OPTIONS.some((o) => o.value === wcRaw)
         ? (wcRaw as LineRow["weight_category"])
@@ -1678,9 +1690,13 @@ export default function B2BJobsDeliveryForm({
                   key={p.name}
                   type="button"
                   onClick={() => addQuickPreset(p)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--bg)]"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--bg)]"
                 >
-                  <Plus className="w-3.5 h-3.5" aria-hidden />
+                  {p.icon ? (
+                    <B2bQuickAddIcon icon={p.icon} className="shrink-0 text-[var(--gold)]" />
+                  ) : (
+                    <Plus className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                  )}
                   {p.name}
                 </button>
               ))}
@@ -1976,7 +1992,12 @@ export default function B2BJobsDeliveryForm({
             </div>
           </div>
         )}
-        {!preview && !previewLoading && <p className="text-[11px] text-[var(--tx3)]">Enter vertical, route, and items to preview.</p>}
+        {!preview && !previewLoading && (
+          <p className="text-[11px] text-[var(--tx3)]">
+            Select a vertical, enter pickup and delivery addresses, add at least one line item (or flooring box count), then
+            the preview updates automatically.
+          </p>
+        )}
         {previewLoading && <p className="text-[11px] text-[var(--tx3)]">Updating preview…</p>}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
           <Field label="Admin override (pre-tax, optional)">
