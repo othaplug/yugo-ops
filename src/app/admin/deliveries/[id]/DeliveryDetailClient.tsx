@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -203,9 +203,6 @@ export default function DeliveryDetailClient({
   b2bOneOffCohort?: { verticalLabel: string | null; combinedRevenue: number; deliveryCount: number } | null;
 }) {
   const router = useRouter();
-  const routeParams = useParams();
-  const pathDeliverySegment =
-    typeof routeParams?.id === "string" ? decodeURIComponent(routeParams.id) : "";
   const { toast } = useToast();
   const supabase = createClient();
   const [delivery, setDelivery] = useState(initialDelivery);
@@ -407,8 +404,13 @@ export default function DeliveryDetailClient({
   const handleRecordPayment = async () => {
     setRecordPaymentLoading(true);
     try {
-      const idSegment = pathDeliverySegment || String(delivery.id || "");
-      const res = await fetch(`/api/admin/deliveries/${encodeURIComponent(idSegment)}/record-payment`, {
+      const id = String(delivery?.id ?? "").trim();
+      if (!id) {
+        toast("Missing delivery reference.", "alertTriangle");
+        setRecordPaymentLoading(false);
+        return;
+      }
+      const res = await fetch(`/api/admin/deliveries/${encodeURIComponent(id)}/record-payment`, {
         method: "POST",
       });
       const d = await res.json().catch(() => ({}));

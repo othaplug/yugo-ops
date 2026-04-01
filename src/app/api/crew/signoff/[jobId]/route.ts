@@ -7,6 +7,7 @@ import { createReviewRequestIfEligible } from "@/lib/review-request-helper";
 import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
 import { maybeNotifyB2BOneOffDelivered } from "@/lib/b2b-delivery-business-notifications";
+import { isEquipmentRelationUnavailable } from "@/lib/supabase-equipment-errors";
 
 export async function GET(
   req: NextRequest,
@@ -54,18 +55,21 @@ export async function GET(
     }
   }
 
-  const { data: eqRow } = await admin
+  const { data: eqRow, error: eqErr } = await admin
     .from("equipment_checks")
     .select("id, skip_reason")
     .eq("job_type", jobType)
     .eq("job_id", entityId)
     .maybeSingle();
 
+  const equipmentQueryFailed = !!(eqErr && isEquipmentRelationUnavailable(eqErr.message));
+
   return NextResponse.json({
     ...(data || {}),
     partnerVertical,
-    equipmentCheckDone: !!eqRow,
+    equipmentCheckDone: equipmentQueryFailed ? false : !!eqRow,
     equipmentCheckSkippedReason: eqRow?.skip_reason ?? null,
+    equipmentTrackingUnavailable: equipmentQueryFailed,
   });
 }
 

@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { CaretLeft as PhCaretLeft, WarningCircle } from "@phosphor-icons/react";
 import YugoLogo from "@/components/YugoLogo";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
+import {
+  EQUIPMENT_TRACKING_UNAVAILABLE_CODE,
+  EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE,
+  isEquipmentRelationUnavailable,
+} from "@/lib/supabase-equipment-errors";
 
 const GOLD = "#C9A962";
 const INK = "#1A1A1A";
@@ -50,6 +55,7 @@ export default function CrewEquipmentCheckPage({
   const [eqSkipChoice, setEqSkipChoice] = useState<"" | "labour_only" | "emergency_later">("");
   const [eqSkipNote, setEqSkipNote] = useState("");
   const [error, setError] = useState("");
+  const [equipmentUnavailable, setEquipmentUnavailable] = useState(false);
 
   useEffect(() => {
     setImmersiveNav(true);
@@ -87,12 +93,27 @@ export default function CrewEquipmentCheckPage({
     let cancelled = false;
     setEqLoading(true);
     setEqMsg(null);
+    setEquipmentUnavailable(false);
+    setEqSkipOpen(false);
+    setError("");
     fetch(`/api/crew/equipment-check/${encodeURIComponent(id)}?jobType=${encodeURIComponent(jobType)}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
+        if (d.code === EQUIPMENT_TRACKING_UNAVAILABLE_CODE) {
+          setEquipmentUnavailable(true);
+          setEqMsg(d.message || EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE);
+          setEqLines([]);
+          return;
+        }
         if (d.error) {
-          setEqMsg(d.error);
+          const raw = String(d.error);
+          if (isEquipmentRelationUnavailable(raw)) {
+            setEquipmentUnavailable(true);
+            setEqMsg(EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE);
+          } else {
+            setEqMsg(raw);
+          }
           setEqLines([]);
           return;
         }
@@ -130,7 +151,15 @@ export default function CrewEquipmentCheckPage({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Could not save skip");
+        const raw = typeof data.error === "string" ? data.error : "Could not save skip";
+        if (data.code === EQUIPMENT_TRACKING_UNAVAILABLE_CODE || isEquipmentRelationUnavailable(raw)) {
+          setEquipmentUnavailable(true);
+          setEqSkipOpen(false);
+          setEqMsg(EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE);
+          setError("");
+        } else {
+          setError(raw);
+        }
         setEqEquipSubmitting(false);
         return;
       }
@@ -174,7 +203,14 @@ export default function CrewEquipmentCheckPage({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Submit failed");
+        const raw = typeof data.error === "string" ? data.error : "Submit failed";
+        if (data.code === EQUIPMENT_TRACKING_UNAVAILABLE_CODE || isEquipmentRelationUnavailable(raw)) {
+          setEquipmentUnavailable(true);
+          setEqMsg(EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE);
+          setError("");
+        } else {
+          setError(raw);
+        }
         setEqEquipSubmitting(false);
         return;
       }
@@ -271,15 +307,28 @@ export default function CrewEquipmentCheckPage({
         </div>
 
         {eqMsg && (
-          <div className="mb-4 p-3 rounded-xl flex gap-2 items-start" style={{ backgroundColor: `${GOLD}12`, border: `1px solid ${GOLD}35` }}>
-            <WarningCircle size={18} className="shrink-0 mt-0.5" color={GOLD} aria-hidden />
-            <p className="text-[11px]" style={{ color: INK }}>{eqMsg}</p>
+          <div
+            className="mb-4 p-3 rounded-xl flex gap-2 items-start"
+            style={{
+              backgroundColor: equipmentUnavailable ? "#FEF2F2" : `${GOLD}12`,
+              border: `1px solid ${equipmentUnavailable ? "#FECACA" : `${GOLD}35`}`,
+            }}
+          >
+            <WarningCircle
+              size={18}
+              className="shrink-0 mt-0.5"
+              color={equipmentUnavailable ? "#B91C1C" : GOLD}
+              aria-hidden
+            />
+            <p className="text-[11px] leading-relaxed" style={{ color: equipmentUnavailable ? "#991B1B" : INK }}>
+              {eqMsg}
+            </p>
           </div>
         )}
 
         {eqLoading ? (
           <p className="text-[13px] text-center py-8" style={{ color: MUTED }}>Loading equipment…</p>
-        ) : eqLines.length === 0 ? (
+        ) : equipmentUnavailable ? null : eqLines.length === 0 ? (
           <div className="text-center py-6 px-2">
             <p className="text-[12px] leading-relaxed" style={{ color: MUTED }}>
               No equipment list for this truck yet. If your truck should have gear assigned, ask dispatch to set up truck equipment in the admin dashboard.
@@ -383,25 +432,29 @@ export default function CrewEquipmentCheckPage({
           </div>
         ) : null}
 
-        <button
-          type="button"
-          onClick={submitEquipmentCheck}
-          disabled={eqEquipSubmitting || eqLines.length === 0}
-          className="w-full py-2 font-semibold transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 mb-2"
-          style={{ backgroundColor: GOLD, color: "#1A1A1A", fontSize: 16 }}
-        >
-          {eqEquipSubmitting ? "Saving…" : "Submit equipment check"}
-        </button>
-        <button
-          type="button"
-          onClick={() => { setEqSkipOpen(true); setError(""); }}
-          className="w-full py-2 text-[11px] font-semibold border rounded-xl transition-colors"
-          style={{ borderColor: BORDER, color: INK }}
-        >
-          Skip equipment check (reason required)
-        </button>
+        {!equipmentUnavailable ? (
+          <>
+            <button
+              type="button"
+              onClick={submitEquipmentCheck}
+              disabled={eqEquipSubmitting || eqLines.length === 0}
+              className="w-full py-2 font-semibold transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 mb-2"
+              style={{ backgroundColor: GOLD, color: "#1A1A1A", fontSize: 16 }}
+            >
+              {eqEquipSubmitting ? "Saving…" : "Submit equipment check"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEqSkipOpen(true); setError(""); }}
+              className="w-full py-2 text-[11px] font-semibold border rounded-xl transition-colors"
+              style={{ borderColor: BORDER, color: INK }}
+            >
+              Skip equipment check (reason required)
+            </button>
+          </>
+        ) : null}
 
-        {eqSkipOpen ? (
+        {eqSkipOpen && !equipmentUnavailable ? (
           <div className="mt-4 p-4 rounded-2xl border space-y-3" style={{ borderColor: BORDER, backgroundColor: NOTE_FILL }}>
             <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: INK }}>Skip reason</p>
             <label className="flex items-center gap-2 text-[12px] cursor-pointer">

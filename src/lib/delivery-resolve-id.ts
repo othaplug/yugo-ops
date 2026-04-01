@@ -11,7 +11,7 @@ export async function resolveDeliveryUuidFromApiPathSegment(
   admin: AdminClient,
   segment: string,
 ): Promise<string | null> {
-  const s = decodeURIComponent(String(segment || "").trim());
+  let s = decodeURIComponent(String(segment || "").trim()).replace(/^#/, "");
   if (!s) return null;
 
   if (isUuid(s)) {

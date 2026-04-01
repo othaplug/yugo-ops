@@ -2,12 +2,12 @@
 
 import { toTitleCase } from "@/lib/format-text";
 import { useEffect, useState } from "react";
-import { Package, Warning, CheckCircle } from "@phosphor-icons/react";
+import { Truck, Warning, CheckCircle, MinusCircle } from "@phosphor-icons/react";
 
 type FleetRow = {
   truckId: string;
   name: string;
-  status: string;
+  status: "low" | "full" | "none" | string;
   itemsLabel: string;
   shortCount: number;
   lastChecked: string | null;
@@ -25,7 +25,11 @@ type LossRow = {
   deliveryId: string | null;
 };
 
-export default function EquipmentDashboard() {
+interface EquipmentDashboardProps {
+  refreshKey?: number;
+}
+
+export default function EquipmentDashboard({ refreshKey = 0 }: EquipmentDashboardProps) {
   const [fleet, setFleet] = useState<FleetRow[]>([]);
   const [restock, setRestock] = useState<RestockRow[]>([]);
   const [losses, setLosses] = useState<LossRow[]>([]);
@@ -35,6 +39,7 @@ export default function EquipmentDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     fetch("/api/admin/equipment-dashboard")
       .then((r) => r.json())
       .then((d) => {
@@ -47,7 +52,7 @@ export default function EquipmentDashboard() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshKey]);
 
   if (loading) {
     return <p className="text-[12px] text-[var(--tx3)] py-6">Loading equipment status…</p>;
@@ -61,7 +66,7 @@ export default function EquipmentDashboard() {
   return (
     <section className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
       <div className="px-4 py-3 border-b border-[var(--brd)] flex items-center gap-2">
-        <Package className="w-4 h-4 text-[var(--gold)]" aria-hidden />
+        <Truck className="w-4 h-4 text-[var(--gold)]" aria-hidden />
         <h2 className="text-[13px] font-bold text-[var(--tx)]">Equipment status</h2>
       </div>
       <div className="p-4 space-y-6">
@@ -96,6 +101,10 @@ export default function EquipmentDashboard() {
                         {f.status === "low" ? (
                           <span className="inline-flex items-center gap-1 text-amber-700">
                             <Warning size={12} aria-hidden /> Low
+                          </span>
+                        ) : f.status === "none" ? (
+                          <span className="inline-flex items-center gap-1 text-[var(--tx3)]">
+                            <MinusCircle size={12} aria-hidden /> No equipment rows
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-emerald-700">

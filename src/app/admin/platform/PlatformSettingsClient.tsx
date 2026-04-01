@@ -12,6 +12,8 @@ import DeviceSetupCodes from "./DeviceSetupCodes";
 import TruckAssignments from "./TruckAssignments";
 import FleetVehiclesManager from "./FleetVehiclesManager";
 import EquipmentDashboard from "./EquipmentDashboard";
+import EquipmentCatalogPanel from "./EquipmentCatalogPanel";
+import TruckOnboardingWizard from "./TruckOnboardingWizard";
 import UserDetailModal from "./UserDetailModal";
 import ModalOverlay from "../components/ModalOverlay";
 import PartnersManagement from "./PartnersManagement";
@@ -1176,6 +1178,8 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   const [editStaffSaving, setEditStaffSaving] = useState(false);
   const [confirmDeleteStaff, setConfirmDeleteStaff] = useState<StaffMember | null>(null);
   const [deleteStaffSaving, setDeleteStaffSaving] = useState(false);
+  const [truckOnboardingOpen, setTruckOnboardingOpen] = useState(false);
+  const [devicesRefreshTick, setDevicesRefreshTick] = useState(0);
 
   useEffect(() => {
     setTeams(initialTeams);
@@ -2099,17 +2103,33 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {/* Devices: Fleet Vehicles, iPad Setup Codes, Truck Assignments */}
       {activeTab === "devices" && (
         <div className="space-y-6">
+          <TruckOnboardingWizard
+            open={truckOnboardingOpen}
+            onClose={() => setTruckOnboardingOpen(false)}
+            onFinished={() => setDevicesRefreshTick((n) => n + 1)}
+          />
           <section className="rounded-xl border border-[var(--brd)] bg-[var(--bg2)] px-4 py-3.5 text-[11px] text-[var(--tx2)] leading-relaxed">
             <p className="font-semibold text-[var(--tx)] mb-1.5">One fleet list for operations</p>
-            <p>
-              Vehicles you add under Fleet Vehicles are the same records used for truck assignments (team per vehicle per day), equipment status per truck, and the vehicle you select when you create iPad setup codes.
-              Coordinators can manage truck assignments; owners still manage setup codes. Deploy the latest app and database changes together so tablets and assignments stay in sync.
+            <p className="mb-3">
+              Vehicles you add here are the same records used for truck assignments (team per vehicle per day), equipment on each truck, and iPad setup codes. Managers can create setup codes; coordinators manage assignments.
+              Crew resolves a truck from the registered iPad (setup code with truck + team) and from today&apos;s truck assignment when needed.
             </p>
+            <button
+              type="button"
+              onClick={() => setTruckOnboardingOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-95 transition-opacity"
+            >
+              Start truck onboarding
+            </button>
+            <span className="block mt-2 text-[10px] text-[var(--tx3)]">
+              Guided flow: new vehicle, equipment on truck, team link, iPad setup code.
+            </span>
           </section>
-          <FleetVehiclesManager />
-          <EquipmentDashboard />
-          <DeviceSetupCodes />
-          <TruckAssignments />
+          <EquipmentCatalogPanel />
+          <FleetVehiclesManager refreshKey={devicesRefreshTick} />
+          <EquipmentDashboard refreshKey={devicesRefreshTick} />
+          <DeviceSetupCodes refreshKey={devicesRefreshTick} />
+          <TruckAssignments refreshKey={devicesRefreshTick} />
         </div>
       )}
 

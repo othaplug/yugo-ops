@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   if (authErr) return authErr;
 
   const body = await req.json();
-  const { vehicle_type, license_plate, display_name, capacity_cuft, capacity_lbs, current_mileage, status, default_team_id, notes } = body;
+  const { vehicle_type, license_plate, display_name, capacity_cuft, capacity_lbs, current_mileage, status, default_team_id, notes, phone } = body;
 
   if (!vehicle_type || !license_plate) {
     return NextResponse.json({ error: "vehicle_type and license_plate required" }, { status: 400 });
@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
   };
   const defaults = typeDefaults[vehicle_type] || { cuft: 0, lbs: 0, name: vehicle_type };
 
+  const phoneNorm =
+    typeof phone === "string" && phone.trim() !== "" ? phone.trim() : null;
+
   const sb = createAdminClient();
   const { data, error } = await sb
     .from("fleet_vehicles")
@@ -49,6 +52,7 @@ export async function POST(req: NextRequest) {
       status: status ?? "active",
       default_team_id: default_team_id || null,
       notes: notes || null,
+      phone: phoneNorm,
     })
     .select()
     .single();

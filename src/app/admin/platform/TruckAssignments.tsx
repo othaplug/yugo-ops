@@ -21,7 +21,11 @@ interface Assignment {
   date: string;
 }
 
-export default function TruckAssignments() {
+interface TruckAssignmentsProps {
+  refreshKey?: number;
+}
+
+export default function TruckAssignments({ refreshKey = 0 }: TruckAssignmentsProps) {
   const { toast } = useToast();
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -49,7 +53,8 @@ export default function TruckAssignments() {
 
   useEffect(() => {
     fetchData();
-  }, [date]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- date + refreshKey drive reload
+  }, [date, refreshKey]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();

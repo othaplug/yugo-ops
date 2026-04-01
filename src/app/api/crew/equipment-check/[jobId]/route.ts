@@ -3,6 +3,12 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { notifyAllAdmins } from "@/lib/notifications";
+import {
+  EQUIPMENT_TRACKING_UNAVAILABLE_CODE,
+  EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE,
+  isEquipmentRelationUnavailable,
+} from "@/lib/supabase-equipment-errors";
+import { getTruckIdForCrewTeam } from "@/lib/crew-truck-resolution";
 
 async function resolveEntityId(
   admin: ReturnType<typeof createAdminClient>,
@@ -33,22 +39,6 @@ async function assertTeamOwnsJob(
   return !!(data && (data as { crew_id: string }).crew_id === teamId);
 }
 
-async function getTruckIdForTeam(
-  admin: ReturnType<typeof createAdminClient>,
-  teamId: string,
-): Promise<string | null> {
-  const { data: device } = await admin
-    .from("registered_devices")
-    .select("truck_id")
-    .eq("default_team_id", teamId)
-    .eq("is_active", true)
-    .not("truck_id", "is", null)
-    .order("last_active_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return device?.truck_id || null;
-}
-
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
@@ -66,20 +56,31 @@ export async function GET(
   const owns = await assertTeamOwnsJob(admin, entityId, jobType, payload.teamId);
   if (!owns) return NextResponse.json({ error: "Not your job" }, { status: 403 });
 
-  const { data: existing } = await admin
+  const { data: existing, error: existingErr } = await admin
     .from("equipment_checks")
     .select("id, skip_reason, skip_notes")
     .eq("job_type", jobType)
     .eq("job_id", entityId)
     .maybeSingle();
 
-  const truckId = await getTruckIdForTeam(admin, payload.teamId);
+  if (existingErr && isEquipmentRelationUnavailable(existingErr.message)) {
+    return NextResponse.json({
+      code: EQUIPMENT_TRACKING_UNAVAILABLE_CODE,
+      truckId: null,
+      lines: [],
+      check: null,
+      message: EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE,
+    });
+  }
+
+  const truckId = await getTruckIdForCrewTeam(admin, payload.teamId);
   if (!truckId) {
     return NextResponse.json({
       truckId: null,
       lines: [],
       check: existing || null,
-      message: "No truck linked to this device. Ask dispatch to register the iPad to a truck.",
+      message:
+        "No truck resolved for this team. Ask dispatch to (1) register the iPad with a setup code that includes both truck and team, and/or (2) set today’s truck assignment for your team in Platform → Devices.",
     });
   }
 
@@ -161,15 +162,21 @@ export async function POST(
   const owns = await assertTeamOwnsJob(admin, entityId, jobType, payload.teamId);
   if (!owns) return NextResponse.json({ error: "Not your job" }, { status: 403 });
 
-  const { data: dup } = await admin
+  const { data: dup, error: dupErr } = await admin
     .from("equipment_checks")
     .select("id")
     .eq("job_type", jobType)
     .eq("job_id", entityId)
     .maybeSingle();
+  if (dupErr && isEquipmentRelationUnavailable(dupErr.message)) {
+    return NextResponse.json(
+      { code: EQUIPMENT_TRACKING_UNAVAILABLE_CODE, error: EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE },
+      { status: 503 },
+    );
+  }
   if (dup) return NextResponse.json({ error: "Equipment check already submitted" }, { status: 400 });
 
-  const truckId = await getTruckIdForTeam(admin, payload.teamId);
+  const truckId = await getTruckIdForCrewTeam(admin, payload.teamId);
   const crewLeadId = payload.crewMemberId || null;
 
   if (skipReason) {
@@ -185,12 +192,26 @@ export async function POST(
       })
       .select("id")
       .single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      if (isEquipmentRelationUnavailable(error.message)) {
+        return NextResponse.json(
+          { code: EQUIPMENT_TRACKING_UNAVAILABLE_CODE, error: EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE },
+          { status: 503 },
+        );
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     return NextResponse.json({ ok: true, id: ins.id, skipped: true });
   }
 
   if (!truckId) {
-    return NextResponse.json({ error: "No truck assigned to this device" }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          "No truck resolved for this team. Use a setup code with truck + team, or set today’s truck assignment for this team.",
+      },
+      { status: 400 },
+    );
   }
 
   const { data: teRows } = await admin
@@ -267,7 +288,15 @@ export async function POST(
     .select("id")
     .single();
 
-  if (cErr || !checkRow) return NextResponse.json({ error: cErr?.message || "Insert failed" }, { status: 500 });
+  if (cErr || !checkRow) {
+    if (cErr && isEquipmentRelationUnavailable(cErr.message)) {
+      return NextResponse.json(
+        { code: EQUIPMENT_TRACKING_UNAVAILABLE_CODE, error: EQUIPMENT_TRACKING_UNAVAILABLE_MESSAGE },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: cErr?.message || "Insert failed" }, { status: 500 });
+  }
 
   const lineInserts: Record<string, unknown>[] = [];
   const nowIso = new Date().toISOString();

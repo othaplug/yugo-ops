@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireOwner } from "@/lib/auth/check-role";
+import { requireRole } from "@/lib/auth/check-role";
 import { fleetVehicleToTruckListRow } from "@/lib/fleet-vehicle-label";
 
 function generateCode(): string {
@@ -13,9 +13,9 @@ function generateCode(): string {
   return `${part1}-${part2}`;
 }
 
-/** GET: List trucks, teams, recent setup codes (owner only) */
+/** GET: List trucks, teams, recent setup codes (coordinator+) */
 export async function GET() {
-  const { error: authErr } = await requireOwner();
+  const { error: authErr } = await requireRole("coordinator");
   if (authErr) return authErr;
 
   const admin = createAdminClient();
@@ -40,9 +40,9 @@ export async function GET() {
   return NextResponse.json({ trucks, teams, codes });
 }
 
-/** POST: Create a new setup code (owner only) */
+/** POST: Create a new setup code (manager+) */
 export async function POST(req: NextRequest) {
-  const { error: authErr } = await requireOwner();
+  const { error: authErr } = await requireRole("manager");
   if (authErr) return authErr;
 
   try {

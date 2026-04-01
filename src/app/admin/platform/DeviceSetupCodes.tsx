@@ -4,12 +4,10 @@ import { useState, useEffect } from "react";
 import { useToast } from "../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import ModalOverlay from "../components/ModalOverlay";
-import { PHONE_PLACEHOLDER, formatPhone } from "@/lib/phone";
 
 interface Truck {
   id: string;
   name: string;
-  phone?: string | null;
 }
 
 interface Team {
@@ -28,26 +26,23 @@ interface SetupCode {
   created_at: string;
 }
 
-export default function DeviceSetupCodes() {
+interface DeviceSetupCodesProps {
+  refreshKey?: number;
+}
+
+export default function DeviceSetupCodes({ refreshKey = 0 }: DeviceSetupCodesProps) {
   const { toast } = useToast();
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [codes, setCodes] = useState<SetupCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [addTruckModalOpen, setAddTruckModalOpen] = useState(false);
-  const [newTruckName, setNewTruckName] = useState("");
-  const [addTruckSaving, setAddTruckSaving] = useState(false);
   const [formTruckId, setFormTruckId] = useState("");
   const [formTeamId, setFormTeamId] = useState("");
   const [formDeviceName, setFormDeviceName] = useState("");
   const [formExpiresInHours, setFormExpiresInHours] = useState(24);
   const [creating, setCreating] = useState(false);
   const [createdCode, setCreatedCode] = useState<SetupCode | null>(null);
-  const [editingTruck, setEditingTruck] = useState<Truck | null>(null);
-  const [editTruckName, setEditTruckName] = useState("");
-  const [savingTruck, setSavingTruck] = useState(false);
-  const [deletingTruckId, setDeletingTruckId] = useState<string | null>(null);
   const [deletingCodeId, setDeletingCodeId] = useState<string | null>(null);
 
   const fetchData = () => {
@@ -65,7 +60,8 @@ export default function DeviceSetupCodes() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey triggers reload; fetchData is stable enough
+  }, [refreshKey]);
 
   const handleCreateCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,81 +101,9 @@ export default function DeviceSetupCodes() {
     }
   };
 
-  const handleAddTruck = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = newTruckName.trim();
-    if (!name) return;
-    setAddTruckSaving(true);
-    try {
-      const res = await fetch("/api/admin/trucks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast(data.error || "Failed to add truck", "x");
-        return;
-      }
-      setTrucks((prev) => [...prev, data]);
-      setNewTruckName("");
-      setAddTruckModalOpen(false);
-      toast("Truck added", "check");
-    } catch {
-      toast("Failed to add truck", "x");
-    } finally {
-      setAddTruckSaving(false);
-    }
-  };
-
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast("Code copied", "check");
-  };
-
-  const handleUpdateTruck = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingTruck || !editTruckName.trim()) return;
-    setSavingTruck(true);
-    try {
-      const res = await fetch("/api/admin/trucks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingTruck.id, name: editTruckName.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast(data.error || "Failed to update truck", "x");
-        return;
-      }
-      setTrucks((prev) => prev.map((t) => (t.id === editingTruck.id ? { ...t, name: data.name } : t)));
-      setEditingTruck(null);
-      setEditTruckName("");
-      toast("Truck updated", "check");
-    } catch {
-      toast("Failed to update truck", "x");
-    } finally {
-      setSavingTruck(false);
-    }
-  };
-
-  const handleRemoveTruck = async (truck: Truck) => {
-    if (!window.confirm(`Remove truck "${truck.name}"? Devices linked to it will keep working but the truck will no longer appear in the list.`)) return;
-    setDeletingTruckId(truck.id);
-    try {
-      const res = await fetch(`/api/admin/trucks?id=${encodeURIComponent(truck.id)}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) {
-        toast(data.error || "Failed to remove truck", "x");
-        return;
-      }
-      setTrucks((prev) => prev.filter((t) => t.id !== truck.id));
-      toast("Truck removed", "check");
-    } catch {
-      toast("Failed to remove truck", "x");
-    } finally {
-      setDeletingTruckId(null);
-    }
   };
 
   const truckMap = new Map(trucks.map((t) => [t.id, t.name]));
@@ -231,14 +155,6 @@ export default function DeviceSetupCodes() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
-            {trucks.length === 0 && (
-              <button
-                onClick={() => setAddTruckModalOpen(true)}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
-              >
-                + Add Truck
-              </button>
-            )}
             <button
               onClick={() => setCreateModalOpen(true)}
               className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all"
@@ -248,6 +164,15 @@ export default function DeviceSetupCodes() {
           </div>
         </div>
         <div className="px-5 py-5">
+          {trucks.length === 0 && (
+            <p className="text-[11px] text-[var(--tx3)] mb-4 px-1">
+              Add a vehicle under{" "}
+              <a href="#fleet-vehicles" className="text-[var(--gold)] font-semibold hover:underline">
+                Fleet Vehicles
+              </a>{" "}
+              before you can attach a truck to a setup code.
+            </p>
+          )}
           {codes.length === 0 ? (
             <div className="py-10 px-4 text-center">
               <p className="text-[var(--text-base)] font-medium text-[var(--tx)] mb-1">No setup codes yet</p>
@@ -314,126 +239,6 @@ export default function DeviceSetupCodes() {
         </div>
       </div>
 
-      {trucks.length > 0 && (
-        <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="admin-section-h2 flex items-center gap-2.5 min-w-0">
-              <Icon name="truck" className="w-[14px] h-[14px]" /> Fleet Trucks
-            </h2>
-            <button
-              onClick={() => setAddTruckModalOpen(true)}
-              className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
-            >
-              + Add Truck
-            </button>
-          </div>
-          <div className="px-5 py-4">
-            <p className="text-[11px] text-[var(--tx3)] mb-3">
-              Set the call number for each truck. Customers see this number on the live tracking page. One number per truck, no duplicate rows when tablets are re-registered.
-            </p>
-            <div className="space-y-3">
-              {trucks.map((t) => (
-                <div key={t.id} className="border border-[var(--brd)] rounded-lg px-4 py-3 space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-[13px] font-semibold text-[var(--tx)]">{t.name}</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <button
-                          type="button"
-                          onClick={() => { setEditingTruck(t); setEditTruckName(t.name); }}
-                          className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
-                        >
-                          Rename
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTruck(t)}
-                          disabled={deletingTruckId === t.id}
-                          className="text-[10px] font-semibold text-[var(--red)] hover:underline disabled:opacity-50"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                    {t.phone && (
-                      <span className="text-[11px] font-medium text-[var(--gold)] shrink-0">{formatPhone(t.phone)}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="tel"
-                      defaultValue={t.phone || ""}
-                      placeholder={PHONE_PLACEHOLDER}
-                      onBlur={async (e) => {
-                        const phone = e.target.value.trim();
-                        if (phone === (t.phone || "")) return;
-                        try {
-                          const res = await fetch("/api/admin/trucks", {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ id: t.id, phone: phone || null }),
-                          });
-                          if (res.ok) {
-                            setTrucks((prev) => prev.map((x) => (x.id === t.id ? { ...x, phone: phone || null } : x)));
-                            toast("Truck phone saved", "check");
-                          } else {
-                            const data = await res.json().catch(() => ({}));
-                            toast(data.error || "Failed to save phone", "x");
-                          }
-                        } catch {
-                          toast("Failed to save phone", "x");
-                        }
-                      }}
-                      className="flex-1 px-3 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
-                    />
-                    <span className="text-[9px] text-[var(--tx3)] shrink-0">Auto-saves on blur</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {editingTruck && (
-        <ModalOverlay
-          open={!!editingTruck}
-          onClose={() => { setEditingTruck(null); setEditTruckName(""); }}
-          title="Reassign truck"
-        >
-          <form onSubmit={handleUpdateTruck} className="space-y-5">
-            <div>
-              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck name</label>
-              <input
-                type="text"
-                value={editTruckName}
-                onChange={(e) => setEditTruckName(e.target.value)}
-                placeholder="e.g. Truck 1"
-                className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--brd)] outline-none"
-                required
-              />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => { setEditingTruck(null); setEditTruckName(""); }}
-                disabled={savingTruck}
-                className="flex-1 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-[12px] font-medium hover:bg-[var(--bg)] transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={savingTruck || !editTruckName.trim()}
-                className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
-              >
-                {savingTruck ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </form>
-        </ModalOverlay>
-      )}
-
       <ModalOverlay
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
@@ -443,25 +248,23 @@ export default function DeviceSetupCodes() {
         <form onSubmit={handleCreateCode} className="space-y-5">
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck (optional)</label>
-            <div className="flex gap-2">
-              <select
-                value={formTruckId}
-                onChange={(e) => setFormTruckId(e.target.value)}
-                className="flex-1 px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
-              >
-                <option value="">- None -</option>
-                {trucks.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => setAddTruckModalOpen(true)}
-                className="px-3 py-2.5 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] shrink-0"
-              >
-                + Truck
-              </button>
-            </div>
+            <select
+              value={formTruckId}
+              onChange={(e) => setFormTruckId(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
+            >
+              <option value="">- None -</option>
+              {trucks.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-[var(--tx3)] mt-1">
+              Vehicles and call numbers are managed in{" "}
+              <a href="#fleet-vehicles" className="text-[var(--gold)] font-semibold hover:underline">
+                Fleet Vehicles
+              </a>
+              .
+            </p>
           </div>
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Default Team (optional)</label>
@@ -475,7 +278,9 @@ export default function DeviceSetupCodes() {
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
-            <p className="text-[10px] text-[var(--tx3)] mt-1">At least one of Truck or Team is required</p>
+            <p className="text-[10px] text-[var(--tx3)] mt-1">
+              At least one of truck or team is required. For crew tablets, select <span className="text-[var(--tx2)]">both</span> truck and team so equipment checks and dispatch resolution work without relying only on the daily assignment board.
+            </p>
           </div>
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Device Name (optional)</label>
@@ -517,43 +322,6 @@ export default function DeviceSetupCodes() {
               className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
             >
               {creating ? "Creating…" : "Create Code"}
-            </button>
-          </div>
-        </form>
-      </ModalOverlay>
-
-      <ModalOverlay
-        open={addTruckModalOpen}
-        onClose={() => setAddTruckModalOpen(false)}
-        title="Add Truck"
-      >
-        <form onSubmit={handleAddTruck} className="space-y-5">
-          <div>
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Truck name</label>
-            <input
-              type="text"
-              value={newTruckName}
-              onChange={(e) => setNewTruckName(e.target.value)}
-              placeholder="e.g. Truck 1"
-              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--brd)] outline-none"
-              required
-            />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setAddTruckModalOpen(false)}
-              disabled={addTruckSaving}
-              className="flex-1 py-2.5 rounded-lg border border-[var(--brd)] text-[var(--tx2)] text-[12px] font-medium hover:bg-[var(--bg)] transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={addTruckSaving || !newTruckName.trim()}
-              className="flex-1 py-2.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[12px] font-semibold hover:bg-[var(--gold2)] transition-colors disabled:opacity-50"
-            >
-              {addTruckSaving ? "Adding…" : "Add Truck"}
             </button>
           </div>
         </form>

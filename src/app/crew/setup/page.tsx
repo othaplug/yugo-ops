@@ -21,7 +21,13 @@ export default function CrewSetupPage() {
   const [deviceName, setDeviceName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [setupWarning, setSetupWarning] = useState("");
   const router = useRouter();
+
+  const goToLogin = () => {
+    router.push("/crew/login");
+    router.refresh();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +53,12 @@ export default function CrewSetupPage() {
       if (data.deviceId && typeof window !== "undefined") {
         localStorage.setItem(DEVICE_STORAGE_KEY, data.deviceId);
       }
-      router.push("/crew/login");
-      router.refresh();
+      if (typeof data.warning === "string" && data.warning.trim()) {
+        setSetupWarning(data.warning.trim());
+        setLoading(false);
+        return;
+      }
+      goToLogin();
     } catch {
       setError("Connection error");
     }
@@ -89,6 +99,34 @@ export default function CrewSetupPage() {
             animation: "setupFadeIn 0.6s ease",
           }}
         >
+          {setupWarning ? (
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 22, color: "#F5F5F3", marginBottom: 12 }}>
+                Registered with a note
+              </div>
+              <p style={{ fontSize: 13, color: "#A8A29E", lineHeight: 1.5, marginBottom: 20 }}>{setupWarning}</p>
+              <button
+                type="button"
+                onClick={goToLogin}
+                className="crew-setup-btn"
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  background: "#C9A962",
+                  color: "#0D0D0D",
+                  border: "none",
+                  borderRadius: 0,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  fontFamily: "'DM Sans', sans-serif",
+                  cursor: "pointer",
+                }}
+              >
+                Continue to crew login
+              </button>
+            </div>
+          ) : (
+            <>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div
               style={{
@@ -235,6 +273,8 @@ export default function CrewSetupPage() {
               {loading ? "Registering..." : "Register Device"}
             </button>
           </form>
+            </>
+          )}
         </div>
       </div>
     </main>

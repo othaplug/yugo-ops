@@ -5,6 +5,7 @@ import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 import { Icon } from "@/components/AppIcons";
 import { CaretDown } from "@phosphor-icons/react";
+import { PHONE_PLACEHOLDER } from "@/lib/phone";
 
 interface Vehicle {
   id: string;
@@ -17,6 +18,7 @@ interface Vehicle {
   status: string;
   default_team_id: string | null;
   notes: string | null;
+  phone?: string | null;
   vehicle_maintenance_log?: MaintenanceEntry[];
 }
 
@@ -56,7 +58,11 @@ const MAINT_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-export default function FleetVehiclesManager() {
+interface FleetVehiclesManagerProps {
+  refreshKey?: number;
+}
+
+export default function FleetVehiclesManager({ refreshKey = 0 }: FleetVehiclesManagerProps) {
   const { toast } = useToast();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -73,6 +79,7 @@ export default function FleetVehiclesManager() {
   const [formMileage, setFormMileage] = useState("");
   const [formStatus, setFormStatus] = useState("active");
   const [formTeam, setFormTeam] = useState("");
+  const [formPhone, setFormPhone] = useState("");
   const [formNotes, setFormNotes] = useState("");
 
   // Maintenance form
@@ -83,6 +90,7 @@ export default function FleetVehiclesManager() {
   const [maintDate, setMaintDate] = useState(() => new Date().toISOString().split("T")[0]);
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([
       fetch("/api/admin/fleet-vehicles").then((r) => r.json()),
       fetch("/api/admin/truck-assignments").then((r) => r.json()),
@@ -90,7 +98,7 @@ export default function FleetVehiclesManager() {
       if (Array.isArray(vehicleData)) setVehicles(vehicleData);
       if (assignData?.teams) setTeams(assignData.teams);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     // Auto-fill display name from type
@@ -106,6 +114,7 @@ export default function FleetVehiclesManager() {
     setFormMileage("");
     setFormStatus("active");
     setFormTeam("");
+    setFormPhone("");
     setFormNotes("");
   };
 
@@ -123,6 +132,7 @@ export default function FleetVehiclesManager() {
           current_mileage: parseInt(formMileage) || 0,
           status: formStatus,
           default_team_id: formTeam || null,
+          phone: formPhone.trim() || null,
           notes: formNotes.trim() || null,
         }),
       });
@@ -149,6 +159,7 @@ export default function FleetVehiclesManager() {
           current_mileage: parseInt(formMileage) || 0,
           status: formStatus,
           default_team_id: formTeam || null,
+          phone: formPhone.trim() || null,
           notes: formNotes.trim() || null,
         }),
       });
@@ -217,11 +228,11 @@ export default function FleetVehiclesManager() {
   if (loading) return <div className="py-8 text-center text-[12px] text-[var(--tx3)]">Loading fleet...</div>;
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
+    <div id="fleet-vehicles" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
       <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)] flex items-center justify-between">
         <div>
           <h3 className="font-heading text-[var(--text-base)] font-bold text-[var(--tx)]">Fleet Vehicles</h3>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage trucks and vans. Vehicle data feeds into quote pricing and profitability tracking.</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage trucks and vans, including the call number shown on live tracking. Vehicle data feeds into quote pricing and profitability tracking.</p>
         </div>
         <button
           onClick={() => { resetForm(); setAddOpen(true); }}
@@ -265,6 +276,9 @@ export default function FleetVehiclesManager() {
                       {teamName && (
                         <div className="text-[11px] text-[var(--tx3)]">Team: {teamName}</div>
                       )}
+                      {v.phone && (
+                        <div className="text-[11px] text-[var(--tx3)]">Call number: {v.phone}</div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -285,6 +299,7 @@ export default function FleetVehiclesManager() {
                         setFormMileage(String(v.current_mileage));
                         setFormStatus(v.status);
                         setFormTeam(v.default_team_id || "");
+                        setFormPhone(v.phone || "");
                         setFormNotes(v.notes || "");
                       }}
                       className="px-2.5 py-1 rounded text-[10px] font-semibold border border-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold)]/10"
@@ -358,6 +373,17 @@ export default function FleetVehiclesManager() {
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
             <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
           </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Call number (optional)</label>
+            <input
+              type="tel"
+              value={formPhone}
+              onChange={(e) => setFormPhone(e.target.value)}
+              placeholder={PHONE_PLACEHOLDER}
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+            />
+            <p className="text-[10px] text-[var(--tx3)] mt-1">Shown to customers on live tracking for this vehicle.</p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Mileage (km)</label>
@@ -400,6 +426,17 @@ export default function FleetVehiclesManager() {
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Display Name</label>
             <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Call number (optional)</label>
+            <input
+              type="tel"
+              value={formPhone}
+              onChange={(e) => setFormPhone(e.target.value)}
+              placeholder={PHONE_PLACEHOLDER}
+              className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+            />
+            <p className="text-[10px] text-[var(--tx3)] mt-1">Shown to customers on live tracking for this vehicle.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

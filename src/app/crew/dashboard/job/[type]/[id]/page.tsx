@@ -288,7 +288,7 @@ export default function CrewJobPage({
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (cancelled || !d) return;
-        setEquipmentCheckPending(!d.equipmentCheckDone);
+        setEquipmentCheckPending(!d.equipmentCheckDone && !d.equipmentTrackingUnavailable);
       })
       .catch(() => {
         if (!cancelled) setEquipmentCheckPending(false);

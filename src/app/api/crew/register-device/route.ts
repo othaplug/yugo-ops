@@ -65,12 +65,19 @@ export async function POST(req: NextRequest) {
       .update({ used_at: new Date().toISOString() })
       .eq("id", setupCode.id);
 
+    const missingTruck = !setupCode.truck_id;
     return NextResponse.json({
       ok: true,
       deviceId: device?.device_id,
       deviceName: device?.device_name,
       truckId: device?.truck_id,
       teamId: device?.default_team_id,
+      ...(missingTruck
+        ? {
+            warning:
+              "This code did not include a truck. For truck equipment checks, create a new setup code with both truck and team, then register again (or rely on today’s truck assignment for your team).",
+          }
+        : {}),
     });
   } catch (e) {
     console.error("[register-device] error:", e);

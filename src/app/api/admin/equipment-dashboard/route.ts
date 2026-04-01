@@ -69,13 +69,14 @@ export async function GET() {
 
   const fleetOverview = (trucks || []).map((t) => {
     const s = byTruck.get(t.id) || { short: 0, total: 0, ok: 0, last: null };
+    const status = s.total === 0 ? "none" : s.short > 0 ? "low" : "full";
     return {
       truckId: t.id,
       name: formatFleetVehicleLabel({
         display_name: t.display_name as string,
         license_plate: t.license_plate as string,
       }),
-      status: s.short > 0 ? "low" : "full",
+      status,
       itemsLabel: s.total ? `${s.ok}/${s.total}` : "—",
       shortCount: s.short,
       lastChecked: s.last,
