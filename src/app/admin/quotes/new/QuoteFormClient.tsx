@@ -63,17 +63,19 @@ import {
   isSkidCatalogLabel,
 } from "./b2b-one-off-ui";
 import SpecialtyTransportQuoteBuilder from "./SpecialtyTransportQuoteBuilder";
-import B2BJobsDeliveryForm from "@/components/admin/b2b/B2BJobsDeliveryForm";
+import B2BJobsDeliveryForm, { type B2BJobsEmbedSnapshot } from "@/components/admin/b2b/B2BJobsDeliveryForm";
 import { calculateBinRentalPrice, BIN_RENTAL_BUNDLE_SPECS } from "@/lib/pricing/bin-rental";
 import {
   calculateB2BDimensionalPrice,
   isMoveDateWeekend,
-  lineItemsFromQuotePayload,
   synthesizeStopsFromAddresses,
   type B2BDimensionalQuoteInput,
+  type B2BQuoteLineItem,
   type B2BWeightCategory,
   type DeliveryVerticalRow,
 } from "@/lib/pricing/b2b-dimensional";
+import { mergeBundleTierIntoMergedRates } from "@/lib/b2b-bundle-line-items";
+import { prepareB2bLineItemsForDimensionalEngine } from "@/lib/b2b-dimensional-quote-prep";
 import { suggestB2bWeightTierFromDescription } from "@/lib/pricing/b2b-weight-helpers";
 import { QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
@@ -511,7 +513,31 @@ type B2bLineRow = {
   haul_away?: boolean;
   bundled?: boolean;
   is_skid?: boolean;
+  unit_type?: string;
+  stop_assignment?: string;
+  serial_number?: string;
+  declared_value?: string;
+  crating_required?: boolean;
+  hookup_required?: boolean;
 };
+
+function mapB2bEmbedLinesToQuoteRows(s: B2BJobsEmbedSnapshot): B2bLineRow[] {
+  return s.lines.map((l) => ({
+    description: l.description,
+    qty: l.quantity,
+    weight_category: l.weight_category,
+    fragile: l.fragile,
+    handling_type: s.handlingType,
+    unit_type: l.unit_type,
+    stop_assignment: l.stop_assignment,
+    serial_number: l.serial_number,
+    declared_value: l.declared_value,
+    crating_required: l.crating_required,
+    hookup_required: l.hookup_required,
+    haul_away: l.haul_away_line,
+    assembly_required: l.line_assembly_required,
+  }));
+}
 
 function b2bRouteAddressesFromForm(
   fromAddress: string,
@@ -1030,6 +1056,7 @@ export default function QuoteFormClient({
   const [b2bRouteLoading, setB2bRouteLoading] = useState(false);
   const [b2bSubmitErrors, setB2bSubmitErrors] = useState<Record<string, string>>({});
   const [b2bVerticalExtras, setB2bVerticalExtras] = useState<Record<string, number>>({});
+  const [b2bEmbedSnapshot, setB2bEmbedSnapshot] = useState<B2BJobsEmbedSnapshot | null>(null);
 
   const selectedB2bVertical = useMemo(
     () => deliveryVerticals.find((v) => v.code === b2bVerticalCode) ?? null,
@@ -1044,7 +1071,8 @@ export default function QuoteFormClient({
   }, [selectedB2bVertical]);
 
   const b2bAutoSameDay = useMemo(() => {
-    if (serviceType !== "b2b_delivery" || !selectedB2bVertical || !moveDate.trim()) return false;
+    if ((serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff") || !selectedB2bVertical || !moveDate.trim())
+      return false;
     if (!isMoveDateTodayToronto(moveDate)) return false;
     const merged = selectedB2bVertical.default_config as Record<string, unknown>;
     const sched = (merged.schedule_surcharges || {}) as Record<string, unknown>;
@@ -1053,7 +1081,7 @@ export default function QuoteFormClient({
   }, [serviceType, selectedB2bVertical, moveDate]);
 
   useEffect(() => {
-    if (serviceType !== "b2b_delivery") return;
+    if (serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff") return;
     if (b2bTimeBand === "morning") setPreferredTime("09:00");
     else if (b2bTimeBand === "afternoon") setPreferredTime("13:00");
     else setPreferredTime("18:00");
@@ -1091,8 +1119,34 @@ export default function QuoteFormClient({
     return deliveryVerticals.filter(noOffice);
   }, [b2bPartnerOrgId, b2bPartnerVerticals, deliveryVerticals]);
 
+  const handleB2bEmbedStateChange = useCallback((s: B2BJobsEmbedSnapshot) => {
+    setB2bEmbedSnapshot(s);
+    setB2bVerticalCode(s.verticalCode);
+    setB2bLines(mapB2bEmbedLinesToQuoteRows(s));
+    setFromAddress(s.pickupAddress);
+    setToAddress(s.deliveryAddress);
+    setExtraFromStops(s.extraPickupAddresses.map((address) => ({ address })));
+    setExtraToStops(s.extraDeliveryAddresses.map((address) => ({ address })));
+    if (s.pickupAccess.trim()) setFromAccess(s.pickupAccess);
+    if (s.deliveryAccess.trim()) setToAccess(s.deliveryAccess);
+    setB2bPartnerOrgId(s.partnerOrgId);
+    setB2bBusinessName(s.businessName);
+    const box = parseInt(s.boxCount, 10);
+    if (s.lines.length === 0 && s.verticalCode === "flooring" && Number.isFinite(box) && box >= 1) {
+      setB2bVerticalExtras({ box_count: box });
+    } else {
+      setB2bVerticalExtras({});
+    }
+  }, []);
+
   useEffect(() => {
-    if (serviceType !== "b2b_delivery") return;
+    if (serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff") {
+      setB2bEmbedSnapshot(null);
+    }
+  }, [serviceType]);
+
+  useEffect(() => {
+    if (serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff") return;
     fetch("/api/admin/partners/b2b-list", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => {
@@ -1105,7 +1159,7 @@ export default function QuoteFormClient({
   }, [serviceType]);
 
   useEffect(() => {
-    if (serviceType !== "b2b_delivery") return;
+    if (serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff") return;
     const id = b2bPartnerOrgId.trim();
     if (!id) {
       setB2bPartnerVerticals([]);
@@ -1125,11 +1179,7 @@ export default function QuoteFormClient({
   }, [serviceType, b2bPartnerOrgId]);
 
   useEffect(() => {
-    setB2bVerticalExtras({});
-  }, [b2bVerticalCode]);
-
-  useEffect(() => {
-    if (serviceType !== "b2b_delivery") {
+    if (serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff") {
       setB2bPreviewDistanceKm(null);
       setB2bPreviewDriveMin(null);
       setB2bDeliveryKmFromGta(null);
@@ -2040,7 +2090,7 @@ export default function QuoteFormClient({
   ]);
 
   useEffect(() => {
-    if (serviceType !== "b2b_delivery") return;
+    if (serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff") return;
     const handle = window.setTimeout(() => {
       const run = async () => {
         let body: Record<string, unknown>;
@@ -2144,8 +2194,10 @@ export default function QuoteFormClient({
   }, [moveDate, config]);
 
   const b2bDimensionalPreview = useMemo(() => {
-    if (serviceType !== "b2b_delivery" || !selectedB2bVertical) return null;
-    const merged = selectedB2bVertical.default_config as Record<string, unknown>;
+    if ((serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff") || !selectedB2bVertical) return null;
+    const merged = mergeBundleTierIntoMergedRates({
+      ...(selectedB2bVertical.default_config as Record<string, unknown>),
+    });
     const useVerticalZoneSchedule = String(merged.distance_mode || "") === "zones";
     const sched = (merged.schedule_surcharges || {}) as Record<string, unknown>;
     const schedWeekend = typeof sched.weekend === "number" ? sched.weekend : Number(sched.weekend);
@@ -2162,37 +2214,47 @@ export default function QuoteFormClient({
       ...b2bPlatformGtaZoneLines,
       ...(verticalHandlesWeekend ? [] : b2bPlatformWeekendLine ? [b2bPlatformWeekendLine] : []),
     ];
-    const items = lineItemsFromQuotePayload({
-      b2b_vertical_code: selectedB2bVertical.code,
-      b2b_weight_category: b2bShowLineWeights ? undefined : b2bWeightCategory,
-      b2b_line_items: effectiveB2bLinesPreview
-        .filter((l) => l.description.trim() && l.qty >= 1)
-        .map((l) => {
-          const desc = l.description.trim();
-          const bundled =
-            l.bundled ??
-            (selectedB2bVertical.code === "flooring"
-              ? isFlooringBundledAccessory(desc, selectedB2bVertical.code)
-              : false);
-          const is_skid = l.is_skid ?? isSkidCatalogLabel(desc);
-          return {
-            description: desc,
-            quantity: l.qty,
-            weight_category: l.weight_category as B2BWeightCategory | undefined,
-            weight_lbs:
-              typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
-                ? l.weight_lbs
-                : undefined,
-            fragile: l.fragile,
-            handling_type: l.handling_type?.trim() || undefined,
-            bundled: bundled || undefined,
-            assembly_required: l.assembly_required || undefined,
-            debris_removal: l.debris_removal || undefined,
-            haul_away: l.haul_away || undefined,
-            is_skid: is_skid || undefined,
-          };
-        }),
+    const rawLines = effectiveB2bLinesPreview.filter((l) => l.description.trim() && l.qty >= 1);
+    const rawItems: B2BQuoteLineItem[] = rawLines.map((l) => {
+      const desc = l.description.trim();
+      const bundled =
+        l.bundled ??
+        (selectedB2bVertical.code === "flooring"
+          ? isFlooringBundledAccessory(desc, selectedB2bVertical.code)
+          : false);
+      const is_skid = l.is_skid ?? isSkidCatalogLabel(desc);
+      return {
+        description: desc,
+        quantity: Math.max(1, l.qty),
+        weight_category: l.weight_category as B2BWeightCategory | undefined,
+        weight_lbs:
+          typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
+            ? l.weight_lbs
+            : undefined,
+        fragile: !!l.fragile,
+        handling_type: l.handling_type?.trim() || undefined,
+        bundled: bundled || undefined,
+        assembly_required: l.assembly_required || undefined,
+        debris_removal: l.debris_removal || undefined,
+        haul_away: l.haul_away || undefined,
+        is_skid: is_skid || undefined,
+        unit_type: l.unit_type?.trim() || undefined,
+        serial_number: l.serial_number?.trim() || undefined,
+        stop_assignment: l.stop_assignment?.trim() || undefined,
+        declared_value: l.declared_value?.trim() || undefined,
+        crating_required: l.crating_required || undefined,
+        hookup_required: l.hookup_required || undefined,
+      };
     });
+    const handlingForEngine =
+      b2bEmbedSnapshot?.handlingType?.trim().toLowerCase() ||
+      b2bMasterHandlingType(effectiveB2bLinesPreview);
+    const items = prepareB2bLineItemsForDimensionalEngine(
+      rawItems,
+      selectedB2bVertical.code,
+      handlingForEngine,
+      merged,
+    );
     const stops: B2BDimensionalQuoteInput["stops"] = b2bDimensionalStopsFromForm(
       fromAddress,
       toAddress,
@@ -2203,14 +2265,39 @@ export default function QuoteFormClient({
     );
     const artN = parseInt(String(b2bArtHangingCount).trim(), 10);
     const crateN = parseInt(String(b2bCratingPieces).trim(), 10);
+    const snap = b2bEmbedSnapshot;
+    const stairsParsed = snap?.stairsFlights?.trim() ? Number(snap.stairsFlights.trim()) : NaN;
+    const addons: string[] = [
+      ...(snap?.highValue ? ["high_value"] : []),
+      ...(snap?.artwork ? ["artwork"] : []),
+      ...(snap?.antiques ? ["antiques"] : []),
+    ];
     const dimInput: B2BDimensionalQuoteInput = {
       vertical_code: selectedB2bVertical.code,
       items,
-      handling_type: b2bMasterHandlingType(effectiveB2bLinesPreview),
+      handling_type: handlingForEngine,
       stops,
       weekend: isMoveDateWeekend(moveDate),
       after_hours: b2bAfterHoursDerived,
-      same_day: b2bAutoSameDay,
+      same_day: snap?.sameDay ?? b2bAutoSameDay,
+      time_sensitive: snap?.timeSensitive ?? false,
+      assembly_required: snap?.assemblyRequired ?? false,
+      debris_removal: snap?.debrisRemoval ?? false,
+      stairs_flights: Number.isFinite(stairsParsed) && stairsParsed > 0 ? stairsParsed : undefined,
+      addons: addons.length > 0 ? addons : undefined,
+      skid_count: (() => {
+        const n = snap?.skidCount?.trim() ? Number(snap.skidCount.trim()) : NaN;
+        return Number.isFinite(n) && n > 0 ? n : undefined;
+      })(),
+      total_load_weight_lbs: (() => {
+        const n = snap?.totalLoadWeightLbs?.trim() ? Number(snap.totalLoadWeightLbs.trim()) : NaN;
+        return Number.isFinite(n) && n > 0 ? n : undefined;
+      })(),
+      haul_away_units: (() => {
+        const n = snap?.haulAwayUnits?.trim() ? Number(snap.haulAwayUnits.trim()) : NaN;
+        return Number.isFinite(n) && n > 0 ? n : undefined;
+      })(),
+      returns_pickup: snap?.returnsPickup ?? false,
       art_hanging_count: Number.isFinite(artN) && artN > 0 ? artN : undefined,
       crating_pieces: Number.isFinite(crateN) && crateN > 0 ? crateN : undefined,
     };
@@ -2254,7 +2341,7 @@ export default function QuoteFormClient({
       preTaxTotal,
       tax,
       total: preTaxTotal + tax,
-      hasRealItems: items.length > 0,
+      hasRealItems: rawLines.length > 0,
       fullOverrideApplied,
       overrideReason:
         fullOverrideApplied && b2bOverrideReason.trim().length >= 3 ? b2bOverrideReason.trim() : "",
@@ -2273,6 +2360,7 @@ export default function QuoteFormClient({
     b2bPlatformGtaZoneLines,
     b2bPlatformWeekendLine,
     effectiveB2bLinesPreview,
+    b2bEmbedSnapshot,
     moveDate,
     b2bAfterHoursDerived,
     b2bAutoSameDay,
@@ -2292,7 +2380,7 @@ export default function QuoteFormClient({
   ]);
 
   const b2bPreviewDistanceLabel = useMemo(() => {
-    if (serviceType !== "b2b_delivery") return "";
+    if (serviceType !== "b2b_delivery" && serviceType !== "b2b_oneoff") return "";
     const minChars = 8;
     const route = b2bRouteAddressesFromForm(fromAddress, toAddress, extraFromStops, extraToStops);
     if (route.length < 2) return "Distance: Calculating…";
@@ -2579,7 +2667,10 @@ export default function QuoteFormClient({
       base.b2b_business_name = b2bBusinessName.trim() || undefined;
       base.b2b_vertical_code = b2bVerticalCode || undefined;
       base.b2b_partner_organization_id = b2bPartnerOrgId.trim() || undefined;
-      base.b2b_handling_type = b2bMasterHandlingType(effectiveB2bLines) || undefined;
+      base.b2b_handling_type =
+        b2bEmbedSnapshot?.handlingType?.trim().toLowerCase() ||
+        b2bMasterHandlingType(effectiveB2bLines) ||
+        undefined;
       base.b2b_line_items =
         effectiveB2bLines.length > 0
           ? effectiveB2bLines.map((l) => {
@@ -2608,6 +2699,12 @@ export default function QuoteFormClient({
                 debris_removal: l.debris_removal ? true : undefined,
                 haul_away: l.haul_away ? true : undefined,
                 is_skid: is_skid ? true : undefined,
+                unit_type: l.unit_type?.trim() || undefined,
+                serial_number: l.serial_number?.trim() || undefined,
+                stop_assignment: l.stop_assignment?.trim() || undefined,
+                declared_value: l.declared_value?.trim() || undefined,
+                crating_required: l.crating_required ? true : undefined,
+                hookup_required: l.hookup_required ? true : undefined,
               };
             })
           : undefined;
@@ -2697,6 +2794,7 @@ export default function QuoteFormClient({
     b2bPriceOverrideOn,
     b2bPreTaxOverrideAmount,
     b2bOverrideReason,
+    b2bEmbedSnapshot,
     singleItemSpecialHandling, specialtyBuildingReqs, specialtyAccessDifficulty,
     binBundleType, binCustomCount, binExtraBins, binPackingPaper, binMaterialDelivery, binLinkedMoveId,
     binDeliveryNotes, binInternalNotes,
@@ -4973,6 +5071,7 @@ export default function QuoteFormClient({
                     verticals={deliveryVerticals}
                     organizations={b2bOrganizations}
                     crews={b2bCrews}
+                    onEmbedStateChange={handleB2bEmbedStateChange}
                   />
                 </div>
               )}
@@ -5578,13 +5677,20 @@ export default function QuoteFormClient({
                         </div>
                         <p className="text-[9px] text-[var(--tx3)]">Generate for live inventory and final totals.</p>
                       </div>
-                    ) : serviceType === "b2b_delivery" && b2bDimensionalPreview ? (
+                    ) : (serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") && b2bDimensionalPreview ? (
                       <div className="rounded-xl border border-[#2B0416]/25 bg-[#2B0416]/[0.06] p-4 space-y-2">
-                        <p className="text-[11px] font-bold tracking-wide text-[#2B0416]">{b2bLivePreviewTitle}</p>
+                        <p className="text-[11px] font-bold tracking-wide text-[var(--gold)]">
+                          {b2bLivePreviewTitle}
+                        </p>
                         <p className="text-[10px] text-[var(--tx2)] uppercase tracking-wide">
                           {b2bPreviewDistanceKm != null
                             ? `${b2bPreviewDistanceKm} Km · ~${b2bPreviewDriveMin ?? "—"} Min Drive`
                             : b2bPreviewDistanceLabel}
+                        </p>
+                        <p className="text-[10px] text-[var(--tx3)] flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span>Truck: {b2bDimensionalPreview.dim.truck}</span>
+                          <span>Crew: {String(b2bDimensionalPreview.dim.crew)}</span>
+                          <span>Est. hours: {String(b2bDimensionalPreview.dim.estimatedHours)}</span>
                         </p>
                         {b2bDeliveryKmFromGta != null ? (
                           <p className="text-[10px] text-[var(--tx3)]">
@@ -5632,7 +5738,7 @@ export default function QuoteFormClient({
                         ) : null}
                         {b2bDimensionalPreview.fullOverrideApplied ? (
                           <div className="pt-1 space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-wide text-[#2B0416]">
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--gold)]">
                               Price Override: {fmtPrice(b2bDimensionalPreview.preTaxTotal)}
                             </p>
                             {b2bDimensionalPreview.overrideReason ? (
@@ -5652,15 +5758,15 @@ export default function QuoteFormClient({
                           <span className="text-[var(--tx3)]">HST</span>
                           <span>{fmtPrice(b2bDimensionalPreview.tax)}</span>
                         </div>
-                        <div className="flex justify-between text-[12px] font-bold">
+                        <div className="flex justify-between text-[12px] font-bold text-[var(--tx)]">
                           <span>Total</span>
-                          <span style={{ color: "#2B0416" }}>{fmtPrice(b2bDimensionalPreview.total)}</span>
+                          <span className="tabular-nums">{fmtPrice(b2bDimensionalPreview.total)}</span>
                         </div>
                         <p className="text-[9px] text-[var(--tx3)] leading-snug">
                           Generate For Server Pricing, Partner Rates, And Final Breakdown.
                         </p>
                       </div>
-                    ) : serviceType === "b2b_delivery" ? (
+                    ) : serviceType === "b2b_delivery" || serviceType === "b2b_oneoff" ? (
                       <div className="rounded-xl border border-[var(--brd)]/60 bg-[var(--card)]/40 p-4 text-[11px] text-[var(--tx2)]">
                         <p className="flex items-start gap-2">
                           <Info className="w-4 h-4 shrink-0 text-[var(--gold)] mt-0.5" aria-hidden />
@@ -6455,8 +6561,8 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
   return (
     <div className="rounded-xl border-2 border-[#2B0416]/35 bg-[#F9EDE4]/40 dark:bg-[#2A2520] p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#2B0416]">B2B One-Off</span>
-        <span className="text-3xl font-black tabular-nums text-[#2B0416]">{fmtPrice(t.price)}</span>
+        <span className="text-[13px] font-bold text-[var(--gold)]">B2B One-Off</span>
+        <span className="text-3xl font-black tabular-nums text-[var(--tx)]">{fmtPrice(t.price)}</span>
       </div>
       {dimensional && verticalName ? (
         <p className="text-[11px] font-semibold text-[var(--tx2)]">{verticalName}</p>

@@ -279,6 +279,8 @@ export function lineItemsFromQuotePayload(input: {
   b2b_items?: string[];
   b2b_weight_category?: string;
   b2b_vertical_code?: string;
+  /** When true, return [] if no line items (no synthetic "Delivery" row). */
+  omit_placeholder?: boolean;
 }): B2BQuoteLineItem[] {
   const vcode = (input.b2b_vertical_code || "furniture_retail").trim() || "furniture_retail";
   if (input.b2b_line_items && input.b2b_line_items.length > 0) {
@@ -290,6 +292,7 @@ export function lineItemsFromQuotePayload(input: {
     const wc = mapLegacyWeightCategory(input.b2b_weight_category);
     return enrichB2bLineItems(parsed, vcode, wc);
   }
+  if (input.omit_placeholder) return [];
   return enrichB2bLineItems(
     [{ description: "Delivery", quantity: 1 }],
     vcode,

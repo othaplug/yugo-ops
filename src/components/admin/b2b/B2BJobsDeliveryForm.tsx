@@ -21,7 +21,7 @@ import {
 } from "@phosphor-icons/react";
 import { parseB2BJobsFieldVisibility, b2bJobsFieldVisible } from "@/lib/b2b-jobs-field-visibility";
 import { b2bJobsDimensionalStops } from "@/lib/b2b-jobs-route-helpers";
-import { parseB2bItemConfigShape } from "@/lib/b2b-bundle-line-items";
+import { resolveB2bItemConfig } from "@/lib/b2b-bundle-line-items";
 import { B2bQuickAddIcon } from "@/components/admin/b2b/b2b-quick-add-icon";
 
 const fieldInput = "field-input-compact w-full";
@@ -112,6 +112,35 @@ type LineRow = {
   line_assembly_required?: boolean;
 };
 
+export type B2BJobsLineRow = LineRow;
+
+export type B2BJobsEmbedSnapshot = {
+  businessName: string;
+  verticalCode: string;
+  lines: B2BJobsLineRow[];
+  handlingType: string;
+  pickupAddress: string;
+  deliveryAddress: string;
+  extraPickupAddresses: string[];
+  extraDeliveryAddresses: string[];
+  pickupAccess: string;
+  deliveryAccess: string;
+  partnerOrgId: string;
+  timeSensitive: boolean;
+  assemblyRequired: boolean;
+  debrisRemoval: boolean;
+  stairsFlights: string;
+  highValue: boolean;
+  artwork: boolean;
+  antiques: boolean;
+  skidCount: string;
+  boxCount: string;
+  totalLoadWeightLbs: string;
+  haulAwayUnits: string;
+  returnsPickup: boolean;
+  sameDay: boolean;
+};
+
 function lineAnnotationsBlock(rows: LineRow[]): string | null {
   const lines: string[] = [];
   for (const r of rows) {
@@ -175,6 +204,8 @@ export type B2BJobsDeliveryFormProps = {
   verticals?: B2BVerticalOption[];
   /** When true, render compact header (embedded in Generate Quote). */
   embed?: boolean;
+  /** Sync dimensional state to parent (Generate Quote sidebar + submit payload). */
+  onEmbedStateChange?: (state: B2BJobsEmbedSnapshot) => void;
 };
 
 export default function B2BJobsDeliveryForm({
@@ -182,8 +213,11 @@ export default function B2BJobsDeliveryForm({
   organizations = [],
   verticals = [],
   embed = false,
+  onEmbedStateChange,
 }: B2BJobsDeliveryFormProps) {
   const router = useRouter();
+  const embedCbRef = useRef(onEmbedStateChange);
+  embedCbRef.current = onEmbedStateChange;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -415,8 +449,8 @@ export default function B2BJobsDeliveryForm({
   );
 
   const itemConfig = useMemo(
-    () => parseB2bItemConfigShape(selectedVertical?.default_config),
-    [selectedVertical],
+    () => resolveB2bItemConfig(selectedVertical?.default_config, verticalCode),
+    [selectedVertical, verticalCode],
   );
 
   const vis = useCallback((key: string) => b2bJobsFieldVisible(fieldVisibility, key), [fieldVisibility]);
@@ -665,6 +699,64 @@ export default function B2BJobsDeliveryForm({
     artwork,
     antiques,
     skidCount,
+    totalLoadWeightLbs,
+    haulAwayUnits,
+    returnsPickup,
+    sameDay,
+  ]);
+
+  useEffect(() => {
+    if (!embed) return;
+    const cb = embedCbRef.current;
+    if (!cb) return;
+    cb({
+      businessName: businessName.trim(),
+      verticalCode,
+      lines,
+      handlingType,
+      pickupAddress,
+      deliveryAddress,
+      extraPickupAddresses: extraPickupStops.map((s) => s.address).filter(Boolean),
+      extraDeliveryAddresses: extraDeliveryStops.map((s) => s.address).filter(Boolean),
+      pickupAccess,
+      deliveryAccess,
+      partnerOrgId: partnerOrgId.trim(),
+      timeSensitive,
+      assemblyRequired,
+      debrisRemoval,
+      stairsFlights,
+      highValue,
+      artwork,
+      antiques,
+      skidCount,
+      boxCount,
+      totalLoadWeightLbs,
+      haulAwayUnits,
+      returnsPickup,
+      sameDay,
+    });
+  }, [
+    embed,
+    businessName,
+    verticalCode,
+    lines,
+    handlingType,
+    pickupAddress,
+    deliveryAddress,
+    extraPickupStops,
+    extraDeliveryStops,
+    pickupAccess,
+    deliveryAccess,
+    partnerOrgId,
+    timeSensitive,
+    assemblyRequired,
+    debrisRemoval,
+    stairsFlights,
+    highValue,
+    artwork,
+    antiques,
+    skidCount,
+    boxCount,
     totalLoadWeightLbs,
     haulAwayUnits,
     returnsPickup,

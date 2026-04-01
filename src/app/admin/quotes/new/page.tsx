@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import QuoteFormClient from "./QuoteFormClient";
 import { sumBinsOutOnRental, availableBinInventory } from "@/lib/pricing/bin-rental";
+import { overlayDeliveryVerticalDbColumns } from "@/lib/admin/delivery-vertical-column-sync";
+import { mergeBundleTierIntoMergedRates } from "@/lib/b2b-bundle-line-items";
 
 export const metadata = { title: "New Quote" };
 
@@ -38,11 +40,9 @@ export default async function NewQuotePage() {
     db.from("crews").select("id, name, members").eq("is_active", true).order("name"),
   ]);
 
-  const dvRes = await db
-    .from("delivery_verticals")
-    .select("code, name, pricing_method, base_rate, default_config")
-    .eq("active", true)
-    .order("sort_order", { ascending: true });
+  const dvRes = await db.from("delivery_verticals").select("*").eq("active", true).order("sort_order", {
+    ascending: true,
+  });
   const deliveryVerticalRows = dvRes.error ? [] : (dvRes.data ?? []);
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -57,16 +57,21 @@ export default async function NewQuotePage() {
   const config: Record<string, string> = {};
   for (const r of configRows ?? []) config[r.key] = r.value;
 
-  const deliveryVerticals = (deliveryVerticalRows ?? []).map((row) => ({
-    code: String(row.code),
-    name: String(row.name),
-    pricing_method: String(row.pricing_method ?? "dimensional"),
-    base_rate: Number(row.base_rate ?? 0),
-    default_config:
+  const deliveryVerticals = (deliveryVerticalRows ?? []).map((row) => {
+    const raw =
       row.default_config && typeof row.default_config === "object" && !Array.isArray(row.default_config)
-        ? (row.default_config as Record<string, unknown>)
-        : {},
-  }));
+        ? { ...(row.default_config as Record<string, unknown>) }
+        : {};
+    overlayDeliveryVerticalDbColumns(row as Record<string, unknown>, raw);
+    const default_config = mergeBundleTierIntoMergedRates(raw);
+    return {
+      code: String(row.code),
+      name: String(row.name),
+      pricing_method: String(row.pricing_method ?? "dimensional"),
+      base_rate: Number(row.base_rate ?? 0),
+      default_config,
+    };
+  });
 
   const totalBins = Number(config.bin_total_inventory ?? "500") || 500;
   const outOnRental = await sumBinsOutOnRental(db);

@@ -24,12 +24,16 @@ export const B2B_ONEOFF_CSS = {
 export const B2B_PREVIEW_HEADER_BY_CODE: Record<string, string> = {
   flooring: "Materials Delivery",
   furniture_retail: "White Glove Delivery",
+  designer: "Interior Designer Delivery",
   interior_designer: "Interior Designer Delivery",
   medical_equipment: "Medical Equipment Delivery",
   appliance: "Appliance Delivery",
   art_gallery: "Art & Gallery Delivery",
   restaurant_hospitality: "Restaurant & Hospitality Delivery",
+  ecommerce_bulk: "E-Commerce / Last-Mile Delivery",
   ecommerce: "E-Commerce / Last-Mile Delivery",
+  cabinetry: "Cabinetry & Fixtures Delivery",
+  office_furniture: "Office Furniture Delivery",
   custom: "Custom Delivery",
 };
 
@@ -37,21 +41,21 @@ export const B2B_PREVIEW_HEADER_BY_CODE: Record<string, string> = {
 export const B2B_VERTICAL_DROPDOWN_LABEL: Record<string, string> = {
   furniture_retail: "Furniture Retail Delivery",
   flooring: "Flooring / Building Materials",
+  designer: "Interior Designer Projects",
   interior_designer: "Interior Designer Projects",
   medical_equipment: "Medical / Lab Equipment",
   appliance: "Appliance Delivery",
   art_gallery: "Art & Gallery",
   restaurant_hospitality: "Restaurant / Hospitality",
+  ecommerce_bulk: "E-Commerce / Last-Mile",
   ecommerce: "E-Commerce / Last-Mile",
+  cabinetry: "Cabinetry & Fixtures",
+  office_furniture: "Office Furniture",
   custom: "Custom / Specialty",
 };
 
-export const B2B_OFFICE_VERTICAL_CODES = new Set([
-  "office",
-  "office_commercial",
-  "commercial_furniture",
-  "office_furniture",
-]);
+/** Exclude true office-move verticals from B2B quote dropdown — not office_furniture (commercial SKUs). */
+export const B2B_OFFICE_VERTICAL_CODES = new Set(["office", "office_commercial", "commercial_furniture"]);
 
 const CATALOG: Record<string, string[]> = {
   flooring: [
@@ -104,6 +108,10 @@ const CATALOG: Record<string, string[]> = {
     "Monitor Station",
   ],
   ecommerce: ["Parcel", "Oversized Parcel", "Pallet"],
+  ecommerce_bulk: ["Parcel", "Oversized Parcel", "Pallet"],
+  designer: ["Sofa", "Accent Chair", "Area Rug", "Artwork", "Console"],
+  cabinetry: ["Base Cabinet", "Wall Cabinet", "Countertop", "Vanity"],
+  office_furniture: ["Desk", "Office Chair", "File Cabinet", "Conference Table"],
 };
 
 export function b2bItemCatalogForVertical(code: string): string[] | null {
@@ -169,7 +177,7 @@ export function defaultHandlingForCatalogItem(
   if (isSkidCatalogLabel(itemLabel)) return "skid_drop";
   if (v === "flooring" && (d.includes("box") || d.includes("underlayment"))) return "carry_in";
   if (v === "flooring") return "carry_in";
-  if (v === "furniture_retail" || v === "interior_designer") return "room_of_choice";
+  if (v === "furniture_retail" || v === "designer" || v === "interior_designer") return "room_of_choice";
   if (v === "appliance") return "threshold";
   if (v === "art_gallery") return "white_glove";
   return "threshold";

@@ -1,4 +1,5 @@
 import type { B2BQuoteLineItem } from "@/lib/pricing/b2b-dimensional";
+import { fallbackB2bItemConfig } from "@/lib/b2b-default-item-config";
 
 export type B2bBundleRules = {
   freeAccessories?: string[];
@@ -70,9 +71,28 @@ export function parseB2bItemConfigShape(
   return ic as B2bItemConfigShape;
 }
 
+/** DB `item_config` plus code fallbacks when `quickAdd` or whole `item_config` is missing. */
+export function resolveB2bItemConfig(
+  defaultConfig: Record<string, unknown> | null | undefined,
+  verticalCode: string,
+): B2bItemConfigShape | null {
+  const base = parseB2bItemConfigShape(defaultConfig);
+  const fb = fallbackB2bItemConfig(verticalCode);
+  if (!base && fb) return fb as B2bItemConfigShape;
+  if (base && (!base.quickAdd || base.quickAdd.length === 0) && fb?.quickAdd?.length) {
+    return {
+      ...base,
+      quickAdd: fb.quickAdd as B2bItemConfigShape["quickAdd"],
+      label: base.label || fb.label,
+    };
+  }
+  return base;
+}
+
 /**
  * Marks free accessories and free-with-parent units as `bundled` so tiered base pricing ignores them.
- * Splits lines when only part of a quantity is free (shared pool across all freeWith keys).
+ * Each `freeWith` child description gets its own allowance: sum(parent qty for that child's parent list) × freeRatio.
+ * Multiple lines of the same child type draw from one pool (in input order).
  */
 export function applyBundleRulesToLineItems(
   items: B2BQuoteLineItem[],
@@ -91,15 +111,14 @@ export function applyBundleRulesToLineItems(
     qtyByDesc.set(d, (qtyByDesc.get(d) ?? 0) + Math.max(1, i.quantity));
   }
 
-  const parentSet = new Set<string>();
-  for (const parents of Object.values(freeWith)) {
-    for (const p of parents) {
-      const t = p.trim();
-      if (t) parentSet.add(t);
-    }
+  /** Remaining free units per child SKU (matches launch spec: each accessory type vs its parents). */
+  const pools = new Map<string, number>();
+  for (const [childDesc, parentList] of Object.entries(freeWith)) {
+    const k = childDesc.trim();
+    if (!k || !Array.isArray(parentList) || parentList.length === 0) continue;
+    const parentQty = parentList.reduce((sum, p) => sum + (qtyByDesc.get(p.trim()) ?? 0), 0);
+    pools.set(k, parentQty * ratio);
   }
-  const parentTotal = [...parentSet].reduce((s, p) => s + (qtyByDesc.get(p) ?? 0), 0);
-  let freeWithPool = parentTotal * ratio;
 
   const out: B2BQuoteLineItem[] = [];
   for (const item of items) {
@@ -114,12 +133,14 @@ export function applyBundleRulesToLineItems(
 
     const parents = freeWith[desc];
     if (parents && parents.length > 0) {
-      if (parentTotal <= 0) {
+      const parentQty = parents.reduce((sum, p) => sum + (qtyByDesc.get(p.trim()) ?? 0), 0);
+      if (parentQty <= 0) {
         out.push({ ...item, quantity: q, bundled: false });
         continue;
       }
-      const take = Math.min(q, freeWithPool);
-      freeWithPool -= take;
+      let pool = pools.get(desc) ?? 0;
+      const take = Math.min(q, pool);
+      pools.set(desc, pool - take);
       const paid = q - take;
       if (take > 0) out.push({ ...item, quantity: take, bundled: true });
       if (paid > 0) out.push({ ...item, quantity: paid, bundled: false });
