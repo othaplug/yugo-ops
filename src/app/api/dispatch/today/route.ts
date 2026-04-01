@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
       .eq("scheduled_date", targetDate)
       .neq("status", "cancelled")
       .order("preferred_time", { ascending: true, nullsFirst: false }),
+    // All scheduled deliveries (B2B one-off, partner, retail, day rate) share this query — no service-type filter.
     admin
       .from("deliveries")
       .select(

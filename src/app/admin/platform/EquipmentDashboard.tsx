@@ -66,7 +66,10 @@ export default function EquipmentDashboard() {
       </div>
       <div className="p-4 space-y-6">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--tx3)] mb-2">Fleet overview</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--tx3)] mb-1">Fleet overview</p>
+          <p className="text-[10px] text-[var(--tx3)] mb-2 leading-snug">
+            Lists active and in-maintenance fleet vehicles. Line counts fill in when each truck has equipment rows (crew checks and assignments).
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
@@ -81,7 +84,9 @@ export default function EquipmentDashboard() {
               <tbody>
                 {fleet.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-4 text-[var(--tx3)]">No operational trucks yet.</td>
+                    <td colSpan={5} className="py-4 text-[var(--tx3)]">
+                      No active or in-service fleet vehicles yet. Add vehicles under Fleet Vehicles in this tab.
+                    </td>
                   </tr>
                 ) : (
                   fleet.map((f) => (

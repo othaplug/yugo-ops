@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound, redirect } from "next/navigation";
 import { isUuid, getDeliveryDetailPath } from "@/lib/move-code";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 import DeliveryDetailClient from "./DeliveryDetailClient";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -80,17 +81,12 @@ export default async function DeliveryDetailPage({ params }: { params: Promise<{
 
     const { data: cohortRows } = await db
       .from("deliveries")
-      .select("total_price, admin_adjusted_price, base_price")
+      .select("total_price, admin_adjusted_price, base_price, final_price, calculated_price, override_price, quoted_price")
       .eq("booking_type", "one_off")
       .is("organization_id", null)
       .ilike("contact_email", emailNorm);
     const cohortList = cohortRows ?? [];
-    const lineRev = (r: { admin_adjusted_price?: number | null; total_price?: number | null; base_price?: number | null }) => {
-      const ap = r.admin_adjusted_price != null ? Number(r.admin_adjusted_price) : null;
-      const tp = r.total_price != null ? Number(r.total_price) : null;
-      const bp = r.base_price != null ? Number(r.base_price) : null;
-      return ap ?? tp ?? bp ?? 0;
-    };
+    const lineRev = (r: Parameters<typeof effectiveDeliveryPrice>[0]) => effectiveDeliveryPrice(r);
     const combinedRevenue = cohortList.reduce((s, r) => s + lineRev(r), 0);
     let verticalLabel: string | null = null;
     const vCode = delivery.vertical_code as string | null | undefined;

@@ -145,12 +145,12 @@ export async function GET(
         .limit(1)
         .maybeSingle();
       if (device?.truck_id) {
-        const { data: truck } = await admin
-          .from("trucks")
+        const { data: fv } = await admin
+          .from("fleet_vehicles")
           .select("phone")
           .eq("id", device.truck_id)
           .maybeSingle();
-        if (truck?.phone) crewPhone = truck.phone;
+        if (fv?.phone) crewPhone = fv.phone;
       }
       if (!crewPhone && device?.phone) crewPhone = device.phone;
       if (!crewPhone) {

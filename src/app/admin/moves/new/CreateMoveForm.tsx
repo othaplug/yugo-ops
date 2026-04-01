@@ -11,7 +11,7 @@ import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import DraftBanner from "@/components/ui/DraftBanner";
-import { Info, Plus, Trash as Trash2, FileText } from "@phosphor-icons/react";
+import { Plus, Trash as Trash2, FileText } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 
 interface Org {
@@ -61,9 +61,6 @@ const WG_ASSEMBLY_OPTIONS = ["Full assembly", "Partial", "None"];
 const PROJECT_TYPES = ["Art installation", "Trade show", "Estate cleanout", "Home staging", "Wine transport", "Medical equipment", "Piano move", "Event setup/teardown", "Custom"];
 const TIMELINE_OPTIONS = ["Half day (4hrs)", "Full day (8hrs)", "Multi-day", "TBD"];
 const SPECIAL_EQUIPMENT_PRESETS = ["A-frame cart", "Crating kit", "Climate truck", "Air-ride suspension", "Lift gate", "Crane", "Custom"];
-
-// B2B One-Off
-const B2B_DELIVERY_TYPES = ["Threshold only", "Room placement", "White glove (full assembly)"];
 
 function AnimatedSection({ show, children }: { show: boolean; children: React.ReactNode }) {
   return (
@@ -126,7 +123,6 @@ export default function CreateMoveForm({
     | "single_item"
     | "white_glove"
     | "specialty"
-    | "b2b_oneoff"
     | "event"
     | "labour_only"
   >("residential");
@@ -225,15 +221,6 @@ export default function CreateMoveForm({
   const [spSpecialEquipment, setSpSpecialEquipment] = useState<string[]>([]);
   const [spCustomEquipmentInput, setSpCustomEquipmentInput] = useState("");
   const [spInsuranceRider, setSpInsuranceRider] = useState(false);
-
-  // B2B One-Off state
-  const [b2bSourceBusiness, setB2bSourceBusiness] = useState("");
-  const [b2bEndCustomerName, setB2bEndCustomerName] = useState("");
-  const [b2bEndCustomerPhone, setB2bEndCustomerPhone] = useState("");
-  const b2bPhoneInput = usePhoneInput(b2bEndCustomerPhone, setB2bEndCustomerPhone);
-  const [b2bDeliveryType, setB2bDeliveryType] = useState("");
-  const [b2bItemDetails, setB2bItemDetails] = useState("");
-  const [b2bNumberOfItems, setB2bNumberOfItems] = useState("1");
 
   // Event logistics (manual create move)
   const [eventName, setEventName] = useState("");
@@ -512,15 +499,6 @@ export default function CreateMoveForm({
         formData.append("special_equipment", JSON.stringify(spSpecialEquipment));
         formData.append("insurance_rider", String(spInsuranceRider));
       }
-      // B2B One-Off fields
-      if (moveType === "b2b_oneoff") {
-        formData.append("source_company", b2bSourceBusiness);
-        formData.append("end_customer_name", b2bEndCustomerName);
-        formData.append("end_customer_phone", normalizePhone(b2bEndCustomerPhone));
-        formData.append("delivery_type", b2bDeliveryType);
-        formData.append("item_description", b2bItemDetails);
-        formData.append("number_of_items", b2bNumberOfItems);
-      }
       if (moveType === "event") {
         formData.append("event_name", eventName.trim());
         formData.append(
@@ -584,7 +562,6 @@ export default function CreateMoveForm({
                   "single_item",
                   "white_glove",
                   "specialty",
-                  "b2b_oneoff",
                   "event",
                   "labour_only",
                 ] as const
@@ -595,7 +572,6 @@ export default function CreateMoveForm({
                   single_item: { label: "Single Item", desc: "One item or small batch delivery" },
                   white_glove: { label: "White Glove", desc: "Premium handling, assembly, placement" },
                   specialty: { label: "Specialty", desc: "Piano, art, antiques, estate, trade show" },
-                  b2b_oneoff: { label: "B2B One-Off", desc: "One-off delivery from a business source" },
                   event: { label: "Event logistics", desc: "Venue delivery, setup, return, matches Event quotes" },
                   labour_only: { label: "Labour only", desc: "Crew hours on-site; use same address if one location" },
                 };
@@ -625,13 +601,6 @@ export default function CreateMoveForm({
                   </button>
                 );
               })}
-            </div>
-            {/* B2B recurring warning, fades in when b2b_oneoff is selected */}
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${moveType === "b2b_oneoff" ? "max-h-12 opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"}`}>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--gold)]/8 border border-[var(--gold)]/20 text-[10px] text-[var(--tx3)]">
-                <Info className="w-3 h-3 shrink-0 text-[var(--gold)]" aria-hidden />
-                For recurring partner deliveries, use <span className="font-semibold text-[var(--tx2)] mx-0.5">Partners → Create Project</span> instead.
-              </div>
             </div>
           </div>
 
@@ -977,46 +946,9 @@ export default function CreateMoveForm({
             </div>
           </AnimatedSection>
 
-          {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty" || moveType === "b2b_oneoff" || moveType === "event" || moveType === "labour_only") && (
+          {(moveType === "office" || moveType === "single_item" || moveType === "white_glove" || moveType === "specialty" || moveType === "event" || moveType === "labour_only") && (
             <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
           )}
-
-          {/* B2B One-Off: business info */}
-          <AnimatedSection show={moveType === "b2b_oneoff"}>
-            <div className="space-y-2">
-              <div className="px-3 py-2 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/30 text-[11px] text-[var(--gold)]">
-                For one-off business deliveries. For recurring partner deliveries, use <span className="font-bold">Partners → Create Project</span>.
-              </div>
-              <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">B2B One-Off Delivery</h3>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <Field label="Source Business Name">
-                  <input value={b2bSourceBusiness} onChange={(e) => setB2bSourceBusiness(e.target.value)} placeholder="Company the item is coming from" className={fieldInput} />
-                </Field>
-                <Field label="Delivery Type">
-                  <select value={b2bDeliveryType} onChange={(e) => setB2bDeliveryType(e.target.value)} className={fieldInput}>
-                    <option value="">Select…</option>
-                    {B2B_DELIVERY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </Field>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <Field label="End Customer Name">
-                  <input value={b2bEndCustomerName} onChange={(e) => setB2bEndCustomerName(e.target.value)} placeholder="Person receiving the delivery" className={fieldInput} />
-                </Field>
-                <Field label="End Customer Phone">
-                  <input ref={b2bPhoneInput.ref} type="tel" value={b2bEndCustomerPhone} onChange={b2bPhoneInput.onChange} placeholder={PHONE_PLACEHOLDER} className={fieldInput} />
-                </Field>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <Field label="Number of Items">
-                  <input type="number" min={1} value={b2bNumberOfItems} onChange={(e) => setB2bNumberOfItems(e.target.value)} className={fieldInput} />
-                </Field>
-              </div>
-              <Field label="Item Details">
-                <textarea value={b2bItemDetails} onChange={(e) => setB2bItemDetails(e.target.value)} rows={3} placeholder="Describe items, dimensions, special handling…" className={`${fieldInput} resize-none`} />
-              </Field>
-            </div>
-          </AnimatedSection>
 
           <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
 
@@ -1594,7 +1526,6 @@ export default function CreateMoveForm({
           </div>
 
           {moveType !== "specialty" &&
-            moveType !== "b2b_oneoff" &&
             moveType !== "event" &&
             moveType !== "labour_only" && (
             <>

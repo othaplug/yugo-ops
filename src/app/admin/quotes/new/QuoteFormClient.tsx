@@ -63,6 +63,7 @@ import {
   isSkidCatalogLabel,
 } from "./b2b-one-off-ui";
 import SpecialtyTransportQuoteBuilder from "./SpecialtyTransportQuoteBuilder";
+import B2BJobsDeliveryForm from "@/components/admin/b2b/B2BJobsDeliveryForm";
 import { calculateBinRentalPrice, BIN_RENTAL_BUNDLE_SPECS } from "@/lib/pricing/bin-rental";
 import {
   calculateB2BDimensionalPrice,
@@ -786,11 +787,16 @@ function fmtPrice(n: number) {
 
 // ─── Component ──────────────────────────────────
 
+type QuoteB2BJobsOrg = { id: string; name: string; type?: string | null };
+type QuoteB2BJobsCrew = { id: string; name: string; members?: string[] };
+
 export default function QuoteFormClient({
   addons: allAddons,
   config,
   itemWeights = [],
   deliveryVerticals = [],
+  b2bOrganizations = [],
+  b2bCrews = [],
   userRole = "coordinator",
   isSuperAdmin = false,
   binInventorySnapshot = null,
@@ -800,6 +806,8 @@ export default function QuoteFormClient({
   itemWeights?: ItemWeight[];
   /** Active rows from delivery_verticals for B2B dimensional quotes */
   deliveryVerticals?: QuoteDeliveryVertical[];
+  b2bOrganizations?: QuoteB2BJobsOrg[];
+  b2bCrews?: QuoteB2BJobsCrew[];
   userRole?: string;
   /** Margin/cost preview — super-admin emails only (see isSuperAdminEmail). */
   isSuperAdmin?: boolean;
@@ -2306,33 +2314,6 @@ export default function QuoteFormClient({
     b2bPreviewDistanceKm,
   ]);
 
-  const b2bGenerateValid = useMemo(() => {
-    if (serviceType !== "b2b_delivery") return true;
-    const clientName = [firstName, lastName].filter(Boolean).join(" ");
-    const hasItem = effectiveB2bLines.some((l) => l.description.trim() && l.qty >= 1);
-    const emailOk = Boolean(email?.trim()) && email.includes("@");
-    if (!fromAddress.trim() || !toAddress.trim()) return false;
-    return (
-      Boolean(b2bBusinessName.trim()) &&
-      Boolean(moveDate.trim()) &&
-      Boolean(clientName.trim()) &&
-      Boolean(phone?.trim()) &&
-      emailOk &&
-      hasItem
-    );
-  }, [
-    serviceType,
-    b2bBusinessName,
-    fromAddress,
-    toAddress,
-    moveDate,
-    firstName,
-    lastName,
-    phone,
-    email,
-    effectiveB2bLines,
-  ]);
-
   const binSchedulePreview = useMemo(() => {
     if (serviceType !== "bin_rental" || !moveDate) return null;
     const dropBefore = Math.max(1, Math.floor(cfgNum(config, "bin_rental_drop_off_days_before", 7)));
@@ -2723,6 +2704,10 @@ export default function QuoteFormClient({
 
   // ── Generate quote (Step 1: creates quote in DB, returns quote_id) ────────────────────────
   const handleGenerate = async (opts?: { serviceAreaOverride?: boolean }) => {
+    if (serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") {
+      toast("Build and generate B2B quotes from B2B Jobs under Deliveries.", "info");
+      return;
+    }
     if (serviceType === "event") {
       if (eventMulti) {
         if (eventLegs.length < 2) {
@@ -2757,39 +2742,6 @@ export default function QuoteFormClient({
           `Please fill work address and ${quoteDetailDateLabel(serviceType).toLowerCase()}`,
           "alertTriangle",
         );
-        return;
-      }
-    } else if (serviceType === "b2b_delivery") {
-      setB2bSubmitErrors({});
-      const clientName = [firstName, lastName].filter(Boolean).join(" ");
-      const errs: Record<string, string> = {};
-      if (!fromAddress.trim()) errs.pickup = "Pickup address is required.";
-      if (!toAddress.trim()) errs.delivery = "Delivery address is required.";
-      if (!b2bBusinessName.trim()) errs.business = "Business name is required.";
-      if (!moveDate.trim()) errs.date = "Delivery date is required.";
-      if (!clientName.trim()) errs.contact = "Contact name (first and last) is required.";
-      if (!phone?.trim()) errs.phone = "Contact phone is required.";
-      if (!email?.trim() || !email.includes("@")) errs.email = "Valid email is required.";
-      const hasItem = effectiveB2bLines.some((l) => l.description.trim() && l.qty >= 1);
-      if (!hasItem) errs.items = "Add at least one line item.";
-      const fullOvN = Number(String(b2bPreTaxOverrideAmount).trim().replace(/,/g, ""));
-      const hasFullOv = b2bPriceOverrideOn && Number.isFinite(fullOvN) && fullOvN > 0;
-      if (hasFullOv && b2bOverrideReason.trim().length < 3) {
-        toast("Price override needs a reason (at least 3 characters).", "alertTriangle");
-        return;
-      }
-      if (Object.keys(errs).length > 0) {
-        setB2bSubmitErrors(errs);
-        toast("Fix the highlighted fields below.", "alertTriangle");
-        const order = ["business", "pickup", "delivery", "items", "date", "contact", "phone", "email"];
-        window.setTimeout(() => {
-          for (const k of order) {
-            if (errs[k]) {
-              document.getElementById(`b2b-err-${k}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-              break;
-            }
-          }
-        }, 0);
         return;
       }
     } else if (serviceType === "bin_rental") {
@@ -5010,606 +4962,21 @@ export default function QuoteFormClient({
                 </div>
               )}
 
-              {/* ── B2B One-Off (rebuilt) ── */}
-              {serviceType === "b2b_delivery" && (
-                <div className="max-w-[800px] mx-auto w-full space-y-6" style={B2B_ONEOFF_CSS}>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <h2 className="text-[18px] font-bold tracking-tight" style={{ color: "var(--yugo-wine, #2B0416)" }}>
-                      B2B One-Off Delivery
-                    </h2>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const el = document.querySelector<HTMLInputElement>("[data-b2b-client-search]");
-                        el?.focus();
-                      }}
-                      className="px-4 py-2 rounded-lg text-[13px] font-semibold border transition-colors shrink-0"
-                      style={{
-                        borderColor: "var(--yugo-wine, #2B0416)",
-                        color: "var(--yugo-wine, #2B0416)",
-                        backgroundColor: "transparent",
-                      }}
-                    >
-                      Select Client To Auto-Fill
-                    </button>
-                  </div>
-
-                  <B2bSectionTitle>Client</B2bSectionTitle>
-                  <div ref={contactDropdownRef} className="relative mb-2">
-                    <B2bFieldLabel>Select Client To Auto-Fill</B2bFieldLabel>
-                    <input
-                      data-b2b-client-search
-                      type="text"
-                      value={contactSearch}
-                      onChange={(e) => {
-                        setContactSearch(e.target.value);
-                        setShowContactDropdown(true);
-                      }}
-                      onFocus={() => setShowContactDropdown(true)}
-                      placeholder="Search By Name, Email, Or Phone…"
-                      className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
-                      style={b2bInputStyleProps()}
-                    />
-                    {showContactDropdown && dbContacts.length > 0 && (
-                      <div className="absolute z-10 top-full left-0 right-0 mt-1 max-h-[240px] overflow-y-auto bg-[var(--card)] border border-[var(--brd)] rounded-lg shadow-lg">
-                        <div className="px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] bg-[var(--bg)]">
-                          Contacts
-                        </div>
-                        {dbContacts.map((c) => (
-                          <button
-                            key={c.hubspot_id}
-                            type="button"
-                            onClick={() => {
-                              const parts = (c.name || "").trim().split(/\s+/);
-                              setFirstName(parts[0] || "");
-                              setLastName(parts.slice(1).join(" ") || "");
-                              setEmail(c.email || "");
-                              setPhone(c.phone ? formatPhone(c.phone) : "");
-                              if (c.address) setFromAddress(c.address);
-                              setContactSearch("");
-                              setShowContactDropdown(false);
-                              setDbContacts([]);
-                            }}
-                            className="w-full text-left px-3 py-2 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0"
-                          >
-                            {c.name}
-                            {c.email && <span className="text-[var(--tx3)] ml-1">- {c.email}</span>}
-                            {c.phone && <span className="text-[var(--tx3)] ml-1">- {formatPhone(c.phone)}</span>}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div
-                    id="b2b-err-contact"
-                    className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${b2bSubmitErrors.contact ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}
-                  >
-                    <div>
-                      <B2bFieldLabel>First Name *</B2bFieldLabel>
-                      <input
-                        value={firstName}
-                        onChange={(e) => {
-                          setFirstName(e.target.value);
-                          setClientDedupResult(null);
-                          setClientBannerDismissed(false);
-                        }}
-                        onBlur={handleClientDedupBlur}
-                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
-                        style={b2bInputStyleProps()}
-                      />
-                    </div>
-                    <div>
-                      <B2bFieldLabel>Last Name *</B2bFieldLabel>
-                      <input
-                        value={lastName}
-                        onChange={(e) => {
-                          setLastName(e.target.value);
-                          setClientDedupResult(null);
-                          setClientBannerDismissed(false);
-                        }}
-                        onBlur={handleClientDedupBlur}
-                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
-                        style={b2bInputStyleProps()}
-                      />
-                    </div>
-                    {b2bSubmitErrors.contact ? (
-                      <p className="text-[10px] text-red-600 dark:text-red-400 sm:col-span-2">{b2bSubmitErrors.contact}</p>
-                    ) : null}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div id="b2b-err-email" className={b2bSubmitErrors.email ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}>
-                      <B2bFieldLabel>Email *</B2bFieldLabel>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setClientDedupResult(null);
-                          setClientBannerDismissed(false);
-                        }}
-                        onBlur={handleClientDedupBlur}
-                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
-                        style={b2bInputStyleProps()}
-                      />
-                      {b2bSubmitErrors.email ? (
-                        <p className="text-[10px] text-red-600 dark:text-red-400 mt-1">{b2bSubmitErrors.email}</p>
-                      ) : null}
-                    </div>
-                    <div id="b2b-err-phone" className={b2bSubmitErrors.phone ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}>
-                      <B2bFieldLabel>Phone *</B2bFieldLabel>
-                      <input
-                        ref={phoneInput.ref}
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => {
-                          phoneInput.onChange(e);
-                          setClientDedupResult(null);
-                          setClientBannerDismissed(false);
-                        }}
-                        onBlur={handleClientDedupBlur}
-                        placeholder={PHONE_PLACEHOLDER}
-                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
-                        style={b2bInputStyleProps()}
-                      />
-                      {b2bSubmitErrors.phone ? (
-                        <p className="text-[10px] text-red-600 dark:text-red-400 mt-1">{b2bSubmitErrors.phone}</p>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div id="b2b-err-business" className={b2bSubmitErrors.business ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5 space-y-1" : ""}>
-                      <B2bFieldLabel>Business Name *</B2bFieldLabel>
-                      <input
-                        value={b2bBusinessName}
-                        onChange={(e) => {
-                          setB2bBusinessName(e.target.value);
-                          setClientDedupResult(null);
-                          setClientBannerDismissed(false);
-                        }}
-                        onBlur={handleClientDedupBlur}
-                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
-                        style={b2bInputStyleProps()}
-                      />
-                      {b2bSubmitErrors.business ? (
-                        <p className="text-[10px] text-red-600 dark:text-red-400">{b2bSubmitErrors.business}</p>
-                      ) : null}
-                    </div>
-                    <div>
-                      <B2bFieldLabel>Delivery Vertical *</B2bFieldLabel>
-                      {deliveryVerticals.length > 0 ? (
-                        <>
-                          {b2bPartnerOrgId.trim() && b2bPartnerVerticals.length === 0 ? (
-                            <p className="text-[10px] text-amber-700 dark:text-amber-400 rounded-lg border border-amber-500/30 px-3 py-2 mb-2">
-                              This Partner Has No B2B Delivery Verticals On File.
-                            </p>
-                          ) : null}
-                          <select
-                            value={b2bVerticalCode}
-                            onChange={(e) => setB2bVerticalCode(e.target.value)}
-                            disabled={b2bPartnerOrgId.trim() !== "" && b2bVerticalSelectOptions.length === 0}
-                            className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)] outline-none focus:border-[#2B0416]"
-                            style={b2bInputStyleProps()}
-                          >
-                            {b2bVerticalSelectOptions.map((v) => (
-                              <option key={v.code} value={v.code}>
-                                {B2B_VERTICAL_DROPDOWN_LABEL[v.code] ?? v.name}
-                              </option>
-                            ))}
-                          </select>
-                        </>
-                      ) : (
-                        <p className="text-[10px] text-amber-700 dark:text-amber-400 rounded-lg border border-amber-500/30 px-3 py-2">
-                          No Delivery Verticals Configured.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {b2bPartnersList.length > 0 ? (
-                    <div>
-                      <B2bFieldLabel>Partner Contract (Optional)</B2bFieldLabel>
-                      <select
-                        value={b2bPartnerOrgId}
-                        onChange={(e) => setB2bPartnerOrgId(e.target.value)}
-                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
-                        style={b2bInputStyleProps()}
-                      >
-                        <option value="">None — List Price</option>
-                        {b2bPartnersList.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : null}
-
-                  <B2bSectionTitle>Route</B2bSectionTitle>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div id="b2b-err-pickup" className={`space-y-3 ${b2bSubmitErrors.pickup ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}>
-                      <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--yugo-leather, #492A1D)" }}>
-                        Pickup
-                      </p>
-                      <MultiStopAddressField
-                        label="Address *"
-                        placeholder="Pickup Address"
-                        addStopButtonText="+ Add Stop"
-                        stops={[{ address: fromAddress }, ...extraFromStops]}
-                        onChange={(stops) => {
-                          setFromAddress(stops[0]?.address ?? "");
-                          setExtraFromStops(stops.slice(1));
-                        }}
-                        inputClassName="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
-                      />
-                      <B2bFieldLabel>Access</B2bFieldLabel>
-                      <div className="flex flex-wrap gap-2">
-                        {B2B_ACCESS_PILLS.map((p) => (
-                          <B2bPill
-                            key={p.value}
-                            selected={fromAccess === p.value}
-                            onClick={() => setFromAccess(p.value)}
-                          >
-                            {p.label}
-                          </B2bPill>
-                        ))}
-                      </div>
-                      <B2bFieldLabel>Parking</B2bFieldLabel>
-                      <div className="flex flex-wrap gap-2">
-                        {B2B_PARKING_PILLS.map((p) => (
-                          <B2bPill
-                            key={`fp-${p.value}`}
-                            selected={fromParking === p.value}
-                            onClick={() => setFromParking(p.value as "dedicated" | "street" | "no_dedicated")}
-                          >
-                            {p.label}
-                          </B2bPill>
-                        ))}
-                      </div>
-                      <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: "var(--yugo-leather, #492A1D)" }}>
-                        <input
-                          type="checkbox"
-                          checked={fromLongCarry}
-                          onChange={(e) => setFromLongCarry(e.target.checked)}
-                          className="rounded border-[var(--yugo-border)]"
-                        />
-                        Long Carry (+$75)
-                      </label>
-                      {b2bSubmitErrors.pickup ? (
-                        <p className="text-[10px] text-red-600 dark:text-red-400">{b2bSubmitErrors.pickup}</p>
-                      ) : null}
-                    </div>
-                    <div id="b2b-err-delivery" className={`space-y-3 ${b2bSubmitErrors.delivery ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}>
-                      <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--yugo-leather, #492A1D)" }}>
-                        Delivery
-                      </p>
-                      <MultiStopAddressField
-                        label="Address *"
-                        placeholder="Delivery Address"
-                        addStopButtonText="+ Add Stop"
-                        stops={[{ address: toAddress }, ...extraToStops]}
-                        onChange={(stops) => {
-                          setToAddress(stops[0]?.address ?? "");
-                          setExtraToStops(stops.slice(1));
-                        }}
-                        inputClassName="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
-                      />
-                      <B2bFieldLabel>Access</B2bFieldLabel>
-                      <div className="flex flex-wrap gap-2">
-                        {B2B_ACCESS_PILLS.map((p) => (
-                          <B2bPill
-                            key={`ta-${p.value}`}
-                            selected={toAccess === p.value}
-                            onClick={() => setToAccess(p.value)}
-                          >
-                            {p.label}
-                          </B2bPill>
-                        ))}
-                      </div>
-                      <B2bFieldLabel>Parking</B2bFieldLabel>
-                      <div className="flex flex-wrap gap-2">
-                        {B2B_PARKING_PILLS.map((p) => (
-                          <B2bPill
-                            key={`tp-${p.value}`}
-                            selected={toParking === p.value}
-                            onClick={() => setToParking(p.value as "dedicated" | "street" | "no_dedicated")}
-                          >
-                            {p.label}
-                          </B2bPill>
-                        ))}
-                      </div>
-                      <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: "var(--yugo-leather, #492A1D)" }}>
-                        <input
-                          type="checkbox"
-                          checked={toLongCarry}
-                          onChange={(e) => setToLongCarry(e.target.checked)}
-                          className="rounded border-[var(--yugo-border)]"
-                        />
-                        Long Carry (+$75)
-                      </label>
-                      {b2bSubmitErrors.delivery ? (
-                        <p className="text-[10px] text-red-600 dark:text-red-400">{b2bSubmitErrors.delivery}</p>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 text-[13px]" style={{ color: "var(--yugo-leather, #492A1D)" }}>
-                    {b2bRouteLoading ? (
-                      <span>Calculating Route…</span>
-                    ) : b2bPreviewDistanceKm != null ? (
-                      <>
-                        <span className="font-medium">
-                          {b2bPreviewDistanceKm} Km · ~{b2bPreviewDriveMin ?? "—"} Min Drive
-                        </span>
-                        {b2bDeliveryKmFromGta != null && b2bDeliveryKmFromGta >= 80 ? (
-                          <span
-                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-full text-white"
-                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
-                          >
-                            Zone 3 (+$150)
-                          </span>
-                        ) : b2bDeliveryKmFromGta != null && b2bDeliveryKmFromGta >= 40 ? (
-                          <span
-                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-full text-white"
-                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
-                          >
-                            Zone 2 (+$75)
-                          </span>
-                        ) : (
-                          <span
-                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-full text-white"
-                            style={{ backgroundColor: "var(--yugo-green, #2B3927)" }}
-                          >
-                            Gta Core
-                          </span>
-                        )}
-                        {(fromAccess.startsWith("walk_up") || toAccess.startsWith("walk_up")) ? (
-                          <span
-                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
-                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
-                          >
-                            Stair Carry +{fmtPrice(cfgNum(config, "b2b_stair_carry_flat", 35))}
-                          </span>
-                        ) : null}
-                        {fromParking === "no_dedicated" || toParking === "no_dedicated" ? (
-                          <span
-                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
-                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
-                          >
-                            No Parking +{fmtPrice(parseCfgJson<Record<string, number>>(config, "parking_surcharges", { no_dedicated: 75 }).no_dedicated ?? 75)}
-                          </span>
-                        ) : null}
-                        {fromLongCarry || toLongCarry ? (
-                          <span
-                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
-                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
-                          >
-                            Long Carry +{fmtPrice(cfgNum(config, "long_carry_surcharge", 75))}
-                          </span>
-                        ) : null}
-                      </>
-                    ) : (
-                      <span>Enter Addresses For Distance</span>
-                    )}
-                  </div>
-
-                  <B2bSectionTitle>Delivery Details</B2bSectionTitle>
-                  <div
-                    id="b2b-err-date"
-                    className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${b2bSubmitErrors.date ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5" : ""}`}
-                  >
-                    <div>
-                      <B2bFieldLabel>Delivery Date *</B2bFieldLabel>
-                      <input
-                        type="date"
-                        value={moveDate}
-                        onChange={(e) => setMoveDate(e.target.value)}
-                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
-                        style={b2bInputStyleProps()}
-                      />
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {isMoveDateWeekend(moveDate) ? (
-                          <span
-                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
-                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
-                          >
-                            Weekend +{fmtPrice(cfgNum(config, "b2b_weekend_surcharge", 40))}
-                          </span>
-                        ) : null}
-                        {b2bAfterHoursDerived ? (
-                          <span
-                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
-                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
-                          >
-                            After-Hours +{fmtPrice(cfgNum(config, "b2b_after_hours_flat", 60))}
-                          </span>
-                        ) : null}
-                        {b2bAutoSameDay ? (
-                          <span
-                            className="text-[10px] font-bold uppercase px-2 py-1 rounded text-white"
-                            style={{ backgroundColor: "var(--yugo-rose, #66143D)" }}
-                          >
-                            Same-Day +{fmtPrice(cfgNum(config, "b2b_same_day_flat", 60))}
-                          </span>
-                        ) : null}
-                      </div>
-                      {b2bSubmitErrors.date ? (
-                        <p className="text-[10px] text-red-600 dark:text-red-400 mt-1">{b2bSubmitErrors.date}</p>
-                      ) : null}
-                    </div>
-                    <div>
-                      <B2bFieldLabel>Preferred Time</B2bFieldLabel>
-                      <div className="flex flex-wrap gap-2">
-                        {(
-                          [
-                            { k: "morning" as const, label: "Morning" },
-                            { k: "afternoon" as const, label: "Afternoon" },
-                            { k: "after_hours" as const, label: "After-Hours" },
-                          ] as const
-                        ).map((t) => (
-                          <B2bPill
-                            key={t.k}
-                            selected={b2bTimeBand === t.k}
-                            onClick={() => setB2bTimeBand(t.k)}
-                          >
-                            {t.label}
-                          </B2bPill>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <B2bFieldLabel>Special Instructions</B2bFieldLabel>
-                    <textarea
-                      value={b2bSpecialInstructions}
-                      onChange={(e) => setB2bSpecialInstructions(e.target.value)}
-                      rows={3}
-                      placeholder="Special Handling, Access Notes, Delivery Instructions…"
-                      className="w-full rounded-lg border px-3 py-2 text-[15px] bg-[var(--card)] resize-none outline-none focus:border-[#2B0416]"
-                      style={b2bInputStyleProps()}
-                    />
-                  </div>
-                  {b2bShowArtCratingFields ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <B2bFieldLabel>Art Hanging (Pieces)</B2bFieldLabel>
-                        <input
-                          type="number"
-                          min={0}
-                          value={b2bArtHangingCount}
-                          onChange={(e) => setB2bArtHangingCount(e.target.value)}
-                          className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
-                          style={b2bInputStyleProps()}
-                        />
-                      </div>
-                      <div>
-                        <B2bFieldLabel>Crating (Pieces)</B2bFieldLabel>
-                        <input
-                          type="number"
-                          min={0}
-                          value={b2bCratingPieces}
-                          onChange={(e) => setB2bCratingPieces(e.target.value)}
-                          className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
-                          style={b2bInputStyleProps()}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div
-                    className="flex items-center justify-between gap-2 pb-2 mb-4 border-b"
-                    style={{ borderColor: "var(--yugo-border, rgba(73,42,29,0.25))" }}
-                  >
-                    <h3 className="text-[16px] font-bold" style={{ color: "var(--yugo-wine, #2B0416)" }}>
-                      Items
-                    </h3>
-                    <B2bAddItemCircle
-                      wine="#2B0416"
-                      onClick={() =>
-                        setB2bLines((p) => [
-                          ...p,
-                          {
-                            description: "",
-                            qty: 1,
-                            weight_category: b2bShowLineWeights ? "light" : undefined,
-                            handling_type: "threshold",
-                          },
-                        ])
-                      }
-                    />
-                  </div>
-                  <div id="b2b-err-items" className={b2bSubmitErrors.items ? "rounded-lg border-2 border-red-500/45 p-2 -m-0.5 space-y-2" : "space-y-3"}>
-                    {b2bLines.map((row, idx) => {
-                      const cat = b2bItemCatalogForVertical(b2bVerticalCode);
-                      const q = (row.description || "").trim().toLowerCase();
-                      const suggestions =
-                        cat && q.length > 0
-                          ? cat.filter((c) => c.toLowerCase().includes(q)).slice(0, 8)
-                          : [];
-                      return (
-                        <B2bItemRowView
-                          key={idx}
-                          idx={idx}
-                          row={{
-                            ...row,
-                            bundled:
-                              row.bundled ??
-                              (b2bVerticalCode === "flooring"
-                                ? isFlooringBundledAccessory(row.description, b2bVerticalCode)
-                                : false),
-                          }}
-                          verticalCode={b2bVerticalCode}
-                          showCarryInPerBox={b2bVerticalCode === "flooring"}
-                          showHaulAwayFlag={b2bVerticalCode === "appliance"}
-                          catalogOpen={b2bCatalogOpenIdx}
-                          setCatalogOpen={setB2bCatalogOpenIdx}
-                          suggestions={suggestions}
-                          wine="#2B0416"
-                          leather="#492A1D"
-                          rose="#66143D"
-                          green="#2B3927"
-                          onChange={(i, patch) =>
-                            setB2bLines((prev) => prev.map((x, j) => (j === i ? { ...x, ...patch } : x)))
-                          }
-                          onRemove={(i) => setB2bLines((prev) => prev.filter((_, j) => j !== i))}
-                        />
-                      );
-                    })}
-                    {b2bSubmitErrors.items ? (
-                      <p className="text-[10px] text-red-600 dark:text-red-400">{b2bSubmitErrors.items}</p>
-                    ) : null}
-                  </div>
-                  {!b2bShowLineWeights ? (
-                    <div>
-                      <B2bFieldLabel>Weight Category (Legacy)</B2bFieldLabel>
-                      <select
-                        value={b2bWeightCategory}
-                        onChange={(e) => setB2bWeightCategory(e.target.value)}
-                        className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
-                        style={b2bInputStyleProps()}
-                      >
-                        {B2B_WEIGHT_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : null}
-
-                  <label className="flex items-center gap-2 text-[13px] font-medium cursor-pointer" style={{ color: "var(--yugo-leather, #492A1D)" }}>
-                    <input
-                      type="checkbox"
-                      checked={b2bPriceOverrideOn}
-                      onChange={(e) => setB2bPriceOverrideOn(e.target.checked)}
-                      className="rounded border-[var(--yugo-border)]"
-                    />
-                    Override Price
-                  </label>
-                  {b2bPriceOverrideOn ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-1">
-                      <div>
-                        <B2bFieldLabel>Override Amount ($)</B2bFieldLabel>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={b2bPreTaxOverrideAmount}
-                          onChange={(e) => setB2bPreTaxOverrideAmount(e.target.value)}
-                          className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
-                          style={b2bInputStyleProps()}
-                        />
-                      </div>
-                      <div>
-                        <B2bFieldLabel>Reason (Required)</B2bFieldLabel>
-                        <input
-                          type="text"
-                          value={b2bOverrideReason}
-                          onChange={(e) => setB2bOverrideReason(e.target.value)}
-                          className="w-full h-11 rounded-lg border px-3 text-[15px] bg-[var(--card)]"
-                          style={b2bInputStyleProps()}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
+              {(serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") && (
+                <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 md:p-6 space-y-4 max-w-[720px]">
+                  <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60">B2B delivery (single form)</p>
+                  <p className="text-[12px] text-[var(--tx3)] leading-relaxed">
+                    Same B2B Jobs form as Deliveries: verticals, dimensional pricing, multi-stop routes, draft / quote / schedule.
+                  </p>
+                  <B2BJobsDeliveryForm
+                    embed
+                    verticals={deliveryVerticals}
+                    organizations={b2bOrganizations}
+                    crews={b2bCrews}
+                  />
                 </div>
               )}
+
               {serviceType === "bin_rental" && (
                 <div className="space-y-4">
                   <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Bundle & pricing</h3>
@@ -5912,30 +5279,21 @@ export default function QuoteFormClient({
               <button
                 type="button"
                 onClick={() => void handleGenerate()}
-                disabled={generating || (serviceType === "b2b_delivery" && !b2bGenerateValid)}
-                className={`flex-1 py-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-2 ${
-                  serviceType === "b2b_delivery"
-                    ? b2bGenerateValid
-                      ? "text-[#F9EDE4] hover:opacity-95"
-                      : "bg-[#492A1D]/35 text-[#492A1D]/70 cursor-not-allowed"
-                    : "bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)]"
-                } disabled:opacity-50`}
-                style={
-                  serviceType === "b2b_delivery" && b2bGenerateValid
-                    ? { backgroundColor: "#2B0416" }
-                    : undefined
+                disabled={
+                  generating ||
+                  serviceType === "b2b_delivery" ||
+                  serviceType === "b2b_oneoff"
                 }
+                className="flex-1 py-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-2 bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50"
               >
                 {generating ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating…
                   </>
-                ) : serviceType === "b2b_delivery" && !b2bGenerateValid ? (
-                  "Complete Required Fields"
+                ) : serviceType === "b2b_delivery" || serviceType === "b2b_oneoff" ? (
+                  "Use B2B Jobs"
                 ) : quoteId ? (
                   "Regenerate"
-                ) : serviceType === "b2b_delivery" ? (
-                  "GENERATE QUOTE"
                 ) : (
                   "Generate Quote"
                 )}
@@ -5948,7 +5306,8 @@ export default function QuoteFormClient({
                   !quoteId ||
                   sendSuccess ||
                   !email?.trim() ||
-                  (serviceType === "b2b_delivery" && !b2bGenerateValid)
+                  serviceType === "b2b_delivery" ||
+                  serviceType === "b2b_oneoff"
                 }
                 className={`flex-1 py-2.5 rounded-lg text-[11px] font-bold border-2 flex items-center justify-center gap-2 ${
                   sendSuccess
@@ -5965,8 +5324,8 @@ export default function QuoteFormClient({
                     <Check className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
                     Sent
                   </span>
-                ) : serviceType === "b2b_delivery" && !b2bGenerateValid ? (
-                  "Complete Required Fields"
+                ) : serviceType === "b2b_delivery" || serviceType === "b2b_oneoff" ? (
+                  "Use B2B Jobs"
                 ) : quoteId && !email?.trim() ? (
                   "Add client email"
                 ) : (

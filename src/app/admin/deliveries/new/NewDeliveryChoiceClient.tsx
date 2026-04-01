@@ -5,6 +5,7 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import NewDeliveryForm from "./NewDeliveryForm";
 import AdminDayRateForm from "./AdminDayRateForm";
 import B2BOneOffDeliveryForm from "./B2BOneOffDeliveryForm";
+import type { B2BVerticalOption } from "@/components/admin/b2b/B2BJobsDeliveryForm";
 
 interface Org {
   id: string;
@@ -26,10 +27,12 @@ interface Crew {
 export default function NewDeliveryChoiceClient({
   organizations,
   crews,
+  verticals = [],
   initialChoice,
 }: {
   organizations: Org[];
   crews: Crew[];
+  verticals?: B2BVerticalOption[];
   initialChoice?: string;
 }) {
   const router = useRouter();
@@ -60,7 +63,7 @@ export default function NewDeliveryChoiceClient({
       <div className="space-y-4">
         {backButton}
         <div className="mb-4" />
-        <B2BOneOffDeliveryForm crews={crews} />
+        <B2BOneOffDeliveryForm organizations={organizations} crews={crews} verticals={verticals} />
       </div>
     );
   }

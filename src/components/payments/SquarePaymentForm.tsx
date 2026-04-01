@@ -15,8 +15,9 @@ const SQUARE_SDK_PRODUCTION = "https://web.squarecdn.com/v1/square.js";
 interface PaymentResult {
   success: boolean;
   payment_id: string;
-  move_id: string;
-  tracking_url?: string;
+  move_id?: string | null;
+  delivery_id?: string | null;
+  tracking_url?: string | null;
 }
 
 interface SquarePaymentFormProps {

@@ -96,7 +96,7 @@ export default function CrewEndOfDayPage() {
         </div>
       ) : (
         <p className="text-[13px] text-[var(--tx3)] mt-2 leading-relaxed max-w-prose">
-          Submit your daily report. Data is auto-compiled from today&apos;s activity.
+          Submit your daily report. Data is auto-compiled from today&apos;s activity. Before you wrap up, open each completed job on the dashboard and finish the truck equipment check if it&apos;s still showing there.
         </p>
       )}
 

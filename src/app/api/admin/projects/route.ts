@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
         const emailFrom = await getEmailFrom();
         const budget = (body.estimated_budget || 0) + (body.project_mgmt_fee || 0);
         const html = emailLayout(`
-          <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">New Project Proposal</div>
+          <div style="font-size:9px;font-weight:700;color:#C9A962;letter-spacing:1.5px;text-transform:none;margin-bottom:8px">New Project Proposal</div>
           <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#F5F5F3">${body.project_name}</h1>
           <p style="font-size:13px;color:#999;line-height:1.6;margin:0 0 20px">
             Hi${org.contact_name ? ` ${org.contact_name}` : ""},<br/><br/>

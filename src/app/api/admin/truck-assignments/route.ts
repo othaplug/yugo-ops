@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireRole } from "@/lib/auth/check-role";
 import { getTodayString } from "@/lib/business-timezone";
+import { fleetVehicleToTruckListRow } from "@/lib/fleet-vehicle-label";
 
 /** GET: List truck assignments for a date. Query: ?date=YYYY-MM-DD */
 export async function GET(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireRole("coordinator");
   if (authErr) return authErr;
 
   const date = (req.nextUrl.searchParams.get("date") || "").trim();
@@ -24,10 +25,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const trucksRes = await admin.from("trucks").select("id, name").order("name");
+  const trucksRes = await admin
+    .from("fleet_vehicles")
+    .select("id, display_name, license_plate")
+    .in("status", ["active", "maintenance"])
+    .order("display_name");
   const teamsRes = await admin.from("crews").select("id, name").order("name");
 
-  const trucks = trucksRes.data || [];
+  const trucks = (trucksRes.data || []).map((row) =>
+    fleetVehicleToTruckListRow({
+      id: row.id,
+      display_name: row.display_name,
+      license_plate: row.license_plate,
+    }),
+  );
   const teams = teamsRes.data || [];
 
   return NextResponse.json({
@@ -40,7 +51,7 @@ export async function GET(req: NextRequest) {
 
 /** POST: Set or update truck assignment. Body: { truckId, teamId, date } */
 export async function POST(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireRole("coordinator");
   if (authErr) return authErr;
 
   try {
@@ -79,7 +90,7 @@ export async function POST(req: NextRequest) {
 
 /** DELETE: Remove truck assignment. Query: ?truckId=xxx&date=YYYY-MM-DD */
 export async function DELETE(req: NextRequest) {
-  const { error: authErr } = await requireAdmin();
+  const { error: authErr } = await requireRole("coordinator");
   if (authErr) return authErr;
 
   const truckId = req.nextUrl.searchParams.get("truckId")?.trim();

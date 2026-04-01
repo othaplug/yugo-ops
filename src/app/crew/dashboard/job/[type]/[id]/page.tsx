@@ -3,7 +3,7 @@
 import { use, useState, useEffect, useCallback, useRef, useMemo, Suspense, type Dispatch, type SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
-import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check } from "@phosphor-icons/react";
+import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check, Toolbox } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { formatTime, formatDate } from "@/lib/client-timezone";
@@ -167,6 +167,7 @@ export default function CrewJobPage({
   params: Promise<{ type: string; id: string }>;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { type, id } = use(params);
   const jobType = type === "delivery" ? "delivery" : "move";
   const [job, setJob] = useState<JobDetail | null>(null);
@@ -209,6 +210,7 @@ export default function CrewJobPage({
   } | null>(null);
   const [changeRequestSubmitted, setChangeRequestSubmitted] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [equipmentCheckPending, setEquipmentCheckPending] = useState(false);
   const { setImmersiveNav } = useCrewImmersiveNav();
 
   const statusFlow = jobType === "move" ? MOVE_STATUS_FLOW : DELIVERY_STATUS_FLOW;
@@ -275,6 +277,26 @@ export default function CrewJobPage({
     const interval = setInterval(fetchSession, 5000);
     return () => clearInterval(interval);
   }, [fetchSession]);
+
+  useEffect(() => {
+    if (!isCompleted) {
+      setEquipmentCheckPending(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/crew/signoff/${encodeURIComponent(id)}?jobType=${encodeURIComponent(jobType)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        setEquipmentCheckPending(!d.equipmentCheckDone);
+      })
+      .catch(() => {
+        if (!cancelled) setEquipmentCheckPending(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isCompleted, id, jobType, pathname]);
 
   useEffect(() => {
     if (
@@ -718,6 +740,24 @@ export default function CrewJobPage({
             <div className="mx-2 rounded-xl border border-red-500/35 bg-red-500/5 px-3 py-2.5">
               <p className="text-[11px] text-red-200 leading-relaxed">{actionError}</p>
             </div>
+          )}
+
+          {isCompleted && equipmentCheckPending && (
+            <Link
+              href={`/crew/dashboard/job/${jobType}/${id}/equipment-check`}
+              className="mx-2 flex items-center gap-3 rounded-2xl border border-[var(--gold)]/35 bg-[var(--gold)]/10 px-4 py-3.5 transition-colors hover:bg-[var(--gold)]/15"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold)]/20 text-[var(--gold)]">
+                <Toolbox size={22} aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] font-bold text-[var(--tx)]">Truck equipment check</p>
+                <p className="text-[11px] text-[var(--tx3)] mt-0.5 leading-snug">
+                  Count gear before your next stop or end-of-day report. Client sign-off is already done.
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-[var(--gold)] shrink-0">Open</span>
+            </Link>
           )}
 
           {/* Location + charging note (status pill lives in top bar until job starts) */}

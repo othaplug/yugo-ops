@@ -5,6 +5,8 @@ import { sendSMS } from "@/lib/sms/sendSMS";
 import { normalizePhone } from "@/lib/phone";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
+import { squareClient } from "@/lib/square";
+import { runB2BOneOffPaymentRecordedFlow } from "@/lib/b2b-delivery-payment";
 import crypto from "crypto";
 
 /**
@@ -13,8 +15,10 @@ import crypto from "crypto";
  * Handles Square webhook events:
  *  - card.expiring         — card on file about to expire (sent ~30 days out)
  *  - payment.updated       — payment status changes (for reconciliation)
+ *  - invoice.updated       — when an invoice is paid, sync DB + B2B one-off delivery prepay flow
  *  - customer.updated      — customer record changes
  *
+ * Subscribe `invoice.updated` in Square Developer Dashboard for the same webhook URL.
  * Square signs each webhook with HMAC-SHA256 using the webhook signature key.
  * https://developer.squareup.com/docs/webhooks/validate-webhook-signature
  */
@@ -109,7 +113,88 @@ export async function POST(req: NextRequest) {
     await handlePaymentUpdated(event, supabase);
   }
 
+  if (event.type === "invoice.updated") {
+    await handleInvoiceUpdated(event, supabase);
+  }
+
   return NextResponse.json({ ok: true });
+}
+
+function extractSquareInvoiceIdFromWebhook(event: SquareWebhookEvent): string | null {
+  const data = event.data as Record<string, unknown> | undefined;
+  if (!data) return null;
+  if (typeof data.id === "string" && data.type === "invoice") return data.id;
+  const obj = data.object as Record<string, unknown> | undefined;
+  if (obj && typeof obj === "object") {
+    const inv = obj.invoice as Record<string, unknown> | undefined;
+    if (inv && typeof inv.id === "string") return inv.id;
+    if (typeof obj.id === "string") return obj.id;
+  }
+  if (typeof data.id === "string") return data.id;
+  return null;
+}
+
+async function handleInvoiceUpdated(
+  event: SquareWebhookEvent,
+  supabase: ReturnType<typeof createAdminClient>,
+) {
+  const invoiceId = extractSquareInvoiceIdFromWebhook(event);
+  if (!invoiceId) return;
+  if (!(process.env.SQUARE_ACCESS_TOKEN || "").trim()) return;
+
+  let status: string | undefined;
+  let publicUrl: string | null = null;
+  try {
+    const res = await squareClient.invoices.get({ invoiceId });
+    status = res.invoice?.status as string | undefined;
+    publicUrl = res.invoice?.publicUrl ?? null;
+  } catch (e) {
+    console.error("[square webhook] invoices.get failed:", e);
+    return;
+  }
+
+  if (status !== "PAID") return;
+
+  const { data: invRow } = await supabase
+    .from("invoices")
+    .select("id, delivery_id, status, square_invoice_url")
+    .eq("square_invoice_id", invoiceId)
+    .maybeSingle();
+
+  if (!invRow?.id) return;
+
+  const now = new Date().toISOString();
+  const patch: Record<string, unknown> = {
+    status: "paid",
+    updated_at: now,
+  };
+  if (publicUrl) patch.square_invoice_url = publicUrl;
+
+  await supabase.from("invoices").update(patch).eq("id", invRow.id);
+
+  await supabase.from("webhook_logs").insert({
+    source: "square",
+    event_type: "invoice.updated.paid",
+    payload: { invoice_id: invoiceId, delivery_id: invRow.delivery_id },
+    status: "processed",
+  });
+
+  const deliveryId = invRow.delivery_id;
+  if (!deliveryId) return;
+
+  const { data: del } = await supabase
+    .from("deliveries")
+    .select("booking_type, organization_id")
+    .eq("id", deliveryId)
+    .maybeSingle();
+
+  if (del?.booking_type !== "one_off" || del.organization_id) return;
+
+  try {
+    await runB2BOneOffPaymentRecordedFlow(deliveryId, { notifyMode: "only_if_newly_paid" });
+  } catch (e) {
+    console.error("[square webhook] B2B one-off payment flow:", e);
+  }
 }
 
 async function handlePaymentUpdated(

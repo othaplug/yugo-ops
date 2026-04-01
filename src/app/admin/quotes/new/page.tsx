@@ -10,7 +10,13 @@ export default async function NewQuotePage() {
   const supabase = await createClient();
   const db = createAdminClient();
 
-  const [{ data: addons }, { data: configRows }, { data: itemWeights }] = await Promise.all([
+  const [
+    { data: addons },
+    { data: configRows },
+    { data: itemWeights },
+    { data: orgRows },
+    { data: crewRows },
+  ] = await Promise.all([
     db
       .from("addons")
       .select(
@@ -24,6 +30,12 @@ export default async function NewQuotePage() {
       .select("slug, item_name, weight_score, category, room, is_common, display_order, active")
       .eq("active", true)
       .order("display_order"),
+    db
+      .from("organizations")
+      .select("id, name, type, vertical, email, contact_name, phone, default_pickup_address")
+      .not("name", "like", "\\_%")
+      .order("name"),
+    db.from("crews").select("id, name, members").eq("is_active", true).order("name"),
   ]);
 
   const dvRes = await db
@@ -71,6 +83,8 @@ export default async function NewQuotePage() {
         config={config}
         itemWeights={itemWeights ?? []}
         deliveryVerticals={deliveryVerticals}
+        b2bOrganizations={orgRows ?? []}
+        b2bCrews={crewRows ?? []}
         userRole={userRole}
         isSuperAdmin={isSuperAdmin}
         binInventorySnapshot={binInventorySnapshot}

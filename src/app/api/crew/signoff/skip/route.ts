@@ -87,23 +87,6 @@ export async function POST(req: NextRequest) {
     });
   } catch {}
 
-  const { data: eqCheck } = await admin
-    .from("equipment_checks")
-    .select("id")
-    .eq("job_type", jobType)
-    .eq("job_id", entityId)
-    .maybeSingle();
-  if (!eqCheck) {
-    return NextResponse.json(
-      {
-        error:
-          "Equipment check required before completing this job, or complete the equipment step with a skip reason.",
-        code: "EQUIPMENT_CHECK_REQUIRED",
-      },
-      { status: 400 },
-    );
-  }
-
   // Complete the job when sign-off is skipped
   const { data: activeSession } = await admin
     .from("tracking_sessions")

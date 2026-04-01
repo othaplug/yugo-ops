@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
+import { formatFleetVehicleLabel } from "@/lib/fleet-vehicle-label";
 
 export async function GET() {
   const { error: authErr } = await requireRole("coordinator");
@@ -10,7 +11,11 @@ export async function GET() {
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
 
   const [{ data: trucks }, { data: teRows }, { data: incidents }, { count: checks30d }] = await Promise.all([
-    admin.from("trucks").select("id, name").order("name"),
+    admin
+      .from("fleet_vehicles")
+      .select("id, display_name, license_plate, status")
+      .in("status", ["active", "maintenance"])
+      .order("display_name"),
     admin
       .from("truck_equipment")
       .select(
@@ -29,8 +34,6 @@ export async function GET() {
       .select("id", { count: "exact", head: true })
       .gte("created_at", since),
   ]);
-
-  const truckMap = new Map((trucks || []).map((t) => [t.id, t.name as string]));
 
   type TeRow = {
     truck_id: string;
@@ -68,7 +71,10 @@ export async function GET() {
     const s = byTruck.get(t.id) || { short: 0, total: 0, ok: 0, last: null };
     return {
       truckId: t.id,
-      name: t.name,
+      name: formatFleetVehicleLabel({
+        display_name: t.display_name as string,
+        license_plate: t.license_plate as string,
+      }),
       status: s.short > 0 ? "low" : "full",
       itemsLabel: s.total ? `${s.ok}/${s.total}` : "—",
       shortCount: s.short,

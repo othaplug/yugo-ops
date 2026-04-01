@@ -65,7 +65,7 @@ export function newClaimAdminEmailHtml(params: {
   const viewUrl = `${baseUrl}/admin/claims/${params.claimId}`;
   const source = params.adminCreated ? "created by your team" : "submitted by the client";
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;">New Damage Claim</div>
+    <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:1.2px;text-transform:none;margin-bottom:8px;">New Damage Claim</div>
     <h1 style="font-size:22px;font-weight:700;color:${TEXT};margin:0 0 8px;">${escapeHtml(params.claimNumber)}</h1>
     <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.6;margin:0 0 20px;">A damage claim was ${source}.</p>
     <div style="background:${PAGE_BG};border-radius:12px;padding:20px;margin-bottom:24px;">
@@ -95,7 +95,7 @@ export function widgetLeadAdminEmailHtml(params: {
   const viewUrl = `${baseUrl}/admin/widget-leads`;
   const routeLine = `${escapeHtml(params.fromPostal.toUpperCase())} → ${escapeHtml(params.toPostal.toUpperCase())}`;
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;">New Widget Lead</div>
+    <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:1.2px;text-transform:none;margin-bottom:8px;">New Widget Lead</div>
     <h1 style="font-size:20px;font-weight:700;color:${TEXT};margin:0 0 4px;">${escapeHtml(params.name)}</h1>
     <p style="font-size:13px;color:${TEXT_MUTED};margin:0 0 16px;">Quote request from the instant quote widget.</p>
     <div style="background:${PAGE_BG};border-radius:12px;padding:16px 20px;margin-bottom:20px;border:1px solid ${BORDER};">
@@ -121,7 +121,7 @@ export function estateBookingAdminEmailHtml(params: {
   const baseUrl = getEmailBaseUrl();
   const viewUrl = `${baseUrl}/admin/moves/${params.moveId}`;
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;">Estate Booking</div>
+    <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:1.2px;text-transform:none;margin-bottom:8px;">Estate Booking</div>
     <h1 style="font-size:22px;font-weight:700;color:${TEXT};margin:0 0 8px;">${escapeHtml(params.clientName)}</h1>
     <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.6;margin:0 0 16px;">${escapeHtml(params.dateLabel)} · ${escapeHtml(params.totalFormatted)}</p>
     <p style="font-size:13px;color:${TEXT_MUTED};margin:0 0 20px;">Assign coordinator and schedule walkthrough.</p>
@@ -141,7 +141,7 @@ export function tipReceivedAdminEmailHtml(params: {
   const baseUrl = getEmailBaseUrl();
   const viewUrl = `${baseUrl}/admin/tips`;
   const inner = `
-    <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;">Tip Received</div>
+    <div style="font-size:10px;font-weight:700;color:${GOLD};letter-spacing:1.2px;text-transform:none;margin-bottom:8px;">Tip Received</div>
     <h1 style="font-size:22px;font-weight:700;color:${TEXT};margin:0 0 8px;">${escapeHtml(params.amount)} from ${escapeHtml(params.clientName)}</h1>
     <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.6;margin:0 0 16px;">For <strong>${escapeHtml(params.crewName)}</strong></p>
     <p style="font-size:13px;color:${TEXT_MUTED};margin:0 0 20px;">Move: ${escapeHtml(params.moveCode)} · Net after processing: ${escapeHtml(params.netAmount)}</p>

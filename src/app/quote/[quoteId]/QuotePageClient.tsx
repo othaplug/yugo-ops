@@ -264,6 +264,8 @@ export default function QuotePageClient({
   const [contractSigned, setContractSigned] = useState(false);
   const [booked, setBooked] = useState(quote.status === "accepted");
   const [paymentMoveId, setPaymentMoveId] = useState<string | null>(null);
+  /** B2B delivery live tracking (absolute URL). Moves use SchedulingAlternativesCard + move_id instead. */
+  const [deliveryTrackingUrl, setDeliveryTrackingUrl] = useState<string | null>(null);
   const [invoiceConfirmLoading, setInvoiceConfirmLoading] = useState(false);
   const [invoiceConfirmError, setInvoiceConfirmError] = useState<string | null>(null);
   const [valuationUpgradeSelected, setValuationUpgradeSelected] = useState(!!quote.valuation_upgraded);
@@ -835,12 +837,15 @@ export default function QuotePageClient({
           selectedAddons: Array.from(selectedAddons.values()),
         }),
       });
-      const data = (await res.json()) as { error?: string; move_id?: string };
+      const data = (await res.json()) as { error?: string; tracking_url?: string | null };
       if (!res.ok) {
         setInvoiceConfirmError(data.error ?? "Could not confirm booking");
         return;
       }
-      if (data.move_id) setPaymentMoveId(data.move_id);
+      const tu = typeof data.tracking_url === "string" ? data.tracking_url.trim() : "";
+      if (tu) {
+        setDeliveryTrackingUrl(tu.startsWith("http") ? tu : `${typeof window !== "undefined" ? window.location.origin : ""}${tu.startsWith("/") ? tu : `/${tu}`}`);
+      }
       setBooked(true);
     } catch {
       setInvoiceConfirmError("Something went wrong. Please try again.");
@@ -1544,7 +1549,15 @@ export default function QuotePageClient({
                           : `PAY ${fmtPrice(deposit)} & BOOK MY MOVE`
                     }
                     onSuccess={(result) => {
-                      setPaymentMoveId(result.move_id);
+                      if (isB2BDeliveryQuoteServiceType(quote.service_type) && result.tracking_url) {
+                        const tu = result.tracking_url.trim();
+                        setDeliveryTrackingUrl(
+                          tu.startsWith("http")
+                            ? tu
+                            : `${typeof window !== "undefined" ? window.location.origin : ""}${tu.startsWith("/") ? tu : `/${tu}`}`,
+                        );
+                      }
+                      if (result.move_id) setPaymentMoveId(result.move_id);
                       setBooked(true);
                     }}
                     onError={(err) => {
@@ -1626,10 +1639,10 @@ export default function QuotePageClient({
                   {fmtDate(quote.move_date)}
                 </span>
               </div>
-              {(paymentMoveId || b2bInvoiceBooking) && (
+              {(paymentMoveId || deliveryTrackingUrl || b2bInvoiceBooking) && (
                 <p className="text-[12px] mt-4" style={{ color: `${FOREST}60` }}>
                   A confirmation email is on its way.
-                  {paymentMoveId
+                  {(paymentMoveId || deliveryTrackingUrl) && !b2bInvoiceBooking
                     ? ` You can track your ${
                         quote.service_type === "office_move"
                           ? "relocation"
@@ -1640,10 +1653,23 @@ export default function QuotePageClient({
                             ? "delivery"
                             : "move"
                       } status anytime.`
-                    : null}
+                    : b2bInvoiceBooking && deliveryTrackingUrl
+                      ? " Use the link below to follow your delivery status."
+                      : null}
                 </p>
               )}
-              {paymentMoveId && (
+              {deliveryTrackingUrl && (
+                <div className="mt-5">
+                  <a
+                    href={deliveryTrackingUrl}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[13px] font-bold text-white transition-opacity hover:opacity-90 min-h-[48px]"
+                    style={{ backgroundColor: FOREST }}
+                  >
+                    Open live delivery tracking
+                  </a>
+                </div>
+              )}
+              {paymentMoveId && !deliveryTrackingUrl && (
                 <SchedulingAlternativesCard
                   moveId={paymentMoveId}
                   accentColor={GOLD}

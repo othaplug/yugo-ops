@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { createBinOrderFromBinRentalQuote } from "@/lib/automations/create-bin-order-from-quote";
+import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 
 /* ═══════════════════════════════════════════════════════════
    createMoveFromQuote
@@ -45,8 +46,6 @@ const SERVICE_TO_MOVE_TYPE: Record<string, string> = {
   single_item: "single_item",
   white_glove: "white_glove",
   specialty: "specialty",
-  b2b_oneoff: "b2b_oneoff",
-  b2b_delivery: "b2b_oneoff",
   event: "event",
   labour_only: "labour_only",
   bin_rental: "bin_rental",
@@ -89,6 +88,12 @@ export async function createMoveFromQuote(
 
   if (quoteErr || !quote) {
     throw new Error(`Quote not found: ${input.quoteId}`);
+  }
+
+  if (isB2BDeliveryQuoteServiceType(String(quote.service_type ?? ""))) {
+    throw new Error(
+      "B2B quotes must be converted with createDeliveryFromB2BQuote, not createMoveFromQuote",
+    );
   }
 
   const contact = quote.contacts as {
@@ -148,9 +153,7 @@ export async function createMoveFromQuote(
       : {};
 
   const singleItemFields =
-    quote.service_type === "single_item" ||
-    quote.service_type === "b2b_oneoff" ||
-    quote.service_type === "b2b_delivery"
+    quote.service_type === "single_item"
       ? {
           item_description: (factors.item_description as string) ?? null,
           item_category: (factors.item_category as string) ?? null,

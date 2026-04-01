@@ -37,6 +37,12 @@ const REROUTE_DEVIATION_M = 200;
 const ARRIVAL_RADIUS_M = 100;
 const POST_MIN_MS = 1100;
 const REVERSE_GEOCODE_MS = 45_000;
+/** When snapping to the route polyline, prefer the earliest segment among those within this perpendicular distance of the best hit (avoids jumping to parallel geometry near the destination). */
+const POLYLINE_SNAP_TIE_M = 42;
+/** Search segments from max(0, lastHint - N) onward so we do not match a closer-but-wrong part of the route behind the driver. */
+const POLYLINE_HINT_LOOKBACK_SEGS = 6;
+/** If the window snap is farther than this from the polyline, run a full-polyline search once to re-acquire after reroute / GPS jump. */
+const POLYLINE_REACQUIRE_PERP_M = 110;
 
 const GOLD = "#B8962E";
 /** Clear / low traffic — high-contrast on dark map (Mapbox dark-v11). */
@@ -347,36 +353,66 @@ function distancePointToSegmentMeters(
   return distancePointToSegmentMetersWithT(latP, lngP, latA, lngA, latB, lngB).dist;
 }
 
-/** Driving distance remaining along the route polyline (not straight-line to destination). */
-function remainingDistanceAlongPolylineM(
+function segmentPerpendicularDistanceM(
   lat: number,
   lng: number,
-  coords: [number, number][]
-): number | null {
+  coords: [number, number][],
+  segIndex: number
+): number {
+  const [lngA, latA] = coords[segIndex];
+  const [lngB, latB] = coords[segIndex + 1];
+  return distancePointToSegmentMeters(lat, lng, latA, lngA, latB, lngB);
+}
+
+/**
+ * Snap to the driven route: search a forward window from the last match, prefer the earliest segment
+ * among ties (stops global "nearest segment" from jumping to parallel geometry near the destination).
+ * Returns remaining distance along the polyline from the snap point to the route end.
+ */
+function remainingDistanceAlongPolylineSnapM(
+  lat: number,
+  lng: number,
+  coords: [number, number][],
+  hintSegIndex: number
+): { remainingM: number; segIndex: number; perpDistM: number } | null {
   if (coords.length < 2) return null;
-  let bestI = 0;
-  let bestT = 0;
-  let bestDist = Infinity;
-  for (let i = 0; i < coords.length - 1; i++) {
-    const [lngA, latA] = coords[i];
-    const [lngB, latB] = coords[i + 1];
-    const { dist, t } = distancePointToSegmentMetersWithT(lat, lng, latA, lngA, latB, lngB);
-    if (dist < bestDist) {
-      bestDist = dist;
-      bestI = i;
-      bestT = t;
+  const lastSeg = coords.length - 2;
+  const clampedHint = Math.max(0, Math.min(hintSegIndex, lastSeg));
+  const winLo = Math.max(0, clampedHint - POLYLINE_HINT_LOOKBACK_SEGS);
+
+  const pickInRange = (segLo: number, segHi: number) => {
+    let minD = Infinity;
+    for (let i = segLo; i <= segHi; i++) {
+      const d = segmentPerpendicularDistanceM(lat, lng, coords, i);
+      if (d < minD) minD = d;
     }
+    let chosenI = segHi;
+    for (let i = segLo; i <= segHi; i++) {
+      const d = segmentPerpendicularDistanceM(lat, lng, coords, i);
+      if (d <= minD + POLYLINE_SNAP_TIE_M) {
+        chosenI = i;
+        break;
+      }
+    }
+    const [lngA, latA] = coords[chosenI];
+    const [lngB, latB] = coords[chosenI + 1];
+    const { dist: perpDistM, t } = distancePointToSegmentMetersWithT(lat, lng, latA, lngA, latB, lngB);
+    const segLen = haversineM(latA, lngA, latB, latB);
+    let remaining = (1 - t) * segLen;
+    for (let j = chosenI + 1; j < coords.length - 1; j++) {
+      const [lngS, latS] = coords[j];
+      const [lngE, latE] = coords[j + 1];
+      remaining += haversineM(latS, lngS, latE, lngE);
+    }
+    return { remainingM: Math.max(0, remaining), segIndex: chosenI, perpDistM };
+  };
+
+  let result = pickInRange(winLo, lastSeg);
+  if (result.perpDistM > POLYLINE_REACQUIRE_PERP_M && winLo > 0) {
+    const full = pickInRange(0, lastSeg);
+    if (full.perpDistM + 20 < result.perpDistM) result = full;
   }
-  const [lngA0, latA0] = coords[bestI];
-  const [lngB0, latB0] = coords[bestI + 1];
-  const segLen = haversineM(latA0, lngA0, latB0, lngB0);
-  let remaining = (1 - bestT) * segLen;
-  for (let j = bestI + 1; j < coords.length - 1; j++) {
-    const [lngS, latS] = coords[j];
-    const [lngE, latE] = coords[j + 1];
-    remaining += haversineM(latS, lngS, latE, lngE);
-  }
-  return Math.max(0, remaining);
+  return result;
 }
 
 function totalPolylineLengthM(coords: [number, number][]): number {
@@ -410,6 +446,7 @@ function formatDistanceM(m: number): string {
 
 function formatEta(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "—";
+  if (seconds < 50) return "< 1 min";
   const m = Math.max(1, Math.round(seconds / 60));
   if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
@@ -483,6 +520,8 @@ export function CrewNavigation({
   const approxPlaceRef = useRef<string | null>(null);
   const arrivedRef = useRef(false);
   const fetchRouteInFlight = useRef(false);
+  /** Last matched segment index along routeCoords — keeps polyline ETA from snapping to wrong parallel geometry. */
+  const polylineHintSegRef = useRef(0);
   const routeCoordsRef = useRef<[number, number][] | null>(null);
   const stepsRef = useRef<RouteStep[]>([]);
   const routeDurationRef = useRef<number | null>(null);
@@ -541,6 +580,7 @@ export function CrewNavigation({
         setTrafficRouteGeoJson(EMPTY_TRAFFIC_ROUTE);
         return;
       }
+      polylineHintSegRef.current = 0;
       const r = intelligent.route;
       setRouteCoords(intelligent.coordinates);
       setTrafficRouteGeoJson(intelligent.trafficRouteGeoJson);
@@ -617,6 +657,7 @@ export function CrewNavigation({
 
   useEffect(() => {
     arrivedRef.current = false;
+    polylineHintSegRef.current = 0;
     setTorontoWarnings([]);
     setTrafficRouteGeoJson(EMPTY_TRAFFIC_ROUTE);
     prevGeoRef.current = null;
@@ -675,14 +716,27 @@ export function CrewNavigation({
         setDistRemainLabel(formatDistanceM(distToDestM));
 
         const rcForEta = routeCoordsRef.current;
-        const remainAlongM =
+        const snap =
           rcForEta && rcForEta.length >= 2
-            ? remainingDistanceAlongPolylineM(latitude, longitude, rcForEta)
+            ? remainingDistanceAlongPolylineSnapM(
+                latitude,
+                longitude,
+                rcForEta,
+                polylineHintSegRef.current
+              )
             : null;
+        if (snap) polylineHintSegRef.current = snap.segIndex;
+
+        let remainAlongM = snap?.remainingM ?? null;
         const polyTotalM =
           rcForEta && rcForEta.length >= 2 ? totalPolylineLengthM(rcForEta) : null;
         const rd = routeDurationRef.current;
         const rdist = routeDistanceRef.current;
+        // Wrong polyline matches (e.g. parallel roads) can make remainAlongM << crow-flies; reject and scale by straight-line vs route length instead.
+        const etaSanitySlackM = Math.max(220, Math.min(1000, 0.028 * distToDestM));
+        if (remainAlongM != null && remainAlongM + etaSanitySlackM < distToDestM) {
+          remainAlongM = null;
+        }
         let etaSec: number | null = null;
         if (rd != null && rdist != null && rdist > 1) {
           if (remainAlongM != null && polyTotalM != null && polyTotalM > 1) {

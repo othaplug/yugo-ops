@@ -68,11 +68,23 @@ export async function PATCH(
     "admin_adjusted_price", "notes",
     "project_id", "phase_id",
     "vertical_code", "b2b_line_items", "b2b_assembly_required", "b2b_debris_removal",
+    "calculated_price", "override_price", "override_reason",
   ];
 
   const updates: Record<string, unknown> = {};
   for (const key of allowedFields) {
     if (key in body) updates[key] = body[key];
+  }
+
+  if ("override_price" in body && body.override_price != null && Number(body.override_price) !== 0) {
+    const r = typeof body.override_reason === "string" ? body.override_reason.trim() : "";
+    if (!r) {
+      return NextResponse.json(
+        { error: "override_reason is required when override_price is set" },
+        { status: 400 },
+      );
+    }
+    updates.override_reason = r;
   }
 
   if ("crew_id" in body) {

@@ -622,3 +622,143 @@ export async function runPostPaymentActions(
 
   return { actions: actionResults };
 }
+
+export interface PostPaymentB2BDeliveryInput {
+  quoteId: string;
+  deliveryId: string;
+  deliveryNumber: string;
+  paymentId: string;
+  amount: number;
+}
+
+/** HubSpot, analytics, and event log when a B2B quote payment creates a delivery (not a move). */
+export async function runPostPaymentActionsB2BDelivery(
+  input: PostPaymentB2BDeliveryInput,
+): Promise<PostPaymentResult> {
+  const supabase = createAdminClient();
+
+  const { data: quote, error: qErr } = await supabase
+    .from("quotes")
+    .select("*, contacts:contact_id(name, email, phone)")
+    .eq("quote_id", input.quoteId)
+    .single();
+
+  if (qErr || !quote) {
+    return {
+      actions: [{ name: "data_fetch", status: "rejected", error: "quote missing" }],
+    };
+  }
+
+  const contact = quote.contacts as { name: string; email: string | null; phone: string | null } | null;
+  const clientName = contact?.name || "";
+  const hubspotDealId = quote.hubspot_deal_id as string | null;
+  const selectedTier = quote.selected_tier;
+  let basePrice = 0;
+  if (selectedTier && quote.tiers) {
+    const tierData = (quote.tiers as Record<string, { price: number }>)[selectedTier];
+    basePrice = tierData?.price ?? 0;
+  } else {
+    basePrice = Number(quote.custom_price) || 0;
+  }
+  const totalWithTax = Math.round(basePrice * 1.13);
+  const depositAmount = input.amount;
+  const tierLabel = TIER_LABELS[selectedTier ?? ""] ?? selectedTier ?? "";
+  const serviceLabel = SERVICE_LABELS[quote.service_type as string] ?? quote.service_type;
+
+  const actionDefs: { name: string; critical: boolean; fn: () => Promise<void> }[] = [
+    {
+      name: "hubspot_deal_update",
+      critical: true,
+      fn: async () => {
+        if (!hubspotDealId) return;
+        await syncDealStage(hubspotDealId, "confirmed");
+        const token = process.env.HUBSPOT_ACCESS_TOKEN;
+        if (!token) return;
+        await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            properties: {
+              amount: String(totalWithTax),
+              deposit_received_at: new Date().toISOString(),
+              square_invoice_id: input.paymentId,
+              opsplus_move_id: input.deliveryId,
+              contract_signed: "true",
+              package_type: tierLabel || serviceLabel,
+            },
+          }),
+        });
+      },
+    },
+    {
+      name: "quote_analytics",
+      critical: false,
+      fn: async () => {
+        await supabase.from("quote_analytics").insert({
+          quote_id: quote.id,
+          outcome: "won",
+          quoted_amount: basePrice,
+          final_amount: totalWithTax,
+          neighbourhood_tier: null,
+          move_size: quote.move_size,
+          service_type: quote.service_type,
+          season: getSeason(quote.move_date),
+          day_of_week: getDayOfWeek(quote.move_date),
+          tier_selected: selectedTier,
+          deposit_amount: depositAmount,
+          move_id: null,
+          square_payment_id: input.paymentId,
+          addon_revenue: 0,
+          addon_count: 0,
+          addon_slugs: [],
+        });
+      },
+    },
+    {
+      name: "payment_event_log",
+      critical: false,
+      fn: async () => {
+        await supabase.from("quote_events").insert({
+          quote_id: input.quoteId,
+          event_type: "payment_started",
+          metadata: {
+            source: "server",
+            payment_id: input.paymentId,
+            amount: depositAmount,
+            delivery_id: input.deliveryId,
+            delivery_number: input.deliveryNumber,
+          },
+        });
+      },
+    },
+    {
+      name: "internal_b2b_delivery_alert",
+      critical: false,
+      fn: async () => {
+        const adminEmail = getClientSupportEmail();
+        if (!adminEmail) return;
+        const resend = getResend();
+        const emailFrom2 = await getEmailFrom();
+        const base = getEmailBaseUrl().replace(/\/$/, "");
+        await resend.emails.send({
+          from: emailFrom2,
+          to: adminEmail,
+          subject: `[B2B Delivery] Paid: ${input.deliveryNumber} — ${clientName || "Client"}`,
+          html: `<p>B2B quote <strong>${input.quoteId}</strong> paid. Delivery <strong>${input.deliveryNumber}</strong>.</p><p><a href="${base}/admin/deliveries/${encodeURIComponent(input.deliveryNumber)}">Open in admin</a></p>`,
+        });
+      },
+    },
+  ];
+
+  const results = await Promise.allSettled(actionDefs.map((a) => a.fn()));
+  const actionResults = results.map((r, i) => ({
+    name: actionDefs[i].name,
+    status: r.status as "fulfilled" | "rejected",
+    error: r.status === "rejected" ? String((r as PromiseRejectedResult).reason) : undefined,
+  }));
+
+  return { actions: actionResults };
+}

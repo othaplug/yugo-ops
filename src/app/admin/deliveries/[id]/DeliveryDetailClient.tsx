@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -13,6 +13,7 @@ import BackButton from "../../components/BackButton";
 import EditDeliveryModal from "./EditDeliveryModal";
 import DownloadPDFButton from "./DownloadPDFButton";
 import GenerateInvoiceButton from "./GenerateInvoiceButton";
+import SendB2BOneOffInvoiceButton from "./SendB2BOneOffInvoiceButton";
 import { formatPhone } from "@/lib/phone";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
 import LiveTrackingMap from "./LiveTrackingMap";
@@ -25,6 +26,7 @@ import { useToast } from "../../components/Toast";
 import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { toTitleCase } from "@/lib/format-text";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 
 /* ═══════════════════════════════════════════════════
    Constants
@@ -169,6 +171,7 @@ interface DeliveryInvoice {
   id: string;
   invoice_number: string;
   square_invoice_url: string | null;
+  /** e.g. sent, paid */
   status: string;
 }
 
@@ -200,6 +203,9 @@ export default function DeliveryDetailClient({
   b2bOneOffCohort?: { verticalLabel: string | null; combinedRevenue: number; deliveryCount: number } | null;
 }) {
   const router = useRouter();
+  const routeParams = useParams();
+  const pathDeliverySegment =
+    typeof routeParams?.id === "string" ? decodeURIComponent(routeParams.id) : "";
   const { toast } = useToast();
   const supabase = createClient();
   const [delivery, setDelivery] = useState(initialDelivery);
@@ -280,7 +286,13 @@ export default function DeliveryDetailClient({
   const deliveryInProgress = isDeliveryInProgress(delivery.status, delivery.stage);
   const cat = CATEGORY_BADGE[delivery.category] || CATEGORY_BADGE.retail;
   const sc = STATUS_COLORS[delivery.status] || STATUS_COLORS.pending;
-  const price = delivery.quoted_price || delivery.total_price || delivery.admin_adjusted_price || 0;
+  const price = effectiveDeliveryPrice(delivery);
+  const calculatedBaseline =
+    Number(delivery.calculated_price) > 0
+      ? Number(delivery.calculated_price)
+      : Number(delivery.quoted_price) > 0
+        ? Number(delivery.quoted_price)
+        : 0;
 
   // Realtime
   useEffect(() => {
@@ -395,7 +407,10 @@ export default function DeliveryDetailClient({
   const handleRecordPayment = async () => {
     setRecordPaymentLoading(true);
     try {
-      const res = await fetch(`/api/admin/deliveries/${delivery.id}/record-payment`, { method: "POST" });
+      const idSegment = pathDeliverySegment || String(delivery.id || "");
+      const res = await fetch(`/api/admin/deliveries/${encodeURIComponent(idSegment)}/record-payment`, {
+        method: "POST",
+      });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
         toast(d.error || "Failed to record payment", "alertTriangle");
@@ -533,11 +548,18 @@ export default function DeliveryDetailClient({
 
       {isB2BOneOff && (
         <div className="mt-3 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-3">
-          <p className="text-[11px] font-bold text-[var(--tx)]">B2B one-off · Tracking</p>
+          <p className="text-[11px] font-bold text-[var(--tx)]">B2B one-off · Payment and tracking</p>
           <p className="text-[11px] text-[var(--tx3)]">
-            After full payment is received, record it here to issue secure tracking links (email + SMS to the business contact).
+            Send a Square invoice so the business contact can pay by card. When Square marks the invoice paid, this job is recorded as prepaid and tracking links go out automatically. Or, if payment was collected outside Square, record it here to issue tracking links (email + SMS to the business contact).
           </p>
           <div className="flex flex-wrap gap-2">
+            <SendB2BOneOffInvoiceButton
+              delivery={delivery}
+              pendingInvoice={
+                !!deliveryInvoice && String(deliveryInvoice.status).toLowerCase() !== "paid"
+              }
+              onSent={() => router.refresh()}
+            />
             <button
               type="button"
               onClick={handleRecordPayment}
@@ -651,6 +673,11 @@ export default function DeliveryDetailClient({
           {/* Status row */}
           <div className="mt-4 pt-3 border-t border-[var(--brd)]/30">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {isB2BOneOff && delivery.payment_received_at ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-emerald-500/15 text-emerald-600 border border-emerald-500/25">
+                  Paid (prepaid)
+                </span>
+              ) : null}
               {/* Status */}
               <div className="flex items-center gap-2">
                 <StatusDot status={delivery.status} />
@@ -1000,7 +1027,11 @@ export default function DeliveryDetailClient({
           {/* Pricing, keeps card treatment (hero/actionable) */}
           <div className={`mt-5 rounded-xl p-4 ${price > 0 ? "bg-gradient-to-br from-[var(--gold)]/8 to-transparent border border-[var(--gold)]/20" : ""}`}>
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]/60 mb-1.5">
-              {delivery.quoted_price ? "Quoted Price" : "Pricing"}
+              {delivery.override_price != null && Number(delivery.override_price) > 0
+                ? "Price (override)"
+                : delivery.quoted_price
+                  ? "Quoted Price"
+                  : "Pricing"}
             </div>
             {price > 0 ? (
               <>
@@ -1008,15 +1039,26 @@ export default function DeliveryDetailClient({
                 <div className="text-[10px] text-[var(--tx3)] mt-0.5">
                   +{formatCurrency(calcHST(price))} HST &middot; Total {formatCurrency(price + calcHST(price))}
                 </div>
-                {delivery.admin_adjusted_price && delivery.admin_adjusted_price !== price && (
+                {(delivery.override_price != null &&
+                  Number(delivery.override_price) > 0 &&
+                  calculatedBaseline > 0 &&
+                  Math.abs(Number(delivery.override_price) - calculatedBaseline) > 0.009) ||
+                (delivery.admin_adjusted_price != null &&
+                  Number(delivery.admin_adjusted_price) > 0 &&
+                  !delivery.override_price &&
+                  Math.abs(Number(delivery.admin_adjusted_price) - price) > 0.009) ? (
                   <div className="text-[10px] text-[var(--tx3)] mt-1">
-                    Adjusted from {formatCurrency(delivery.total_price || delivery.quoted_price)}
+                    Adjusted from {formatCurrency(calculatedBaseline || Number(delivery.total_price) || Number(delivery.quoted_price) || 0)}
                   </div>
-                )}
+                ) : null}
                 {deliveryInvoice ? (
                   <div className="mt-3 pt-3 border-t border-[var(--gold)]/15">
-                    <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1.5">
-                      <span>Invoice generated</span>
+                    <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1.5 flex-wrap">
+                      <span>
+                        {String(deliveryInvoice.status).toLowerCase() === "paid"
+                          ? "Invoice paid"
+                          : "Invoice sent"}
+                      </span>
                       {deliveryInvoice.square_invoice_url && (
                         <a
                           href={deliveryInvoice.square_invoice_url}

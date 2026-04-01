@@ -102,6 +102,7 @@ export async function GET(req: NextRequest) {
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
         .neq("status", "cancelled"),
+      // Scheduled deliveries include B2B (`category`); no separate query.
       db
         .from("deliveries")
         .select("id, delivery_number, client_name, customer_name, delivery_type, category, status, scheduled_date, time_slot, scheduled_start, scheduled_end, estimated_duration_hours, crew_id, pickup_address, delivery_address, items")

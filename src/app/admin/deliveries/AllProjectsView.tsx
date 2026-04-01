@@ -47,6 +47,8 @@ interface Delivery {
   status: string;
   category: string;
   booking_type?: string | null;
+  organization_id?: string | null;
+  payment_received_at?: string | null;
   vehicle_type?: string | null;
   num_stops?: number | null;
   total_price?: number | null;
@@ -149,9 +151,18 @@ const deliveryColumns: ColumnDef<Delivery>[] = [
     render: (d) => {
       const s = (d.status || "").toLowerCase();
       const style = DELIVERY_STATUS_STYLE[s] || "text-[var(--tx3)] bg-[var(--gdim)]";
+      const prepaid =
+        d.booking_type === "one_off" && !d.organization_id && !!d.payment_received_at;
       return (
-        <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${style}`}>
-          {toTitleCase(d.status || "")}
+        <span className="inline-flex flex-wrap items-center gap-1">
+          <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${style}`}>
+            {toTitleCase(d.status || "")}
+          </span>
+          {prepaid ? (
+            <span className="inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight text-emerald-700 bg-emerald-500/12 border border-emerald-500/20">
+              Paid
+            </span>
+          ) : null}
         </span>
       );
     },

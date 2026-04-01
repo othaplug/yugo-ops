@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getLocalDateDisplay } from "@/lib/business-timezone";
 import { resolveRegisteredDeviceTeamId } from "@/lib/crew-device-team";
+import { formatFleetVehicleLabel } from "@/lib/fleet-vehicle-label";
 
 /** GET: Returns crew lead + team members for device-based login. Query: ?deviceId=xxx. Rate limited per deviceId. */
 export async function GET(req: NextRequest) {
@@ -51,13 +52,22 @@ export async function GET(req: NextRequest) {
     }
 
     const crewLead = members.find((m) => m.role === "lead") || members[0];
-    const [{ data: truckRow }, { data: teamRow }] = await Promise.all([
+    const [{ data: fvRow }, { data: teamRow }] = await Promise.all([
       device.truck_id
-        ? admin.from("trucks").select("name").eq("id", device.truck_id).maybeSingle()
+        ? admin
+            .from("fleet_vehicles")
+            .select("display_name, license_plate")
+            .eq("id", device.truck_id)
+            .maybeSingle()
         : { data: null },
       admin.from("crews").select("name").eq("id", teamId).maybeSingle(),
     ]);
-    const truckName = truckRow?.name || "Truck";
+    const truckName = fvRow
+      ? formatFleetVehicleLabel({
+          display_name: fvRow.display_name,
+          license_plate: fvRow.license_plate,
+        })
+      : "Truck";
     const teamName = teamRow?.name || "Team";
 
     const dateStr = getLocalDateDisplay(new Date());

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireOwner } from "@/lib/auth/check-role";
+import { fleetVehicleToTruckListRow } from "@/lib/fleet-vehicle-label";
 
 function generateCode(): string {
   const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // exclude I, O for clarity
@@ -20,12 +21,19 @@ export async function GET() {
   const admin = createAdminClient();
 
   const [trucksRes, crewsRes, codesRes] = await Promise.all([
-    admin.from("trucks").select("id, name, phone").order("name"),
+    admin.from("fleet_vehicles").select("id, display_name, license_plate, phone").order("display_name"),
     admin.from("crews").select("id, name").order("name"),
     admin.from("device_setup_codes").select("id, code, truck_id, default_team_id, device_name, expires_at, used_at, created_at").order("created_at", { ascending: false }).limit(20),
   ]);
 
-  const trucks = trucksRes.data || [];
+  const trucks = (trucksRes.data || []).map((row) =>
+    fleetVehicleToTruckListRow({
+      id: row.id,
+      display_name: row.display_name,
+      license_plate: row.license_plate,
+      phone: row.phone,
+    }),
+  );
   const teams = crewsRes.data || [];
   const codes = codesRes.data || [];
 

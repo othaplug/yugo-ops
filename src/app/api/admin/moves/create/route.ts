@@ -21,7 +21,6 @@ const MOVE_TYPE_TO_SERVICE_TYPE: Record<string, string> = {
   single_item: "single_item",
   white_glove: "white_glove",
   specialty: "specialty",
-  b2b_oneoff: "b2b_oneoff",
   event: "event",
   labour_only: "labour_only",
 };
@@ -126,7 +125,6 @@ export async function POST(req: NextRequest) {
       "single_item",
       "white_glove",
       "specialty",
-      "b2b_oneoff",
       "event",
       "labour_only",
     ] as const;

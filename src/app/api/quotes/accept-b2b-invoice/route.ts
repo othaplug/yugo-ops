@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
+import { createDeliveryFromB2BQuote } from "@/lib/automations/create-delivery-from-b2b-quote";
+import { runPostPaymentActionsB2BDelivery } from "@/lib/automations/post-payment";
+import {
+  issueDeliveryTrackingTokens,
+  sendB2BTrackingNotifications,
+} from "@/lib/delivery-tracking-tokens";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
 
 /**
  * B2B one-off quotes with payment method "invoice" — confirm booking without card.
- * Sets quote payment_status to invoiced and creates move(s) with $0 deposit recorded.
+ * Sets quote payment_status to invoiced and creates a delivery with $0 deposit recorded.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -64,7 +70,7 @@ export async function POST(req: NextRequest) {
       })
       .eq("id", quote.id);
 
-    const moveResult = await createMoveFromQuote({
+    const d = await createDeliveryFromB2BQuote({
       quoteId: quote.quote_id,
       depositAmount: 0,
       selectedTier: selectedTier ?? null,
@@ -73,10 +79,25 @@ export async function POST(req: NextRequest) {
       clientEmail: clientEmail.trim(),
     });
 
+    const { trackingToken } = await issueDeliveryTrackingTokens(d.deliveryId);
+    await sendB2BTrackingNotifications(d.deliveryId);
+    const base = getEmailBaseUrl().replace(/\/$/, "");
+    const trackingUrl = `${base}/delivery/track/${encodeURIComponent(trackingToken)}`;
+
+    runPostPaymentActionsB2BDelivery({
+      quoteId: quote.quote_id,
+      deliveryId: d.deliveryId,
+      deliveryNumber: d.deliveryNumber,
+      paymentId: "invoice-booking",
+      amount: 0,
+    }).catch((err) => console.error("[accept-b2b-invoice] post-payment:", err));
+
     return NextResponse.json({
       success: true,
-      move_id: moveResult.moveId,
-      tracking_url: moveResult.trackingUrl,
+      delivery_id: d.deliveryId,
+      delivery_number: d.deliveryNumber,
+      move_id: d.deliveryId,
+      tracking_url: trackingUrl,
     });
   } catch (e) {
     console.error("[accept-b2b-invoice]", e);

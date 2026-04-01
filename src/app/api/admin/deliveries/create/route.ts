@@ -23,6 +23,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const isB2BOneOff = body.booking_type === "one_off";
     const organizationId = isB2BOneOff ? null : ((body.organization_id || "").trim() || null);
+    const explicitOverride = body.override_price;
+    const overrideReasonRaw = typeof body.override_reason === "string" ? body.override_reason.trim() : "";
+    if (explicitOverride != null && explicitOverride !== "" && Number(explicitOverride) !== 0 && !overrideReasonRaw) {
+      return NextResponse.json(
+        { error: "override_reason is required when override_price is set" },
+        { status: 400 },
+      );
+    }
 
     const admin = createAdminClient();
 
@@ -54,6 +62,40 @@ export async function POST(req: NextRequest) {
 
     const rateLookup = await getActiveRateCardLookup(organizationId || "");
 
+    const quotedNum =
+      typeof body.quoted_price === "number"
+        ? body.quoted_price
+        : typeof body.quoted_price === "string"
+          ? parseFloat(body.quoted_price.replace(/[^0-9.-]/g, "")) || 0
+          : 0;
+    const totalFromBody =
+      body.total_price != null && body.total_price !== ""
+        ? Number(body.total_price)
+        : null;
+    const calculatedFromBody =
+      body.calculated_price != null && body.calculated_price !== ""
+        ? Number(body.calculated_price)
+        : null;
+    const legacyTotal =
+      totalFromBody != null && Number.isFinite(totalFromBody) && totalFromBody > 0 ? totalFromBody : null;
+    const totalPriceVal =
+      legacyTotal != null
+        ? legacyTotal
+        : isB2BOneOff && quotedNum > 0
+          ? Math.round(quotedNum * 1.13 * 100) / 100
+          : Number(body.total_price ?? body.quoted_price ?? 0) || 0;
+
+    const calculatedPrice =
+      calculatedFromBody != null && Number.isFinite(calculatedFromBody)
+        ? calculatedFromBody
+        : isB2BOneOff && quotedNum > 0
+          ? quotedNum
+          : legacyTotal != null
+            ? legacyTotal
+            : quotedNum > 0
+              ? quotedNum
+              : 0;
+
     const insertPayload: Record<string, unknown> = {
       delivery_number: deliveryNumber,
       organization_id: organizationId || null,
@@ -73,7 +115,7 @@ export async function POST(req: NextRequest) {
       items,
       instructions: (body.instructions || "").trim() || null,
       special_handling: !!body.special_handling,
-      status: "scheduled",
+      status: body.status === "draft" ? "draft" : "scheduled",
       category: normalizeCategory((body.category || org?.type || "retail").trim() || "retail"),
       created_by_source: "admin",
       created_by_user: null,
@@ -93,8 +135,9 @@ export async function POST(req: NextRequest) {
       services_price: body.services_price || 0,
       zone_surcharge: body.zone_surcharge || 0,
       after_hours_surcharge: body.after_hours_surcharge || 0,
-      total_price: body.total_price ?? body.quoted_price ?? 0,
+      total_price: totalPriceVal,
       quoted_price: body.quoted_price ?? body.total_price ?? null,
+      calculated_price: calculatedPrice,
       services_selected: body.services_selected || [],
       end_customer_name: (body.end_customer_name || customerName).trim() || null,
       end_customer_phone: (body.end_customer_phone || body.customer_phone || "").trim() || null,
@@ -106,7 +149,26 @@ export async function POST(req: NextRequest) {
       crew_id: (body.crew_id || "").trim() || null,
       project_id: (body.project_id || "").trim() || null,
       phase_id: (body.phase_id || "").trim() || null,
+      vertical_code: (body.vertical_code || "").trim() || null,
+      b2b_line_items: body.b2b_line_items != null ? body.b2b_line_items : null,
+      b2b_assembly_required: !!body.b2b_assembly_required,
+      b2b_debris_removal: !!body.b2b_debris_removal,
+      estimated_duration_hours:
+        body.estimated_duration_hours != null && body.estimated_duration_hours !== ""
+          ? Number(body.estimated_duration_hours)
+          : null,
     };
+
+    if (
+      explicitOverride != null &&
+      explicitOverride !== "" &&
+      Number.isFinite(Number(explicitOverride)) &&
+      Number(explicitOverride) !== 0 &&
+      overrideReasonRaw
+    ) {
+      insertPayload.override_price = Number(explicitOverride);
+      insertPayload.override_reason = overrideReasonRaw;
+    }
 
     const crewIdForSnap = insertPayload.crew_id as string | null;
     if (crewIdForSnap) {

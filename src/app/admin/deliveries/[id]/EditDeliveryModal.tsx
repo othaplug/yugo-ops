@@ -14,6 +14,7 @@ import {
   FileText, Clock, Shield, Buildings as Building,
 } from "@phosphor-icons/react";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 
 /* ═══════════════════════════════════════════════════
    Time helpers
@@ -88,8 +89,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
   const router = useRouter();
   const { toast } = useToast();
 
-  // Effective price: admin override → partner booking total → quoted
-  const effectivePrice = delivery?.admin_adjusted_price || delivery?.total_price || delivery?.quoted_price || 0;
+  const effectivePrice = delivery ? effectiveDeliveryPrice(delivery) : 0;
 
   useEffect(() => {
     if (open && delivery) {
@@ -119,6 +119,7 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
     const orgId = (form.get("organization_id") as string)?.trim() || null;
 
     try {
+      const parsedPrice = parseNumberInput(quotedPrice) || 0;
       const res = await fetch(`/api/admin/deliveries/${delivery.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -133,10 +134,11 @@ export default function EditDeliveryModal({ delivery, organizations = [], crews 
           delivery_window: form.get("delivery_window"),
           instructions: form.get("instructions"),
           items,
-          // Sync all three price fields so admin, partner, and delivery detail always agree
-          quoted_price: parseNumberInput(quotedPrice) || null,
-          total_price: parseNumberInput(quotedPrice) || null,
-          admin_adjusted_price: parseNumberInput(quotedPrice) || null,
+          quoted_price: parsedPrice || null,
+          total_price: parsedPrice || null,
+          admin_adjusted_price: parsedPrice || null,
+          override_price: parsedPrice > 0 ? parsedPrice : null,
+          override_reason: parsedPrice > 0 ? "Admin delivery editor" : null,
           status: form.get("status") || delivery.status,
           special_handling: !!form.get("special_handling"),
           organization_id: orgId || null,

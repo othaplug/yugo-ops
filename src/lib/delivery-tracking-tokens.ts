@@ -40,16 +40,20 @@ export async function issueDeliveryTrackingTokens(deliveryId: string): Promise<{
   const { data: row, error } = await admin
     .from("deliveries")
     .select(
-      "id, tracking_token, recipient_tracking_token, business_name, contact_email, contact_phone, customer_name, customer_email, customer_phone, delivery_address, booking_type, organization_id"
+      "id, tracking_token, recipient_tracking_token, business_name, contact_email, contact_phone, customer_name, customer_email, customer_phone, delivery_address, booking_type, organization_id, category, vertical_code"
     )
     .eq("id", deliveryId)
     .single();
 
   if (error || !row) throw new Error(error?.message || "Delivery not found");
 
-  const isB2BOneOff =
-    row.booking_type === "one_off" && !row.organization_id;
-  if (!isB2BOneOff) {
+  const cat = String(row.category ?? "").toLowerCase();
+  const vertical = String(row.vertical_code ?? "").trim();
+  const isB2BDeliveryJob =
+    (row.booking_type === "one_off" && !row.organization_id) ||
+    cat === "b2b" ||
+    vertical.length > 0;
+  if (!isB2BDeliveryJob) {
     return {
       trackingToken: row.tracking_token || "",
       recipientToken: row.recipient_tracking_token || null,
@@ -104,7 +108,7 @@ export async function sendB2BTrackingNotifications(
     const subj = "Your Yugo delivery is confirmed";
     const inner = `
 <div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#FAF7F2;max-width:560px;margin:0 auto">
-  <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;opacity:0.7;margin:0 0 12px">Yugo</p>
+  <p style="font-size:11px;letter-spacing:0.04em;text-transform:none;opacity:0.7;margin:0 0 12px">Yugo</p>
   <h1 style="font-size:22px;margin:0 0 16px">Delivery confirmed</h1>
   <p style="font-size:15px;line-height:1.5;margin:0 0 20px">Your Yugo delivery is confirmed. Track progress anytime.</p>
   <a href="${bizUrl}" style="display:inline-block;background:#5C1A33;color:#FAF7F2;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>
@@ -134,7 +138,7 @@ export async function sendB2BTrackingNotifications(
     const subj = `Your ${brand} delivery by Yugo`;
     const inner = `
 <div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#FAF7F2;max-width:560px;margin:0 auto">
-  <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;opacity:0.7;margin:0 0 12px">${brand} · Yugo</p>
+  <p style="font-size:11px;letter-spacing:0.04em;text-transform:none;opacity:0.7;margin:0 0 12px">${brand} · Yugo</p>
   <h1 style="font-size:22px;margin:0 0 16px">Track your delivery</h1>
   <p style="font-size:15px;line-height:1.5;margin:0 0 20px">Your order from <strong>${brand}</strong> is on the way with Yugo.</p>
   <a href="${recUrl}" style="display:inline-block;background:#5C1A33;color:#FAF7F2;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>

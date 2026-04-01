@@ -120,8 +120,16 @@ export default function TruckAssignments() {
             <Icon name="calendar" className="w-[14px] h-[14px]" /> Truck Assignments
           </h2>
           <p className="text-[11px] text-[var(--tx3)] mt-0.5">
-            Assign which team is on which truck for the day. When crews swap trucks, set this so the tablet shows the correct team for login.
+            Uses the same fleet vehicles as above. Pick a date, then pair each vehicle with a team for that day. Tablets still use their default team when there is no row for that date.
           </p>
+          {!loading && trucks.length === 0 && (
+            <p className="text-[11px] text-amber-600 dark:text-amber-500/90 mt-2">
+              Add at least one active or in-maintenance vehicle under Fleet Vehicles to enable assignments.
+            </p>
+          )}
+          {!loading && trucks.length > 0 && teams.length === 0 && (
+            <p className="text-[11px] text-amber-600 dark:text-amber-500/90 mt-2">Add a crew before you can assign trucks.</p>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <input
@@ -149,7 +157,7 @@ export default function TruckAssignments() {
               <div className="py-6 text-center">
                 <p className="text-[13px] text-[var(--tx3)] mb-1">No assignments for this date</p>
                 <p className="text-[11px] text-[var(--tx3)] mb-3">
-                  Tablets use their default team. Add assignments when crews swap trucks.
+                  Creating a fleet vehicle does not add a row here. Use Add assignment when you need a team override for that vehicle on this date.
                 </p>
                 <button
                   onClick={() => setAddModalOpen(true)}

@@ -18,77 +18,99 @@ export type TrackingStatus =
   | "arrived"
   | "delivering";
 
-const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; notifyPartner: boolean; clientMessage: string }> = {
+const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; notifyPartner: boolean }> = {
   en_route_to_pickup: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: false,
-    clientMessage: "Your crew is on the way. We will keep you updated as your move day unfolds.",
   },
   arrived_at_pickup: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: false,
-    clientMessage: "Your crew has arrived and is ready to begin. You are in good hands.",
   },
   loading: {
     notifyClient: false,
     notifyAdmin: false,
     notifyPartner: false,
-    clientMessage: "",
   },
   en_route_to_destination: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Everything is loaded and your crew is now heading to your new home.",
   },
   arrived_at_destination: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your crew has arrived and is ready to unload. You are almost there.",
   },
   unloading: {
     notifyClient: false,
     notifyAdmin: false,
     notifyPartner: false,
-    clientMessage: "",
   },
   completed: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your move is complete. It was a privilege to take care of you today.",
   },
   en_route: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your delivery is underway. We will notify you when your crew arrives.",
   },
   arrived: {
     notifyClient: true,
     notifyAdmin: true,
     notifyPartner: true,
-    clientMessage: "Your crew has arrived at your address.",
   },
   delivering: {
     notifyClient: false,
     notifyAdmin: false,
     notifyPartner: false,
-    clientMessage: "",
   },
 };
 
-function getClientMessage(status: TrackingStatus, jobType: "move" | "delivery", defaultMessage: string): string {
-  if (jobType === "delivery") {
-    if (status === "en_route_to_pickup" || status === "en_route") return "Your crew is on the way to collect your delivery.";
-    if (status === "en_route_to_destination") return "Your delivery is on its way to you.";
-    if (status === "arrived_at_destination") return "Your crew has arrived. Your delivery will be placed shortly.";
-    if (status === "completed") return "Your delivery is complete. Thank you for choosing Yugo.";
+/** Email headline: move copy never references delivery; delivery copy never references a move. */
+function headlineForTrackingCheckpoint(status: TrackingStatus, jobType: "move" | "delivery"): string {
+  if (jobType === "move") {
+    switch (status) {
+      case "en_route_to_pickup":
+        return "Your crew is on the way. We will keep you updated as your move day unfolds.";
+      case "arrived_at_pickup":
+        return "Your crew has arrived and is ready to begin. You are in good hands.";
+      case "en_route_to_destination":
+        return "Everything is loaded and your crew is now heading to your new home.";
+      case "arrived_at_destination":
+        return "Your crew has arrived and is ready to unload. You are almost there.";
+      case "completed":
+        return "Your move is complete. It was a privilege to take care of you today.";
+      case "en_route":
+        return "Your crew is on the way. We will notify you when they arrive.";
+      case "arrived":
+        return "Your crew has arrived at your address.";
+      default:
+        return "A status update on your move";
+    }
   }
-  return defaultMessage;
+  switch (status) {
+    case "en_route_to_pickup":
+      return "Your crew is on the way to collect your delivery.";
+    case "en_route":
+      return "Your delivery is underway. We will notify you when your crew arrives.";
+    case "arrived_at_pickup":
+      return "Your crew has arrived and is ready to load your items for delivery.";
+    case "en_route_to_destination":
+      return "Your delivery is on its way to you.";
+    case "arrived_at_destination":
+      return "Your crew has arrived. Your delivery will be placed shortly.";
+    case "completed":
+      return "Your delivery is complete. Thank you for choosing Yugo.";
+    case "arrived":
+      return "Your crew has arrived with your delivery.";
+    default:
+      return "A status update on your delivery";
+  }
 }
 
 export async function notifyOnCheckpoint(
@@ -100,7 +122,7 @@ export async function notifyOnCheckpoint(
   fromAddress?: string,
   toAddress?: string
 ): Promise<void> {
-  let cfg = CONFIG[status] || { notifyClient: false, notifyAdmin: false, notifyPartner: false, clientMessage: "" };
+  let cfg = CONFIG[status] || { notifyClient: false, notifyAdmin: false, notifyPartner: false };
   if (jobType === "delivery" && (status === "en_route_to_pickup" || status === "en_route")) {
     cfg = { ...cfg, notifyClient: false };
   }
@@ -174,15 +196,24 @@ export async function notifyOnCheckpoint(
     ? jobType === "delivery" ? `Your delivery is complete - ${formatJobId(moveCode || jobId, jobType)}` : `Your move is complete - ${formatJobId(moveCode || jobId, jobType)}`
     : `Your crew update - ${formatJobId(moveCode || jobId, jobType)}`;
 
-  const headline = getClientMessage(status, jobType, cfg.clientMessage) || cfg.clientMessage || "A status update on your move";
-  const body = status === "completed"
-    ? "It was a pleasure taking care of you today. Your documents and receipt are available in your portal."
-    : "Your crew has provided a live update. Track your move in real time using the link below.";
+  const headline = headlineForTrackingCheckpoint(status, jobType);
+  const body =
+    status === "completed"
+      ? jobType === "delivery"
+        ? "It was a pleasure taking care of you today. Thank you for choosing Yugo."
+        : "It was a pleasure taking care of you today. Your documents and receipt are available in your portal."
+      : jobType === "delivery"
+        ? "Your crew has provided a live update. Track your delivery in real time using the link below."
+        : "Your crew has provided a live update. Track your move in real time using the link below.";
   const html = statusUpdateEmailHtml({
     headline,
     body,
     ctaUrl: trackUrl,
-    ctaLabel: trackUrl ? "Track your move" : undefined,
+    ctaLabel: trackUrl
+      ? jobType === "delivery"
+        ? "Track your delivery"
+        : "Track your move"
+      : undefined,
     includeFooter: false,
   });
 

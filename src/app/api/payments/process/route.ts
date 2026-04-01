@@ -3,7 +3,13 @@ import { squareClient } from "@/lib/square";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
-import { runPostPaymentActions } from "@/lib/automations/post-payment";
+import { createDeliveryFromB2BQuote } from "@/lib/automations/create-delivery-from-b2b-quote";
+import { runPostPaymentActions, runPostPaymentActionsB2BDelivery } from "@/lib/automations/post-payment";
+import {
+  issueDeliveryTrackingTokens,
+  sendB2BTrackingNotifications,
+} from "@/lib/delivery-tracking-tokens";
+import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { rateLimit } from "@/lib/rate-limit";
 import { isQuoteExpiredForBooking, quoteExpiryBlockedStatuses } from "@/lib/quote-expiry";
 import { squareThrownErrorMessage } from "@/lib/square-payment-errors";
@@ -206,35 +212,62 @@ export async function POST(req: Request) {
       })
       .eq("id", quote.id);
 
-    // ── 6. Create move record from quote ──
+    const svcType = String(quote.service_type ?? "");
+    const isB2bPay = isB2BDeliveryQuoteServiceType(svcType);
+
     let moveId: string | null = null;
     let moveCode: string | null = null;
+    let deliveryId: string | null = null;
+    let deliveryNumber: string | null = null;
+    let trackingUrl: string | null = null;
 
     try {
-      const moveResult = await createMoveFromQuote({
-        quoteId,
-        depositAmount: amount,
-        selectedTier: selectedTier ?? null,
-        selectedAddons: selectedAddons ?? [],
-        clientName,
-        clientEmail,
-        squareCustomerId,
-        squareCardId,
-        squarePaymentId,
-        squareReceiptUrl,
-      });
-      moveId = moveResult.moveId;
-      moveCode = moveResult.moveCode;
-    } catch (moveErr) {
-      console.error("[createMoveFromQuote] failed:", moveErr);
-      // Payment succeeded but move creation failed — return success with a warning
-      // so the client knows payment went through, and admin can recover the move
+      if (isB2bPay) {
+        const d = await createDeliveryFromB2BQuote({
+          quoteId,
+          depositAmount: amount,
+          selectedTier: selectedTier ?? null,
+          selectedAddons: selectedAddons ?? [],
+          clientName,
+          clientEmail,
+          squareCustomerId,
+          squareCardId,
+          squarePaymentId,
+          squareReceiptUrl,
+        });
+        deliveryId = d.deliveryId;
+        deliveryNumber = d.deliveryNumber;
+        const { trackingToken } = await issueDeliveryTrackingTokens(deliveryId);
+        await sendB2BTrackingNotifications(deliveryId);
+        const base = getEmailBaseUrl().replace(/\/$/, "");
+        trackingUrl = `${base}/delivery/track/${encodeURIComponent(trackingToken)}`;
+      } else {
+        const moveResult = await createMoveFromQuote({
+          quoteId,
+          depositAmount: amount,
+          selectedTier: selectedTier ?? null,
+          selectedAddons: selectedAddons ?? [],
+          clientName,
+          clientEmail,
+          squareCustomerId,
+          squareCardId,
+          squarePaymentId,
+          squareReceiptUrl,
+        });
+        moveId = moveResult.moveId;
+        moveCode = moveResult.moveCode;
+      }
+    } catch (jobErr) {
+      console.error("[payments/process] job creation failed:", jobErr);
       return NextResponse.json({
         success: true,
         payment_id: squarePaymentId,
         move_id: null,
+        delivery_id: null,
         tracking_url: null,
-        warning: "Payment was processed successfully but move creation failed. Please contact support with your quote ID.",
+        warning: isB2bPay
+          ? "Payment was processed successfully but delivery creation failed. Please contact support with your quote ID."
+          : "Payment was processed successfully but move creation failed. Please contact support with your quote ID.",
       });
     }
 
@@ -248,7 +281,15 @@ export async function POST(req: Request) {
     });
 
     // ── 8. Post-payment actions (fire-and-forget) ──
-    if (moveId && moveCode && squarePaymentId) {
+    if (isB2bPay && deliveryId && deliveryNumber && squarePaymentId) {
+      runPostPaymentActionsB2BDelivery({
+        quoteId,
+        deliveryId,
+        deliveryNumber,
+        paymentId: squarePaymentId,
+        amount,
+      }).catch((err) => console.error("[postPayment B2B delivery] error:", err));
+    } else if (moveId && moveCode && squarePaymentId) {
       runPostPaymentActions({
         quoteId,
         moveId,
@@ -262,7 +303,12 @@ export async function POST(req: Request) {
       success: true,
       payment_id: squarePaymentId,
       move_id: moveId,
-      tracking_url: moveCode ? `/track/move/${moveCode}` : null,
+      delivery_id: deliveryId,
+      tracking_url: isB2bPay
+        ? trackingUrl
+        : moveCode
+          ? `/track/move/${moveCode}`
+          : null,
     });
   } catch (e) {
     console.error("[payments/process] unexpected error:", e);

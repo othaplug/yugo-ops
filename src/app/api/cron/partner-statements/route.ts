@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
+import { effectiveDeliveryPrice } from "@/lib/delivery-pricing";
 
 /**
  * Vercel Cron: runs daily at 6 AM EST.
@@ -94,10 +95,7 @@ export async function GET(req: NextRequest) {
 
       if (!deliveries || deliveries.length === 0) continue;
 
-      const linePrice = (d: {
-        admin_adjusted_price?: number | null;
-        total_price?: number | null;
-      }) => Number(d.admin_adjusted_price ?? d.total_price ?? 0) || 0;
+      const linePrice = (d: Parameters<typeof effectiveDeliveryPrice>[0]) => effectiveDeliveryPrice(d);
 
       const subtotal = deliveries.reduce((s, d) => s + linePrice(d), 0);
       const hst = Math.round(subtotal * 0.13 * 100) / 100;
@@ -272,7 +270,7 @@ function buildStatementEmail(opts: {
 <body style="background:#f5f4f2;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
     <div style="background:#0d0b08;border-radius:12px;padding:28px;margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#C9A962;margin:0 0 4px;">Yugo</p>
+      <p style="font-size:10px;letter-spacing:0.04em;text-transform:none;color:#C9A962;margin:0 0 4px;">Yugo</p>
       <h1 style="font-size:20px;font-weight:700;color:#e8e0d0;margin:0 0 2px;">Statement Ready</h1>
       <p style="font-size:12px;color:#9c9489;margin:0;">${opts.statementNumber}</p>
     </div>
@@ -289,7 +287,7 @@ function buildStatementEmail(opts: {
         <strong>Payment due: ${dueDateLabel}</strong> - ${cycleLabel}
       </div>
       <div style="margin-top:20px;text-align:center;">
-        <a href="${opts.statementUrl}" style="display:inline-block;background:#B8962E;color:#0d0b08;padding:12px 28px;font-size:11px;font-weight:700;text-decoration:none;letter-spacing:1.2px;text-transform:uppercase;border-radius:8px;">View Statement</a>
+        <a href="${opts.statementUrl}" style="display:inline-block;background:#B8962E;color:#0d0b08;padding:12px 28px;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:0.02em;text-transform:none;border-radius:8px;">View statement</a>
       </div>
     </div>
     <p style="font-size:11px;color:#9c9489;text-align:center;">Questions? Email ${getClientSupportEmail()} or contact your Yugo coordinator.</p>
@@ -303,7 +301,7 @@ function buildOverdueEmail(opts: { partnerName: string; statementNumber: string;
 <body style="background:#f5f4f2;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
     <div style="background:#1a0a0a;border-radius:12px;padding:28px;margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#ef4444;margin:0 0 4px;">PAYMENT OVERDUE</p>
+      <p style="font-size:10px;letter-spacing:0.04em;text-transform:none;color:#ef4444;margin:0 0 4px;">Payment overdue</p>
       <h1 style="font-size:20px;font-weight:700;color:#e8e0d0;margin:0;">${opts.statementNumber}</h1>
     </div>
     <div style="background:#fff;border-radius:12px;padding:24px;">

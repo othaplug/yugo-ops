@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
-import {
-  issueDeliveryTrackingTokens,
-  sendB2BTrackingNotifications,
-} from "@/lib/delivery-tracking-tokens";
+import { resolveDeliveryUuidFromApiPathSegment } from "@/lib/delivery-resolve-id";
+import { runB2BOneOffPaymentRecordedFlow } from "@/lib/b2b-delivery-payment";
 
 /**
  * Marks B2B one-off delivery as paid and issues tracking links (idempotent).
@@ -16,8 +14,13 @@ export async function POST(
   const { error: authErr } = await requireRole("coordinator");
   if (authErr) return authErr;
 
-  const { id } = await params;
+  const rawSegment = (await params).id?.trim() || "";
   const admin = createAdminClient();
+  const id = await resolveDeliveryUuidFromApiPathSegment(admin, rawSegment);
+
+  if (!id) {
+    return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
+  }
 
   const { data: d, error: fetchErr } = await admin
     .from("deliveries")
@@ -33,19 +36,8 @@ export async function POST(
     return NextResponse.json({ error: "Only B2B one-off deliveries use this action" }, { status: 400 });
   }
 
-  const now = new Date().toISOString();
-
-  await admin
-    .from("deliveries")
-    .update({
-      payment_received_at: d.payment_received_at || now,
-      updated_at: now,
-    })
-    .eq("id", id);
-
   try {
-    await issueDeliveryTrackingTokens(id);
-    await sendB2BTrackingNotifications(id);
+    await runB2BOneOffPaymentRecordedFlow(id, { notifyMode: "always" });
   } catch (e) {
     console.error("[record-payment] tracking tokens:", e);
     return NextResponse.json(

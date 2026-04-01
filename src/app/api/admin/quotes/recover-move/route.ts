@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMoveFromQuote } from "@/lib/automations/create-move-from-quote";
+import { createDeliveryFromB2BQuote } from "@/lib/automations/create-delivery-from-b2b-quote";
+import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
 import { requireStaff } from "@/lib/api-auth";
 
 /**
@@ -37,22 +39,39 @@ export async function POST(req: Request) {
     );
   }
 
-  // Any move linked to this quote (event bundles create multiple rows)
-  const { data: existingList } = await db
-    .from("moves")
-    .select("id, move_code, created_at")
-    .eq("quote_id", quote.id)
-    .order("created_at", { ascending: true })
-    .limit(1);
+  const svc = String(quote.service_type ?? "");
 
-  const existing = existingList?.[0];
-  if (existing) {
-    return NextResponse.json({
-      success: true,
-      move_id: existing.id,
-      move_code: existing.move_code,
-      message: "Move already exists",
-    });
+  if (isB2BDeliveryQuoteServiceType(svc)) {
+    const { data: existingDel } = await db
+      .from("deliveries")
+      .select("id, delivery_number")
+      .eq("source_quote_id", quote.id)
+      .maybeSingle();
+    if (existingDel) {
+      return NextResponse.json({
+        success: true,
+        delivery_id: existingDel.id,
+        delivery_number: existingDel.delivery_number,
+        message: "Delivery already exists",
+      });
+    }
+  } else {
+    const { data: existingList } = await db
+      .from("moves")
+      .select("id, move_code, created_at")
+      .eq("quote_id", quote.id)
+      .order("created_at", { ascending: true })
+      .limit(1);
+
+    const existing = existingList?.[0];
+    if (existing) {
+      return NextResponse.json({
+        success: true,
+        move_id: existing.id,
+        move_code: existing.move_code,
+        message: "Move already exists",
+      });
+    }
   }
 
   const contact = quote.contacts as { name?: string; email?: string | null; phone?: string | null } | null;
@@ -60,6 +79,26 @@ export async function POST(req: Request) {
   const clientName = contact?.name?.trim() || undefined;
 
   try {
+    if (isB2BDeliveryQuoteServiceType(svc)) {
+      const d = await createDeliveryFromB2BQuote({
+        quoteId,
+        depositAmount: Number(quote.deposit_amount ?? 0),
+        selectedTier: quote.selected_tier ?? null,
+        selectedAddons: quote.selected_addons ?? [],
+        clientName,
+        clientEmail,
+        squareCustomerId: quote.square_customer_id ?? undefined,
+        squareCardId: quote.square_card_id ?? undefined,
+        squarePaymentId: quote.square_payment_id ?? undefined,
+      });
+      return NextResponse.json({
+        success: true,
+        delivery_id: d.deliveryId,
+        delivery_number: d.deliveryNumber,
+        message: "Delivery created from quote",
+      });
+    }
+
     const result = await createMoveFromQuote({
       quoteId,
       depositAmount: Number(quote.deposit_amount ?? 0),
@@ -85,7 +124,7 @@ export async function POST(req: Request) {
         : {}),
     });
   } catch (err) {
-    console.error("[recover-move] createMoveFromQuote failed:", err);
+    console.error("[recover-move] create job from quote failed:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to create move" },
       { status: 500 },

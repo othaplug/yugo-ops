@@ -2099,6 +2099,13 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       {/* Devices: Fleet Vehicles, iPad Setup Codes, Truck Assignments */}
       {activeTab === "devices" && (
         <div className="space-y-6">
+          <section className="rounded-xl border border-[var(--brd)] bg-[var(--bg2)] px-4 py-3.5 text-[11px] text-[var(--tx2)] leading-relaxed">
+            <p className="font-semibold text-[var(--tx)] mb-1.5">One fleet list for operations</p>
+            <p>
+              Vehicles you add under Fleet Vehicles are the same records used for truck assignments (team per vehicle per day), equipment status per truck, and the vehicle you select when you create iPad setup codes.
+              Coordinators can manage truck assignments; owners still manage setup codes. Deploy the latest app and database changes together so tablets and assignments stay in sync.
+            </p>
+          </section>
           <FleetVehiclesManager />
           <EquipmentDashboard />
           <DeviceSetupCodes />
