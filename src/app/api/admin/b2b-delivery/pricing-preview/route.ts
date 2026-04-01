@@ -9,6 +9,10 @@ import {
   type B2BQuoteLineItem,
 } from "@/lib/pricing/b2b-dimensional";
 import { loadB2BVerticalPricing } from "@/lib/pricing/b2b-vertical-load";
+import {
+  mergedRatesWithBundleTiers,
+  prepareB2bLineItemsForDimensionalEngine,
+} from "@/lib/b2b-dimensional-quote-prep";
 
 const TAX_FALLBACK = 0.13;
 
@@ -88,12 +92,22 @@ export async function POST(req: NextRequest) {
       const wc = String(o.weight_category || "light").toLowerCase();
       const wcat =
         wc === "medium" || wc === "heavy" || wc === "extra_heavy" ? wc : "light";
+      const unitType = typeof o.unit_type === "string" ? o.unit_type.trim() : undefined;
+      const haulOld = !!(o.haul_away ?? o.haul_away_old);
       lines.push({
         description: desc,
         quantity: qty,
         weight_category: wcat as B2BQuoteLineItem["weight_category"],
         fragile: !!o.fragile,
         handling_type: typeof o.handling_type === "string" ? o.handling_type : undefined,
+        unit_type: unitType || undefined,
+        serial_number: typeof o.serial_number === "string" ? o.serial_number.trim() || undefined : undefined,
+        stop_assignment: typeof o.stop_assignment === "string" ? o.stop_assignment.trim() || undefined : undefined,
+        declared_value: typeof o.declared_value === "string" ? o.declared_value.trim() || undefined : undefined,
+        crating_required: !!o.crating_required,
+        hookup_required: !!o.hookup_required,
+        haul_away: haulOld,
+        assembly_required: !!o.assembly_required,
       });
     }
 
@@ -102,12 +116,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unknown or inactive vertical" }, { status: 400 });
     }
 
-    const merged = loaded.mergedRates as Record<string, unknown>;
+    const merged = mergedRatesWithBundleTiers(loaded.mergedRates as Record<string, unknown>);
     const useVerticalZoneSchedule = String(merged.distance_mode || "") === "zones";
+
+    const engineItems = prepareB2bLineItemsForDimensionalEngine(
+      lines.length > 0 ? lines : [{ description: "Items TBD", quantity: 1, weight_category: "light" }],
+      loaded.vertical.code,
+      handlingType,
+      loaded.mergedRates as Record<string, unknown>,
+    );
 
     const dimInput: B2BDimensionalQuoteInput = {
       vertical_code: loaded.vertical.code,
-      items: lines.length > 0 ? lines : [{ description: "Items TBD", quantity: 1, weight_category: "light" }],
+      items: engineItems,
       handling_type: handlingType,
       stops: [
         { address: pickupMain, type: "pickup", access: pickupAccess || undefined },
@@ -152,7 +173,7 @@ export async function POST(req: NextRequest) {
 
     const dim = calculateB2BDimensionalPrice({
       vertical: loaded.vertical,
-      mergedRates: loaded.mergedRates,
+      mergedRates: merged,
       input: dimInput,
       totalDistanceKm: distKm,
       roundingNearest: rounding,

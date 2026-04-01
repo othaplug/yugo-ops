@@ -17,9 +17,11 @@ import {
   CheckCircle,
   Warning,
   ArrowSquareOut,
+  Buildings,
 } from "@phosphor-icons/react";
 import { parseB2BJobsFieldVisibility, b2bJobsFieldVisible } from "@/lib/b2b-jobs-field-visibility";
 import { b2bJobsDimensionalStops } from "@/lib/b2b-jobs-route-helpers";
+import { parseB2bItemConfigShape } from "@/lib/b2b-bundle-line-items";
 
 const fieldInput = "field-input-compact w-full";
 
@@ -84,12 +86,65 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+const FLOORING_UNIT_OPTIONS = [
+  { value: "box", label: "Box" },
+  { value: "roll", label: "Roll" },
+  { value: "bundle", label: "Bundle" },
+  { value: "piece", label: "Piece" },
+  { value: "bag", label: "Bag" },
+  { value: "pallet", label: "Pallet" },
+  { value: "unit", label: "Unit" },
+] as const;
+
 type LineRow = {
   description: string;
   quantity: number;
   weight_category: (typeof LINE_WEIGHT_OPTIONS)[number]["value"];
   fragile: boolean;
+  unit_type?: string;
+  stop_assignment?: string;
+  serial_number?: string;
+  declared_value?: string;
+  crating_required?: boolean;
+  hookup_required?: boolean;
+  haul_away_line?: boolean;
+  line_assembly_required?: boolean;
 };
+
+function lineAnnotationsBlock(rows: LineRow[]): string | null {
+  const lines: string[] = [];
+  for (const r of rows) {
+    const parts: string[] = [];
+    if (r.stop_assignment?.trim()) parts.push(`Stop assignment: ${r.stop_assignment.trim()}`);
+    if (r.serial_number?.trim()) parts.push(`Serial: ${r.serial_number.trim()}`);
+    if (r.declared_value?.trim()) parts.push(`Declared value: ${r.declared_value.trim()}`);
+    if (r.hookup_required) parts.push("Hook-up required");
+    if (r.haul_away_line) parts.push("Haul-away old unit");
+    if (r.line_assembly_required) parts.push("Line item assembly");
+    if (r.crating_required) parts.push("Crating required");
+    if (parts.length) lines.push(`${r.description}${r.quantity > 1 ? ` ×${r.quantity}` : ""}: ${parts.join("; ")}`);
+  }
+  if (lines.length === 0) return null;
+  return ["Item details", ...lines.map((l) => `• ${l}`)].join("\n");
+}
+
+function toB2bLinePayload(l: LineRow, handlingType: string): Record<string, unknown> {
+  return {
+    description: l.description,
+    quantity: l.quantity,
+    weight_category: l.weight_category,
+    fragile: l.fragile,
+    handling_type: handlingType,
+    ...(l.unit_type ? { unit_type: l.unit_type } : {}),
+    ...(l.serial_number?.trim() ? { serial_number: l.serial_number.trim() } : {}),
+    ...(l.stop_assignment?.trim() ? { stop_assignment: l.stop_assignment.trim() } : {}),
+    ...(l.declared_value?.trim() ? { declared_value: l.declared_value.trim() } : {}),
+    ...(l.crating_required ? { crating_required: true } : {}),
+    ...(l.hookup_required ? { hookup_required: true } : {}),
+    ...(l.haul_away_line ? { haul_away: true } : {}),
+    ...(l.line_assembly_required ? { assembly_required: true } : {}),
+  };
+}
 
 interface HubSpotContact {
   hubspot_id: string;
@@ -100,6 +155,16 @@ interface HubSpotContact {
   company: string;
   deal_ids: string[];
 }
+
+type HubSpotSuggestRow = {
+  hubspot_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  company: string;
+  title: string;
+};
 
 type HubSpotMatchKind = "email" | "phone" | "company_name" | "company";
 
@@ -137,6 +202,14 @@ export default function B2BJobsDeliveryForm({
   const [hsAutofilled, setHsAutofilled] = useState<string[]>([]);
   const formSnapshotRef = useRef({ businessName: "", contactName: "", contactPhone: "", contactEmail: "" });
   const dedupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const hubspotBusinessWrapRef = useRef<HTMLDivElement | null>(null);
+  const hsSuggestSeqRef = useRef(0);
+  const [hsSuggestOpen, setHsSuggestOpen] = useState(false);
+  const [hsSuggestLoading, setHsSuggestLoading] = useState(false);
+  const [hsSuggestItems, setHsSuggestItems] = useState<HubSpotSuggestRow[]>([]);
+  const [hsSuggestHighlight, setHsSuggestHighlight] = useState(0);
+  const [hsSuggestNoResults, setHsSuggestNoResults] = useState(false);
 
   formSnapshotRef.current = { businessName, contactName, contactPhone, contactEmail };
 
@@ -253,6 +326,82 @@ export default function B2BJobsDeliveryForm({
     }, 400);
   }, [runHubSpotDedup]);
 
+  const applyHubSpotSuggestion = useCallback((row: HubSpotSuggestRow) => {
+    const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ");
+    if (row.company) setBusinessName(row.company);
+    if (fullName) setContactName(fullName);
+    if (row.phone) setContactPhone(formatPhone(row.phone));
+    if (row.email) setContactEmail(row.email.trim().toLowerCase());
+    setHsSuggestOpen(false);
+    setHsSuggestNoResults(false);
+    setHsSuggestItems([]);
+    const filled: string[] = [];
+    if (row.company) filled.push("Business name");
+    if (fullName) filled.push("Contact name");
+    if (row.phone) filled.push("Phone");
+    if (row.email) filled.push("Email");
+    setHsLookupState("found");
+    setHsAutofilled(filled);
+    setHsDuplicate(null);
+  }, []);
+
+  useEffect(() => {
+    const q = businessName.trim();
+    if (q.length < 2) {
+      setHsSuggestItems([]);
+      setHsSuggestOpen(false);
+      setHsSuggestLoading(false);
+      setHsSuggestNoResults(false);
+      return;
+    }
+
+    const t = setTimeout(() => {
+      const seq = ++hsSuggestSeqRef.current;
+      setHsSuggestLoading(true);
+      setHsSuggestItems([]);
+      setHsSuggestNoResults(false);
+      void (async () => {
+        try {
+          const res = await fetch("/api/hubspot/suggest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: q }),
+          });
+          const data = (await res.json()) as { suggestions?: HubSpotSuggestRow[] };
+          const items = Array.isArray(data.suggestions) ? data.suggestions : [];
+          if (seq !== hsSuggestSeqRef.current) return;
+          setHsSuggestItems(items);
+          setHsSuggestNoResults(items.length === 0);
+          setHsSuggestOpen(true);
+        } catch {
+          if (seq === hsSuggestSeqRef.current) {
+            setHsSuggestItems([]);
+            setHsSuggestNoResults(true);
+            setHsSuggestOpen(true);
+          }
+        } finally {
+          if (seq === hsSuggestSeqRef.current) setHsSuggestLoading(false);
+        }
+      })();
+    }, 320);
+
+    return () => clearTimeout(t);
+  }, [businessName]);
+
+  useEffect(() => {
+    setHsSuggestHighlight(0);
+  }, [hsSuggestItems]);
+
+  useEffect(() => {
+    if (!hsSuggestOpen) return;
+    const onDocDown = (e: MouseEvent) => {
+      const w = hubspotBusinessWrapRef.current;
+      if (w && !w.contains(e.target as Node)) setHsSuggestOpen(false);
+    };
+    document.addEventListener("mousedown", onDocDown);
+    return () => document.removeEventListener("mousedown", onDocDown);
+  }, [hsSuggestOpen]);
+
   const selectedVertical = useMemo(
     () => verticals.find((v) => v.code === verticalCode) ?? null,
     [verticals, verticalCode],
@@ -263,12 +412,33 @@ export default function B2BJobsDeliveryForm({
     [selectedVertical],
   );
 
+  const itemConfig = useMemo(
+    () => parseB2bItemConfigShape(selectedVertical?.default_config),
+    [selectedVertical],
+  );
+
   const vis = useCallback((key: string) => b2bJobsFieldVisible(fieldVisibility, key), [fieldVisibility]);
+
+  const showItemField = useCallback(
+    (key: string) => !itemConfig?.showFields?.length || (itemConfig.showFields as string[]).includes(key),
+    [itemConfig?.showFields],
+  );
 
   useEffect(() => {
     const dh = fieldVisibility?.defaultHandling;
     if (dh) setHandlingType(dh.toLowerCase());
   }, [verticalCode, fieldVisibility?.defaultHandling]);
+
+  useEffect(() => {
+    setNewStopAssignment("");
+    setNewSerialNumber("");
+    setNewDeclaredValue("");
+    setNewHookupRequired(false);
+    setNewHaulAwayLine(false);
+    setNewCratingRequired(false);
+    setNewLineAssemblyRequired(false);
+    setNewUnitType("box");
+  }, [verticalCode]);
 
   const [pickupAddress, setPickupAddress] = useState("");
   const [extraPickupStops, setExtraPickupStops] = useState<StopEntry[]>([]);
@@ -282,6 +452,14 @@ export default function B2BJobsDeliveryForm({
   const [newQty, setNewQty] = useState(1);
   const [newWeight, setNewWeight] = useState<(typeof LINE_WEIGHT_OPTIONS)[number]["value"]>("light");
   const [newFragile, setNewFragile] = useState(false);
+  const [newUnitType, setNewUnitType] = useState<string>("box");
+  const [newStopAssignment, setNewStopAssignment] = useState("");
+  const [newSerialNumber, setNewSerialNumber] = useState("");
+  const [newDeclaredValue, setNewDeclaredValue] = useState("");
+  const [newHookupRequired, setNewHookupRequired] = useState(false);
+  const [newHaulAwayLine, setNewHaulAwayLine] = useState(false);
+  const [newCratingRequired, setNewCratingRequired] = useState(false);
+  const [newLineAssemblyRequired, setNewLineAssemblyRequired] = useState(false);
 
   const [handlingType, setHandlingType] = useState("threshold");
   const [scheduledDate, setScheduledDate] = useState("");
@@ -333,10 +511,29 @@ export default function B2BJobsDeliveryForm({
     if (lines.length > 0) return lines;
     const bc = parseInt(boxCount, 10);
     if (vis("box_count") && bc >= 1 && verticalCode === "flooring") {
-      return [{ description: "Flooring / building materials", quantity: bc, weight_category: "light", fragile: false }];
+      return [
+        {
+          description: "Flooring / building materials",
+          quantity: bc,
+          weight_category: "light",
+          fragile: false,
+          unit_type: "box",
+        },
+      ];
     }
     return [];
   }, [lines, boxCount, vis, verticalCode]);
+
+  const showUnitTypeColumn = verticalCode === "flooring" && showItemField("unit_type");
+
+  const showLineDetailFields =
+    showItemField("stop_assignment") ||
+    showItemField("serial_number") ||
+    showItemField("declared_value") ||
+    showItemField("crating_required") ||
+    showItemField("hookup_required") ||
+    showItemField("haul_away_old") ||
+    showItemField("assembly_required");
 
   const runPricingPreview = useCallback(async () => {
     if (!verticalCode.trim() || !pickupAddress.trim() || !deliveryAddress.trim()) {
@@ -360,12 +557,7 @@ export default function B2BJobsDeliveryForm({
           extra_pickup_addresses: extraPickupStops.map((s) => s.address).filter(Boolean),
           extra_delivery_addresses: extraDeliveryStops.map((s) => s.address).filter(Boolean),
           handling_type: handlingType,
-          line_items: effLines.map((l) => ({
-            description: l.description,
-            quantity: l.quantity,
-            weight_category: l.weight_category,
-            fragile: l.fragile,
-          })),
+          line_items: effLines.map((l) => toB2bLinePayload(l, handlingType)),
           crew_override: crewOverride ? Number(crewOverride) : undefined,
           truck_override: truckOverride || undefined,
           estimated_hours_override: hoursOverride ? Number(hoursOverride) : undefined,
@@ -439,9 +631,33 @@ export default function B2BJobsDeliveryForm({
   ]);
 
   useEffect(() => {
-    const t = setTimeout(() => void runPricingPreview(), 450);
+    const t = setTimeout(() => void runPricingPreview(), 300);
     return () => clearTimeout(t);
-  }, [runPricingPreview]);
+  }, [
+    runPricingPreview,
+    verticalCode,
+    lines,
+    boxCount,
+    pickupAddress,
+    deliveryAddress,
+    pickupAccess,
+    deliveryAccess,
+    extraPickupStops,
+    extraDeliveryStops,
+    handlingType,
+    timeSensitive,
+    assemblyRequired,
+    debrisRemoval,
+    stairsFlights,
+    highValue,
+    artwork,
+    antiques,
+    skidCount,
+    totalLoadWeightLbs,
+    haulAwayUnits,
+    returnsPickup,
+    sameDay,
+  ]);
 
   const formState = useMemo(
     () => ({
@@ -459,6 +675,18 @@ export default function B2BJobsDeliveryForm({
       extraDeliveryStops,
       deliveryAccess,
       lines,
+      newDesc,
+      newQty,
+      newWeight,
+      newFragile,
+      newUnitType,
+      newStopAssignment,
+      newSerialNumber,
+      newDeclaredValue,
+      newHookupRequired,
+      newHaulAwayLine,
+      newCratingRequired,
+      newLineAssemblyRequired,
       handlingType,
       scheduledDate,
       timeWindow,
@@ -502,6 +730,18 @@ export default function B2BJobsDeliveryForm({
       extraDeliveryStops,
       deliveryAccess,
       lines,
+      newDesc,
+      newQty,
+      newWeight,
+      newFragile,
+      newUnitType,
+      newStopAssignment,
+      newSerialNumber,
+      newDeclaredValue,
+      newHookupRequired,
+      newHaulAwayLine,
+      newCratingRequired,
+      newLineAssemblyRequired,
       handlingType,
       scheduledDate,
       timeWindow,
@@ -583,6 +823,23 @@ export default function B2BJobsDeliveryForm({
     apply("overridePrice", (v) => setOverridePrice(String(v ?? "")));
     apply("overrideReason", (v) => setOverrideReason(String(v ?? "")));
     apply("crewId", (v) => setCrewId(String(v ?? "")));
+    apply("newDesc", (v) => setNewDesc(String(v ?? "")));
+    apply("newQty", (v) => setNewQty(Math.max(1, Number(v) || 1)));
+    apply("newWeight", (v) => {
+      const s = String(v ?? "medium").toLowerCase();
+      setNewWeight(
+        LINE_WEIGHT_OPTIONS.some((o) => o.value === s) ? (s as LineRow["weight_category"]) : "medium",
+      );
+    });
+    apply("newFragile", (v) => setNewFragile(!!v));
+    apply("newUnitType", (v) => setNewUnitType(String(v ?? "box")));
+    apply("newStopAssignment", (v) => setNewStopAssignment(String(v ?? "")));
+    apply("newSerialNumber", (v) => setNewSerialNumber(String(v ?? "")));
+    apply("newDeclaredValue", (v) => setNewDeclaredValue(String(v ?? "")));
+    apply("newHookupRequired", (v) => setNewHookupRequired(!!v));
+    apply("newHaulAwayLine", (v) => setNewHaulAwayLine(!!v));
+    apply("newCratingRequired", (v) => setNewCratingRequired(!!v));
+    apply("newLineAssemblyRequired", (v) => setNewLineAssemblyRequired(!!v));
   }, [restoreDraft]);
 
   const stopsForQuote = useMemo(
@@ -603,8 +860,11 @@ export default function B2BJobsDeliveryForm({
       : "";
   const hookupBlock =
     vis("hookup") && hookupNotes.trim() ? `Hook-up / install: ${hookupNotes.trim()}` : "";
+  const lineDetailBlock = lineAnnotationsBlock(buildEffectiveLines());
   const instructionsMerged =
-    [accessNotes.trim(), specialInstructions.trim(), chainBlock, hookupBlock].filter(Boolean).join("\n\n") || null;
+    [accessNotes.trim(), specialInstructions.trim(), chainBlock, hookupBlock, lineDetailBlock]
+      .filter(Boolean)
+      .join("\n\n") || null;
 
   const validateCore = (requireEmailForQuote: boolean) => {
     const partnerId = partnerOrgId.trim();
@@ -640,13 +900,7 @@ export default function B2BJobsDeliveryForm({
     const itemsList = effLines.map((i) =>
       `${i.description}${i.quantity > 1 ? ` ×${i.quantity}` : ""}`,
     );
-    const b2bLineItems = effLines.map((l) => ({
-      description: l.description,
-      quantity: l.quantity,
-      weight_category: l.weight_category,
-      fragile: l.fragile,
-      handling_type: handlingType,
-    }));
+    const b2bLineItems = effLines.map((l) => toB2bLinePayload(l, handlingType));
 
     const enginePreTax = preview?.rounded_pre_tax ?? 0;
     const ovAmt = parseNumberInput(overridePrice);
@@ -740,13 +994,7 @@ export default function B2BJobsDeliveryForm({
     setLoading(true);
     setError("");
     const effLines = buildEffectiveLines();
-    const b2b_line_items = effLines.map((l) => ({
-      description: l.description,
-      quantity: l.quantity,
-      weight_category: l.weight_category,
-      fragile: l.fragile,
-      handling_type: handlingType,
-    }));
+    const b2b_line_items = effLines.map((l) => toB2bLinePayload(l, handlingType));
 
     const ovAmt = parseNumberInput(overridePrice);
     const payload: Record<string, unknown> = {
@@ -810,15 +1058,67 @@ export default function B2BJobsDeliveryForm({
     }
   };
 
+  const patchLine = (idx: number, patch: Partial<LineRow>) => {
+    setLines((prev) => prev.map((row, i) => (i === idx ? { ...row, ...patch } : row)));
+  };
+
+  const addQuickPreset = useCallback(
+    (p: { name: string; weight?: string; fragile?: boolean; unit?: string }) => {
+      const wcRaw = (p.weight || "medium").toLowerCase();
+      const wc = LINE_WEIGHT_OPTIONS.some((o) => o.value === wcRaw)
+        ? (wcRaw as LineRow["weight_category"])
+        : "medium";
+      setLines((prev) => [
+        ...prev,
+        {
+          description: p.name,
+          quantity: 1,
+          weight_category: wc,
+          fragile: !!p.fragile,
+          ...(showUnitTypeColumn ? { unit_type: p.unit || "box" } : {}),
+        },
+      ]);
+    },
+    [showUnitTypeColumn],
+  );
+
   const addLine = () => {
     if (!newDesc.trim()) return;
     setLines((prev) => [
       ...prev,
-      { description: newDesc.trim(), quantity: newQty, weight_category: newWeight, fragile: newFragile },
+      {
+        description: newDesc.trim(),
+        quantity: newQty,
+        weight_category: newWeight,
+        fragile: newFragile,
+        ...(showUnitTypeColumn ? { unit_type: newUnitType } : {}),
+        ...(showItemField("stop_assignment") && newStopAssignment.trim()
+          ? { stop_assignment: newStopAssignment.trim() }
+          : {}),
+        ...(showItemField("serial_number") && newSerialNumber.trim()
+          ? { serial_number: newSerialNumber.trim() }
+          : {}),
+        ...(showItemField("declared_value") && newDeclaredValue.trim()
+          ? { declared_value: newDeclaredValue.trim() }
+          : {}),
+        ...(showItemField("hookup_required") && newHookupRequired ? { hookup_required: true } : {}),
+        ...(showItemField("haul_away_old") && newHaulAwayLine ? { haul_away_line: true } : {}),
+        ...(showItemField("crating_required") && newCratingRequired ? { crating_required: true } : {}),
+        ...(showItemField("assembly_required") && newLineAssemblyRequired
+          ? { line_assembly_required: true }
+          : {}),
+      },
     ]);
     setNewDesc("");
     setNewQty(1);
     setNewFragile(false);
+    setNewStopAssignment("");
+    setNewSerialNumber("");
+    setNewDeclaredValue("");
+    setNewHookupRequired(false);
+    setNewHaulAwayLine(false);
+    setNewCratingRequired(false);
+    setNewLineAssemblyRequired(false);
   };
 
   const removeLine = (idx: number) => setLines((prev) => prev.filter((_, i) => i !== idx));
@@ -906,15 +1206,95 @@ export default function B2BJobsDeliveryForm({
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label={partnerOrgId.trim() ? "Business name" : "Business name *"}>
-            <input
-              value={businessName}
-              onChange={(e) => {
-                setBusinessName(e.target.value);
-                clearHubSpotMatch();
-              }}
-              onBlur={scheduleHubSpotDedup}
-              className={fieldInput}
-            />
+            <div ref={hubspotBusinessWrapRef} className="relative">
+              <input
+                value={businessName}
+                onChange={(e) => {
+                  setBusinessName(e.target.value);
+                  clearHubSpotMatch();
+                }}
+                onFocus={() => {
+                  if (businessName.trim().length >= 2) setHsSuggestOpen(true);
+                }}
+                onKeyDown={(e) => {
+                  if (!hsSuggestOpen || hsSuggestLoading) {
+                    if (e.key === "Escape") setHsSuggestOpen(false);
+                    return;
+                  }
+                  const n = hsSuggestItems.length;
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setHsSuggestOpen(false);
+                    return;
+                  }
+                  if (n === 0) return;
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setHsSuggestHighlight((i) => (i + 1) % n);
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setHsSuggestHighlight((i) => (i - 1 + n) % n);
+                  } else if (e.key === "Enter") {
+                    e.preventDefault();
+                    const row = hsSuggestItems[hsSuggestHighlight];
+                    if (row) applyHubSpotSuggestion(row);
+                  }
+                }}
+                onBlur={scheduleHubSpotDedup}
+                className={fieldInput}
+                autoComplete="organization"
+                aria-autocomplete="list"
+                aria-expanded={hsSuggestOpen}
+                aria-controls="hubspot-business-suggest-list"
+              />
+              {hsSuggestOpen && (
+                <div
+                  id="hubspot-business-suggest-list"
+                  role="listbox"
+                  className="absolute z-30 mt-1 left-0 right-0 max-h-[240px] overflow-y-auto rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg"
+                >
+                  {hsSuggestLoading && (
+                    <div className="flex items-center gap-2 px-3 py-2.5 text-[11px] text-[var(--tx3)]">
+                      <SpinnerGap size={14} className="animate-spin shrink-0" aria-hidden />
+                      Searching HubSpot…
+                    </div>
+                  )}
+                  {!hsSuggestLoading && hsSuggestItems.length === 0 && hsSuggestNoResults && (
+                    <div className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">No matching companies in HubSpot</div>
+                  )}
+                  {!hsSuggestLoading &&
+                    hsSuggestItems.map((row, idx) => {
+                      const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ");
+                      const primary = row.company || fullName || row.email || "Contact";
+                      const secondary = [fullName, row.email, row.phone ? formatPhone(row.phone) : ""]
+                        .filter(Boolean)
+                        .join(" · ");
+                      const active = idx === hsSuggestHighlight;
+                      return (
+                        <button
+                          key={`${row.hubspot_id}-${idx}`}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          onPointerDown={(ev) => ev.preventDefault()}
+                          onClick={() => applyHubSpotSuggestion(row)}
+                          className={`flex w-full items-start gap-2 text-left px-3 py-2 border-b border-[var(--brd)] last:border-0 ${
+                            active ? "bg-[var(--bg)]" : "hover:bg-[var(--bg)]"
+                          }`}
+                        >
+                          <Buildings size={16} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
+                          <span className="min-w-0">
+                            <span className="block text-[12px] font-medium text-[var(--tx)] truncate">{primary}</span>
+                            {secondary ? (
+                              <span className="block text-[10px] text-[var(--tx3)] truncate">{secondary}</span>
+                            ) : null}
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
           </Field>
           <Field label="Contact name *">
             <input
@@ -995,57 +1375,318 @@ export default function B2BJobsDeliveryForm({
             {lines.map((row, idx) => (
               <li
                 key={idx}
-                className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[11px]"
+                className="space-y-2 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[11px]"
               >
-                <span className="flex-1 min-w-[120px] text-[var(--tx)]">
-                  {row.description} ×{row.quantity} · {row.weight_category}
-                  {row.fragile ? " · Fragile" : ""}
-                </span>
-                <button type="button" onClick={() => removeLine(idx)} className="p-1 text-[var(--tx3)] hover:text-[var(--red)]" aria-label="Remove">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="flex-1 min-w-[140px]">
+                    <Field label="Item">
+                      <input
+                        value={row.description}
+                        onChange={(e) => patchLine(idx, { description: e.target.value })}
+                        className={fieldInput}
+                      />
+                    </Field>
+                  </div>
+                  <div className="w-[72px]">
+                    <Field label="Qty">
+                      <input
+                        type="number"
+                        min={1}
+                        value={row.quantity}
+                        onChange={(e) => patchLine(idx, { quantity: Math.max(1, Number(e.target.value) || 1) })}
+                        className={fieldInput}
+                      />
+                    </Field>
+                  </div>
+                  {showItemField("weight") && (
+                    <div className="w-[120px]">
+                      <Field label="Weight">
+                        <select
+                          value={row.weight_category}
+                          onChange={(e) =>
+                            patchLine(idx, { weight_category: e.target.value as LineRow["weight_category"] })
+                          }
+                          className={fieldInput}
+                        >
+                          {LINE_WEIGHT_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                  )}
+                  {showUnitTypeColumn && (
+                    <div className="w-[112px]">
+                      <Field label="Unit">
+                        <select
+                          value={row.unit_type || "box"}
+                          onChange={(e) => patchLine(idx, { unit_type: e.target.value })}
+                          className={fieldInput}
+                        >
+                          {FLOORING_UNIT_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                  )}
+                  {showItemField("fragile") && (
+                    <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pb-2 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={row.fragile}
+                        onChange={(e) => patchLine(idx, { fragile: e.target.checked })}
+                        className="accent-[var(--gold)]"
+                      />
+                      Fragile
+                    </label>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeLine(idx)}
+                    className="p-2 text-[var(--tx3)] hover:text-[var(--red)] shrink-0"
+                    aria-label="Remove line"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                {showLineDetailFields && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 border-t border-[var(--brd)]/50">
+                    {showItemField("stop_assignment") && (
+                      <Field label="Stop assignment">
+                        <input
+                          value={row.stop_assignment ?? ""}
+                          onChange={(e) => patchLine(idx, { stop_assignment: e.target.value })}
+                          className={fieldInput}
+                          placeholder="Vendor / stop"
+                        />
+                      </Field>
+                    )}
+                    {showItemField("serial_number") && (
+                      <Field label="Serial number">
+                        <input
+                          value={row.serial_number ?? ""}
+                          onChange={(e) => patchLine(idx, { serial_number: e.target.value })}
+                          className={fieldInput}
+                        />
+                      </Field>
+                    )}
+                    {showItemField("declared_value") && (
+                      <Field label="Declared value">
+                        <input
+                          value={row.declared_value ?? ""}
+                          onChange={(e) => patchLine(idx, { declared_value: e.target.value })}
+                          className={fieldInput}
+                          placeholder="e.g. 5000"
+                        />
+                      </Field>
+                    )}
+                    {showItemField("hookup_required") && (
+                      <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                        <input
+                          type="checkbox"
+                          checked={!!row.hookup_required}
+                          onChange={(e) => patchLine(idx, { hookup_required: e.target.checked })}
+                          className="accent-[var(--gold)]"
+                        />
+                        Hook-up required
+                      </label>
+                    )}
+                    {showItemField("haul_away_old") && (
+                      <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                        <input
+                          type="checkbox"
+                          checked={!!row.haul_away_line}
+                          onChange={(e) => patchLine(idx, { haul_away_line: e.target.checked })}
+                          className="accent-[var(--gold)]"
+                        />
+                        Haul-away old unit
+                      </label>
+                    )}
+                    {showItemField("crating_required") && (
+                      <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                        <input
+                          type="checkbox"
+                          checked={!!row.crating_required}
+                          onChange={(e) => patchLine(idx, { crating_required: e.target.checked })}
+                          className="accent-[var(--gold)]"
+                        />
+                        Crating required
+                      </label>
+                    )}
+                    {showItemField("assembly_required") && (
+                      <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                        <input
+                          type="checkbox"
+                          checked={!!row.line_assembly_required}
+                          onChange={(e) => patchLine(idx, { line_assembly_required: e.target.checked })}
+                          className="accent-[var(--gold)]"
+                        />
+                        Assembly required
+                      </label>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 items-end">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+          <div className="sm:col-span-3">
             <Field label="Description">
               <input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} className={fieldInput} placeholder="Item description" />
             </Field>
           </div>
-          <Field label="Qty">
-            <input
-              type="number"
-              min={1}
-              value={newQty}
-              onChange={(e) => setNewQty(Number(e.target.value) || 1)}
-              className={fieldInput}
-            />
-          </Field>
-          <Field label="Weight">
-            <select value={newWeight} onChange={(e) => setNewWeight(e.target.value as LineRow["weight_category"])} className={fieldInput}>
-              {LINE_WEIGHT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pb-2">
-            <input type="checkbox" checked={newFragile} onChange={(e) => setNewFragile(e.target.checked)} className="accent-[var(--gold)]" />
-            Fragile
-          </label>
+          <div className="sm:col-span-2">
+            <Field label="Qty">
+              <input
+                type="number"
+                min={1}
+                value={newQty}
+                onChange={(e) => setNewQty(Number(e.target.value) || 1)}
+                className={fieldInput}
+              />
+            </Field>
+          </div>
+          {showItemField("weight") && (
+            <div className="sm:col-span-2">
+              <Field label="Weight">
+                <select value={newWeight} onChange={(e) => setNewWeight(e.target.value as LineRow["weight_category"])} className={fieldInput}>
+                  {LINE_WEIGHT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          )}
+          {showUnitTypeColumn && (
+            <div className="sm:col-span-2">
+              <Field label="Unit type">
+                <select value={newUnitType} onChange={(e) => setNewUnitType(e.target.value)} className={fieldInput}>
+                  {FLOORING_UNIT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          )}
+          {showItemField("fragile") && (
+            <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pb-2 sm:col-span-1">
+              <input type="checkbox" checked={newFragile} onChange={(e) => setNewFragile(e.target.checked)} className="accent-[var(--gold)]" />
+              Fragile
+            </label>
+          )}
           <button
             type="button"
             onClick={addLine}
             disabled={!newDesc.trim()}
-            className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50 sm:col-span-2"
           >
             <Plus className="w-4 h-4" />
             Add
           </button>
         </div>
+        {showLineDetailFields && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1">
+            {showItemField("stop_assignment") && (
+              <Field label="Stop assignment (new line)">
+                <input
+                  value={newStopAssignment}
+                  onChange={(e) => setNewStopAssignment(e.target.value)}
+                  className={fieldInput}
+                  placeholder="Vendor / stop"
+                />
+              </Field>
+            )}
+            {showItemField("serial_number") && (
+              <Field label="Serial number (new line)">
+                <input value={newSerialNumber} onChange={(e) => setNewSerialNumber(e.target.value)} className={fieldInput} />
+              </Field>
+            )}
+            {showItemField("declared_value") && (
+              <Field label="Declared value (new line)">
+                <input
+                  value={newDeclaredValue}
+                  onChange={(e) => setNewDeclaredValue(e.target.value)}
+                  className={fieldInput}
+                  placeholder="e.g. 5000"
+                />
+              </Field>
+            )}
+            {showItemField("hookup_required") && (
+              <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                <input
+                  type="checkbox"
+                  checked={newHookupRequired}
+                  onChange={(e) => setNewHookupRequired(e.target.checked)}
+                  className="accent-[var(--gold)]"
+                />
+                Hook-up required
+              </label>
+            )}
+            {showItemField("haul_away_old") && (
+              <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                <input
+                  type="checkbox"
+                  checked={newHaulAwayLine}
+                  onChange={(e) => setNewHaulAwayLine(e.target.checked)}
+                  className="accent-[var(--gold)]"
+                />
+                Haul-away old unit
+              </label>
+            )}
+            {showItemField("crating_required") && (
+              <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                <input
+                  type="checkbox"
+                  checked={newCratingRequired}
+                  onChange={(e) => setNewCratingRequired(e.target.checked)}
+                  className="accent-[var(--gold)]"
+                />
+                Crating required
+              </label>
+            )}
+            {showItemField("assembly_required") && (
+              <label className="flex items-center gap-2 text-[11px] text-[var(--tx)] pt-6">
+                <input
+                  type="checkbox"
+                  checked={newLineAssemblyRequired}
+                  onChange={(e) => setNewLineAssemblyRequired(e.target.checked)}
+                  className="accent-[var(--gold)]"
+                />
+                Assembly required
+              </label>
+            )}
+          </div>
+        )}
+        {itemConfig?.quickAdd && itemConfig.quickAdd.length > 0 && (
+          <div className="pt-2 space-y-1">
+            <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
+              Quick add{itemConfig.label ? ` (${itemConfig.label})` : ""}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {itemConfig.quickAdd.map((p) => (
+                <button
+                  key={p.name}
+                  type="button"
+                  onClick={() => addQuickPreset(p)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] bg-[var(--bg)]"
+                >
+                  <Plus className="w-3.5 h-3.5" aria-hidden />
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {vis("handling") && (
@@ -1148,10 +1789,12 @@ export default function B2BJobsDeliveryForm({
             Same-day delivery
           </label>
         )}
-        <label className="flex items-center gap-2 text-[11px] text-[var(--tx)]">
-          <input type="checkbox" checked={timeSensitive} onChange={(e) => setTimeSensitive(e.target.checked)} className="accent-[var(--gold)]" />
-          Time-sensitive
-        </label>
+        {vis("time_sensitive") && (
+          <label className="flex items-center gap-2 text-[11px] text-[var(--tx)]">
+            <input type="checkbox" checked={timeSensitive} onChange={(e) => setTimeSensitive(e.target.checked)} className="accent-[var(--gold)]" />
+            Time-sensitive
+          </label>
+        )}
       </section>
 
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
@@ -1215,30 +1858,48 @@ export default function B2BJobsDeliveryForm({
         </section>
       )}
 
-      {(vis("complexity") || vis("skid_count") || vis("haul_away") || vis("returns") || vis("total_weight")) && (
+      {(vis("debris_removal") ||
+        vis("stairs") ||
+        vis("high_value") ||
+        vis("artwork") ||
+        vis("antiques") ||
+        vis("chain_of_custody") ||
+        vis("hookup") ||
+        vis("returns") ||
+        vis("skid_count") ||
+        vis("total_weight") ||
+        vis("haul_away")) && (
         <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Complexity & extras</h3>
-          {vis("complexity") && (
+          {(vis("debris_removal") || vis("high_value") || vis("artwork") || vis("antiques")) && (
             <div className="flex flex-wrap gap-3 text-[11px] text-[var(--tx)]">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={debrisRemoval} onChange={(e) => setDebrisRemoval(e.target.checked)} className="accent-[var(--gold)]" />
-                Debris removal
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={highValue} onChange={(e) => setHighValue(e.target.checked)} className="accent-[var(--gold)]" />
-                High value
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={artwork} onChange={(e) => setArtwork(e.target.checked)} className="accent-[var(--gold)]" />
-                Artwork
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={antiques} onChange={(e) => setAntiques(e.target.checked)} className="accent-[var(--gold)]" />
-                Antiques
-              </label>
+              {vis("debris_removal") && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={debrisRemoval} onChange={(e) => setDebrisRemoval(e.target.checked)} className="accent-[var(--gold)]" />
+                  Debris removal
+                </label>
+              )}
+              {vis("high_value") && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={highValue} onChange={(e) => setHighValue(e.target.checked)} className="accent-[var(--gold)]" />
+                  High value
+                </label>
+              )}
+              {vis("artwork") && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={artwork} onChange={(e) => setArtwork(e.target.checked)} className="accent-[var(--gold)]" />
+                  Artwork
+                </label>
+              )}
+              {vis("antiques") && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={antiques} onChange={(e) => setAntiques(e.target.checked)} className="accent-[var(--gold)]" />
+                  Antiques
+                </label>
+              )}
             </div>
           )}
-          {vis("complexity") && (
+          {vis("stairs") && (
             <Field label="Stairs (flights)">
               <input type="number" min={0} value={stairsFlights} onChange={(e) => setStairsFlights(e.target.value)} className={fieldInput} />
             </Field>

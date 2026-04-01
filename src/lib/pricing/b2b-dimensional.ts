@@ -26,6 +26,14 @@ export interface B2BQuoteLineItem {
   haul_away?: boolean;
   /** Skid / pallet line — contributes to skid handling count. */
   is_skid?: boolean;
+  /** Flooring: box | roll | bundle | piece | bag | pallet | unit — drives per-line handling. */
+  unit_type?: string;
+  /** Line-level metadata / pricing hints */
+  serial_number?: string;
+  stop_assignment?: string;
+  declared_value?: string;
+  crating_required?: boolean;
+  hookup_required?: boolean;
 }
 
 export interface B2BStopInput {
@@ -242,18 +250,23 @@ function enrichB2bLineItems(
   const vcode = verticalCode.trim().toLowerCase() || "furniture_retail";
   const wcGlobal = legacyWc;
   return lines.map((i) => {
-    const q = Math.max(1, i.quantity || 1);
-    let weight_lbs = i.weight_lbs;
+    const ext = i as B2BQuoteLineItem & { haul_away_old?: boolean };
+    const iNorm: B2BQuoteLineItem = {
+      ...i,
+      haul_away: !!(i.haul_away || ext.haul_away_old),
+    };
+    const q = Math.max(1, iNorm.quantity || 1);
+    let weight_lbs = iNorm.weight_lbs;
     if (weight_lbs == null || !Number.isFinite(weight_lbs)) {
-      const fromText = extractMaxWeightLbsFromText(i.description);
+      const fromText = extractMaxWeightLbsFromText(iNorm.description);
       if (fromText != null) weight_lbs = Math.round(fromText);
     }
-    let wc = i.weight_category ?? wcGlobal;
+    let wc = iNorm.weight_category ?? wcGlobal;
     if (!wc && weight_lbs != null && weight_lbs > 0) {
       wc = inferB2bWeightCategoryFromLbs(weight_lbs, vcode);
     }
     return {
-      ...i,
+      ...iNorm,
       quantity: q,
       weight_category: wc,
       weight_lbs: weight_lbs != null && Number.isFinite(weight_lbs) ? weight_lbs : undefined,
@@ -723,7 +736,11 @@ export function calculateB2BDimensionalPrice(args: {
       breakdown.push({ label: `Art hanging (${hangN} piece(s))`, amount: h });
     }
     const crateRate = num(prem.crating_per_piece, 0);
-    const crateN = Math.max(0, args.input.crating_pieces ?? 0);
+    const crateFromLines = items.reduce(
+      (s, i) => (i.crating_required ? s + Math.max(1, i.quantity) : s),
+      0,
+    );
+    const crateN = Math.max(0, args.input.crating_pieces ?? 0, crateFromLines);
     if (crateN > 0 && crateRate > 0) {
       const c = Math.round(crateN * crateRate * 100) / 100;
       totalPrice += c;

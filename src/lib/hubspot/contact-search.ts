@@ -61,23 +61,63 @@ async function fetchDealIdsForContact(token: string, contactId: string): Promise
   }
 }
 
-async function searchContacts(
+async function runContactSearch(
   token: string,
   body: Record<string, unknown>,
-): Promise<{ id: string; properties?: Record<string, unknown> } | null> {
+  limit: number,
+): Promise<{ id: string; properties?: Record<string, unknown> }[]> {
   const searchRes = await fetch(`${HS_BASE}/objects/contacts/search`, {
     method: "POST",
     headers: hsHeaders(token),
     body: JSON.stringify({
       ...body,
       properties: [...CONTACT_PROPERTIES],
-      limit: 1,
+      limit: Math.min(Math.max(1, limit), 100),
     }),
   });
-  if (!searchRes.ok) return null;
+  if (!searchRes.ok) return [];
   const searchData = await searchRes.json();
-  const row = searchData.results?.[0];
-  return row ?? null;
+  return searchData.results ?? [];
+}
+
+async function searchContacts(
+  token: string,
+  body: Record<string, unknown>,
+): Promise<{ id: string; properties?: Record<string, unknown> } | null> {
+  const rows = await runContactSearch(token, body, 1);
+  return rows[0] ?? null;
+}
+
+/** Contact rows for autosuggest (no deal fetch — keep list snappy). */
+export type HubSpotContactSuggestion = Omit<HubSpotContactPayload, "deal_ids">;
+
+/**
+ * Typeahead: contacts whose `company` matches HubSpot CONTAINS_TOKEN rules.
+ * Multi-word queries AND each word (length ≥ 2) as separate tokens on `company`.
+ * Single string (e.g. "MyNewFloor") uses one CONTAINS_TOKEN. Min 2 characters total.
+ */
+export async function suggestHubSpotContactsByCompanyQuery(
+  token: string,
+  query: string,
+  limit = 12,
+): Promise<HubSpotContactSuggestion[]> {
+  const raw = query.trim();
+  if (raw.length < 2) return [];
+
+  const words = raw.split(/\s+/).filter(Boolean);
+  const strongTokens = words.filter((w) => w.length >= 2);
+  const filters =
+    strongTokens.length > 0
+      ? strongTokens.slice(0, 6).map((value) => ({
+          propertyName: "company",
+          operator: "CONTAINS_TOKEN",
+          value,
+        }))
+      : [{ propertyName: "company", operator: "CONTAINS_TOKEN", value: raw }];
+
+  const rows = await runContactSearch(token, { filterGroups: [{ filters }] }, limit);
+
+  return rows.map((row) => mapContactRow(row));
 }
 
 export async function searchHubSpotContactByEmail(

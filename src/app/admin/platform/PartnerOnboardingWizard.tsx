@@ -53,10 +53,12 @@ const B2B_DELIVERY_VERTICAL_OPTIONS: { id: string; label: string }[] = [
   { id: "furniture_retail", label: "Furniture Retail Delivery" },
   { id: "flooring", label: "Flooring / Building Materials" },
   { id: "designer", label: "Interior Designer Projects" },
+  { id: "cabinetry", label: "Cabinetry & Fixtures" },
   { id: "medical_equipment", label: "Medical / Lab Equipment" },
   { id: "appliance", label: "Appliance Delivery" },
   { id: "art_gallery", label: "Art & Gallery" },
   { id: "restaurant_hospitality", label: "Restaurant / Hospitality" },
+  { id: "office_furniture", label: "Office / Commercial Furniture" },
   { id: "ecommerce_bulk", label: "E-Commerce / Bulk Delivery" },
   { id: "custom", label: "Custom / Other" },
 ];

@@ -17,6 +17,10 @@ import {
 } from "@/lib/pricing/b2b-dimensional";
 import { loadB2BVerticalPricing } from "@/lib/pricing/b2b-vertical-load";
 import {
+  mergedRatesWithBundleTiers,
+  prepareB2bLineItemsForDimensionalEngine,
+} from "@/lib/b2b-dimensional-quote-prep";
+import {
   SPECIALTY_EQUIPMENT_DEFAULTS,
   SPECIALTY_PROJECT_BASE_DEFAULTS,
 } from "@/lib/pricing/specialty-project-defaults";
@@ -141,11 +145,19 @@ interface QuoteInput {
     dimensions?: string;
     /** Per-line handling (threshold, room_placement, white_glove, carry_in_per_box, skid_drop, etc.) */
     handling_type?: string;
+    /** Flooring: box, roll, bundle, piece, bag, pallet, unit */
+    unit_type?: string;
+    serial_number?: string;
+    stop_assignment?: string;
+    declared_value?: string;
+    crating_required?: boolean;
+    hookup_required?: boolean;
+    haul_away?: boolean;
+    haul_away_old?: boolean;
     /** Flooring accessory lines excluded from billable unit tier counts */
     bundled?: boolean;
     assembly_required?: boolean;
     debris_removal?: boolean;
-    haul_away?: boolean;
     is_skid?: boolean;
   }[];
   b2b_time_sensitive?: boolean;
@@ -2197,12 +2209,24 @@ async function calcB2bOneoff(
   if (loaded) {
     const items = lineItemsFromQuotePayload(input);
     const stops = stopsFromQuotePayload(input);
-    const merged = loaded.mergedRates as Record<string, unknown>;
+    const merged = mergedRatesWithBundleTiers(loaded.mergedRates as Record<string, unknown>);
     const useVerticalZoneSchedule = String(merged.distance_mode || "") === "zones";
+    const itemsForEngine = prepareB2bLineItemsForDimensionalEngine(
+      items,
+      loaded.vertical.code,
+      (input.b2b_handling_type || "threshold").toLowerCase(),
+      loaded.mergedRates as Record<string, unknown>,
+    );
+
+    const crateFromLineItems = items.reduce(
+      (s, i) => (i.crating_required ? s + Math.max(1, i.quantity) : s),
+      0,
+    );
+    const cratingPieces = Math.max(crateFromLineItems, input.b2b_crating_pieces ?? 0);
 
     const dimInput: B2BDimensionalQuoteInput = {
       vertical_code: loaded.vertical.code,
-      items,
+      items: itemsForEngine,
       handling_type: (input.b2b_handling_type || "threshold").toLowerCase(),
       stops,
       crew_override: input.b2b_crew_override,
@@ -2222,14 +2246,14 @@ async function calcB2bOneoff(
       returns_pickup: !!input.b2b_returns_pickup,
       monthly_delivery_volume: input.b2b_monthly_delivery_volume_estimate,
       art_hanging_count: input.b2b_art_hanging_count,
-      crating_pieces: input.b2b_crating_pieces,
+      crating_pieces: cratingPieces > 0 ? cratingPieces : undefined,
     };
 
     const b2bExtrasForDim = useVerticalZoneSchedule ? [] : b2bLocationExtras.lines;
 
     const dim = calculateB2BDimensionalPrice({
       vertical: loaded.vertical,
-      mergedRates: loaded.mergedRates,
+      mergedRates: merged,
       input: dimInput,
       totalDistanceKm: distKm,
       roundingNearest: rounding,
@@ -2242,11 +2266,11 @@ async function calcB2bOneoff(
     if (partnerOrgId) {
       const listLoaded = await loadB2BVerticalPricing(sb, input.b2b_vertical_code, null);
       if (listLoaded) {
-        const listMerged = listLoaded.mergedRates as Record<string, unknown>;
-        const listUseZones = String(listMerged.distance_mode || "") === "zones";
+        const listMergedCalc = mergedRatesWithBundleTiers(listLoaded.mergedRates as Record<string, unknown>);
+        const listUseZones = String(listMergedCalc.distance_mode || "") === "zones";
         dimStandard = calculateB2BDimensionalPrice({
           vertical: listLoaded.vertical,
-          mergedRates: listLoaded.mergedRates,
+          mergedRates: listMergedCalc,
           input: dimInput,
           totalDistanceKm: distKm,
           roundingNearest: rounding,

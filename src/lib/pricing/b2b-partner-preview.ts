@@ -5,6 +5,10 @@ import {
   type B2BQuoteLineItem,
 } from "@/lib/pricing/b2b-dimensional";
 import { loadB2BVerticalPricing } from "@/lib/pricing/b2b-vertical-load";
+import {
+  mergedRatesWithBundleTiers,
+  prepareB2bLineItemsForDimensionalEngine,
+} from "@/lib/b2b-dimensional-quote-prep";
 import type { createAdminClient } from "@/lib/supabase/admin";
 
 type Admin = ReturnType<typeof createAdminClient>;
@@ -33,9 +37,18 @@ export async function computeB2BDimensionalForOrg(
   const loaded = await loadB2BVerticalPricing(admin, opts.verticalCode, opts.partnerOrganizationId);
   if (!loaded) return null;
 
+  const raw = opts.items.filter((i) => i.quantity > 0 && i.description.trim());
+  const mergedCalc = mergedRatesWithBundleTiers(loaded.mergedRates as Record<string, unknown>);
+  const engineItems = prepareB2bLineItemsForDimensionalEngine(
+    raw,
+    loaded.vertical.code,
+    (opts.handlingType || "threshold").toLowerCase(),
+    loaded.mergedRates as Record<string, unknown>,
+  );
+
   const dimInput: B2BDimensionalQuoteInput = {
     vertical_code: loaded.vertical.code,
-    items: opts.items.filter((i) => i.quantity > 0 && i.description.trim()),
+    items: engineItems,
     handling_type: (opts.handlingType || "threshold").toLowerCase(),
     stops: [
       { type: "pickup", address: from },
@@ -48,7 +61,7 @@ export async function computeB2BDimensionalForOrg(
 
   const dim = calculateB2BDimensionalPrice({
     vertical: loaded.vertical,
-    mergedRates: loaded.mergedRates,
+    mergedRates: mergedCalc,
     input: dimInput,
     totalDistanceKm: distKm,
     roundingNearest: opts.roundingNearest,
