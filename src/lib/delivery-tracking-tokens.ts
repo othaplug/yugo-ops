@@ -37,13 +37,8 @@ export async function issueDeliveryTrackingTokens(deliveryId: string): Promise<{
   recipientToken: string | null;
 }> {
   const admin = createAdminClient();
-  const { data: row, error } = await admin
-    .from("deliveries")
-    .select(
-      "id, tracking_token, recipient_tracking_token, business_name, contact_email, contact_phone, customer_name, customer_email, customer_phone, delivery_address, booking_type, organization_id, category, vertical_code"
-    )
-    .eq("id", deliveryId)
-    .single();
+  /** Use * so older DBs without newer columns (e.g. vertical_code) do not fail the whole request. */
+  const { data: row, error } = await admin.from("deliveries").select("*").eq("id", deliveryId).single();
 
   if (error || !row) throw new Error(error?.message || "Delivery not found");
 
@@ -90,13 +85,7 @@ export async function sendB2BTrackingNotifications(
 ): Promise<void> {
   const audiences = opts.audiences ?? ["business", "recipient"];
   const admin = createAdminClient();
-  const { data: d } = await admin
-    .from("deliveries")
-    .select(
-      "tracking_token, recipient_tracking_token, business_name, contact_email, contact_phone, customer_email, customer_phone, customer_name"
-    )
-    .eq("id", deliveryId)
-    .single();
+  const { data: d } = await admin.from("deliveries").select("*").eq("id", deliveryId).single();
 
   if (!d?.tracking_token) return;
 

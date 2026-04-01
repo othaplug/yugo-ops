@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const { error: authErr } = await requireRole("coordinator");
   if (authErr) return authErr;
 
-  let body: { deliveryId?: string };
+  let body: { deliveryId?: string; deliveryNumber?: string };
   try {
     body = await req.json();
   } catch {
@@ -21,12 +21,16 @@ export async function POST(req: NextRequest) {
   }
 
   const rawId = String(body.deliveryId || "").trim();
-  if (!rawId) {
-    return NextResponse.json({ error: "deliveryId required" }, { status: 400 });
+  const rawNumber = String(body.deliveryNumber || "").trim();
+  if (!rawId && !rawNumber) {
+    return NextResponse.json({ error: "deliveryId or deliveryNumber required" }, { status: 400 });
   }
 
   const admin = createAdminClient();
-  const deliveryUuid = await resolveDeliveryUuidFromApiPathSegment(admin, rawId);
+  let deliveryUuid = rawId ? await resolveDeliveryUuidFromApiPathSegment(admin, rawId) : null;
+  if (!deliveryUuid && rawNumber) {
+    deliveryUuid = await resolveDeliveryUuidFromApiPathSegment(admin, rawNumber);
+  }
   if (!deliveryUuid) {
     return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
   }
@@ -46,11 +50,10 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  /** Avoid listing columns that may not exist on all DBs; effectiveDeliveryPrice reads common price fields from row. */
   const { data: delivery, error: delErr } = await admin
     .from("deliveries")
-    .select(
-      "id, delivery_number, booking_type, organization_id, customer_name, client_name, business_name, contact_email, contact_phone, delivery_address, pickup_address, admin_adjusted_price, total_price, quoted_price, final_price, calculated_price, override_price"
-    )
+    .select("*")
     .eq("id", deliveryUuid)
     .single();
 

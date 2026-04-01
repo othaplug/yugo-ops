@@ -410,7 +410,9 @@ export default function DeliveryDetailClient({
         setRecordPaymentLoading(false);
         return;
       }
-      const res = await fetch(`/api/admin/deliveries/${encodeURIComponent(id)}/record-payment`, {
+      const num = typeof delivery.delivery_number === "string" ? delivery.delivery_number.trim() : "";
+      const qs = num ? `?number=${encodeURIComponent(num)}` : "";
+      const res = await fetch(`/api/admin/deliveries/${encodeURIComponent(id)}/record-payment${qs}`, {
         method: "POST",
       });
       const d = await res.json().catch(() => ({}));

@@ -8,7 +8,7 @@ export default function SendB2BOneOffInvoiceButton({
   onSent,
   pendingInvoice,
 }: {
-  delivery: { id: string; payment_received_at?: string | null };
+  delivery: { id: string; delivery_number?: string | null; payment_received_at?: string | null };
   onSent?: () => void;
   /** When an invoice row exists but Square has not marked it paid yet */
   pendingInvoice?: boolean;
@@ -22,7 +22,12 @@ export default function SendB2BOneOffInvoiceButton({
       const res = await fetch("/api/invoices/delivery-b2b-one-off", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deliveryId: delivery.id }),
+        body: JSON.stringify({
+          deliveryId: delivery.id,
+          ...(delivery.delivery_number?.trim()
+            ? { deliveryNumber: delivery.delivery_number.trim() }
+            : {}),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

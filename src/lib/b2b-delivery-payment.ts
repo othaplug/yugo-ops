@@ -18,11 +18,7 @@ export async function runB2BOneOffPaymentRecordedFlow(
   opts: { notifyMode: B2BPaymentNotifyMode },
 ): Promise<void> {
   const admin = createAdminClient();
-  const { data: row, error } = await admin
-    .from("deliveries")
-    .select("id, booking_type, organization_id, payment_received_at")
-    .eq("id", deliveryUuid)
-    .single();
+  const { data: row, error } = await admin.from("deliveries").select("*").eq("id", deliveryUuid).single();
 
   if (error || !row) {
     throw new Error(error?.message || "Delivery not found");

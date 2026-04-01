@@ -8,23 +8,28 @@ import { runB2BOneOffPaymentRecordedFlow } from "@/lib/b2b-delivery-payment";
  * Marks B2B one-off delivery as paid and issues tracking links (idempotent).
  */
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { error: authErr } = await requireRole("coordinator");
   if (authErr) return authErr;
 
   const rawSegment = (await params).id?.trim() || "";
+  const fallbackNumber = req.nextUrl.searchParams.get("number")?.trim() || "";
   const admin = createAdminClient();
-  const id = await resolveDeliveryUuidFromApiPathSegment(admin, rawSegment);
+  let id = await resolveDeliveryUuidFromApiPathSegment(admin, rawSegment);
+  if (!id && fallbackNumber) {
+    id = await resolveDeliveryUuidFromApiPathSegment(admin, fallbackNumber);
+  }
 
   if (!id) {
     return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
   }
 
+  /** Minimal columns (all on base deliveries) — avoids rare PostgREST issues on wide rows. */
   const { data: d, error: fetchErr } = await admin
     .from("deliveries")
-    .select("id, booking_type, organization_id, status, payment_received_at")
+    .select("id, booking_type, organization_id, status")
     .eq("id", id)
     .single();
 
