@@ -61,12 +61,21 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
   }
 
   // Mark as viewed + record event (server-side, fire-and-forget)
+  // Use .eq("status", "sent") as a condition so only the first view triggers the HubSpot note
   if (quote.status === "draft" || quote.status === "sent") {
     admin
       .from("quotes")
       .update({ status: "viewed", viewed_at: new Date().toISOString() })
       .eq("id", quote.id)
-      .then(() => {});
+      .eq("status", "sent")  // atomic: only updates if still "sent", preventing duplicate HubSpot notes
+      .select("id")
+      .maybeSingle()
+      .then(({ data: updated }) => {
+        if (updated) {
+          // Only push HubSpot note on the first view (when we actually changed the status)
+          pushViewedNoteToHubSpot(quote.quote_id, quote.hubspot_deal_id);
+        }
+      });
     admin
       .from("quote_events")
       .insert({
@@ -75,7 +84,6 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
         metadata: { source: "server", service_type: quote.service_type },
       })
       .then(() => {});
-    pushViewedNoteToHubSpot(quote.quote_id, quote.hubspot_deal_id);
   }
 
   // Fetch contact, add-ons, crew count, move count, and valuation data in parallel
@@ -89,7 +97,7 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
       .select("id, name, slug, description, price, price_type, unit_label, tiers, percent_value, applicable_service_types, excluded_tiers, is_popular, display_order")
       .eq("active", true)
       .order("display_order"),
-    admin.from("crews").select("id", { count: "exact", head: true }).eq("active", true),
+    admin.from("crews").select("id", { count: "exact", head: true }).eq("is_active", true),
     quote.move_date
       ? admin
           .from("moves")

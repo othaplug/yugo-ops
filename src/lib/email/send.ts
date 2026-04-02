@@ -59,8 +59,6 @@ export type TemplateName =
   | "quote-labouronly"
   | "quote-binrental"
   | "quote-b2boneoff"
-  | "booking-confirmation"
-  | "move-updated"
   | "pre-move-72hr"
   | "pre-move-24hr"
   | "balance-receipt"

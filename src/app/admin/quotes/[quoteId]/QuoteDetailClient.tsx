@@ -18,7 +18,8 @@ import {
   CaretDown as ChevronDown,
 } from "@phosphor-icons/react";
 import { toTitleCase } from "@/lib/format-text";
-import { displayLabel } from "@/lib/display-labels";
+import { displayLabel } from "@/lib/displayLabels";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { formatPhone } from "@/lib/phone";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 import { quoteDetailDateLabel } from "@/lib/quotes/quote-field-labels";
@@ -119,12 +120,15 @@ export default function QuoteDetailClient({
 }: Props) {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRecoverConfirm, setShowRecoverConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [engagementExpanded, setEngagementExpanded] = useState(false);
   const [recoveringMove, setRecoveringMove] = useState(false);
+  const [recoverError, setRecoverError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function handleRecoverMove() {
-    if (!window.confirm("Create a move record from this accepted quote?")) return;
+    setRecoverError(null);
     setRecoveringMove(true);
     try {
       const res = await fetch("/api/admin/quotes/recover-move", {
@@ -137,11 +141,10 @@ export default function QuoteDetailClient({
       if (data.move_code) {
         router.push(`/admin/moves/${data.move_code}`);
       } else {
-        alert("Move created. Check the Moves page.");
         router.push("/admin/moves");
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create move");
+      setRecoverError(err instanceof Error ? err.message : "Failed to create move");
     } finally {
       setRecoveringMove(false);
     }
@@ -149,17 +152,18 @@ export default function QuoteDetailClient({
   const contact = Array.isArray(quote.contacts) ? quote.contacts[0] : quote.contacts;
 
   async function handleDeleteQuote() {
+    setDeleteError(null);
     setDeleting(true);
     try {
       const res = await fetch(`/api/admin/quotes/${quote.id}`, { method: "DELETE" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        alert(body.error || "Failed to delete");
+        setDeleteError(body.error || "Failed to delete");
       } else {
         router.push("/admin/quotes");
       }
     } catch {
-      alert("Failed to delete quote");
+      setDeleteError("Failed to delete quote");
     } finally {
       setDeleting(false);
     }
@@ -245,14 +249,19 @@ export default function QuoteDetailClient({
             </a>
           )}
           {quote.status === "accepted" && (
-            <button
-              type="button"
-              onClick={handleRecoverMove}
-              disabled={recoveringMove}
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--grn)] px-3 py-1.5 rounded-lg border border-[var(--grn)]/40 hover:border-[var(--grn)] bg-[var(--grn)]/10 disabled:opacity-50 transition-colors"
-            >
-              {recoveringMove ? "Creating…" : "Create Move"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setShowRecoverConfirm(true)}
+                disabled={recoveringMove}
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--grn)] px-3 py-1.5 rounded-lg border border-[var(--grn)]/40 hover:border-[var(--grn)] bg-[var(--grn)]/10 disabled:opacity-50 transition-colors"
+              >
+                {recoveringMove ? "Creating…" : "Create Move"}
+              </button>
+              {recoverError && (
+                <span className="text-[11px] text-[var(--red)]">{recoverError}</span>
+              )}
+            </>
           )}
           {canDeleteQuote && !showDeleteConfirm && (
             <button
@@ -263,24 +272,8 @@ export default function QuoteDetailClient({
               <Trash2 className="w-3 h-3" /> Delete
             </button>
           )}
-          {showDeleteConfirm && canDeleteQuote && (
-            <>
-              <button
-                type="button"
-                onClick={handleDeleteQuote}
-                disabled={deleting}
-                className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--red)] bg-[var(--red)]/10 hover:bg-[var(--red)]/20 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {deleting ? "Deleting…" : "Confirm Delete"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                className="text-[11px] font-medium text-[var(--tx3)] hover:text-[var(--tx)] px-2 py-1.5 transition-colors"
-              >
-                Cancel
-              </button>
-            </>
+          {deleting && (
+            <span className="text-[11px] text-[var(--tx3)]">Deleting…</span>
           )}
         </div>
       </div>
@@ -743,5 +736,30 @@ export default function QuoteDetailClient({
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      open={showRecoverConfirm}
+      title="Create Move from Quote"
+      message="This will create a move record linked to this accepted quote. Continue?"
+      confirmLabel="Create Move"
+      onConfirm={() => { setShowRecoverConfirm(false); handleRecoverMove(); }}
+      onCancel={() => setShowRecoverConfirm(false)}
+    />
+
+    <ConfirmDialog
+      open={showDeleteConfirm && canDeleteQuote}
+      title="Delete Quote"
+      message="This will permanently delete the quote and all engagement history. This cannot be undone."
+      confirmLabel="Delete"
+      variant="danger"
+      onConfirm={() => { setShowDeleteConfirm(false); handleDeleteQuote(); }}
+      onCancel={() => setShowDeleteConfirm(false)}
+    />
+
+    {deleteError && (
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-[var(--red)] text-white text-[12px] font-semibold px-4 py-2 rounded-xl shadow-lg">
+        {deleteError}
+      </div>
+    )}
   );
 }

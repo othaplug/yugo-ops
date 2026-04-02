@@ -218,13 +218,17 @@ export default function TrackTipClient({
                     key={amt}
                     type="button"
                     onClick={() => { setAmount(amt); setCustomAmount(""); setShowCustom(false); }}
-                    className="px-4 py-3 rounded-xl text-[13px] font-semibold border transition-colors touch-manipulation"
+                    aria-pressed={amount === amt}
+                    className="relative px-4 py-3 rounded-xl text-[13px] font-semibold border transition-colors touch-manipulation"
                     style={{
                       borderColor: amount === amt ? GOLD : `${FOREST}25`,
                       color: GOLD,
                       backgroundColor: amount === amt ? `${GOLD}18` : "transparent",
                     }}
                   >
+                    {amount === amt && (
+                      <Check size={10} weight="bold" aria-hidden className="absolute top-1 right-1" style={{ color: GOLD }} />
+                    )}
                     ${amt}
                   </button>
                 ))}

@@ -96,7 +96,7 @@ export async function POST(
     const cardRes = await squareClient.cards.create({
       sourceId,
       card: { customerId: squareCustomerId },
-      idempotencyKey: `partner-card-${partnerId}-${Date.now()}`,
+      idempotencyKey: `partner-card-${partnerId}`,
     });
     squareCardId  = cardRes.card?.id ?? "";
     cardLastFour  = cardRes.card?.last4 ?? "";

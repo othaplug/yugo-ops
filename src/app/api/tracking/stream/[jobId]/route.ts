@@ -47,13 +47,19 @@ export async function GET(
   }
 
   const encoder = new TextEncoder();
+  let intervalId: ReturnType<typeof setInterval> | null = null;
+
   const stream = new ReadableStream({
     async start(controller) {
       let lastCheckpoints = "";
       let lastLocation = "";
 
       const send = (event: string, data: object) => {
-        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // controller may be closed
+        }
       };
 
       const poll = async () => {
@@ -80,13 +86,19 @@ export async function GET(
             }
           }
         } catch {
-          // ignore
+          send("error", { type: "poll_error" });
         }
       };
 
       await poll();
-      const id = setInterval(poll, POLL_MS);
-      req.signal.addEventListener("abort", () => clearInterval(id));
+      intervalId = setInterval(poll, POLL_MS);
+      req.signal.addEventListener("abort", () => {
+        if (intervalId) clearInterval(intervalId);
+        try { controller.close(); } catch { /* already closed */ }
+      });
+    },
+    cancel() {
+      if (intervalId) clearInterval(intervalId);
     },
   });
 

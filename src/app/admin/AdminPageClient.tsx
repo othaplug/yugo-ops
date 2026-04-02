@@ -282,6 +282,7 @@ export default function AdminPageClient({
 }: Props) {
   const router = useRouter();
   const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
+  const [liveSessionsError, setLiveSessionsError] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(true);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
@@ -308,9 +309,9 @@ export default function AdminPageClient({
   useEffect(() => {
     const load = () => {
       fetch("/api/tracking/active")
-        .then((r) => r.json())
-        .then((d) => setLiveSessions(d.sessions || []))
-        .catch(() => {});
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("tracking"))))
+        .then((d) => { setLiveSessions(d.sessions || []); setLiveSessionsError(false); })
+        .catch(() => setLiveSessionsError(true));
     };
     load();
     const id = setInterval(load, 15_000);
@@ -614,6 +615,12 @@ export default function AdminPageClient({
       )}
 
       {/* ── Live Crew Banner (only when active) ── */}
+      {liveSessionsError && (
+        <div className="mb-3 text-[11px] text-[var(--tx3)] flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+          Live crew tracking unavailable — retrying
+        </div>
+      )}
       {liveSessions.length > 0 && (
         <div className="mb-6 flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
           <div className="flex items-center gap-1.5 shrink-0">

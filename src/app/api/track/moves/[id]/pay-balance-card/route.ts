@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       customerId: move.square_customer_id || undefined,
       referenceId: move.move_code || moveId,
       note: "Balance + processing fee, tracking page (card on file)",
-      idempotencyKey: `bal-track-card-${moveId}-${Date.now()}`,
+      idempotencyKey: `bal-track-card-${moveId}`,
       locationId,
     });
 

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(find /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src -name RevenueClient* -o -name revenue*Client*)",
+      "Bash(head -5 find /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src -path */admin/revenue*)",
+      "Bash(grep -n \"percent_value\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/quote/[quoteId]/QuotePageClient.tsx)",
+      "Bash(grep -n \"PAST_PAID\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/api/admin/moves/[id]/route.ts)",
+      "Bash(grep -n \"opacity-40\\\\|opacity-\\\\[0\\\\.\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/track/move/[id]/TrackMoveClient.tsx)",
+      "Bash(head -10 grep -n \"selectedAmount\\\\|preset\\\\|tip.*amount\\\\|amount.*button\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/track/tip/[id]/TrackTipClient.tsx)",
+      "Bash(grep -n \"handleRecoverMove\\\\|recoveringMove\\\\|showDeleteConfirm\\\\|canDeleteQuote\\\\|recoverError\\\\|deleteError\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/quotes/[quoteId]/QuoteDetailClient.tsx)",
+      "Bash(grep -n \"deleteError\\\\|showDeleteConfirm\\\\|</div>\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/quotes/[quoteId]/QuoteDetailClient.tsx)",
+      "Bash(grep -n \"selectedAmount\\\\|setSelectedAmount\\\\|presetAmount\\\\|TIP_AMOUNTS\\\\|tipAmount\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/track/tip/[id]/TrackTipClient.tsx)",
+      "Bash(grep -n \"preset\\\\|amount.*button\\\\|button.*amount\\\\|$20\\\\|$40\\\\|$60\\\\|selected.*border\\\\|border.*selected\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/track/tip/[id]/TrackTipClient.tsx)",
+      "Bash(grep -n \"20\\\\|40\\\\|60\\\\|80\\\\|tipAmt\\\\|selected\\\\|gold.*border\\\\|border.*gold\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/track/tip/[id]/TrackTipClient.tsx)",
+      "Bash(grep -n \"isResidential.*ProgressBar\\\\|ProgressBar.*isResidential\\\\|isResidential &&.*currentStep\\\\|currentStep.*isResidential\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/quote/[quoteId]/QuotePageClient.tsx)",
+      "Bash(grep -n \"viewed\\\\|pushViewed\\\\|hubspot.*note\\\\|status.*sent\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/quote/[quoteId]/page.tsx)",
+      "Bash(grep -n \"client_name\\\\|openContact\\\\|hover:text.*gold\\\\|contact.*modal\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
+      "Bash(grep -n \"^import.*phosphor\\\\|PencilSimple\\\\|Pencil\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
+      "Bash(grep -n \"handleStatusChange\\\\|status.*select\\\\|onChange.*status\\\\|setStatus\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
+      "Bash(grep -n \"cancelled\\\\|status.*change\\\\|onChange.*e\\\\.\\\\|select.*status\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
+      "Bash(grep -n \"cancelConfirm\\\\|cancelOverride\\\\|setCancelConfirm\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
+      "Bash(grep -n \"useState\\\\|const \\\\[\" /Users/kog/Developer/yugo-ops/.claude/worktrees/nifty-wilbur/src/app/admin/moves/[id]/MoveDetailClient.tsx)",
+      "Bash(git add:*)"
+    ]
+  }
+}

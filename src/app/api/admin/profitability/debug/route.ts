@@ -4,6 +4,10 @@ import { requireAdmin } from "@/lib/api-auth";
 
 /** Temporary debug endpoint — reveals what data profitability sees for a given range */
 export async function GET(req: NextRequest) {
+  if (process.env.NODE_ENV !== "development") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const { error: authErr } = await requireAdmin();
   if (authErr) return authErr;
 

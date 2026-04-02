@@ -26,7 +26,7 @@ export default function ProgressBar({ currentStep, onStepClick }: Props) {
         borderColor: "#E8E3DC",
       }}
     >
-      <div className="flex items-center justify-center gap-1 md:gap-2 min-w-max">
+      <ol role="list" className="flex items-center justify-center gap-1 md:gap-2 min-w-max" aria-label="Booking steps">
         {STEPS.map((step, i) => {
           const stepNum = i + 1;
           const isComplete = currentStep > stepNum;
@@ -35,28 +35,32 @@ export default function ProgressBar({ currentStep, onStepClick }: Props) {
           return (
             <React.Fragment key={step.key}>
               {i > 0 && (
-                <span className="text-[10px] md:text-[11px] shrink-0" style={{ color: "#CCC" }}>
+                <span className="text-[10px] md:text-[11px] shrink-0" style={{ color: "#CCC" }} aria-hidden="true">
                   ·
                 </span>
               )}
-              <button
-                type="button"
-                onClick={() => onStepClick?.(stepNum)}
-                className="flex shrink-0 items-center gap-1 md:gap-1.5 text-[11px] md:text-[12px] font-medium transition-colors hover:opacity-80 whitespace-nowrap"
-                style={{
-                  color: isComplete ? GOLD : isCurrent ? FOREST : "#AAA",
-                  fontWeight: isCurrent ? 700 : 500,
-                }}
-              >
-                {isComplete ? (
-                  <Check className="w-3.5 h-3.5 shrink-0" style={{ color: GOLD }} />
-                ) : null}
-                <span>{step.label}</span>
-              </button>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onStepClick?.(stepNum)}
+                  aria-current={isCurrent ? "step" : undefined}
+                  aria-label={`Step ${stepNum}: ${step.label}${isComplete ? " (completed)" : isCurrent ? " (current)" : ""}`}
+                  className="flex shrink-0 items-center gap-1 md:gap-1.5 text-[11px] md:text-[12px] font-medium transition-colors hover:opacity-80 whitespace-nowrap"
+                  style={{
+                    color: isComplete ? GOLD : isCurrent ? FOREST : "#AAA",
+                    fontWeight: isCurrent ? 700 : 500,
+                  }}
+                >
+                  {isComplete ? (
+                    <Check className="w-3.5 h-3.5 shrink-0" style={{ color: GOLD }} aria-hidden="true" />
+                  ) : null}
+                  <span>{step.label}</span>
+                </button>
+              </li>
             </React.Fragment>
           );
         })}
-      </div>
+      </ol>
     </div>
   );
 }

@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
         customerId: move.square_customer_id || undefined,
         referenceId: move.move_code || move.id,
         note: "Balance + processing fee, auto-charge",
-        idempotencyKey: `bal-auto-${move.id}-${Date.now()}`,
+        idempotencyKey: `bal-auto-${move.id}-${new Date().toISOString().split("T")[0]}`,
         locationId,
       });
 

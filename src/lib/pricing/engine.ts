@@ -23,7 +23,8 @@ type ConfigMap = Map<string, string> | Record<string, string>;
 
 export function cfgNum(config: ConfigMap, key: string, fallback: number): number {
   const v = config instanceof Map ? config.get(key) : config[key];
-  return v !== undefined ? Number(v) : fallback;
+  if (v === undefined || v === "" || Number.isNaN(Number(v))) return fallback;
+  return Number(v);
 }
 
 export function cfgStr(config: ConfigMap, key: string, fallback: string): string {

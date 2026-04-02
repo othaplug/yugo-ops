@@ -104,7 +104,7 @@ export async function POST(
       ...(squareCustomerId ? { customerId: squareCustomerId } : {}),
       referenceId: statement.statement_number,
       note: `Yugo statement ${statement.statement_number}`,
-      idempotencyKey: `stmt-pay-${statement.id}-${Date.now()}`,
+      idempotencyKey: `stmt-pay-${statement.id}`,
       locationId,
     });
 

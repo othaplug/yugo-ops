@@ -593,7 +593,7 @@ export default function QuotePageClient({
           sum += addon.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
           break;
         case "percent":
-          sum += Math.round(basePrice * (addon.percent_value ?? 0));
+          sum += Math.round(basePrice * Math.min(Math.max(addon.percent_value ?? 0, 0), 1));
           break;
       }
     }
@@ -676,7 +676,7 @@ export default function QuotePageClient({
           cost = addon.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
           break;
         case "percent":
-          cost = Math.round(basePrice * (addon.percent_value ?? 0));
+          cost = Math.round(basePrice * Math.min(Math.max(addon.percent_value ?? 0, 0), 1));
           break;
       }
       list.push({ name: addon.name, price: cost, quantity: sel.quantity ?? 1 });
@@ -1072,14 +1072,14 @@ export default function QuotePageClient({
         </div>
       </header>
 
-      {isResidential && currentStep >= 2 && !booked && (
+      {currentStep >= 2 && !booked && (
         <ProgressBar currentStep={currentStep} onStepClick={handleStepClick} />
       )}
 
       <div className="max-w-4xl md:max-w-5xl lg:max-w-7xl mx-auto px-5 md:px-6">
         {/* ═══ GUARANTEED PRICE BADGE ═══ */}
         <div
-          className={`mb-8 py-3 ${isResidential && currentStep >= 2 && !booked ? "mt-3" : "mt-4"}`}
+          className={`mb-8 py-3 ${currentStep >= 2 && !booked ? "mt-3" : "mt-4"}`}
           style={{ backgroundColor: CREAM }}
         >
           <div className="flex justify-center w-full min-w-0 px-1 sm:px-0">
@@ -3044,7 +3044,7 @@ function AddOnsSection({
               computedCost = addon.tiers?.[sel?.tier_index ?? 0]?.price ?? 0;
               break;
             case "percent":
-              computedCost = Math.round(basePrice * (addon.percent_value ?? 0));
+              computedCost = Math.round(basePrice * Math.min(Math.max(addon.percent_value ?? 0, 0), 1));
               priceLabel = `${((addon.percent_value ?? 0) * 100).toFixed(0)}% (${fmtPrice(computedCost)})`;
               break;
           }

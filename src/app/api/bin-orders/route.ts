@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
       const cardRes = await squareClient.cards.create({
         sourceId,
         card: { customerId: squareCustomerId! },
-        idempotencyKey: `bin-card-${orderNumber}-${Date.now()}`,
+        idempotencyKey: `bin-card-${orderNumber}`,
       });
       squareCardId = cardRes.card?.id;
     } catch (e) {
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
         customerId: squareCustomerId,
         referenceId: orderNumber,
         note: `Yugo bin rental ${orderNumber}`,
-        idempotencyKey: `bin-pay-${orderNumber}-${Date.now()}`,
+        idempotencyKey: `bin-pay-${orderNumber}`,
         locationId,
       });
       squarePaymentId = paymentRes.payment?.id;

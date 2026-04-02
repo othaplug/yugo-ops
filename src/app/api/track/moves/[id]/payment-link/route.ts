@@ -100,7 +100,7 @@ export async function POST(
     }
 
     const amountCents = Math.floor(totalCents);
-    const idempotencyKey = `move-${moveId}-${Date.now()}`;
+    const idempotencyKey = `move-${moveId}`;
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
     const redirectUrl = baseUrl ? `${baseUrl}/track/move/${moveId}?payment=success` : undefined;
 

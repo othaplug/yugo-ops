@@ -125,7 +125,7 @@ export async function PATCH(
             customerId: order.square_customer_id || undefined,
             referenceId: order.order_number,
             note: `Missing bins charge: ${binsMissing} bin(s) x $${MISSING_BIN_FEE}`,
-            idempotencyKey: `bin-missing-${id}-${Date.now()}`,
+            idempotencyKey: `bin-missing-${id}`,
             locationId,
           });
         }

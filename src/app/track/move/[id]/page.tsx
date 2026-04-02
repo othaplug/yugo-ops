@@ -165,7 +165,7 @@ export default async function TrackMovePage({
   const minH = parseInt(icCfg.change_request_min_hours_before_move, 10);
   const moveDate = move.scheduled_date ? parseDateOnly(move.scheduled_date) ?? new Date(move.scheduled_date) : null;
   // When minH <= 0, no time restriction applies
-  const hoursOk = minH <= 0 || (moveDate ? moveDate.getTime() - Date.now() >= minH * 3600_000 : false);
+  const hoursOk = minH <= 0 || !moveDate || (moveDate.getTime() - Date.now() >= minH * 3600_000);
   const statusOk = ["confirmed", "scheduled", "paid"].includes(st);
   const notTerminal = !["in_progress", "completed", "delivered", "cancelled"].includes(st);
   const invChangeEnabled = icCfg.change_request_enabled === "true";

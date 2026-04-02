@@ -149,7 +149,7 @@ export async function POST(req: Request) {
         card: {
           customerId: squareCustomerId!,
         },
-        idempotencyKey: `card-${quoteId}-${Date.now()}`,
+        idempotencyKey: `card-${quoteId}`,
       });
       squareCardId = cardRes.card?.id;
     } catch (e) {
@@ -179,7 +179,7 @@ export async function POST(req: Request) {
           String(quote.service_type) === "b2b_oneoff" || String(quote.service_type) === "b2b_delivery"
             ? `YUGO B2B delivery payment ${quoteId}`
             : `YUGO deposit ${quoteId}`,
-        idempotencyKey: `pay-${quoteId}-${Date.now()}`,
+        idempotencyKey: `pay-${quoteId}`,
         locationId,
       });
       squarePaymentId = paymentRes.payment?.id;
@@ -200,17 +200,6 @@ export async function POST(req: Request) {
       }).catch(() => {});
       return NextResponse.json({ error: msg }, { status: 402 });
     }
-
-    // ── 5. Update quote → accepted ──
-    await supabase
-      .from("quotes")
-      .update({
-        status: "accepted",
-        selected_tier: selectedTier ?? null,
-        accepted_at: new Date().toISOString(),
-        selected_addons: selectedAddons ?? [],
-      })
-      .eq("id", quote.id);
 
     const svcType = String(quote.service_type ?? "");
     const isB2bPay = isB2BDeliveryQuoteServiceType(svcType);
@@ -257,18 +246,27 @@ export async function POST(req: Request) {
         moveId = moveResult.moveId;
         moveCode = moveResult.moveCode;
       }
+
+      // ── 5. Update quote → accepted (only after successful move/delivery creation) ──
+      await supabase
+        .from("quotes")
+        .update({
+          status: "accepted",
+          selected_tier: selectedTier ?? null,
+          accepted_at: new Date().toISOString(),
+          selected_addons: selectedAddons ?? [],
+        })
+        .eq("id", quote.id);
     } catch (jobErr) {
       console.error("[payments/process] job creation failed:", jobErr);
-      return NextResponse.json({
-        success: true,
-        payment_id: squarePaymentId,
-        move_id: null,
-        delivery_id: null,
-        tracking_url: null,
-        warning: isB2bPay
-          ? "Payment was processed successfully but delivery creation failed. Please contact support with your quote ID."
-          : "Payment was processed successfully but move creation failed. Please contact support with your quote ID.",
-      });
+      return NextResponse.json(
+        {
+          error: isB2bPay
+            ? "Payment was processed but delivery creation failed. Please contact support with your quote ID."
+            : "Payment was processed but move creation failed. Please contact support with your quote ID.",
+        },
+        { status: 500 },
+      );
     }
 
     // ── 7. Log to activity feed ──

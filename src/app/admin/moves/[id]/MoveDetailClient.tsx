@@ -23,6 +23,7 @@ import ModalOverlay from "../../components/ModalOverlay";
 import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import { useToast } from "../../components/Toast";
 import { useRelativeTime } from "./useRelativeTime";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 interface EtaSmsLogEntry {
   message_type: string;
@@ -44,8 +45,55 @@ interface ReviewRequestEntry {
 
 type ItemWeightRow = { slug: string; item_name: string; weight_score: number; category: string; room?: string; is_common: boolean; display_order?: number; active?: boolean };
 
+interface MoveRecord {
+  id: string;
+  status: string;
+  stage?: string | null;
+  service_type?: string | null;
+  crew_id?: string | null;
+  client_name?: string | null;
+  client_email?: string | null;
+  customer_email?: string | null;
+  client_phone?: string | null;
+  preferred_contact?: string | null;
+  move_code?: string | null;
+  scheduled_date?: string | null;
+  move_date?: string | null;
+  from_address?: string | null;
+  to_address?: string | null;
+  from_lat?: number | null;
+  from_lng?: number | null;
+  to_lat?: number | null;
+  to_lng?: number | null;
+  estimate?: number | null;
+  amount?: number | null;
+  deposit_amount?: number | null;
+  balance_amount?: number | null;
+  assigned_members?: string[] | null;
+  assigned_crew_name?: string | null;
+  truck_primary?: string | null;
+  truck_override?: boolean | null;
+  tier_selected?: string | null;
+  has_piano?: boolean | null;
+  hubspot_deal_id?: string | null;
+  payment_marked_paid?: boolean | null;
+  payment_marked_paid_at?: string | null;
+  balance_paid_at?: string | null;
+  completed_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  contact_id?: string | null;
+  from_access?: string | null;
+  to_access?: string | null;
+  move_size?: string | null;
+  delivery_address?: string | null;
+  est_crew_size?: number | null;
+  est_hours?: number | null;
+  [key: string]: unknown;
+}
+
 interface MoveDetailClientProps {
-  move: any;
+  move: MoveRecord;
   crews?: { id: string; name: string; members?: string[] }[];
   isOffice?: boolean;
   userRole?: string;
@@ -302,6 +350,8 @@ export default function MoveDetailClient({
   const [overrideStatusModalOpen, setOverrideStatusModalOpen] = useState(false);
   const [overrideStatusNewStatus, setOverrideStatusNewStatus] = useState("confirmed");
   const [overrideStatusTyped, setOverrideStatusTyped] = useState("");
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [pendingCancelStatus, setPendingCancelStatus] = useState<string | null>(null);
   const [reviewReminderLoading, setReviewReminderLoading] = useState(false);
   const selectedCrew = crews.find((c) => c.id === move.crew_id);
   const crewMembers = selectedCrew?.members && Array.isArray(selectedCrew.members) ? selectedCrew.members : [];
@@ -458,9 +508,10 @@ export default function MoveDetailClient({
               <button
                 type="button"
                 onClick={() => setContactModalOpen(true)}
-                className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left break-words line-clamp-2"
+                className="font-heading text-[17px] md:text-[19px] font-bold text-[var(--tx)] hover:text-[var(--gold)] transition-colors text-left break-words line-clamp-2 flex items-center gap-1.5 group"
               >
                 {move.client_name}
+                <Pencil size={12} aria-hidden className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0" />
               </button>
               {move.move_code && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-bold tracking-wide bg-[var(--gdim)]/60 text-[var(--gold)] border border-[var(--gold)]/20">
@@ -539,6 +590,11 @@ export default function MoveDetailClient({
                       setRestartOverrideTyped("");
                       return;
                     }
+                    if (v.toLowerCase() === "cancelled") {
+                      setPendingCancelStatus(v);
+                      setCancelConfirmOpen(true);
+                      return;
+                    }
                     const now = new Date().toISOString();
                     const updates: Record<string, unknown> = {
                       status: v,
@@ -573,12 +629,12 @@ export default function MoveDetailClient({
                         if (last) dealProps.lastname = last;
                       }
                       if (move.from_address?.trim()) dealProps.pick_up_address = move.from_address.trim();
-                      const toAddr = move.to_address?.trim() || (move as { delivery_address?: string }).delivery_address?.trim();
+                      const toAddr = (move.to_address?.trim()) || (move.delivery_address?.trim());
                       if (toAddr) dealProps.drop_off_address = toAddr;
-                      if ((move as { from_access?: string }).from_access?.trim()) dealProps.access_from = (move as { from_access?: string }).from_access!.trim();
-                      if ((move as { to_access?: string }).to_access?.trim()) dealProps.access_to = (move as { to_access?: string }).to_access!.trim();
+                      if (move.from_access?.trim()) dealProps.access_from = move.from_access.trim();
+                      if (move.to_access?.trim()) dealProps.access_to = move.to_access.trim();
                       if (move.service_type?.trim()) dealProps.service_type = move.service_type.trim();
-                      if ((move as { move_size?: string }).move_size?.trim()) dealProps.move_size = (move as { move_size?: string }).move_size!.trim();
+                      if (move.move_size?.trim()) dealProps.move_size = move.move_size.trim();
                       if (move.scheduled_date?.trim()) dealProps.move_date = move.scheduled_date.trim();
                       fetch("/api/hubspot/update-deal", {
                         method: "POST",
@@ -1570,6 +1626,30 @@ export default function MoveDetailClient({
         }}
       />
 
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        title="Cancel this move?"
+        message="Cancelling will notify the client and lock this move. This action is difficult to undo."
+        confirmLabel="Cancel Move"
+        variant="danger"
+        onConfirm={async () => {
+          setCancelConfirmOpen(false);
+          const v = pendingCancelStatus!;
+          setPendingCancelStatus(null);
+          const now = new Date().toISOString();
+          const { data, error } = await supabase.from("moves").update({ status: v, updated_at: now }).eq("id", move.id).select().single();
+          if (error) { toast(error.message || "Failed to update status", "alertTriangle"); return; }
+          if (data) setMove(data);
+          setEditingCard(null);
+          router.refresh();
+          fetch(`/api/admin/moves/${move.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "log_status_change", new_status: v, previous_status: move.status }),
+          }).catch(() => {});
+        }}
+        onCancel={() => { setCancelConfirmOpen(false); setPendingCancelStatus(null); }}
+      />
       {deleteConfirmOpen && (
         <ModalOverlay open onClose={() => setDeleteConfirmOpen(false)} title="Delete move?" maxWidth="sm">
           <div className="p-5 space-y-4">
@@ -1616,7 +1696,7 @@ export default function MoveDetailClient({
 /* ════════════════════════════════════════
    Profitability Breakdown (Owner-Only)
    ════════════════════════════════════════ */
-function MoveProfitCard({ move }: { move: any }) {
+function MoveProfitCard({ move }: { move: MoveRecord }) {
   const [costs, setCosts] = useState<{
     labour: number; fuel: number; truck: number; supplies: number;
     processing: number; totalDirect: number; allocatedOverhead: number;

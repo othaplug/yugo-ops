@@ -12,11 +12,11 @@ export default async function RevenuePage() {
     { data: orgs },
     { data: paidMoves },
   ] = await Promise.all([
-    db.from("invoices").select("id, client_name, organization_id, amount, status, created_at, updated_at, invoice_number"),
+    db.from("invoices").select("id, client_name, organization_id, amount, status, created_at, updated_at, invoice_number, paid_at"),
     db.from("organizations").select("id, name, type"),
     db
       .from("moves")
-      .select("id, move_code, client_name, estimate, payment_marked_paid_at")
+      .select("id, move_code, client_name, estimate, amount, deposit_amount, balance_amount, payment_marked_paid_at")
       .eq("payment_marked_paid", true)
       .not("payment_marked_paid_at", "is", null),
   ]);

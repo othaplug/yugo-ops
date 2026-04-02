@@ -14,6 +14,7 @@ import AdminPageClient from "./AdminPageClient";
 export default async function AdminPage() {
   const admin = createAdminClient();
   const today = getTodayString();
+  const cutoff90 = new Date(Date.now() - 90 * 24 * 3600_000).toISOString().slice(0, 10);
 
   const [
     { data: deliveries },
@@ -27,8 +28,8 @@ export default async function AdminPage() {
     { data: reviewRequests },
     leadPulseResult,
   ] = await Promise.all([
-    admin.from("deliveries").select("*").order("created_at", { ascending: false }),
-    admin.from("moves").select("*").order("created_at", { ascending: false }),
+    admin.from("deliveries").select("*").gte("created_at", `${cutoff90}T00:00:00.000Z`).order("created_at", { ascending: false }).limit(500),
+    admin.from("moves").select("*").gte("created_at", `${cutoff90}T00:00:00.000Z`).order("created_at", { ascending: false }).limit(500),
     admin.from("invoices").select("id, status, amount, updated_at, created_at"),
     (async () => {
       try {

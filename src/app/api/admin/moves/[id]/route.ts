@@ -39,8 +39,8 @@ export async function PATCH(
       const { data: current, error: fetchErr } = await admin.from("moves").select("status").eq("id", id).single();
       if (fetchErr || !current) return NextResponse.json({ error: "Move not found" }, { status: 404 });
 
-      // Don't regress a move that's already in_progress, completed, or cancelled
-      const PAST_PAID_STATUSES = new Set(["in_progress", "completed", "cancelled"]);
+      // Don't regress a move that's already paid, in_progress, completed, or cancelled
+      const PAST_PAID_STATUSES = new Set(["paid", "in_progress", "completed", "cancelled"]);
       const patch: Record<string, unknown> = {
         payment_marked_paid: true,
         payment_marked_paid_at: now,
@@ -187,7 +187,7 @@ export async function PATCH(
           customerId: move.square_customer_id || undefined,
           referenceId: move.move_code || id,
           note: `Balance payment, manual charge by admin`,
-          idempotencyKey: `bal-manual-${id}-${Date.now()}`,
+          idempotencyKey: `bal-manual-${id}`,
           locationId,
         });
 

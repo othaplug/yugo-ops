@@ -80,7 +80,7 @@ export async function POST(req: Request) {
             paymentId: move.square_payment_id,
             amountMoney: { amount: BigInt(refundCents), currency: "CAD" },
             reason: `${REASON_LABELS[reason] || reason}${reasonDetail ? ` ${reasonDetail}` : ""}`,
-            idempotencyKey: `refund-${moveId}-${Date.now()}`,
+            idempotencyKey: `refund-${moveId}`,
           });
 
           squareRefundId = refundRes.refund?.id ?? null;

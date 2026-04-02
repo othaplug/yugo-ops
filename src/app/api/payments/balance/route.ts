@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         const cardRes = await squareClient.cards.create({
           sourceId,
           card: { customerId: move.square_customer_id },
-          idempotencyKey: `bal-card-${moveId}-${Date.now()}`,
+          idempotencyKey: `bal-card-${moveId}`,
         });
         cardId = cardRes.card?.id;
       } catch {
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
       customerId: move.square_customer_id || undefined,
       referenceId: move.move_code || moveId,
       note: "Balance + processing fee, client payment",
-      idempotencyKey: `bal-pay-${moveId}-${Date.now()}`,
+      idempotencyKey: `bal-pay-${moveId}`,
       locationId,
     });
 

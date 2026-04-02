@@ -32,7 +32,7 @@ async function loadConfig(): Promise<Record<string, string>> {
 
 export async function getConfig(key: string, fallback = ""): Promise<string> {
   const map = await loadConfig();
-  return map[key] || fallback;
+  return map[key] ?? fallback;
 }
 
 export async function getConfigs(
@@ -42,7 +42,7 @@ export async function getConfigs(
   const map = await loadConfig();
   const result: Record<string, string> = {};
   for (const k of keys) {
-    result[k] = map[k] || fallbacks[k] || "";
+    result[k] = map[k] ?? fallbacks[k] ?? "";
   }
   return result;
 }

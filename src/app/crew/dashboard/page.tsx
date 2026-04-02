@@ -211,9 +211,11 @@ export default function CrewDashboardPage() {
                 data.crewMember?.dateStr ||
                 formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" })}
             </p>
-            <p className="text-[10px] text-[var(--tx3)]/75 mt-2 leading-relaxed max-w-[340px]">
-              Missing a job? Confirm your team and schedule date in dispatch.
-            </p>
+            {data.crewMember?.role === "lead" && (
+              <p className="text-[10px] text-[var(--tx3)]/75 mt-2 leading-relaxed max-w-[340px]">
+                Missing a job? Confirm your team and schedule date in dispatch.
+              </p>
+            )}
 
             {totalCount > 0 && (
               <div className="mt-5">

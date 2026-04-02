@@ -57,7 +57,15 @@ export async function requireRole(minRole: AppRole) {
     .eq("user_id", user.id)
     .single();
 
-  const userRole = pu?.role ?? "viewer";
+  if (!pu) {
+    return {
+      user,
+      role: null,
+      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+
+  const userRole = pu.role;
 
   if (!hasMinRole(userRole, minRole)) {
     return {

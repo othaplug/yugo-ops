@@ -957,7 +957,7 @@ export default function TrackMoveClient({
             <h1 className="font-hero text-[26px] sm:text-[28px] leading-tight font-semibold tracking-tight truncate" style={{ color: WINE }}>
               {greeting}, {move.client_name?.split(" ")[0] || move.client_name || "Your Move"}
             </h1>
-            <p className="text-[11px] mt-0.5 font-sans opacity-40 flex items-center gap-1.5" style={{ color: FOREST }}>
+            <p className="text-[11px] mt-0.5 font-sans opacity-60 flex items-center gap-1.5" style={{ color: FOREST }}>
               {displayCode}
               {(() => {
                 const isOffice = serviceType === "office_move";

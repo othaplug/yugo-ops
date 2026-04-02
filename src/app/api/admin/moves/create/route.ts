@@ -259,6 +259,17 @@ export async function POST(req: NextRequest) {
       setupReqRaw === "1" ||
       setupReqRaw === "on";
 
+    const labourResult =
+      typeof body.inventory_score === "number" && body.inventory_score > 0
+        ? estimateLabourFromScore(
+            body.inventory_score as number,
+            0,
+            (body.from_access as string) || undefined,
+            (body.to_access as string) || undefined,
+            (body.move_size as string) || undefined,
+          )
+        : null;
+
     const moveCrewId = (body.crew_id as string)?.trim() || null;
     let moveAssignedMembers = Array.isArray(body.assigned_members) ? body.assigned_members : [];
     let moveAssignedCrewName: string | null = null;
@@ -306,8 +317,16 @@ export async function POST(req: NextRequest) {
         truck_primary: truckPrimary ?? null,
         distance_km: distanceKm,
         drive_time_min: driveTimeMin,
-        est_crew_size: body.est_crew_size ? Number(body.est_crew_size) : null,
-        est_hours: body.est_hours ? Number(body.est_hours) : null,
+        est_crew_size: body.est_crew_size
+          ? Number(body.est_crew_size)
+          : labourResult
+            ? labourResult.crewSize
+            : null,
+        est_hours: body.est_hours
+          ? Number(body.est_hours)
+          : labourResult
+            ? labourResult.estimatedHours
+            : null,
         ...(moveType === "event"
           ? {
               event_name: (body.event_name as string)?.trim() || null,
@@ -316,21 +335,8 @@ export async function POST(req: NextRequest) {
               setup_instructions: (body.setup_instructions as string)?.trim() || null,
             }
           : {}),
-        ...(typeof body.inventory_score === "number" && body.inventory_score > 0
-          ? (() => {
-              const labour = estimateLabourFromScore(
-                body.inventory_score as number,
-                0,
-                (body.from_access as string) || undefined,
-                (body.to_access as string) || undefined,
-                (body.move_size as string) || undefined,
-              );
-              return {
-                est_crew_size: labour.crewSize,
-                est_hours: labour.estimatedHours,
-                est_truck_size: labour.truckSize,
-              };
-            })()
+        ...(labourResult
+          ? { est_truck_size: labourResult.truckSize }
           : {}),
         est_margin_percent: estMarginPercent,
         est_cost_total: estCostTotal,
@@ -350,7 +356,7 @@ export async function POST(req: NextRequest) {
 
     try {
       if (!organizationId) {
-        const orgEmail = (clientEmail || "").trim() || `client-${moveId}@placeholder.local`;
+        const orgEmail = (clientEmail || "").trim() || null;
         const { data: newOrg, error: orgError } = await db
           .from("organizations")
           .insert({
@@ -462,7 +468,7 @@ export async function POST(req: NextRequest) {
         const sendResult = await resend.emails.send({
           from: emailFrom,
           to: emailTrimmed,
-          subject: `Your move has been created track your move`,
+          subject: `Your move is confirmed — track your move`,
           html,
           headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
         });

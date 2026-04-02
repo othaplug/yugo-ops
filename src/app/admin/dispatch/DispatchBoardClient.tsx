@@ -293,7 +293,7 @@ export default function DispatchBoardClient({ today }: Props) {
             <div className="relative min-w-0 flex-1 md:flex-initial md:w-auto">
               <button
                 type="button"
-                onClick={() => dateInputRef.current?.showPicker?.()}
+                onClick={() => { if (dateInputRef.current?.showPicker) { dateInputRef.current.showPicker(); } else { dateInputRef.current?.click(); } }}
                 className="admin-btn admin-btn-ghost w-full min-w-0 justify-center md:w-auto"
               >
                 <CalendarDays weight="regular" className="w-3 h-3 shrink-0 opacity-70" />
@@ -306,7 +306,7 @@ export default function DispatchBoardClient({ today }: Props) {
                 value={date}
                 onChange={(e) => { if (e.target.value) setDate(e.target.value); }}
                 className="absolute inset-0 opacity-0 w-full cursor-pointer"
-                tabIndex={-1}
+                aria-label="Select date"
               />
             </div>
 
@@ -369,6 +369,7 @@ export default function DispatchBoardClient({ today }: Props) {
                   key={stat.key}
                   type="button"
                   onClick={() => setFilterStatus(filterStatus === stat.key ? "all" : stat.key!)}
+                  aria-pressed={filterStatus === stat.key}
                   className={`admin-kpi-card group transition-all duration-200 ${
                     filterStatus === stat.key
                       ? "border-[var(--gold)]/70 bg-[var(--gold)]/10 shadow-sm shadow-[var(--gold)]/10"
@@ -443,12 +444,30 @@ export default function DispatchBoardClient({ today }: Props) {
               {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <DispatchSchedule
-            jobs={filteredJobs}
-            onReassign={(j) => setReassignJob(j)}
-            onContact={handleContact}
-            defaultCompletedOpen={filterStatus === "completed"}
-          />
+          {filteredJobs.length === 0 && data && (
+            <div className="flex flex-col items-center justify-center py-14 text-center">
+              <p className="text-[13px] text-[var(--tx2)]">
+                {filterStatus === "all" ? "No jobs scheduled for today" : `No ${filterStatus} jobs`}
+              </p>
+              {filterStatus !== "all" && (
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus("all")}
+                  className="mt-2 text-[11px] text-[var(--gold)] hover:underline"
+                >
+                  Show all jobs
+                </button>
+              )}
+            </div>
+          )}
+          {filteredJobs.length > 0 && (
+            <DispatchSchedule
+              jobs={filteredJobs}
+              onReassign={(j) => setReassignJob(j)}
+              onContact={handleContact}
+              defaultCompletedOpen={filterStatus === "completed"}
+            />
+          )}
         </div>
 
         {/* Right: Activity Feed */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/AppIcons";
 
@@ -25,6 +25,8 @@ export default function GlobalModal({
   noHeader = false,
   noPadding = false,
 }: GlobalModalProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -37,9 +39,18 @@ export default function GlobalModal({
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleEscape);
+    // Move focus into the modal on open
+    const frame = requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+      const focusable = containerRef.current.querySelector<HTMLElement>(
+        "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
+      );
+      (focusable ?? containerRef.current).focus();
+    });
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", handleEscape);
+      cancelAnimationFrame(frame);
     };
   }, [open, handleEscape]);
 
@@ -54,11 +65,13 @@ export default function GlobalModal({
 
   const modal = (
     <div
+      ref={containerRef}
       data-modal-root
       className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
+      tabIndex={-1}
     >
       {/* Dimmed backdrop */}
       <div

@@ -39,6 +39,7 @@ interface Invoice {
   created_at: string | null;
   updated_at: string | null;
   invoice_number: string | null;
+  paid_at: string | null;
 }
 
 interface PaidMove {
@@ -46,6 +47,9 @@ interface PaidMove {
   move_code: string | null;
   client_name: string | null;
   estimate: number | null;
+  amount: number | null;
+  deposit_amount: number | null;
+  balance_amount: number | null;
   payment_marked_paid_at: string | null;
 }
 
@@ -57,7 +61,7 @@ interface RevenueClientProps {
 }
 
 function getInvoiceRevenueDate(inv: Invoice): Date {
-  const ts = inv.updated_at || inv.created_at;
+  const ts = inv.paid_at || inv.created_at;
   return ts ? new Date(ts) : new Date(0);
 }
 
@@ -216,7 +220,7 @@ export default function RevenueClient({
   const paidMovesList = paidMoves || [];
 
   const invoiceRevenue = paid.reduce((s, i) => s + Number(i.amount), 0);
-  const moveRevenue = paidMovesList.reduce((s, m) => s + Number(m.estimate || 0), 0);
+  const moveRevenue = paidMovesList.reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
   const paidTotal = invoiceRevenue + moveRevenue;
   const totalSource = Math.max(1, invoiceRevenue + moveRevenue);
   const invPct = Math.round((invoiceRevenue / totalSource) * 100);
@@ -233,7 +237,7 @@ export default function RevenueClient({
   });
   paidMovesList.forEach((m) => {
     const name = m.client_name || "-";
-    byClient[name] = (byClient[name] || 0) + Number(m.estimate || 0);
+    byClient[name] = (byClient[name] || 0) + Number(m.amount ?? m.estimate ?? 0);
   });
   const topClients = Object.entries(byClient)
     .sort((a, b) => b[1] - a[1])
@@ -254,7 +258,7 @@ export default function RevenueClient({
       });
       paidMovesList.forEach((m) => {
         const y = getMoveRevenueDate(m).getFullYear();
-        byYear[y] = (byYear[y] || 0) + Number(m.estimate || 0);
+        byYear[y] = (byYear[y] || 0) + Number(m.amount ?? m.estimate ?? 0);
       });
       const years = Object.keys(byYear).map(Number).sort((a, b) => a - b);
       return years.map((y) => ({
@@ -275,7 +279,7 @@ export default function RevenueClient({
         });
         paidMovesList.forEach((move) => {
           const d = getMoveRevenueDate(move);
-          if (d.getFullYear() === selectedYear && d.getMonth() === m) sum += Number(move.estimate || 0);
+          if (d.getFullYear() === selectedYear && d.getMonth() === m) sum += Number(move.amount ?? move.estimate ?? 0);
         });
         result.push({ label: MONTH_LABELS[m], value: sum, fullLabel: `${MONTH_LABELS[m]} ${selectedYear}` });
       }
@@ -295,7 +299,7 @@ export default function RevenueClient({
       paidMovesList.forEach((m) => {
         const d = getMoveRevenueDate(m);
         if (d.getFullYear() === year && d.getMonth() === month) {
-          byDay[d.getDate()] = (byDay[d.getDate()] || 0) + Number(m.estimate || 0);
+          byDay[d.getDate()] = (byDay[d.getDate()] || 0) + Number(m.amount ?? m.estimate ?? 0);
         }
       });
       return Array.from({ length: daysInMonth }, (_, i) => {
@@ -324,7 +328,7 @@ export default function RevenueClient({
       });
       paidMovesList.forEach((move) => {
         const d = getMoveRevenueDate(move);
-        if (d.getFullYear() === y && d.getMonth() === m) sum += Number(move.estimate || 0);
+        if (d.getFullYear() === y && d.getMonth() === m) sum += Number(move.amount ?? move.estimate ?? 0);
       });
       result.push({ label: MONTH_LABELS[m], value: sum, fullLabel: `${MONTH_LABELS[m]} ${y}` });
     }
@@ -356,7 +360,7 @@ export default function RevenueClient({
   const currentMonthRevenue = useMemo(() => {
     const y = now.getFullYear(); const m = now.getMonth();
     const invSum = paid.filter((inv) => { const d = getInvoiceRevenueDate(inv); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, i) => s + Number(i.amount), 0);
-    const moveSum = paidMovesList.filter((move) => { const d = getMoveRevenueDate(move); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, m) => s + Number(m.estimate || 0), 0);
+    const moveSum = paidMovesList.filter((move) => { const d = getMoveRevenueDate(move); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
     return invSum + moveSum;
   }, [paid, paidMovesList, now]);
 
@@ -364,14 +368,14 @@ export default function RevenueClient({
     const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const y = prev.getFullYear(); const m = prev.getMonth();
     const invSum = paid.filter((inv) => { const d = getInvoiceRevenueDate(inv); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, i) => s + Number(i.amount), 0);
-    const moveSum = paidMovesList.filter((move) => { const d = getMoveRevenueDate(move); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, m) => s + Number(m.estimate || 0), 0);
+    const moveSum = paidMovesList.filter((move) => { const d = getMoveRevenueDate(move); return d.getFullYear() === y && d.getMonth() === m; }).reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
     return invSum + moveSum;
   }, [paid, paidMovesList, now]);
 
   const ytdRevenue = useMemo(() => {
     const y = now.getFullYear();
     const invSum = paid.filter((inv) => getInvoiceRevenueDate(inv).getFullYear() === y).reduce((s, i) => s + Number(i.amount), 0);
-    const moveSum = paidMovesList.filter((move) => getMoveRevenueDate(move).getFullYear() === y).reduce((s, m) => s + Number(m.estimate || 0), 0);
+    const moveSum = paidMovesList.filter((move) => getMoveRevenueDate(move).getFullYear() === y).reduce((s, m) => s + Number(m.amount ?? m.estimate ?? 0), 0);
     return invSum + moveSum;
   }, [paid, paidMovesList, now]);
 

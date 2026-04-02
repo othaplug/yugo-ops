@@ -42,6 +42,7 @@ export default async function PartnerDashboardPage({
 
   if (orgError) {
     console.error("Partner page org fetch error:", orgError);
+    redirect(`/partner/login?error=org_fetch&message=${encodeURIComponent(orgError.message)}`);
   }
 
   const contactName = (user.user_metadata?.full_name as string | undefined) || org?.contact_name || user.email?.split("@")[0] || "Partner";

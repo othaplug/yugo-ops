@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
         customerId: org.square_customer_id || undefined,
         referenceId: stmt.statement_number,
         note: `Yugo statement ${stmt.statement_number}, ${org.name}`,
-        idempotencyKey: `stmt-auto-${stmt.id}-${Date.now()}`,
+        idempotencyKey: `stmt-auto-${stmt.id}-${new Date().toISOString().split("T")[0]}`,
         locationId,
       });
 

@@ -337,9 +337,14 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
             onToggle={() => setNotifOpen(!notifOpen)}
             onClose={() => setNotifOpen(false)}
           />
-          <div className="w-8 h-8 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[11px] font-bold cursor-pointer" onClick={() => setSettingsOpen(true)}>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Account settings"
+            className="w-8 h-8 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[11px] font-bold cursor-pointer hover:opacity-90 transition-opacity"
+          >
             {contactName.charAt(0).toUpperCase()}{(contactName.split(" ")[1] || "").charAt(0).toUpperCase() || contactName.charAt(1)?.toUpperCase() || ""}
-          </div>
+          </button>
         </div>
       </header>
 
@@ -492,11 +497,27 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
             )}
           </div>
         )}
+        {/* Full-page skeleton on initial load */}
+        {loading && !data && (
+          <div className="animate-pulse space-y-6 pt-2">
+            <div className="h-9 w-48 bg-[var(--brd)] rounded-lg" />
+            <div className="h-4 w-64 bg-[var(--brd)] rounded" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              {[1,2,3,4].map((i) => <div key={i} className="h-[80px] bg-[var(--brd)] rounded-xl" />)}
+            </div>
+            <div className="flex gap-2 border-b border-[var(--brd)]/30 pb-0">
+              {[1,2,3].map((i) => <div key={i} className="h-10 w-24 bg-[var(--brd)] rounded-t-lg" />)}
+            </div>
+            <div className="space-y-3">
+              {[1,2,3].map((i) => <div key={i} className="h-16 bg-[var(--brd)] rounded-xl" />)}
+            </div>
+          </div>
+        )}
+
         {/* Returning user welcome-back banner */}
         {isReturning && loginInfo?.lastLoginAt && (
           <div className="mb-5 flex items-center gap-3 px-4 py-3 border-t border-[var(--brd)]/30 pt-5" style={{ animation: "fadeSlideUp 0.4s ease" }}>
-            <style>{`@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-            <div className="w-9 h-9 rounded-xl bg-[#F0FFF4] flex items-center justify-center flex-shrink-0">
+<div className="w-9 h-9 rounded-xl bg-[#F0FFF4] flex items-center justify-center flex-shrink-0">
               <Check size={18} color="#2D6A4F" weight="bold" />
             </div>
             <div className="flex-1 min-w-0">
@@ -518,7 +539,7 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
           ) : isDesignerOrg ? (
             <p className="text-[15px] text-[var(--tx3)] mt-1.5">
               {data?.todayDeliveries && data.todayDeliveries.length > 0
-                ? `${data.todayDeliveries.length} delivery${data.todayDeliveries.length !== 1 ? " scheduled" : " scheduled"} today`
+                ? `${data.todayDeliveries.length} ${data.todayDeliveries.length !== 1 ? "deliveries" : "delivery"} scheduled today`
                 : "Your projects and deliveries dashboard"}
             </p>
           ) : features.showProjects ? (

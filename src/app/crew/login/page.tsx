@@ -44,7 +44,6 @@ export default function CrewLoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isWelcome = useMemo(() => searchParams.get("welcome") === "1", [searchParams]);
-  const consentRequired = isWelcome ? consentChecked : true;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -90,7 +89,7 @@ export default function CrewLoginPage() {
 
   const handleLogin = async () => {
     if (!selectedMember || submitting) return;
-    if (!consentRequired) return;
+    if (isWelcome && !consentChecked) return;
     const len = selectedMember.pinLength;
     if (pin.length !== len) return;
     setSubmitting(true);
@@ -113,7 +112,6 @@ export default function CrewLoginPage() {
         return;
       }
       router.push("/crew/dashboard");
-      router.refresh();
     } catch {
       setError("Connection error");
       setPin("");
@@ -122,7 +120,7 @@ export default function CrewLoginPage() {
   };
 
   const submitPhoneLogin = async () => {
-    if (!consentRequired) return;
+    if (isWelcome && !consentChecked) return;
     if (submitting) return;
     const digits = phoneDigits.replace(/\D/g, "").slice(0, 10);
     if (digits.length < 10 || phonePin.length !== PHONE_LOGIN_PIN_DIGITS) return;
@@ -142,7 +140,6 @@ export default function CrewLoginPage() {
         return;
       }
       router.push("/crew/dashboard");
-      router.refresh();
     } catch {
       setError("Connection error");
       setPhonePin("");
@@ -156,12 +153,13 @@ export default function CrewLoginPage() {
   submitPhoneLoginRef.current = submitPhoneLogin;
 
   useEffect(() => {
-    if (!selectedMember || submitting || !consentRequired) return;
+    if (!selectedMember || submitting) return;
+    if (isWelcome && !consentChecked) return;
     const len = selectedMember.pinLength;
     if (pin.length === len) {
       handleLoginRef.current?.();
     }
-  }, [pin, selectedMember, submitting, consentRequired]);
+  }, [pin, selectedMember, submitting, isWelcome, consentChecked]);
 
   useEffect(() => {
     if (selectedMember && context?.hasDevice && !showMemberPicker && !usePhoneLogin) {
@@ -171,12 +169,13 @@ export default function CrewLoginPage() {
   }, [selectedMember, context?.hasDevice, showMemberPicker, usePhoneLogin]);
 
   useEffect(() => {
-    if (!usePhoneLogin || submitting || !consentRequired) return;
+    if (!usePhoneLogin || submitting) return;
+    if (isWelcome && !consentChecked) return;
     const digits = phoneDigits.replace(/\D/g, "").slice(0, 10);
     if (digits.length === 10 && phonePin.length === PHONE_LOGIN_PIN_DIGITS) {
       submitPhoneLoginRef.current?.();
     }
-  }, [phonePin, phoneDigits, usePhoneLogin, submitting, consentRequired]);
+  }, [phonePin, phoneDigits, usePhoneLogin, submitting, isWelcome, consentChecked]);
 
   useEffect(() => {
     if (!usePhoneLogin) return;
@@ -251,10 +250,7 @@ export default function CrewLoginPage() {
         }}
       >
         <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", textAlign: "center" }}>
-          <style>{`
-            .crew-login-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
-            .crew-login-link:hover { color: #D4B56C !important; text-decoration: underline; }
-          `}</style>
+
           {usePhoneLogin ? (
             <div
               style={{
@@ -391,10 +387,7 @@ export default function CrewLoginPage() {
         }}
       >
         <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", textAlign: "center" }}>
-          <style>{`
-            .crew-login-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
-            .crew-login-link:hover { color: #D4B56C !important; text-decoration: underline; }
-          `}</style>
+
           {usePhoneLogin ? (
             <div
               style={{
@@ -531,10 +524,7 @@ export default function CrewLoginPage() {
         }}
       >
         <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", textAlign: "center" }}>
-          <style>{`
-            .crew-login-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
-            .crew-login-link:hover { color: #D4B56C !important; text-decoration: underline; }
-          `}</style>
+
           {usePhoneLogin ? (
             <div
               style={{
@@ -789,6 +779,7 @@ export default function CrewLoginPage() {
                           setSelectedMember(m);
                           setShowMemberPicker(false);
                           setPin("");
+                          setError("");
                           setTimeout(() => pinInputRef.current?.focus(), 100);
                         }}
                         style={{

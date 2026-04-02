@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runLeadCapture } from "@/lib/leads/capture-handler";
 import { pickField, normalizeWebflowPayload } from "@/lib/leads/webflow-parse";
@@ -9,10 +10,11 @@ function verify(req: NextRequest): boolean {
   const secret =
     process.env.LEADS_CAPTURE_WEBHOOK_SECRET?.trim() ||
     process.env.WEBFLOW_LEADS_WEBHOOK_SECRET?.trim();
-  if (!secret) return true;
+  if (!secret) return false;
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const header = req.headers.get("x-webflow-signature") ?? "";
-  return bearer === secret || header === secret;
+  const h = (s: string) => createHash("sha256").update(s).digest();
+  return h(bearer).equals(h(secret)) || h(header).equals(h(secret));
 }
 
 export async function POST(req: NextRequest) {

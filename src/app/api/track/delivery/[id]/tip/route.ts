@@ -76,7 +76,7 @@ export async function POST(
       );
     }
 
-    const idempotencyKey = `tip-delivery-${deliveryId}-${Date.now()}`;
+    const idempotencyKey = `tip-delivery-${deliveryId}`;
     const paymentRes = await squareClient.payments.create({
       sourceId,
       amountMoney: { amount: BigInt(amountCents), currency: "CAD" },

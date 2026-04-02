@@ -68,7 +68,7 @@ export async function POST(
           customerId: move.square_customer_id || undefined,
           referenceId: String(move.move_code || moveId),
           note: `Walkthrough change request, ${String(cr.id)}, extras approved`,
-          idempotencyKey: `crew-cr-approve-${requestId}-${Date.now()}`,
+          idempotencyKey: `crew-cr-approve-${requestId}`,
           locationId,
         });
 

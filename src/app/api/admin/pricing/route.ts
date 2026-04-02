@@ -62,9 +62,19 @@ export async function PUT(req: NextRequest) {
     const table = TABLE_MAP[section];
 
     for (const row of rows) {
-      if (row.id) {
-        const { id, ...rest } = row;
-        const { error } = await supabase.from(table).update(rest).eq("id", id);
+      if (table === "platform_config") {
+        const { key, ...updateData } = row;
+        if (!key) continue;
+        const { error } = await supabase.from(table).update({ value: updateData.value }).eq("key", key);
+        if (error) {
+          return NextResponse.json(
+            { error: error.message || "Update failed", detail: String(key) },
+            { status: 500 },
+          );
+        }
+      } else if (row.id) {
+        const { id, ...updateData } = row;
+        const { error } = await supabase.from(table).update(updateData).eq("id", id);
         if (error) {
           return NextResponse.json(
             { error: error.message || "Update failed", detail: String(id) },
