@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   ArrowLeft,
-  PencilSimple as Pencil,
   ArrowSquareOut as ExternalLink,
   Eye,
   CursorClick as MousePointerClick,
@@ -19,6 +18,7 @@ import {
   CaretDown as ChevronDown,
 } from "@phosphor-icons/react";
 import { toTitleCase } from "@/lib/format-text";
+import { displayLabel } from "@/lib/display-labels";
 import { formatPhone } from "@/lib/phone";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 import { quoteDetailDateLabel } from "@/lib/quotes/quote-field-labels";
@@ -220,7 +220,8 @@ export default function QuoteDetailClient({
 
         {/* Row 3: subtitle */}
         <p className="text-[12px] text-[var(--tx3)]">
-          {toTitleCase(quote.service_type?.split("_").join(" "))} &middot; Created{" "}
+          {displayLabel(quote.service_type) || toTitleCase(quote.service_type?.split("_").join(" ") || "")}{" "}
+          &middot; Created{" "}
           {new Date(quote.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
         </p>
 
@@ -229,18 +230,18 @@ export default function QuoteDetailClient({
           <button
             type="button"
             onClick={() => router.push(`/admin/quotes/${quote.quote_id}/edit`)}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold)]/80 px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/40 transition-colors"
+            className="text-[11px] font-semibold text-[var(--gold)] hover:text-[var(--gold)]/80 px-3 py-1.5 rounded-lg border border-[var(--brd)] hover:border-[var(--gold)]/40 transition-colors"
           >
-            <Pencil className="w-3 h-3" /> Edit All Details
+            Edit all details
           </button>
           {quote.quote_url && (
             <a
               href={quote.quote_url}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] px-3 py-1.5 rounded-lg border border-[var(--brd)] transition-colors"
+              className="text-[11px] font-semibold text-[var(--tx3)] hover:text-[var(--tx)] px-3 py-1.5 rounded-lg border border-[var(--brd)] transition-colors"
             >
-              <ExternalLink className="w-3 h-3" /> Client View
+              Client view
             </a>
           )}
           {quote.status === "accepted" && (
@@ -294,12 +295,87 @@ export default function QuoteDetailClient({
               {/* Client */}
               <div>
                 <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Client</p>
-                <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">{contact?.name ?? "-"}</p>
+                {quote.service_type === "b2b_delivery" && factors?.b2b_business_name ? (
+                  <>
+                    <p className="text-[12px] text-[var(--tx2)]">
+                      <span className="text-[var(--tx3)]">Business: </span>
+                      {String(factors.b2b_business_name)}
+                    </p>
+                    <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight mt-1">
+                      {contact?.name ?? "-"}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-[15px] font-semibold text-[var(--tx)] leading-tight">{contact?.name ?? "-"}</p>
+                )}
                 <p className="text-[12px] text-[var(--tx3)] mt-0.5">{contact?.email ?? "-"}</p>
                 {contact?.phone && (
                   <p className="text-[12px] text-[var(--tx3)]">{formatPhone(contact.phone)}</p>
                 )}
               </div>
+              {quote.service_type === "b2b_delivery" && factors && (
+                <div className="sm:col-span-2 space-y-2 pt-1 border-t border-[var(--brd)]/40">
+                  <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50">Delivery</p>
+                  <div className="grid sm:grid-cols-2 gap-3 text-[12px] text-[var(--tx)]">
+                    <div>
+                      <span className="text-[var(--tx3)]">Vertical: </span>
+                      <span className="font-medium">
+                        {(factors.b2b_vertical_name as string) ||
+                          displayLabel(String(factors.b2b_vertical_code || "")) ||
+                          "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--tx3)]">Handling: </span>
+                      <span className="font-medium">
+                        {displayLabel(String(factors.b2b_handling_type || "")) || "—"}
+                      </span>
+                    </div>
+                    {factors.b2b_delivery_window ? (
+                      <div className="sm:col-span-2">
+                        <span className="text-[var(--tx3)]">Window: </span>
+                        <span className="font-medium">{String(factors.b2b_delivery_window)}</span>
+                      </div>
+                    ) : null}
+                    {Array.isArray(factors.b2b_line_items) && (factors.b2b_line_items as unknown[]).length > 0 ? (
+                      <div className="sm:col-span-2">
+                        <span className="text-[var(--tx3)] block mb-1">Items</span>
+                        <ul className="list-disc list-inside text-[var(--tx2)] space-y-0.5">
+                          {(factors.b2b_line_items as { description?: string; quantity?: number }[]).map((li, idx) => (
+                            <li key={idx}>
+                              {Math.max(1, Number(li.quantity) || 1)}× {li.description || "Item"}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : factors.b2b_items ? (
+                      <div className="sm:col-span-2">
+                        <span className="text-[var(--tx3)]">Items: </span>
+                        <span className="text-[var(--tx2)]">
+                          {Array.isArray(factors.b2b_items)
+                            ? (factors.b2b_items as string[]).join(", ")
+                            : String(factors.b2b_items)}
+                        </span>
+                      </div>
+                    ) : null}
+                    {(factors.b2b_assembly_required === true ||
+                      factors.b2b_debris_removal === true ||
+                      (Array.isArray(factors.b2b_complexity_addons) &&
+                        (factors.b2b_complexity_addons as string[]).length > 0)) && (
+                      <div className="sm:col-span-2 text-[11px] text-[var(--tx2)]">
+                        {factors.b2b_assembly_required === true ? "Assembly required. " : ""}
+                        {factors.b2b_debris_removal === true ? "Debris removal. " : ""}
+                        {Array.isArray(factors.b2b_complexity_addons) &&
+                        (factors.b2b_complexity_addons as string[]).length > 0
+                          ? `Complexity: ${(factors.b2b_complexity_addons as string[])
+                              .map((k) => displayLabel(k))
+                              .join(", ")}`
+                          : ""}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               {/* Move Date */}
               <div>
                 <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]/50 mb-1.5">Move Date</p>
@@ -368,8 +444,10 @@ export default function QuoteDetailClient({
                       Vehicle
                     </span>
                     <p className="text-[11px] font-medium text-[var(--tx)] mt-0.5">
-                      {toTitleCase(quote.truck_primary)}
-                      {quote.truck_secondary ? ` + ${toTitleCase(quote.truck_secondary)}` : ""}
+                      {displayLabel(quote.truck_primary) || toTitleCase(quote.truck_primary)}
+                      {quote.truck_secondary
+                        ? ` + ${displayLabel(quote.truck_secondary) || toTitleCase(quote.truck_secondary)}`
+                        : ""}
                     </p>
                   </div>
                 )}
@@ -583,7 +661,9 @@ export default function QuoteDetailClient({
             <div className="space-y-2 text-[11px]">
               <div className="flex justify-between">
                 <span className="text-[var(--tx3)]">Service</span>
-                <span className="text-[var(--tx)] font-medium">{toTitleCase(quote.service_type?.split("_").join(" "))}</span>
+                <span className="text-[var(--tx)] font-medium">
+                  {displayLabel(quote.service_type) || toTitleCase(quote.service_type?.split("_").join(" ") || "")}
+                </span>
               </div>
               {quote.move_size && (
                 <div className="flex justify-between">
@@ -594,7 +674,9 @@ export default function QuoteDetailClient({
               {quote.truck_primary && (
                 <div className="flex justify-between">
                   <span className="text-[var(--tx3)]">Vehicle</span>
-                  <span className="text-[var(--tx)] font-medium">{toTitleCase(quote.truck_primary)}</span>
+                  <span className="text-[var(--tx)] font-medium">
+                    {displayLabel(quote.truck_primary) || toTitleCase(quote.truck_primary)}
+                  </span>
                 </div>
               )}
               {(quote.est_crew_size ?? (factors as any)?.est_crew_size) && (

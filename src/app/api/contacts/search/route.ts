@@ -11,6 +11,8 @@ interface HubSpotContact {
   name: string;
   email: string;
   phone: string;
+  /** HubSpot contact `company` text or associated company when available */
+  company: string;
   address: string;
   postal: string;
 }
@@ -65,6 +67,7 @@ export async function GET(req: NextRequest) {
             "lastname",
             "email",
             "phone",
+            "company",
             "address",
             "city",
             "zip",
@@ -97,6 +100,7 @@ export async function GET(req: NextRequest) {
           name: [first, last].filter(Boolean).join(" "),
           email: (p.email ?? "").trim(),
           phone: (p.phone ?? "").trim(),
+          company: (p.company ?? "").trim(),
           address: fullAddress,
           postal: (p.zip ?? "").trim(),
         };

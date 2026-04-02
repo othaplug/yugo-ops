@@ -111,6 +111,8 @@ export function clearAllDrafts() {
 export type UseFormDraftUrlRestore<T extends Record<string, unknown>> = {
   /** If `?draftId=` matches this form session, call `applySaved` once (Resume from Drafts page). */
   applySaved: (data: T) => void;
+  /** Debounce before writing localStorage (default 1500ms). */
+  debounceMs?: number;
 };
 
 export function useFormDraft<T extends Record<string, unknown>>(
@@ -119,6 +121,7 @@ export function useFormDraft<T extends Record<string, unknown>>(
   titleFn: (state: T) => string,
   urlAutoRestore?: UseFormDraftUrlRestore<T>,
 ) {
+  const saveDebounceMs = urlAutoRestore?.debounceMs ?? DEBOUNCE_MS;
   const [draftId] = useState(() => {
     if (typeof window === "undefined") return crypto.randomUUID();
     const params = new URLSearchParams(window.location.search);
@@ -193,10 +196,10 @@ export function useFormDraft<T extends Record<string, unknown>>(
       // Keep max 20 drafts total
       writeDrafts(drafts.slice(0, 20));
       savedRef.current = true;
-    }, DEBOUNCE_MS);
+    }, saveDebounceMs);
 
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [formState, formType, draftId, titleFn, dismissed]);
+  }, [formState, formType, draftId, titleFn, dismissed, saveDebounceMs]);
 
   // Warn on page close / refresh
   useEffect(() => {

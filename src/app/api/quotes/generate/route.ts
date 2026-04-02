@@ -124,11 +124,15 @@ interface QuoteInput {
   b2b_weight_category?: string;
   b2b_special_instructions?: string;
   b2b_payment_method?: "card" | "invoice";
+  /** When payment is invoice: on_completion | net_15 | net_30 */
+  b2b_invoice_terms?: string;
   b2b_retailer_source?: string;
   /** Dimensional B2B pricing */
   b2b_vertical_code?: string;
   b2b_partner_organization_id?: string;
   b2b_handling_type?: string;
+  /** Coordinator-selected delivery window label (e.g. morning band). */
+  b2b_delivery_window?: string;
   b2b_stops?: {
     address: string;
     type: "pickup" | "delivery";
@@ -2340,6 +2344,11 @@ async function calcB2bOneoff(
         b2b_line_items: items,
         b2b_stops: stops,
         b2b_handling_type: dimInput.handling_type,
+        b2b_delivery_window: input.b2b_delivery_window?.trim() || null,
+        b2b_assembly_required: !!input.b2b_assembly_required,
+        b2b_debris_removal: !!input.b2b_debris_removal,
+        b2b_time_sensitive: !!input.b2b_time_sensitive,
+        b2b_complexity_addons: input.b2b_complexity_addons?.length ? input.b2b_complexity_addons : null,
         truck_recommended: truckKey,
         truck_surcharge: truckSurchargeDim,
         b2b_estimated_hours: dim.estimatedHours,
@@ -2347,6 +2356,10 @@ async function calcB2bOneoff(
         b2b_business_name: input.b2b_business_name || null,
         b2b_items: input.b2b_items || null,
         b2b_payment_method: input.b2b_payment_method ?? "card",
+        b2b_invoice_terms:
+          input.b2b_payment_method === "invoice"
+            ? (input.b2b_invoice_terms?.trim() || "on_completion")
+            : null,
         b2b_retailer_source: input.b2b_retailer_source?.trim() || null,
         weight_surcharge: 0,
         weight_category: input.b2b_weight_category || null,
@@ -2424,7 +2437,16 @@ async function calcB2bOneoff(
       truck_recommended: truckB2b,
       truck_surcharge: truckSurchargeAmount(config, truckB2b),
       b2b_payment_method: input.b2b_payment_method ?? "card",
+      b2b_invoice_terms:
+        input.b2b_payment_method === "invoice"
+          ? (input.b2b_invoice_terms?.trim() || "on_completion")
+          : null,
       b2b_retailer_source: input.b2b_retailer_source?.trim() || null,
+      b2b_delivery_window: input.b2b_delivery_window?.trim() || null,
+      b2b_assembly_required: !!input.b2b_assembly_required,
+      b2b_debris_removal: !!input.b2b_debris_removal,
+      b2b_handling_type: input.b2b_handling_type || null,
+      b2b_complexity_addons: input.b2b_complexity_addons?.length ? input.b2b_complexity_addons : null,
       includes: b2bIncludes,
       b2b_delivery_km_from_gta_core: b2bLocationExtras.deliveryKmFromGta,
       b2b_gta_zone: b2bLocationExtras.gtaZone,

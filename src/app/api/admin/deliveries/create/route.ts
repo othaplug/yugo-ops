@@ -115,7 +115,12 @@ export async function POST(req: NextRequest) {
       items,
       instructions: (body.instructions || "").trim() || null,
       special_handling: !!body.special_handling,
-      status: body.status === "draft" ? "draft" : "scheduled",
+      status:
+        body.status === "draft"
+          ? "draft"
+          : String(body.status || "").toLowerCase() === "confirmed"
+            ? "confirmed"
+            : "scheduled",
       category: normalizeCategory((body.category || org?.type || "retail").trim() || "retail"),
       created_by_source: "admin",
       created_by_user: null,

@@ -157,6 +157,49 @@ function mapContactRowWithCompanyFallback(
   return row;
 }
 
+/** First associated company name when the contact `company` property is empty. */
+export async function fetchPrimaryAssociatedCompanyName(token: string, contactId: string): Promise<string | null> {
+  try {
+    const assocRes = await fetch(`${HS_BASE}/objects/contacts/${contactId}/associations/companies`, {
+      headers: hsHeaders(token),
+    });
+    if (!assocRes.ok) return null;
+    const assocData = (await assocRes.json()) as { results?: { id?: string }[] };
+    const companyId = assocData.results?.[0]?.id;
+    if (!companyId) return null;
+    const coRes = await fetch(`${HS_BASE}/objects/companies/${companyId}?properties=name`, {
+      headers: hsHeaders(token),
+    });
+    if (!coRes.ok) return null;
+    const co = (await coRes.json()) as { properties?: { name?: string } };
+    const n = String(co.properties?.name || "").trim();
+    return n || null;
+  } catch {
+    return null;
+  }
+}
+
+async function enrichSuggestionCompanyFields(
+  token: string,
+  rows: HubSpotContactSuggestion[],
+): Promise<HubSpotContactSuggestion[]> {
+  const need = rows.filter((r) => !r.company.trim());
+  if (need.length === 0) return rows;
+  const enriched = new Map<string, string>();
+  await Promise.all(
+    need.map(async (r) => {
+      const name = await fetchPrimaryAssociatedCompanyName(token, r.hubspot_id);
+      if (name) enriched.set(r.hubspot_id, name);
+    }),
+  );
+  if (enriched.size === 0) return rows;
+  return rows.map((r) => {
+    const add = enriched.get(r.hubspot_id);
+    if (!add || r.company.trim()) return r;
+    return { ...r, company: add };
+  });
+}
+
 /** AND filters on `company` (contact property) from query tokens. */
 function contactCompanyTokenFilters(query: string): { filters: { propertyName: string; operator: string; value: string }[] } {
   const raw = query.trim();
@@ -298,7 +341,7 @@ export async function suggestHubSpotForTypeahead(
     out.push(mapContactRow(row));
   }
 
-  return out;
+  return enrichSuggestionCompanyFields(token, out);
 }
 
 /** @deprecated Prefer {@link suggestHubSpotForTypeahead} — behavior is identical now. */
@@ -461,6 +504,11 @@ export async function dedupeHubSpotContact(
   }
 
   if (!base || !match_kind) return null;
+
+  if (!base.company.trim()) {
+    const assocName = await fetchPrimaryAssociatedCompanyName(token, base.hubspot_id);
+    if (assocName) base = { ...base, company: assocName };
+  }
 
   const contact = await resolveContactWithDeals(token, base);
   return { contact, match_kind };

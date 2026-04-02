@@ -1464,7 +1464,9 @@ export default function QuoteFormClient({
   // Contact search for auto-fill (same as Create Move)
   const [contactSearch, setContactSearch] = useState("");
   const [showContactDropdown, setShowContactDropdown] = useState(false);
-  const [dbContacts, setDbContacts] = useState<{ hubspot_id: string; name: string; email: string; phone: string; address: string; postal: string }[]>([]);
+  const [dbContacts, setDbContacts] = useState<
+    { hubspot_id: string; name: string; email: string; phone: string; company: string; address: string; postal: string }[]
+  >([]);
   const contactDropdownRef = useRef<HTMLDivElement>(null);
   const contactSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -3241,6 +3243,10 @@ export default function QuoteFormClient({
                               setEmail(c.email || "");
                               setPhone(c.phone ? formatPhone(c.phone) : "");
                               if (c.address) setFromAddress(c.address);
+                              const biz = (c.company || "").trim();
+                              if (biz && (serviceType === "b2b_delivery" || serviceType === "b2b_oneoff")) {
+                                setB2bBusinessName(biz);
+                              }
                               setContactSearch("");
                               setShowContactDropdown(false);
                               setDbContacts([]);

@@ -9,15 +9,7 @@ import { useFormDraft } from "@/hooks/useFormDraft";
 import { formatNumberInput, formatCurrency, parseNumberInput } from "@/lib/format-currency";
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import DraftBanner from "@/components/ui/DraftBanner";
-import {
-  Plus,
-  Trash as Trash2,
-  SpinnerGap,
-  CheckCircle,
-  Warning,
-  ArrowSquareOut,
-  Buildings,
-} from "@phosphor-icons/react";
+import { Plus, Trash as Trash2, SpinnerGap, ArrowSquareOut } from "@phosphor-icons/react";
 import { parseB2BJobsFieldVisibility, b2bJobsFieldVisible } from "@/lib/b2b-jobs-field-visibility";
 import { b2bJobsDimensionalStops } from "@/lib/b2b-jobs-route-helpers";
 import { resolveB2bItemConfig } from "@/lib/b2b-bundle-line-items";
@@ -272,8 +264,9 @@ export default function B2BJobsDeliveryForm({
   const lastVerticalForItemsRef = useRef<string | null>(null);
 
   const [hsLookupState, setHsLookupState] = useState<"idle" | "loading" | "found" | "not_found">("idle");
-  const [hsDuplicate, setHsDuplicate] = useState<{ type: "contact" | "company"; label: string } | null>(null);
-  const [hsAutofilled, setHsAutofilled] = useState<string[]>([]);
+  const [hsPendingMatch, setHsPendingMatch] = useState<{ contact: HubSpotContact; match_kind: HubSpotMatchKind } | null>(
+    null,
+  );
   const formSnapshotRef = useRef({ businessName: "", contactName: "", contactPhone: "", contactEmail: "" });
   const dedupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -299,8 +292,7 @@ export default function B2BJobsDeliveryForm({
 
   const clearHubSpotMatch = useCallback(() => {
     setHsLookupState("idle");
-    setHsDuplicate(null);
-    setHsAutofilled([]);
+    setHsPendingMatch(null);
   }, []);
 
   useEffect(() => () => {
@@ -324,8 +316,7 @@ export default function B2BJobsDeliveryForm({
     }
 
     setHsLookupState("loading");
-    setHsDuplicate(null);
-    setHsAutofilled([]);
+    setHsPendingMatch(null);
 
     try {
       const res = await fetch("/api/hubspot/search", {
@@ -348,55 +339,7 @@ export default function B2BJobsDeliveryForm({
       }
 
       setHsLookupState("found");
-      const filled: string[] = [];
-      const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
-
-      if (match_kind !== "company") {
-        setBusinessName((prev) => {
-          if (!prev.trim() && contact.company) {
-            filled.push("Business Name");
-            return contact.company;
-          }
-          return prev;
-        });
-        setContactName((prev) => {
-          if (!prev.trim() && fullName) {
-            filled.push("Contact Name");
-            return fullName;
-          }
-          return prev;
-        });
-        setContactPhone((prev) => {
-          if (!prev.trim() && contact.phone) {
-            filled.push("Contact Phone");
-            return formatPhone(contact.phone);
-          }
-          return prev;
-        });
-        setContactEmail((prev) => {
-          if (!prev.trim() && contact.email) {
-            filled.push("Contact Email");
-            return contact.email;
-          }
-          return prev;
-        });
-      }
-
-      setHsAutofilled(filled);
-
-      if (match_kind === "company") {
-        const hsLabel = [fullName || contact.email, contact.company].filter(Boolean).join(" — ");
-        setHsDuplicate({
-          type: "company",
-          label: `HubSpot lists a contact under a similar business name (${hsLabel || "see HubSpot"}). Confirm this is not a duplicate before creating the delivery.`,
-        });
-      } else {
-        let label = `This ${match_kind === "email" ? "email" : match_kind === "phone" ? "phone number" : "record"} matches an existing HubSpot contact${fullName ? ` (${fullName})` : ""}.`;
-        if (contact.deal_ids.length > 0) {
-          label += ` They already have ${contact.deal_ids.length} deal${contact.deal_ids.length > 1 ? "s" : ""} in HubSpot.`;
-        }
-        setHsDuplicate({ type: "contact", label });
-      }
+      setHsPendingMatch({ contact, match_kind: match_kind ?? "email" });
     } catch {
       setHsLookupState("idle");
     }
@@ -410,23 +353,32 @@ export default function B2BJobsDeliveryForm({
     }, 400);
   }, [runHubSpotDedup]);
 
+  const applyHubSpotContactFromMatch = useCallback((contact: HubSpotContact) => {
+    const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
+    if (contact.company?.trim()) setBusinessName(contact.company.trim());
+    if (fullName) setContactName(fullName);
+    if (contact.phone?.trim()) setContactPhone(formatPhone(contact.phone));
+    if (contact.email?.trim()) setContactEmail(contact.email.trim().toLowerCase());
+    setHsPendingMatch(null);
+    setHsLookupState("idle");
+  }, []);
+
   const applyHubSpotSuggestion = useCallback((row: HubSpotSuggestRow) => {
     const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ");
-    if (row.company) setBusinessName(row.company);
+    const biz =
+      row.company?.trim() ||
+      (row as { business_name?: string }).business_name?.trim() ||
+      (row as { organization?: string }).organization?.trim() ||
+      "";
+    if (biz) setBusinessName(biz);
     if (fullName) setContactName(fullName);
     if (row.phone) setContactPhone(formatPhone(row.phone));
     if (row.email) setContactEmail(row.email.trim().toLowerCase());
     setHsSuggestOpen(false);
     setHsSuggestNoResults(false);
     setHsSuggestItems([]);
-    const filled: string[] = [];
-    if (row.company) filled.push("Business name");
-    if (fullName) filled.push("Contact name");
-    if (row.phone) filled.push("Phone");
-    if (row.email) filled.push("Email");
-    setHsLookupState("found");
-    setHsAutofilled(filled);
-    setHsDuplicate(null);
+    setHsPendingMatch(null);
+    setHsLookupState("idle");
   }, []);
 
   const onHubSpotSuggestKeyDown = useCallback(
@@ -551,7 +503,6 @@ export default function B2BJobsDeliveryForm({
                   active ? "bg-[var(--bg)]" : "hover:bg-[var(--bg)]"
                 }`}
               >
-                <Buildings size={16} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
                 <span className="min-w-0">
                   <span className="block text-[12px] font-medium text-[var(--tx)] truncate">{primary}</span>
                   {secondary ? (
@@ -669,6 +620,7 @@ export default function B2BJobsDeliveryForm({
   const [hookupNotes, setHookupNotes] = useState("");
 
   const [paymentMethod, setPaymentMethod] = useState<"card" | "invoice">("card");
+  const [invoiceTerms, setInvoiceTerms] = useState<"on_completion" | "net_15" | "net_30">("on_completion");
 
   const [overridePrice, setOverridePrice] = useState("");
   const [overrideReason, setOverrideReason] = useState("");
@@ -677,7 +629,7 @@ export default function B2BJobsDeliveryForm({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [clientDistanceLoading, setClientDistanceLoading] = useState(false);
   const [estimatedDistanceKm, setEstimatedDistanceKm] = useState<number | null>(null);
-  const [preview, setPreview] = useState<{
+  type B2bPriceBlock = {
     rounded_pre_tax: number;
     hst: number;
     total_with_tax: number;
@@ -686,8 +638,9 @@ export default function B2BJobsDeliveryForm({
     crew: number;
     estimated_hours: number;
     access_surcharge: number;
-    source: "client" | "server";
-  } | null>(null);
+  };
+  const [clientEstimate, setClientEstimate] = useState<B2bPriceBlock | null>(null);
+  const [serverPricing, setServerPricing] = useState<B2bPriceBlock | null>(null);
 
   const effectiveOrgId = applyPartnerRates && partnerOrgId.trim() ? partnerOrgId.trim() : null;
 
@@ -783,7 +736,7 @@ export default function B2BJobsDeliveryForm({
       });
       const data = await res.json();
       if (res.ok && data.ok) {
-        setPreview({
+        setServerPricing({
           rounded_pre_tax: data.rounded_pre_tax,
           hst: data.hst,
           total_with_tax: data.total_with_tax,
@@ -792,10 +745,7 @@ export default function B2BJobsDeliveryForm({
           crew: data.crew,
           estimated_hours: data.estimated_hours,
           access_surcharge: data.access_surcharge ?? 0,
-          source: "server",
         });
-      } else {
-        /* Keep client estimate when server returns an error */
       }
     } catch {
       /* Keep client estimate on network failure */
@@ -941,6 +891,7 @@ export default function B2BJobsDeliveryForm({
       chainOfCustodyNotes,
       hookupNotes,
       paymentMethod,
+      invoiceTerms,
       overridePrice,
       overrideReason,
       crewId,
@@ -996,6 +947,7 @@ export default function B2BJobsDeliveryForm({
       chainOfCustodyNotes,
       hookupNotes,
       paymentMethod,
+      invoiceTerms,
       overridePrice,
       overrideReason,
       crewId,
@@ -1047,6 +999,11 @@ export default function B2BJobsDeliveryForm({
     apply("chainOfCustodyNotes", (v) => setChainOfCustodyNotes(String(v ?? "")));
     apply("hookupNotes", (v) => setHookupNotes(String(v ?? "")));
     apply("paymentMethod", (v) => setPaymentMethod(v === "invoice" ? "invoice" : "card"));
+    apply("invoiceTerms", (v) => {
+      const s = String(v || "on_completion");
+      if (s === "net_15" || s === "net_30" || s === "on_completion") setInvoiceTerms(s);
+      else setInvoiceTerms("on_completion");
+    });
     apply("overridePrice", (v) => setOverridePrice(String(v ?? "")));
     apply("overrideReason", (v) => setOverrideReason(String(v ?? "")));
     apply("crewId", (v) => setCrewId(String(v ?? "")));
@@ -1071,6 +1028,7 @@ export default function B2BJobsDeliveryForm({
 
   const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("delivery_b2b", formState, titleFn, {
     applySaved: applyB2bDraftData as (data: typeof formState) => void,
+    debounceMs: 30_000,
   });
 
   const handleRestoreDraft = useCallback(() => {
@@ -1123,12 +1081,12 @@ export default function B2BJobsDeliveryForm({
 
   useEffect(() => {
     if (!selectedVertical) {
-      setPreview(null);
+      setClientEstimate(null);
       return;
     }
     const eff = buildEffectiveLines();
     if (!verticalCode.trim() || !pickupAddress.trim() || !deliveryAddress.trim() || eff.length === 0) {
-      setPreview(null);
+      setClientEstimate(null);
       return;
     }
     const rawItems: B2BQuoteLineItem[] = eff
@@ -1156,7 +1114,7 @@ export default function B2BJobsDeliveryForm({
       .filter((i) => i.description.length > 0);
 
     if (rawItems.length === 0) {
-      setPreview(null);
+      setClientEstimate(null);
       return;
     }
 
@@ -1214,7 +1172,7 @@ export default function B2BJobsDeliveryForm({
     const access = 0;
     const roundedPreTax = roundToNearest(dim.subtotal + access, ROUNDING_NEAREST_CLIENT);
     const hst = Math.round(roundedPreTax * TAX_RATE_CLIENT * 100) / 100;
-    setPreview({
+    setClientEstimate({
       rounded_pre_tax: roundedPreTax,
       hst,
       total_with_tax: Math.round((roundedPreTax + hst) * 100) / 100,
@@ -1223,7 +1181,6 @@ export default function B2BJobsDeliveryForm({
       crew: dim.crew,
       estimated_hours: dim.estimatedHours,
       access_surcharge: access,
-      source: "client",
     });
   }, [
     selectedVertical,
@@ -1292,7 +1249,7 @@ export default function B2BJobsDeliveryForm({
     return null;
   };
 
-  const postCreateDelivery = async (status: "draft" | "scheduled") => {
+  const postCreateDelivery = async (status: "draft" | "scheduled" | "confirmed") => {
     const err = validateCore(false);
     if (err) {
       setError(err);
@@ -1310,7 +1267,8 @@ export default function B2BJobsDeliveryForm({
     );
     const b2bLineItems = effLines.map((l) => toB2bLinePayload(l, handlingType));
 
-    const enginePreTax = preview?.rounded_pre_tax ?? 0;
+    const priceBlock = serverPricing ?? clientEstimate;
+    const enginePreTax = priceBlock?.rounded_pre_tax ?? 0;
     const ovAmt = parseNumberInput(overridePrice);
     const finalPreTax = ovAmt > 0 ? ovAmt : enginePreTax;
     const calculated_price = enginePreTax > 0 ? enginePreTax : null;
@@ -1335,9 +1293,9 @@ export default function B2BJobsDeliveryForm({
       b2b_line_items: b2bLineItems,
       b2b_assembly_required: assemblyRequired,
       b2b_debris_removal: debrisRemoval,
-      pricing_breakdown: preview?.breakdown ?? null,
-      recommended_vehicle: truckOverride || preview?.truck || null,
-      estimated_duration_hours: hoursOverride ? Number(hoursOverride) : preview?.estimated_hours ?? null,
+      pricing_breakdown: priceBlock?.breakdown ?? null,
+      recommended_vehicle: truckOverride || priceBlock?.truck || null,
+      estimated_duration_hours: hoursOverride ? Number(hoursOverride) : priceBlock?.estimated_hours ?? null,
       crew_id: crewId || null,
       calculated_price,
       total_price: totalWithTax,
@@ -1404,65 +1362,154 @@ export default function B2BJobsDeliveryForm({
     const effLines = buildEffectiveLines();
     const b2b_line_items = effLines.map((l) => toB2bLinePayload(l, handlingType));
 
-    const ovAmt = parseNumberInput(overridePrice);
-    const payload: Record<string, unknown> = {
-      service_type: "b2b_delivery",
-      from_address: pickupAddress.trim(),
-      to_address: deliveryAddress.trim(),
-      from_access: pickupAccess,
-      to_access: deliveryAccess,
-      move_date: scheduledDate,
-      client_name: contactName.trim(),
-      client_email: contactEmail.trim().toLowerCase(),
-      client_phone: contactPhone.trim() || undefined,
-      b2b_business_name: businessName.trim() || undefined,
-      b2b_vertical_code: verticalCode,
-      b2b_partner_organization_id: effectiveOrgId,
-      b2b_handling_type: handlingType,
-      b2b_line_items,
-      b2b_stops: buildB2bStopsPayload(),
-      b2b_payment_method: paymentMethod,
-      b2b_special_instructions: instructionsMerged || undefined,
-      b2b_assembly_required: assemblyRequired,
-      b2b_debris_removal: debrisRemoval,
-      b2b_stairs_flights: stairsFlights ? Number(stairsFlights) : undefined,
-      b2b_time_sensitive: timeSensitive,
-      b2b_crew_override: crewOverride ? Number(crewOverride) : undefined,
-      b2b_estimated_hours_override: hoursOverride ? Number(hoursOverride) : undefined,
-      truck_type: truckOverride || undefined,
-      b2b_same_day: sameDay,
-      b2b_skid_count: skidCount ? Number(skidCount) : undefined,
-      b2b_total_load_weight_lbs: totalLoadWeightLbs ? Number(totalLoadWeightLbs) : undefined,
-      b2b_haul_away_units: haulAwayUnits ? Number(haulAwayUnits) : undefined,
-      b2b_returns_pickup: returnsPickup,
-      selected_addons: [],
-    };
-    if (ovAmt > 0 && overrideReason.trim()) {
-      payload.b2b_subtotal_override = ovAmt;
-      payload.b2b_subtotal_override_reason = overrideReason.trim();
-    }
-
     try {
+      const pv = await fetch("/api/admin/b2b-delivery/pricing-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vertical_code: verticalCode,
+          organization_id: effectiveOrgId,
+          scheduled_date: scheduledDate,
+          pickup_address: pickupAddress,
+          delivery_address: deliveryAddress,
+          pickup_access: pickupAccess,
+          delivery_access: deliveryAccess,
+          extra_pickup_addresses: extraPickupStops.map((s) => s.address).filter(Boolean),
+          extra_delivery_addresses: extraDeliveryStops.map((s) => s.address).filter(Boolean),
+          handling_type: handlingType,
+          line_items: effLines.map((l) => toB2bLinePayload(l, handlingType)),
+          crew_override: crewOverride ? Number(crewOverride) : undefined,
+          truck_override: truckOverride || undefined,
+          estimated_hours_override: hoursOverride ? Number(hoursOverride) : undefined,
+          time_sensitive: timeSensitive,
+          assembly_required: assemblyRequired,
+          debris_removal: debrisRemoval,
+          stairs_flights: stairsFlights ? Number(stairsFlights) : undefined,
+          complexity_addons: [
+            ...(highValue ? ["high_value"] : []),
+            ...(artwork ? ["artwork"] : []),
+            ...(antiques ? ["antiques"] : []),
+          ],
+          skid_count: skidCount ? Number(skidCount) : undefined,
+          total_load_weight_lbs: totalLoadWeightLbs ? Number(totalLoadWeightLbs) : undefined,
+          haul_away_units: haulAwayUnits ? Number(haulAwayUnits) : undefined,
+          returns_pickup: returnsPickup,
+          same_day: sameDay,
+        }),
+      });
+      const pvData = await pv.json();
+      if (!pv.ok || !pvData.ok) {
+        setLoading(false);
+        setError(
+          typeof pvData.error === "string"
+            ? pvData.error
+            : "Could not calculate exact price. Check addresses, vertical, and line items, then try again.",
+        );
+        return;
+      }
+      setServerPricing({
+        rounded_pre_tax: pvData.rounded_pre_tax,
+        hst: pvData.hst,
+        total_with_tax: pvData.total_with_tax,
+        breakdown: pvData.breakdown ?? [],
+        truck: pvData.truck,
+        crew: pvData.crew,
+        estimated_hours: pvData.estimated_hours,
+        access_surcharge: pvData.access_surcharge ?? 0,
+      });
+
+      const ovAmt = parseNumberInput(overridePrice);
+      const payload: Record<string, unknown> = {
+        service_type: "b2b_delivery",
+        from_address: pickupAddress.trim(),
+        to_address: deliveryAddress.trim(),
+        from_access: pickupAccess,
+        to_access: deliveryAccess,
+        move_date: scheduledDate,
+        client_name: contactName.trim(),
+        client_email: contactEmail.trim().toLowerCase(),
+        client_phone: contactPhone.trim() || undefined,
+        b2b_business_name: businessName.trim() || undefined,
+        b2b_vertical_code: verticalCode,
+        b2b_partner_organization_id: effectiveOrgId,
+        b2b_handling_type: handlingType,
+        b2b_line_items,
+        b2b_stops: buildB2bStopsPayload(),
+        b2b_payment_method: paymentMethod,
+        ...(paymentMethod === "invoice" ? { b2b_invoice_terms: invoiceTerms } : {}),
+        b2b_special_instructions: instructionsMerged || undefined,
+        b2b_assembly_required: assemblyRequired,
+        b2b_debris_removal: debrisRemoval,
+        b2b_stairs_flights: stairsFlights ? Number(stairsFlights) : undefined,
+        b2b_time_sensitive: timeSensitive,
+        b2b_crew_override: crewOverride ? Number(crewOverride) : undefined,
+        b2b_estimated_hours_override: hoursOverride ? Number(hoursOverride) : undefined,
+        truck_type: truckOverride || undefined,
+        b2b_same_day: sameDay,
+        b2b_skid_count: skidCount ? Number(skidCount) : undefined,
+        b2b_total_load_weight_lbs: totalLoadWeightLbs ? Number(totalLoadWeightLbs) : undefined,
+        b2b_haul_away_units: haulAwayUnits ? Number(haulAwayUnits) : undefined,
+        b2b_returns_pickup: returnsPickup,
+        b2b_delivery_window: timeWindow.trim() || undefined,
+        b2b_complexity_addons: [
+          ...(highValue ? ["high_value"] : []),
+          ...(artwork ? ["artwork"] : []),
+          ...(antiques ? ["antiques"] : []),
+        ],
+        selected_addons: [],
+      };
+      if (ovAmt > 0 && overrideReason.trim()) {
+        payload.b2b_subtotal_override = ovAmt;
+        payload.b2b_subtotal_override_reason = overrideReason.trim();
+      }
+
       const res = await fetch("/api/quotes/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      setLoading(false);
       if (!res.ok) {
+        setLoading(false);
         setError(data.error || "Failed to generate quote");
         return;
       }
-      clearDraft();
       const qid = data.quote_id as string;
-      if (qid && qid !== "PREVIEW") {
+      if (!qid || qid === "PREVIEW") {
+        setLoading(false);
+        setError("Invalid quote response");
+        return;
+      }
+
+      const sendRes = await fetch("/api/quotes/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quote_id: qid,
+          client_email: contactEmail.trim().toLowerCase(),
+          client_phone: contactPhone.trim() || undefined,
+          client_name: contactName.trim(),
+        }),
+      });
+      const sendData = await sendRes.json().catch(() => ({}));
+      setLoading(false);
+      if (!sendRes.ok) {
+        setError(
+          typeof sendData.error === "string"
+            ? sendData.error
+            : "Quote was saved but the email could not be sent. Open the quote and use Send from the admin quote page.",
+        );
         router.push(`/admin/quotes/${encodeURIComponent(qid)}`);
         router.refresh();
+        return;
       }
-    } catch {
+
+      clearDraft();
+      router.push(`/admin/quotes/${encodeURIComponent(qid)}`);
+      router.refresh();
+    } catch (e) {
       setLoading(false);
-      setError("Failed to send quote");
+      setError(e instanceof Error ? e.message : "Failed to send quote");
     }
   };
 
@@ -1540,7 +1587,6 @@ export default function B2BJobsDeliveryForm({
           {error}
         </div>
       )}
-
       {embed && (
         <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--tx3)]">
           <span>Prefer the full-page experience?</span>
@@ -1584,9 +1630,6 @@ export default function B2BJobsDeliveryForm({
               ))}
             </select>
           </Field>
-          {applyPartnerRates && partnerOrgId && paymentMethod === "invoice" && (
-            <p className="text-[10px] text-[var(--tx3)]">Invoice booking is for partners with billing on file; card is typical for one-offs.</p>
-          )}
         </section>
       )}
 
@@ -1599,17 +1642,61 @@ export default function B2BJobsDeliveryForm({
               HubSpot…
             </span>
           )}
-          {hsLookupState === "found" && hsAutofilled.length > 0 && (
-            <span className="flex items-center gap-1 text-[10px] text-[#2D9F5A] font-medium">
-              <CheckCircle size={12} weight="fill" />
-              Autofilled
-            </span>
-          )}
         </div>
-        {hsDuplicate && (
-          <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-700 dark:text-amber-400">
-            <Warning size={14} weight="fill" className="shrink-0 mt-0.5" />
-            <span>{hsDuplicate.label}</span>
+        {hsPendingMatch && (
+          <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/5">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[var(--tx)]">
+                  {hsPendingMatch.match_kind === "company"
+                    ? "Similar business in HubSpot"
+                    : "Existing contact found:"}{" "}
+                  {hsPendingMatch.match_kind !== "company" && (
+                    <span className="text-[var(--tx)]">
+                      {[hsPendingMatch.contact.first_name, hsPendingMatch.contact.last_name].filter(Boolean).join(" ") ||
+                        hsPendingMatch.contact.email ||
+                        "Contact"}
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-[var(--tx3)] mt-1">
+                  {hsPendingMatch.contact.company?.trim()
+                    ? `Company: ${hsPendingMatch.contact.company.trim()} · `
+                    : ""}
+                  {hsPendingMatch.contact.email || ""}
+                  {hsPendingMatch.contact.deal_ids?.length
+                    ? ` · ${hsPendingMatch.contact.deal_ids.length} deal${
+                        hsPendingMatch.contact.deal_ids.length > 1 ? "s" : ""
+                      } in HubSpot`
+                    : ""}
+                </p>
+                {hsPendingMatch.match_kind === "company" && (
+                  <p className="text-[11px] text-[var(--tx2)] mt-2">
+                    HubSpot lists a contact under a similar business name. Confirm this is not a duplicate before
+                    proceeding.
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => applyHubSpotContactFromMatch(hsPendingMatch.contact)}
+                  className="px-3 py-1.5 text-xs rounded-md bg-rose-600 hover:bg-rose-700 text-white font-medium"
+                >
+                  Auto-fill
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHsPendingMatch(null);
+                    setHsLookupState("idle");
+                  }}
+                  className="px-3 py-1.5 text-xs rounded-md border border-[var(--brd)] text-[var(--tx)] hover:bg-[var(--bg)]"
+                >
+                  Ignore
+                </button>
+              </div>
+            </div>
           </div>
         )}
         <div ref={hubspotClientSuggestRef} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2163,7 +2250,9 @@ export default function B2BJobsDeliveryForm({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
           <Field label="Recommended truck">
             <div className="px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] min-h-[36px] flex items-center">
-              {previewLoading || (clientDistanceLoading && !preview) ? "…" : preview?.truck ?? "—"}
+              {previewLoading || (clientDistanceLoading && !clientEstimate && !serverPricing)
+                ? "…"
+                : (serverPricing ?? clientEstimate)?.truck ?? "—"}
             </div>
           </Field>
           <Field label="Override truck">
@@ -2178,7 +2267,11 @@ export default function B2BJobsDeliveryForm({
           </Field>
           <Field label="Recommended crew">
             <div className="px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] min-h-[36px] flex items-center">
-              {previewLoading || (clientDistanceLoading && !preview) ? "…" : preview != null ? String(preview.crew) : "—"}
+              {previewLoading || (clientDistanceLoading && !clientEstimate && !serverPricing)
+                ? "…"
+                : (serverPricing ?? clientEstimate) != null
+                  ? String((serverPricing ?? clientEstimate)!.crew)
+                  : "—"}
             </div>
           </Field>
           <Field label="Override crew size">
@@ -2194,7 +2287,11 @@ export default function B2BJobsDeliveryForm({
           </Field>
           <Field label="Est. hours">
             <div className="px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] min-h-[36px] flex items-center">
-              {previewLoading || (clientDistanceLoading && !preview) ? "…" : preview != null ? `${preview.estimated_hours} hrs` : "—"}
+              {previewLoading || (clientDistanceLoading && !clientEstimate && !serverPricing)
+                ? "…"
+                : (serverPricing ?? clientEstimate) != null
+                  ? `${(serverPricing ?? clientEstimate)!.estimated_hours} hrs`
+                  : "—"}
             </div>
           </Field>
           <Field label="Override hours">
@@ -2325,17 +2422,54 @@ export default function B2BJobsDeliveryForm({
             ) : null}
           </div>
         )}
-        {preview && (
-          <div className="text-[11px] space-y-1 text-[var(--tx)]">
+        {clientEstimate && (
+          <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--brd)]/50 rounded-lg p-3 bg-[var(--bg)]/40">
             <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
-              {preview.source === "server" ? "Server pricing" : "Client estimate"}
+              Estimate (client-side, updates as you type)
             </p>
-            <div className="font-semibold text-[var(--gold)]">Calculated pre-tax: {formatCurrency(preview.rounded_pre_tax)}</div>
-            {preview.access_surcharge > 0 && (
-              <div className="text-[var(--tx3)]">Access surcharges (in pre-tax): {formatCurrency(preview.access_surcharge)}</div>
+            <p className="text-[10px] text-[var(--tx3)]">
+              Approximate subtotal using route distance; does not include full partner rate lookup or every access surcharge.
+            </p>
+            <div className="font-semibold text-[var(--gold)]">
+              Pre-tax estimate: {formatCurrency(clientEstimate.rounded_pre_tax)}
+            </div>
+            {clientEstimate.access_surcharge > 0 && (
+              <div className="text-[var(--tx3)]">
+                Access (in pre-tax): {formatCurrency(clientEstimate.access_surcharge)}
+              </div>
+            )}
+            <div className="border-t border-[var(--brd)]/40 pt-2 mt-2 space-y-0.5 max-h-32 overflow-y-auto">
+              {clientEstimate.breakdown.map((b, i) => (
+                <div key={i} className="flex justify-between gap-2">
+                  <span className="text-[var(--tx3)]">{b.label}</span>
+                  <span>{formatCurrency(b.amount)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between font-medium pt-2 border-t border-[var(--brd)]/40">
+              <span>HST (est.)</span>
+              <span>{formatCurrency(clientEstimate.hst)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-[var(--gold)]">
+              <span>Total (est.)</span>
+              <span>~{formatCurrency(clientEstimate.total_with_tax)}</span>
+            </div>
+          </div>
+        )}
+        {serverPricing && (
+          <div className="text-[11px] space-y-1 text-[var(--tx)] border border-[var(--gold)]/25 rounded-lg p-3 bg-[var(--gold)]/5">
+            <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">Server price (authoritative)</p>
+            <p className="text-[10px] text-[var(--tx3)]">
+              Mapbox distance, partner rates when applicable, and full surcharges. This is what appears on the quote.
+            </p>
+            <div className="font-semibold text-[var(--gold)]">
+              Calculated pre-tax: {formatCurrency(serverPricing.rounded_pre_tax)}
+            </div>
+            {serverPricing.access_surcharge > 0 && (
+              <div className="text-[var(--tx3)]">Access surcharges (in pre-tax): {formatCurrency(serverPricing.access_surcharge)}</div>
             )}
             <div className="border-t border-[var(--brd)]/40 pt-2 mt-2 space-y-0.5 max-h-40 overflow-y-auto">
-              {preview.breakdown.map((b, i) => (
+              {serverPricing.breakdown.map((b, i) => (
                 <div key={i} className="flex justify-between gap-2">
                   <span className="text-[var(--tx3)]">{b.label}</span>
                   <span>{formatCurrency(b.amount)}</span>
@@ -2344,22 +2478,22 @@ export default function B2BJobsDeliveryForm({
             </div>
             <div className="flex justify-between font-medium pt-2 border-t border-[var(--brd)]/40">
               <span>HST</span>
-              <span>{formatCurrency(preview.hst)}</span>
+              <span>{formatCurrency(serverPricing.hst)}</span>
             </div>
             <div className="flex justify-between font-bold text-[var(--gold)]">
-              <span>Total</span>
-              <span>{formatCurrency(preview.total_with_tax)}</span>
+              <span>Total (incl. HST)</span>
+              <span>{formatCurrency(serverPricing.total_with_tax)}</span>
             </div>
           </div>
         )}
-        {!preview && !previewLoading && !clientDistanceLoading && (
+        {!clientEstimate && !previewLoading && !clientDistanceLoading && (
           <p className="text-[11px] text-[var(--tx3)]">
-            Select a vertical, enter pickup and delivery addresses, add at least one line item (or flooring box count). The
-            estimate updates as you type. Use server pricing for partner rate cards and full access surcharges.
+            Select a vertical, enter pickup and delivery addresses, and add at least one line item (or flooring box count).
+            The estimate above updates as you type. Use Get exact price for the number that goes on the quote.
           </p>
         )}
-        {previewLoading && <p className="text-[11px] text-[var(--tx3)]">Fetching server pricing…</p>}
-        {clientDistanceLoading && !preview && (
+        {previewLoading && <p className="text-[11px] text-[var(--tx3)]">Calculating exact price on server…</p>}
+        {clientDistanceLoading && !clientEstimate && (
           <p className="text-[11px] text-[var(--tx3)]">Calculating route distance…</p>
         )}
         <button
@@ -2368,7 +2502,7 @@ export default function B2BJobsDeliveryForm({
           onClick={() => void runPricingPreview()}
           className="w-full sm:w-auto px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] disabled:opacity-50"
         >
-          Refresh server pricing
+          Get exact price
         </button>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
           <Field label="Admin override (pre-tax, optional)">
@@ -2401,7 +2535,7 @@ export default function B2BJobsDeliveryForm({
               onChange={() => setPaymentMethod("card")}
               className="accent-[var(--gold)]"
             />
-            Card at booking (typical for one-offs)
+            Card at booking (full payment)
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -2409,12 +2543,28 @@ export default function B2BJobsDeliveryForm({
               name="b2b-pay"
               checked={paymentMethod === "invoice"}
               onChange={() => setPaymentMethod("invoice")}
-              disabled={!partnerOrgId.trim()}
               className="accent-[var(--gold)]"
             />
-            Invoice (partner billing — select an organization)
+            Invoice
           </label>
         </div>
+        {paymentMethod === "invoice" && (
+          <div className="mt-2 space-y-1">
+            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Invoice terms</label>
+            <select
+              value={invoiceTerms}
+              onChange={(e) => setInvoiceTerms(e.target.value as typeof invoiceTerms)}
+              className={fieldInput}
+            >
+              <option value="on_completion">Due on job completion</option>
+              <option value="net_15">Net 15 (due 15 days after completion)</option>
+              <option value="net_30">Net 30 (due 30 days after completion)</option>
+            </select>
+            <p className="text-[10px] text-[var(--tx3)]">
+              Invoice is sent after delivery is completed. No card required at booking.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
@@ -2462,7 +2612,7 @@ export default function B2BJobsDeliveryForm({
         <button
           type="button"
           disabled={loading}
-          onClick={() => void postCreateDelivery("scheduled")}
+          onClick={() => void postCreateDelivery("confirmed")}
           className="px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90 disabled:opacity-50"
         >
           Create and schedule
