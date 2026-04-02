@@ -197,6 +197,7 @@ export default function QuoteDetailClient({
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-2">
@@ -761,5 +762,6 @@ export default function QuoteDetailClient({
         {deleteError}
       </div>
     )}
+    </>
   );
 }
