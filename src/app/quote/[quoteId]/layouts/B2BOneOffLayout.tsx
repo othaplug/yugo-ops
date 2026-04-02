@@ -1,4 +1,4 @@
-import { MapPin, ArrowRight, Check, Truck, Package } from "@phosphor-icons/react";
+import { MapPin, ArrowRight, Check } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
@@ -8,7 +8,7 @@ import {
   fmtPrice,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
-import { getB2BDeliveryFeatureList, b2bVerticalUsesPackageLeadIcon } from "@/lib/quotes/b2b-quote-copy";
+import { getB2BDeliveryFeatureList } from "@/lib/quotes/b2b-quote-copy";
 
 interface Props {
   quote: Quote;
@@ -30,7 +30,6 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
       ? f.b2b_vertical_name.trim()
       : null;
   const verticalCode = typeof f?.b2b_vertical_code === "string" ? f.b2b_vertical_code : null;
-  const usePackageLead = b2bVerticalUsesPackageLeadIcon(verticalCode, verticalTitle);
   const crewFromFactors =
     typeof f?.b2b_crew === "number" && Number.isFinite(f.b2b_crew) ? Math.round(f.b2b_crew as number) : null;
   const lineItems = Array.isArray(f?.b2b_line_items)
@@ -90,60 +89,43 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
 
       {/* Item & Route */}
       <div>
-        <div className="flex items-start gap-4 mb-4">
-          {!usePackageLead ? (
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${FOREST}08` }}
-            >
-              <Truck className="w-6 h-6" style={{ color: FOREST }} aria-hidden />
-            </div>
-          ) : (
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${FOREST}08` }}
-            >
-              <Package className="w-6 h-6" style={{ color: FOREST }} aria-hidden />
-            </div>
-          )}
-          <div>
-            <p className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
-              {specialtyTransport
-                ? "Specialty Transport"
-                : verticalTitle ?? (f?.item_description as string) ?? "Delivery Service"}
+        <div className="mb-4">
+          <p className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
+            {specialtyTransport
+              ? "Specialty Transport"
+              : verticalTitle ?? (f?.item_description as string) ?? "Delivery Service"}
+          </p>
+          {specialtyTransport && typeof f?.item_description === "string" && f.item_description.trim() ? (
+            <p className="text-[12px] mt-1 font-medium leading-snug" style={{ color: `${FOREST}90` }}>
+              {f.item_description.trim()}
             </p>
-            {specialtyTransport && typeof f?.item_description === "string" && f.item_description.trim() ? (
-              <p className="text-[12px] mt-1 font-medium leading-snug" style={{ color: `${FOREST}90` }}>
-                {f.item_description.trim()}
-              </p>
-            ) : null}
-            {specialtyTransport ? (
-              <span
-                className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
-              >
-                One-off B2B
-              </span>
-            ) : f?.item_category ? (
-              <span
-                className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
-              >
-                {dimensional ? "COMMERCIAL DELIVERY" : toTitleCase(String(f.item_category))}
-              </span>
-            ) : null}
-            {crewN != null && crewN > 0 ? (
-              <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
-                <span className="font-semibold" style={{ color: FOREST }}>Crew: </span>
-                {crewN} people
-              </p>
-            ) : null}
-            {retailer ? (
-              <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
-                <span className="font-semibold" style={{ color: FOREST }}>Retailer:</span> {retailer}
-              </p>
-            ) : null}
-          </div>
+          ) : null}
+          {specialtyTransport ? (
+            <span
+              className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+              style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
+            >
+              One-off B2B
+            </span>
+          ) : f?.item_category ? (
+            <span
+              className="inline-block mt-1 text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
+              style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
+            >
+              {dimensional ? "COMMERCIAL DELIVERY" : toTitleCase(String(f.item_category))}
+            </span>
+          ) : null}
+          {crewN != null && crewN > 0 ? (
+            <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
+              <span className="font-semibold" style={{ color: FOREST }}>Crew: </span>
+              {crewN} people
+            </p>
+          ) : null}
+          {retailer ? (
+            <p className="text-[11px] mt-2" style={{ color: `${FOREST}75` }}>
+              <span className="font-semibold" style={{ color: FOREST }}>Retailer:</span> {retailer}
+            </p>
+          ) : null}
         </div>
 
         {/* Items (dimensional) */}
