@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { X, Check, FloppyDisk, CalendarBlank, Sun, SunHorizon as Sunset, Clock } from "@phosphor-icons/react";
+import { X, Check, FloppyDisk, Sun, SunHorizon as Sunset, Clock } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
@@ -689,16 +689,13 @@ export default function PartnerScheduleModal({
             <div className="space-y-6">
               <section className="space-y-2">
                 <SectionLabel>Date</SectionLabel>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={dayScheduledDate}
-                    onChange={(e) => setDayScheduledDate(e.target.value)}
-                    className={`${fieldInput} pr-10`}
-                    style={{ colorScheme: "dark" }}
-                  />
-                  <CalendarBlank size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]" />
-                </div>
+                <input
+                  type="date"
+                  value={dayScheduledDate}
+                  onChange={(e) => setDayScheduledDate(e.target.value)}
+                  className={fieldInput}
+                  style={{ colorScheme: "dark" }}
+                />
               </section>
 
               <section className="space-y-2">

@@ -240,11 +240,8 @@ export default function CreateMoveForm({
   }), [moveType, clientName, clientEmail, clientPhone, fromAddress, toAddress, estimate, scheduledDate, scheduledTime, arrivalWindow, accessNotes, internalNotes, crewId, estCrewSize, estHours, moveSize, companyName]);
 
   const draftTitleFn = useCallback((s: typeof draftState) => s.clientName || s.companyName || "Move", []);
-  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("move", draftState, draftTitleFn);
 
-  const handleRestoreDraft = useCallback(() => {
-    const d = restoreDraft();
-    if (!d) return;
+  const applyMoveDraft = useCallback((d: Record<string, unknown>) => {
     type K = keyof typeof d;
     const setters: Record<string, (v: string) => void> = {
       moveType: (v) => setMoveType(v as typeof moveType),
@@ -259,7 +256,17 @@ export default function CreateMoveForm({
       const val = d[key as K];
       if (val && typeof val === "string") setter(val);
     }
-  }, [restoreDraft]);
+  }, []);
+
+  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("move", draftState, draftTitleFn, {
+    applySaved: applyMoveDraft as (data: typeof draftState) => void,
+  });
+
+  const handleRestoreDraft = useCallback(() => {
+    const d = restoreDraft();
+    if (!d) return;
+    applyMoveDraft(d as Record<string, unknown>);
+  }, [restoreDraft, applyMoveDraft]);
 
   const filteredOrgs = organizations.filter((o) => {
     const term = contactSearch.toLowerCase();

@@ -39,6 +39,7 @@ import {
   OfficeChair,
   CheckCircle,
   EggCrack,
+  Package,
   type Icon as LucideIcon,
 } from "@phosphor-icons/react";
 import {
@@ -114,6 +115,8 @@ import {
   getB2BQuoteHero,
   isB2BDeliveryQuoteServiceType,
   isB2BInvoiceQuote,
+  b2bVerticalUsesPackageLeadIcon,
+  isClientLogisticsDeliveryServiceType,
 } from "@/lib/quotes/b2b-quote-copy";
 
 /* ═══════════════════════════════════════════════════
@@ -169,7 +172,6 @@ const TIER_FEATURES: Record<string, TierFeature[]> = {
     { card: "Full furniture wrapping and protection throughout", title: "Full furniture wrapping", desc: "Every piece individually wrapped and padded", iconName: "Armchair" },
     { card: "Full disassembly & precision reassembly", title: "Full disassembly & precision reassembly", desc: "Complete furniture breakdown and expert reassembly", iconName: "Wrench" },
     { card: "Floor and property protection throughout", title: "Floor and property protection", desc: "Runners, booties, and corner guards throughout", iconName: "Home" },
-    { card: "Mattress and TV protection included", title: "Mattress and TV protection", desc: "Dedicated covers for mattresses and screens", iconName: "Shield" },
     { card: "All packing materials and supplies included", title: "All packing materials and supplies included", desc: "Boxes, wrapping, and all protection materials provided", iconName: "Suitcase" },
     { card: "White glove handling for furniture, art, and high-value items", title: "White glove handling", desc: "Specialist-level care for your most valued possessions", iconName: "Star" },
     { card: "Precision placement in every room", title: "Precision placement in every room", desc: "Every piece placed exactly where you want it", iconName: "Compass" },
@@ -191,13 +193,88 @@ const UNIVERSAL_FEATURES: TierFeature[] = [
   { card: "Zero-damage commitment", title: "Zero-damage commitment", desc: "Your belongings, protected and insured", iconName: "EggCrack" },
 ];
 
+/** Client delivery / B2B — replaces residential "Your Move Includes" copy. */
+const LOGISTICS_INCLUSION_FEATURES: TierFeature[] = [
+  {
+    card: "Dedicated delivery vehicle",
+    title: "Dedicated delivery vehicle",
+    desc: "Climate-controlled transport, sized for your shipment",
+    iconName: "Truck",
+  },
+  {
+    card: "Professional crew",
+    title: "Professional crew",
+    desc: "Licensed, insured logistics professionals",
+    iconName: "Users",
+  },
+  {
+    card: "Protective wrapping",
+    title: "Protective wrapping for freight",
+    desc: "Blankets and pads to protect items in transit",
+    iconName: "Armchair",
+  },
+  {
+    card: "Loading & unloading",
+    title: "Trained loading & unloading",
+    desc: "Careful handling at pickup and delivery",
+    iconName: "Wrench",
+  },
+  {
+    card: "Site protection",
+    title: "Floor & entryway protection",
+    desc: "Runners, booties, and corner guards where needed",
+    iconName: "Home",
+  },
+  {
+    card: "Equipment included",
+    title: "Standard equipment included",
+    desc: "Dollies, straps, and tools as required",
+    iconName: "Toolbox",
+  },
+  {
+    card: "Valuation",
+    title: "Valuation per your selection",
+    desc: "Coverage as shown in Your Protection below",
+    iconName: "Shield",
+  },
+  {
+    card: "Tracking",
+    title: "Shipment visibility",
+    desc: "Track your delivery status from your device",
+    iconName: "MapPin",
+  },
+];
+
+const UNIVERSAL_LOGISTICS_FEATURES: TierFeature[] = [
+  {
+    card: "Guaranteed flat price",
+    title: "Guaranteed flat price",
+    desc: "The price you see is the price you pay",
+    iconName: "DollarSign",
+  },
+  {
+    card: "Accountability",
+    title: "Professional accountability",
+    desc: "Your shipment, protected and documented",
+    iconName: "EggCrack",
+  },
+];
+
+const LOGISTICS_VEHICLE_LABELS: Record<string, string> = {
+  sprinter: "Dedicated Sprinter cargo van",
+  "16ft": "16ft climate-controlled box truck",
+  "20ft": "20ft dedicated delivery truck",
+  "24ft": "24ft delivery truck",
+  "26ft": "26ft delivery truck",
+};
+
 /** Renders a Lucide icon by string name. Falls back to CheckCircle for unknown names. */
 function FeatureIcon({ iconName, className, style }: { iconName: string; className?: string; style?: React.CSSProperties }) {
   const ICON_MAP: Record<string, LucideIcon> = {
     Truck, Users, Shield, ShieldCheck, Star, Clock, Gift, Wrench, Toolbox,
     Armchair, Suitcase, UserCircle, FrameCorners, Compass,
     Home, MapPin, DollarSign, Shirt, ClipboardCheck, OfficeChair, CheckCircle, Trash2,
-    Ruler, Radar, Camera, Hand, Lock, EggCrack,
+    Ruler, Radar, Camera, Hand, Lock, EggCrack, Package,
   };
   const Icon = ICON_MAP[iconName] ?? CheckCircle;
   return <Icon className={className} style={style} weight="duotone" />;
@@ -233,6 +310,20 @@ export default function QuotePageClient({
     }),
     [quote],
   );
+
+  const b2bVerticalCodeNorm = useMemo(() => {
+    const fa = quote.factors_applied as Record<string, unknown> | null;
+    const c = typeof fa?.b2b_vertical_code === "string" ? fa.b2b_vertical_code.trim().toLowerCase() : null;
+    return c;
+  }, [quote.factors_applied]);
+  const b2bVerticalDisplayName = useMemo(() => {
+    const fa = quote.factors_applied as Record<string, unknown> | null;
+    return typeof fa?.b2b_vertical_name === "string" ? fa.b2b_vertical_name : null;
+  }, [quote.factors_applied]);
+  const b2bPackageLeadIcon = b2bVerticalUsesPackageLeadIcon(b2bVerticalCodeNorm, b2bVerticalDisplayName);
+  const valuationJourneyCopy: "move" | "delivery" = isClientLogisticsDeliveryServiceType(quote.service_type)
+    ? "delivery"
+    : "move";
 
   const clientPickupRows = useMemo(() => {
     const fa = quote.factors_applied as Record<string, unknown> | null;
@@ -1084,6 +1175,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              variant="logistics"
               truckPricingNote={truckBreakdownClientNote}
             />
             <SingleItemLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
@@ -1097,6 +1189,7 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              variant="logistics"
               truckPricingNote={truckBreakdownClientNote}
             />
             <WhiteGloveLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
@@ -1123,6 +1216,8 @@ export default function QuotePageClient({
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
+              variant="logistics"
+              logisticsLeadPackage={b2bPackageLeadIcon}
               truckPricingNote={truckBreakdownClientNote}
             />
             <B2BOneOffLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
@@ -1258,6 +1353,7 @@ export default function QuotePageClient({
               declarations={declarations}
               onAddDeclaration={(d) => setDeclarations((prev) => [...prev, d])}
               onRemoveDeclaration={(idx) => setDeclarations((prev) => prev.filter((_, i) => i !== idx))}
+              journeyCopy={valuationJourneyCopy}
             />
             {isResidential && currentStep === 3 && (
               <div className="mt-6 pb-10 flex flex-col items-center gap-3">
@@ -1714,7 +1810,9 @@ const InclusionsShowcase = React.forwardRef<
     truckPrimary: string | null;
     truckSecondary: string | null;
     crewSize: number | null;
-    variant?: "residential" | "event";
+    variant?: "residential" | "event" | "logistics";
+    /** Custom / Other B2B vertical: neutral package icon instead of truck. */
+    logisticsLeadPackage?: boolean;
     eventFeatures?: TierFeature[] | null;
     showEventSetupFeature?: boolean;
     /** e.g. Truck: 20ft (+$150) from factors_applied */
@@ -1728,6 +1826,7 @@ const InclusionsShowcase = React.forwardRef<
     truckSecondary,
     crewSize,
     variant = "residential",
+    logisticsLeadPackage = false,
     eventFeatures = null,
     showEventSetupFeature = false,
     truckPricingNote = null,
@@ -1745,46 +1844,98 @@ const InclusionsShowcase = React.forwardRef<
       : TRUCK_LUXURY[truckPrimary] ?? truckPrimary
     : "Your dedicated moving truck";
 
+  const logisticsVehicleTitle = truckPrimary
+    ? truckSecondary
+      ? `${LOGISTICS_VEHICLE_LABELS[truckPrimary] ?? truckPrimary} + support vehicle`
+      : LOGISTICS_VEHICLE_LABELS[truckPrimary] ?? `Delivery vehicle (${truckPrimary})`
+    : "Dedicated delivery vehicle";
+
   const crewDesc = crewSize
     ? `${crewSize} licensed, insured, background-checked movers`
     : "Licensed, insured, background-checked movers";
 
-  const baseFeatures =
-    variant === "event" && eventFeatures && eventFeatures.length > 0
-      ? eventFeatures.filter(
-          (feat) => feat.title !== "On-site setup and arrangement" || showEventSetupFeature,
-        )
-      : (TIER_FEATURES[tier] ?? TIER_FEATURES.essential);
+  const logisticsCrewDesc = crewSize
+    ? `${crewSize} licensed, insured logistics professionals`
+    : "Licensed, insured logistics professionals";
 
-  // Hydrate dynamic truck & crew entries (residential / generic only)
+  const baseFeatures =
+    variant === "logistics"
+      ? LOGISTICS_INCLUSION_FEATURES
+      : variant === "event" && eventFeatures && eventFeatures.length > 0
+        ? eventFeatures.filter(
+            (feat) => feat.title !== "On-site setup and arrangement" || showEventSetupFeature,
+          )
+        : (TIER_FEATURES[tier] ?? TIER_FEATURES.essential);
+
+  // Hydrate dynamic truck & crew entries
   const hydratedFeatures =
     variant === "event"
       ? baseFeatures.map((f) => ({ ...f }))
-      : baseFeatures.map((f, i) => {
-          if (i === 0) return { ...f, title: truckLabel };
-          if (i === 1) {
-            return {
-              ...f,
-              title: crewSize ? `Professional crew of ${crewSize}` : "Professional crew",
-              desc: crewDesc,
-            };
-          }
-          return f;
-        });
+      : variant === "logistics"
+        ? baseFeatures.map((f, i) => {
+            if (logisticsLeadPackage && i === 0) {
+              return {
+                ...f,
+                iconName: "Package",
+                title: "Right-sized vehicle for your shipment",
+                desc: "Climate-controlled transport, assigned to this delivery",
+              };
+            }
+            if (i === 0) {
+              return {
+                ...f,
+                title: logisticsVehicleTitle,
+                desc: "Climate-controlled transport, equipped for your shipment",
+              };
+            }
+            if (i === 1) {
+              return {
+                ...f,
+                title: crewSize ? `Professional crew of ${crewSize}` : "Professional crew",
+                desc: logisticsCrewDesc,
+              };
+            }
+            return { ...f };
+          })
+        : baseFeatures.map((f, i) => {
+            if (i === 0) return { ...f, title: truckLabel };
+            if (i === 1) {
+              return {
+                ...f,
+                title: crewSize ? `Professional crew of ${crewSize}` : "Professional crew",
+                desc: crewDesc,
+              };
+            }
+            return f;
+          });
 
-  const universalTail = variant === "event" ? [] : UNIVERSAL_FEATURES;
+  const universalTail =
+    variant === "event" ? [] : variant === "logistics" ? UNIVERSAL_LOGISTICS_FEATURES : UNIVERSAL_FEATURES;
   const allItems = [...hydratedFeatures, ...universalTail];
   const hasMore = allItems.length > INITIAL_VISIBLE;
   const visibleItems = expanded || !hasMore ? allItems : allItems.slice(0, INITIAL_VISIBLE);
+
+  const sectionTitle =
+    variant === "event"
+      ? "What's Included"
+      : variant === "logistics"
+        ? "Your Delivery Includes"
+        : "Your Move Includes";
+  const sectionSub =
+    variant === "event"
+      ? "Event logistics, fully covered."
+      : variant === "logistics"
+        ? "Commercial logistics, handled end to end."
+        : "Every detail, handled.";
 
   return (
     <section ref={ref} className="mb-10 pt-6 border-t border-[var(--brd)]/30">
       <div className="text-center mb-6">
         <h2 className="admin-section-h2 mb-1.5">
-          {variant === "event" ? "What's Included" : "Your Move Includes"}
+          {sectionTitle}
         </h2>
         <p className="font-hero text-[15px] italic" style={{ color: `${FOREST}60` }}>
-          {variant === "event" ? "Event logistics, fully covered." : "Every detail, handled."}
+          {sectionSub}
         </p>
       </div>
 
@@ -2405,6 +2556,7 @@ function ValuationProtectionCard({
   declarations,
   onAddDeclaration,
   onRemoveDeclaration,
+  journeyCopy = "move",
 }: {
   includedValuation: string;
   currentPackage: string;
@@ -2415,6 +2567,8 @@ function ValuationProtectionCard({
   declarations: HighValueDeclaration[];
   onAddDeclaration: (d: HighValueDeclaration) => void;
   onRemoveDeclaration: (idx: number) => void;
+  /** Delivery / logistics quotes use shipment wording instead of "move". */
+  journeyCopy?: "move" | "delivery";
 }) {
   const [coversOpen, setCoversOpen] = useState(false);
   const [excludesOpen, setExcludesOpen] = useState(false);
@@ -2476,7 +2630,11 @@ function ValuationProtectionCard({
           <div className="flex-1 min-w-0">
             <div className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>{dispActive.shortLabel}</div>
             <div className="text-[11px]" style={{ color: `${FOREST}50` }}>
-              {upgradeSelected ? "Upgraded" : "Included with your move"}
+              {upgradeSelected
+                ? "Upgraded"
+                : journeyCopy === "delivery"
+                  ? "Included with your delivery"
+                  : "Included with your move"}
             </div>
           </div>
           {isHighest && (
@@ -2626,7 +2784,11 @@ function ValuationProtectionCard({
                   border: upgradeSelected ? `1px solid ${FOREST}20` : "1px solid transparent",
                 }}
               >
-                {upgradeSelected ? "Remove upgrade" : "Add to my move"}
+                {upgradeSelected
+                  ? "Remove upgrade"
+                  : journeyCopy === "delivery"
+                    ? "Add to my delivery"
+                    : "Add to my move"}
               </button>
             </div>
           </div>

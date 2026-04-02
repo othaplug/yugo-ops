@@ -70,6 +70,54 @@ const SPECIALTY_ITEM_TYPES = [
   "gym_equipment_per_piece", "motorcycle",
 ] as const;
 
+/** Deterministic JSON for comparing pricing payloads (addon order, inventory order, etc.). */
+function stableStringify(val: unknown): string {
+  if (val === null || typeof val !== "object") return JSON.stringify(val);
+  if (Array.isArray(val)) return `[${val.map(stableStringify).join(",")}]`;
+  const o = val as Record<string, unknown>;
+  return `{${Object.keys(o)
+    .sort()
+    .map((k) => `${JSON.stringify(k)}:${stableStringify(o[k])}`)
+    .join(",")}}`;
+}
+
+function stableEditQuotePayloadFingerprint(payload: Record<string, any>): string {
+  const p = JSON.parse(JSON.stringify(payload)) as Record<string, any>;
+  if (Array.isArray(p.selected_addons)) {
+    p.selected_addons = [...p.selected_addons].sort((a, b) => String(a.addon_id).localeCompare(String(b.addon_id)));
+  }
+  if (Array.isArray(p.inventory_items)) {
+    p.inventory_items = [...p.inventory_items]
+      .map((i: any) => ({
+        slug: i.slug ?? null,
+        name: String(i.name ?? ""),
+        quantity: Number(i.quantity) || 0,
+        weight_score: Number(i.weight_score) || 0,
+      }))
+      .sort((a, b) =>
+        `${a.slug ?? ""}\0${a.name}\0${a.quantity}`.localeCompare(`${b.slug ?? ""}\0${b.name}\0${b.quantity}`),
+      );
+  }
+  if (Array.isArray(p.specialty_items)) {
+    p.specialty_items = [...p.specialty_items]
+      .map((s: any) => ({ type: String(s.type), qty: Number(s.qty) || 0 }))
+      .sort((a, b) => a.type.localeCompare(b.type) || a.qty - b.qty);
+  }
+  if (Array.isArray(p.additional_pickup_addresses)) {
+    p.additional_pickup_addresses = [...p.additional_pickup_addresses]
+      .map((x: any) => String(x.address ?? "").trim().toLowerCase())
+      .filter(Boolean)
+      .sort();
+  }
+  if (Array.isArray(p.additional_dropoff_addresses)) {
+    p.additional_dropoff_addresses = [...p.additional_dropoff_addresses]
+      .map((x: any) => String(x.address ?? "").trim().toLowerCase())
+      .filter(Boolean)
+      .sort();
+  }
+  return stableStringify(p);
+}
+
 function formatCurrency(n: number): string {
   return `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
@@ -101,6 +149,8 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   const oq = originalQuote;
   const contact = Array.isArray(oq.contacts) ? oq.contacts[0] : oq.contacts;
   const [serviceType] = useState<string>(oq.service_type);
+  /** B2B quotes use dimensional pricing on the quote detail page — this screen only supports move-style re-quotes. */
+  const isB2bQuote = serviceType === "b2b_delivery";
   const factors = (oq.factors_applied ?? {}) as Record<string, any>;
 
   // ── Core fields ──────────────────────────────────────────
@@ -200,10 +250,18 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   // ── Live preview ──────────────────────────────────────────
   const [livePreview, setLivePreview] = useState<any>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [jobStopsLoaded, setJobStopsLoaded] = useState(false);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Fingerprint of pricing inputs after job-stops hydrate — preview/regenerate only when this diverges. */
+  const baselineFingerprintRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!oq.quote_id) return;
+    if (!oq.quote_id) {
+      setJobStopsLoaded(true);
+      return;
+    }
     let cancelled = false;
+    setJobStopsLoaded(false);
     (async () => {
       try {
         const res = await fetch(
@@ -229,6 +287,8 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
         setExtraToStops(dropoffs);
       } catch {
         /* ignore */
+      } finally {
+        if (!cancelled) setJobStopsLoaded(true);
       }
     })();
     return () => {
@@ -374,12 +434,45 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
     contact, oq, factors, extraFromStops, extraToStops,
   ]);
 
-  // ── Debounced live preview ────────────────────────────────
   useEffect(() => {
+    if (!isB2bQuote || !oq.quote_id) return;
+    router.replace(`/admin/quotes/${encodeURIComponent(oq.quote_id)}`);
+  }, [isB2bQuote, oq.quote_id, router]);
+
+  // After multi-stop rows load, capture baseline so we do not call pricing until the user changes scope.
+  useEffect(() => {
+    if (isB2bQuote || !jobStopsLoaded) return;
+    if (!fromAddress?.trim() || !toAddress?.trim() || !moveDate?.trim()) return;
+    if (baselineFingerprintRef.current !== null) return;
+    baselineFingerprintRef.current = stableEditQuotePayloadFingerprint(buildPayload());
+  }, [isB2bQuote, jobStopsLoaded, fromAddress, toAddress, moveDate, buildPayload]);
+
+  // ── Debounced live preview (only when pricing inputs differ from post-load baseline) ──
+  useEffect(() => {
+    if (isB2bQuote) {
+      setLivePreview(null);
+      setPreviewLoading(false);
+      return;
+    }
+    if (!jobStopsLoaded) return;
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
     if (!fromAddress || !toAddress || !moveDate) return;
 
+    const baseline = baselineFingerprintRef.current;
+    const currentFp = stableEditQuotePayloadFingerprint(buildPayload());
+    if (baseline !== null && currentFp === baseline) {
+      setLivePreview(null);
+      setPreviewLoading(false);
+      return;
+    }
+
     previewTimerRef.current = setTimeout(async () => {
+      const fp = stableEditQuotePayloadFingerprint(buildPayload());
+      if (baselineFingerprintRef.current !== null && fp === baselineFingerprintRef.current) {
+        setLivePreview(null);
+        setPreviewLoading(false);
+        return;
+      }
       setPreviewLoading(true);
       try {
         const res = await fetch("/api/quotes/generate?preview=true", {
@@ -396,7 +489,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
     }, 800);
 
     return () => { if (previewTimerRef.current) clearTimeout(previewTimerRef.current); };
-  }, [buildPayload, fromAddress, toAddress, moveDate, inventoryItems.length, moveSize]);
+  }, [isB2bQuote, jobStopsLoaded, buildPayload, fromAddress, toAddress, moveDate]);
 
   const replaceQuoteJobStops = useCallback(async (quoteId: string) => {
     try {
@@ -432,15 +525,22 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
   // ── Finalize: generate real quote + save to DB ────────────
   const handleRegenerate = useCallback(async () => {
     setError(null);
+    const payload = buildPayload();
+    const fp = stableEditQuotePayloadFingerprint(payload);
+    if (baselineFingerprintRef.current !== null && fp === baselineFingerprintRef.current) {
+      setError("No changes to quote details. Update addresses, access, inventory, add-ons, or other fields before re-generating.");
+      return;
+    }
     setGenerating(true);
     try {
       const res = await fetch("/api/quotes/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed to generate quote"); return; }
+      baselineFingerprintRef.current = stableEditQuotePayloadFingerprint(buildPayload());
       setNewQuoteResult(data);
       const id = data.quote_id ?? data.quoteId;
       const qid = typeof id === "string" && id.trim() ? id.trim() : oq.quote_id;
@@ -482,6 +582,15 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
 
   const inputClass = "w-full px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)]/60 focus:border-[var(--brd)] focus:ring-1 focus:ring-[var(--brd)]/30 outline-none transition-all";
   const labelClass = "block text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1";
+
+  if (isB2bQuote) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-[var(--tx3)] text-sm" role="status">
+        <Loader2 size={22} className="animate-spin text-[var(--gold)]" aria-hidden />
+        <span>Opening quote…</span>
+      </div>
+    );
+  }
 
   if (done) {
     return (

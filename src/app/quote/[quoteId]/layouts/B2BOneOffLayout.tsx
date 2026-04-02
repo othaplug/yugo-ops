@@ -1,4 +1,4 @@
-import { MapPin, ArrowRight, Check, Truck } from "@phosphor-icons/react";
+import { MapPin, ArrowRight, Check, Truck, Package } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
@@ -8,7 +8,7 @@ import {
   fmtPrice,
 } from "../quote-shared";
 import { toTitleCase } from "@/lib/format-text";
-import { getB2BDeliveryFeatureList } from "@/lib/quotes/b2b-quote-copy";
+import { getB2BDeliveryFeatureList, b2bVerticalUsesPackageLeadIcon } from "@/lib/quotes/b2b-quote-copy";
 
 interface Props {
   quote: Quote;
@@ -30,6 +30,7 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
       ? f.b2b_vertical_name.trim()
       : null;
   const verticalCode = typeof f?.b2b_vertical_code === "string" ? f.b2b_vertical_code : null;
+  const usePackageLead = b2bVerticalUsesPackageLeadIcon(verticalCode, verticalTitle);
   const crewFromFactors =
     typeof f?.b2b_crew === "number" && Number.isFinite(f.b2b_crew) ? Math.round(f.b2b_crew as number) : null;
   const lineItems = Array.isArray(f?.b2b_line_items)
@@ -43,7 +44,8 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
       ? (f.includes as string[])
       : null;
   const serviceIncludes =
-    coordinatorIncludes ?? getB2BDeliveryFeatureList(verticalCode, crewFromFactors ?? quote.est_crew_size);
+    coordinatorIncludes ??
+    getB2BDeliveryFeatureList(verticalCode, crewFromFactors ?? quote.est_crew_size, verticalTitle);
   const truckBreakdown =
     typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
       ? f.truck_breakdown_line.trim()
@@ -89,12 +91,21 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
       {/* Item & Route */}
       <div>
         <div className="flex items-start gap-4 mb-4">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${FOREST}08` }}
-          >
-            <Truck className="w-6 h-6" style={{ color: FOREST }} />
-          </div>
+          {!usePackageLead ? (
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${FOREST}08` }}
+            >
+              <Truck className="w-6 h-6" style={{ color: FOREST }} aria-hidden />
+            </div>
+          ) : (
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${FOREST}08` }}
+            >
+              <Package className="w-6 h-6" style={{ color: FOREST }} aria-hidden />
+            </div>
+          )}
           <div>
             <p className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
               {specialtyTransport

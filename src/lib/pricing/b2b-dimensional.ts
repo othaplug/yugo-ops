@@ -342,6 +342,42 @@ function normalizeHandlingKey(ht: string): string {
   return h;
 }
 
+/** Never merge distinct unit_type counts into one misleading label (e.g. pieces as "boxes"). */
+const B2B_UNIT_TYPE_DISPLAY: Record<string, string> = {
+  box: "box",
+  roll: "roll",
+  piece: "piece",
+  bundle: "bundle",
+  bag: "bag",
+  pallet: "pallet",
+  unit: "unit",
+};
+
+function billableUnitTypeKey(item: B2BQuoteLineItem, verticalCode: string, fallbackUnitLabel: string): string {
+  const u = (item.unit_type || "").trim().toLowerCase();
+  if (u) return u;
+  if (verticalCode === "flooring") return "box";
+  const fb = fallbackUnitLabel.trim().toLowerCase();
+  return fb || "item";
+}
+
+function unitTypeDisplayLabel(utKey: string, fallback: string): string {
+  return (B2B_UNIT_TYPE_DISPLAY[utKey] ?? utKey) || fallback;
+}
+
+function aggregateBillableByUnitType(
+  billable: B2BQuoteLineItem[],
+  verticalCode: string,
+  fallbackUnitLabel: string,
+): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const i of billable) {
+    const k = billableUnitTypeKey(i, verticalCode, fallbackUnitLabel);
+    m.set(k, (m.get(k) ?? 0) + i.quantity);
+  }
+  return m;
+}
+
 /** One handling tier / group (subset of items) — returns charge added. */
 function handlingChargeForType(
   htRaw: string,
@@ -413,9 +449,8 @@ export function calculateB2BDimensionalPrice(args: {
 
   const items = args.input.items.filter((i) => i.quantity > 0 && i.description.trim());
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
-  const tierBillableUnits = items
-    .filter((i) => !i.bundled)
-    .reduce((s, i) => s + i.quantity, 0);
+  const tierBillableItems = items.filter((i) => !i.bundled);
+  const tierBillableUnits = tierBillableItems.reduce((s, i) => s + i.quantity, 0);
 
   const unitLabel = str(vc.unit_label, "item");
   const unitRate = num(vc.unit_rate, 0);
@@ -431,7 +466,91 @@ export function calculateB2BDimensionalPrice(args: {
     Number.isFinite(itemsIncludedBase) &&
     Number.isFinite(perItemAfterBase);
 
-  if (usesTieredItems) {
+  const verticalCodeNorm = (args.vertical.code || args.input.vertical_code || "").trim().toLowerCase();
+  const byType = aggregateBillableByUnitType(tierBillableItems, verticalCodeNorm, unitLabel);
+  const shouldSplitUnitLines =
+    includeUnits &&
+    tierBillableUnits > 0 &&
+    (verticalCodeNorm === "flooring" || byType.size > 1);
+
+  if (shouldSplitUnitLines && usesTieredItems) {
+    const baseIncluded = itemsIncludedBase!;
+    const rate = perItemAfterBase;
+    const typeKeys = [...byType.keys()].sort((a, b) => {
+      if (a === "box") return -1;
+      if (b === "box") return 1;
+      return a.localeCompare(b);
+    });
+
+    if (byType.has("box")) {
+      let includedRemaining = baseIncluded;
+      for (const utKey of typeKeys) {
+        const qty = byType.get(utKey) ?? 0;
+        if (qty <= 0) continue;
+        const disp = unitTypeDisplayLabel(utKey, unitLabel);
+        if (utKey === "box") {
+          const extra = Math.max(0, qty - includedRemaining);
+          includedRemaining = Math.max(0, includedRemaining - qty);
+          if (extra > 0) {
+            const unitCharge = Math.round(extra * rate * 100) / 100;
+            totalPrice += unitCharge;
+            breakdown.push({
+              label: `Additional ${disp}s (${extra} beyond ${baseIncluded}) × ${fmtMoney(rate)}`,
+              amount: unitCharge,
+            });
+          }
+        } else {
+          const unitCharge = Math.round(qty * rate * 100) / 100;
+          if (unitCharge !== 0) {
+            totalPrice += unitCharge;
+            breakdown.push({
+              label: `${qty} ${disp}(s) × ${fmtMoney(rate)}`,
+              amount: unitCharge,
+            });
+          }
+        }
+      }
+    } else {
+      const extra = Math.max(0, tierBillableUnits - baseIncluded);
+      if (extra > 0) {
+        const totalCharge = Math.round(extra * rate * 100) / 100;
+        const keysWithQty = typeKeys.filter((k) => (byType.get(k) ?? 0) > 0);
+        let allocated = 0;
+        for (let i = 0; i < keysWithQty.length; i++) {
+          const utKey = keysWithQty[i]!;
+          const qty = byType.get(utKey) ?? 0;
+          const disp = unitTypeDisplayLabel(utKey, unitLabel);
+          const isLast = i === keysWithQty.length - 1;
+          const share = isLast
+            ? Math.round((totalCharge - allocated) * 100) / 100
+            : Math.round(((totalCharge * qty) / tierBillableUnits) * 100) / 100;
+          allocated += share;
+          if (share !== 0) {
+            totalPrice += share;
+            breakdown.push({
+              label: `${qty} ${disp}(s) (share of ${extra} add'l units beyond ${baseIncluded}) × ${fmtMoney(rate)}`,
+              amount: share,
+            });
+          }
+        }
+      }
+    }
+  } else if (shouldSplitUnitLines && !usesTieredItems && unitRate > 0) {
+    const typeKeys = [...byType.keys()].sort((a, b) => a.localeCompare(b));
+    for (const utKey of typeKeys) {
+      const qty = byType.get(utKey) ?? 0;
+      if (qty <= 0) continue;
+      const disp = unitTypeDisplayLabel(utKey, unitLabel);
+      const unitCharge = Math.round(qty * unitRate * 100) / 100;
+      if (unitCharge !== 0) {
+        totalPrice += unitCharge;
+        breakdown.push({
+          label: `${qty} ${disp}(s) × ${fmtMoney(unitRate)}`,
+          amount: unitCharge,
+        });
+      }
+    }
+  } else if (usesTieredItems) {
     const extra = Math.max(0, tierBillableUnits - itemsIncludedBase!);
     if (extra > 0) {
       const unitCharge = Math.round(extra * perItemAfterBase * 100) / 100;

@@ -847,7 +847,6 @@ async function residentialIncludes(
     "Full furniture wrapping and protection throughout",
     "Full disassembly & precision reassembly",
     "Floor and property protection throughout",
-    "Mattress and TV protection included",
     "All packing materials and supplies included",
     "White glove handling for furniture, art, and high-value items",
     "Precision placement in every room",

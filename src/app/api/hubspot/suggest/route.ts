@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
-import { suggestHubSpotContactsByCompanyQuery } from "@/lib/hubspot/contact-search";
+import { suggestHubSpotForTypeahead } from "@/lib/hubspot/contact-search";
 
 /**
  * POST /api/hubspot/suggest
  * Body: { query: string }
- * Returns contacts matching company (CONTAINS_TOKEN) for business-name typeahead.
+ * Returns contacts matching Company name (associated records), contact company text, name, or email.
  */
 export async function POST(req: NextRequest) {
   const { error: authErr } = await requireAuth();
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!token) return NextResponse.json({ suggestions: [] });
 
   try {
-    const rows = await suggestHubSpotContactsByCompanyQuery(token, query, 12);
+    const rows = await suggestHubSpotForTypeahead(token, query, 12);
     return NextResponse.json({
       suggestions: rows.map((c) => ({
         hubspot_id: c.hubspot_id,
@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
         title: c.title,
       })),
     });
-  } catch {
+  } catch (err) {
+    console.error("[api/hubspot/suggest]", err);
     return NextResponse.json({ suggestions: [] });
   }
 }

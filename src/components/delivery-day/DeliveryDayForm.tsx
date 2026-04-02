@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import AddressAutocomplete, { type AddressResult } from "@/components/ui/AddressAutocomplete";
 import {
-  CalendarBlank,
   Clock, Sun, SunHorizon as Sunset, MapPin, Plus, Trash as Trash2,
   Warning as AlertTriangle, CaretRight as ChevronRight, X, ArrowLeft, Sparkle as Sparkles,
 } from "@phosphor-icons/react";
@@ -347,14 +346,7 @@ export default function DeliveryDayForm({
           </div>
           <section className="space-y-2">
             <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Date</label>
-            <div className="relative">
-              <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={`${fieldInput} pr-10`} style={{ colorScheme: "dark" }} />
-              <CalendarBlank
-                size={15}
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]"
-                aria-hidden
-              />
-            </div>
+            <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={fieldInput} style={{ colorScheme: "dark" }} />
           </section>
           <section className="space-y-3">
             <label className="block text-[9px] font-semibold tracking-wider uppercase text-[var(--tx3)]">Time Window</label>

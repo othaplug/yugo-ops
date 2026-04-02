@@ -1,6 +1,11 @@
 -- B2B launch: cabinetry vertical, per-vertical item_config (quick-add + bundle rules), field_visibility,
 -- and competitive base / tier rates. item_config.bundleRules drive pricing via application merge logic.
 
+-- Mirror columns from 20260330210000_b2b_prompt4_completion; some remotes never received that migration.
+ALTER TABLE public.delivery_verticals
+  ADD COLUMN IF NOT EXISTS items_included_in_base INTEGER,
+  ADD COLUMN IF NOT EXISTS per_item_rate_after_base NUMERIC(12, 2);
+
 INSERT INTO public.delivery_verticals (
   code, name, description, icon, base_rate, pricing_method, default_config, sort_order, active,
   items_included_in_base, per_item_rate_after_base

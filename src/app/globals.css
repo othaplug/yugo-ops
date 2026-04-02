@@ -89,6 +89,14 @@
   /* Admin mobile bottom nav — main padding + toasts/sheets must match */
   --admin-mobile-nav-bar: 68px;
 
+  /* B2B / brand text on admin dark surfaces (avoid wine #2B0416 on dark bg) */
+  --yugo-primary-text: #f9ede4;
+  --yugo-accent: #c9a96e;
+  --yugo-accent-hover: #d4b87a;
+  --yugo-surface: #242424;
+  --yugo-muted: #888888;
+  --yugo-rose-accent: #66143d;
+
   /* ── Fonts ── */
   --font-heading: 'Instrument Sans', 'DM Sans', system-ui, sans-serif;
   --font-hero: 'Instrument Serif', serif;
@@ -126,6 +134,13 @@
   --text-secondary: #333333;
   --text-tertiary: #524D47;
   --text-accent: #8C6E2F;
+
+  --yugo-primary-text: #2b0416;
+  --yugo-accent: #66143d;
+  --yugo-accent-hover: #7a1a4a;
+  --yugo-surface: #ffffff;
+  --yugo-muted: #524d47;
+  --yugo-rose-accent: #66143d;
 }
 
 html {
@@ -689,6 +704,12 @@ input[type="datetime-local"],
 input[type="time"] {
   color-scheme: dark;
 }
+
+/*
+ * Native date/datetime-local inputs already include a working calendar control from the browser.
+ * Do not overlay decorative icons on the same input (e.g. absolute-positioned Phosphor icons with
+ * pointer-events-none)—that shows two icons and the overlay does not open the picker.
+ */
 
 /* Elegant checkbox - refined, gold accent */
 .checkbox-elegant {

@@ -121,6 +121,54 @@ const BALANCE_DUE: Record<string, string> = {
   bin_rental: "included in the amount due at booking (full payment)",
 };
 
+/** Agreement card title + subtitle (client-facing). */
+const AGREEMENT_HEADER: Record<string, { title: string; subtitle: string }> = {
+  local_move: {
+    title: "Residential Move Agreement",
+    subtitle: "Review the agreement, then sign to proceed to payment",
+  },
+  long_distance: {
+    title: "Long Distance Move Agreement",
+    subtitle: "Review the agreement, then sign to proceed to payment",
+  },
+  office_move: {
+    title: "Office Relocation Agreement",
+    subtitle: "Review the agreement, then sign to proceed to payment",
+  },
+  single_item: {
+    title: "Delivery Service Agreement",
+    subtitle: "Review the agreement, then sign to proceed to payment",
+  },
+  white_glove: {
+    title: "White Glove Delivery Agreement",
+    subtitle: "Review the agreement, then sign to proceed to payment",
+  },
+  specialty: {
+    title: "Specialty Service Agreement",
+    subtitle: "Review the agreement, then sign to proceed to payment",
+  },
+  b2b_oneoff: {
+    title: "Commercial Delivery Agreement",
+    subtitle: "Review the agreement, then sign to confirm your delivery booking",
+  },
+  b2b_delivery: {
+    title: "Commercial Delivery Agreement",
+    subtitle: "Review the agreement, then sign to confirm your delivery booking",
+  },
+  event: {
+    title: "Event Logistics Agreement",
+    subtitle: "Review the agreement, then sign to proceed to payment",
+  },
+  labour_only: {
+    title: "Labour Service Agreement",
+    subtitle: "Review the agreement, then sign to proceed to payment",
+  },
+  bin_rental: {
+    title: "Bin Rental Agreement",
+    subtitle: "Review the bin rental agreement, then sign to proceed to payment",
+  },
+};
+
 const SERVICE_DESCRIPTION: Record<string, string> = {
   local_move:
     "Professional local residential moving service including truck, crew, equipment, and all loading/unloading.",
@@ -194,6 +242,11 @@ export default function ContractSign({
   const b2bNet30Invoice = Boolean(q.b2bNet30Invoice);
   const paidInFullAtBooking =
     !b2bNet30Invoice && q.grandTotal > 0 && balance <= 0.005;
+  const agreementHeader =
+    AGREEMENT_HEADER[q.serviceType] ??
+    (isClientLogisticsDeliveryServiceType(q.serviceType)
+      ? { title: "Delivery Service Agreement", subtitle: "Review the agreement, then sign to proceed to payment" }
+      : { title: "Service Agreement", subtitle: "Review the agreement, then sign to proceed to payment" });
   const serviceHeading = isBinRental ? "Bin Rental" : toTitleCase(q.serviceType);
   const scheduleSectionTitle =
     isBinRental
@@ -350,12 +403,10 @@ export default function ContractSign({
               className="font-heading text-[var(--text-base)] font-bold tracking-wider uppercase"
               style={{ color: FOREST }}
             >
-              {isBinRental ? "Bin Rental Agreement" : "Service Agreement"}
+              {agreementHeader.title}
             </h2>
             <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
-              {isBinRental
-                ? "Review the bin rental agreement, then sign to proceed to payment"
-                : "Review the agreement, then sign to proceed to payment"}
+              {agreementHeader.subtitle}
             </p>
           </div>
         </div>
@@ -1116,13 +1167,37 @@ export default function ContractSign({
                     9. Client Responsibilities
                   </h3>
                   <p>
-                    The client is responsible for: (a) accurately disclosing all items to be moved,
-                    including dimensions and special handling requirements; (b) declaring any items
-                    valued above $500 individually; (c) ensuring building elevator bookings, parking
-                    permits, and clear access at both locations; (d) removing or identifying hazardous
-                    materials, perishables, and prohibited items (firearms, chemicals, flammables) which
-                    {companyDisplayName} cannot transport. Failure to disclose access restrictions or item details may
-                    result in scope adjustments per Section 7.
+                    {isClientLogisticsDeliveryServiceType(q.serviceType) ? (
+                      <>
+                        The client is responsible for: (a) accurately describing all items in this shipment
+                        or delivery, including dimensions and special handling requirements; (b) declaring any
+                        items valued above $500 individually when required; (c) ensuring safe access for
+                        pickup and delivery (loading dock or door, elevator bookings, parking, permits, and
+                        clear paths); (d) removing or identifying hazardous materials, perishables, and
+                        prohibited items (firearms, chemicals, flammables) which {companyDisplayName} cannot
+                        transport. Failure to disclose access restrictions or shipment details may result in
+                        scope adjustments per Section 7.
+                      </>
+                    ) : q.serviceType === "office_move" ? (
+                      <>
+                        The client is responsible for: (a) accurately disclosing all equipment, furniture,
+                        and materials included in the relocation; (b) coordinating building and IT access; (c)
+                        ensuring elevator bookings, parking, and clear paths at origin and destination; (d)
+                        identifying hazardous or prohibited items {companyDisplayName} cannot transport.
+                        Failure to disclose access restrictions or scope details may result in adjustments
+                        per Section 7.
+                      </>
+                    ) : (
+                      <>
+                        The client is responsible for: (a) accurately disclosing all items to be moved,
+                        including dimensions and special handling requirements; (b) declaring any items
+                        valued above $500 individually; (c) ensuring building elevator bookings, parking
+                        permits, and clear access at both locations; (d) removing or identifying hazardous
+                        materials, perishables, and prohibited items (firearms, chemicals, flammables) which
+                        {companyDisplayName} cannot transport. Failure to disclose access restrictions or item
+                        details may result in scope adjustments per Section 7.
+                      </>
+                    )}
                   </p>
                 </div>
 
@@ -1178,6 +1253,11 @@ export default function ContractSign({
               <>
                 By signing below, I confirm that I have read this bin rental agreement, understand
                 the terms, and authorize {companyDisplayName} to deliver and pick up bins as scheduled.
+              </>
+            ) : isClientLogisticsDeliveryServiceType(q.serviceType) ? (
+              <>
+                By signing below, I confirm that I have read the agreement, understand the terms, and
+                authorize {companyDisplayName} to complete this delivery as described.
               </>
             ) : (
               <>

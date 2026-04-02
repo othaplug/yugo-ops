@@ -11,14 +11,14 @@ import {
   type IconProps,
 } from "@phosphor-icons/react";
 
-/** Brand tokens for B2B one-off form (no gold). */
+/** Brand tokens: map to theme vars so admin dark mode stays readable (no wine-on-wine text). */
 export const B2B_ONEOFF_CSS = {
-  "--yugo-wine": "#2B0416",
-  "--yugo-off-white": "#F9EDE4",
-  "--yugo-rose": "#66143D",
+  "--yugo-wine": "var(--yugo-primary-text, #2B0416)",
+  "--yugo-off-white": "var(--tx)",
+  "--yugo-rose": "var(--yugo-rose-accent, #66143D)",
   "--yugo-green": "#2B3927",
-  "--yugo-leather": "#492A1D",
-  "--yugo-border": "rgba(73, 42, 29, 0.25)",
+  "--yugo-leather": "var(--tx2, #492A1D)",
+  "--yugo-border": "color-mix(in srgb, var(--brd) 85%, transparent)",
 } as React.CSSProperties;
 
 export const B2B_PREVIEW_HEADER_BY_CODE: Record<string, string> = {
@@ -211,8 +211,8 @@ export function isMoveDateTodayToronto(isoDate: string): boolean {
 export function B2bSectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <h3
-      className="text-[16px] font-bold pb-2 mb-4 border-b"
-      style={{ color: "var(--yugo-wine, #2B0416)", borderColor: "var(--yugo-border, rgba(73,42,29,0.25))" }}
+      className="text-[16px] font-bold pb-2 mb-4 border-b border-[var(--brd)]"
+      style={{ color: "var(--yugo-primary-text, var(--tx))" }}
     >
       {children}
     </h3>
@@ -237,9 +237,9 @@ export function B2bPill({
       onClick={onClick}
       className="px-4 py-2 rounded-full text-[13px] font-medium transition-colors"
       style={{
-        border: "1px solid var(--yugo-border, rgba(73,42,29,0.25))",
-        backgroundColor: selected ? "var(--yugo-wine, #2B0416)" : "transparent",
-        color: selected ? "var(--yugo-off-white, #F9EDE4)" : "var(--yugo-leather, #492A1D)",
+        border: "1px solid var(--brd)",
+        backgroundColor: selected ? "var(--gold)" : "transparent",
+        color: selected ? "var(--btn-text-on-accent)" : "var(--yugo-primary-text, var(--tx))",
       }}
     >
       {children}
@@ -249,9 +249,7 @@ export function B2bPill({
 
 export function B2bFieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="block text-[13px] font-medium mb-1" style={{ color: "var(--yugo-leather, #492A1D)" }}>
-      {children}
-    </span>
+    <span className="block text-[13px] font-medium mb-1 text-[var(--tx2)]">{children}</span>
   );
 }
 
@@ -260,10 +258,8 @@ const b2bInputClass =
 
 export function b2bInputStyleProps(focusWine = true): React.CSSProperties {
   return {
-    borderColor: "var(--yugo-border, rgba(73,42,29,0.25))",
-    ...(focusWine
-      ? ({ "--tw-ring-color": "#2B0416" } as React.CSSProperties)
-      : undefined),
+    borderColor: "var(--brd)",
+    ...(focusWine ? ({ "--tw-ring-color": "var(--gold)" } as React.CSSProperties) : undefined),
   };
 }
 

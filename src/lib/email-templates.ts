@@ -2,7 +2,7 @@ import { getClientEmailFooterTrs } from "@/lib/email/client-email-footer";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import { getEmailBaseUrl } from "./email-base-url";
 import { formatCurrency } from "./format-currency";
-import { formatPhone } from "./phone";
+import { formatPhone, normalizePhone } from "./phone";
 
 /* ═══ Client emails: Equinox-style transaction shell (bordered dark card, logo inside card). Table-based. ═══ */
 const EQ_PAGE_BG = "#121212";
@@ -72,14 +72,16 @@ function emailCardLogoGoldLegacy(): string {
 </table>`;
 }
 
-/** Black wordmark centered — light cards (Estate ivory, admin white). */
-function emailCardLogoBlack(): string {
-  const logoUrl = getEmailLogoBlackUrl();
+/** Estate header: black logo in light mode, gold wordmark when client uses dark mode (prefers-color-scheme). */
+function emailCardLogoEstate(): string {
+  const blackUrl = getEmailLogoBlackUrl();
+  const goldUrl = getEmailLogoUrl();
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 20px;">
   <tr>
     <td align="center" style="padding:0;">
-      <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
+      <img src="${blackUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" class="estate-email-logo-light" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
+      <img src="${goldUrl}" alt="" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" class="estate-email-logo-dark" style="display:none;border:0;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;margin:0 auto;" />
     </td>
   </tr>
 </table>`;
@@ -187,29 +189,60 @@ function estateDivider(): string {
   return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:36px 0 32px;border-top:1px solid rgba(92,26,51,0.14);font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
 }
 
-/** Georgia small-caps section eyebrow. */
+/** Georgia section eyebrow — uppercase, letterspaced. */
 function estateLabel(text: string): string {
-  return `<p style="font-family:${ESTATE_GEORGIA};font-size:10px;font-weight:700;letter-spacing:0.24em;color:${ESTATE_WINE};text-transform:none;margin:0 0 20px;line-height:1.4;">${text}</p>`;
+  return `<p style="font-family:${ESTATE_GEORGIA};font-size:11px;font-weight:700;letter-spacing:0.22em;color:${ESTATE_WINE};text-transform:uppercase;margin:0 0 20px;line-height:1.4;">${text}</p>`;
 }
 
 /**
  * Estate luxury wrapper: warm cream page, ivory card with wine-tint border (logo + hairline inside card).
  * Completely distinct from the dark promo shell.
  */
+const ESTATE_EMAIL_DARK_MODE_CSS = `
+<style type="text/css">
+@media (prefers-color-scheme: dark) {
+  .estate-email-logo-light { display: none !important; }
+  .estate-email-logo-dark { display: block !important; }
+  .estate-email-logo-rule {
+    background: #D4B87A !important;
+    background-image: linear-gradient(90deg, #A67C2A, #F0E4C8, #A67C2A) !important;
+  }
+}
+@media only screen and (max-width: 600px) {
+  .estate-email-outer {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 20px !important;
+    padding-bottom: 48px !important;
+  }
+  .estate-email-inner {
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    border-width: 0 !important;
+  }
+  .estate-email-content {
+    padding: 28px 16px 36px !important;
+  }
+}
+</style>
+`.trim();
+
 function estateLuxuryCreamLayout(innerHtml: string): string {
   return `
+${ESTATE_EMAIL_DARK_MODE_CSS}
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${ESTATE_CREAM_PAGE};">
   <tr>
-    <td align="center" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};">
-      <table width="580" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);">
+    <td class="estate-email-outer" align="center" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};">
+      <table class="estate-email-inner" width="580" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;width:580px;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);">
         <tr>
-          <td style="padding:52px 48px 56px;font-family:${ESTATE_DM_SANS};color:${ESTATE_BODY};font-size:15px;line-height:1.78;">
-            ${emailCardLogoBlack()}
+          <td class="estate-email-content" style="padding:52px 48px 56px;font-family:${ESTATE_DM_SANS};color:${ESTATE_BODY};font-size:15px;line-height:1.78;">
+            ${emailCardLogoEstate()}
             <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 28px;">
               <tr>
                 <td align="center" style="padding:0;">
                   <table width="72" cellpadding="0" cellspacing="0" border="0" role="presentation">
-                    <tr><td style="height:2px;background:linear-gradient(90deg,${ESTATE_WINE},${ESTATE_GOLD_DARK},${ESTATE_WINE});font-size:0;line-height:0;">&nbsp;</td></tr>
+                    <tr><td class="estate-email-logo-rule" style="height:2px;background:linear-gradient(90deg,${ESTATE_WINE},${ESTATE_GOLD_DARK},${ESTATE_WINE});font-size:0;line-height:0;">&nbsp;</td></tr>
                   </table>
                 </td>
               </tr>
@@ -1157,6 +1190,23 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   const coordName = p.coordinatorName || "your coordinator";
   const firstName = (p.clientName || "").split(" ")[0];
+  const estateCoordLinkStyle = `color:${ESTATE_WINE};text-decoration:underline;`;
+  const coordDigits = p.coordinatorPhone ? normalizePhone(p.coordinatorPhone) : "";
+  const phoneDisplay = p.coordinatorPhone ? formatPhone(p.coordinatorPhone) : "";
+  const coordPhoneHtml =
+    phoneDisplay && coordDigits.length > 0
+      ? `<a href="tel:+1${coordDigits}" style="${estateCoordLinkStyle}">${escapeHtml(phoneDisplay)}</a>`
+      : phoneDisplay
+        ? escapeHtml(phoneDisplay)
+        : "";
+  const coordEmailRaw = p.coordinatorEmail?.trim() ?? "";
+  const coordEmailHtml = coordEmailRaw
+    ? `<a href="mailto:${encodeURIComponent(coordEmailRaw)}" style="${estateCoordLinkStyle}">${escapeHtml(coordEmailRaw)}</a>`
+    : "";
+  const coordContactLine =
+    coordPhoneHtml && coordEmailHtml
+      ? `${coordPhoneHtml}<span style="color:${ESTATE_BODY_MUTED};">&nbsp;&middot;&nbsp;</span>${coordEmailHtml}`
+      : `${coordPhoneHtml}${coordEmailHtml}`;
 
   const canonicalIncludes = [
     `Dedicated crew of ${p.crewSize} - hand-selected for your move`,
@@ -1244,11 +1294,11 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     </p>
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-bottom:28px;">
-      <tr><td style="padding:6px 0;vertical-align:top;width:18px;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Schedule your pre-move walkthrough (in-person or virtual)</td></tr>
-      <tr><td style="padding:6px 0;vertical-align:top;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Confirm any items requiring special handling</td></tr>
-      <tr><td style="padding:6px 0;vertical-align:top;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Review your timeline and any access requirements</td></tr>
-      <tr><td style="padding:6px 0;vertical-align:top;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Answer every question you have</td></tr>
-      <tr><td style="padding:6px 0;vertical-align:top;color:${ESTATE_WINE};font-size:14px;">&middot;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Send your welcome package</td></tr>
+      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Schedule your pre-move walkthrough (in-person or virtual)</td></tr>
+      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Confirm any items requiring special handling</td></tr>
+      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Review your timeline and any access requirements</td></tr>
+      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Answer every question you have</td></tr>
+      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Send your welcome package</td></tr>
     </table>
 
     <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 16px;line-height:1.78;">
@@ -1279,14 +1329,17 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     <p style="font-family:${ESTATE_GEORGIA};font-size:28px;color:${ESTATE_WINE};margin:0 0 10px;line-height:1.2;letter-spacing:0.01em;">${formatCurrency(p.totalWithTax)}</p>
     <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0 0 20px;line-height:1.65;">This is your guaranteed rate. No hourly charges. No surprises. No hidden fees.</p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px;border-collapse:collapse;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;border-collapse:collapse;table-layout:fixed;width:100%;">
       <tr>
-        <td style="color:#2D7A4F;font-weight:600;padding:6px 0;">&#10003;&nbsp; Deposit paid</td>
-        <td style="color:#2D7A4F;font-weight:600;padding:6px 0;text-align:right;">${formatCurrency(p.depositPaid)}</td>
+        <td style="color:#2D7A4F;font-weight:600;padding:12px 16px 12px 0;vertical-align:middle;width:58%;">&#10003;&nbsp; Deposit paid</td>
+        <td align="right" style="color:#2D7A4F;font-weight:600;padding:12px 0;vertical-align:middle;text-align:right;white-space:nowrap;">${formatCurrency(p.depositPaid)}</td>
       </tr>
       <tr>
-        <td style="color:${ESTATE_BODY_MUTED};padding:6px 0;border-top:1px solid rgba(92,26,51,0.1);">Balance remaining</td>
-        <td style="color:${ESTATE_GOLD_DARK};font-weight:600;padding:6px 0;text-align:right;border-top:1px solid rgba(92,26,51,0.1);">${formatCurrency(p.balanceRemaining)}</td>
+        <td colspan="2" style="padding:0;border-top:1px solid rgba(92,26,51,0.12);font-size:0;line-height:0;">&nbsp;</td>
+      </tr>
+      <tr>
+        <td style="color:${ESTATE_BODY_MUTED};padding:12px 16px 12px 0;vertical-align:middle;">Balance remaining</td>
+        <td align="right" style="color:${ESTATE_GOLD_DARK};font-weight:600;padding:12px 0;vertical-align:middle;text-align:right;white-space:nowrap;">${formatCurrency(p.balanceRemaining)}</td>
       </tr>
     </table>
 
@@ -1298,7 +1351,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
     <p style="font-size:16px;font-weight:700;color:${ESTATE_BODY};margin:0 0 4px;font-family:${ESTATE_DM_SANS};">${p.coordinatorName}</p>
     <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0 0 8px;font-family:${ESTATE_DM_SANS};">Move Coordinator, Yugo</p>
     <p style="font-size:13px;color:${ESTATE_BODY};margin:0;font-family:${ESTATE_DM_SANS};">
-      ${p.coordinatorPhone ? `${formatPhone(p.coordinatorPhone)}` : ""}${p.coordinatorPhone && p.coordinatorEmail ? `&nbsp;&middot;&nbsp;` : ""}${p.coordinatorEmail ? `${p.coordinatorEmail}` : ""}
+      ${coordContactLine}
     </p>
     ` : `
     <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0;font-family:${ESTATE_DM_SANS};">Yugo Estate Team</p>

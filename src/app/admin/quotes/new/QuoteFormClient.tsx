@@ -45,7 +45,6 @@ import {
   type IconProps,
 } from "@phosphor-icons/react";
 import {
-  B2B_ONEOFF_CSS,
   B2B_ACCESS_PILLS,
   B2B_PARKING_PILLS,
   B2B_PREVIEW_HEADER_BY_CODE,
@@ -1036,7 +1035,7 @@ export default function QuoteFormClient({
 
   // B2B One-Off fields (dimensional engine)
   const [b2bBusinessName, setB2bBusinessName] = useState("");
-  const [b2bVerticalCode, setB2bVerticalCode] = useState("custom");
+  const [b2bVerticalCode, setB2bVerticalCode] = useState("");
   const [b2bPartnerOrgId, setB2bPartnerOrgId] = useState("");
   const [b2bLines, setB2bLines] = useState<B2bLineRow[]>([]);
   const [b2bTimeBand, setB2bTimeBand] = useState<"morning" | "afternoon" | "after_hours">("morning");
@@ -1058,9 +1057,24 @@ export default function QuoteFormClient({
   const [b2bVerticalExtras, setB2bVerticalExtras] = useState<Record<string, number>>({});
   const [b2bEmbedSnapshot, setB2bEmbedSnapshot] = useState<B2BJobsEmbedSnapshot | null>(null);
 
+  /** Prefer live embed vertical so sidebar preview matches the B2B form (same rules as partner-filtered dropdown). */
+  const effectiveB2bVerticalCode = useMemo(() => {
+    const fromSnap = b2bEmbedSnapshot?.verticalCode?.trim();
+    if (fromSnap && deliveryVerticals.some((v) => v.code === fromSnap)) return fromSnap;
+    const fromState = b2bVerticalCode.trim();
+    if (fromState && deliveryVerticals.some((v) => v.code === fromState)) return fromState;
+    const noOffice = (v: QuoteDeliveryVertical) => !B2B_OFFICE_VERTICAL_CODES.has(v.code.trim().toLowerCase());
+    let pool = deliveryVerticals.filter(noOffice);
+    if (b2bPartnerOrgId.trim() && b2bPartnerVerticals.length > 0) {
+      const allow = new Set(b2bPartnerVerticals.map((v) => v.code));
+      pool = pool.filter((v) => allow.has(v.code));
+    }
+    return pool[0]?.code ?? "custom";
+  }, [b2bEmbedSnapshot?.verticalCode, b2bVerticalCode, deliveryVerticals, b2bPartnerOrgId, b2bPartnerVerticals]);
+
   const selectedB2bVertical = useMemo(
-    () => deliveryVerticals.find((v) => v.code === b2bVerticalCode) ?? null,
-    [deliveryVerticals, b2bVerticalCode],
+    () => deliveryVerticals.find((v) => v.code === effectiveB2bVerticalCode) ?? null,
+    [deliveryVerticals, effectiveB2bVerticalCode],
   );
 
   const b2bAfterHoursDerived = b2bTimeBand === "after_hours";
@@ -1256,11 +1270,8 @@ export default function QuoteFormClient({
     const name = [s.firstName, s.lastName].filter(Boolean).join(" ");
     return name || s.b2bBusinessName || s.eventName || "Quote";
   }, []);
-  const { hasDraft: quoteHasDraft, restoreDraft: quoteRestoreDraft, dismissDraft: quoteDismissDraft, clearDraft: quoteClearDraft } = useFormDraft("quote", quoteDraftState, quoteDraftTitleFn);
 
-  const handleRestoreQuoteDraft = useCallback(() => {
-    const d = quoteRestoreDraft();
-    if (!d) return;
+  const applyQuoteDraftFromStorage = useCallback((d: Record<string, unknown>) => {
     if (d.serviceType) setServiceType(d.serviceType as string);
     if (d.firstName) setFirstName(d.firstName as string);
     if (d.lastName) setLastName(d.lastName as string);
@@ -1283,7 +1294,17 @@ export default function QuoteFormClient({
     if (d.itemDescription) setItemDescription(d.itemDescription as string);
     if (d.specialtyType) setSpecialtyType(d.specialtyType as string);
     if (d.declaredValue) setDeclaredValue(d.declaredValue as string);
-  }, [quoteRestoreDraft]);
+  }, []);
+
+  const { hasDraft: quoteHasDraft, restoreDraft: quoteRestoreDraft, dismissDraft: quoteDismissDraft, clearDraft: quoteClearDraft } = useFormDraft("quote", quoteDraftState, quoteDraftTitleFn, {
+    applySaved: applyQuoteDraftFromStorage as (data: typeof quoteDraftState) => void,
+  });
+
+  const handleRestoreQuoteDraft = useCallback(() => {
+    const d = quoteRestoreDraft();
+    if (!d) return;
+    applyQuoteDraftFromStorage(d as Record<string, unknown>);
+  }, [quoteRestoreDraft, applyQuoteDraftFromStorage]);
 
   const handleClientDedupBlur = useCallback(async () => {
     const emailTrim = email.trim().toLowerCase();
@@ -2665,7 +2686,7 @@ export default function QuoteFormClient({
     }
     if (serviceType === "b2b_delivery") {
       base.b2b_business_name = b2bBusinessName.trim() || undefined;
-      base.b2b_vertical_code = b2bVerticalCode || undefined;
+      base.b2b_vertical_code = effectiveB2bVerticalCode || undefined;
       base.b2b_partner_organization_id = b2bPartnerOrgId.trim() || undefined;
       base.b2b_handling_type =
         b2bEmbedSnapshot?.handlingType?.trim().toLowerCase() ||
@@ -2779,7 +2800,7 @@ export default function QuoteFormClient({
     workAddress, workAccess, labourDescription, labourCrewSize, labourHours, labourTruckRequired,
     labourVisits, labourSecondVisitDate, labourStorageNeeded, labourStorageWeeks, labourContext,
     b2bBusinessName,
-    b2bVerticalCode,
+    effectiveB2bVerticalCode,
     b2bPartnerOrgId,
     b2bLines,
     effectiveB2bLines,
@@ -5678,7 +5699,7 @@ export default function QuoteFormClient({
                         <p className="text-[9px] text-[var(--tx3)]">Generate for live inventory and final totals.</p>
                       </div>
                     ) : (serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") && b2bDimensionalPreview ? (
-                      <div className="rounded-xl border border-[#2B0416]/25 bg-[#2B0416]/[0.06] p-4 space-y-2">
+                      <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)]/80 p-4 space-y-2">
                         <p className="text-[11px] font-bold tracking-wide text-[var(--gold)]">
                           {b2bLivePreviewTitle}
                         </p>
@@ -6559,7 +6580,7 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
   const fullOverrideApplied = factors.b2b_full_pre_tax_override_applied === true;
 
   return (
-    <div className="rounded-xl border-2 border-[#2B0416]/35 bg-[#F9EDE4]/40 dark:bg-[#2A2520] p-5 space-y-3">
+    <div className="rounded-xl border-2 border-[var(--brd)] bg-[var(--card)]/90 p-5 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-[13px] font-bold text-[var(--gold)]">B2B One-Off</span>
         <span className="text-3xl font-black tabular-nums text-[var(--tx)]">{fmtPrice(t.price)}</span>

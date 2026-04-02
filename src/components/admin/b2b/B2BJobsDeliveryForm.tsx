@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, useLayoutEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
@@ -10,7 +10,6 @@ import { formatNumberInput, formatCurrency, parseNumberInput } from "@/lib/forma
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import DraftBanner from "@/components/ui/DraftBanner";
 import {
-  CalendarBlank,
   Plus,
   Trash as Trash2,
   SpinnerGap,
@@ -23,6 +22,22 @@ import { parseB2BJobsFieldVisibility, b2bJobsFieldVisible } from "@/lib/b2b-jobs
 import { b2bJobsDimensionalStops } from "@/lib/b2b-jobs-route-helpers";
 import { resolveB2bItemConfig } from "@/lib/b2b-bundle-line-items";
 import { B2bQuickAddIcon } from "@/components/admin/b2b/b2b-quick-add-icon";
+import {
+  b2bVerticalComplexityKeys,
+  b2bVerticalShowsLineField,
+  b2bComplexityVisibilityKey,
+  b2bVerticalQuickAddPresets,
+  type B2bQuickAddPreset,
+} from "@/lib/b2b-vertical-ui";
+import {
+  calculateB2BDimensionalPrice,
+  isMoveDateWeekend,
+  type DeliveryVerticalRow,
+  type B2BDimensionalQuoteInput,
+  type B2BQuoteLineItem,
+} from "@/lib/pricing/b2b-dimensional";
+import { getMultiStopDrivingDistance } from "@/lib/mapbox/driving-distance";
+import { mergedRatesWithBundleTiers, prepareB2bLineItemsForDimensionalEngine } from "@/lib/b2b-dimensional-quote-prep";
 
 const fieldInput = "field-input-compact w-full";
 
@@ -77,6 +92,29 @@ const ACCESS_OPTIONS = [
 const TIME_WINDOW_OPTIONS = ["Morning (7 AM – 12 PM)", "Afternoon (12 PM – 5 PM)", "Full Day (7 AM – 5 PM)"];
 
 const TRUCK_OPTIONS = ["sprinter", "16ft", "20ft", "24ft", "26ft"] as const;
+
+const TAX_RATE_CLIENT = 0.13;
+const ROUNDING_NEAREST_CLIENT = 25;
+
+function roundToNearest(amount: number, nearest: number): number {
+  if (!nearest || nearest <= 0) return Math.round(amount * 100) / 100;
+  return Math.round(amount / nearest) * nearest;
+}
+
+function b2bOptionToVerticalRow(v: B2BVerticalOption): DeliveryVerticalRow {
+  return {
+    id: v.code,
+    code: v.code,
+    name: v.name,
+    description: null,
+    icon: null,
+    base_rate: v.base_rate,
+    pricing_method: v.pricing_method,
+    default_config: v.default_config,
+    active: true,
+    sort_order: 0,
+  };
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -239,13 +277,23 @@ export default function B2BJobsDeliveryForm({
   const formSnapshotRef = useRef({ businessName: "", contactName: "", contactPhone: "", contactEmail: "" });
   const dedupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const hubspotBusinessWrapRef = useRef<HTMLDivElement | null>(null);
+  const hubspotClientSuggestRef = useRef<HTMLDivElement | null>(null);
   const hsSuggestSeqRef = useRef(0);
   const [hsSuggestOpen, setHsSuggestOpen] = useState(false);
   const [hsSuggestLoading, setHsSuggestLoading] = useState(false);
   const [hsSuggestItems, setHsSuggestItems] = useState<HubSpotSuggestRow[]>([]);
   const [hsSuggestHighlight, setHsSuggestHighlight] = useState(0);
   const [hsSuggestNoResults, setHsSuggestNoResults] = useState(false);
+  const [hsSuggestSource, setHsSuggestSource] = useState<"business" | "contact" | "email">("business");
+
+  const hsSuggestQuery = useMemo(() => {
+    const b = businessName.trim();
+    const c = contactName.trim();
+    const e = contactEmail.trim();
+    if (hsSuggestSource === "contact") return c;
+    if (hsSuggestSource === "email") return e;
+    return b;
+  }, [businessName, contactName, contactEmail, hsSuggestSource]);
 
   formSnapshotRef.current = { businessName, contactName, contactPhone, contactEmail };
 
@@ -381,8 +429,36 @@ export default function B2BJobsDeliveryForm({
     setHsDuplicate(null);
   }, []);
 
+  const onHubSpotSuggestKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!hsSuggestOpen || hsSuggestLoading) {
+        if (e.key === "Escape") setHsSuggestOpen(false);
+        return;
+      }
+      const n = hsSuggestItems.length;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setHsSuggestOpen(false);
+        return;
+      }
+      if (n === 0) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHsSuggestHighlight((i) => (i + 1) % n);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHsSuggestHighlight((i) => (i - 1 + n) % n);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const row = hsSuggestItems[hsSuggestHighlight];
+        if (row) applyHubSpotSuggestion(row);
+      }
+    },
+    [hsSuggestOpen, hsSuggestLoading, hsSuggestItems, hsSuggestHighlight, applyHubSpotSuggestion],
+  );
+
   useEffect(() => {
-    const q = businessName.trim();
+    const q = hsSuggestQuery;
     if (q.length < 2) {
       setHsSuggestItems([]);
       setHsSuggestOpen(false);
@@ -422,7 +498,7 @@ export default function B2BJobsDeliveryForm({
     }, 320);
 
     return () => clearTimeout(t);
-  }, [businessName]);
+  }, [hsSuggestQuery]);
 
   useEffect(() => {
     setHsSuggestHighlight(0);
@@ -431,12 +507,63 @@ export default function B2BJobsDeliveryForm({
   useEffect(() => {
     if (!hsSuggestOpen) return;
     const onDocDown = (e: MouseEvent) => {
-      const w = hubspotBusinessWrapRef.current;
+      const w = hubspotClientSuggestRef.current;
       if (w && !w.contains(e.target as Node)) setHsSuggestOpen(false);
     };
     document.addEventListener("mousedown", onDocDown);
     return () => document.removeEventListener("mousedown", onDocDown);
   }, [hsSuggestOpen]);
+
+  const renderHubSpotSuggestDropdown = (field: "business" | "contact" | "email") => {
+    if (!hsSuggestOpen || hsSuggestSource !== field) return null;
+    return (
+      <div
+        id="hubspot-b2b-suggest-listbox"
+        role="listbox"
+        className="absolute z-30 mt-1 left-0 right-0 max-h-[240px] overflow-y-auto rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg"
+      >
+        {hsSuggestLoading && (
+          <div className="flex items-center gap-2 px-3 py-2.5 text-[11px] text-[var(--tx3)]">
+            <SpinnerGap size={14} className="animate-spin shrink-0" aria-hidden />
+            Searching HubSpot…
+          </div>
+        )}
+        {!hsSuggestLoading && hsSuggestItems.length === 0 && hsSuggestNoResults && (
+          <div className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">No matching contacts in HubSpot</div>
+        )}
+        {!hsSuggestLoading &&
+          hsSuggestItems.map((row, idx) => {
+            const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ");
+            const primary = row.company || fullName || row.email || "Contact";
+            const secondary = [fullName, row.email, row.phone ? formatPhone(row.phone) : ""]
+              .filter(Boolean)
+              .join(" · ");
+            const active = idx === hsSuggestHighlight;
+            return (
+              <button
+                key={`${row.hubspot_id}-${idx}`}
+                type="button"
+                role="option"
+                aria-selected={active}
+                onPointerDown={(ev) => ev.preventDefault()}
+                onClick={() => applyHubSpotSuggestion(row)}
+                className={`flex w-full items-start gap-2 text-left px-3 py-2 border-b border-[var(--brd)] last:border-0 ${
+                  active ? "bg-[var(--bg)]" : "hover:bg-[var(--bg)]"
+                }`}
+              >
+                <Buildings size={16} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
+                <span className="min-w-0">
+                  <span className="block text-[12px] font-medium text-[var(--tx)] truncate">{primary}</span>
+                  {secondary ? (
+                    <span className="block text-[10px] text-[var(--tx3)] truncate">{secondary}</span>
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
+      </div>
+    );
+  };
 
   const selectedVertical = useMemo(
     () => verticals.find((v) => v.code === verticalCode) ?? null,
@@ -455,9 +582,22 @@ export default function B2BJobsDeliveryForm({
 
   const vis = useCallback((key: string) => b2bJobsFieldVisible(fieldVisibility, key), [fieldVisibility]);
 
+  /** Complexity keys allowed for this vertical, then DB field_visibility. */
+  const cmpVis = useCallback(
+    (productKey: string) => {
+      if (!b2bVerticalComplexityKeys(verticalCode).includes(productKey)) return false;
+      return vis(b2bComplexityVisibilityKey(productKey));
+    },
+    [verticalCode, vis],
+  );
+
   const showItemField = useCallback(
-    (key: string) => !itemConfig?.showFields?.length || (itemConfig.showFields as string[]).includes(key),
-    [itemConfig?.showFields],
+    (key: string) => {
+      if (!b2bVerticalShowsLineField(verticalCode, key)) return false;
+      if (!itemConfig?.showFields?.length) return true;
+      return (itemConfig.showFields as string[]).includes(key);
+    },
+    [verticalCode, itemConfig?.showFields],
   );
 
   useEffect(() => {
@@ -535,6 +675,8 @@ export default function B2BJobsDeliveryForm({
   const [crewId, setCrewId] = useState("");
 
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [clientDistanceLoading, setClientDistanceLoading] = useState(false);
+  const [estimatedDistanceKm, setEstimatedDistanceKm] = useState<number | null>(null);
   const [preview, setPreview] = useState<{
     rounded_pre_tax: number;
     hst: number;
@@ -544,6 +686,7 @@ export default function B2BJobsDeliveryForm({
     crew: number;
     estimated_hours: number;
     access_surcharge: number;
+    source: "client" | "server";
   } | null>(null);
 
   const effectiveOrgId = applyPartnerRates && partnerOrgId.trim() ? partnerOrgId.trim() : null;
@@ -551,12 +694,12 @@ export default function B2BJobsDeliveryForm({
   const buildEffectiveLines = useCallback((): LineRow[] => {
     if (lines.length > 0) return lines;
     const bc = parseInt(boxCount, 10);
-    if (vis("box_count") && bc >= 1 && verticalCode === "flooring") {
+    if (verticalCode === "flooring" && vis("box_count") && bc >= 1) {
       return [
         {
           description: "Flooring / building materials",
           quantity: bc,
-          weight_category: "light",
+          weight_category: "medium",
           fragile: false,
           unit_type: "box",
         },
@@ -576,6 +719,22 @@ export default function B2BJobsDeliveryForm({
     showItemField("haul_away_old") ||
     showItemField("assembly_required");
 
+  const quickAddPresets = useMemo((): B2bQuickAddPreset[] => {
+    const v = b2bVerticalQuickAddPresets(verticalCode);
+    if (v.length > 0) return v;
+    const q = itemConfig?.quickAdd;
+    if (Array.isArray(q) && q.length > 0) {
+      return q.map((p) => ({
+        name: p.name,
+        weight: ((p.weight as B2bQuickAddPreset["weight"]) || "medium") as B2bQuickAddPreset["weight"],
+        fragile: p.fragile,
+        unit: p.unit,
+        icon: p.icon,
+      }));
+    }
+    return [];
+  }, [verticalCode, itemConfig?.quickAdd]);
+
   const runPricingPreview = useCallback(async () => {
     const effLines = buildEffectiveLines();
     if (
@@ -584,7 +743,6 @@ export default function B2BJobsDeliveryForm({
       !deliveryAddress.trim() ||
       effLines.length === 0
     ) {
-      setPreview(null);
       return;
     }
     setPreviewLoading(true);
@@ -634,16 +792,13 @@ export default function B2BJobsDeliveryForm({
           crew: data.crew,
           estimated_hours: data.estimated_hours,
           access_surcharge: data.access_surcharge ?? 0,
+          source: "server",
         });
-        if (!truckOverride) setTruckOverride("");
-        if (!crewOverride) {
-          /* recommended crew shown from preview */
-        }
       } else {
-        setPreview(null);
+        /* Keep client estimate when server returns an error */
       }
     } catch {
-      setPreview(null);
+      /* Keep client estimate on network failure */
     } finally {
       setPreviewLoading(false);
     }
@@ -676,36 +831,7 @@ export default function B2BJobsDeliveryForm({
     sameDay,
   ]);
 
-  useEffect(() => {
-    const t = setTimeout(() => void runPricingPreview(), 300);
-    return () => clearTimeout(t);
-  }, [
-    runPricingPreview,
-    verticalCode,
-    lines,
-    boxCount,
-    pickupAddress,
-    deliveryAddress,
-    pickupAccess,
-    deliveryAccess,
-    extraPickupStops,
-    extraDeliveryStops,
-    handlingType,
-    timeSensitive,
-    assemblyRequired,
-    debrisRemoval,
-    stairsFlights,
-    highValue,
-    artwork,
-    antiques,
-    skidCount,
-    totalLoadWeightLbs,
-    haulAwayUnits,
-    returnsPickup,
-    sameDay,
-  ]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!embed) return;
     const cb = embedCbRef.current;
     if (!cb) return;
@@ -877,12 +1003,9 @@ export default function B2BJobsDeliveryForm({
   );
 
   const titleFn = useCallback((s: typeof formState) => s.businessName || s.contactName || "B2B Delivery", []);
-  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("delivery_b2b", formState, titleFn);
 
-  const handleRestoreDraft = useCallback(() => {
-    const data = restoreDraft();
-    if (!data) return;
-    const d = data as Record<string, unknown>;
+  const applyB2bDraftData = useCallback((data: Record<string, unknown>) => {
+    const d = data;
     const apply = (k: string, fn: (v: unknown) => void) => {
       if (d[k] !== undefined) fn(d[k]);
     };
@@ -894,12 +1017,12 @@ export default function B2BJobsDeliveryForm({
     apply("applyPartnerRates", (v) => setApplyPartnerRates(!!v));
     apply("verticalCode", (v) => setVerticalCode(String(v)));
     apply("pickupAddress", (v) => setPickupAddress(String(v)));
-    if (Array.isArray(data.extraPickupStops)) setExtraPickupStops(data.extraPickupStops as StopEntry[]);
+    if (Array.isArray(d.extraPickupStops)) setExtraPickupStops(d.extraPickupStops as StopEntry[]);
     apply("pickupAccess", (v) => setPickupAccess(String(v)));
     apply("deliveryAddress", (v) => setDeliveryAddress(String(v)));
     if (Array.isArray(d.extraDeliveryStops)) setExtraDeliveryStops(d.extraDeliveryStops as StopEntry[]);
     apply("deliveryAccess", (v) => setDeliveryAccess(String(v)));
-    if (Array.isArray(data.lines)) setLines(data.lines as LineRow[]);
+    if (Array.isArray(d.lines)) setLines(d.lines as LineRow[]);
     apply("handlingType", (v) => setHandlingType(String(v)));
     apply("scheduledDate", (v) => setScheduledDate(String(v)));
     apply("timeWindow", (v) => setTimeWindow(String(v)));
@@ -944,12 +1067,193 @@ export default function B2BJobsDeliveryForm({
     apply("newHaulAwayLine", (v) => setNewHaulAwayLine(!!v));
     apply("newCratingRequired", (v) => setNewCratingRequired(!!v));
     apply("newLineAssemblyRequired", (v) => setNewLineAssemblyRequired(!!v));
-  }, [restoreDraft]);
+  }, []);
+
+  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("delivery_b2b", formState, titleFn, {
+    applySaved: applyB2bDraftData as (data: typeof formState) => void,
+  });
+
+  const handleRestoreDraft = useCallback(() => {
+    const data = restoreDraft();
+    if (!data) return;
+    applyB2bDraftData(data as Record<string, unknown>);
+  }, [restoreDraft, applyB2bDraftData]);
 
   const stopsForQuote = useMemo(
     () => b2bJobsDimensionalStops(pickupAddress, deliveryAddress, pickupAccess, deliveryAccess, extraPickupStops, extraDeliveryStops),
     [pickupAddress, deliveryAddress, pickupAccess, deliveryAccess, extraPickupStops, extraDeliveryStops],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    const pickupMain = pickupAddress.trim();
+    const deliveryMain = deliveryAddress.trim();
+    if (!pickupMain || !deliveryMain) {
+      setEstimatedDistanceKm(null);
+      setClientDistanceLoading(false);
+      return;
+    }
+    const extraP = extraPickupStops.map((s) => s.address).filter(Boolean);
+    const extraD = extraDeliveryStops.map((s) => s.address).filter(Boolean);
+    const addresses = [pickupMain, ...extraP, deliveryMain, ...extraD];
+    if (addresses.length < 2) {
+      setEstimatedDistanceKm(null);
+      setClientDistanceLoading(false);
+      return;
+    }
+    setClientDistanceLoading(true);
+    const t = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const info = await getMultiStopDrivingDistance(addresses);
+          if (cancelled) return;
+          setEstimatedDistanceKm(info?.distance_km ?? null);
+        } catch {
+          if (!cancelled) setEstimatedDistanceKm(null);
+        } finally {
+          if (!cancelled) setClientDistanceLoading(false);
+        }
+      })();
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [pickupAddress, deliveryAddress, extraPickupStops, extraDeliveryStops]);
+
+  useEffect(() => {
+    if (!selectedVertical) {
+      setPreview(null);
+      return;
+    }
+    const eff = buildEffectiveLines();
+    if (!verticalCode.trim() || !pickupAddress.trim() || !deliveryAddress.trim() || eff.length === 0) {
+      setPreview(null);
+      return;
+    }
+    const rawItems: B2BQuoteLineItem[] = eff
+      .map((l) => {
+        const p = toB2bLinePayload(l, handlingType);
+        const wc = String(p.weight_category || "light").toLowerCase();
+        const wcat =
+          wc === "medium" || wc === "heavy" || wc === "extra_heavy" ? wc : "light";
+        return {
+          description: String(p.description || "").trim(),
+          quantity: Math.max(1, Number(p.quantity) || 1),
+          weight_category: wcat as B2BQuoteLineItem["weight_category"],
+          fragile: !!p.fragile,
+          handling_type: typeof p.handling_type === "string" ? p.handling_type : undefined,
+          unit_type: typeof p.unit_type === "string" ? p.unit_type : undefined,
+          serial_number: typeof p.serial_number === "string" ? p.serial_number : undefined,
+          stop_assignment: typeof p.stop_assignment === "string" ? p.stop_assignment : undefined,
+          declared_value: typeof p.declared_value === "string" ? p.declared_value : undefined,
+          crating_required: !!p.crating_required,
+          hookup_required: !!p.hookup_required,
+          haul_away: !!p.haul_away,
+          assembly_required: !!p.assembly_required,
+        };
+      })
+      .filter((i) => i.description.length > 0);
+
+    if (rawItems.length === 0) {
+      setPreview(null);
+      return;
+    }
+
+    const merged = mergedRatesWithBundleTiers({
+      ...(selectedVertical.default_config as Record<string, unknown>),
+    });
+    const engineItems = prepareB2bLineItemsForDimensionalEngine(rawItems, verticalCode, handlingType, merged);
+
+    const routeStops = b2bJobsDimensionalStops(
+      pickupAddress,
+      deliveryAddress,
+      pickupAccess,
+      deliveryAccess,
+      extraPickupStops,
+      extraDeliveryStops,
+    );
+
+    const dimInput: B2BDimensionalQuoteInput = {
+      vertical_code: verticalCode,
+      items: engineItems,
+      handling_type: handlingType,
+      stops: routeStops,
+      crew_override: crewOverride ? Number(crewOverride) : undefined,
+      truck_override: truckOverride || undefined,
+      estimated_hours_override: hoursOverride ? Number(hoursOverride) : undefined,
+      time_sensitive: timeSensitive,
+      assembly_required: assemblyRequired,
+      debris_removal: debrisRemoval,
+      stairs_flights: stairsFlights ? Number(stairsFlights) : undefined,
+      addons: [
+        ...(highValue ? ["high_value"] : []),
+        ...(artwork ? ["artwork"] : []),
+        ...(antiques ? ["antiques"] : []),
+      ],
+      weekend: scheduledDate ? isMoveDateWeekend(scheduledDate) : false,
+      after_hours: false,
+      same_day: sameDay,
+      skid_count: skidCount ? Number(skidCount) : undefined,
+      total_load_weight_lbs: totalLoadWeightLbs ? Number(totalLoadWeightLbs) : undefined,
+      haul_away_units: haulAwayUnits ? Number(haulAwayUnits) : undefined,
+      returns_pickup: returnsPickup,
+    };
+
+    const distKm = estimatedDistanceKm ?? 0;
+    const dim = calculateB2BDimensionalPrice({
+      vertical: b2bOptionToVerticalRow(selectedVertical),
+      mergedRates: merged,
+      input: dimInput,
+      totalDistanceKm: distKm,
+      roundingNearest: ROUNDING_NEAREST_CLIENT,
+      parkingLongCarryTotal: 0,
+      pricingExtras: [],
+    });
+
+    const access = 0;
+    const roundedPreTax = roundToNearest(dim.subtotal + access, ROUNDING_NEAREST_CLIENT);
+    const hst = Math.round(roundedPreTax * TAX_RATE_CLIENT * 100) / 100;
+    setPreview({
+      rounded_pre_tax: roundedPreTax,
+      hst,
+      total_with_tax: Math.round((roundedPreTax + hst) * 100) / 100,
+      breakdown: dim.breakdown,
+      truck: dim.truck,
+      crew: dim.crew,
+      estimated_hours: dim.estimatedHours,
+      access_surcharge: access,
+      source: "client",
+    });
+  }, [
+    selectedVertical,
+    verticalCode,
+    buildEffectiveLines,
+    pickupAddress,
+    deliveryAddress,
+    pickupAccess,
+    deliveryAccess,
+    extraPickupStops,
+    extraDeliveryStops,
+    handlingType,
+    timeSensitive,
+    assemblyRequired,
+    debrisRemoval,
+    stairsFlights,
+    highValue,
+    artwork,
+    antiques,
+    skidCount,
+    totalLoadWeightLbs,
+    haulAwayUnits,
+    returnsPickup,
+    sameDay,
+    scheduledDate,
+    crewOverride,
+    truckOverride,
+    hoursOverride,
+    estimatedDistanceKm,
+  ]);
 
   const buildB2bStopsPayload = () =>
     stopsForQuote.map((s) => ({
@@ -959,11 +1263,11 @@ export default function B2BJobsDeliveryForm({
     }));
 
   const chainBlock =
-    vis("chain_of_custody") && chainOfCustodyNotes.trim()
+    cmpVis("chain_of_custody") && chainOfCustodyNotes.trim()
       ? `Chain of custody: ${chainOfCustodyNotes.trim()}`
       : "";
   const hookupBlock =
-    vis("hookup") && hookupNotes.trim() ? `Hook-up / install: ${hookupNotes.trim()}` : "";
+    cmpVis("hookup_install") && hookupNotes.trim() ? `Hook-up / install: ${hookupNotes.trim()}` : "";
   const lineDetailBlock = lineAnnotationsBlock(buildEffectiveLines());
   const instructionsMerged =
     [accessNotes.trim(), specialInstructions.trim(), chainBlock, hookupBlock, lineDetailBlock]
@@ -1153,7 +1457,7 @@ export default function B2BJobsDeliveryForm({
       clearDraft();
       const qid = data.quote_id as string;
       if (qid && qid !== "PREVIEW") {
-        router.push(`/admin/quotes/${encodeURIComponent(qid)}/edit`);
+        router.push(`/admin/quotes/${encodeURIComponent(qid)}`);
         router.refresh();
       }
     } catch {
@@ -1308,9 +1612,9 @@ export default function B2BJobsDeliveryForm({
             <span>{hsDuplicate.label}</span>
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div ref={hubspotClientSuggestRef} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label={partnerOrgId.trim() ? "Business name" : "Business name *"}>
-            <div ref={hubspotBusinessWrapRef} className="relative">
+            <div className="relative">
               <input
                 value={businessName}
                 onChange={(e) => {
@@ -1318,98 +1622,42 @@ export default function B2BJobsDeliveryForm({
                   clearHubSpotMatch();
                 }}
                 onFocus={() => {
+                  setHsSuggestSource("business");
                   if (businessName.trim().length >= 2) setHsSuggestOpen(true);
                 }}
-                onKeyDown={(e) => {
-                  if (!hsSuggestOpen || hsSuggestLoading) {
-                    if (e.key === "Escape") setHsSuggestOpen(false);
-                    return;
-                  }
-                  const n = hsSuggestItems.length;
-                  if (e.key === "Escape") {
-                    e.preventDefault();
-                    setHsSuggestOpen(false);
-                    return;
-                  }
-                  if (n === 0) return;
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setHsSuggestHighlight((i) => (i + 1) % n);
-                  } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    setHsSuggestHighlight((i) => (i - 1 + n) % n);
-                  } else if (e.key === "Enter") {
-                    e.preventDefault();
-                    const row = hsSuggestItems[hsSuggestHighlight];
-                    if (row) applyHubSpotSuggestion(row);
-                  }
-                }}
+                onKeyDown={onHubSpotSuggestKeyDown}
                 onBlur={scheduleHubSpotDedup}
                 className={fieldInput}
                 autoComplete="organization"
                 aria-autocomplete="list"
-                aria-expanded={hsSuggestOpen}
-                aria-controls="hubspot-business-suggest-list"
+                aria-expanded={hsSuggestOpen && hsSuggestSource === "business"}
+                aria-controls="hubspot-b2b-suggest-listbox"
               />
-              {hsSuggestOpen && (
-                <div
-                  id="hubspot-business-suggest-list"
-                  role="listbox"
-                  className="absolute z-30 mt-1 left-0 right-0 max-h-[240px] overflow-y-auto rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg"
-                >
-                  {hsSuggestLoading && (
-                    <div className="flex items-center gap-2 px-3 py-2.5 text-[11px] text-[var(--tx3)]">
-                      <SpinnerGap size={14} className="animate-spin shrink-0" aria-hidden />
-                      Searching HubSpot…
-                    </div>
-                  )}
-                  {!hsSuggestLoading && hsSuggestItems.length === 0 && hsSuggestNoResults && (
-                    <div className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">No matching companies in HubSpot</div>
-                  )}
-                  {!hsSuggestLoading &&
-                    hsSuggestItems.map((row, idx) => {
-                      const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ");
-                      const primary = row.company || fullName || row.email || "Contact";
-                      const secondary = [fullName, row.email, row.phone ? formatPhone(row.phone) : ""]
-                        .filter(Boolean)
-                        .join(" · ");
-                      const active = idx === hsSuggestHighlight;
-                      return (
-                        <button
-                          key={`${row.hubspot_id}-${idx}`}
-                          type="button"
-                          role="option"
-                          aria-selected={active}
-                          onPointerDown={(ev) => ev.preventDefault()}
-                          onClick={() => applyHubSpotSuggestion(row)}
-                          className={`flex w-full items-start gap-2 text-left px-3 py-2 border-b border-[var(--brd)] last:border-0 ${
-                            active ? "bg-[var(--bg)]" : "hover:bg-[var(--bg)]"
-                          }`}
-                        >
-                          <Buildings size={16} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
-                          <span className="min-w-0">
-                            <span className="block text-[12px] font-medium text-[var(--tx)] truncate">{primary}</span>
-                            {secondary ? (
-                              <span className="block text-[10px] text-[var(--tx3)] truncate">{secondary}</span>
-                            ) : null}
-                          </span>
-                        </button>
-                      );
-                    })}
-                </div>
-              )}
+              {renderHubSpotSuggestDropdown("business")}
             </div>
           </Field>
           <Field label="Contact name *">
-            <input
-              value={contactName}
-              onChange={(e) => {
-                setContactName(e.target.value);
-                clearHubSpotMatch();
-              }}
-              onBlur={scheduleHubSpotDedup}
-              className={fieldInput}
-            />
+            <div className="relative">
+              <input
+                value={contactName}
+                onChange={(e) => {
+                  setContactName(e.target.value);
+                  clearHubSpotMatch();
+                }}
+                onFocus={() => {
+                  setHsSuggestSource("contact");
+                  if (contactName.trim().length >= 2) setHsSuggestOpen(true);
+                }}
+                onKeyDown={onHubSpotSuggestKeyDown}
+                onBlur={scheduleHubSpotDedup}
+                className={fieldInput}
+                autoComplete="name"
+                aria-autocomplete="list"
+                aria-expanded={hsSuggestOpen && hsSuggestSource === "contact"}
+                aria-controls="hubspot-b2b-suggest-listbox"
+              />
+              {renderHubSpotSuggestDropdown("contact")}
+            </div>
           </Field>
           <Field label="Phone *">
             <input
@@ -1426,16 +1674,28 @@ export default function B2BJobsDeliveryForm({
             />
           </Field>
           <Field label="Email">
-            <input
-              type="email"
-              value={contactEmail}
-              onChange={(e) => {
-                setContactEmail(e.target.value);
-                clearHubSpotMatch();
-              }}
-              onBlur={scheduleHubSpotDedup}
-              className={fieldInput}
-            />
+            <div className="relative">
+              <input
+                type="email"
+                value={contactEmail}
+                onChange={(e) => {
+                  setContactEmail(e.target.value);
+                  clearHubSpotMatch();
+                }}
+                onFocus={() => {
+                  setHsSuggestSource("email");
+                  if (contactEmail.trim().length >= 2) setHsSuggestOpen(true);
+                }}
+                onKeyDown={onHubSpotSuggestKeyDown}
+                onBlur={scheduleHubSpotDedup}
+                className={fieldInput}
+                autoComplete="email"
+                aria-autocomplete="list"
+                aria-expanded={hsSuggestOpen && hsSuggestSource === "email"}
+                aria-controls="hubspot-b2b-suggest-listbox"
+              />
+              {renderHubSpotSuggestDropdown("email")}
+            </div>
           </Field>
         </div>
       </section>
@@ -1462,16 +1722,12 @@ export default function B2BJobsDeliveryForm({
 
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Items *</h3>
-        {vis("box_count") && (
-          <Field label="Box count (flooring shortcut)">
-            <input
-              type="number"
-              min={0}
-              value={boxCount}
-              onChange={(e) => setBoxCount(e.target.value)}
-              className={fieldInput}
-              placeholder="When set without lines, builds a flooring line for pricing"
-            />
+        {verticalCode === "flooring" && vis("box_count") && (
+          <Field label="Box / unit count (flooring shortcut)">
+            <input type="number" min={0} value={boxCount} onChange={(e) => setBoxCount(e.target.value)} className={fieldInput} />
+            <p className="text-[10px] text-[var(--tx3)] mt-1">
+              Quick entry: set total units without adding individual line items
+            </p>
           </Field>
         )}
         {lines.length > 0 && (
@@ -1771,13 +2027,13 @@ export default function B2BJobsDeliveryForm({
             )}
           </div>
         )}
-        {itemConfig?.quickAdd && itemConfig.quickAdd.length > 0 && (
+        {quickAddPresets.length > 0 && (
           <div className="pt-2 space-y-1">
             <p className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]">
-              Quick add{itemConfig.label ? ` (${itemConfig.label})` : ""}
+              Quick add{itemConfig?.label ? ` (${itemConfig.label})` : ""}
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {itemConfig.quickAdd.map((p) => (
+              {quickAddPresets.map((p) => (
                 <button
                   key={p.name}
                   type="button"
@@ -1789,7 +2045,7 @@ export default function B2BJobsDeliveryForm({
                   ) : (
                     <Plus className="w-3.5 h-3.5 shrink-0" aria-hidden />
                   )}
-                  {p.name}
+                  + {p.name}
                 </button>
               ))}
             </div>
@@ -1875,10 +2131,7 @@ export default function B2BJobsDeliveryForm({
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Schedule</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label="Date *">
-            <div className="relative">
-              <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={`${fieldInput} pr-9`} style={{ colorScheme: "dark" }} />
-              <CalendarBlank size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)]" aria-hidden />
-            </div>
+            <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className={fieldInput} style={{ colorScheme: "dark" }} />
           </Field>
           <Field label="Delivery window">
             <select value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)} className={fieldInput}>
@@ -1891,7 +2144,7 @@ export default function B2BJobsDeliveryForm({
             </select>
           </Field>
         </div>
-        {vis("same_day") && (
+        {cmpVis("same_day") && (
           <label className="flex items-center gap-2 text-[11px] text-[var(--tx)]">
             <input type="checkbox" checked={sameDay} onChange={(e) => setSameDay(e.target.checked)} className="accent-[var(--gold)]" />
             Same-day delivery
@@ -1910,7 +2163,7 @@ export default function B2BJobsDeliveryForm({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
           <Field label="Recommended truck">
             <div className="px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] min-h-[36px] flex items-center">
-              {previewLoading ? "…" : preview?.truck ?? "—"}
+              {previewLoading || (clientDistanceLoading && !preview) ? "…" : preview?.truck ?? "—"}
             </div>
           </Field>
           <Field label="Override truck">
@@ -1925,7 +2178,7 @@ export default function B2BJobsDeliveryForm({
           </Field>
           <Field label="Recommended crew">
             <div className="px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] min-h-[36px] flex items-center">
-              {previewLoading ? "…" : preview != null ? String(preview.crew) : "—"}
+              {previewLoading || (clientDistanceLoading && !preview) ? "…" : preview != null ? String(preview.crew) : "—"}
             </div>
           </Field>
           <Field label="Override crew size">
@@ -1941,7 +2194,7 @@ export default function B2BJobsDeliveryForm({
           </Field>
           <Field label="Est. hours">
             <div className="px-2 py-2 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] min-h-[36px] flex items-center">
-              {previewLoading ? "…" : preview != null ? String(preview.estimated_hours) : "—"}
+              {previewLoading || (clientDistanceLoading && !preview) ? "…" : preview != null ? `${preview.estimated_hours} hrs` : "—"}
             </div>
           </Field>
           <Field label="Override hours">
@@ -1966,40 +2219,40 @@ export default function B2BJobsDeliveryForm({
         </section>
       )}
 
-      {(vis("debris_removal") ||
-        vis("stairs") ||
-        vis("high_value") ||
-        vis("artwork") ||
-        vis("antiques") ||
-        vis("chain_of_custody") ||
-        vis("hookup") ||
-        vis("returns") ||
-        vis("skid_count") ||
-        vis("total_weight") ||
-        vis("haul_away")) && (
+      {(cmpVis("debris_removal") ||
+        cmpVis("stairs") ||
+        cmpVis("high_value") ||
+        cmpVis("artwork") ||
+        cmpVis("antiques") ||
+        cmpVis("chain_of_custody") ||
+        cmpVis("hookup_install") ||
+        cmpVis("returns_pickup") ||
+        cmpVis("skid_count") ||
+        cmpVis("total_load_weight") ||
+        cmpVis("haul_away")) && (
         <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Complexity & extras</h3>
-          {(vis("debris_removal") || vis("high_value") || vis("artwork") || vis("antiques")) && (
+          {(cmpVis("debris_removal") || cmpVis("high_value") || cmpVis("artwork") || cmpVis("antiques")) && (
             <div className="flex flex-wrap gap-3 text-[11px] text-[var(--tx)]">
-              {vis("debris_removal") && (
+              {cmpVis("debris_removal") && (
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={debrisRemoval} onChange={(e) => setDebrisRemoval(e.target.checked)} className="accent-[var(--gold)]" />
                   Debris removal
                 </label>
               )}
-              {vis("high_value") && (
+              {cmpVis("high_value") && (
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={highValue} onChange={(e) => setHighValue(e.target.checked)} className="accent-[var(--gold)]" />
                   High value
                 </label>
               )}
-              {vis("artwork") && (
+              {cmpVis("artwork") && (
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={artwork} onChange={(e) => setArtwork(e.target.checked)} className="accent-[var(--gold)]" />
                   Artwork
                 </label>
               )}
-              {vis("antiques") && (
+              {cmpVis("antiques") && (
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={antiques} onChange={(e) => setAntiques(e.target.checked)} className="accent-[var(--gold)]" />
                   Antiques
@@ -2007,12 +2260,12 @@ export default function B2BJobsDeliveryForm({
               )}
             </div>
           )}
-          {vis("stairs") && (
+          {cmpVis("stairs") && (
             <Field label="Stairs (flights)">
               <input type="number" min={0} value={stairsFlights} onChange={(e) => setStairsFlights(e.target.value)} className={fieldInput} />
             </Field>
           )}
-          {vis("chain_of_custody") && (
+          {cmpVis("chain_of_custody") && (
             <Field label="Chain of custody notes">
               <textarea
                 value={chainOfCustodyNotes}
@@ -2023,7 +2276,7 @@ export default function B2BJobsDeliveryForm({
               />
             </Field>
           )}
-          {vis("hookup") && (
+          {cmpVis("hookup_install") && (
             <Field label="Hook-up / install notes">
               <textarea
                 value={hookupNotes}
@@ -2034,23 +2287,23 @@ export default function B2BJobsDeliveryForm({
               />
             </Field>
           )}
-          {vis("returns") && (
+          {cmpVis("returns_pickup") && (
             <label className="flex items-center gap-2 text-[11px] text-[var(--tx)]">
               <input type="checkbox" checked={returnsPickup} onChange={(e) => setReturnsPickup(e.target.checked)} className="accent-[var(--gold)]" />
               Returns pickup
             </label>
           )}
-          {vis("skid_count") && (
+          {cmpVis("skid_count") && (
             <Field label="Skid count">
               <input type="number" min={0} value={skidCount} onChange={(e) => setSkidCount(e.target.value)} className={fieldInput} />
             </Field>
           )}
-          {vis("total_weight") && (
+          {cmpVis("total_load_weight") && (
             <Field label="Total load weight (lbs)">
               <input type="number" min={0} value={totalLoadWeightLbs} onChange={(e) => setTotalLoadWeightLbs(e.target.value)} className={fieldInput} />
             </Field>
           )}
-          {vis("haul_away") && (
+          {cmpVis("haul_away") && (
             <Field label="Haul-away units">
               <input type="number" min={0} value={haulAwayUnits} onChange={(e) => setHaulAwayUnits(e.target.value)} className={fieldInput} />
             </Field>
@@ -2060,8 +2313,23 @@ export default function B2BJobsDeliveryForm({
 
       <section className="space-y-2 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 shadow-sm">
         <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Pricing</h3>
+        {selectedVertical && (
+          <div className="text-[11px] text-[var(--tx2)] space-y-0.5">
+            <p>
+              <span className="font-semibold text-[var(--tx)]">{selectedVertical.name}</span>
+              <span className="text-[var(--tx3)]"> · Base rate </span>
+              <span className="tabular-nums text-[var(--tx)]">{formatCurrency(selectedVertical.base_rate)}</span>
+            </p>
+            {estimatedDistanceKm != null ? (
+              <p className="text-[10px] text-[var(--tx3)]">Route ~{estimatedDistanceKm} km (used in estimate)</p>
+            ) : null}
+          </div>
+        )}
         {preview && (
           <div className="text-[11px] space-y-1 text-[var(--tx)]">
+            <p className="text-[9px] uppercase tracking-wide text-[var(--tx3)]">
+              {preview.source === "server" ? "Server pricing" : "Client estimate"}
+            </p>
             <div className="font-semibold text-[var(--gold)]">Calculated pre-tax: {formatCurrency(preview.rounded_pre_tax)}</div>
             {preview.access_surcharge > 0 && (
               <div className="text-[var(--tx3)]">Access surcharges (in pre-tax): {formatCurrency(preview.access_surcharge)}</div>
@@ -2084,13 +2352,24 @@ export default function B2BJobsDeliveryForm({
             </div>
           </div>
         )}
-        {!preview && !previewLoading && (
+        {!preview && !previewLoading && !clientDistanceLoading && (
           <p className="text-[11px] text-[var(--tx3)]">
-            Select a vertical, enter pickup and delivery addresses, add at least one line item (or flooring box count), then
-            the preview updates automatically.
+            Select a vertical, enter pickup and delivery addresses, add at least one line item (or flooring box count). The
+            estimate updates as you type. Use server pricing for partner rate cards and full access surcharges.
           </p>
         )}
-        {previewLoading && <p className="text-[11px] text-[var(--tx3)]">Updating preview…</p>}
+        {previewLoading && <p className="text-[11px] text-[var(--tx3)]">Fetching server pricing…</p>}
+        {clientDistanceLoading && !preview && (
+          <p className="text-[11px] text-[var(--tx3)]">Calculating route distance…</p>
+        )}
+        <button
+          type="button"
+          disabled={previewLoading}
+          onClick={() => void runPricingPreview()}
+          className="w-full sm:w-auto px-3 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx)] hover:border-[var(--gold)] disabled:opacity-50"
+        >
+          Refresh server pricing
+        </button>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
           <Field label="Admin override (pre-tax, optional)">
             <input

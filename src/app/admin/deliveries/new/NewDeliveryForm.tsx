@@ -138,11 +138,8 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   }), [projectType, organizationId, customerName, customerEmail, customerPhone, pickupAddress, deliveryAddress, scheduledDate, timeSlot, deliveryWindow, instructions, accessNotes, internalNotes, quotedPrice, crewId, deliveryAccess, itemWeightCategory, itemsFallback]);
 
   const draftTitleFn = useCallback((s: typeof draftState) => s.customerName || "Delivery", []);
-  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("delivery", draftState, draftTitleFn);
 
-  const handleRestoreDraft = useCallback(() => {
-    const d = restoreDraft();
-    if (!d) return;
+  const applyDeliveryDraft = useCallback((d: Record<string, unknown>) => {
     if (d.projectType) setProjectType(d.projectType as string);
     if (d.organizationId) setOrganizationId(d.organizationId as string);
     if (d.customerName) setCustomerName(d.customerName as string);
@@ -161,7 +158,17 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
     if (d.deliveryAccess) setDeliveryAccess(d.deliveryAccess as string);
     if (d.itemWeightCategory) setItemWeightCategory(d.itemWeightCategory as string);
     if (d.itemsFallback) setItemsFallback(d.itemsFallback as string);
-  }, [restoreDraft]);
+  }, []);
+
+  const { hasDraft, restoreDraft, dismissDraft, clearDraft } = useFormDraft("delivery", draftState, draftTitleFn, {
+    applySaved: applyDeliveryDraft as (data: typeof draftState) => void,
+  });
+
+  const handleRestoreDraft = useCallback(() => {
+    const d = restoreDraft();
+    if (!d) return;
+    applyDeliveryDraft(d as Record<string, unknown>);
+  }, [restoreDraft, applyDeliveryDraft]);
 
   const filteredOrgs = organizations.filter((o) => {
     if (!contactSearch) return true;

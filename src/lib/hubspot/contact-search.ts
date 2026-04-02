@@ -80,6 +80,154 @@ async function runContactSearch(
   return searchData.results ?? [];
 }
 
+async function runCompanySearch(
+  token: string,
+  body: Record<string, unknown>,
+  limit: number,
+): Promise<{ id: string; properties?: Record<string, unknown> }[]> {
+  const searchRes = await fetch(`${HS_BASE}/objects/companies/search`, {
+    method: "POST",
+    headers: hsHeaders(token),
+    body: JSON.stringify({
+      ...body,
+      properties: ["name"],
+      limit: Math.min(Math.max(1, limit), 100),
+    }),
+  });
+  if (!searchRes.ok) return [];
+  const searchData = await searchRes.json();
+  return searchData.results ?? [];
+}
+
+async function fetchAssociatedContactIds(token: string, companyId: string): Promise<string[]> {
+  try {
+    const res = await fetch(`${HS_BASE}/objects/companies/${companyId}/associations/contacts`, {
+      headers: hsHeaders(token),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { results?: { toObjectId?: string; id?: string }[] };
+    return (data.results ?? [])
+      .map((r) => (r.toObjectId != null ? String(r.toObjectId) : r.id != null ? String(r.id) : ""))
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function batchReadContacts(
+  token: string,
+  ids: string[],
+): Promise<{ id: string; properties?: Record<string, unknown> }[]> {
+  if (ids.length === 0) return [];
+  const unique = [...new Set(ids)];
+  const out: { id: string; properties?: Record<string, unknown> }[] = [];
+  for (let i = 0; i < unique.length; i += 100) {
+    const chunk = unique.slice(i, i + 100);
+    try {
+      const res = await fetch(`${HS_BASE}/objects/contacts/batch/read`, {
+        method: "POST",
+        headers: hsHeaders(token),
+        body: JSON.stringify({
+          properties: [...CONTACT_PROPERTIES],
+          inputs: chunk.map((id) => ({ id })),
+        }),
+      });
+      if (!res.ok) continue;
+      const data = (await res.json()) as {
+        results?: { id?: string; properties?: Record<string, unknown> }[];
+      };
+      for (const r of data.results ?? []) {
+        if (r.id) out.push({ id: r.id, properties: r.properties });
+      }
+    } catch {
+      /* skip chunk */
+    }
+  }
+  return out;
+}
+
+function mapContactRowWithCompanyFallback(
+  contact: { id: string; properties?: Record<string, unknown> },
+  fallbackCompany?: string,
+): HubSpotContactSuggestion {
+  const row = mapContactRow(contact);
+  if (!row.company.trim() && fallbackCompany?.trim()) {
+    return { ...row, company: fallbackCompany.trim() };
+  }
+  return row;
+}
+
+/** AND filters on `company` (contact property) from query tokens. */
+function contactCompanyTokenFilters(query: string): { filters: { propertyName: string; operator: string; value: string }[] } {
+  const raw = query.trim();
+  const words = raw.split(/\s+/).filter(Boolean);
+  const strongTokens = words.filter((w) => w.length >= 2);
+  const filters =
+    strongTokens.length > 0
+      ? strongTokens.slice(0, 6).map((value) => ({
+          propertyName: "company",
+          operator: "CONTAINS_TOKEN",
+          value,
+        }))
+      : [{ propertyName: "company", operator: "CONTAINS_TOKEN", value: raw }];
+  return { filters };
+}
+
+/** AND filters on Company object `name` for the same tokens. */
+function companyNameTokenFilters(query: string): { filters: { propertyName: string; operator: string; value: string }[] } {
+  const raw = query.trim();
+  const words = raw.split(/\s+/).filter(Boolean);
+  const strongTokens = words.filter((w) => w.length >= 2);
+  const filters =
+    strongTokens.length > 0
+      ? strongTokens.slice(0, 6).map((value) => ({
+          propertyName: "name",
+          operator: "CONTAINS_TOKEN",
+          value,
+        }))
+      : [{ propertyName: "name", operator: "CONTAINS_TOKEN", value: raw }];
+  return { filters };
+}
+
+/**
+ * OR contact search: contact `company` text, first/last name, email — max 5 filter groups (HubSpot limit).
+ */
+function contactOrFilterGroupsForTypeahead(query: string): { filters: { propertyName: string; operator: string; value: string }[] }[] {
+  const raw = query.trim();
+  const lower = raw.toLowerCase();
+  const words = raw.split(/\s+/).filter(Boolean);
+  const strongTokens = words.filter((w) => w.length >= 2);
+
+  const groups: { filters: { propertyName: string; operator: string; value: string }[] }[] = [];
+
+  groups.push(contactCompanyTokenFilters(raw));
+
+  if (strongTokens.length >= 2) {
+    const first = strongTokens[0]!;
+    const last = strongTokens.slice(1).join(" ");
+    groups.push({
+      filters: [
+        { propertyName: "firstname", operator: "CONTAINS_TOKEN", value: first },
+        { propertyName: "lastname", operator: "CONTAINS_TOKEN", value: last },
+      ],
+    });
+  } else {
+    const t = strongTokens[0] || raw;
+    if (t.length >= 2) {
+      groups.push({ filters: [{ propertyName: "firstname", operator: "CONTAINS_TOKEN", value: t }] });
+      groups.push({ filters: [{ propertyName: "lastname", operator: "CONTAINS_TOKEN", value: t }] });
+    }
+  }
+
+  if (raw.includes("@")) {
+    groups.push({ filters: [{ propertyName: "email", operator: "EQ", value: lower }] });
+  } else if (raw.length >= 2) {
+    groups.push({ filters: [{ propertyName: "email", operator: "CONTAINS_TOKEN", value: lower }] });
+  }
+
+  return groups.slice(0, 5);
+}
+
 async function searchContacts(
   token: string,
   body: Record<string, unknown>,
@@ -92,11 +240,11 @@ async function searchContacts(
 export type HubSpotContactSuggestion = Omit<HubSpotContactPayload, "deal_ids">;
 
 /**
- * Typeahead: contacts whose `company` matches HubSpot CONTAINS_TOKEN rules.
- * Multi-word queries AND each word (length ≥ 2) as separate tokens on `company`.
- * Single string (e.g. "MyNewFloor") uses one CONTAINS_TOKEN. Min 2 characters total.
+ * Typeahead: HubSpot contacts for admin forms.
+ * - Matches **Company** records by `name`, then loads **associated contacts** (fixes empty contact `company` text).
+ * - Matches contact `company`, first/last name, and email (OR groups, HubSpot max 5).
  */
-export async function suggestHubSpotContactsByCompanyQuery(
+export async function suggestHubSpotForTypeahead(
   token: string,
   query: string,
   limit = 12,
@@ -104,21 +252,57 @@ export async function suggestHubSpotContactsByCompanyQuery(
   const raw = query.trim();
   if (raw.length < 2) return [];
 
-  const words = raw.split(/\s+/).filter(Boolean);
-  const strongTokens = words.filter((w) => w.length >= 2);
-  const filters =
-    strongTokens.length > 0
-      ? strongTokens.slice(0, 6).map((value) => ({
-          propertyName: "company",
-          operator: "CONTAINS_TOKEN",
-          value,
-        }))
-      : [{ propertyName: "company", operator: "CONTAINS_TOKEN", value: raw }];
+  const suggestedIds = new Set<string>();
+  const out: HubSpotContactSuggestion[] = [];
 
-  const rows = await runContactSearch(token, { filterGroups: [{ filters }] }, limit);
+  const companyRows = await runCompanySearch(
+    token,
+    { filterGroups: [companyNameTokenFilters(raw)] },
+    15,
+  );
 
-  return rows.map((row) => mapContactRow(row));
+  const assocChunks = await Promise.all(
+    companyRows.slice(0, 10).map(async (co) => {
+      const name = String((co.properties?.name as string) || "");
+      const ids = await fetchAssociatedContactIds(token, co.id);
+      return { ids, name };
+    }),
+  );
+
+  const orderedUniqueIds: string[] = [];
+  const idToCompanyName = new Map<string, string>();
+  for (const { ids, name } of assocChunks) {
+    for (const cid of ids) {
+      if (suggestedIds.has(cid)) continue;
+      suggestedIds.add(cid);
+      orderedUniqueIds.push(cid);
+      if (name) idToCompanyName.set(cid, name);
+    }
+  }
+
+  const assocContacts = await batchReadContacts(token, orderedUniqueIds.slice(0, 80));
+  const byAssocId = new Map(assocContacts.map((c) => [c.id, c]));
+  for (const id of orderedUniqueIds) {
+    if (out.length >= limit) break;
+    const row = byAssocId.get(id);
+    if (!row) continue;
+    out.push(mapContactRowWithCompanyFallback(row, idToCompanyName.get(id)));
+  }
+
+  const filterGroups = contactOrFilterGroupsForTypeahead(raw);
+  const contactRows = await runContactSearch(token, { filterGroups }, Math.min(100, limit * 4));
+  for (const row of contactRows) {
+    if (out.length >= limit) break;
+    if (suggestedIds.has(row.id)) continue;
+    suggestedIds.add(row.id);
+    out.push(mapContactRow(row));
+  }
+
+  return out;
 }
+
+/** @deprecated Prefer {@link suggestHubSpotForTypeahead} — behavior is identical now. */
+export const suggestHubSpotContactsByCompanyQuery = suggestHubSpotForTypeahead;
 
 export async function searchHubSpotContactByEmail(
   token: string,

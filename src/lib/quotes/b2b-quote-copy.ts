@@ -123,8 +123,16 @@ export function getB2BQuoteEmailSubheading(verticalCode: string | null | undefin
 
 const ASSEMBLY_LINE = "Full Assembly And Room-Of-Choice Placement";
 const NO_ASSEMBLY_LINE = "Careful Unloading To Designated Area";
+const CUSTOM_SCOPE_PLACEMENT = "Handling & Placement Per Your Quoted Scope";
 
 const VERTICALS_NO_ASSEMBLY = new Set(["flooring"]);
+
+function b2bVerticalIsCustomOther(
+  verticalCode: string | null | undefined,
+  verticalDisplayName?: string | null,
+): boolean {
+  return b2bVerticalUsesPackageLeadIcon(verticalCode, verticalDisplayName);
+}
 
 /**
  * Standard B2B delivery feature bullets for quote UI.
@@ -133,12 +141,21 @@ const VERTICALS_NO_ASSEMBLY = new Set(["flooring"]);
 export function getB2BDeliveryFeatureList(
   verticalCode: string | null | undefined,
   crewSize: number | null | undefined,
+  verticalDisplayName?: string | null,
 ): string[] {
   const code = (verticalCode || "custom").trim() || "custom";
+  const isCustomOther = b2bVerticalIsCustomOther(verticalCode, verticalDisplayName);
   const n = typeof crewSize === "number" && crewSize > 0 ? Math.round(crewSize) : 2;
-  const line4 = VERTICALS_NO_ASSEMBLY.has(code) ? NO_ASSEMBLY_LINE : ASSEMBLY_LINE;
+  const line4 = isCustomOther
+    ? CUSTOM_SCOPE_PLACEMENT
+    : VERTICALS_NO_ASSEMBLY.has(code)
+      ? NO_ASSEMBLY_LINE
+      : ASSEMBLY_LINE;
+  const vehicleLine = isCustomOther
+    ? "Climate-Controlled Vehicle Assigned To Your Shipment"
+    : "Dedicated Delivery Vehicle (Climate-Controlled)";
   return [
-    "Dedicated Delivery Vehicle (Climate-Controlled)",
+    vehicleLine,
     `Professional ${n}-Person Crew`,
     "Protective Blanket Wrapping For All Items",
     line4,
@@ -149,4 +166,16 @@ export function getB2BDeliveryFeatureList(
     "Real-Time GPS Tracking Via Partner Portal",
     "Digital Proof Of Delivery",
   ];
+}
+
+/** B2B verticals where the lead vehicle icon should not be a truck (neutral logistics mark). */
+export function b2bVerticalUsesPackageLeadIcon(
+  verticalCode: string | null | undefined,
+  verticalDisplayName?: string | null,
+): boolean {
+  const code = (verticalCode || "").trim().toLowerCase();
+  if (code === "custom") return true;
+  const name = (verticalDisplayName || "").trim().toLowerCase();
+  if (name.includes("custom") && name.includes("other")) return true;
+  return false;
 }

@@ -44,10 +44,37 @@ export function getDraftCreatePath(type: DraftFormType): string {
   return paths[type] ?? "/admin";
 }
 
+/** Resume link: use `&draftId=` when the base path already has query params. */
+export function buildDraftResumePath(formType: DraftFormType, draftId: string): string {
+  const base = getDraftCreatePath(formType);
+  return base.includes("?") ? `${base}&draftId=${encodeURIComponent(draftId)}` : `${base}?draftId=${encodeURIComponent(draftId)}`;
+}
+
+/** Legacy bug: paths like `...?choice=b2b_oneoff?draftId=` broke Next searchParams. */
+function normalizeDraftPath(path: string): string {
+  const firstQ = path.indexOf("?");
+  const bad = path.indexOf("?draftId=");
+  if (firstQ >= 0 && bad > firstQ) {
+    return `${path.slice(0, bad)}&draftId=${path.slice(bad + "?draftId=".length)}`;
+  }
+  return path;
+}
+
 function readDrafts(): DraftEntry[] {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed: DraftEntry[] = raw ? JSON.parse(raw) : [];
+    let changed = false;
+    const fixed = parsed.map((e) => {
+      const p = normalizeDraftPath(e.path);
+      if (p !== e.path) {
+        changed = true;
+        return { ...e, path: p };
+      }
+      return e;
+    });
+    if (changed) writeDrafts(fixed);
+    return fixed;
   } catch {
     return [];
   }
@@ -81,10 +108,16 @@ export function clearAllDrafts() {
  * @param formState — current serializable form state (all useState values as an object)
  * @param titleFn   — derives a human-readable draft title from formState (e.g. customer name)
  */
+export type UseFormDraftUrlRestore<T extends Record<string, unknown>> = {
+  /** If `?draftId=` matches this form session, call `applySaved` once (Resume from Drafts page). */
+  applySaved: (data: T) => void;
+};
+
 export function useFormDraft<T extends Record<string, unknown>>(
   formType: DraftFormType,
   formState: T,
   titleFn: (state: T) => string,
+  urlAutoRestore?: UseFormDraftUrlRestore<T>,
 ) {
   const [draftId] = useState(() => {
     if (typeof window === "undefined") return crypto.randomUUID();
@@ -97,21 +130,42 @@ export function useFormDraft<T extends Record<string, unknown>>(
   const [dismissed, setDismissed] = useState(false);
   const savedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const urlRestoreDoneRef = useRef(false);
+  const applySavedRef = useRef(urlAutoRestore?.applySaved);
+  applySavedRef.current = urlAutoRestore?.applySaved;
 
-  // On mount: check for an existing draft for this form type (from URL param or existing)
+  // On mount: resume from URL draftId (auto-apply) or show restore banner for latest draft of this form type
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const drafts = readDrafts();
     const params = new URLSearchParams(window.location.search);
     const resumeId = params.get("draftId");
     const existing = resumeId
-      ? drafts.find((d) => d.id === resumeId)
+      ? drafts.find((d) => d.id === resumeId && d.formType === formType)
       : drafts.find((d) => d.formType === formType);
 
-    if (existing) {
-      setHasDraft(true);
-      setDraftData(existing.data as T);
+    if (!existing) return;
+
+    const shouldAutoApply =
+      Boolean(urlAutoRestore?.applySaved) &&
+      Boolean(resumeId) &&
+      resumeId === draftId &&
+      existing.id === draftId;
+
+    if (shouldAutoApply) {
+      if (!urlRestoreDoneRef.current) {
+        urlRestoreDoneRef.current = true;
+        applySavedRef.current?.(existing.data as T);
+        setDismissed(true);
+        setHasDraft(false);
+        setDraftData(null);
+      }
+      return;
     }
-  }, [formType]);
+
+    setHasDraft(true);
+    setDraftData(existing.data as T);
+  }, [formType, draftId]);
 
   // Debounced auto-save whenever formState changes
   useEffect(() => {
@@ -133,7 +187,7 @@ export function useFormDraft<T extends Record<string, unknown>>(
         formType,
         title: titleFn(formState) || getDraftLabel(formType),
         updatedAt: new Date().toISOString(),
-        path: getDraftCreatePath(formType) + `?draftId=${draftId}`,
+        path: buildDraftResumePath(formType, draftId),
         data: formState as Record<string, unknown>,
       });
       // Keep max 20 drafts total
