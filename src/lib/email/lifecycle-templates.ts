@@ -66,11 +66,11 @@ function starRatingLinks(reviewUrl: string, reviewRedirectUrl: string): string {
   return `
     <div style="font-size:11px;color:#B8B5B0;margin-bottom:10px;text-align:center">Rate your experience:</div>
     <div style="margin:0 0 24px;text-align:center">
-      <a href="${link1}" style="${starStyle}" title="1 star">★</a>
-      <a href="${link2}" style="${starStyle}" title="2 stars">★</a>
-      <a href="${link3}" style="${starStyle}" title="3 stars">★</a>
-      <a href="${link4}" style="${starStyle}" title="4 stars">★</a>
-      <a href="${link5}" style="${starStyle}" title="5 stars">★</a>
+      <a href="${link1}" style="${starStyle}" title="1 star">1</a>
+      <a href="${link2}" style="${starStyle}" title="2 stars">2</a>
+      <a href="${link3}" style="${starStyle}" title="3 stars">3</a>
+      <a href="${link4}" style="${starStyle}" title="4 stars">4</a>
+      <a href="${link5}" style="${starStyle}" title="5 stars">5</a>
     </div>
   `;
 }
@@ -109,13 +109,13 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
     <div style="${EQ_PANEL}">
       <div style="font-size:10px;color:#B8962E;text-transform:none;font-weight:700;letter-spacing:0.12em;margin-bottom:14px;font-family:${EQ_SANS}">Pre-move checklist</div>
       <div style="font-size:13px;color:${EQ_MUTED};line-height:2;font-family:${EQ_SANS}">
-        <div>&#9744; Book elevator or loading dock at both locations</div>
-        <div>&#9744; Reserve parking access for our truck</div>
-        <div>&#9744; Finish packing any remaining boxes</div>
-        <div>&#9744; Clear hallways and pathways throughout</div>
-        <div>&#9744; Arrange care for pets and young children on the day</div>
-        <div>&#9744; Keep valuables, medications, and important documents with you</div>
-        <div>&#9744; Defrost the freezer and empty the fridge</div>
+        <div>— Book elevator or loading dock at both locations</div>
+        <div>— Reserve parking access for our truck</div>
+        <div>— Finish packing any remaining boxes</div>
+        <div>— Clear hallways and pathways throughout</div>
+        <div>— Arrange care for pets and young children on the day</div>
+        <div>— Keep valuables, medications, and important documents with you</div>
+        <div>— Defrost the freezer and empty the fridge</div>
       </div>
     </div>
 

@@ -226,9 +226,6 @@ export default function TrackTipClient({
                       backgroundColor: amount === amt ? `${GOLD}18` : "transparent",
                     }}
                   >
-                    {amount === amt && (
-                      <Check size={10} weight="bold" aria-hidden className="absolute top-1 right-1" style={{ color: GOLD }} />
-                    )}
                     ${amt}
                   </button>
                 ))}

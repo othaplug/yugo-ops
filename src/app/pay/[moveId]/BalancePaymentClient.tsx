@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Script from "next/script";
-import { Check, Lock } from "@phosphor-icons/react";
+import { Check } from "@phosphor-icons/react";
 
 const SQUARE_SDK_SANDBOX = "https://sandbox.web.squarecdn.com/v1/square.js";
 const SQUARE_SDK_PRODUCTION = "https://web.squarecdn.com/v1/square.js";
@@ -306,11 +306,6 @@ export default function BalancePaymentClient({
           )}
         </button>
 
-        {/* Security */}
-        <div className="flex items-center justify-center gap-2 mt-4 mb-8">
-          <Lock size={14} color="#666" />
-          <span className="text-[10px] text-[#454545]">Secured by Square · 256-bit encryption</span>
-        </div>
       </div>
     </div>
   );

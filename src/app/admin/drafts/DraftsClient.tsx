@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ClockCounterClockwise, Trash, ArrowRight, FolderOpen } from "@phosphor-icons/react";
+import { ClockCounterClockwise, Trash, ArrowRight } from "@phosphor-icons/react";
 import { getAllDraftMetas, deleteDraft, clearAllDrafts, getDraftLabel, type DraftMeta } from "@/hooks/useFormDraft";
 
 const TYPE_COLORS: Record<string, string> = {
@@ -78,7 +78,6 @@ export default function DraftsClient() {
 
       {drafts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <FolderOpen size={48} className="text-[var(--tx3)]/40 mb-4" weight="thin" />
           <p className="text-[15px] font-semibold text-[var(--tx2)]">No drafts saved</p>
           <p className="text-[12px] text-[var(--tx3)] mt-1 max-w-sm">
             When you start filling out a form and leave before submitting, it will automatically be saved here.

@@ -258,7 +258,6 @@ export default function ReviewPageClient() {
                     className="inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold text-[12px] py-2.5 px-4 border-2 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
                     style={{ borderColor: GOLD, color: GOLD, backgroundColor: "transparent" }}
                   >
-                    <StarIcon filled size={14} />
                     {submitting ? "Saving…" : "Leave a Review on Google"}
                   </button>
                 )}

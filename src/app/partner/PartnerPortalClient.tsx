@@ -385,19 +385,14 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
                   <h3 className="font-hero text-[26px] font-semibold text-[var(--tx)] mb-5">Here&apos;s what you can do</h3>
                   <div className="space-y-3">
                     {[
-                      { PhIcon: MapPin, color: "#2D6A4F", bg: "#F0FFF4", title: "Track Deliveries Live", desc: "GPS tracking with real-time crew locations on a map" },
-                      { PhIcon: Calendar, color: "#8B5CF6", bg: "#F5F3FF", title: "Schedule & Calendar", desc: "View upcoming deliveries in calendar view, schedule new ones" },
-                      { PhIcon: ShareNetwork, color: "#C9A962", bg: "#FFFBF0", title: "Share Tracking Links", desc: "Send live tracking links to your end clients via email" },
-                      { PhIcon: FileText, color: "#059669", bg: "#ECFDF5", title: "Invoices & Monthly Report", desc: "View invoices, monthly performance, and SLA report" },
+                      { title: "Track Deliveries Live", desc: "GPS tracking with real-time crew locations on a map" },
+                      { title: "Schedule & Calendar", desc: "View upcoming deliveries in calendar view, schedule new ones" },
+                      { title: "Share Tracking Links", desc: "Send live tracking links to your end clients via email" },
+                      { title: "Invoices & Monthly Report", desc: "View invoices, monthly performance, and SLA report" },
                     ].map((item) => (
-                      <div key={item.title} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: item.bg }}>
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${item.color}15` }}>
-                          <item.PhIcon size={18} color={item.color} />
-                        </div>
-                        <div>
-                          <div className="text-[13px] font-semibold text-[var(--tx)]">{item.title}</div>
-                          <div className="text-[12px] text-[var(--tx3)]">{item.desc}</div>
-                        </div>
+                      <div key={item.title} className="p-3 rounded-xl border border-[var(--brd)]/30">
+                        <div className="text-[13px] font-semibold text-[var(--tx)]">{item.title}</div>
+                        <div className="text-[12px] text-[var(--tx3)] mt-0.5">{item.desc}</div>
                       </div>
                     ))}
                   </div>

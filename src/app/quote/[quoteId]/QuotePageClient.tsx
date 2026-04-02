@@ -1475,7 +1475,6 @@ export default function QuotePageClient({
           <div>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <Star className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
                 <p className="text-[13px] font-bold" style={{ color: FOREST }}>
                   360+ Reviews
                 </p>
@@ -1484,7 +1483,6 @@ export default function QuotePageClient({
                 </p>
               </div>
               <div>
-                <Shield className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
                 <p className="text-[13px] font-bold" style={{ color: FOREST }}>
                   $2M Insurance
                 </p>
@@ -1493,7 +1491,6 @@ export default function QuotePageClient({
                 </p>
               </div>
               <div>
-                <Check className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
                 <p className="text-[13px] font-bold" style={{ color: FOREST }}>
                   Flat-Rate Guarantee
                 </p>

@@ -5,18 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Recycle,
-  ArrowsClockwise,
   Truck,
   CheckCircle,
   Warning,
   Phone,
   Envelope,
-  MapPin,
-  CalendarBlank,
-  CreditCard,
   Link as LinkIcon,
-  Camera,
   XCircle,
 } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
@@ -209,7 +203,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Client info */}
-        <Section title="Client" icon={<Phone size={14} />}>
+        <Section title="Client">
           <InfoRow label="Name" value={order.client_name} />
           <InfoRow
             label="Email"
@@ -229,7 +223,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
         </Section>
 
         {/* Delivery */}
-        <Section title="Delivery" icon={<MapPin size={14} />}>
+        <Section title="Delivery">
           <InfoRow label="Address" value={order.delivery_address} />
           {order.delivery_postal && <InfoRow label="Postal code" value={order.delivery_postal} />}
           <InfoRow label="Access" value={ACCESS_LABELS[order.delivery_access] || order.delivery_access || "-"} />
@@ -237,14 +231,14 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
         </Section>
 
         {/* Bundle */}
-        <Section title="Bundle" icon={<Recycle size={14} />}>
+        <Section title="Bundle">
           <InfoRow label="Type" value={`${BUNDLE_LABELS[order.bundle_type] || order.bundle_type} (${order.bin_count} bins)`} />
           <InfoRow label="Includes paper" value={order.includes_paper ? "Yes" : "No"} />
           <InfoRow label="Includes zip ties" value={order.includes_zip_ties ? "Yes" : "No"} />
         </Section>
 
         {/* Schedule */}
-        <Section title="Schedule" icon={<CalendarBlank size={14} />}>
+        <Section title="Schedule">
           <InfoRow label="Drop-off date" value={fmtDate(order.drop_off_date)} />
           <InfoRow label="Move date" value={fmtDate(order.move_date)} />
           <InfoRow label="Pickup date" value={fmtDate(order.pickup_date)} />
@@ -262,7 +256,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
         </Section>
 
         {/* Payment */}
-        <Section title="Payment" icon={<CreditCard size={14} />}>
+        <Section title="Payment">
           <InfoRow label="Bundle price" value={fmtMoney(order.bundle_price)} />
           {Number(order.delivery_surcharge) > 0 && (
             <InfoRow label="GTA surcharge" value={fmtMoney(order.delivery_surcharge)} />
@@ -289,7 +283,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
         </Section>
 
         {/* Status update */}
-        <Section title="Update Status" icon={<ArrowsClockwise size={14} />}>
+        <Section title="Update Status">
           <div className="space-y-3">
             <select
               defaultValue={order.status}
@@ -309,7 +303,7 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
       {/* Photos */}
       {(order.drop_off_photos?.length > 0 || order.pickup_photos?.length > 0) && (
         <div className="mt-4">
-          <Section title="Photos" icon={<Camera size={14} />}>
+          <Section title="Photos">
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {[...(order.drop_off_photos || []), ...(order.pickup_photos || [])].map((url: string, i: number) => (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -383,11 +377,11 @@ export default function BinOrderDetailClient({ order, moveCode }: { order: any; 
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-[var(--gold)]">{icon}</span>
+        {icon && <span className="text-[var(--gold)]">{icon}</span>}
         <h3 className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">{title}</h3>
       </div>
       <div className="space-y-2.5">{children}</div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, CheckCircle } from "@phosphor-icons/react";
 import PageContent from "@/app/admin/components/PageContent";
 
 export default function CrewEndOfDayPage() {
@@ -74,7 +75,7 @@ export default function CrewEndOfDayPage() {
         href="/crew/dashboard"
         className="inline-flex gap-1.5 py-2 text-[13px] text-[var(--tx3)] hover:text-[var(--gold)]"
       >
-        ← Back to Dashboard
+        <ArrowLeft size={14} /> Back to Dashboard
       </Link>
       <div className="mt-1">
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1">Crew</p>
@@ -84,8 +85,8 @@ export default function CrewEndOfDayPage() {
       </div>
       {preview?.alreadySubmitted ? (
         <div className="mt-4 flex items-center gap-3 py-3 px-4 rounded-xl bg-[var(--grn)]/10 border border-[var(--grn)]/30">
-          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--grn)] text-white text-[13px] shrink-0">
-            ✓
+          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--grn)] text-white shrink-0">
+            <CheckCircle size={18} weight="bold" />
           </span>
           <div className="min-w-0">
             <p className="text-[13px] font-semibold text-[var(--grn)]">End of day submitted</p>

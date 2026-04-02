@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight } from "@phosphor-icons/react";
 import BackButton from "../components/BackButton";
 import { formatCompactCurrency } from "@/lib/format-currency";
 
@@ -149,10 +148,6 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
           className="group inline-flex items-center gap-2 shrink-0 rounded-full border border-[var(--gold)]/45 bg-[var(--gold)]/[0.09] px-4 py-2.5 text-[10px] font-bold tracking-wide text-[var(--gold)] shadow-[0_1px_0_rgba(0,0,0,0.35)] transition-all hover:border-[var(--gold)]/70 hover:bg-[var(--gold)]/[0.16] hover:shadow-[0_2px_8px_rgba(201,169,98,0.12)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold)]"
         >
           Generate quote
-          <ArrowUpRight
-            className="w-3.5 h-3.5 opacity-80 transition-transform group-hover:translate-x-[1px] group-hover:-translate-y-[1px] group-hover:opacity-100"
-            aria-hidden
-          />
         </Link>
       </div>
 

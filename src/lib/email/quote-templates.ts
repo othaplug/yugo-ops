@@ -265,7 +265,7 @@ function whyYugoBlock(): string {
           <table cellpadding="0" cellspacing="0" border="0" width="100%">
             ${items.map(([strong, rest]) => `
               <tr>
-                <td style="padding:6px 0;font-size:10px;color:${GOLD};vertical-align:top;width:18px;line-height:1.6;">&#10003;</td>
+                <td style="padding:6px 0;font-size:10px;color:${GOLD};vertical-align:top;width:18px;line-height:1.6;">—</td>
                 <td style="padding:6px 0;font-size:12px;color:${TX2};line-height:1.6;"><strong style="color:${TX};font-weight:600;">${strong}</strong> - ${rest}</td>
               </tr>
             `).join("")}
@@ -368,7 +368,7 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
       /* Checklist only on the recommended card */
       const includesRows = isRec
         ? (t.includes || []).filter(Boolean).map((item) =>
-            `<tr><td style="color:${accent};font-size:10px;padding:4px 0;vertical-align:top;width:16px;line-height:1.5;">&#10003;</td><td style="color:${TIER_TX}CC;font-size:11px;padding:4px 0;line-height:1.5;">${item}</td></tr>`
+            `<tr><td style="color:${accent};font-size:10px;padding:4px 0;vertical-align:top;width:16px;line-height:1.5;">—</td><td style="color:${TIER_TX}CC;font-size:11px;padding:4px 0;line-height:1.5;">${item}</td></tr>`
           ).join("")
         : "";
 

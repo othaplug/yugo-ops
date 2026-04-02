@@ -6,12 +6,7 @@ import Link from "next/link";
 import {
   Invoice,
   CheckCircle,
-  Lock,
   ArrowLeft,
-  Buildings,
-  CalendarBlank,
-  Warning,
-  Truck,
 } from "@phosphor-icons/react";
 
 const FOREST = "#2C3E2D";
@@ -263,7 +258,6 @@ export default function PartnerStatementPayClient({
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Invoice size={14} color={GOLD} />
             <span
               className="text-[10px] font-bold tracking-widest uppercase"
               style={{ color: GOLD }}
@@ -276,10 +270,9 @@ export default function PartnerStatementPayClient({
           </h1>
           {org && (
             <p
-              className="text-[13px] flex items-center gap-1.5 mt-0.5"
+              className="text-[13px] mt-0.5"
               style={{ color: `${FOREST}55` }}
             >
-              <Buildings size={12} />
               {org.name}
             </p>
           )}
@@ -309,26 +302,23 @@ export default function PartnerStatementPayClient({
           >
             {[
               {
-                icon: <CalendarBlank size={13} />,
                 label: "Period",
                 value: periodLabel,
               },
               {
-                icon: <Warning size={13} />,
                 label: "Due Date",
                 value: fmtLongDate(statement.due_date),
               },
-            ].map(({ icon, label, value }) => (
+            ].map(({ label, value }) => (
               <div
                 key={label}
                 className="flex items-center justify-between px-4 py-3 border-b last:border-0"
                 style={{ borderColor: `${FOREST}06` }}
               >
                 <span
-                  className="text-[12px] flex items-center gap-2"
+                  className="text-[12px]"
                   style={{ color: `${FOREST}50` }}
                 >
-                  {icon}
                   {label}
                 </span>
                 <span className="text-[13px] font-semibold" style={{ color: FOREST }}>
@@ -498,7 +488,6 @@ export default function PartnerStatementPayClient({
                 className="mt-4 inline-flex items-center gap-2 text-[12px] font-semibold"
                 style={{ color: `${FOREST}60` }}
               >
-                <Truck size={13} />
                 Back to portal
               </Link>
             </div>
@@ -593,7 +582,6 @@ export default function PartnerStatementPayClient({
               </button>
 
               <div className="flex items-center justify-center gap-2 mt-3">
-                <Lock size={12} style={{ color: `${FOREST}35` }} aria-hidden />
                 <span className="text-[10px]" style={{ color: `${FOREST}35` }}>
                   Secured by Square &middot; 256-bit encryption
                 </span>

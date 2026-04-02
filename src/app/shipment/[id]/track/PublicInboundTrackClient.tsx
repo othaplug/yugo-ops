@@ -2,7 +2,7 @@
 
 import { toTitleCase } from "@/lib/format-text";
 import { useEffect, useState } from "react";
-import { ShippingContainer, ClipboardText, CheckCircle, Clock } from "@phosphor-icons/react";
+import { ShippingContainer, ClipboardText, Clock } from "@phosphor-icons/react";
 
 type LogRow = { id: string; status: string; notes: string | null; created_at: string };
 
@@ -59,7 +59,7 @@ export default function PublicInboundTrackClient({ id, token }: { id: string; to
     <div className="min-h-screen bg-[#FAF8F5] text-[var(--tx)] px-4 py-10">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-2 mb-2">
-          <ShippingContainer className="text-[#C9A962]" size={28} weight="duotone" aria-hidden />
+          <ShippingContainer className="text-[#C9A962]" size={28} weight="regular" aria-hidden />
           <h1 className="text-xl font-semibold tracking-tight">Inbound shipment</h1>
         </div>
         <p className="text-sm text-[var(--tx3)] mb-6">Reference {num}</p>
@@ -99,9 +99,6 @@ export default function PublicInboundTrackClient({ id, token }: { id: string; to
           <ul className="space-y-4">
             {data.log.map((row) => (
               <li key={row.id} className="flex gap-3 text-sm">
-                <span className="mt-0.5 text-[#C9A962]">
-                  <CheckCircle size={18} weight="fill" aria-hidden />
-                </span>
                 <div>
                   <div className="font-medium">{toTitleCase(row.status)}</div>
                   <div className="text-[var(--tx3)] text-xs">

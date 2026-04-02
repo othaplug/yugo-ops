@@ -4,12 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   Plus,
-  ShippingContainer,
-  Truck,
-  Warehouse,
-  RocketLaunch,
-  CheckCircle,
-  UserPlus,
   ArrowRight,
 } from "@phosphor-icons/react";
 import { INBOUND_SHIPMENT_STATUS_LABELS } from "@/lib/inbound-shipment-labels";
@@ -89,7 +83,6 @@ export default function InboundShipmentsClient() {
 
       {repeatSenders.length > 0 && (
         <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
-          <UserPlus className="text-amber-700 shrink-0" size={22} aria-hidden />
           <div className="flex-1 text-sm">
             <span className="font-semibold text-[var(--tx)]">Repeat sender</span>
             {repeatSenders.map((r) => (
@@ -110,21 +103,18 @@ export default function InboundShipmentsClient() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
           {[
-            { key: "awaiting", label: "Awaiting", value: stats.awaiting, Icon: ShippingContainer },
-            { key: "in_transit", label: "In transit", value: stats.in_transit, Icon: Truck },
-            { key: "at_facility", label: "At facility", value: stats.at_facility, Icon: Warehouse },
-            { key: "ready", label: "Ready to deliver", value: stats.ready, Icon: RocketLaunch },
-            { key: "delivered", label: "Delivered", value: stats.delivered, Icon: CheckCircle },
-          ].map(({ key, label, value, Icon }) => (
+            { key: "awaiting", label: "Awaiting", value: stats.awaiting },
+            { key: "in_transit", label: "In transit", value: stats.in_transit },
+            { key: "at_facility", label: "At facility", value: stats.at_facility },
+            { key: "ready", label: "Ready to deliver", value: stats.ready },
+            { key: "delivered", label: "Delivered", value: stats.delivered },
+          ].map(({ key, label, value }) => (
             <div
               key={key}
-              className="rounded-xl border border-[var(--brd)] bg-[var(--card)] px-4 py-3 flex items-center gap-3"
+              className="rounded-xl border border-[var(--brd)] bg-[var(--card)] px-4 py-3"
             >
-              <Icon className="text-[var(--gold)] shrink-0" size={22} aria-hidden />
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">{label}</div>
-                <div className="text-xl font-semibold text-[var(--tx)]">{value}</div>
-              </div>
+              <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx3)]">{label}</div>
+              <div className="text-xl font-semibold text-[var(--tx)]">{value}</div>
             </div>
           ))}
         </div>

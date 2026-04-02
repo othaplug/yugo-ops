@@ -4,10 +4,8 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   MagnifyingGlass,
-  ChatCircle,
   EnvelopeSimpleOpen,
   EnvelopeSimple,
-  Funnel,
 } from "@phosphor-icons/react";
 
 interface Message {
@@ -78,7 +76,6 @@ export default function InboxClient({ messages }: { messages: Message[] }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <ChatCircle size={28} weight="duotone" className="text-[var(--gold)]" />
           <h1 className="text-2xl font-semibold text-[var(--tx1)]">Inbox</h1>
           {unreadCount > 0 && (
             <span className="rounded-full bg-[var(--red)]/15 px-2.5 py-0.5 text-xs font-medium text-[var(--red)]">
@@ -106,7 +103,6 @@ export default function InboxClient({ messages }: { messages: Message[] }) {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <Funnel size={16} className="text-[var(--tx3)] mr-1" />
           {FILTERS.map((f) => (
             <button
               key={f.value}

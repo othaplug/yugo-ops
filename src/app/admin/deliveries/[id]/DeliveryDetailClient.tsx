@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
-  PaperPlaneTilt as Send, MapPin, Truck, Clock, Stack as Layers, Users, FileText,
+  PaperPlaneTilt as Send, MapPin, Clock, Stack as Layers, Users, FileText,
   Money as DollarSign, Warning as AlertTriangle, PencilSimple as Pencil, Trash as Trash2, CaretDown as ChevronDown, Phone,
-  Envelope as Mail, Shield, ArrowSquareOut as ExternalLink, Hash, Folder, ArrowRight, Check,
+  Envelope as Mail, Shield, ArrowSquareOut as ExternalLink, Folder, ArrowRight, Check,
 } from "@phosphor-icons/react";
 import BackButton from "../../components/BackButton";
 import EditDeliveryModal from "./EditDeliveryModal";
@@ -643,7 +643,7 @@ export default function DeliveryDetailClient({
 
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
-                  <Hash className="w-2.5 h-2.5" />{delivery.delivery_number}
+                  {delivery.delivery_number}
                 </span>
                 {delivery.booking_type === "day_rate" && (
                   <span className="px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-amber-500/10 text-amber-700 border border-amber-500/30">
@@ -800,7 +800,6 @@ export default function DeliveryDetailClient({
                 />
               ) : (
                 <div className="px-6 py-10 text-center">
-                  <Truck className="w-5 h-5 text-[var(--tx3)]/30 mx-auto mb-2" />
                   <p className="text-[12px] font-medium text-[var(--tx2)]">No crew assigned</p>
                   <p className="text-[10px] text-[var(--tx3)] mt-1 mb-3">Assign a crew to enable live GPS tracking</p>
                   {!deliveryInProgress && (

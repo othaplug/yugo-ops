@@ -14,10 +14,6 @@ import {
 import {
   TrendUp as TrendingUp,
   Warning as AlertTriangle,
-  Calendar,
-  Users,
-  Sun,
-  ChartBar as BarChart3,
 } from "@phosphor-icons/react";
 import BackButton from "../../components/BackButton";
 
@@ -171,7 +167,7 @@ export default function ForecastClient() {
       </div>
 
       {/* ══════════ SECTION 1: REVENUE PIPELINE ══════════ */}
-      <Section title="Revenue Pipeline" icon={<BarChart3 className="w-4 h-4" />}>
+      <Section title="Revenue Pipeline">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Confirmed */}
           <PipelineCard
@@ -247,7 +243,7 @@ export default function ForecastClient() {
       </Section>
 
       {/* ══════════ SECTION 2: DAILY REVENUE CHART ══════════ */}
-      <Section title="Daily Revenue" icon={<Calendar className="w-4 h-4" />}>
+      <Section title="Daily Revenue">
         {dailyRevenue.length > 0 ? (
           <>
             <div className="h-72">
@@ -326,7 +322,7 @@ export default function ForecastClient() {
       </Section>
 
       {/* ══════════ SECTION 3: CAPACITY UTILIZATION ══════════ */}
-      <Section title="Crew Capacity (Next 7 Days)" icon={<Users className="w-4 h-4" />}>
+      <Section title="Crew Capacity (Next 7 Days)">
         <div className="space-y-2">
           {capacity.map((day) => (
             <CapacityRow key={day.date} day={day} />
@@ -347,7 +343,7 @@ export default function ForecastClient() {
       </Section>
 
       {/* ══════════ SECTION 4: SEASONAL INTELLIGENCE ══════════ */}
-      <Section title="Seasonal Trends" icon={<Sun className="w-4 h-4" />}>
+      <Section title="Seasonal Trends">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {seasonal.map((s) => (
             <div
@@ -528,7 +524,7 @@ function CapacityRow({ day }: { day: CapacityDay }) {
       </span>
       <span className="text-[10px] text-[var(--tx3)] min-w-[140px] truncate hidden sm:inline">
         {day.details}
-        {isFull && " \u26A0\uFE0F FULL"}
+        {isFull && " FULL"}
       </span>
     </div>
   );

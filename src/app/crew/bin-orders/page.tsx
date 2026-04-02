@@ -9,7 +9,6 @@ import {
   MapPin,
   Phone,
   ArrowLeft,
-  Camera,
   Warning,
 } from "@phosphor-icons/react";
 import { formatAccessForDisplay } from "@/lib/format-text";
@@ -196,12 +195,11 @@ export default function CrewBinOrdersPage() {
                           <span className="font-bold text-[14px]">{task.order_number}</span>
                           {task.status === "overdue" && <Warning size={13} color="#ef4444" />}
                           <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${task.taskType === "dropoff" ? "bg-[#7C9FD4]/15 text-[#7C9FD4]" : "bg-[#22c55e]/15 text-[#22c55e]"}`}>
-                            {task.taskType === "dropoff" ? <><Recycle size={10} className="inline" /> Drop-off</> : <><Truck size={10} className="inline" /> Pickup</>}
+                            {task.taskType === "dropoff" ? "Drop-off" : "Pickup"}
                           </span>
                         </div>
                         <p className="text-[13px] text-gray-300 mt-0.5">{task.client_name}</p>
-                        <p className="text-[12px] text-gray-500 mt-0.5 flex items-center gap-1">
-                          <MapPin size={10} />
+                        <p className="text-[12px] text-gray-500 mt-0.5">
                           {task.delivery_address}
                         </p>
                       </div>
@@ -229,9 +227,7 @@ export default function CrewBinOrdersPage() {
                 <div>
                   <span className="font-bold text-[16px]">{activeTask.order_number}</span>
                   <span className={`ml-2 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${activeTask.taskType === "dropoff" ? "bg-[#7C9FD4]/15 text-[#7C9FD4]" : "bg-[#22c55e]/15 text-[#22c55e]"}`}>
-                    {activeTask.taskType === "dropoff"
-                    ? <><Recycle size={11} className="inline mr-0.5" /> Drop-off</>
-                    : <><Truck size={11} className="inline mr-0.5" /> Pickup</>}
+                    {activeTask.taskType === "dropoff" ? "Drop-off" : "Pickup"}
                   </span>
                 </div>
                 <span className="text-[12px] text-gray-400">
@@ -284,8 +280,7 @@ export default function CrewBinOrdersPage() {
                       className="w-full bg-[#0F1117] border border-[#3a3d4a] rounded-lg px-3 py-3 text-white text-center text-[20px] font-bold focus:outline-none focus:border-[#C9A962]"
                     />
                     {binsReturned < activeTask.bin_count && (
-                      <p className="text-[12px] text-red-400 mt-1.5 flex items-center gap-1">
-                        <Warning size={12} />
+                      <p className="text-[12px] text-red-400 mt-1.5">
                         {activeTask.bin_count - binsReturned} bins missing, $
                         {((activeTask.bin_count - binsReturned) * 20).toFixed(0)} charge will be applied
                       </p>
@@ -303,7 +298,6 @@ export default function CrewBinOrdersPage() {
                 </div>
 
                 <div className="bg-[#0F1117] rounded-lg p-3 text-[12px] text-gray-400">
-                  <Camera size={13} className="inline mr-1" />
                   Photo upload: use your phone camera and share via WhatsApp to the Yugo crew group.
                 </div>
 

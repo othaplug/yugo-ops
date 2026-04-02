@@ -27,7 +27,6 @@ import {
   Funnel,
   CurrencyDollar,
   Star,
-  Lightning,
   Eye,
   CheckCircle,
   Clock,
@@ -599,7 +598,6 @@ export default function AdminPageClient({
             onClick={() => setBriefOpen((v) => !v)}
             className="flex items-center gap-2 group w-full text-left"
           >
-            <Lightning size={14} className="text-[var(--gold)]" weight="duotone" aria-hidden />
             <span className="text-[10px] font-bold tracking-wide text-[var(--gold)]">Daily Brief</span>
             <CaretRight
               weight="regular"
@@ -1194,7 +1192,6 @@ export default function AdminPageClient({
             <div className="pt-6 border-t border-[var(--brd)]/30">
               <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <Lightning size={14} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
                   <h2 className="admin-section-h2 min-w-0">Leads</h2>
                 </div>
                 <Link href="/admin/leads" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">

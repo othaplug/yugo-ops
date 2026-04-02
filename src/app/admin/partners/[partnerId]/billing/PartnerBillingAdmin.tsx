@@ -4,12 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Invoice,
-  CalendarBlank,
-  Clock,
   Warning,
   CheckCircle,
   ArrowRight,
-  Buildings,
   CurrencyDollar,
   PlusCircle,
   CircleNotch,
@@ -172,7 +169,6 @@ export default function PartnerBillingAdmin({
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Invoice size={16} color="var(--gold)" />
             <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--gold)]">
               Billing Overview
             </span>
@@ -181,20 +177,17 @@ export default function PartnerBillingAdmin({
             {org.name}
           </h1>
           <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-            <span className="flex items-center gap-1.5 text-[12px] text-[var(--tx3)]">
-              <Clock size={12} />
+            <span className="text-[12px] text-[var(--tx3)]">
               {TERMS_LABELS[org.payment_terms ?? "net_30"] ?? org.payment_terms}
             </span>
             {org.billing_anchor_day && org.payment_terms !== "due_on_receipt" && org.payment_terms !== "due_on_delivery" && (
-              <span className="flex items-center gap-1.5 text-[12px] text-[var(--tx3)]">
-                <CalendarBlank size={12} />
+              <span className="text-[12px] text-[var(--tx3)]">
                 {org.payment_terms === "net_15"
                   ? "Cycles: 1st & 16th of month"
                   : <>Anchor: {org.billing_anchor_day}{org.billing_anchor_day === 1 ? "st" : org.billing_anchor_day === 2 ? "nd" : org.billing_anchor_day === 3 ? "rd" : "th"} of month</>}
               </span>
             )}
-            <span className="flex items-center gap-1.5 text-[12px] text-[var(--tx3)]">
-              <Buildings size={12} />
+            <span className="text-[12px] text-[var(--tx3)]">
               {org.billing_email || org.email}
             </span>
           </div>

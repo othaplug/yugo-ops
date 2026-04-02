@@ -7,7 +7,6 @@ import {
   Truck,
   CurrencyDollar,
   ChatText,
-  GearSix,
   CheckCircle,
   EnvelopeSimple,
   X,
@@ -257,7 +256,6 @@ export default function AuditLogClient({ events }: { events: ActivityEventRow[] 
 
         {filtered.length === 0 ? (
           <div className="py-16 px-4 text-center">
-            <GearSix className="mx-auto mb-3 text-[var(--tx3)]" size={28} weight="duotone" aria-hidden />
             <p className="text-[12px] font-semibold text-[var(--tx2)]">No events match your filters</p>
             <p className="text-[11px] text-[var(--tx3)] mt-1">Try clearing search or widening the time range.</p>
           </div>

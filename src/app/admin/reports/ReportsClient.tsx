@@ -8,11 +8,6 @@ import {
   ChartBar,
   ClipboardText,
   GearSix,
-  Clock,
-  Users,
-  CheckCircle,
-  TrendUp,
-  CurrencyDollar,
 } from "@phosphor-icons/react";
 
 /* ── Shared types ── */
@@ -399,12 +394,9 @@ export default function ReportsClient({
 
           {/* Revenue by service type */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <CurrencyDollar size={16} className="text-[var(--gold)]" weight="bold" />
-              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
-                Revenue by Service Type
-              </h2>
-            </div>
+            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+              Revenue by Service Type
+            </h2>
             {revenueByServiceType.length === 0 ? (
               <p className="text-[13px] text-[var(--tx3)]">No move data in the last 6 months.</p>
             ) : (
@@ -434,12 +426,9 @@ export default function ReportsClient({
 
           {/* Monthly revenue table */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <TrendUp size={16} className="text-[var(--gold)]" weight="bold" />
-              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
-                Monthly Revenue (Last 6 Months)
-              </h2>
-            </div>
+            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+              Monthly Revenue (Last 6 Months)
+            </h2>
             {monthlyRevenue.length === 0 ? (
               <p className="text-[13px] text-[var(--tx3)]">No revenue data available.</p>
             ) : (
@@ -513,12 +502,9 @@ export default function ReportsClient({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Move status breakdown */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <CheckCircle size={16} className="text-[var(--gold)]" weight="bold" />
-                <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
-                  Move Status Breakdown
-                </h2>
-              </div>
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+                Move Status Breakdown
+              </h2>
               {statusBreakdown.length === 0 ? (
                 <p className="text-[13px] text-[var(--tx3)]">No moves this month.</p>
               ) : (
@@ -560,12 +546,9 @@ export default function ReportsClient({
 
             {/* Tracking sessions by team */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Users size={16} className="text-[var(--gold)]" weight="bold" />
-                <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
-                  Completed Sessions by Team
-                </h2>
-              </div>
+              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+                Completed Sessions by Team
+              </h2>
               {sessionsByTeam.size === 0 ? (
                 <p className="text-[13px] text-[var(--tx3)]">No completed sessions this month.</p>
               ) : (
@@ -602,12 +585,9 @@ export default function ReportsClient({
 
           {/* Session performance */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Clock size={16} className="text-[var(--gold)]" weight="bold" />
-              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60">
-                Session Performance
-              </h2>
-            </div>
+            <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/60 mb-4">
+              Session Performance
+            </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total Sessions</div>

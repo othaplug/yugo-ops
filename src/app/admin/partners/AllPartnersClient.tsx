@@ -350,7 +350,6 @@ export default function AllPartnersClient() {
             {" "}haven't booked in 15+ days.
           </p>
           <span className="text-[11px] font-semibold text-amber-400 group-hover:underline">View Health</span>
-          <Icon name="chevronRight" className="w-3.5 h-3.5 text-amber-400" />
         </Link>
       )}
 
