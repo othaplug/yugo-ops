@@ -26,7 +26,7 @@ function dateDisplay(dateStr: string | null | undefined): string {
 const GOLD_BTN = "#B8962E";
 const EQ_SANS = "Helvetica Neue,Helvetica,Arial,sans-serif";
 const EQ_H1 =
-  "font-size:24px;font-weight:700;margin:0 0 12px;color:#FFFFFF;letter-spacing:0.02em;text-transform:none;line-height:1.35;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
+  "font-size:28px;font-weight:700;margin:0 0 12px;color:#FFFFFF;letter-spacing:0.01em;text-transform:none;line-height:1.25;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
 const EQ_LEAD =
   "font-size:14px;color:#A3A3A3;line-height:1.65;margin:0 0 26px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif";
 const EQ_EYE =
@@ -44,7 +44,7 @@ function ctaButton(url: string, label: string, sub?: string): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0 ${sub ? "6px" : "16px"};">
       <tr>
         <td align="center" style="text-align:center;">
-          <a href="${url}" style="display:inline-block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:13px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:0.02em;text-transform:none;font-family:${EQ_SANS};">
+          <a href="${url}" style="display:inline-block;background-color:${GOLD_BTN};color:#0A0806;padding:14px 32px;font-size:12px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:0.05em;text-transform:none;font-family:${EQ_SANS};">
             ${label}
           </a>
         </td>

@@ -240,7 +240,7 @@ function ctaButton(url: string, label: string, sub?: string): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 8px;">
       <tr>
         <td align="center">
-          <a href="${url}" style="display:block;background-color:${GOLD};color:#0A0806;padding:14px 32px;font-size:11px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:1.2px;text-transform:none;">
+          <a href="${url}" style="display:block;background-color:${GOLD};color:#0A0806;padding:14px 32px;font-size:12px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:0.05em;text-transform:none;">
             ${label}
           </a>
         </td>

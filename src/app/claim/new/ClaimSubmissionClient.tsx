@@ -176,8 +176,8 @@ export default function ClaimSubmissionClient() {
   if (submitted) {
     return (
       <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#f0fdf4" }}>
-          <Check weight="bold" size={32} color="#16a34a" aria-hidden />
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "rgba(201,169,98,0.12)" }}>
+          <Check weight="bold" size={32} color="#C9A962" aria-hidden />
         </div>
         <h2 className="text-[22px] font-bold text-[#1a1a1a] mb-2">Claim Submitted</h2>
         <p className="text-[var(--text-base)] text-[#555] leading-relaxed mb-4">

@@ -173,8 +173,8 @@ export default function BalancePaymentClient({
             <div className="font-hero text-[28px] font-bold tracking-wider text-[#C9A962]">Yugo</div>
           </div>
           <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#2D9F5A]/20 flex items-center justify-center">
-              <Check size={32} color="#2D9F5A" weight="bold" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#C9A962]/15 flex items-center justify-center">
+              <Check size={32} color="#C9A962" weight="bold" />
             </div>
             <h1 className="text-[22px] font-bold text-[#F5F5F3] mb-2">Payment Received</h1>
             <p className="text-[var(--text-base)] text-[#B8B5B0] leading-relaxed mb-4">
@@ -184,7 +184,7 @@ export default function BalancePaymentClient({
               <div className="text-[11px] text-[#C9A962] font-bold uppercase tracking-wider mb-2">
                 {move.move_code || "Move Details"}
               </div>
-              <div className="text-[24px] font-bold text-[#2D9F5A]">{fmtPrice(ccTotal)}</div>
+              <div className="text-[24px] font-bold text-[#C9A962]">{fmtPrice(ccTotal)}</div>
               <div className="text-[11px] text-[#454545] mt-1">Charged to your card</div>
             </div>
           </div>

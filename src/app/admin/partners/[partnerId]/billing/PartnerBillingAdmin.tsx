@@ -176,18 +176,21 @@ export default function PartnerBillingAdmin({
           <h1 className="font-hero text-[28px] font-bold text-[var(--tx)] leading-none">
             {org.name}
           </h1>
-          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+          <div className="flex items-center gap-4 mt-1.5 flex-wrap">
             <span className="text-[12px] text-[var(--tx3)]">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]/50 mr-1">Terms</span>
               {TERMS_LABELS[org.payment_terms ?? "net_30"] ?? org.payment_terms}
             </span>
             {org.billing_anchor_day && org.payment_terms !== "due_on_receipt" && org.payment_terms !== "due_on_delivery" && (
               <span className="text-[12px] text-[var(--tx3)]">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]/50 mr-1">Cycle</span>
                 {org.payment_terms === "net_15"
-                  ? "Cycles: 1st & 16th of month"
-                  : <>Anchor: {org.billing_anchor_day}{org.billing_anchor_day === 1 ? "st" : org.billing_anchor_day === 2 ? "nd" : org.billing_anchor_day === 3 ? "rd" : "th"} of month</>}
+                  ? "1st & 16th of month"
+                  : <>{org.billing_anchor_day}{org.billing_anchor_day === 1 ? "st" : org.billing_anchor_day === 2 ? "nd" : org.billing_anchor_day === 3 ? "rd" : "th"} of month</>}
               </span>
             )}
             <span className="text-[12px] text-[var(--tx3)]">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]/50 mr-1">Billing email</span>
               {org.billing_email || org.email}
             </span>
           </div>
