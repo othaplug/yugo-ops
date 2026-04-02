@@ -113,6 +113,7 @@ import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
 import { SafeText } from "@/components/SafeText";
 import {
   getB2BQuoteHero,
+  getLogisticsLoadingUnloadingFeature,
   isB2BDeliveryQuoteServiceType,
   isB2BInvoiceQuote,
   b2bVerticalUsesPackageLeadIcon,
@@ -958,7 +959,11 @@ export default function QuotePageClient({
     const base = HERO_CONFIG[quote.service_type] ?? HERO_CONFIG.local_move;
     if (isB2BDeliveryQuoteServiceType(quote.service_type)) {
       const code = typeof fa?.b2b_vertical_code === "string" ? fa.b2b_vertical_code : null;
-      return getB2BQuoteHero(code);
+      const handling =
+        typeof fa?.b2b_handling_type === "string" && fa.b2b_handling_type.trim()
+          ? fa.b2b_handling_type
+          : undefined;
+      return getB2BQuoteHero(code, handling);
     }
     return base;
   }, [quote.service_type, quote.factors_applied]);
@@ -1218,6 +1223,14 @@ export default function QuotePageClient({
               crewSize={quote.est_crew_size}
               variant="logistics"
               logisticsLeadPackage={b2bPackageLeadIcon}
+              logisticsB2bHandling={
+                typeof (quote.factors_applied as Record<string, unknown> | null)?.b2b_handling_type ===
+                "string"
+                  ? String(
+                      (quote.factors_applied as Record<string, unknown>).b2b_handling_type,
+                    ).trim() || null
+                  : null
+              }
               truckPricingNote={truckBreakdownClientNote}
             />
             <B2BOneOffLayout quote={quoteForDisplay} onConfirm={handleConfirm} confirmed={confirmed} />
@@ -1813,6 +1826,8 @@ const InclusionsShowcase = React.forwardRef<
     variant?: "residential" | "event" | "logistics";
     /** Custom / Other B2B vertical: neutral package icon instead of truck. */
     logisticsLeadPackage?: boolean;
+    /** When set, loading/unloading row matches `factors_applied.b2b_handling_type`. */
+    logisticsB2bHandling?: string | null;
     eventFeatures?: TierFeature[] | null;
     showEventSetupFeature?: boolean;
     /** e.g. Truck: 20ft (+$150) from factors_applied */
@@ -1827,6 +1842,7 @@ const InclusionsShowcase = React.forwardRef<
     crewSize,
     variant = "residential",
     logisticsLeadPackage = false,
+    logisticsB2bHandling = null,
     eventFeatures = null,
     showEventSetupFeature = false,
     truckPricingNote = null,
@@ -1893,6 +1909,14 @@ const InclusionsShowcase = React.forwardRef<
                 ...f,
                 title: crewSize ? `Professional crew of ${crewSize}` : "Professional crew",
                 desc: logisticsCrewDesc,
+              };
+            }
+            if (i === 3 && logisticsB2bHandling?.trim()) {
+              const lu = getLogisticsLoadingUnloadingFeature(logisticsB2bHandling);
+              return {
+                ...f,
+                title: lu.title,
+                desc: lu.desc,
               };
             }
             return { ...f };

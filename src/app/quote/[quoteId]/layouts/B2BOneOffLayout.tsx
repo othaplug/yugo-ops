@@ -36,15 +36,23 @@ export default function B2BOneOffLayout({ quote, onConfirm, confirmed }: Props) 
     ? (f.b2b_line_items as { description?: string; quantity?: number; fragile?: boolean }[])
     : [];
   const legacyItems = Array.isArray(f?.b2b_items) ? (f.b2b_items as string[]) : [];
-  const handlingLabel =
-    typeof f?.b2b_handling_type === "string" ? f.b2b_handling_type.replace(/_/g, " ") : "";
+  const handlingRaw = typeof f?.b2b_handling_type === "string" ? f.b2b_handling_type : null;
+  const handlingLabel = handlingRaw ? handlingRaw.replace(/_/g, " ") : "";
+  const assemblyRequired = f?.b2b_assembly_required === true;
+  const debrisRemoval = f?.b2b_debris_removal === true;
   const coordinatorIncludes =
     specialtyTransport && Array.isArray(f?.includes) && (f.includes as string[]).length > 0
       ? (f.includes as string[])
       : null;
   const serviceIncludes =
     coordinatorIncludes ??
-    getB2BDeliveryFeatureList(verticalCode, crewFromFactors ?? quote.est_crew_size, verticalTitle);
+    getB2BDeliveryFeatureList(
+      verticalCode,
+      crewFromFactors ?? quote.est_crew_size,
+      verticalTitle,
+      handlingRaw,
+      { assemblyRequired, debrisRemoval },
+    );
   const truckBreakdown =
     typeof f?.truck_breakdown_line === "string" && f.truck_breakdown_line.trim().length > 0
       ? f.truck_breakdown_line.trim()

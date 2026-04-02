@@ -293,6 +293,10 @@ export async function POST(req: NextRequest) {
           ? (factors.b2b_items as string[]).join(", ")
           : null,
         b2bVerticalCode: (factors.b2b_vertical_code as string) ?? null,
+        b2bHandlingType:
+          typeof factors.b2b_handling_type === "string" && factors.b2b_handling_type.trim()
+            ? factors.b2b_handling_type
+            : null,
         binBundleLabel: (factors.bin_bundle_label as string) ?? null,
         binDropOffDate: (factors.bin_drop_off_date as string) ?? null,
         binPickupDate: (factors.bin_pickup_date as string) ?? null,

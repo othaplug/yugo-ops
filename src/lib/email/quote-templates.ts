@@ -179,6 +179,8 @@ export interface QuoteTemplateData {
   b2bBusinessName?: string | null;
   b2bItems?: string | null;
   b2bVerticalCode?: string | null;
+  /** Matches `factors_applied.b2b_handling_type` for commercial quote emails. */
+  b2bHandlingType?: string | null;
   // Bin rental
   binBundleLabel?: string | null;
   binDropOffDate?: string | null;
@@ -877,7 +879,10 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
 
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
-  const scopeLine = getB2BQuoteEmailSubheading(d.b2bVerticalCode ?? undefined);
+  const scopeLine = getB2BQuoteEmailSubheading(
+    d.b2bVerticalCode ?? undefined,
+    d.b2bHandlingType ?? undefined,
+  );
 
   return quoteEmailLayout(`
     ${subHeading("COMMERCIAL DELIVERY QUOTE")}
