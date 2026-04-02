@@ -27,7 +27,8 @@ const PUBLIC_PATHS = new Set([
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
-  if (pathname.startsWith("/crew/")) return true;
+  // Crew login/setup are always public; other /crew/ routes require session (checked below)
+  if (pathname === "/crew/login" || pathname === "/crew/setup") return true;
   if (pathname.startsWith("/quote/")) return true;
   if (pathname.startsWith("/quote-widget")) return true;
   if (pathname.startsWith("/pay/")) return true;
@@ -69,6 +70,17 @@ export async function proxy(request: NextRequest) {
   response.headers.set("x-next-pathname", pathname);
 
   if (isPublic(pathname)) return response;
+
+  // ── Crew routes: validate custom HMAC session cookie ─────────────────────
+  if (pathname.startsWith("/crew/")) {
+    const crewSession = request.cookies.get("yugo-crew-session");
+    if (!crewSession?.value) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/crew/login";
+      return NextResponse.redirect(url);
+    }
+    return response;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
