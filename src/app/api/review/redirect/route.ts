@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveGoogleReviewUrl } from "@/lib/google-review-url";
 import { verifyReviewToken } from "@/lib/track-token";
-
-/** 4 and 5 star email links always redirect here. */
-const REVIEW_4_5_STAR_URL = "https://g.page/r/CU67iDN6TgMIEB0/review/";
-
-const DEFAULT_GOOGLE_URL = "https://g.page/r/CU67iDN6TgMIEB0/review/";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -16,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const admin = createAdminClient();
 
-  // Token + rating (4 or 5): save rating then redirect to Google (used by email star links)
+  // Token + rating (4 or 5): save rating then redirect to Google (legacy email links)
   if (token && Number.isInteger(rating) && rating >= 4 && rating <= 5) {
     const reviewRequestId = verifyReviewToken(token);
     if (reviewRequestId) {
@@ -29,7 +25,12 @@ export async function GET(req: NextRequest) {
         })
         .eq("id", reviewRequestId);
 
-      return NextResponse.redirect(REVIEW_4_5_STAR_URL);
+      const { data: cfg } = await admin
+        .from("platform_config")
+        .select("value")
+        .eq("key", "google_review_url")
+        .single();
+      return NextResponse.redirect(resolveGoogleReviewUrl(cfg?.value));
     }
     // Invalid/expired token: send to review page so user sees "Invalid or expired link" (same as 1–3 star)
     const reviewPage = new URL("/review", req.url);
@@ -52,6 +53,5 @@ export async function GET(req: NextRequest) {
     .eq("key", "google_review_url")
     .single();
 
-  const redirectUrl = config?.value || process.env.GOOGLE_REVIEW_URL || DEFAULT_GOOGLE_URL;
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.redirect(resolveGoogleReviewUrl(config?.value));
 }

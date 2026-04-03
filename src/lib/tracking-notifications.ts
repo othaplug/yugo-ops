@@ -4,7 +4,11 @@ import { getEmailFrom, sendEmail } from "@/lib/email/send";
 import { signTrackToken } from "@/lib/track-token";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatJobId } from "@/lib/move-code";
-import { statusUpdateEmailHtml } from "@/lib/email-templates";
+import {
+  PREMIUM_TRACK_CTA_LABEL,
+  PREMIUM_TRACK_DELIVERY_CTA_LABEL,
+  statusUpdateEmailHtml,
+} from "@/lib/email-templates";
 
 export type TrackingStatus =
   | "en_route_to_pickup"
@@ -211,8 +215,8 @@ export async function notifyOnCheckpoint(
     ctaUrl: trackUrl,
     ctaLabel: trackUrl
       ? jobType === "delivery"
-        ? "Track your delivery"
-        : "Track your move"
+        ? PREMIUM_TRACK_DELIVERY_CTA_LABEL
+        : PREMIUM_TRACK_CTA_LABEL
       : undefined,
     includeFooter: false,
   });

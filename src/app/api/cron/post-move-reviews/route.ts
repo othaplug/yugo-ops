@@ -9,9 +9,7 @@ import {
   postMovePerksEmail,
   moveAnniversaryEmail,
 } from "@/lib/email/lifecycle-templates";
-
-const GOOGLE_REVIEW_URL =
-  process.env.GOOGLE_REVIEW_URL || "https://g.page/r/CU67iDN6TgMIEB0/review/";
+import { resolveGoogleReviewUrl } from "@/lib/google-review-url";
 
 /**
  * Vercel Cron: runs daily at 10 AM EST.
@@ -51,9 +49,12 @@ export async function GET(req: NextRequest) {
   const { data: coordConfig } = await supabase
     .from("platform_config")
     .select("key, value")
-    .in("key", ["coordinator_name", "coordinator_phone", "coordinator_email"]);
+    .in("key", ["coordinator_name", "coordinator_phone", "coordinator_email", "google_review_url"]);
 
   const coordinatorName = coordConfig?.find((c) => c.key === "coordinator_name")?.value || null;
+  const googleReviewUrl = resolveGoogleReviewUrl(
+    coordConfig?.find((c) => c.key === "google_review_url")?.value,
+  );
   const coordinatorPhone = coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
   const coordinatorEmail = coordConfig?.find((c) => c.key === "coordinator_email")?.value || null;
 
@@ -118,7 +119,7 @@ export async function GET(req: NextRequest) {
           data: {
             clientName: move.client_name || "",
             moveCode: move.move_code || move.id,
-            googleReviewUrl: GOOGLE_REVIEW_URL,
+            googleReviewUrl,
             referralUrl,
             trackingUrl,
           },

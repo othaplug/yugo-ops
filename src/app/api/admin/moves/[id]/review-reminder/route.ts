@@ -171,9 +171,9 @@ export async function POST(
     );
   }
 
-  const token = signReviewToken(rr.id);
-  const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(token)}`;
-  const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(token)}`;
+  const remindToken = signReviewToken(rr.id);
+  const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(remindToken)}`;
+  const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(remindToken)}`;
 
   try {
     await sendEmail({

@@ -7,25 +7,34 @@ import { formatAccessForDisplay } from "@/lib/format-text";
 import { TIER_LABELS as DISPLAY_TIER_LABELS, displayLabel } from "@/lib/displayLabels";
 import { getB2BQuoteEmailSubheading, quoteEmailCrewLine } from "@/lib/quotes/b2b-quote-copy";
 
+/* Typography: hero = Instrument Serif + Georgia; kickers = 12px uppercase, letter-spacing 0; cream/rose accents on black (no gold). */
 /* ─── Brand tokens ─── */
 const BG = "#080808";
 const CARD = "#111111";
 const CARD_BORDER = "#1E1E1E";
-const GOLD = "#B8962E";
-const GOLD_LIGHT = "#C9A962";
+/** Cream / off-white / rose accents for text & rules on near-black (replaces gold). */
+const ACCENT_CREAM = "#EDE6DC";
+const ACCENT_OFF_WHITE = "#F5F0E8";
+const ACCENT_ROSE = "#D4AAB5";
+const ACCENT_ROSE_MUTED = "#B88998";
+const CTA_BG = ACCENT_OFF_WHITE;
+const CTA_TX = "#0D0B0A";
 const TX = "#F0EDE8";
 const TX2 = "#A8A29C";
 const TX3 = "#5E5A56";
+
+/** Shared kicker/eyebrow on dark quote shell (12px, uppercase, 0 tracking). */
+const QUOTE_EYEBROW = `font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${ACCENT_CREAM};letter-spacing:0px;text-transform:uppercase;`;
 
 /* ─── Tier card backgrounds (user-specified) ─── */
 const CURATED_BG   = "#492A1D";  /* dark rust / brown  */
 const SIG_BG       = "#2B3929";  /* dark forest green  */
 const ESTATE_BG    = "#2B0416";  /* deep wine          */
 
-/* ─── Tier accent colors (label, check marks) ─── */
-const CURATED_ACCENT  = "#C9956A";  /* warm copper / amber         */
-const SIG_ACCENT      = "#C9A962";  /* brand gold                  */
-const ESTATE_ACCENT   = "#C9A84C";  /* estate gold                 */
+/* ─── Tier accent colors (label, check marks) — cream/rose tones, no gold ─── */
+const CURATED_ACCENT  = "#E8C4A8";  /* warm peach on rust            */
+const SIG_ACCENT      = "#D8E3D8";  /* soft sage-cream on forest     */
+const ESTATE_ACCENT   = "#E8C4D0";  /* rose-cream on wine            */
 
 /* ─── Tier card primary text (warm cream — legible on all three dark bgs) ─── */
 const TIER_TX = "#F5EEE6";
@@ -73,7 +82,7 @@ const INSTRUMENT_SERIF_FACE = `
 
 function quoteEmailLayout(innerHtml: string): string {
   const base = getEmailBaseUrl();
-  const logoUrl = `${base}/images/yugo-logo-gold.png`;
+  const logoUrl = `${base}/images/yugo-logo-cream.png`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -91,13 +100,13 @@ function quoteEmailLayout(innerHtml: string): string {
 <body style="margin:0;padding:0;background-color:${BG};">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG}" style="background-color:${BG};">
   <tr>
-    <td align="center" style="padding:32px 16px 0;">
+    <td align="center" style="padding:24px 16px 0;">
       <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:560px;width:100%;background-color:${BG};border:1px solid ${CARD_BORDER};">
         <tr>
           <td class="eq-inner" style="padding:32px 36px 40px;background-color:${BG};color:${TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-            <div class="eq-hdr" align="center" style="margin:0 0 24px;">
+            <div class="eq-hdr" align="center" style="margin:0 0 16px;">
               <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0;margin:0 auto;" />
-              <div style="width:40px;height:1px;background-color:${GOLD};margin:14px auto 0;line-height:0;font-size:0;">&nbsp;</div>
+              <div style="width:40px;height:1px;background-color:${ACCENT_ROSE_MUTED};margin:8px auto 0;line-height:0;font-size:0;">&nbsp;</div>
             </div>
             ${innerHtml}
           </td>
@@ -212,8 +221,8 @@ function flatRateBadge(): string {
   return `
     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;">
       <tr>
-        <td style="background-color:${GOLD}1A;border:1px solid ${GOLD}80;padding:5px 14px;">
-          <span style="font-size:9px;font-weight:700;color:${GOLD_LIGHT};letter-spacing:1.4px;text-transform:none;">Guaranteed flat rate</span>
+        <td style="background-color:${ACCENT_ROSE}18;border:1px solid ${ACCENT_ROSE_MUTED}66;padding:6px 14px;">
+          <span style="${QUOTE_EYEBROW}">Guaranteed flat rate</span>
         </td>
       </tr>
     </table>
@@ -240,13 +249,13 @@ function ctaButton(url: string, label: string, sub?: string): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 8px;">
       <tr>
         <td align="center">
-          <a href="${url}" style="display:block;background-color:${GOLD};color:#0A0806;padding:14px 32px;font-size:12px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:0.05em;text-transform:none;">
+          <a href="${url}" style="display:block;background-color:${CTA_BG};color:${CTA_TX};padding:10px 28px;font-size:12px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:0px;text-transform:uppercase;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
             ${label}
           </a>
         </td>
       </tr>
     </table>
-    <p style="font-size:10px;color:${TX3};text-align:center;margin:0 0 24px;letter-spacing:0.3px;">${sub ?? "Booking takes less than two minutes"}</p>
+    <p style="font-size:10px;color:${TX3};text-align:center;margin:0 0 24px;letter-spacing:0;">${sub ?? "Booking takes less than two minutes"}</p>
   `;
 }
 
@@ -261,11 +270,11 @@ function whyYugoBlock(): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 0;border-top:1px solid ${CARD_BORDER};">
       <tr>
         <td style="padding-top:22px;">
-          <div style="font-size:8px;font-weight:700;color:${TX3};text-transform:none;letter-spacing:2.4px;margin-bottom:14px;">The Yugo Difference</div>
+          <div style="${QUOTE_EYEBROW}margin-bottom:12px;">The Yugo difference</div>
           <table cellpadding="0" cellspacing="0" border="0" width="100%">
             ${items.map(([strong, rest]) => `
               <tr>
-                <td style="padding:6px 0;font-size:10px;color:${GOLD};vertical-align:top;width:18px;line-height:1.6;">—</td>
+                <td style="padding:6px 0;font-size:10px;color:${ACCENT_ROSE};vertical-align:top;width:18px;line-height:1.6;">—</td>
                 <td style="padding:6px 0;font-size:12px;color:${TX2};line-height:1.6;"><strong style="color:${TX};font-weight:600;">${strong}</strong> - ${rest}</td>
               </tr>
             `).join("")}
@@ -305,7 +314,7 @@ function detailRow(label: string, value: string, last = false): string {
 function detailsPlain(rows: [string, string][]): string {
   if (rows.length === 0) return "";
   return `
-    <div style="font-size:8px;color:${TX3};text-transform:none;font-weight:700;letter-spacing:2.4px;margin-bottom:10px;">Move Details</div>
+    <div style="${QUOTE_EYEBROW}margin-bottom:10px;">Move details</div>
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border-top:1px solid ${CARD_BORDER};margin-bottom:28px;">
       ${rows.map(([l, v], i) => detailRow(l, v, i === rows.length - 1)).join("")}
     </table>
@@ -362,7 +371,7 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
       const priceSz   = isRec ? "34px" : "22px";
 
       const badge = badgeText
-        ? `<span style="display:inline-block;padding:2px 9px;font-size:7px;font-weight:700;background-color:${isRec ? accent : TIER_TX + "1A"};color:${isRec ? BG : TIER_TX + "88"};margin-left:8px;letter-spacing:1px;text-transform:none;vertical-align:middle;">${badgeText}</span>`
+        ? `<span style="display:inline-block;padding:2px 9px;font-size:7px;font-weight:700;background-color:${isRec ? accent : TIER_TX + "1A"};color:${isRec ? BG : TIER_TX + "88"};margin-left:8px;letter-spacing:0;text-transform:none;vertical-align:middle;">${badgeText}</span>`
         : "";
 
       /* Checklist only on the recommended card */
@@ -376,7 +385,7 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
         <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${cardBg};border:${borderW} solid ${borderClr};margin-bottom:12px;">
           <tr>
             <td style="padding:${padVal};">
-              <div style="font-size:8px;font-weight:700;color:${accent};text-transform:none;letter-spacing:2px;margin-bottom:10px;">${label}${badge}</div>
+              <div style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${accent};letter-spacing:0px;text-transform:uppercase;margin-bottom:10px;">${label}${badge}</div>
               <div style="font-family:${HERO_FONT};font-size:${priceSz};font-weight:400;color:${TIER_TX};line-height:1;margin-bottom:${isRec ? "16px" : "4px"};">${formatCurrency(t.price)}</div>
               ${includesRows ? `<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:4px;">${includesRows}</table>` : ""}
             </td>
@@ -406,10 +415,10 @@ function priceCard(label: string, price: number, note: string): string {
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:28px;">
       <tr>
-        <td align="center" style="background-color:${CARD};border:1px solid ${GOLD}40;padding:28px 24px;">
-          <div style="font-size:8px;color:${TX3};text-transform:none;font-weight:700;letter-spacing:2.4px;margin-bottom:10px;">${label}</div>
-          <div style="font-family:${HERO_FONT};font-size:36px;font-weight:400;color:${GOLD_LIGHT};line-height:1;">${formatCurrency(price)}</div>
-          <div style="font-size:11px;color:${TX3};margin-top:8px;letter-spacing:0.3px;">${note}</div>
+        <td align="center" style="background-color:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}55;padding:24px 22px;">
+          <div style="${QUOTE_EYEBROW}margin-bottom:10px;">${label}</div>
+          <div style="font-family:${HERO_FONT};font-size:36px;font-weight:400;color:${ACCENT_OFF_WHITE};line-height:1;letter-spacing:0;">${formatCurrency(price)}</div>
+          <div style="font-size:11px;color:${TX3};margin-top:8px;letter-spacing:0;">${note}</div>
         </td>
       </tr>
     </table>
@@ -422,7 +431,7 @@ function coordinatorBlock(name?: string | null, phone?: string | null): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:20px 0 24px;border-top:1px solid ${CARD_BORDER};">
       <tr>
         <td style="padding-top:16px;">
-          <div style="font-size:8px;color:${TX3};text-transform:none;font-weight:700;letter-spacing:2.4px;margin-bottom:6px;">Your Coordinator</div>
+          <div style="${QUOTE_EYEBROW}margin-bottom:8px;">Your coordinator</div>
           <div style="font-size:14px;color:${TX};font-weight:500;">${name}</div>
           ${phone ? `<div style="font-size:12px;color:${TX2};margin-top:3px;">${phone}</div>` : ""}
         </td>
@@ -434,11 +443,11 @@ function coordinatorBlock(name?: string | null, phone?: string | null): string {
 const HERO_FONT = "'Instrument Serif', Georgia, 'Times New Roman', serif";
 
 function heading(text: string): string {
-  return `<h1 style="font-family:${HERO_FONT};font-size:30px;font-weight:400;margin:0 0 14px;color:${TX};line-height:1.25;letter-spacing:-0.3px;">${text}</h1>`;
+  return `<h1 style="font-family:${HERO_FONT};font-size:30px;font-weight:400;margin:0 0 14px;color:${TX};line-height:1.25;letter-spacing:0;">${text}</h1>`;
 }
 
 function subHeading(text: string): string {
-  return `<div style="font-size:8px;font-weight:700;color:${GOLD};letter-spacing:2.8px;text-transform:none;margin-bottom:12px;">${text}</div>`;
+  return `<div style="${QUOTE_EYEBROW}margin:0 0 12px;">${text}</div>`;
 }
 
 function bodyText(text: string): string {
@@ -722,7 +731,7 @@ function eventTemplate(d: QuoteTemplateData): string {
           .map(
             (leg) => `
     <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid ${CARD_BORDER};text-align:left">
-      <div style="font-size:10px;font-weight:700;color:${GOLD_LIGHT};letter-spacing:1.2px;text-transform:none;margin-bottom:8px">${leg.label}</div>
+      <div style="${QUOTE_EYEBROW}margin-bottom:8px;">${leg.label}</div>
       <div style="font-size:11px;color:${TX2};line-height:1.7;margin-bottom:6px">
         <strong style="color:${TX}">Delivery:</strong> ${leg.deliveryDay}<br/>
         <strong style="color:${TX}">Return:</strong> ${leg.returnDay}<br/>
@@ -757,7 +766,7 @@ function eventTemplate(d: QuoteTemplateData): string {
         <div><strong style="color:${TX}">Total:</strong> ${formatCurrency(total)}</div>
         <div>HST (13%): ${formatCurrency(tax)}</div>
         <div><strong style="color:${TX}">Grand Total:</strong> ${formatCurrency(grand)}</div>
-        <div style="margin-top:6px">Deposit to confirm: <strong style="color:${GOLD_LIGHT}">${formatCurrency(deposit)}</strong></div>
+        <div style="margin-top:6px">Deposit to confirm: <strong style="color:${ACCENT_CREAM}">${formatCurrency(deposit)}</strong></div>
       </div>
     </div>
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
@@ -795,10 +804,10 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
     ${bodyText("Your labour service quote is ready. A professional crew arrives fully equipped and ready to work. No truck required.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
-    <div style="background:${CARD};border:1px solid ${GOLD}33;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
-      <div style="font-size:9px;color:${TX3};text-transform:none;font-weight:700;letter-spacing:1.5px;margin-bottom:8px">Labour Service</div>
+    <div style="background:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}44;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+      <div style="${QUOTE_EYEBROW}margin-bottom:8px;">Labour service</div>
       ${labourNote ? `<div style="font-size:12px;color:${TX2};margin-bottom:10px">${labourNote}</div>` : ""}
-      <div style="font-family:${HERO_FONT};font-size:32px;font-weight:700;color:${GOLD_LIGHT}">${formatCurrency(total)}</div>
+      <div style="font-family:${HERO_FONT};font-size:32px;font-weight:700;color:${ACCENT_OFF_WHITE};letter-spacing:0;">${formatCurrency(total)}</div>
       <div style="font-size:11px;color:${TX3};margin-top:6px">+${formatCurrency(tax)} HST &middot; Total ${formatCurrency(total + tax)}</div>
       <div style="font-size:11px;color:${TX3};margin-top:4px">Deposit to book: <strong style="color:${TX}">${formatCurrency(deposit)}</strong> (50%)</div>
     </div>
@@ -848,18 +857,18 @@ function binRentalTemplate(d: QuoteTemplateData): string {
     ${subHeading("Your Yugo Bin Rental Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Your eco-friendly bin rental quote is ready.")}
-    <p style="font-size:11px;font-weight:700;color:${TX};text-transform:none;letter-spacing:0.08em;margin:0 0 8px">What&apos;s included</p>
+    <p style="${QUOTE_EYEBROW}margin:0 0 8px;">What&apos;s included</p>
     ${includeBullets}
     ${expiryNote(d.expiresAt)}
-    <p style="font-size:11px;font-weight:700;color:${TX};text-transform:none;letter-spacing:0.08em;margin:0 0 8px">Your schedule</p>
+    <p style="${QUOTE_EYEBROW}margin:0 0 8px;">Your schedule</p>
     ${detailsPlain(rows)}
     <div style="text-align:left;margin:16px 0">
-      <p style="font-size:11px;font-weight:700;color:${TX};text-transform:none;letter-spacing:0.08em;margin:0 0 8px">Quote</p>
+      <p style="font-size:11px;font-weight:700;color:${TX};text-transform:none;letter-spacing:0;margin:0 0 8px">Quote</p>
       <table cellpadding="0" cellspacing="0" border="0" width="100%" style="font-size:12px;color:${TX2}">
         ${quoteLines}
         <tr><td style="padding:8px 0;font-weight:600;color:${TX}">Subtotal</td><td style="padding:8px 0;text-align:right">${formatCurrency(subtotal)}</td></tr>
         <tr><td style="padding:8px 0;font-weight:600;color:${TX}">HST (13%)</td><td style="padding:8px 0;text-align:right">${formatCurrency(tax)}</td></tr>
-        <tr><td style="padding:10px 0 0;font-weight:700;color:${TX}">Total</td><td style="padding:10px 0 0;text-align:right;font-weight:700;color:${GOLD_LIGHT}">${formatCurrency(grand)}</td></tr>
+        <tr><td style="padding:10px 0 0;font-weight:700;color:${TX}">Total</td><td style="padding:10px 0 0;text-align:right;font-weight:700;color:${ACCENT_CREAM}">${formatCurrency(grand)}</td></tr>
       </table>
     </div>
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
@@ -886,7 +895,7 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
 
   return quoteEmailLayout(`
     ${subHeading("COMMERCIAL DELIVERY QUOTE")}
-    <p style="font-size:14px;font-weight:600;color:${GOLD_LIGHT};margin:0 0 20px;line-height:1.5;">${scopeLine}</p>
+    <p style="font-size:14px;font-weight:600;color:${ACCENT_OFF_WHITE};letter-spacing:0;margin:0 0 20px;line-height:1.5;">${scopeLine}</p>
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Your commercial delivery quote is ready. One transparent flat rate with professional logistics from pickup through delivery.")}
     ${expiryNote(d.expiresAt)}

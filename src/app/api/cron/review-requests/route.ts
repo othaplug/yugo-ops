@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const { data: configRows } = await supabase
     .from("platform_config")
     .select("key, value")
-    .in("key", ["google_review_url", "auto_review_requests", "coordinator_name"]);
+    .in("key", ["auto_review_requests", "coordinator_name"]);
 
   const config: Record<string, string> = {};
   for (const r of configRows || []) config[r.key] = r.value;
@@ -126,9 +126,9 @@ export async function GET(req: NextRequest) {
     .lte("reminder_send_at", now);
 
   for (const rr of toRemind || []) {
-    const token = signReviewToken(rr.id);
-    const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(token)}`;
-    const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(token)}`;
+    const remindToken = signReviewToken(rr.id);
+    const reviewUrl = `${baseUrl}/review?token=${encodeURIComponent(remindToken)}`;
+    const reviewRedirectUrl = `${baseUrl}/api/review/redirect?token=${encodeURIComponent(remindToken)}`;
 
     if (rr.client_email) {
       try {

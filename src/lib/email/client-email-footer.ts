@@ -15,6 +15,8 @@
  *   NEXT_PUBLIC_EMAIL_REFER_FRIEND_URL — default: {base}/client
  *
  * Placeholders __YUGO_FOOTER_*__ are replaced when sending (see resend.ts).
+ *
+ * Nav links use letter-spacing 0 (global email typography alignment).
  */
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
@@ -31,7 +33,8 @@ const FOOTER_WHY_COPY: Record<EmailFooterWhy, string> = {
 const FOOTER_BG = "#FFFFFF";
 const FOOTER_TEXT = "#000000";
 const FOOTER_LEGAL_TEXT = "#555555";
-const FOOTER_LINK_BLUE = "#2563EB";
+/** Body / nav text links — brand wine (not default blue). */
+const FOOTER_LINK_WINE = "#5C1A33";
 const FOOTER_HR = "#E5E5E5";
 const FOOTER_NAV_FONT = "Helvetica Neue,Helvetica,Arial,sans-serif";
 const FOOTER_LEGAL_FONT = "Helvetica Neue,Helvetica,Arial,sans-serif";
@@ -134,7 +137,7 @@ function hrRow(): string {
 }
 
 function navLink(href: string, label: string): string {
-  return `<a href="${href}" style="color:${FOOTER_TEXT};font-family:${FOOTER_NAV_FONT};font-size:11px;font-weight:400;letter-spacing:0.12em;text-transform:none;text-decoration:none;border-bottom:1px solid ${FOOTER_TEXT};padding-bottom:2px;">${label}</a>`;
+  return `<a href="${href}" style="color:${FOOTER_LINK_WINE};font-family:${FOOTER_NAV_FONT};font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;text-decoration:none;border-bottom:1px solid ${FOOTER_LINK_WINE};padding-bottom:2px;">${label}</a>`;
 }
 
 /** Full-width table rows: optional REFER A FRIEND band (no GET APP). */
@@ -145,7 +148,7 @@ function buildReferFriendTopRows(params: {
 }): string {
   const { includeReferFriend, referFriendUrl, showMarketingTopRow } = params;
   if (!showMarketingTopRow || !includeReferFriend) return "";
-  const link = `<a href="${escapeHtml(referFriendUrl)}" style="color:${FOOTER_TEXT};font-family:${FOOTER_NAV_FONT};font-size:12px;font-weight:400;letter-spacing:0.04em;text-transform:none;text-decoration:none;border-bottom:1px solid ${FOOTER_TEXT};padding-bottom:3px;">Refer a friend</a>`;
+  const link = `<a href="${escapeHtml(referFriendUrl)}" style="color:${FOOTER_LINK_WINE};font-family:${FOOTER_NAV_FONT};font-size:12px;font-weight:400;letter-spacing:0;text-transform:none;text-decoration:none;border-bottom:1px solid ${FOOTER_LINK_WINE};padding-bottom:3px;">Refer a friend</a>`;
   return `
     ${hrRow()}
     <tr>
@@ -241,24 +244,24 @@ __YUGO_FOOTER_TOP_PROMO__
                 ${escapeHtml(whyLine)}
               </p>
               <p style="margin:0 0 14px;">
-                This email was sent to <a href="mailto:__YUGO_FOOTER_RECIPIENT_MAILTO__" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">__YUGO_FOOTER_RECIPIENT__</a>.
+                This email was sent to <a href="mailto:__YUGO_FOOTER_RECIPIENT_MAILTO__" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">__YUGO_FOOTER_RECIPIENT__</a>.
               </p>
               <p style="margin:0 0 14px;">
-                Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book to ensure you receive updates about your move, offers, and exclusive perks.
+                Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book to ensure you receive updates about your move, offers, and exclusive perks.
               </p>
               <p style="margin:0;">
                 <strong style="color:${FOOTER_LEGAL_TEXT};font-weight:600;">Yugo Inc.</strong>
-                <a href="${mapsUrl}" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;margin-left:6px;">${addrLine1} ${addrLine2}, ${addrLine3}, Canada</a>
+                <a href="${mapsUrl}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;margin-left:6px;">${addrLine1} ${addrLine2}, ${addrLine3}, Canada</a>
               </p>
               <p style="margin:14px 0 0;font-size:10px;color:#888888;">
-                We are always here to help. <a href="${mailtoContact}" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">Email us</a>
+                We are always here to help. <a href="${mailtoContact}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">Email us</a>
                 <span style="color:#cccccc;"> &middot; </span>
-                <a href="${tel}" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">Call ${escapeHtml(contactPhone)}</a>
+                <a href="${tel}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">Call ${escapeHtml(contactPhone)}</a>
               </p>
               <p style="margin:12px 0 0;font-size:10px;color:#aaaaaa;">
-                <a href="${privacyUrl}" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">Privacy policy</a>
+                <a href="${privacyUrl}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">Privacy policy</a>
                 <span style="color:#cccccc;margin:0 8px;">|</span>
-                <a href="${termsUrl}" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">Terms of use</a>
+                <a href="${termsUrl}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">Terms of use</a>
               </p>
             </td>
           </tr>
