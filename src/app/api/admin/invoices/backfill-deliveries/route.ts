@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { createAndPublishSquareInvoice } from "@/lib/square-invoice";
+import { resolveB2BInvoiceCustomerName } from "@/lib/b2b-invoice-customer-name";
 
 /**
  * Admin-only: Generate invoices for completed/delivered deliveries
@@ -17,7 +18,7 @@ export async function POST() {
   const { data: deliveries, error: delErr } = await admin
     .from("deliveries")
     .select(
-      "id, delivery_number, customer_name, client_name, organization_id, delivery_address, admin_adjusted_price, total_price, quoted_price"
+      "id, delivery_number, business_name, customer_name, client_name, organization_id, delivery_address, admin_adjusted_price, total_price, quoted_price"
     )
     .in("status", ["delivered", "completed"])
     .not("organization_id", "is", null);
@@ -71,8 +72,12 @@ export async function POST() {
       const orgEmail = org?.email ?? null;
       const orgName = org?.name || delivery.client_name || "Partner";
       const contactName = org?.contact_name ?? null;
-      // Client = B2B partner (the entity being billed)
-      const clientName = orgName;
+      const clientName = resolveB2BInvoiceCustomerName({
+        business_name: delivery.business_name,
+        client_name: delivery.client_name,
+        customer_name: delivery.customer_name,
+        organizationName: org?.name,
+      });
       const amount = Number(
         delivery.admin_adjusted_price ?? delivery.total_price ?? delivery.quoted_price ?? 0
       );
@@ -91,7 +96,7 @@ export async function POST() {
           deliveryAddress: delivery.delivery_address || "",
           amount,
           orgEmail,
-          orgName,
+          orgName: clientName,
           contactName,
         });
         if (result) {

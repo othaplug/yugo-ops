@@ -501,7 +501,7 @@ export default function AdminPageClient({
       <div className="mb-8 min-w-0">
         <div className="flex items-start justify-between gap-3 sm:gap-4 min-w-0 w-full">
           <div className="min-w-0 flex-1">
-            <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+            <h1 className="admin-page-hero text-[var(--tx)]">
               {greeting}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--tx3)] font-medium">

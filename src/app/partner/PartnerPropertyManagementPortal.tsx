@@ -190,9 +190,9 @@ export default function PartnerPropertyManagementPortal({
           <nav className="flex gap-1 px-3 py-2 bg-[var(--card)] border-b border-[var(--brd)] text-[11px] font-semibold">
             {(
               [
-                { id: "dash" as const, label: "Dashboard" },
-                { id: "book" as const, label: "Book Delivery" },
-                { id: "programs" as const, label: "Programs" },
+                { id: "dash" as const, label: "Overview" },
+                { id: "book" as const, label: "Schedule Move" },
+                { id: "programs" as const, label: "Projects" },
               ] as const
             ).map((t) => (
               <button
@@ -645,7 +645,7 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
 
   return (
     <form onSubmit={submit} className="space-y-4 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-      <h2 className="text-[16px] font-bold text-[var(--tx)]">Book A Delivery</h2>
+      <h2 className="text-[16px] font-bold text-[var(--tx)]">Schedule a tenant move</h2>
 
       <div>
         <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Property</label>

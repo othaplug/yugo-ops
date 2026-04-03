@@ -12,6 +12,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
     const updates: Record<string, unknown> = {};
+    const admin = createAdminClient();
 
     if (typeof body.name === "string") updates.name = body.name.trim();
     if (typeof body.type === "string") {
@@ -23,7 +24,12 @@ export async function PATCH(
     if (typeof body.phone === "string") updates.phone = body.phone.trim();
     if (typeof body.vertical === "string") updates.vertical = body.vertical;
     if (body.portal_features && typeof body.portal_features === "object" && !Array.isArray(body.portal_features)) {
-      updates.portal_features = body.portal_features;
+      const { data: existingOrg } = await admin.from("organizations").select("portal_features").eq("id", id).single();
+      const prev =
+        existingOrg?.portal_features && typeof existingOrg.portal_features === "object" && !Array.isArray(existingOrg.portal_features)
+          ? (existingOrg.portal_features as Record<string, unknown>)
+          : {};
+      updates.portal_features = { ...prev, ...(body.portal_features as Record<string, unknown>) };
     }
     if (body.invoice_due_days !== undefined) {
       const v = Number(body.invoice_due_days);
@@ -40,7 +46,6 @@ export async function PATCH(
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
-    const admin = createAdminClient();
     const { error } = await admin.from("organizations").update(updates).eq("id", id);
 
     if (error) {

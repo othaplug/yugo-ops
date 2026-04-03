@@ -250,7 +250,7 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
 
       <div className="mb-2">
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">Partners</p>
-        <h1 className="font-hero text-[26px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight leading-none">
+        <h1 className="admin-page-hero text-[var(--tx)]">
           Create inbound shipment
         </h1>
       </div>

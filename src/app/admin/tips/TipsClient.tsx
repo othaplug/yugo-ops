@@ -98,7 +98,7 @@ export default function TipsClient({
   return (
     <div className="max-w-[1000px] mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 animate-fade-up min-w-0">
       <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
-      <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none mb-8">Tips</h1>
+      <h1 className="admin-page-hero text-[var(--tx)] mb-8">Tips</h1>
 
       <div className="grid grid-cols-3 gap-6 md:gap-8 pb-8 border-b border-[var(--brd)]">
         <KpiCard label="Total Collected" value={formatCurrency(totalTips)} sub={`${tipCount} gratuities`} accent />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { cancelOrDeleteSquareInvoice } from "@/lib/square-invoice";
 
 /** POST /api/admin/invoices/bulk — Archive, cancel, or delete selected invoices */
 export async function POST(req: NextRequest) {
@@ -27,6 +28,10 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
 
   if (action === "delete") {
+    const { data: rows } = await admin.from("invoices").select("id, square_invoice_id").in("id", ids);
+    for (const row of rows || []) {
+      await cancelOrDeleteSquareInvoice(row.square_invoice_id as string | null);
+    }
     const { error } = await admin.from("invoices").delete().in("id", ids);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true, updated: ids.length });

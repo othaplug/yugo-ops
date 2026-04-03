@@ -314,7 +314,7 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
       <div className="flex items-center justify-between gap-3 mb-1">
         <div>
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
-          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Recurring Schedules</h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">Recurring Schedules</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-2">{schedules.length} schedule{schedules.length !== 1 ? "s" : ""} across all partners</p>
         </div>
         <CreateButton onClick={() => setCreateOpen(true)} title="New Schedule" />

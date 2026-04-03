@@ -22,7 +22,8 @@ export async function GET() {
       .order("name");
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ organizations: organizations ?? [] });
+    const visible = (organizations ?? []).filter((o) => !(o.name || "").startsWith("_"));
+    return NextResponse.json({ organizations: visible });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to fetch" },

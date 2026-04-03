@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { formatCurrency } from "@/lib/format-currency";
+import { getPartnerLabelsForPartner } from "@/utils/partnerType";
 
 interface Props {
   orgId: string;
   orgName: string;
+  /** Organizations.vertical or type — drives Move vs Delivery labels */
+  partnerVertical?: string | null;
 }
 
 const GOLD = "#C9A962";
@@ -18,10 +21,14 @@ const PERIOD_OPTIONS = [
   { value: 365, label: "1Y" },
 ];
 
-export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
+export default function AdminPartnerAnalytics({ orgId, orgName, partnerVertical }: Props) {
   const [period, setPeriod] = useState(90);
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
+  const labels = useMemo(
+    () => getPartnerLabelsForPartner({ vertical: partnerVertical, type: partnerVertical }),
+    [partnerVertical],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,13 +62,16 @@ export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
     damageRate: number;
     monthlyVolume: { month: string; count: number; revenue: number }[];
     zoneDistribution: { zone: string; count: number; pct: number }[];
+    source?: string;
   };
 
   return (
     <div className="space-y-6 py-5">
       {/* Period toggle */}
       <div className="flex items-center justify-between">
-        <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">{orgName}, Performance Analytics</h3>
+        <h3 className="text-[var(--text-base)] font-bold text-[var(--tx)]">
+          {orgName}, {labels.analyticsTitle}
+        </h3>
         <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--bg)]">
           {PERIOD_OPTIONS.map((opt) => (
             <button
@@ -80,7 +90,7 @@ export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
       {/* KPI Grid */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Deliveries</div>
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">{labels.serviceUnitPlural}</div>
           <div className="text-[20px] font-bold text-[var(--tx)] mt-0.5">{d.totalDeliveries}</div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
@@ -88,7 +98,7 @@ export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
           <div className="text-[20px] font-bold text-[var(--gold)] mt-0.5">{formatCurrency(d.revenue)}</div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
-          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">Per Delivery</div>
+          <div className="text-[9px] font-bold tracking-wider uppercase text-[var(--tx3)]/60">{labels.avgMetric}</div>
           <div className="text-[20px] font-bold text-[var(--tx)] mt-0.5">{formatCurrency(d.avgRevenuePerDelivery)}</div>
         </div>
         <div className="p-3 rounded-xl border border-[var(--brd)] bg-[var(--card)]">
@@ -116,7 +126,7 @@ export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
                 <YAxis yAxisId="left" tick={{ fontSize: 9, fill: "#888" }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: "#888" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
                 <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #E8E4DC" }} />
-                <Bar yAxisId="left" dataKey="count" fill={GOLD} radius={[3, 3, 0, 0]} name="Deliveries" />
+                <Bar yAxisId="left" dataKey="count" fill={GOLD} radius={[3, 3, 0, 0]} name={labels.volumeSeriesName} />
                 <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#2D6A4F" strokeWidth={2} dot={false} name="Revenue" />
               </BarChart>
             </ResponsiveContainer>
@@ -127,7 +137,9 @@ export default function AdminPartnerAnalytics({ orgId, orgName }: Props) {
       {/* Zone Distribution */}
       {d.zoneDistribution && d.zoneDistribution.length > 0 && (
         <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5">
-          <h4 className="text-[12px] font-bold text-[var(--tx)] mb-3">Zone Distribution</h4>
+          <h4 className="text-[12px] font-bold text-[var(--tx)] mb-3">
+            {d.source === "moves" ? "Area / zone mix" : "Zone distribution"}
+          </h4>
           <div className="flex items-center gap-6">
             <div className="h-[150px] w-[150px]">
               <ResponsiveContainer width="100%" height="100%">

@@ -100,7 +100,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
               Statement
             </span>
           </div>
-          <h1 className="font-hero text-[26px] font-bold text-[var(--tx)]">
+          <h1 className="admin-page-hero text-[var(--tx)]">
             {statement.statement_number}
           </h1>
           {org && (

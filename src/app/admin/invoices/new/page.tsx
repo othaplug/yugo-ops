@@ -76,7 +76,7 @@ export default function NewInvoicePage() {
   return (
     <div className="max-w-[540px] mx-auto px-5 md:px-6 py-5">
       <BackButton label="Back" fallback="/admin/invoices" className="mb-3" />
-      <h1 className="font-hero text-[18px] font-bold text-[var(--tx)] mb-6">Create Invoice</h1>
+      <h1 className="admin-page-hero text-[var(--tx)] mb-6">Create Invoice</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>

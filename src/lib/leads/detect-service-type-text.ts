@@ -4,9 +4,35 @@ export type DetectedServiceType = { slug: string; confidence: number };
  * Infer canonical quote `service_type` slug from free text (same vocabulary as Webflow mapping).
  * RISSD-style language maps to white_glove (no dedicated quote type yet).
  */
+const PM_INQUIRY_KEYWORDS = [
+  "property management",
+  "tenant",
+  "renovation",
+  "unit turnover",
+  "building",
+  "condo corp",
+  "superintendent",
+  "suite",
+  "displacement",
+  "managed properties",
+  "portfolio",
+  "property manager",
+  "landlord",
+  "turnover",
+];
+
+function textLooksLikePmInquiry(text: string): boolean {
+  const lower = text.toLowerCase();
+  return PM_INQUIRY_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 export function detectServiceTypeFromText(message: string, inventoryText: string): DetectedServiceType | null {
   const text = `${message || ""} ${inventoryText || ""}`.toLowerCase();
   if (!text.trim()) return null;
+
+  if (textLooksLikePmInquiry(text)) {
+    return { slug: "pm_inquiry", confidence: 0.88 };
+  }
 
   if (
     /specialty\s*transport|white\s*glove\s*delivery|freight\s*delivery|b2b\s*delivery|commercial\s*delivery|one[-\s]?off\s*delivery/i.test(

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePartner } from "@/lib/partner-auth";
 import { getActiveRateCardLookup } from "@/lib/partners/calculateDeliveryPrice";
 import { generateDeliveryNumber } from "@/lib/delivery-number";
+import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
 
 export async function POST(req: NextRequest) {
   const { primaryOrgId, userId, error } = await requirePartner();
@@ -15,9 +16,20 @@ export async function POST(req: NextRequest) {
 
     const { data: org } = await admin
       .from("organizations")
-      .select("name, type, pricing_tier")
+      .select("name, type, vertical, pricing_tier")
       .eq("id", primaryOrgId)
       .single();
+
+    const orgVertical = String(org?.vertical || org?.type || "");
+    if (isPropertyManagementDeliveryVertical(orgVertical)) {
+      return NextResponse.json(
+        {
+          error:
+            "Portfolio partners book tenant moves in the property portal, not B2B deliveries. Open Schedule move from your dashboard.",
+        },
+        { status: 400 },
+      );
+    }
 
     const customerName = (body.customer_name || "").trim();
     const deliveryAddress = (body.delivery_address || "").trim();

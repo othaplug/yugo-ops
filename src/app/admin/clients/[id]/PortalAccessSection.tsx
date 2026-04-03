@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "../../components/Toast";
 import { Icon } from "@/components/AppIcons";
 import ModalOverlay from "../../components/ModalOverlay";
+import { getPartnerLabelsForPartner } from "@/utils/partnerType";
 
 interface PortalUser {
   user_id: string;
@@ -12,8 +13,21 @@ interface PortalUser {
   status: string;
 }
 
-export default function PortalAccessSection({ orgId, orgName }: { orgId: string; orgName: string }) {
+export default function PortalAccessSection({
+  orgId,
+  orgName,
+  partnerVertical,
+}: {
+  orgId: string;
+  orgName: string;
+  /** organizations.vertical or type */
+  partnerVertical?: string | null;
+}) {
   const { toast } = useToast();
+  const labels = useMemo(
+    () => getPartnerLabelsForPartner({ vertical: partnerVertical, type: partnerVertical }),
+    [partnerVertical],
+  );
   const [users, setUsers] = useState<PortalUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -141,7 +155,9 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
           <h3 className="font-heading text-[16px] font-bold text-[var(--tx)] flex items-center gap-2">
             <Icon name="lock" className="w-[16px] h-[16px]" /> Portal Access
           </h3>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage who at this partner can log in to view deliveries and schedule requests.</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+            Manage who at this partner can log in to {labels.portalDescription}.
+          </p>
         </div>
         <button
           onClick={() => setInviteOpen(true)}
@@ -242,7 +258,7 @@ export default function PortalAccessSection({ orgId, orgName }: { orgId: string;
       <ModalOverlay open={inviteOpen} onClose={() => setInviteOpen(false)} title="Invite Portal User" maxWidth="md">
         <form onSubmit={handleInvite} className="p-5 space-y-4">
           <p className="text-[12px] text-[var(--tx3)]">
-            Invite someone at {orgName} to log in and view their deliveries.
+            Invite someone at {orgName} to log in. They can {labels.portalDescription}.
           </p>
           <div>
             <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email *</label>

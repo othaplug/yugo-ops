@@ -410,7 +410,7 @@ export default function QuotesListClient({
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 min-w-0">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Sales</p>
-            <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Quotes</h1>
+            <h1 className="admin-page-hero text-[var(--tx)]">Quotes</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-auto">
             <button

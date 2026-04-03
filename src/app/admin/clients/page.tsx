@@ -7,13 +7,14 @@ import ClientsPageClient from "./ClientsPageClient";
 
 export default async function ClientsPage() {
   const db = createAdminClient();
-  const { data: clients } = await db
+  const { data: rawClients } = await db
     .from("organizations")
     .select("*")
     .eq("type", "b2c")
     .order("created_at", { ascending: false });
 
-  const b2cIds = (clients ?? []).map((c) => c.id);
+  const clients = (rawClients ?? []).filter((c) => !(c.name || "").startsWith("_"));
+  const b2cIds = clients.map((c) => c.id);
   const { data: moves } = b2cIds.length > 0
     ? await db
         .from("moves")
@@ -34,5 +35,5 @@ export default async function ClientsPage() {
     }
   }
 
-  return <ClientsPageClient clients={clients || []} moveClientData={latestByOrg} />;
+  return <ClientsPageClient clients={clients} moveClientData={latestByOrg} />;
 }

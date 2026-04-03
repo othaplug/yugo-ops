@@ -118,7 +118,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
     <div className="px-4 sm:px-6 py-5 max-w-[720px] mx-auto">
       <BackButton label="Back" />
 
-      <h1 className="font-hero text-[20px] font-bold text-[var(--tx)] mt-4 mb-6">New Project</h1>
+      <h1 className="admin-page-hero text-[var(--tx)] mt-4 mb-6">New Project</h1>
 
       {/* Step Indicator */}
       <div className="flex items-center gap-2 mb-8">

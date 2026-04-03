@@ -379,7 +379,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
       <div className="mt-4 mb-6">
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-2">B2B Operations · Project</p>
         <div className="flex flex-wrap items-center gap-3 mb-2">
-          <h1 className="font-hero text-[20px] font-bold text-[var(--tx)]">
+          <h1 className="admin-page-hero text-[var(--tx)]">
             {data.project_number} · {data.project_name}
           </h1>
           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${STATUS_COLORS[data.status] || ""}`}>
@@ -550,7 +550,7 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
         {/* Estimate */}
         <section className="py-5 first:pt-0">
           <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-3">Project Estimate</div>
-          <div className="text-[28px] font-bold text-[var(--tx)] font-hero">{formatCurrency(projectEstimate)}</div>
+          <div className="admin-page-hero-stat text-[var(--tx)]">{formatCurrency(projectEstimate)}</div>
           <div className="text-[12px] text-[var(--tx3)] mt-1">
             {estimateFromDeliveries
               ? `Based on ${data.deliveries.filter((d) => d.status !== "cancelled").length} linked deliver${data.deliveries.filter((d) => d.status !== "cancelled").length === 1 ? "y" : "ies"}${data.project_mgmt_fee ? " + mgmt fee" : ""}`
@@ -2207,7 +2207,7 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub: st
   return (
     <div>
       <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">{label}</div>
-      <div className="text-[24px] font-bold text-[var(--tx)] mt-1 font-hero">{value}</div>
+      <div className="admin-page-hero-stat text-[var(--tx)] mt-1">{value}</div>
       <div className="text-[11px] text-[var(--tx3)]">{sub}</div>
     </div>
   );

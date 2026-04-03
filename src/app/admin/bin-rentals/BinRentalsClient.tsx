@@ -141,7 +141,7 @@ export default function BinRentalsClient({ orders, stats }: { orders: BinOrder[]
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
         <div>
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">Operations</p>
-          <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] leading-none">Bin Rentals</h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">Bin Rentals</h1>
         </div>
         <Link
           href="/admin/quotes/new"

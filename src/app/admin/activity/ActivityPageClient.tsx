@@ -76,7 +76,7 @@ export default function ActivityPageClient({ initialEvents }: { initialEvents: A
       <div className="flex items-center gap-3 mb-6">
         <BackButton href="/admin" />
         <div className="flex items-center gap-2 min-w-0">
-          <h1 className="font-hero text-[22px] sm:text-[26px] font-bold text-[var(--tx)] tracking-tight truncate">Activity</h1>
+          <h1 className="admin-page-hero text-[var(--tx)] truncate">Activity</h1>
         </div>
       </div>
       <p className="text-[var(--text-md)] text-[var(--tx3)] mb-4 leading-snug font-medium">

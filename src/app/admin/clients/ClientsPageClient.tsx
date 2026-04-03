@@ -157,7 +157,7 @@ export default function ClientsPageClient({
       <div className="flex items-center justify-between gap-3 mb-6">
         <div>
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
-          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Contacts</h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">Contacts</h1>
         </div>
         <div className="flex gap-1.5 shrink-0">
           <Link href="/admin/clients/new" className="admin-btn admin-btn-primary">+ Add Client</Link>

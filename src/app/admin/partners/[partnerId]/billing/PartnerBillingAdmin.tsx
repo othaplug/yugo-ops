@@ -12,6 +12,7 @@ import {
   CircleNotch,
 } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
+import { ordinalDay } from "@/lib/ordinal";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   draft:   { label: "Draft",   color: "#9c9489", bg: "rgba(156,148,137,0.12)" },
@@ -173,7 +174,7 @@ export default function PartnerBillingAdmin({
               Billing Overview
             </span>
           </div>
-          <h1 className="font-hero text-[28px] font-bold text-[var(--tx)] leading-none">
+          <h1 className="admin-page-hero text-[var(--tx)]">
             {org.name}
           </h1>
           <div className="flex items-center gap-4 mt-1.5 flex-wrap">
@@ -186,7 +187,7 @@ export default function PartnerBillingAdmin({
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--tx3)]/50 mr-1">Cycle</span>
                 {org.payment_terms === "net_15"
                   ? "1st & 16th of month"
-                  : <>{org.billing_anchor_day}{org.billing_anchor_day === 1 ? "st" : org.billing_anchor_day === 2 ? "nd" : org.billing_anchor_day === 3 ? "rd" : "th"} of month</>}
+                  : <>{ordinalDay(org.billing_anchor_day)} of month</>}
               </span>
             )}
             <span className="text-[12px] text-[var(--tx3)]">

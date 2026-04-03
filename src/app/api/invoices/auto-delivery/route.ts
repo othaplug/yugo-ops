@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createAndPublishSquareInvoice } from "@/lib/square-invoice";
+import { resolveB2BInvoiceCustomerName } from "@/lib/b2b-invoice-customer-name";
 
 /**
  * Internal endpoint — called fire-and-forget by the crew signoff route
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   const { data: delivery, error: delErr } = await admin
     .from("deliveries")
     .select(
-      "id, delivery_number, customer_name, client_name, organization_id, delivery_address, admin_adjusted_price, total_price, quoted_price, items"
+      "id, delivery_number, business_name, customer_name, client_name, organization_id, delivery_address, admin_adjusted_price, total_price, quoted_price, items"
     )
     .eq("id", deliveryId)
     .single();
@@ -70,8 +71,12 @@ export async function POST(req: NextRequest) {
   const orgEmail = org.email ?? null;
   const orgName = org.name || delivery.client_name || "Partner";
   const contactName = org.contact_name ?? null;
-  // Client = B2B partner (the entity being billed)
-  const clientName = orgName;
+  const clientName = resolveB2BInvoiceCustomerName({
+    business_name: delivery.business_name,
+    client_name: delivery.client_name,
+    customer_name: delivery.customer_name,
+    organizationName: org.name,
+  });
 
   // Generate an invoice number
   const { count } = await admin
@@ -91,7 +96,7 @@ export async function POST(req: NextRequest) {
       deliveryAddress: delivery.delivery_address || "",
       amount,
       orgEmail,
-      orgName,
+      orgName: clientName,
       contactName,
       invoiceDueDays: org.invoice_due_days === 15 ? 15 : 30,
       invoiceDueDayOfMonth: org.invoice_due_day_of_month === 15 || org.invoice_due_day_of_month === 30 ? org.invoice_due_day_of_month : null,

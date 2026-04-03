@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import BackButton from "../../components/BackButton";
 import KpiCard from "@/components/ui/KpiCard";
@@ -56,9 +57,13 @@ export default async function RealtorsPage() {
 
       <div className="mb-8">
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Partners</p>
-        <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Referral Partners</h1>
+        <h1 className="admin-page-hero text-[var(--tx)]">Referral Partners</h1>
         <p className="mt-2 text-[13px] text-[var(--tx3)] max-w-2xl leading-relaxed">
-          Referrals from referral partners, led by <span className="text-[var(--tx2)] font-medium">realtors</span> (property managers &amp; developers share the same pipeline).
+          Referral agreements with realtors, property managers, and developers. For property-management service contracts (tenant moves, renovations), manage partners under{" "}
+          <Link href="/admin/partners" className="text-[var(--gold)] font-medium hover:underline">
+            Partners
+          </Link>
+          .
         </p>
       </div>
 

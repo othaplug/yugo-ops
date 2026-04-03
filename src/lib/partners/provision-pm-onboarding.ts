@@ -12,6 +12,8 @@ export type PmPropertyInput = {
   has_move_elevator?: boolean;
   elevator_type?: string;
   move_hours?: string;
+  /** When move_hours is the literal "custom", API may send free-text here */
+  custom_move_hours?: string;
   parking_type?: string;
   building_contact_name?: string;
   building_contact_phone?: string;
@@ -47,6 +49,10 @@ export async function provisionPmPartnerPortfolio(
   if (props.length === 0) return { contractId: null };
 
   for (const p of props) {
+    const resolvedMoveHours =
+      String(p.move_hours || "").toLowerCase() === "custom" && p.custom_move_hours?.trim()
+        ? p.custom_move_hours.trim()
+        : p.move_hours?.trim() || null;
     const { error } = await admin.from("partner_properties").insert({
       partner_id: orgId,
       building_name: p.building_name.trim(),
@@ -57,7 +63,7 @@ export async function provisionPmPartnerPortfolio(
       has_loading_dock: !!p.has_loading_dock,
       has_move_elevator: !!p.has_move_elevator,
       elevator_type: p.elevator_type?.trim() || null,
-      move_hours: p.move_hours?.trim() || null,
+      move_hours: resolvedMoveHours,
       parking_type: p.parking_type?.trim() || null,
       building_contact_name: p.building_contact_name?.trim() || null,
       building_contact_phone: p.building_contact_phone?.trim() || null,

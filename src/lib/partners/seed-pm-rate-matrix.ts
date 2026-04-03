@@ -16,7 +16,7 @@ function section(card: Record<string, unknown>, key: string): Record<string, num
 }
 
 /**
- * Inserts pm_rate_cards rows (local zone) from the legacy DEFAULT_PM_RATE_CARD shape.
+ * Inserts pm_rate_cards rows (local zone) from DEFAULT_PM_RATE_CARD.
  */
 export async function seedPmRateMatrixFromDefaults(admin: SupabaseClient, contractId: string): Promise<void> {
   const card = DEFAULT_PM_RATE_CARD as Record<string, unknown>;
@@ -44,22 +44,23 @@ export async function seedPmRateMatrixFromDefaults(admin: SupabaseClient, contra
     }
   };
 
-  addReason("reno_move_out", "renovation_move_out");
-  addReason("reno_move_in", "renovation_move_in");
-  addReason("unit_turnover", "renovation_move_out");
-  addReason("tenant_move_in", "tenant_move_gta");
-  addReason("tenant_move_out", "tenant_move_gta");
-  addReason("incentive_move", "tenant_move_gta");
-  addReason("suite_transfer", "tenant_move_gta");
-  addReason("staging", "renovation_move_in");
-  addReason("destaging", "renovation_move_out");
-  addReason("office_suite_setup", "tenant_move_gta");
-  addReason("office_suite_clearout", "tenant_move_gta");
-  addReason("common_area", "tenant_move_gta");
-  addReason("storage_move", "renovation_move_out");
+  addReason("tenant_move_out", "tenant_move_out");
+  addReason("tenant_move_in", "tenant_move_in");
+  addReason("reno_move_out", "reno_move_out");
+  addReason("reno_move_in", "reno_move_in");
+  addReason("suite_transfer", "suite_transfer");
+  addReason("emergency_relocation", "emergency_relocation");
+  addReason("staging", "staging");
+  addReason("unit_turnover", "unit_turnover");
+
+  addReason("destaging", "staging");
+  addReason("incentive_move", "tenant_move_in");
+  addReason("office_suite_setup", "tenant_move_in");
+  addReason("office_suite_clearout", "tenant_move_in");
+  addReason("common_area", "tenant_move_in");
+  addReason("storage_move", "reno_move_out");
   addReason("building_transfer", "tenant_move_outside", "outside_gta");
-  addReason("emergency_relocation", "tenant_move_outside", "outside_gta");
-  addReason("other", "tenant_move_gta");
+  addReason("other", "tenant_move_in");
 
   if (inserts.length === 0) return;
 

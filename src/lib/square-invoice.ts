@@ -86,11 +86,12 @@ export async function createAndPublishSquareInvoice(
     }
 
     if (!squareCustomerId) {
+      const displayCompany = (customerName || orgName || "").trim() || "Partner";
       const customerRes = await squareClient.customers.create({
         idempotencyKey: `customer-delivery-${deliveryId}`,
-        givenName: contactName || orgName || customerName,
+        givenName: (contactName || displayCompany).slice(0, 100),
         emailAddress: orgEmail || undefined,
-        companyName: orgName || undefined,
+        companyName: displayCompany.slice(0, 255),
       });
       squareCustomerId = customerRes.customer?.id ?? null;
     }
@@ -179,5 +180,40 @@ export async function createAndPublishSquareInvoice(
   } catch (err) {
     console.error("[square-invoice] createAndPublishSquareInvoice failed:", err);
     return null;
+  }
+}
+
+/**
+ * Best-effort remove a Square invoice before deleting the local row.
+ * Draft invoices are deleted; unpaid / scheduled invoices are cancelled (Square does not allow deleting published invoices).
+ */
+export async function cancelOrDeleteSquareInvoice(squareInvoiceId: string | null | undefined): Promise<void> {
+  const id = (squareInvoiceId || "").trim();
+  if (!id || !(process.env.SQUARE_ACCESS_TOKEN || "").trim()) return;
+
+  try {
+    const getRes = await squareClient.invoices.get({ invoiceId: id });
+    const inv = getRes.invoice;
+    if (!inv?.id || inv.version == null) return;
+    const status = inv.status;
+
+    if (status === "DRAFT") {
+      await squareClient.invoices.delete({ invoiceId: id, version: inv.version });
+      return;
+    }
+
+    if (
+      status === "UNPAID" ||
+      status === "PARTIALLY_PAID" ||
+      status === "SCHEDULED" ||
+      status === "PAYMENT_PENDING"
+    ) {
+      await squareClient.invoices.cancel({
+        invoiceId: id,
+        version: inv.version,
+      });
+    }
+  } catch (err) {
+    console.error("[square-invoice] cancelOrDeleteSquareInvoice failed:", err);
   }
 }

@@ -57,6 +57,11 @@ export const LEAD_ACTIVITY_LABELS: Record<string, string> = {
   lost: "Lost",
 };
 
+/** Parsed / inferred service slugs shown on lead detail (coordinator-facing). */
+export const DETECTED_SERVICE_TYPE_LABELS: Record<string, string> = {
+  pm_inquiry: "Property management inquiry",
+};
+
 export const DISMISS_REASONS: { value: string; label: string }[] = [
   { value: "spam", label: "Spam" },
   { value: "wrong_service_area", label: "Wrong service area" },

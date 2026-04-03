@@ -67,7 +67,7 @@ export default function InboundShipmentsClient() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <p className="text-[10px] font-bold tracking-[0.18em] text-[var(--tx3)]/60 mb-1.5">B2B</p>
-          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+          <h1 className="admin-page-hero text-[var(--tx)]">
             Inbound Shipments
           </h1>
           <p className="text-sm text-[var(--tx3)] mt-2">Receive, inspect, store & deliver (RISSD)</p>

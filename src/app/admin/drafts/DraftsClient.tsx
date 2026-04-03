@@ -47,7 +47,7 @@ export default function DraftsClient() {
   if (!mounted) {
     return (
       <div className="p-6">
-        <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+        <h1 className="admin-page-hero text-[var(--tx)]">
           Drafts
         </h1>
         <p className="text-[13px] text-[var(--tx3)] mt-1">Loading…</p>
@@ -59,7 +59,7 @@ export default function DraftsClient() {
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+          <h1 className="admin-page-hero text-[var(--tx)]">
             Drafts
           </h1>
           <p className="text-[13px] text-[var(--tx3)] mt-0.5">

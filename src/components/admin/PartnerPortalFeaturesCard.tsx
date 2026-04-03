@@ -1,41 +1,116 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/app/admin/components/Toast";
+import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
 
-// ─── Vertical defaults (mirrors the DB migration defaults) ────────────────────
-export const VERTICAL_DEFAULTS: Record<string, { projects: boolean; day_rates: boolean; recurring_schedules: boolean }> = {
-  furniture_retailer:    { projects: false, day_rates: true,  recurring_schedules: true  },
-  cabinetry:             { projects: false, day_rates: true,  recurring_schedules: true  },
-  flooring:              { projects: false, day_rates: true,  recurring_schedules: true  },
-  interior_designer:     { projects: true,  day_rates: true,  recurring_schedules: false },
-  art_gallery:           { projects: true,  day_rates: false, recurring_schedules: false },
-  antique_dealer:        { projects: true,  day_rates: false, recurring_schedules: false },
-  hospitality:           { projects: true,  day_rates: true,  recurring_schedules: true  },
-  medical_equipment:     { projects: false, day_rates: false, recurring_schedules: false },
-  av_technology:         { projects: false, day_rates: false, recurring_schedules: false },
-  appliances:            { projects: false, day_rates: false, recurring_schedules: false },
-  realtor:               { projects: false, day_rates: false, recurring_schedules: false },
-  property_manager:      { projects: false, day_rates: false, recurring_schedules: false },
-  developer:             { projects: false, day_rates: false, recurring_schedules: false },
-  // legacy
-  retail:                { projects: false, day_rates: true,  recurring_schedules: true  },
-  designer:              { projects: true,  day_rates: true,  recurring_schedules: false },
-  gallery:               { projects: true,  day_rates: false, recurring_schedules: false },
+type DeliveryPortalDefaults = {
+  schedule_deliveries: boolean;
+  day_rates: boolean;
+  recurring_schedules: boolean;
+  monthly_statements: boolean;
+  delivery_history: boolean;
+  projects: boolean;
 };
 
-const FEATURE_META = [
-  { key: "projects",            label: "Projects",             desc: "Multi-phase project management and item tracking" },
-  { key: "day_rates",           label: "Day Rates",            desc: "Book a dedicated truck + crew for a full day" },
-  { key: "recurring_schedules", label: "Recurring Schedules",  desc: "Set weekly or monthly recurring delivery slots" },
+const DELIVERY_DEFAULT_EVERYTHING: DeliveryPortalDefaults = {
+  schedule_deliveries: true,
+  day_rates: true,
+  recurring_schedules: true,
+  monthly_statements: true,
+  delivery_history: true,
+  projects: false,
+};
+
+// ─── Vertical defaults (mirrors the DB migration defaults) ────────────────────
+export const VERTICAL_DEFAULTS: Record<string, DeliveryPortalDefaults> = {
+  furniture_retailer: { ...DELIVERY_DEFAULT_EVERYTHING },
+  cabinetry: { ...DELIVERY_DEFAULT_EVERYTHING },
+  flooring: { ...DELIVERY_DEFAULT_EVERYTHING },
+  interior_designer: { ...DELIVERY_DEFAULT_EVERYTHING, projects: true, recurring_schedules: false },
+  art_gallery: { ...DELIVERY_DEFAULT_EVERYTHING, projects: true, day_rates: false, recurring_schedules: false },
+  antique_dealer: { ...DELIVERY_DEFAULT_EVERYTHING, projects: true, day_rates: false, recurring_schedules: false },
+  hospitality: { ...DELIVERY_DEFAULT_EVERYTHING, projects: true },
+  medical_equipment: { ...DELIVERY_DEFAULT_EVERYTHING, day_rates: false, recurring_schedules: false },
+  av_technology: { ...DELIVERY_DEFAULT_EVERYTHING, day_rates: false, recurring_schedules: false },
+  appliances: { ...DELIVERY_DEFAULT_EVERYTHING, day_rates: false, recurring_schedules: false },
+  realtor: { ...DELIVERY_DEFAULT_EVERYTHING, schedule_deliveries: false, day_rates: false, recurring_schedules: false, monthly_statements: false, delivery_history: false },
+  property_manager: { ...DELIVERY_DEFAULT_EVERYTHING, schedule_deliveries: false, day_rates: false, recurring_schedules: false, monthly_statements: false, delivery_history: false },
+  developer: { ...DELIVERY_DEFAULT_EVERYTHING, schedule_deliveries: false, day_rates: false, recurring_schedules: false, monthly_statements: false, delivery_history: false },
+  retail: { ...DELIVERY_DEFAULT_EVERYTHING },
+  designer: { ...DELIVERY_DEFAULT_EVERYTHING, projects: true, recurring_schedules: false },
+  gallery: { ...DELIVERY_DEFAULT_EVERYTHING, projects: true, day_rates: false, recurring_schedules: false },
+};
+
+const PM_VERTICAL_DEFAULTS: Record<
+  string,
+  {
+    buildings_units: boolean;
+    schedule_tenant_moves: boolean;
+    renovation_projects: boolean;
+    monthly_statements: boolean;
+    move_history_pods: boolean;
+    day_rates: boolean;
+  }
+> = {
+  property_management_residential: {
+    buildings_units: true,
+    schedule_tenant_moves: true,
+    renovation_projects: true,
+    monthly_statements: true,
+    move_history_pods: true,
+    day_rates: false,
+  },
+  property_management_commercial: {
+    buildings_units: true,
+    schedule_tenant_moves: true,
+    renovation_projects: true,
+    monthly_statements: true,
+    move_history_pods: true,
+    day_rates: false,
+  },
+  developer_builder: {
+    buildings_units: true,
+    schedule_tenant_moves: true,
+    renovation_projects: true,
+    monthly_statements: true,
+    move_history_pods: true,
+    day_rates: false,
+  },
+};
+
+const DELIVERY_FEATURE_META = [
+  { key: "schedule_deliveries", label: "Schedule Deliveries", desc: "Request and manage B2B deliveries from the portal" },
+  { key: "day_rates", label: "Day Rates", desc: "Book a dedicated truck and crew for a full day" },
+  { key: "recurring_schedules", label: "Recurring Schedules", desc: "Weekly or monthly recurring delivery slots" },
+  { key: "monthly_statements", label: "Monthly Statements", desc: "Statements and billing documents" },
+  { key: "delivery_history", label: "Delivery History & PODs", desc: "Completed jobs, proof of delivery, and documents" },
+  { key: "projects", label: "Projects (multi-phase)", desc: "Multi-phase project management and item tracking" },
 ] as const;
 
-type FeatureKey = typeof FEATURE_META[number]["key"];
+const PM_FEATURE_META = [
+  { key: "buildings_units",       label: "Buildings & Units",       desc: "Properties on contract, units, access, and contacts" },
+  { key: "schedule_tenant_moves", label: "Schedule Tenant Moves",   desc: "Book tenant moves with PM rate card pricing" },
+  { key: "renovation_projects",   label: "Renovation Projects",     desc: "Track multi-unit renovation and displacement programs" },
+  { key: "monthly_statements",    label: "Monthly Statements",      desc: "View and download portfolio billing statements" },
+  { key: "move_history_pods",     label: "Move History & PODs",     desc: "Completed jobs, proof of delivery, and documents" },
+  { key: "day_rates",           label: "Day Rates (optional)",    desc: "Some PM accounts also book dedicated crew days" },
+] as const;
+
+type DeliveryFeatureKey = typeof DELIVERY_FEATURE_META[number]["key"];
+type PmFeatureKey = typeof PM_FEATURE_META[number]["key"];
 
 interface PortalFeatures {
+  schedule_deliveries?: boolean;
   projects?: boolean;
   day_rates?: boolean;
   recurring_schedules?: boolean;
+  monthly_statements?: boolean;
+  delivery_history?: boolean;
+  buildings_units?: boolean;
+  schedule_tenant_moves?: boolean;
+  renovation_projects?: boolean;
+  move_history_pods?: boolean;
 }
 
 interface Props {
@@ -51,15 +126,22 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  const defaults = VERTICAL_DEFAULTS[vertical || ""] ?? null;
+  const v = vertical || "";
+  const isPmVertical = isPropertyManagementDeliveryVertical(v);
+  const deliveryDefaults = isPmVertical ? null : (VERTICAL_DEFAULTS[v] ?? DELIVERY_DEFAULT_EVERYTHING);
+  const pmDefaults = PM_VERTICAL_DEFAULTS[v] ?? PM_VERTICAL_DEFAULTS.property_management_residential;
+
+  const defaults = isPmVertical ? pmDefaults : deliveryDefaults;
+
+  const featureMeta = useMemo(() => (isPmVertical ? PM_FEATURE_META : DELIVERY_FEATURE_META), [isPmVertical]);
 
   useEffect(() => {
     setFeatures(initialFeatures ?? {});
     setDirty(false);
   }, [orgId, initialFeatures]);
 
-  const toggle = (key: FeatureKey) => {
-    setFeatures((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggle = (key: DeliveryFeatureKey | PmFeatureKey) => {
+    setFeatures((prev) => ({ ...prev, [key]: !prev[key as keyof PortalFeatures] }));
     setDirty(true);
   };
 
@@ -95,7 +177,9 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
         <div>
           <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">Portal Features</div>
           <p className="text-[11px] text-[var(--tx3)]">
-            Control which sections appear in this partner&apos;s portal.
+            {isPmVertical
+              ? "Portfolio portal: buildings, tenant moves, programs, and billing — not B2B delivery scheduling."
+              : "Control which sections appear in this partner's portal."}
           </p>
         </div>
         {defaults && (
@@ -110,9 +194,9 @@ export default function PartnerPortalFeaturesCard({ orgId, vertical, initialFeat
       </div>
 
       <div className="space-y-3">
-        {FEATURE_META.map(({ key, label, desc }) => {
-          const enabled = features[key] === true;
-          const defaultVal = defaults?.[key];
+        {featureMeta.map(({ key, label, desc }) => {
+          const enabled = features[key as keyof PortalFeatures] === true;
+          const defaultVal = defaults ? (defaults as Record<string, boolean>)[key] : undefined;
           return (
             <div key={key} className="flex items-start gap-3 p-3 rounded-lg border border-[var(--brd)]/60 hover:border-[var(--brd)] transition-colors">
               <button

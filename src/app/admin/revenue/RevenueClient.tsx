@@ -401,7 +401,7 @@ export default function RevenueClient({
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/50 mb-1">
             Financial Overview
           </p>
-          <h1 className="font-hero text-[26px] font-bold text-[var(--tx)] leading-none">
+          <h1 className="admin-page-hero text-[var(--tx)]">
             Revenue
           </h1>
         </div>

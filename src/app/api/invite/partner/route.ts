@@ -45,7 +45,11 @@ async function maybeProvisionPmPortfolio(
         has_loading_dock: !!p.has_loading_dock,
         has_move_elevator: !!p.has_move_elevator,
         elevator_type: p.elevator_type ? String(p.elevator_type) : undefined,
-        move_hours: p.move_hours ? String(p.move_hours) : undefined,
+        move_hours: String(p.move_hours || "").toLowerCase() === "custom" && p.custom_move_hours
+          ? String(p.custom_move_hours).trim()
+          : p.move_hours
+            ? String(p.move_hours)
+            : undefined,
         parking_type: p.parking_type ? String(p.parking_type) : undefined,
         building_contact_name: p.building_contact_name ? String(p.building_contact_name) : undefined,
         building_contact_phone: p.building_contact_phone ? String(p.building_contact_phone) : undefined,
@@ -139,7 +143,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const templateId = await resolveTemplateId(admin, template_slug || null);
+    let templateId = await resolveTemplateId(admin, template_slug || null);
+    if (!templateId && isPropertyManagementDeliveryVertical(typeVal)) {
+      templateId = await resolveTemplateId(admin, "property_management");
+    }
 
     // Check if org with this email already exists (invited partner)
     const { data: existingOrg } = await admin

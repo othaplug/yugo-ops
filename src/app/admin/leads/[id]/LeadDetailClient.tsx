@@ -7,6 +7,7 @@ import BackButton from "../../components/BackButton";
 import { useToast } from "../../components/Toast";
 import {
   COMPLETENESS_PATH_LABELS,
+  DETECTED_SERVICE_TYPE_LABELS,
   DISMISS_REASONS,
   LEAD_ACTIVITY_LABELS,
   LEAD_PRIORITY_LABELS,
@@ -162,7 +163,7 @@ export default function LeadDetailClient({
 
       <header className="mb-6">
         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]">Lead</p>
-        <h1 className="font-hero text-xl font-bold text-[var(--tx)]">
+        <h1 className="admin-page-hero text-[var(--tx)]">
           {ln} — {[fn, lnName].filter(Boolean).join(" ") || "Unknown"}
         </h1>
         <p className="text-[12px] text-[var(--tx3)] mt-1">
@@ -244,7 +245,8 @@ export default function LeadDetailClient({
           ) : null}
           {lead.detected_service_type ? (
             <p>
-              <span className="text-[var(--tx3)]">Detected service:</span> {String(lead.detected_service_type)}
+              <span className="text-[var(--tx3)]">Detected service:</span>{" "}
+              {DETECTED_SERVICE_TYPE_LABELS[String(lead.detected_service_type)] ?? String(lead.detected_service_type)}
             </p>
           ) : null}
           {Array.isArray(lead.detected_dates) && (lead.detected_dates as unknown[]).length > 0 ? (

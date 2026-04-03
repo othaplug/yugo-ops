@@ -29,7 +29,7 @@ export default async function NewClientPage({
       >
         ← Back
       </Link>
-      <h1 className="font-hero text-[18px] font-bold text-[var(--tx)] mb-4">{pageTitle}</h1>
+      <h1 className="admin-page-hero text-[var(--tx)] mb-4">{pageTitle}</h1>
       <NewClientForm
         defaultPersona={isPartner ? "partner" : "client"}
         defaultPartnerType={partnerType}

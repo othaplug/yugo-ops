@@ -130,7 +130,9 @@ export async function GET(req: NextRequest) {
         .eq("organization_id", schedule.organization_id)
         .eq("scheduled_date", targetDate)
         .eq("status", "draft")
-        .like("notes", `%${marker}%`)
+        .or(
+          `source_recurring_delivery_schedule_id.eq.${schedule.id},notes.ilike.%${marker}%`,
+        )
         .limit(1);
 
       if (dupRows?.[0]?.id) {
@@ -170,6 +172,7 @@ export async function GET(req: NextRequest) {
         items: [],
         category: (org?.type || "b2b").trim() || "b2b",
         notes: `Auto-generated from recurring schedule. ${marker}`,
+        source_recurring_delivery_schedule_id: schedule.id,
         created_by_source: "recurring_schedule",
         crew_id: schedule.crew_id || null,
         services_selected: servicesSelected,

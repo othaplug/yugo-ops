@@ -275,7 +275,7 @@ export default function CrewAnalyticsClient({
       <div className="mb-1 flex w-full min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Operations</p>
-          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">
+          <h1 className="admin-page-hero text-[var(--tx)]">
             Crew Performance
           </h1>
         </div>
@@ -576,7 +576,7 @@ function CrewDetailView({
           {/* Crew header */}
           <div className="flex flex-wrap items-start gap-4 mb-6">
             <div className="flex-1 min-w-0">
-              <h1 className="font-hero text-[24px] sm:text-[28px] font-bold text-[var(--tx)] tracking-tight">
+              <h1 className="admin-page-hero text-[var(--tx)]">
                 {name}
               </h1>
               {detail.crew.members.length > 0 && (

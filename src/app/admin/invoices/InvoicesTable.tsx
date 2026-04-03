@@ -7,6 +7,25 @@ import { formatCurrency, calcHST } from "@/lib/format-currency";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import { useToast } from "../components/Toast";
+import { getInvoiceServiceTypeLabel } from "@/utils/partnerType";
+
+/** Strip protocol and truncate for table display; full URL stays on the link + title. */
+function shortenInvoiceUrl(raw: string, maxLen = 44): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  try {
+    const u = new URL(trimmed);
+    const host = u.hostname.replace(/^www\./, "");
+    const tail = `${u.pathname}${u.search}` || "/";
+    const combined = `${host}${tail}`;
+    if (combined.length <= maxLen) return combined;
+    return `${combined.slice(0, maxLen - 1)}…`;
+  } catch {
+    const noProto = trimmed.replace(/^https?:\/\//i, "");
+    if (noProto.length <= maxLen) return noProto;
+    return `${noProto.slice(0, maxLen - 1)}…`;
+  }
+}
 
 export default function InvoicesTable({
   invoices,
@@ -60,21 +79,22 @@ export default function InvoicesTable({
       id: "invoice_number",
       label: "Invoice",
       accessor: (r) => r.invoice_number,
-      render: (r) => (
-        <div>
-          <span className="dt-text-id">{r.invoice_number}</span>
-          {r.delivery_id && (
-            <span className="ml-2 inline-flex items-center dt-text-meta px-1.5 py-0.5 rounded bg-[var(--gold)]/10 text-[var(--gold)]">
-              Delivery
+      render: (r) => {
+        const typeLabel = getInvoiceServiceTypeLabel(r);
+        const isMove = typeLabel === "Move";
+        return (
+          <div>
+            <span className="dt-text-id">{r.invoice_number}</span>
+            <span
+              className={`ml-2 inline-flex items-center dt-text-meta px-1.5 py-0.5 rounded ${
+                isMove ? "bg-blue-50 text-blue-600" : "bg-[var(--gold)]/10 text-[var(--gold)]"
+              }`}
+            >
+              {typeLabel}
             </span>
-          )}
-          {r.move_id && !r.delivery_id && (
-            <span className="ml-2 inline-flex items-center dt-text-meta px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">
-              Move
-            </span>
-          )}
-        </div>
-      ),
+          </div>
+        );
+      },
       searchable: true,
     },
     {
@@ -141,17 +161,22 @@ export default function InvoicesTable({
     {
       id: "square",
       label: "Square",
-      accessor: (r) => r.square_invoice_url || "",
+      accessor: (r) =>
+        [r.square_invoice_url, r.square_invoice_id].filter(Boolean).join(" ") || "",
       render: (r) =>
         r.square_invoice_url ? (
           <a
             href={r.square_invoice_url}
             target="_blank"
             rel="noopener noreferrer"
+            title={r.square_invoice_url}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
+            className="inline-flex flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:gap-1.5 text-left max-w-[min(200px,28vw)]"
           >
-            View
+            <span className="text-[10px] font-semibold text-[var(--gold)] hover:underline shrink-0">View</span>
+            <span className="text-[9px] font-mono text-[var(--tx3)] truncate w-full sm:max-w-[160px]" title={r.square_invoice_url}>
+              {shortenInvoiceUrl(String(r.square_invoice_url))}
+            </span>
           </a>
         ) : null,
     },

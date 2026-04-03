@@ -210,7 +210,7 @@ export default function ClaimDetailClient({
 
       {/* Title + status */}
       <div className="flex items-center gap-3 flex-wrap mb-1">
-        <h1 className="font-hero text-[26px] sm:text-[30px] font-bold text-[var(--tx)] tracking-tight leading-none">{claim.claim_number}</h1>
+        <h1 className="admin-page-hero text-[var(--tx)]">{claim.claim_number}</h1>
         <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0 ${statusBadge(claim.status)}`}>
           {statusLabel(claim.status)}
         </span>

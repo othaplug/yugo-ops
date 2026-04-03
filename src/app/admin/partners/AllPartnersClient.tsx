@@ -31,20 +31,39 @@ interface RealtorRow {
   created_at: string;
 }
 
-const TYPE_TAB_KEYS = ["all", "retail", "designer", "hospitality", "gallery", "realtor"] as const;
+const TAB_KEYS = [
+  "all",
+  "furniture_retailer",
+  "interior_designer",
+  "hospitality",
+  "art_gallery",
+  "property_management",
+  "commercial_pm",
+  "developer_portfolio",
+  "referral",
+] as const;
 
-/** Tab labels (realtor tab = referral partners; realtor is the primary channel) */
-const PARTNER_TAB_LABELS: Partial<Record<(typeof TYPE_TAB_KEYS)[number], string>> = {
-  realtor: "Referral Partners",
+const TAB_LABELS: Record<string, string> = {
+  furniture_retailer: "Furniture Retailer",
+  interior_designer: "Interior Designer",
+  hospitality: "Hospitality",
+  art_gallery: "Art Gallery",
+  property_management: "Property Management",
+  commercial_pm: "Commercial PM",
+  developer_portfolio: "Developer",
+  referral: "Referral Partners",
 };
 
-// Maps each tab key → all DB type values that should appear under that tab
+/** Tab key → organization `type` / `vertical` values included in that filter */
 const TAB_TYPE_MAP: Record<string, string[]> = {
-  retail:       ["retail", "furniture_retailer", "cabinetry", "flooring", "appliances", "antique_dealer"],
-  designer:     ["designer", "interior_designer", "av_technology"],
-  hospitality:  ["hospitality", "medical_equipment"],
-  gallery:      ["gallery", "art_gallery"],
-  realtor:      ["realtor", "property_manager", "developer"],
+  furniture_retailer: ["furniture_retailer", "retail", "cabinetry", "flooring", "appliances"],
+  interior_designer: ["interior_designer", "designer", "av_technology"],
+  hospitality: ["hospitality", "medical_equipment"],
+  art_gallery: ["art_gallery", "antique_dealer", "gallery"],
+  property_management: ["property_management_residential", "property_management_commercial"],
+  commercial_pm: ["property_management_commercial"],
+  developer_portfolio: ["developer_builder"],
+  referral: ["realtor", "property_manager", "developer"],
 };
 
 function partnerListTypeLabel(type: string): string {
@@ -255,9 +274,9 @@ export default function AllPartnersClient() {
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { all: partners.length };
-    for (const key of TYPE_TAB_KEYS) {
+    for (const key of TAB_KEYS) {
       if (key !== "all") {
-        if (key === "realtor") {
+        if (key === "referral") {
           counts[key] = realtors.length;
         } else {
           const types = TAB_TYPE_MAP[key];
@@ -270,9 +289,9 @@ export default function AllPartnersClient() {
 
   const typeTabs = useMemo(() => {
     const allTab = { key: "all", label: "All Partners" };
-    const typeTabsList = TYPE_TAB_KEYS.filter((k) => k !== "all").map((key) => ({
+    const typeTabsList = TAB_KEYS.filter((k) => k !== "all").map((key) => ({
       key,
-      label: PARTNER_TAB_LABELS[key] ?? partnerListTypeLabel(key),
+      label: TAB_LABELS[key] ?? partnerListTypeLabel(key),
     }));
     return [allTab, ...typeTabsList];
   }, []);
@@ -297,7 +316,7 @@ export default function AllPartnersClient() {
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">CRM</p>
-          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Partners</h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">Partners</h1>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <Link
@@ -366,7 +385,7 @@ export default function AllPartnersClient() {
         ))}
       </div>
 
-      {activeTab === "realtor" ? (
+      {activeTab === "referral" ? (
         <DataTable
           data={realtors}
           columns={realtorColumns}
@@ -392,7 +411,9 @@ export default function AllPartnersClient() {
           defaultSortDir="desc"
           onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
           emptyMessage="No partners found"
-          emptySubtext={activeTab !== "all" ? `No ${partnerListTypeLabel(activeTab)} partners yet` : undefined}
+          emptySubtext={
+            activeTab !== "all" ? `No ${TAB_LABELS[activeTab] ?? partnerListTypeLabel(activeTab)} partners yet` : undefined
+          }
         />
       )}
 

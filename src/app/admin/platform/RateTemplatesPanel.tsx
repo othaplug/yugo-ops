@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { organizationTypeLabel } from "@/lib/partner-type";
+import { organizationTypeLabel, VERTICAL_LABELS } from "@/lib/partner-type";
 import ModalOverlay from "../components/ModalOverlay";
 import CreateButton from "../components/CreateButton";
 import { useToast } from "../components/Toast";
@@ -13,6 +13,8 @@ interface RateTemplate {
   description?: string; verticals_covered?: string[];
   is_active: boolean; partner_count: number;
   created_at: string; updated_at: string;
+  template_kind?: string | null;
+  extras?: Record<string, unknown> | null;
 }
 
 interface TemplateRates {
@@ -22,16 +24,59 @@ interface TemplateRates {
   partners: any[];
 }
 
-const VEHICLE_LABELS: Record<string, string> = { sprinter: "Sprinter", "16ft": "16ft", "20ft": "20ft", "26ft": "26ft" };
+const VEHICLE_LABELS: Record<string, string> = {
+  sprinter: "Sprinter",
+  "16ft": "16ft",
+  "20ft": "20ft",
+  "26ft": "26ft",
+  "16ft_after_hours": "16ft (After Hours)",
+  "20ft_after_hours": "20ft (After Hours)",
+  "16ft_2crew": "16ft + 2 crew",
+  "20ft_3crew": "20ft + 3 crew",
+  "26ft_4crew": "26ft + 4 crew",
+};
 const DELIVERY_TYPE_LABELS: Record<string, string> = {
-  single_item: "Single Item", multi_piece: "Multi-Piece", full_room: "Full Room Setup",
-  multi_stop: "Multi-Stop", curbside: "Curbside Drop", oversized: "Oversized/Fragile",
-  day_rate: "Day Rate", b2b: "B2B", b2b_delivery: "B2B", delivery: "Standard Delivery",
-  designer: "Designer", retail: "Retail", hospitality: "Hospitality", gallery: "Gallery", project: "Project",
+  single_item: "Single Item",
+  multi_piece: "Multi-Piece",
+  full_room: "Full Room Setup",
+  multi_stop: "Multi-Stop",
+  curbside: "Curbside Drop",
+  oversized: "Oversized/Fragile",
+  day_rate: "Day Rate",
+  b2b: "B2B",
+  b2b_delivery: "B2B",
+  delivery: "Standard Delivery",
+  designer: "Designer",
+  retail: "Retail",
+  hospitality: "Hospitality",
+  gallery: "Gallery",
+  project: "Project",
+  art_piece_small: "Per piece (small)",
+  art_piece_medium: "Per piece (medium)",
+  art_piece_large: "Per piece (large)",
+  art_sculpture_3d: "Sculpture / 3D",
+  hosp_piece_chair: "Per piece (chairs, small)",
+  hosp_piece_table: "Per piece (tables, large)",
+  hosp_piece_kitchen: "Per piece (kitchen, heavy)",
+  hosp_booth: "Booth / banquette",
+  hosp_pos: "POS / electronics",
+  hosp_display: "Display case",
+  med_equipment_small: "Small equipment (<50 lbs)",
+  med_equipment_medium: "Medium equipment (50–200 lbs)",
+  med_equipment_large: "Large equipment (200–500 lbs)",
+  med_equipment_heavy: "Heavy equipment (500+ lbs)",
+  med_server_rack: "Server rack / data cabinet",
+  med_imaging: "Imaging equipment",
 };
 const OVERAGE_LABELS: Record<string, string> = {
-  full_7_10: "Full Day 7–10 stops", full_11_plus: "Full Day 11+",
-  half_4_6: "Half Day 4–6 stops", half_7_plus: "Half Day 7+",
+  full_7_10: "Full Day 7–10 stops",
+  full_11_plus: "Full Day 11+",
+  half_4_6: "Half Day 4–6 stops",
+  half_7_plus: "Half Day 7+",
+  art_extra_stop: "Extra stop (beyond included)",
+  art_wait_30min: "Wait time (beyond 15 min at stop)",
+  art_crew_hourly: "Additional crew member",
+  art_stairs_flight: "Stairs (per flight, no elevator)",
 };
 
 /* ─── Template Rate Editor Modal ─── */
@@ -64,7 +109,12 @@ function TemplateRateEditor({
 
   const preparePayload = () => {
     const rates: Record<string, any[]> = {
-      day_rates: [], delivery_rates: [], services: [], overages: [], zones: [],
+      day_rates: [],
+      delivery_rates: [],
+      services: [],
+      overages: [],
+      zones: [],
+      volume_bonuses: [],
     };
 
     for (const r of data.dayRates) {
@@ -92,6 +142,10 @@ function TemplateRateEditor({
     for (const r of data.zones) {
       const sc = getVal("zones", r.id, "surcharge", r.surcharge);
       if (sc !== r.surcharge) rates.zones.push({ id: r.id, surcharge: sc });
+    }
+    for (const r of data.volumeBonuses || []) {
+      const d = getVal("volume_bonuses", r.id, "discount_pct", Number(r.discount_pct));
+      if (d !== Number(r.discount_pct)) rates.volume_bonuses.push({ id: r.id, discount_pct: d });
     }
 
     const hasChanges = Object.values(rates).some((arr) => arr.length > 0);
@@ -161,6 +215,280 @@ function TemplateRateEditor({
       {children}
     </th>
   );
+
+  const templateKind = data.template.template_kind || "delivery";
+
+  if (templateKind === "referral") {
+    const ex = data.template.extras || {};
+    const cs = ex.commission_structure as Record<string, unknown> | undefined;
+    const rt = ex.referral_terms as Record<string, unknown> | undefined;
+    const rates = cs?.rates as Record<string, number> | undefined;
+    return (
+      <ModalOverlay open onClose={onClose} title={`Edit: ${data.template.template_name}`} maxWidth="lg">
+        <div className="p-5 space-y-4 overflow-y-auto" style={{ maxHeight: "75vh" }}>
+          <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+            Referral partners use commission structures instead of delivery rates. Commission JSON lives on the template; use the SQL editor or a future admin tool to change it.
+          </p>
+          <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr>
+                  <Th>Tier</Th>
+                  <Th>Commission</Th>
+                  <Th>Trigger</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--brd)]/30">
+                <tr>
+                  <td className="px-2 py-2 font-semibold text-[var(--tx)]">Essential</td>
+                  <td className="px-2 py-2 text-[var(--tx)]">{rates?.essential != null ? `${Math.round(rates.essential * 100)}% of move value` : "—"}</td>
+                  <td className="px-2 py-2 text-[var(--tx2)]">Move completed and paid</td>
+                </tr>
+                <tr>
+                  <td className="px-2 py-2 font-semibold text-[var(--tx)]">Signature</td>
+                  <td className="px-2 py-2 text-[var(--tx)]">{rates?.signature != null ? `${Math.round(rates.signature * 100)}% of move value` : "—"}</td>
+                  <td className="px-2 py-2 text-[var(--tx2)]">Move completed and paid</td>
+                </tr>
+                <tr>
+                  <td className="px-2 py-2 font-semibold text-[var(--tx)]">Estate</td>
+                  <td className="px-2 py-2 text-[var(--tx)]">{rates?.estate != null ? `${Math.round(rates.estate * 100)}% of move value` : "—"}</td>
+                  <td className="px-2 py-2 text-[var(--tx2)]">Move completed and paid</td>
+                </tr>
+                <tr>
+                  <td className="px-2 py-2 font-semibold text-[var(--tx)]">Flat per referral</td>
+                  <td className="px-2 py-2 text-[var(--tx)]">{cs?.flat_rate != null ? `$${Number(cs.flat_rate)}` : "—"}</td>
+                  <td className="px-2 py-2 text-[var(--tx2)]">Move completed and paid</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {rt && (
+            <ul className="text-[11px] text-[var(--tx2)] space-y-1 list-disc pl-4">
+              {rt.referral_code != null && <li>Referral code: {String(rt.referral_code)}</li>}
+              {rt.validity_days != null && <li>Valid for: {String(rt.validity_days)} days from referral date</li>}
+              {rt.payout_schedule != null && <li>Payout: {String(rt.payout_schedule)}</li>}
+              {rt.minimum_payout != null && <li>Minimum payout: ${Number(rt.minimum_payout)} (rolls over if below)</li>}
+            </ul>
+          )}
+        </div>
+        <div className="border-t border-[var(--brd)] p-4 flex justify-end">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">
+            Close
+          </button>
+        </div>
+      </ModalOverlay>
+    );
+  }
+
+  if (templateKind === "property_portfolio") {
+    const ex = (data.template.extras || {}) as Record<string, unknown>;
+    const moveRates = Array.isArray(ex.move_rates) ? (ex.move_rates as Record<string, unknown>[]) : [];
+    const surcharges = Array.isArray(ex.surcharges) ? (ex.surcharges as { label: string; value: string }[]) : [];
+    const addl = Array.isArray(ex.additional_services) ? (ex.additional_services as { label: string; value: string }[]) : [];
+    const volDisc = Array.isArray(ex.volume_discounts) ? (ex.volume_discounts as { label: string; value: string }[]) : [];
+    const unitCols = ["studio", "1br", "2br", "3br", "4br_plus"] as const;
+    const hdr = (u: string) =>
+      u === "studio" ? "Studio" : u === "1br" ? "1 BR" : u === "2br" ? "2 BR" : u === "3br" ? "3 BR" : "4 BR+";
+    return (
+      <>
+        <ModalOverlay open onClose={onClose} title={`Edit: ${data.template.template_name}`} maxWidth="lg">
+          <div className="flex flex-col" style={{ maxHeight: "80vh" }}>
+          <div className="flex-1 overflow-y-auto p-5 space-y-6">
+            <div>
+              <h3 className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-2">Move rates by unit size</h3>
+              <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr>
+                      <Th>Move reason</Th>
+                      {unitCols.map((u) => (
+                        <Th key={u}>{hdr(u)}</Th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--brd)]/30">
+                    {moveRates.map((row, i) => (
+                      <tr key={String(row.reason_code ?? i)}>
+                        <td className="px-2 py-2 font-semibold text-[var(--tx)]">{String(row.label || row.reason_code || "—")}</td>
+                        {unitCols.map((u) => {
+                          const v = row[u];
+                          const n = typeof v === "number" ? v : v != null ? parseFloat(String(v)) : NaN;
+                          return (
+                            <td key={u} className="px-2 py-2 text-right tabular-nums text-[var(--tx)]">
+                              {!Number.isNaN(n) ? `$${n}` : "—"}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {surcharges.length > 0 && (
+              <div>
+                <h3 className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-2">Surcharges</h3>
+                <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr>
+                        <Th>Surcharge</Th>
+                        <Th>Amount</Th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--brd)]/30">
+                      {surcharges.map((s, i) => (
+                        <tr key={i}>
+                          <td className="px-2 py-2 text-[var(--tx)]">{s.label}</td>
+                          <td className="px-2 py-2 text-right font-semibold text-[var(--tx)]">{s.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {addl.length > 0 && (
+              <div>
+                <h3 className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-2">Additional services</h3>
+                <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr>
+                        <Th>Service</Th>
+                        <Th>Price</Th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--brd)]/30">
+                      {addl.map((s, i) => (
+                        <tr key={i}>
+                          <td className="px-2 py-2 text-[var(--tx)]">{s.label}</td>
+                          <td className="px-2 py-2 text-right font-semibold text-[var(--tx)]">{s.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {volDisc.length > 0 && (
+              <div>
+                <h3 className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-2">Volume discounts (reference)</h3>
+                <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr>
+                        <Th>Volume</Th>
+                        <Th>Discount</Th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--brd)]/30">
+                      {volDisc.map((s, i) => (
+                        <tr key={i}>
+                          <td className="px-2 py-2 text-[var(--tx)]">{s.label}</td>
+                          <td className="px-2 py-2 text-right font-semibold text-[var(--tx)]">{s.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            <div>
+              <h3 className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-2">Day rates (crew for a day)</h3>
+              <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr>
+                      <Th>Vehicle</Th>
+                      <Th>Tier</Th>
+                      <Th>Full Day</Th>
+                      <Th>Half Day</Th>
+                      <Th>Stops (Full)</Th>
+                      <Th>Stops (Half)</Th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--brd)]/30">
+                    {data.dayRates.map((r) => (
+                      <tr key={r.id}>
+                        <td className="px-2 py-2 font-semibold text-[var(--tx)]">{VEHICLE_LABELS[r.vehicle_type] || r.vehicle_type}</td>
+                        <td className="px-2 py-2 text-[10px] text-[var(--tx3)] uppercase">{r.pricing_tier}</td>
+                        <EditableCell table="day_rates" id={r.id} field="full_day_price" original={r.full_day_price} />
+                        <EditableCell table="day_rates" id={r.id} field="half_day_price" original={r.half_day_price} />
+                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)] text-center">{r.stops_included_full}</td>
+                        <td className="px-2 py-2 text-[11px] text-[var(--tx3)] text-center">{r.stops_included_half}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {data.volumeBonuses.length > 0 && (
+              <div>
+                <h3 className="text-[10px] font-bold uppercase text-[var(--tx3)] mb-2">Volume tiers (% discount)</h3>
+                <p className="text-[10px] text-[var(--tx3)] mb-2">Editable rows sync to partner rate cards; narrative above is reference-only.</p>
+                <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr>
+                        <Th>Min deliveries</Th>
+                        <Th>Max</Th>
+                        <Th>Discount %</Th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--brd)]/30">
+                      {data.volumeBonuses.map((r) => (
+                        <tr key={r.id}>
+                          <td className="px-2 py-2 text-[var(--tx)]">{r.min_deliveries}</td>
+                          <td className="px-2 py-2 text-[var(--tx)]">{r.max_deliveries ?? "—"}</td>
+                          <EditableCell table="volume_bonuses" id={r.id} field="discount_pct" original={r.discount_pct} isPercent />
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="border-t border-[var(--brd)] p-4 flex justify-between items-center gap-3">
+            <div className="text-[10px] text-[var(--tx3)]">{data.template.partner_count} partner(s) on this template</div>
+            <div className="flex gap-2">
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveClick}
+                disabled={saving}
+                className="px-4 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50"
+              >
+                {saving ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+        </ModalOverlay>
+        {confirmOpen && (
+          <ModalOverlay open onClose={() => setConfirmOpen(false)} title="Confirm template update" maxWidth="sm">
+            <div className="p-5 space-y-4">
+              <p className="text-[12px] text-[var(--tx2)] leading-relaxed">
+                This will update <strong className="text-[var(--tx)]">{data.template.template_name}</strong> template rates and affect{" "}
+                <strong className="text-[var(--tx)]">{data.template.partner_count}</strong> partner(s).
+              </p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setConfirmOpen(false)} className="flex-1 py-2 rounded-lg text-[11px] border border-[var(--brd)] text-[var(--tx2)]">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleConfirmSave} disabled={saving} className="flex-1 py-2 rounded-lg text-[11px] font-bold bg-[var(--gold)] text-white disabled:opacity-50">
+                  {saving ? "Saving…" : "Confirm & Save"}
+                </button>
+              </div>
+            </div>
+          </ModalOverlay>
+        )}
+      </>
+    );
+  }
 
   return (
     <ModalOverlay open onClose={onClose} title={`Edit: ${data.template.template_name}`} maxWidth="lg">
@@ -279,7 +607,7 @@ function TemplateRateEditor({
             <div className="overflow-x-auto rounded-lg border border-[var(--brd)]">
               <table className="w-full text-[11px]">
                 <thead>
-                  <tr><Th>Tier</Th><Th>Pricing Tier</Th><Th>Per Stop</Th></tr>
+                  <tr><Th>Overage</Th><Th>Tier</Th><Th>Rate</Th></tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--brd)]/30">
                   {data.overages.map((r) => (
@@ -706,72 +1034,82 @@ export default function RateTemplatesPanel({ isSuperAdmin = false }: { isSuperAd
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h2 className="admin-section-h2">Rate Card Templates</h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Industry templates applied to partners. Changes affect all partners on the template.</p>
+    <div className="w-full">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 md:mb-8">
+        <div className="min-w-0">
+          <h2 className="admin-section-h2 text-[clamp(1.125rem,2vw,1.35rem)]">Rate Card Templates</h2>
+          <p className="text-[12px] md:text-[13px] text-[var(--tx3)] mt-1.5 max-w-2xl leading-relaxed">
+            Industry templates applied to partners. Changes affect all partners on the template.
+          </p>
         </div>
         <CreateButton onClick={() => setCreateOpen(true)} title="New Template" />
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-5 md:space-y-6">
         {templates.map((t) => (
-          <div key={t.id} className="border border-[var(--brd)] rounded-xl p-4 bg-[var(--card)]">
+          <div
+            key={t.id}
+            className="border border-[var(--brd)] rounded-2xl p-6 md:p-8 lg:p-10 bg-[var(--card)] w-full min-h-44 md:min-h-48 shadow-sm shadow-black/5"
+          >
             {/* Top row: name + status badge */}
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="font-heading font-bold text-[15px] text-[var(--tx)]">{t.template_name}</span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${t.is_active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"}`}>
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <span className="font-heading font-bold text-[17px] md:text-[19px] text-[var(--tx)] leading-tight">{t.template_name}</span>
+              <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${t.is_active ? "bg-[var(--grdim)] text-[var(--grn)]" : "bg-[var(--rdim)] text-[var(--red)]"}`}>
                 {t.is_active ? "Active" : "Inactive"}
               </span>
             </div>
             {/* Meta row */}
             {t.description && (
-              <p className="text-[11px] text-[var(--tx3)] mb-2 line-clamp-2">{t.description}</p>
+              <p className="text-[12px] md:text-[13px] text-[var(--tx3)] mb-4 leading-relaxed line-clamp-3 md:line-clamp-none max-w-4xl">
+                {t.description}
+              </p>
             )}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--tx3)] mb-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] md:text-[12px] text-[var(--tx3)] mb-5">
               <span>{t.verticals_covered?.length || 0} verticals</span>
-              <span>·</span>
+              <span className="text-[var(--brd)]">·</span>
               <button onClick={() => handleViewPartners(t.id)} className="text-[var(--gold)] hover:underline font-semibold">
                 {loadingId === t.id + "_p" ? "Loading…" : `${t.partner_count} partner${t.partner_count !== 1 ? "s" : ""}`}
               </button>
-              <span>·</span>
+              <span className="text-[var(--brd)]">·</span>
               <span>Updated {new Date(t.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
             </div>
             {/* Action buttons row, full-width on mobile */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5 md:gap-3">
               <button
                 onClick={() => handleEditRates(t.id)}
                 disabled={loadingId === t.id}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50 transition-all"
+                className="px-4 py-2.5 rounded-lg text-[11px] md:text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] disabled:opacity-50 transition-all min-h-[40px]"
               >
                 {loadingId === t.id ? "Loading…" : "Edit Rates"}
               </button>
               <button
                 type="button"
                 onClick={() => setEditingNameFor(t)}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--tx3)]/60 hover:text-[var(--tx)] transition-all"
+                className="px-4 py-2.5 rounded-lg text-[11px] md:text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--tx3)]/60 hover:text-[var(--tx)] transition-all min-h-[40px]"
               >
                 Edit Name
               </button>
               <button
                 onClick={() => handleDuplicate(t)}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--brd)] hover:text-[var(--tx)] transition-all"
+                className="px-4 py-2.5 rounded-lg text-[11px] md:text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--brd)] hover:text-[var(--tx)] transition-all min-h-[40px]"
               >
                 Duplicate
               </button>
               <button
                 onClick={() => setDeletingTemplate(t)}
-                className="px-3 py-1 rounded text-[10px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all"
+                className="px-4 py-2.5 rounded-lg text-[11px] md:text-[12px] font-semibold bg-[var(--red)] text-white hover:opacity-90 transition-all min-h-[40px]"
               >
                 Delete
               </button>
             </div>
             {t.verticals_covered && t.verticals_covered.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-[var(--brd)]/30 overflow-hidden">
+              <div className="flex flex-wrap gap-2 mt-5 md:mt-6 pt-5 md:pt-6 border-t border-[var(--brd)]/30">
                 {t.verticals_covered.map((v) => (
-                  <span key={v} className="px-2 py-0.5 rounded bg-[var(--bgsub)] text-[9px] text-[var(--tx3)] font-medium uppercase">
-                    {v.replace(/_/g, " ")}
+                  <span
+                    key={v}
+                    className="px-3 py-1.5 rounded-lg bg-[var(--bgsub)] text-[10px] md:text-[11px] text-[var(--tx2)] font-medium leading-snug"
+                  >
+                    {VERTICAL_LABELS[v] || v.replace(/_/g, " ")}
                   </span>
                 ))}
               </div>

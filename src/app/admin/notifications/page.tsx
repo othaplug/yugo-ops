@@ -128,7 +128,7 @@ export default function AdminNotificationsPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Admin</p>
-          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Notifications</h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">Notifications</h1>
           <p className="text-[12px] text-[var(--tx3)] mt-2">
             {total} total{unreadOnPage > 0 ? ` · ${unreadOnPage} unread on this page` : ""}
           </p>

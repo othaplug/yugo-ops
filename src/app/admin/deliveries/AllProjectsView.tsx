@@ -305,7 +305,7 @@ export default function AllDeliveriesView({
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">B2B Operations</p>
-          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">All Deliveries</h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">All Deliveries</h1>
         </div>
         <div className="relative" ref={createDropRef}>
           <CreateButton onClick={() => setCreateDropOpen((v) => !v)} title="New Delivery" />

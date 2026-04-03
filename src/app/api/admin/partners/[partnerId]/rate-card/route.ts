@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/check-role";
+import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ partnerId: string }> }) {
   const { error: authErr } = await requireRole("coordinator");
@@ -12,11 +13,44 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ par
   // Get partner org with template info
   const { data: org, error: orgErr } = await db
     .from("organizations")
-    .select("id, name, type, pricing_tier, template_id, global_discount_pct, rates_locked")
+    .select("id, name, type, vertical, pricing_tier, template_id, global_discount_pct, rates_locked")
     .eq("id", partnerId)
     .single();
 
   if (orgErr || !org) return NextResponse.json({ error: "Partner not found" }, { status: 404 });
+
+  const orgVertical = String((org as { vertical?: string; type?: string }).vertical || (org as { type?: string }).type || "");
+  const portfolioPartner = isPropertyManagementDeliveryVertical(orgVertical);
+
+  let pmContract: Record<string, unknown> | null = null;
+  let pmRates: Record<string, unknown>[] = [];
+  let pmAddons: Record<string, unknown>[] = [];
+
+  if (portfolioPartner) {
+    const { data: contracts } = await db
+      .from("partner_contracts")
+      .select("id, contract_number, contract_type, status, start_date, end_date")
+      .eq("partner_id", partnerId)
+      .order("created_at", { ascending: false });
+
+    const contractRow =
+      (contracts || []).find((c) => (c as { status?: string }).status === "active") || (contracts || [])[0] || null;
+
+    if (contractRow?.id) {
+      pmContract = contractRow as Record<string, unknown>;
+      const [ratesRes, addonsRes] = await Promise.all([
+        db
+          .from("pm_rate_cards")
+          .select("*")
+          .eq("contract_id", contractRow.id as string)
+          .eq("active", true)
+          .order("reason_code"),
+        db.from("pm_contract_addons").select("*").eq("contract_id", contractRow.id as string).eq("active", true),
+      ]);
+      pmRates = (ratesRes.data || []) as Record<string, unknown>[];
+      pmAddons = (addonsRes.data || []) as Record<string, unknown>[];
+    }
+  }
 
   // Get all available templates for the dropdown
   const { data: allTemplates } = await db
@@ -35,21 +69,24 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ par
       overages: [], zones: [], volumeBonuses: [],
       overrides: [],
       mode: "no_template",
+      portfolioPartner,
+      pmContract,
+      pmRates,
+      pmAddons,
     });
   }
 
   const templateId = org.template_id;
-  const pricingTier = org.pricing_tier || "partner";
 
   // Get template info + rates + overrides in parallel
   const [tmplRes, dayRatesRes, deliveryRes, servicesRes, overagesRes, zonesRes, volumeRes, overridesRes] =
     await Promise.all([
       db.from("rate_card_templates").select("*").eq("id", templateId).single(),
-      db.from("rate_card_day_rates").select("*").eq("template_id", templateId).eq("pricing_tier", pricingTier).order("vehicle_type"),
-      db.from("rate_card_delivery_rates").select("*").eq("template_id", templateId).eq("pricing_tier", pricingTier).order("delivery_type").order("zone"),
-      db.from("rate_card_services").select("*").eq("template_id", templateId).eq("pricing_tier", pricingTier).order("service_slug"),
-      db.from("rate_card_overages").select("*").eq("template_id", templateId).eq("pricing_tier", pricingTier).order("overage_tier"),
-      db.from("rate_card_zones").select("*").eq("template_id", templateId).eq("pricing_tier", pricingTier).order("zone_number"),
+      db.from("rate_card_day_rates").select("*").eq("template_id", templateId).order("pricing_tier").order("vehicle_type"),
+      db.from("rate_card_delivery_rates").select("*").eq("template_id", templateId).order("pricing_tier").order("delivery_type").order("zone"),
+      db.from("rate_card_services").select("*").eq("template_id", templateId).order("pricing_tier").order("service_slug"),
+      db.from("rate_card_overages").select("*").eq("template_id", templateId).order("pricing_tier").order("overage_tier"),
+      db.from("rate_card_zones").select("*").eq("template_id", templateId).order("pricing_tier").order("zone_number"),
       db.from("rate_card_volume_bonuses").select("*").eq("template_id", templateId).order("min_deliveries"),
       db.from("partner_rate_overrides").select("*").eq("partner_id", partnerId),
     ]);
@@ -66,6 +103,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ par
     volumeBonuses: volumeRes.data || [],
     overrides: overridesRes.data || [],
     mode: "template",
+    portfolioPartner,
+    pmContract,
+    pmRates,
+    pmAddons,
   });
 }
 

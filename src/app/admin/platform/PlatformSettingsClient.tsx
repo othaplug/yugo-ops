@@ -491,11 +491,11 @@ function BusinessInfoSection() {
         <div>
           <div className={subheadCls}>Company Details</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {inp("company_name", "Company Name", "HelloYugo")}
-            {inp("company_legal_name", "Legal Name", "HelloYugo Inc.")}
-            {inp("company_address", "Address", "50 Carroll St, Toronto, ON")}
+            {inp("company_name", "Company Name", "Your company name")}
+            {inp("company_legal_name", "Legal Name", "Your company legal name")}
+            {inp("company_address", "Address", "Street, City, Province")}
             {inp("company_hst_number", "HST / Tax Number", "123456789RT0001")}
-            {inp("company_website", "Website", "https://helloyugo.com", "url")}
+            {inp("company_website", "Website", "https://example.com", "url")}
           </div>
         </div>
 
@@ -505,7 +505,7 @@ function BusinessInfoSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {inp("company_phone", "Main Phone", PHONE_PLACEHOLDER, "tel")}
             {inp("dispatch_phone", "Dispatch Phone", PHONE_PLACEHOLDER, "tel")}
-            {inp("company_email", "Company Email", "info@helloyugo.com", "email")}
+            {inp("company_email", "Company Email", "info@example.com", "email")}
             {inp("after_hours_contact", "After-Hours Contact", "Emergency phone or email")}
             {inp("business_hours", "Business Hours", "Mon-Sat 7:00 AM - 8:00 PM")}
           </div>
@@ -519,7 +519,7 @@ function BusinessInfoSection() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {inp("notifications_from_email", "Notifications 'From' Email", "notifications@opsplus.co", "email")}
-            {inp("admin_notification_email", "Admin Notification Email", "admin@helloyugo.com", "email")}
+            {inp("admin_notification_email", "Admin Notification Email", "admin@example.com", "email")}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-2">The &quot;From&quot; email must be verified in your email provider (Resend). Admin notification email receives payment failures, tips, etc.</p>
         </div>

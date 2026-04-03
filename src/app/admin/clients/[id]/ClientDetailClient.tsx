@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import Badge from "../../components/Badge";
 import ContactDetailsModal from "../../components/ContactDetailsModal";
@@ -14,6 +14,8 @@ import PortalAccessSection from "./PortalAccessSection";
 import PartnerRateCardTab from "./PartnerRateCardTab";
 import AdminPartnerAnalytics from "./AdminPartnerAnalytics";
 import PartnerPortalFeaturesCard from "@/components/admin/PartnerPortalFeaturesCard";
+import PartnerBuildingsTab, { type PartnerPropertyRow } from "./PartnerBuildingsTab";
+import PartnerReferralSection from "./PartnerReferralSection";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import ModalOverlay from "../../components/ModalOverlay";
 import { useToast } from "../../components/Toast";
@@ -24,15 +26,20 @@ import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import { ScheduleDeliveryButton, ScheduleMoveItem } from "../../components/ScheduleItem";
 import { isPropertyManagementDeliveryVertical, organizationTypeLabel } from "@/lib/partner-type";
+import { getPartnerLabelsForPartner } from "@/utils/partnerType";
 
 interface MoveRow {
   id: string;
   move_number?: string | null;
+  move_code?: string | null;
   client_name?: string | null;
   status?: string | null;
   stage?: string | null;
   scheduled_date?: string | null;
   created_at?: string | null;
+  estimate?: number | null;
+  pm_reason_code?: string | null;
+  partner_property_id?: string | null;
 }
 
 interface ChangeRequestRow {
@@ -50,6 +57,18 @@ interface ClientDetailClientProps {
   client: any;
   deliveries: any[];
   moves: MoveRow[];
+  partnerMoves?: MoveRow[];
+  partnerProperties?: PartnerPropertyRow[];
+  portfolioPartner?: boolean;
+  pmMetrics?: {
+    buildingsCount: number;
+    totalMoves: number;
+    movesThisMonth: number;
+    revenueMtd: number;
+    revenueYtd: number;
+    avgMoveValue: number;
+    onTimeRate: number | null;
+  } | null;
   changeRequests?: ChangeRequestRow[];
   allInvoices: any[];
   outstandingTotal: number;
@@ -61,10 +80,16 @@ interface ClientDetailClientProps {
   squareLocationId?: string;
 }
 
+type PartnerAdminTab = "overview" | "buildings" | "rate-card" | "moves" | "analytics" | "portal";
+
 export default function ClientDetailClient({
   client,
   deliveries,
   moves,
+  partnerMoves = [],
+  partnerProperties = [],
+  portfolioPartner = false,
+  pmMetrics = null,
   changeRequests = [],
   allInvoices,
   outstandingTotal,
@@ -76,6 +101,7 @@ export default function ClientDetailClient({
   squareLocationId = "",
 }: ClientDetailClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -86,12 +112,23 @@ export default function ClientDetailClient({
   const [proposalLoading, setProposalLoading] = useState(false);
   const [summaryDelivery, setSummaryDelivery] = useState<typeof deliveries[0] | null>(null);
   const [summaryInvoice, setSummaryInvoice] = useState<typeof allInvoices[0] | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "rate-card" | "analytics" | "portal">("overview");
+  const [activeTab, setActiveTab] = useState<PartnerAdminTab>("overview");
 
   useEffect(() => {
     if (searchParams.get("edit") === "1") setEditModalOpen(true);
-    if (searchParams.get("tab") === "rate-card") setActiveTab("rate-card");
-  }, [searchParams]);
+    const t = searchParams.get("tab");
+    if (t === "rate-card") setActiveTab("rate-card");
+    else if (t === "analytics") setActiveTab("analytics");
+    else if (t === "portal") setActiveTab("portal");
+    else if (portfolioPartner && t === "buildings") setActiveTab("buildings");
+    else if (portfolioPartner && t === "moves") setActiveTab("moves");
+  }, [searchParams, portfolioPartner]);
+
+  useEffect(() => {
+    if (!portfolioPartner && (activeTab === "buildings" || activeTab === "moves")) {
+      setActiveTab("overview");
+    }
+  }, [portfolioPartner, activeTab]);
 
   const paidInvoices = allInvoices.filter((i) => i.status === "paid");
   const paidTotal = paidInvoices.reduce((s, i) => s + Number(i.amount || 0), 0);
@@ -99,6 +136,10 @@ export default function ClientDetailClient({
   const isClient = client.type === "b2c";
   const personaLabel = isClient ? "Client" : "Partner";
   const showPmProposal = !isClient && isPropertyManagementDeliveryVertical(String(client.vertical || client.type || ""));
+  const partnerLabels = getPartnerLabelsForPartner({
+    vertical: client.vertical,
+    type: client.type,
+  });
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -131,7 +172,7 @@ export default function ClientDetailClient({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-hero text-[22px] md:text-[24px] font-bold text-[var(--tx)] break-words line-clamp-3">{client.name}</h1>
+              <h1 className="admin-page-hero text-[var(--tx)] break-words line-clamp-3">{client.name}</h1>
               <span className={`inline-flex px-2.5 py-[3px] rounded text-[9px] font-bold ${isClient ? "bg-[var(--bldim)] text-[var(--blue)]" : "bg-[var(--gdim)] text-[var(--gold)]"}`}>
                 {personaLabel}
               </span>
@@ -260,22 +301,54 @@ export default function ClientDetailClient({
       </div>
 
       {/* Portal Access, partners only */}
-      {!isClient && isAdmin && <PortalAccessSection orgId={client.id} orgName={client.name || ""} />}
+      {!isClient && isAdmin && (
+        <PortalAccessSection
+          orgId={client.id}
+          orgName={client.name || ""}
+          partnerVertical={client.vertical || client.type}
+        />
+      )}
 
       {/* Tab bar, partners only */}
       {!isClient && isAdmin && (
-        <div className="flex gap-0.5 border-b border-[var(--brd)] mb-0 -mx-0">
-          {(["overview", "rate-card", "analytics", "portal"] as const).map((tab) => (
+        <div className="flex gap-0.5 border-b border-[var(--brd)] mb-0 -mx-0 overflow-x-auto">
+          {(portfolioPartner
+            ? (["overview", "buildings", "rate-card", "moves", "analytics", "portal"] as const)
+            : (["overview", "rate-card", "analytics", "portal"] as const)
+          ).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2.5 text-[10px] font-bold tracking-[0.08em] uppercase transition-all border-b-2 -mb-px ${
+              type="button"
+              onClick={() => {
+                setActiveTab(tab);
+                const next = new URLSearchParams(searchParams.toString());
+                if (tab === "overview") {
+                  next.delete("tab");
+                  next.delete("building");
+                } else {
+                  next.set("tab", tab);
+                  if (tab !== "moves") next.delete("building");
+                }
+                const qs = next.toString();
+                router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+              }}
+              className={`px-4 py-2.5 text-[10px] font-bold tracking-[0.08em] uppercase transition-all border-b-2 -mb-px whitespace-nowrap shrink-0 ${
                 activeTab === tab
                   ? "border-[var(--gold)] text-[var(--gold)]"
                   : "border-transparent text-[var(--tx3)] hover:text-[var(--tx2)]"
               }`}
             >
-              {tab === "overview" ? "Overview" : tab === "rate-card" ? "Rate Card" : tab === "analytics" ? "Analytics" : "Portal"}
+              {tab === "overview"
+                ? "Overview"
+                : tab === "buildings"
+                  ? "Buildings"
+                  : tab === "rate-card"
+                    ? "Rate Card"
+                    : tab === "moves"
+                      ? "Moves"
+                      : tab === "analytics"
+                        ? "Analytics"
+                        : "Portal"}
             </button>
           ))}
         </div>
@@ -286,9 +359,75 @@ export default function ClientDetailClient({
         <PartnerRateCardTab orgId={client.id} orgName={client.name || ""} />
       )}
 
+      {!isClient && isAdmin && portfolioPartner && activeTab === "buildings" && (
+        <PartnerBuildingsTab partnerId={client.id} properties={partnerProperties} moves={partnerMoves} />
+      )}
+
+      {!isClient && isAdmin && portfolioPartner && activeTab === "moves" && (
+        <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
+          <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Moves for this partner</h3>
+          <p className="text-[11px] text-[var(--tx3)] mb-4">
+            Tenant and portfolio jobs tied to this organization (residential move ops), not B2B deliveries.
+          </p>
+          {(() => {
+            const buildingFilter = searchParams.get("building");
+            const filteredMoves =
+              buildingFilter?.trim()
+                ? partnerMoves.filter((m) => m.partner_property_id === buildingFilter.trim())
+                : partnerMoves;
+            const propName =
+              buildingFilter?.trim() &&
+              partnerProperties.find((pr) => pr.id === buildingFilter.trim())?.building_name;
+            return (
+              <>
+                {propName ? (
+                  <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-[var(--tx2)]">
+                    <span>
+                      Filtered: <span className="font-semibold text-[var(--tx)]">{propName}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => router.replace(`/admin/clients/${client.id}?tab=moves`)}
+                      className="text-[var(--gold)] font-semibold hover:underline"
+                    >
+                      Clear filter
+                    </button>
+                  </div>
+                ) : null}
+                <div className="divide-y divide-[var(--brd)]/30 -mx-2">
+                  {filteredMoves.length === 0 ? (
+                    <div className="text-[10px] text-[var(--tx3)] py-4 text-center">
+                      {buildingFilter ? "No moves for this building yet" : "No moves yet"}
+                    </div>
+                  ) : (
+                    filteredMoves.map((m, idx) => (
+                      <ScheduleMoveItem
+                        key={m.id}
+                        href={getMoveDetailPath(m)}
+                        leftPrimary={String(idx + 1).padStart(2, "0")}
+                        leftSecondary={formatMoveDate(
+                          m.scheduled_date || (m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : null)
+                        )}
+                        status={getStatusLabel(m.status ?? null)}
+                        title={m.client_name || m.move_number || "Move"}
+                        subtitle={m.move_number ?? getMoveCode(m as { move_code?: string | null; id?: string | null })}
+                      />
+                    ))
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Analytics tab content */}
       {!isClient && isAdmin && activeTab === "analytics" && (
-        <AdminPartnerAnalytics orgId={client.id} orgName={client.name || ""} />
+        <AdminPartnerAnalytics
+          orgId={client.id}
+          orgName={client.name || ""}
+          partnerVertical={client.vertical || client.type}
+        />
       )}
 
       {/* Portal Features tab content */}
@@ -356,72 +495,154 @@ export default function ClientDetailClient({
       {/* High-level metrics */}
       <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
         <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">Metrics</div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-6">
-          <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Moves" : "Projects"}</div>
-            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{isClient ? moves.length : deliveries.length}</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">AVG DEL</div>
-            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "-"}</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total paid</div>
-            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
-            <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
-              {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
+        {portfolioPartner && pmMetrics ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Buildings</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{pmMetrics.buildingsCount}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total moves</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{pmMetrics.totalMoves}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">This month</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{pmMetrics.movesThisMonth} moves</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Revenue (MTD)</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(pmMetrics.revenueMtd)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Revenue (YTD)</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(pmMetrics.revenueYtd)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
+              <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
+                {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Avg move value</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
+                {pmMetrics.avgMoveValue > 0 ? formatCompactCurrency(pmMetrics.avgMoveValue) : "—"}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">On-time rate</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
+                {pmMetrics.onTimeRate != null ? `${Math.round(pmMetrics.onTimeRate * 100)}%` : "—"}
+              </div>
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoices</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
+                {allInvoices.length}{" "}
+                <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span>
+              </div>
             </div>
           </div>
-          <div className="col-span-2 sm:col-span-1">
-            <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoices</div>
-            <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{allInvoices.length} <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span></div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-6">
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">
+                {isClient ? "Moves" : partnerLabels.totalMetric}
+              </div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
+                {isClient ? moves.length : deliveries.length}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">AVG DEL</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">{client.deliveries_per_month ?? "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Total paid</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--grn)]">{formatCompactCurrency(paidTotal)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Outstanding</div>
+              <div className={`text-[18px] md:text-[20px] font-bold font-heading ${outstandingTotal > 0 ? "text-[var(--org)]" : "text-[var(--grn)]"}`}>
+                {outstandingTotal > 0 ? formatCompactCurrency(outstandingTotal) : formatCompactCurrency(0)}
+              </div>
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">Invoices</div>
+              <div className="text-[18px] md:text-[20px] font-bold font-heading text-[var(--tx)]">
+                {allInvoices.length} <span className="text-[11px] font-normal text-[var(--tx3)]">({paidInvoices.length} paid)</span>
+              </div>
+            </div>
           </div>
+        )}
+      </div>
+
+      {/* Recent moves (B2C) or Recent projects (delivery partners) / moves (portfolio) */}
+      <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
+        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+          {isClient ? "Recent moves" : partnerLabels.recentLabel}
+        </h3>
+        <div className="divide-y divide-[var(--brd)]/30 -mx-2">
+          {isClient ? (
+            moves.length === 0 ? (
+              <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No moves yet</div>
+            ) : (
+              moves.map((m, idx) => (
+                <ScheduleMoveItem
+                  key={m.id}
+                  href={getMoveDetailPath(m)}
+                  leftPrimary={String(idx + 1).padStart(2, "0")}
+                  leftSecondary={formatMoveDate(m.scheduled_date || (m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : null))}
+                  status={getStatusLabel(m.status ?? null)}
+                  title={m.client_name || m.move_number || "Move"}
+                  subtitle={m.move_number ?? getMoveCode(m as { move_code?: string | null; id?: string | null })}
+                />
+              ))
+            )
+          ) : portfolioPartner ? (
+            partnerMoves.length === 0 ? (
+              <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No moves yet</div>
+            ) : (
+              partnerMoves.slice(0, 8).map((m, idx) => (
+                <ScheduleMoveItem
+                  key={m.id}
+                  href={getMoveDetailPath(m)}
+                  leftPrimary={String(idx + 1).padStart(2, "0")}
+                  leftSecondary={formatMoveDate(m.scheduled_date || (m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : null))}
+                  status={getStatusLabel(m.status ?? null)}
+                  title={m.client_name || m.move_number || "Move"}
+                  subtitle={m.move_number ?? getMoveCode(m as { move_code?: string | null; id?: string | null })}
+                />
+              ))
+            )
+          ) : (
+            <>
+              {deliveries.map((d) => (
+                <ScheduleDeliveryButton
+                  key={d.id}
+                  onClick={() => setSummaryDelivery(d)}
+                  timeSlot={d.time_slot || "-"}
+                  pill={`${d.items?.length || 0} items`}
+                  status={toTitleCase(d.status || "")}
+                  title={d.customer_name}
+                  subtitle={`${d.delivery_number} • ${d.client_name}`}
+                />
+              ))}
+              {deliveries.length === 0 && (
+                <div className="text-[10px] text-[var(--tx3)] py-4 text-center">{partnerLabels.emptyState}</div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Recent moves (B2C) or Recent projects (partners) */}
-      <div className="border-t border-[var(--brd)]/30 pt-6 pb-4">
-        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">{isClient ? "Recent moves" : "Recent projects"}</h3>
-        <div className="divide-y divide-[var(--brd)]/30 -mx-2">
-          {isClient ? (
-          moves.length === 0 ? (
-            <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No moves yet</div>
-          ) : (
-            moves.map((m, idx) => (
-              <ScheduleMoveItem
-                key={m.id}
-                href={getMoveDetailPath(m)}
-                leftPrimary={String(idx + 1).padStart(2, "0")}
-                leftSecondary={formatMoveDate(m.scheduled_date || (m.created_at ? new Date(m.created_at).toISOString().slice(0, 10) : null))}
-                status={getStatusLabel(m.status ?? null)}
-                title={m.client_name || m.move_number || "Move"}
-                subtitle={m.move_number ?? getMoveCode(m as { move_code?: string | null; id?: string | null })}
-              />
-            ))
-          )
-        ) : (
-          <>
-            {deliveries.map((d) => (
-              <ScheduleDeliveryButton
-                key={d.id}
-                onClick={() => setSummaryDelivery(d)}
-                timeSlot={d.time_slot || "-"}
-                pill={`${d.items?.length || 0} items`}
-                status={toTitleCase(d.status || "")}
-                title={d.customer_name}
-                subtitle={`${d.delivery_number} • ${d.client_name}`}
-              />
-            ))}
-            {deliveries.length === 0 && (
-              <div className="text-[10px] text-[var(--tx3)] py-4 text-center">No deliveries yet</div>
-            )}
-          </>
-        )}
-        </div>
-      </div>
+      {portfolioPartner && isAdmin && (
+        <PartnerReferralSection
+          orgId={client.id}
+          portalFeatures={client.portal_features}
+          onSaved={() => router.refresh()}
+        />
+      )}
 
       {/* Change requests (client-submitted) */}
       {changeRequests.length > 0 && (

@@ -138,7 +138,10 @@ export default function AdminLoginPage() {
           {mode === "login" && (
             <>
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 22, fontWeight: 600, color: "#E8E5E0", marginBottom: 4, fontFamily: "'Instrument Sans', 'DM Sans', sans-serif" }}>
+                <div
+                  className="font-hero"
+                  style={{ fontSize: 34, fontWeight: 600, color: "#E8E5E0", marginBottom: 6, letterSpacing: "-0.02em", lineHeight: 1.15 }}
+                >
                   {isFirstTime ? "Welcome to Yugo" : "Welcome back"}
                 </div>
                 <div style={{ fontSize: 13, color: "#4A4A4E" }}>

@@ -22,6 +22,8 @@ import {
   organizationTypeLabel,
   partnerHasSelfServePortal,
 } from "@/lib/partner-type";
+import { ordinalDayOfMonthLabel } from "@/lib/ordinal";
+import { getPartnerCategory, getPartnerLabels } from "@/utils/partnerType";
 
 /** Platform onboarding: delivery + property & portfolio only (referral orgs use `/admin/partners/realtors`). */
 const WIZARD_SEGMENT_GROUPS = PARTNER_SEGMENT_GROUPS.filter((s) => s.profile !== "referral");
@@ -182,6 +184,7 @@ interface PmPropertyDraft {
   has_move_elevator: boolean;
   elevator_type: string;
   move_hours: string;
+  custom_move_hours: string;
   parking_type: string;
   building_contact_name: string;
   building_contact_phone: string;
@@ -199,6 +202,7 @@ function emptyPmProperty(): PmPropertyDraft {
     has_move_elevator: false,
     elevator_type: "",
     move_hours: "8to6",
+    custom_move_hours: "",
     parking_type: "",
     building_contact_name: "",
     building_contact_phone: "",
@@ -655,7 +659,10 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
                       has_loading_dock: p.has_loading_dock,
                       has_move_elevator: !!p.elevator_type && p.elevator_type !== "none",
                       elevator_type: p.elevator_type.trim() || undefined,
-                      move_hours: p.move_hours || undefined,
+                      move_hours:
+                        p.move_hours === "custom"
+                          ? (p.custom_move_hours.trim() || undefined)
+                          : (p.move_hours || undefined),
                       parking_type: p.parking_type.trim() || undefined,
                       building_contact_name: p.building_contact_name.trim() || undefined,
                       building_contact_phone: p.building_contact_phone.trim() || undefined,
@@ -1450,14 +1457,31 @@ function Step1BusinessDetails({
                     <label className={labelCls}>Move hours</label>
                     <select
                       value={prop.move_hours}
-                      onChange={(e) => patchPmProperty(idx, { move_hours: e.target.value })}
+                      onChange={(e) =>
+                        patchPmProperty(idx, {
+                          move_hours: e.target.value,
+                          ...(e.target.value !== "custom" ? { custom_move_hours: "" } : {}),
+                        })
+                      }
                       className={inputCls}
                     >
                       <option value="8to6">8 AM – 6 PM</option>
                       <option value="24_7">24/7</option>
-                      <option value="custom">Custom (see notes)</option>
+                      <option value="custom">Custom</option>
                     </select>
                   </div>
+                  {prop.move_hours === "custom" && (
+                    <div className="sm:col-span-2">
+                      <label className={labelCls}>Custom move hours</label>
+                      <input
+                        type="text"
+                        value={prop.custom_move_hours}
+                        onChange={(e) => patchPmProperty(idx, { custom_move_hours: e.target.value })}
+                        className={inputCls}
+                        placeholder="e.g., 6 AM – 8 PM weekdays, 7 AM – 5 PM weekends"
+                      />
+                    </div>
+                  )}
                   <div>
                     <label className={labelCls}>Parking</label>
                     <input
@@ -2011,6 +2035,7 @@ function Step3RateCardBilling({
   templates: RateTemplate[];
   flow: OnboardingFlow;
 }) {
+  const flowLabels = getPartnerLabels(getPartnerCategory({ vertical: state.type, type: state.type }));
   const autoSlug = VERTICAL_TO_TEMPLATE_SLUG[state.type] || "";
   const effectiveSlug = state.templateSlug || autoSlug;
   const effectiveLabel = TEMPLATE_SLUG_LABELS[effectiveSlug] || effectiveSlug;
@@ -2104,13 +2129,15 @@ function Step3RateCardBilling({
               className={inputCls}
             >
               {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>{d === 1 ? "1st" : d === 2 ? "2nd" : d === 3 ? "3rd" : `${d}th`} of month</option>
+                <option key={d} value={d}>
+                  {ordinalDayOfMonthLabel(d)}
+                </option>
               ))}
             </select>
             <p className="text-[11px] text-[var(--tx3)] mt-1.5">
               {flow === "delivery_pm"
                 ? "Statement generated on this day each month. Billable moves and services from the prior period are included."
-                : "Statement generated on this day each month. Payment due on statement date. Deliveries completed in the prior 30 days are included."}
+                : `Statement generated on this day each month. Payment due on statement date. ${flowLabels.serviceUnitPlural} completed in the prior 30 days are included.`}
             </p>
           </div>
         )}

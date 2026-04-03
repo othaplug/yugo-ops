@@ -11,9 +11,45 @@ import InvoicesPageClient from "./InvoicesPageClient";
 
 export default async function InvoicesPage() {
   const db = createAdminClient();
-  const { data: invoices } = await db.from("invoices").select("*").order("created_at", { ascending: false });
 
-  const all = invoices || [];
+  const withOrg = await db
+    .from("invoices")
+    .select("*, organizations(vertical, type)")
+    .order("created_at", { ascending: false });
+
+  let invoices = withOrg.data;
+  let loadError: string | null = null;
+  let orgEmbedWarning: string | null = null;
+
+  if (withOrg.error) {
+    console.error("[admin/invoices] query with organizations embed failed:", withOrg.error);
+    const plain = await db.from("invoices").select("*").order("created_at", { ascending: false });
+    if (plain.error) {
+      console.error("[admin/invoices] fallback query failed:", plain.error);
+      loadError = plain.error.message || "Failed to load invoices";
+      invoices = [];
+    } else {
+      invoices = plain.data;
+      if ((plain.data?.length ?? 0) > 0) {
+        orgEmbedWarning =
+          withOrg.error.message ||
+          "Could not load organization details; invoices are shown without partner vertical/type.";
+      }
+    }
+  }
+
+  const all = (invoices ?? []).map((row) => {
+    const inv = row as Record<string, unknown>;
+    const orgRel = inv.organizations;
+    const { organizations: _drop, ...rest } = inv;
+    const org =
+      orgRel && typeof orgRel === "object" && !Array.isArray(orgRel)
+        ? (orgRel as { vertical?: string | null; type?: string | null })
+        : null;
+    return { ...rest, organization: org } as typeof row & {
+      organization: { vertical?: string | null; type?: string | null } | null;
+    };
+  });
   const paid = all.filter((i) => i.status === "paid");
   const sent = all.filter((i) => i.status === "sent");
   const overdue = all.filter((i) => i.status === "overdue");
@@ -26,11 +62,28 @@ export default async function InvoicesPage() {
     <div className="max-w-[1200px] mx-auto px-5 md:px-6 py-5 md:py-6 animate-fade-up">
       <div className="mb-6"><BackButton label="Back" /></div>
 
+      {loadError && (
+        <div
+          className="mb-4 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-[12px]"
+          role="alert"
+        >
+          Unable to load invoices. {loadError}
+        </div>
+      )}
+      {orgEmbedWarning && (
+        <div
+          className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[12px]"
+          role="status"
+        >
+          {orgEmbedWarning}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
           <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Finance</p>
-          <h1 className="font-hero text-[26px] sm:text-[32px] font-bold text-[var(--tx)] tracking-tight leading-none">Invoices</h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">Invoices</h1>
         </div>
       </div>
 

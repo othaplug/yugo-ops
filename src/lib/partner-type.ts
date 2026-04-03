@@ -55,6 +55,7 @@ export const PARTNER_SEGMENT_GROUPS: {
         templateSlug: "hospitality_commercial",
         verticals: [
           { value: "hospitality", label: "Hospitality" },
+          { value: "developer", label: "Developer" },
         ],
       },
       {
@@ -95,7 +96,6 @@ export const PARTNER_SEGMENT_GROUPS: {
         verticals: [
           { value: "realtor", label: "Realtor" },
           { value: "property_manager", label: "Property Manager" },
-          { value: "developer", label: "Developer" },
         ],
       },
     ],
@@ -158,7 +158,7 @@ export function augmentOrganizationsTypeCheckError(message: string): string {
   return `${message} Your database needs migration 20260402100000_organizations_type_pm_delivery_verticals.sql (or run \`supabase db push\` / paste that file into the Supabase SQL editor).`;
 }
 
-const REFERRAL_VERTICALS = new Set<string>(["realtor", "property_manager", "developer"]);
+const REFERRAL_VERTICALS = new Set<string>(["realtor", "property_manager"]);
 
 /** Delivery-profile verticals that use the property management partner portal (contracts, buildings, PM moves). */
 export const PM_DELIVERY_VERTICALS = new Set<string>([

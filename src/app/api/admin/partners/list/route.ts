@@ -17,9 +17,10 @@ export async function GET() {
       .order("name");
 
     if (orgsError) return NextResponse.json({ error: orgsError.message }, { status: 400 });
-    if (!orgs || orgs.length === 0) return NextResponse.json({ partners: [] });
+    const visibleOrgs = (orgs || []).filter((o) => !(o.name || "").startsWith("_"));
+    if (visibleOrgs.length === 0) return NextResponse.json({ partners: [] });
 
-    const orgIds = orgs.map((o) => o.id);
+    const orgIds = visibleOrgs.map((o) => o.id);
     const { data: allPartnerUsers } = await admin
       .from("partner_users")
       .select("user_id, org_id")
@@ -60,7 +61,7 @@ export async function GET() {
       admin.from("moves").select("organization_id", { count: "exact", head: true }).in("organization_id", orgIds),
     ]);
 
-    const partners = orgs.map((org) => ({
+    const partners = visibleOrgs.map((org) => ({
       id: org.id,
       name: org.name,
       type: org.vertical || org.type,
@@ -75,7 +76,7 @@ export async function GET() {
 
     return NextResponse.json({
       partners,
-      totalOrgs: orgs.length,
+      totalOrgs: visibleOrgs.length,
       totalPortalUsers: userIds.length,
       totalDeliveries: deliveriesCount ?? 0,
       totalMoves: movesCount ?? 0,

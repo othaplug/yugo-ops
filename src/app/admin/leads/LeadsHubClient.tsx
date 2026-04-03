@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   COMPLETENESS_PATH_LABELS,
+  DETECTED_SERVICE_TYPE_LABELS,
   LEAD_ACTIVITY_LABELS,
   LEAD_PRIORITY_LABELS,
   LEAD_SOURCE_LABELS,
@@ -37,6 +38,7 @@ export type LeadRow = {
   source: string;
   source_detail: string | null;
   service_type: string | null;
+  detected_service_type?: string | null;
   move_size: string | null;
   preferred_date: string | null;
   from_address: string | null;
@@ -409,6 +411,11 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
                 Specialty quote
               </span>
             ) : null}
+            {(lead.service_type === "pm_inquiry" || lead.detected_service_type === "pm_inquiry") && (
+              <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide bg-amber-400/15 text-amber-600 border border-amber-400/25 rounded px-1.5 py-0.5">
+                {DETECTED_SERVICE_TYPE_LABELS.pm_inquiry}
+              </span>
+            )}
           </div>
           <Link
             href={`/admin/leads/${lead.id}`}
@@ -459,7 +466,7 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
       <div className="mb-2">
         <div>
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]">Revenue</p>
-          <h1 className="font-hero text-xl md:text-2xl font-bold text-[var(--tx)] tracking-tight">Leads</h1>
+          <h1 className="admin-page-hero text-[var(--tx)]">Leads</h1>
         </div>
       </div>
       <p className="text-[12px] text-[var(--tx3)] mb-4 max-w-xl">
@@ -659,6 +666,13 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
                       <td className="px-3 py-2">
                         {[lead.first_name, lead.last_name].filter(Boolean).join(" ") || "—"}
                         <div className="text-[10px] text-[var(--tx3)]">{lead.phone || lead.email || ""}</div>
+                        {(lead.service_type === "pm_inquiry" || lead.detected_service_type === "pm_inquiry") && (
+                          <div className="mt-1">
+                            <span className="inline-flex rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-amber-400/15 text-amber-600 border border-amber-400/25">
+                              {DETECTED_SERVICE_TYPE_LABELS.pm_inquiry}
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-2">{sourceLabel(lead.source, lead.source_detail)}</td>
                       <td className="px-3 py-2">
