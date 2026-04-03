@@ -128,10 +128,13 @@ export interface HighValueDeclaration {
 
 export const TIER_ORDER = ["essential", "signature", "estate"] as const;
 
-export const TIER_META: Record<
+/** Tier card copy on the client quote (tagline + “Best for” footer can be overridden via platform_config). */
+export type ResidentialQuoteTierMetaMap = Record<
   string,
   { label: string; tagline: string; badge?: string; footer?: string; accent: string; bg: string; border: string }
-> = {
+>;
+
+export const TIER_META: ResidentialQuoteTierMetaMap = {
   essential: {
     label: TIER_LABELS.essential,
     tagline: "Precision and care, handled efficiently.",

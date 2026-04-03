@@ -3,6 +3,12 @@ import { isFeatureEnabled } from "@/lib/platform-settings";
 import { getLegalBranding } from "@/lib/legal-branding";
 import { getCompanyPhone } from "@/lib/config";
 import type { TierFeature } from "./quote-shared";
+import {
+  mergeResidentialTierFeaturesFromConfig,
+  mergeResidentialTierMetaFromConfig,
+  QUOTE_RESIDENTIAL_TIER_FEATURES_KEY,
+  QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY,
+} from "@/lib/quotes/residential-tier-quote-display";
 import QuotePageClient from "./QuotePageClient";
 import QuoteExpired from "./QuoteExpired";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
@@ -87,7 +93,16 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
   }
 
   // Fetch contact, add-ons, crew count, move count, and valuation data in parallel
-  const [contactResult, addonsResult, crewCountResult, moveDateCountResult, valTiersResult, valUpgradesResult, eventFeatResult] =
+  const [
+    contactResult,
+    addonsResult,
+    crewCountResult,
+    moveDateCountResult,
+    valTiersResult,
+    valUpgradesResult,
+    eventFeatResult,
+    quoteDisplayCfgResult,
+  ] =
     await Promise.all([
     quote.contact_id
       ? admin.from("contacts").select("email").eq("id", quote.contact_id).single()
@@ -108,6 +123,10 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
     admin.from("valuation_tiers").select("*").eq("active", true).order("tier_slug"),
     admin.from("valuation_upgrades").select("*").eq("active", true).eq("move_size", quote.move_size ?? "2br"),
     admin.from("platform_config").select("value").eq("key", "event_features").maybeSingle(),
+    admin
+      .from("platform_config")
+      .select("key, value")
+      .in("key", [QUOTE_RESIDENTIAL_TIER_FEATURES_KEY, QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY]),
   ]);
 
   const contactEmail = contactResult?.data?.email ?? null;
@@ -133,6 +152,16 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
     }
   }
 
+  const quoteDisplayRows = quoteDisplayCfgResult?.data ?? [];
+  const quoteDisplayMap: Record<string, string> = {};
+  for (const row of quoteDisplayRows) quoteDisplayMap[row.key] = row.value ?? "";
+  const residentialTierFeatures = mergeResidentialTierFeaturesFromConfig(
+    quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_FEATURES_KEY],
+  );
+  const residentialTierMeta = mergeResidentialTierMetaFromConfig(
+    quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY],
+  );
+
   return (
     <QuotePageClient
       quote={quote}
@@ -147,6 +176,8 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
         email: branding.email,
       }}
       eventFeatures={eventFeatures}
+      residentialTierFeatures={residentialTierFeatures}
+      residentialTierMeta={residentialTierMeta}
     />
   );
 }

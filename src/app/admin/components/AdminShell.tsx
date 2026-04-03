@@ -244,14 +244,8 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
   const quickActionsRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
-  const isPlatformRoute = pathname.startsWith("/admin/platform");
-  const platformTopbarLeft = isPlatformRoute
-    ? sidebarCollapsed
-      ? "left-0 sm:left-[calc(3.5rem+200px+1.25rem+1.5rem)] md:left-[calc(3.5rem+200px+1.5rem+1.5rem)] lg:left-[calc(3.5rem+200px+1.5rem+2rem)]"
-      : "left-0 sm:left-[calc(220px+200px+1.25rem+1.5rem)] md:left-[calc(220px+200px+1.5rem+1.5rem)] lg:left-[calc(220px+200px+1.5rem+2rem)]"
-    : sidebarCollapsed
-      ? "left-0 md:left-14"
-      : "left-0 md:left-[220px]";
+  /** Align fixed topbar with main column (after admin sidebar only). Platform tab rail lives in page content — do not inset topbar or search + border look centered with a partial underline. */
+  const topbarLeftOffset = sidebarCollapsed ? "left-0 md:left-14" : "left-0 md:left-[220px]";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -500,7 +494,7 @@ export default function AdminShell({ user, isSuperAdmin = false, isAdmin = true,
             <div className="flex-1 flex flex-col min-w-0 min-h-0 max-w-full admin-main-offset">
               {/* Topbar — flex row; search width capped inside flex-1 wrapper so bell + profile stay visible */}
               <div
-                className={`fixed top-0 right-0 z-30 h-14 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top flex items-center justify-between gap-2 sm:gap-4 min-w-0 max-w-full pl-3 pr-3 sm:pl-4 sm:pr-4 md:px-6 ${platformTopbarLeft}`}
+                className={`fixed top-0 right-0 z-30 h-14 shrink-0 glass-topbar border-b border-[var(--brd)]/50 transition-all duration-300 safe-area-top flex items-center justify-between gap-2 sm:gap-4 min-w-0 max-w-full pl-3 pr-3 sm:pl-4 sm:pr-4 md:px-6 ${topbarLeftOffset}`}
               >
                 <button
                   onClick={() => setSidebarOpen(true)}

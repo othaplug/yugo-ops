@@ -76,9 +76,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
         style={{ borderColor: `${GOLD}55`, backgroundColor: `${GOLD}08` }}
       >
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${FOREST}10` }}>
-            <Recycle className="w-6 h-6" style={{ color: FOREST }} weight="regular" aria-hidden />
-          </div>
+          <Recycle className="w-6 h-6 shrink-0" style={{ color: FOREST }} weight="regular" aria-hidden />
           <div>
             <p className="text-[10px] font-bold tracking-wider uppercase" style={{ color: `${FOREST}55` }}>
               Eco-friendly plastic bins

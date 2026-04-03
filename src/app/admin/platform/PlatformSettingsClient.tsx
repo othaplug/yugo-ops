@@ -20,6 +20,7 @@ import PartnersManagement from "./PartnersManagement";
 import PricingControlPanel from "./PricingControlPanel";
 import DeliveryVerticalsPanel from "./DeliveryVerticalsPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
+import QuoteResidentialDisplaySection from "./QuoteResidentialDisplaySection";
 import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
 import { Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText, GasPump, Package } from "@phosphor-icons/react";
@@ -403,10 +404,16 @@ interface ReviewConfig {
   googleReviewUrl: string;
 }
 
+interface QuoteResidentialDisplayInitial {
+  tierFeaturesJson: string;
+  tierMetaOverridesJson: string;
+}
+
 interface PlatformSettingsClientProps {
   initialTeams?: Team[];
   initialToggles?: AppToggles;
   initialReviewConfig?: ReviewConfig;
+  initialQuoteResidentialDisplay?: QuoteResidentialDisplayInitial;
   currentUserId?: string;
   isSuperAdmin?: boolean;
 }
@@ -1102,7 +1109,19 @@ function EmailTemplatesSection() {
 
 const DEFAULT_REVIEW_CONFIG: ReviewConfig = { autoReviewRequests: true, googleReviewUrl: "https://g.page/r/CU67iDN6TgMIEB0/review/" };
 
-export default function PlatformSettingsClient({ initialTeams = [], initialToggles = DEFAULT_TOGGLES, initialReviewConfig = DEFAULT_REVIEW_CONFIG, currentUserId, isSuperAdmin = false }: PlatformSettingsClientProps) {
+const DEFAULT_QUOTE_RESIDENTIAL_DISPLAY: QuoteResidentialDisplayInitial = {
+  tierFeaturesJson: "",
+  tierMetaOverridesJson: "",
+};
+
+export default function PlatformSettingsClient({
+  initialTeams = [],
+  initialToggles = DEFAULT_TOGGLES,
+  initialReviewConfig = DEFAULT_REVIEW_CONFIG,
+  initialQuoteResidentialDisplay = DEFAULT_QUOTE_RESIDENTIAL_DISPLAY,
+  currentUserId,
+  isSuperAdmin = false,
+}: PlatformSettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -1519,9 +1538,9 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
   });
 
   return (
-    <div className="flex flex-col sm:flex-row gap-6 lg:gap-8 sm:items-start min-h-0">
-      {/* ── Vertical tab sidebar ── */}
-      <nav className="hidden sm:flex flex-col gap-0.5 w-[200px] shrink-0 sticky top-[4.5rem]">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5 sm:items-start min-h-0">
+      {/* ── Vertical tab sidebar (compact rail so main pricing / tier grids get more width) ── */}
+      <nav className="hidden sm:flex flex-col gap-0.5 w-44 shrink-0 sticky top-[4.5rem] pr-2 sm:pr-3 border-r border-[var(--brd)]/25">
         {visibleTabs.map((t) => {
           const TabIcon = t.Icon;
           const active = activeTab === t.id;
@@ -1530,26 +1549,26 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
               key={t.id}
               id={`tab-${t.id}`}
               href={`/admin/platform?tab=${t.id}`}
-              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+              className={`group flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-all ${
                 active
                   ? "bg-[var(--gdim)] text-[var(--gold)]"
                   : "text-[var(--tx3)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)]"
               }`}
             >
               <TabIcon
-                size={16}
+                size={15}
                 weight={active ? "fill" : "regular"}
                 className={`shrink-0 transition-colors ${active ? "text-[var(--gold)]" : "text-[var(--tx3)] group-hover:text-[var(--tx2)]"}`}
               />
-              <div className="min-w-0">
-                <div className={`text-[12px] font-semibold leading-tight truncate ${active ? "text-[var(--gold)]" : ""}`}>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[11px] font-semibold leading-snug ${active ? "text-[var(--gold)]" : ""}`}>
                   {t.label}
                 </div>
-                <div className="text-[10px] text-[var(--tx3)] leading-tight truncate mt-0.5 hidden lg:block">
+                <div className="text-[9px] text-[var(--tx3)] leading-tight mt-0.5 hidden xl:block line-clamp-2">
                   {"desc" in t ? t.desc : ""}
                 </div>
               </div>
-              {active && <span className="ml-auto w-1 h-1 rounded-full bg-[var(--gold)] shrink-0" />}
+              {active && <span className="ml-0.5 w-1 h-1 rounded-full bg-[var(--gold)] shrink-0 self-start mt-1.5" />}
             </Link>
           );
         })}
@@ -1578,7 +1597,7 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
       </div>
 
       {/* ── Content panel ── */}
-      <div className="flex-1 min-w-0 space-y-6">
+      <div className="flex-1 min-w-0 space-y-6 sm:pl-1">
 
       {/* Pricing Control Panel */}
       {activeTab === "pricing" && (
@@ -2237,6 +2256,11 @@ export default function PlatformSettingsClient({ initialTeams = [], initialToggl
 
       {/* Quoting Defaults */}
       <QuotingDefaultsSection />
+
+      <QuoteResidentialDisplaySection
+        initialTierFeaturesJson={initialQuoteResidentialDisplay.tierFeaturesJson}
+        initialTierMetaOverridesJson={initialQuoteResidentialDisplay.tierMetaOverridesJson}
+      />
 
       {/* Fuel prices — gas/diesel $/L for navigation & move fuel logging */}
       <FuelPricingSection />

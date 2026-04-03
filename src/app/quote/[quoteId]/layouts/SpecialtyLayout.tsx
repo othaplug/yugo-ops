@@ -119,12 +119,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
       {/* Project overview */}
       <div>
         <div className="flex items-start gap-4 mb-4">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${WINE}10` }}
-          >
-            <Wrench className="w-6 h-6" style={{ color: WINE }} />
-          </div>
+          <Wrench className="w-6 h-6 shrink-0 mt-1" style={{ color: WINE }} aria-hidden />
           <div>
             <span
               className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"

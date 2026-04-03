@@ -63,12 +63,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
       {/* Item details */}
       <div>
         <div className="flex items-start gap-4">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${WINE}10` }}
-          >
-            <Diamond className="w-7 h-7" style={{ color: WINE }} />
-          </div>
+          <Diamond className="w-7 h-7 shrink-0 mt-0.5" style={{ color: WINE }} aria-hidden />
           <div className="flex-1">
             <h3 className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>
               {(f?.item_description as string) ?? "White Glove Item"}
@@ -111,18 +106,10 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
             const Icon = step.icon;
             return (
               <div key={i} className="flex items-start gap-4">
-                <div className="relative">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: i === 4 ? `${GOLD}15` : `${WINE}08` }}
-                  >
-                    <Icon className="w-[18px] h-[18px]" style={{ color: i === 4 ? GOLD : WINE }} />
-                  </div>
+                <div className="flex flex-col items-center shrink-0">
+                  <Icon className="w-[18px] h-[18px] mt-0.5" style={{ color: i === 4 ? GOLD : WINE }} aria-hidden />
                   {i < PROTOCOL_STEPS.length - 1 && (
-                    <div
-                      className="absolute top-10 left-1/2 -translate-x-1/2 w-px h-6"
-                      style={{ backgroundColor: `${WINE}15` }}
-                    />
+                    <div className="w-px h-6 mt-2" style={{ backgroundColor: `${WINE}15` }} aria-hidden />
                   )}
                 </div>
                 <div className="pt-0.5">

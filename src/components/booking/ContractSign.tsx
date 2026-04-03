@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Check, CaretDown as ChevronDown, CaretUp as ChevronUp, FileText, Shield, Calendar, MapPin, Ruler, Clock } from "@phosphor-icons/react";
+import { Check, CaretDown as ChevronDown, CaretUp as ChevronUp, FileText, Calendar, MapPin, Ruler, Clock } from "@phosphor-icons/react";
 import { toTitleCase, formatAccessForDisplay, formatAddressForDisplay } from "@/lib/format-text";
 import { isClientLogisticsDeliveryServiceType } from "@/lib/quotes/b2b-quote-copy";
 
@@ -1241,12 +1241,9 @@ export default function ContractSign({
 
         {/* ── Signature section ── */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4" style={{ color: GOLD }} />
-            <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
-              Electronic Signature
-            </p>
-          </div>
+          <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
+            Electronic Signature
+          </p>
 
           <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}80` }}>
             {isBinRental ? (

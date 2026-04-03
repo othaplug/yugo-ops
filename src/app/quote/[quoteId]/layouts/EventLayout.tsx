@@ -82,12 +82,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
       {/* Event header */}
       <div>
         <div className="flex items-start gap-4 mb-5">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${WINE}10` }}
-          >
-            <Star className="w-6 h-6" style={{ color: WINE }} />
-          </div>
+          <Star className="w-6 h-6 shrink-0 mt-1" style={{ color: WINE }} aria-hidden />
           <div>
             <div className="flex flex-wrap items-center gap-2">
               {eventName && (

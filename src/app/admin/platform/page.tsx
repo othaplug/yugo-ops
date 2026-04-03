@@ -8,6 +8,10 @@ import { redirect } from "next/navigation";
 import PlatformSettingsClient from "./PlatformSettingsClient";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { getPlatformToggles } from "@/lib/platform-settings";
+import {
+  QUOTE_RESIDENTIAL_TIER_FEATURES_KEY,
+  QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY,
+} from "@/lib/quotes/residential-tier-quote-display";
 
 export default async function PlatformPage() {
   const supabase = await createClient();
@@ -56,6 +60,17 @@ export default async function PlatformPage() {
     }
   }
 
+  const { data: quoteDisplayCfg } = await db
+    .from("platform_config")
+    .select("key, value")
+    .in("key", [QUOTE_RESIDENTIAL_TIER_FEATURES_KEY, QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY]);
+  const quoteDisplayMap: Record<string, string> = {};
+  for (const r of quoteDisplayCfg ?? []) quoteDisplayMap[r.key] = r.value ?? "";
+  const initialQuoteResidentialDisplay = {
+    tierFeaturesJson: quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_FEATURES_KEY] ?? "",
+    tierMetaOverridesJson: quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY] ?? "",
+  };
+
   const initialTeams = crews.map((c: { id: string; name: string; members?: unknown[]; active?: boolean; phone?: string }) => ({
     id: c.id,
     label: c.name,
@@ -70,12 +85,19 @@ export default async function PlatformPage() {
   }));
 
   return (
-    <div className="w-full max-w-[1100px] min-w-0 mx-auto px-4 sm:px-5 md:px-6 py-6 md:py-8 animate-fade-up">
+    <div className="w-full max-w-[min(100vw-1.25rem,1580px)] 2xl:max-w-[1700px] min-w-0 mx-auto px-3 sm:px-4 md:px-5 lg:px-6 py-6 md:py-8 animate-fade-up">
       <div className="mb-8">
         <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/60 mb-1.5">Admin</p>
         <h1 className="admin-page-hero text-[var(--tx)]">Platform Settings</h1>
       </div>
-      <PlatformSettingsClient initialTeams={initialTeams} initialToggles={initialToggles} initialReviewConfig={initialReviewConfig} currentUserId={user?.id} isSuperAdmin={isSuperAdmin} />
+      <PlatformSettingsClient
+        initialTeams={initialTeams}
+        initialToggles={initialToggles}
+        initialReviewConfig={initialReviewConfig}
+        initialQuoteResidentialDisplay={initialQuoteResidentialDisplay}
+        currentUserId={user?.id}
+        isSuperAdmin={isSuperAdmin}
+      />
     </div>
   );
 }

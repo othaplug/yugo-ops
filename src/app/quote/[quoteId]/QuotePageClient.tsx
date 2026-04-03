@@ -5,42 +5,12 @@ import SchedulingAlternativesCard from "./SchedulingAlternativesCard";
 import SeasonalPricingPreview from "@/components/SeasonalPricingPreview";
 import {
   Check,
-  Ruler,
-  Shield,
-  ShieldCheck,
-  Star,
   Clock,
-  Lock,
-  Lightning as Zap,
-  Truck,
-  Users,
-  Wrench,
-  Toolbox,
-  Armchair,
-  Suitcase,
-  UserCircle,
-  FrameCorners,
-  Compass,
-  Broadcast as Radar,
-  Camera,
-  Hand,
-  Trash as Trash2,
   CaretDown as ChevronDown,
   CaretUp as ChevronUp,
   Plus,
   X,
-  Gift,
-  House as Home,
-  MapPin,
   Calendar,
-  Money as DollarSign,
-  TShirt as Shirt,
-  ClipboardText as ClipboardCheck,
-  OfficeChair,
-  CheckCircle,
-  EggCrack,
-  Package,
-  type Icon as LucideIcon,
 } from "@phosphor-icons/react";
 import {
   type Quote,
@@ -56,7 +26,7 @@ import {
   FOREST,
   GOLD,
   CREAM,
-  TIER_META,
+  type ResidentialQuoteTierMetaMap,
   HERO_CONFIG,
   SERVICE_LABEL,
   MOVE_SIZE_LABELS,
@@ -130,61 +100,6 @@ const TRUCK_LUXURY: Record<string, string> = {
   "20ft": "20ft dedicated moving truck",
   "24ft": "24ft full-capacity moving truck",
   "26ft": "26ft maximum-capacity moving truck",
-};
-
-/**
- * Single source of truth for tier features.
- * Used by BOTH the tier card bullet list (card field) and the 'Your Move Includes'
- * expanded section (title + desc + iconName).
- *
- * Index 0 is always the truck entry; index 1 is always the crew entry.
- * Both are dynamically substituted at render time with actual values from the quote.
- */
-const TIER_FEATURES: Record<string, TierFeature[]> = {
-  essential: [
-    { card: "Dedicated moving truck", title: "Dedicated moving truck", desc: "Climate-protected, equipped for your move", iconName: "Truck" },
-    { card: "Professional crew of [N]", title: "Professional crew of [N]", desc: "Licensed, insured, background-checked movers", iconName: "Users" },
-    { card: "Protective wrapping for key furniture", title: "Protective wrapping for key furniture", desc: "Key pieces wrapped in quilted moving blankets", iconName: "Armchair" },
-    { card: "Basic disassembly & reassembly", title: "Basic disassembly & reassembly", desc: "We take it apart and put it back together", iconName: "Wrench" },
-    { card: "Floor & entryway protection", title: "Floor & entryway protection", desc: "Runners, booties, and corner guards throughout", iconName: "Home" },
-    { card: "All standard equipment included", title: "All standard equipment included", desc: "Dollies, straps, tools, nothing extra to rent", iconName: "Toolbox" },
-    { card: "Standard valuation coverage", title: "Standard valuation coverage", desc: "Basic protection for your belongings", iconName: "Shield" },
-    { card: "Real-time GPS tracking", title: "Real-time GPS tracking", desc: "Follow your move live from any device", iconName: "MapPin" },
-  ],
-  signature: [
-    { card: "Dedicated moving truck", title: "Dedicated moving truck", desc: "Climate-protected, equipped for your move", iconName: "Truck" },
-    { card: "Professional crew of [N]", title: "Professional crew of [N]", desc: "Licensed, insured, background-checked movers", iconName: "Users" },
-    { card: "Full protective wrapping for all furniture", title: "Full protective wrapping for all furniture", desc: "Every piece individually wrapped and padded", iconName: "Armchair" },
-    { card: "Basic disassembly & reassembly", title: "Basic disassembly & reassembly", desc: "We take it apart and put it back together", iconName: "Wrench" },
-    { card: "Floor & door frame protection", title: "Floor & door frame protection", desc: "Runners, booties, and corner guards throughout", iconName: "Home" },
-    { card: "Mattress and TV protection included", title: "Mattress and TV protection", desc: "Dedicated covers for mattresses and screens", iconName: "Shield" },
-    { card: "Room-of-choice placement throughout the home", title: "Room-of-choice placement", desc: "Every piece placed exactly where you want it", iconName: "Compass" },
-    { card: "Wardrobe box for immediate use", title: "Wardrobe box for immediate use", desc: "Hang your clothes directly, no folding needed", iconName: "Shirt" },
-    { card: "Debris and packaging removal at completion", title: "Debris and packaging removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
-    { card: "All equipment included", title: "All equipment included", desc: "Dollies, straps, tools, nothing extra to rent", iconName: "Toolbox" },
-    { card: "Enhanced valuation coverage", title: "Enhanced valuation coverage", desc: "Up to $2,500 per item protection", iconName: "ShieldCheck" },
-    { card: "Real-time GPS tracking", title: "Real-time GPS tracking", desc: "Follow your move live from any device", iconName: "MapPin" },
-  ],
-  estate: [
-    { card: "Dedicated moving truck", title: "Dedicated moving truck", desc: "Climate-protected, equipped for your move", iconName: "Truck" },
-    { card: "Professional crew of [N]", title: "Professional crew of [N]", desc: "Licensed, insured, background-checked movers", iconName: "Users" },
-    { card: "Dedicated move coordinator from booking to final placement", title: "Dedicated move coordinator", desc: "One point of contact from booking through final placement", iconName: "UserCircle" },
-    { card: "Pre-move walkthrough with room-by-room plan", title: "Pre-move walkthrough", desc: "Documented room-by-room plan before we touch anything", iconName: "ClipboardCheck" },
-    { card: "Full furniture wrapping and protection throughout", title: "Full furniture wrapping", desc: "Every piece individually wrapped and padded", iconName: "Armchair" },
-    { card: "Full disassembly & precision reassembly", title: "Full disassembly & precision reassembly", desc: "Complete furniture breakdown and expert reassembly", iconName: "Wrench" },
-    { card: "Floor and property protection throughout", title: "Floor and property protection", desc: "Runners, booties, and corner guards throughout", iconName: "Home" },
-    { card: "All packing materials and supplies included", title: "All packing materials and supplies included", desc: "Boxes, wrapping, and all protection materials provided", iconName: "Suitcase" },
-    { card: "White glove handling for furniture, art, and high-value items", title: "White glove handling", desc: "Specialist-level care for your most valued possessions", iconName: "Star" },
-    { card: "Precision placement in every room", title: "Precision placement in every room", desc: "Every piece placed exactly where you want it", iconName: "Compass" },
-    { card: "Full replacement valuation coverage", title: "Full replacement valuation coverage", desc: "Maximum protection for your most valuable items", iconName: "ShieldCheck" },
-    { card: "Wardrobe box for immediate use", title: "Wardrobe box for immediate use", desc: "Hang your clothes directly, no folding needed", iconName: "Shirt" },
-    { card: "Debris and packaging removal at completion", title: "Debris and packaging removal", desc: "We clear away all packing materials post-move", iconName: "Trash2" },
-    { card: "Pre-move inventory planning and oversight", title: "Pre-move inventory planning", desc: "Full inventory documented before and after your move", iconName: "FrameCorners" },
-    { card: "Premium handling for art, antiques, and specialty items", title: "Premium art & antique handling", desc: "Art, antiques, and fragile items individually wrapped", iconName: "FrameCorners" },
-    { card: "30-day post-move concierge support", title: "30-day concierge support", desc: "Post-move support and questions answered within 30 days", iconName: "Clock" },
-    { card: "Real-time GPS tracking", title: "Real-time GPS tracking", desc: "Follow your move live from any device", iconName: "MapPin" },
-    { card: "Exclusive partner offers & perks", title: "Exclusive partner offers & perks", desc: "Access to partner discounts and member benefits", iconName: "Gift" },
-  ],
 };
 
 /** Universal features appended to the bottom of every tier's 'Your Move Includes' section.
@@ -269,18 +184,6 @@ const LOGISTICS_VEHICLE_LABELS: Record<string, string> = {
   "26ft": "26ft delivery truck",
 };
 
-/** Renders a Lucide icon by string name. Falls back to CheckCircle for unknown names. */
-function FeatureIcon({ iconName, className, style }: { iconName: string; className?: string; style?: React.CSSProperties }) {
-  const ICON_MAP: Record<string, LucideIcon> = {
-    Truck, Users, Shield, ShieldCheck, Star, Clock, Gift, Wrench, Toolbox,
-    Armchair, Suitcase, UserCircle, FrameCorners, Compass,
-    Home, MapPin, DollarSign, Shirt, ClipboardCheck, OfficeChair, CheckCircle, Trash2,
-    Ruler, Radar, Camera, Hand, Lock, EggCrack, Package,
-  };
-  const Icon = ICON_MAP[iconName] ?? CheckCircle;
-  return <Icon className={className} style={style} weight="duotone" />;
-}
-
 export default function QuotePageClient({
   quote,
   addons: allAddons,
@@ -290,6 +193,8 @@ export default function QuotePageClient({
   valuationUpgrades = [],
   branding,
   eventFeatures = null,
+  residentialTierFeatures,
+  residentialTierMeta,
 }: {
   quote: Quote;
   addons: Addon[];
@@ -299,6 +204,8 @@ export default function QuotePageClient({
   valuationUpgrades?: ValuationUpgrade[];
   branding: { companyLegal: string; brand: string; email: string };
   eventFeatures?: TierFeature[] | null;
+  residentialTierFeatures: Record<string, TierFeature[]>;
+  residentialTierMeta: ResidentialQuoteTierMetaMap;
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
   const tiers = quote.tiers as Record<string, TierData> | null;
@@ -518,13 +425,13 @@ export default function QuotePageClient({
   /* ── Package label (for contract) ── */
   const packageLabel = useMemo(() => {
     if (isResidential && selectedTier)
-      return TIER_META[selectedTier]?.label ?? getDisplayLabel(selectedTier, "tier");
+      return residentialTierMeta[selectedTier]?.label ?? getDisplayLabel(selectedTier, "tier");
     return (
       SERVICE_LABEL[quote.service_type] ??
       getDisplayLabel(quote.service_type, "service_type") ??
       "Standard"
     );
-  }, [isResidential, selectedTier, quote.service_type]);
+  }, [isResidential, selectedTier, quote.service_type, residentialTierMeta]);
 
   /* ── Applicable add-ons (tier bundles: Estate/Signature hide kits & included services — see addon-visibility) ── */
   const applicableAddons = useMemo(() => {
@@ -1084,14 +991,13 @@ export default function QuotePageClient({
         >
           <div className="flex justify-center w-full min-w-0 px-1 sm:px-0">
             <div
-              className="box-border flex w-full min-w-0 max-w-full items-start gap-3 rounded-xl px-4 py-3 shadow-sm sm:inline-flex sm:w-fit sm:max-w-none sm:items-center sm:px-5"
+              className="box-border w-full min-w-0 max-w-full rounded-xl px-4 py-3.5 text-center shadow-sm sm:inline-block sm:w-fit sm:max-w-none sm:px-6 sm:text-left"
               style={{
                 backgroundColor: "#FFFDF8",
                 border: `1px solid ${GOLD}60`,
               }}
             >
-              <Lock className="w-[18px] h-[18px] shrink-0 mt-0.5 sm:mt-0" style={{ color: GOLD }} aria-hidden />
-              <div className="min-w-0 text-left">
+              <div className="min-w-0">
                 <p className="text-[12px] font-bold tracking-wider uppercase sm:text-[13px]" style={{ color: GOLD }}>
                   Guaranteed Price
                 </p>
@@ -1133,12 +1039,14 @@ export default function QuotePageClient({
               onSelectTier={handleSelectTier}
               recommendedTier={recommendedTierNorm}
               hasSelection={false}
-              tierFeaturesConfig={TIER_FEATURES}
+              tierFeaturesConfig={residentialTierFeatures}
+              tierMetaMap={residentialTierMeta}
             />
             <InclusionsShowcase
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1151,6 +1059,7 @@ export default function QuotePageClient({
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1164,6 +1073,7 @@ export default function QuotePageClient({
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1177,6 +1087,7 @@ export default function QuotePageClient({
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1191,6 +1102,7 @@ export default function QuotePageClient({
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1205,6 +1117,7 @@ export default function QuotePageClient({
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1218,6 +1131,7 @@ export default function QuotePageClient({
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1241,6 +1155,7 @@ export default function QuotePageClient({
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1259,6 +1174,7 @@ export default function QuotePageClient({
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1274,6 +1190,7 @@ export default function QuotePageClient({
               ref={comparisonRef}
               selectedTier={selectedTier}
               isResidential={isResidential}
+              residentialTierFeatures={residentialTierFeatures}
               truckPrimary={quote.truck_primary}
               truckSecondary={quote.truck_secondary}
               crewSize={quote.est_crew_size}
@@ -1512,12 +1429,8 @@ export default function QuotePageClient({
         {/* ═══ DATE AVAILABILITY ═══ */}
         {slotsRemaining != null && slotsRemaining <= 2 && slotsRemaining > 0 && quote.move_date && !booked && (
           <section className="mb-6 pt-6 border-t border-[var(--brd)]/30">
-            <div
-              className="px-5 py-3 flex items-center gap-2.5"
-              style={{ backgroundColor: "#FFF8E1" }}
-            >
-              <Zap className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
-              <p className="text-[12px] font-medium" style={{ color: "#8B6914" }}>
+            <div className="px-5 py-3.5" style={{ backgroundColor: "#FFF8E1" }}>
+              <p className="text-[12px] font-medium leading-snug" style={{ color: "#8B6914" }}>
                 High demand - only {slotsRemaining} slot{slotsRemaining > 1 ? "s" : ""} remaining for{" "}
                 {new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                   month: "long",
@@ -1683,12 +1596,7 @@ export default function QuotePageClient({
               className="rounded-2xl border-2 p-8 md:p-10 text-center"
               style={{ borderColor: GOLD, backgroundColor: "#FFFDF8" }}
             >
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ backgroundColor: `${GOLD}20` }}
-              >
-                <Check className="w-7 h-7" style={{ color: GOLD }} />
-              </div>
+              <Check className="w-7 h-7 mx-auto mb-4 block" style={{ color: GOLD }} aria-hidden />
               <h2 className="font-hero text-[30px] mb-2" style={{ color: WINE }}>
                 You&apos;re All Set!
               </h2>
@@ -1817,6 +1725,7 @@ const InclusionsShowcase = React.forwardRef<
   {
     selectedTier: string | null;
     isResidential: boolean;
+    residentialTierFeatures: Record<string, TierFeature[]>;
     truckPrimary: string | null;
     truckSecondary: string | null;
     crewSize: number | null;
@@ -1834,6 +1743,7 @@ const InclusionsShowcase = React.forwardRef<
   {
     selectedTier,
     isResidential,
+    residentialTierFeatures,
     truckPrimary,
     truckSecondary,
     crewSize,
@@ -1849,7 +1759,7 @@ const InclusionsShowcase = React.forwardRef<
   const INITIAL_VISIBLE = 6;
   const [expanded, setExpanded] = React.useState(false);
 
-  const tier = (isResidential ? (selectedTier ?? "essential") : "essential") as keyof typeof TIER_FEATURES;
+  const tier = (isResidential ? (selectedTier ?? "essential") : "essential") as string;
 
   const truckLabel = truckPrimary
     ? truckSecondary
@@ -1878,7 +1788,7 @@ const InclusionsShowcase = React.forwardRef<
         ? eventFeatures.filter(
             (feat) => feat.title !== "On-site setup and arrangement" || showEventSetupFeature,
           )
-        : (TIER_FEATURES[tier] ?? TIER_FEATURES.essential);
+        : (residentialTierFeatures[tier] ?? residentialTierFeatures.essential);
 
   // Hydrate dynamic truck & crew entries
   const hydratedFeatures =
@@ -1973,13 +1883,7 @@ const InclusionsShowcase = React.forwardRef<
 
       <div className="grid md:grid-cols-2 gap-x-5 gap-y-4 max-w-4xl mx-auto">
         {visibleItems.map((item, i) => (
-          <div key={i} className="flex items-start gap-3.5 py-3 px-1">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${GOLD}10` }}
-            >
-              <FeatureIcon iconName={item.iconName} className="w-[18px] h-[18px]" style={{ color: GOLD }} />
-            </div>
+          <div key={i} className="py-3 px-0 md:px-0.5">
             <div className="min-w-0">
               <p className="text-[13px] font-semibold leading-snug" style={{ color: FOREST }}>
                 {item.title}
@@ -1993,23 +1897,24 @@ const InclusionsShowcase = React.forwardRef<
       </div>
 
       {hasMore && (
-        <div className="text-center mt-6">
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-4 py-2 rounded-full border transition-colors"
-            style={{
-              borderColor: `${GOLD}40`,
-              color: `${FOREST}99`,
-              backgroundColor: `${GOLD}08`,
-            }}
-          >
-            {expanded ? (
-              <>Show less<ChevronUp className="w-3.5 h-3.5" /></>
-            ) : (
-              <>View all {allItems.length} features<ChevronDown className="w-3.5 h-3.5" /></>
-            )}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex w-fit mx-auto mt-6 items-center gap-1.5 text-[11px] font-semibold py-1 transition-opacity hover:opacity-70"
+          style={{ color: `${FOREST}99` }}
+        >
+          {expanded ? (
+            <>
+              Show less
+              <ChevronUp className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            </>
+          ) : (
+            <>
+              View all {allItems.length} features
+              <ChevronDown className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            </>
+          )}
+        </button>
       )}
     </section>
   );
@@ -2409,8 +2314,7 @@ function ConfirmDetailsSection({
               </p>
               <ul className="space-y-1 pl-0 list-none">
                 {pickupRows.map((row, i) => (
-                  <li key={i} className="flex gap-2">
-                    <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+                  <li key={i}>
                     <span>
                       {formatAddressForDisplay(row.address)}
                       {accessLabel(row.access) ? (
@@ -2434,8 +2338,7 @@ function ConfirmDetailsSection({
               </p>
               <ul className="space-y-1 pl-0 list-none">
                 {dropoffRows.map((row, i) => (
-                  <li key={i} className="flex gap-2">
-                    <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+                  <li key={i}>
                     <span>
                       {formatAddressForDisplay(row.address)}
                       {accessLabel(row.access) ? (
@@ -2645,9 +2548,7 @@ function ValuationProtectionCard({
       {/* Active protection card */}
       <div className="rounded-2xl border overflow-hidden" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
 
-        {/* Shield badge header */}
-        <div className="px-5 py-4 flex items-center gap-3.5" style={{ borderBottom: `1px solid ${FOREST}08` }}>
-          <Shield className="w-[18px] h-[18px] shrink-0" style={{ color: GOLD }} aria-hidden />
+        <div className="px-5 py-4 flex items-center justify-between gap-3" style={{ borderBottom: `1px solid ${FOREST}08` }}>
           <div className="flex-1 min-w-0">
             <div className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>{dispActive.shortLabel}</div>
             <div className="text-[11px]" style={{ color: `${FOREST}50` }}>
@@ -2659,8 +2560,8 @@ function ValuationProtectionCard({
             </div>
           </div>
           {isHighest && (
-            <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold" style={{ backgroundColor: `${GOLD}10`, color: GOLD }}>
-              <Check className="w-3 h-3" /> Highest
+            <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold" style={{ backgroundColor: `${GOLD}10`, color: GOLD }}>
+              Highest
             </span>
           )}
         </div>
@@ -2727,10 +2628,9 @@ function ValuationProtectionCard({
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${coversOpen ? "rotate-180" : ""}`} style={{ color: FOREST }} />
           </button>
           {coversOpen && (
-            <ul className="pb-3 space-y-2 pl-1">
+            <ul className="pb-3 space-y-2">
               {tierData.covers.map((c, i) => (
-                <li key={i} className="text-[12px] flex items-start gap-2.5" style={{ color: `${FOREST}70` }}>
-                  <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: GOLD }} />
+                <li key={i} className="text-[12px] leading-relaxed" style={{ color: `${FOREST}70` }}>
                   {c}
                 </li>
               ))}
@@ -2747,10 +2647,9 @@ function ValuationProtectionCard({
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${excludesOpen ? "rotate-180" : ""}`} style={{ color: FOREST }} />
           </button>
           {excludesOpen && (
-            <ul className="pb-3 space-y-2 pl-1">
+            <ul className="pb-3 space-y-2">
               {tierData.excludes.map((e, i) => (
-                <li key={i} className="text-[12px] flex items-start gap-2.5" style={{ color: `${FOREST}50` }}>
-                  <X className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: `${FOREST}25` }} />
+                <li key={i} className="text-[12px] leading-relaxed" style={{ color: `${FOREST}50` }}>
                   {e}
                 </li>
               ))}
@@ -2769,28 +2668,21 @@ function ValuationProtectionCard({
           }}
         >
           <div className="px-5 py-4">
-            <div className="flex items-start gap-3.5">
-              <Shield
-                className="w-[18px] h-[18px] shrink-0 mt-0.5"
-                style={{ color: upgradeSelected ? GOLD : WINE }}
-                aria-hidden
-              />
-              <div className="flex-1 min-w-0">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: GOLD }}>
-                  {upgradeSelected ? "Upgrade Added" : "Upgrade Available"}
-                </div>
-                <div className="text-[var(--text-base)] font-semibold mb-0.5" style={{ color: FOREST }}>
-                  {dispUpgrade.label}
-                </div>
-                <div className="text-[12px] mb-2" style={{ color: `${FOREST}60` }}>
-                  {upgradeTierData.rate_description}
-                </div>
-                {upgradeData.assumed_shipment_value > 0 && (
-                  <div className="text-[11px]" style={{ color: `${FOREST}45` }}>
-                    Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total shipment value
-                  </div>
-                )}
+            <div className="min-w-0">
+              <div className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: GOLD }}>
+                {upgradeSelected ? "Upgrade Added" : "Upgrade Available"}
               </div>
+              <div className="text-[var(--text-base)] font-semibold mb-0.5" style={{ color: FOREST }}>
+                {dispUpgrade.label}
+              </div>
+              <div className="text-[12px] mb-2" style={{ color: `${FOREST}60` }}>
+                {upgradeTierData.rate_description}
+              </div>
+              {upgradeData.assumed_shipment_value > 0 && (
+                <div className="text-[11px]" style={{ color: `${FOREST}45` }}>
+                  Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total shipment value
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: `${FOREST}08` }}>
               <div className="text-[18px] font-bold" style={{ color: FOREST }}>
@@ -2854,9 +2746,7 @@ function ValuationProtectionCard({
               className="flex items-center gap-2 text-[12px] font-semibold transition-opacity hover:opacity-70"
               style={{ color: GOLD }}
             >
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${GOLD}10` }}>
-                <Plus className="w-3.5 h-3.5" />
-              </div>
+              <Plus className="w-3.5 h-3.5 shrink-0" aria-hidden />
               Declare an item
             </button>
           ) : (

@@ -9,6 +9,7 @@ import {
   CaretDown,
   CaretUp,
   X,
+  Trash,
   Plus,
   Truck,
   Users,
@@ -2089,8 +2090,17 @@ function TierFeaturesSection() {
         ))}
       </div>
 
-      {/* Tier columns */}
-      <div className={`grid gap-4 ${meta.tiers.length === 3 ? "grid-cols-3" : "grid-cols-1 max-w-md"}`}>
+      <p className="text-[10px] text-[var(--tx2)] leading-relaxed -mt-2 mb-1">
+        <span className="font-semibold text-[var(--tx)]">Delete / reorder:</span> each row shows move arrows and a{" "}
+        <span className="inline-flex align-middle text-red-400/90">
+          <Trash size={11} weight="regular" className="inline" aria-hidden />
+        </span>{" "}
+        remove control on the right (always visible). Changes apply after you click{" "}
+        <span className="font-semibold">Save</span> in the bar at the bottom.
+      </p>
+
+      {/* Tier columns — stack on small screens; equal fractions on md+ for wide platform layout */}
+      <div className={`grid gap-3 md:gap-4 xl:gap-5 ${meta.tiers.length === 3 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 max-w-md"}`}>
         {meta.tiers.map((tier) => {
           const features = featuresFor(tier);
           return (
@@ -2112,7 +2122,7 @@ function TierFeaturesSection() {
                   const featureId = String(f.id);
                   const currentIcon = iconMap[featureId] ?? getAutoIcon(String(f.feature));
                   return (
-                  <div key={featureId} className="flex items-center gap-2 px-3 py-2 group">
+                  <div key={featureId} className="flex items-center gap-2 px-3 py-2">
                     {/* Toggle active */}
                     <button
                       type="button"
@@ -2153,13 +2163,14 @@ function TierFeaturesSection() {
                       />
                     </div>
 
-                    {/* Icon dropdown label (visible on hover) */}
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    {/* Icon dropdown (always visible — was hover-only and easy to miss) */}
+                    <div className="shrink-0">
                       <select
                         value={currentIcon}
                         onChange={(e) => setFeatureIcon(featureId, e.target.value)}
-                        className="text-[9px] bg-[var(--bg)] border border-[var(--brd)] rounded px-1 py-0.5 text-[var(--tx3)] cursor-pointer"
+                        className="text-[9px] bg-[var(--bg)] border border-[var(--brd)] rounded px-1 py-0.5 text-[var(--tx3)] cursor-pointer max-w-[5.5rem]"
                         title="Icon for this feature"
+                        aria-label="Icon for this feature"
                       >
                         {ICON_OPTIONS.map((opt) => (
                           <option key={opt.name} value={opt.name}>{opt.label}</option>
@@ -2167,33 +2178,36 @@ function TierFeaturesSection() {
                       </select>
                     </div>
 
-                    {/* Reorder + delete, visible on hover */}
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    {/* Reorder + delete — always visible (hover-only hid controls on touch / no-hover UIs) */}
+                    <div className="flex items-center gap-0.5 shrink-0 border-l border-[var(--brd)]/50 pl-1.5 ml-0.5">
                       <button
                         type="button"
                         onClick={() => handleMoveUp(featureId, tier)}
                         disabled={idx === 0}
-                        className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
+                        className="p-1 rounded hover:bg-[var(--gold)]/10 text-[var(--tx2)] disabled:opacity-25"
                         title="Move up"
+                        aria-label="Move feature up"
                       >
-                        <CaretUp size={10} weight="regular" className="text-current" />
+                        <CaretUp size={12} weight="bold" className="text-current" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleMoveDown(featureId, tier)}
                         disabled={idx === features.length - 1}
-                        className="p-0.5 rounded hover:bg-[var(--gold)]/10 text-[var(--tx3)] disabled:opacity-20"
+                        className="p-1 rounded hover:bg-[var(--gold)]/10 text-[var(--tx2)] disabled:opacity-25"
                         title="Move down"
+                        aria-label="Move feature down"
                       >
-                        <CaretDown size={10} weight="regular" className="text-current" />
+                        <CaretDown size={12} weight="bold" className="text-current" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(featureId)}
-                        className="p-0.5 rounded hover:bg-red-500/10 text-[var(--tx3)] hover:text-red-400 ml-0.5"
-                        title="Remove feature"
+                        className="p-1 rounded hover:bg-red-500/15 text-[var(--tx2)] hover:text-red-400 border border-transparent hover:border-red-500/25"
+                        title="Remove feature from this tier"
+                        aria-label="Remove feature from this tier"
                       >
-                        <X size={10} weight="regular" className="text-current" />
+                        <Trash size={14} weight="regular" className="text-current" aria-hidden />
                       </button>
                     </div>
                   </div>

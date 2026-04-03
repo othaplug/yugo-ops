@@ -3,8 +3,8 @@ import {
   type Quote,
   type TierData,
   type TierFeature,
+  type ResidentialQuoteTierMetaMap,
   TIER_ORDER,
-  TIER_META,
   WINE,
   FOREST,
   GOLD,
@@ -41,6 +41,8 @@ interface Props {
    * Remaining items use the config card labels directly.
    */
   tierFeaturesConfig?: Record<string, TierFeature[]>;
+  /** Merged tier labels, taglines, and “Best for” lines (from code + platform_config). */
+  tierMetaMap: ResidentialQuoteTierMetaMap;
 }
 
 export default function ResidentialLayout({
@@ -51,6 +53,7 @@ export default function ResidentialLayout({
   recommendedTier = "signature",
   hasSelection = false,
   tierFeaturesConfig,
+  tierMetaMap,
 }: Props) {
   const raw = (recommendedTier ?? "signature").toString().toLowerCase().trim();
   const recTier = TIER_ORDER.includes(raw as (typeof TIER_ORDER)[number]) ? raw : "signature";
@@ -102,7 +105,8 @@ export default function ResidentialLayout({
         {TIER_ORDER.map((tierKey) => {
           const t = tiers[tierKey];
           if (!t) return null;
-          const meta = TIER_META[tierKey];
+          const meta = tierMetaMap[tierKey];
+          if (!meta) return null;
           const isSelected = selectedTier === tierKey;
           const isRecommended = tierKey === recTier;
 
@@ -227,7 +231,7 @@ export default function ResidentialLayout({
                     );
                   })()}
                   {!isCollapsed && meta.footer && (
-                    <p className="text-[10px] mb-4 leading-relaxed shrink-0 font-medium" style={{ color: footerColor }}>
+                    <p className="text-[12px] mb-4 leading-relaxed shrink-0 font-medium" style={{ color: footerColor }}>
                       {meta.footer}
                     </p>
                   )}

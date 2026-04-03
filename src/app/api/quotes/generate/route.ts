@@ -858,7 +858,6 @@ async function residentialIncludes(
     "Wardrobe box for immediate use",
     "Debris and packaging removal at completion",
     "Pre-move inventory planning and oversight",
-    "Premium handling for art, antiques, and specialty items",
     "30-day post-move concierge support",
     "Real-time GPS tracking",
     "Exclusive partner offers & perks",

@@ -67,12 +67,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
       {/* Service overview */}
       <div>
         <div className="flex items-start gap-4 mb-5">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${FOREST}08` }}
-          >
-            <Users className="w-6 h-6" style={{ color: FOREST }} />
-          </div>
+          <Users className="w-6 h-6 shrink-0 mt-1" style={{ color: FOREST }} aria-hidden />
           <div>
             <span
               className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"

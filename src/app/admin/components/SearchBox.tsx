@@ -113,7 +113,9 @@ export default function SearchBox() {
   return (
     <div ref={ref} className="relative w-full min-w-0 max-w-[200px] sm:max-w-[240px] md:max-w-[280px]">
       <div className="flex h-9 w-full min-w-0 items-center gap-1.5 rounded-lg border border-[var(--brd)] bg-[var(--bg)] px-2 sm:gap-2 sm:px-3 transition-colors duration-200">
-        <span className="text-[var(--tx3)] shrink-0"><Icon name="search" className="w-[14px] h-[14px]" /></span>
+        <span className="inline-flex shrink-0 items-center justify-center text-[var(--tx3)]">
+          <Icon name="search" className="h-[14px] w-[14px]" />
+        </span>
         <input
           type="text"
           placeholder="Search…"
@@ -122,18 +124,18 @@ export default function SearchBox() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}
-          className="flex-1 min-w-0 bg-transparent border-none text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none font-sans"
+          className="min-h-0 flex-1 border-none bg-transparent py-0 font-sans text-[12px] leading-none text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none"
         />
         {query.length > 0 ? (
           <button
             type="button"
             onClick={() => { setQuery(""); setResults([]); setOpen(false); }}
-            className="text-[var(--tx3)] hover:text-[var(--tx)] shrink-0"
+            className="inline-flex h-5 shrink-0 items-center justify-center text-[var(--tx3)] hover:text-[var(--tx)]"
           >
             <X size={12} weight="regular" className="text-current" aria-hidden />
           </button>
         ) : (
-          <kbd className="hidden sm:inline-flex items-center gap-px px-1.5 py-0.5 rounded border border-[var(--brd)] bg-transparent text-[9px] font-mono text-[var(--tx3)] shrink-0 leading-none">
+          <kbd className="hidden h-5 shrink-0 select-none items-center justify-center rounded border border-[var(--brd)] bg-transparent px-1.5 font-mono text-[10px] leading-none text-[var(--tx3)] sm:inline-flex">
             ⌘K
           </kbd>
         )}
