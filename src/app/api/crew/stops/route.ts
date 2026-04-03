@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
+import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,7 @@ export async function PATCH(req: NextRequest) {
       const allDone = (allStops || []).every((s) => s.stop_status === "completed" || s.stop_status === "skipped");
       if (allDone) {
         await db.from("deliveries").update({ status: "completed", completed_at: now }).eq("id", delivery_id);
+        syncDealStageByDeliveryId(delivery_id, "completed").catch(() => {});
       }
     }
   }

@@ -78,62 +78,62 @@ export default function PartnerProfileSettings() {
   return (
     <div id="partner-profile" className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden scroll-mt-4">
       <div className="px-5 py-5 border-b border-[var(--brd)] bg-[var(--bg2)]">
-        <h2 className="admin-section-h2 flex items-center gap-2.5">
-          <Icon name="handshake" className="w-[18px] h-[18px]" /> Partner Profile
+        <h2 className="admin-section-h2 flex items-center gap-2">
+          <Icon name="handshake" className="w-[14px] h-[14px]" /> Partner Profile
         </h2>
-        <p className="text-[12px] text-[var(--tx3)] mt-1.5">Update your contact details. Company name and partner type can only be changed by an administrator.</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1">Update your contact details. Company name and partner type can only be changed by an administrator.</p>
       </div>
-      <form onSubmit={handleSave} className="px-5 py-5 space-y-4">
+      <form onSubmit={handleSave} className="px-5 py-5 space-y-5">
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Company Name</label>
-          <div className="text-[13px] text-[var(--tx2)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-4 py-2.5">
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Company Name</label>
+          <div className="text-[13px] text-[var(--tx2)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2">
             {profile.name}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-1">Only administrators can change this</p>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Partner Type</label>
-          <div className="text-[13px] text-[var(--tx2)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-4 py-2.5">
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Partner Type</label>
+          <div className="text-[13px] text-[var(--tx2)] bg-[var(--bg)] border border-[var(--brd)] rounded-lg px-3 py-2">
             {TYPE_LABELS[profile.type] || profile.type}
           </div>
           <p className="text-[10px] text-[var(--tx3)] mt-1">Only administrators can change this</p>
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Contact Name</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Contact Name</label>
           <input
             type="text"
             value={contactName}
             onChange={(e) => setContactName(e.target.value)}
             placeholder="e.g. Marie Dubois"
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Email</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="contact@company.com"
             required
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Phone</label>
+          <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Phone</label>
           <input
             ref={phoneInput.ref}
             type="tel"
             value={phone}
             onChange={phoneInput.onChange}
             placeholder={PHONE_PLACEHOLDER}
-            className="w-full px-4 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] focus:border-[var(--brd)] outline-none"
+            className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none"
           />
         </div>
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2.5 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
+          className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save changes"}
         </button>

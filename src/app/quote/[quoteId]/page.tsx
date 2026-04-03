@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { isFeatureEnabled } from "@/lib/platform-settings";
 import { getLegalBranding } from "@/lib/legal-branding";
 import { getCompanyPhone } from "@/lib/config";
@@ -80,6 +81,7 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
         if (updated) {
           // Only push HubSpot note on the first view (when we actually changed the status)
           pushViewedNoteToHubSpot(quote.quote_id, quote.hubspot_deal_id);
+          syncDealStage(quote.hubspot_deal_id, "viewed").catch(() => {});
         }
       });
     admin

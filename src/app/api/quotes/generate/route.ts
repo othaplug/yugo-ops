@@ -20,6 +20,8 @@ import {
   mergedRatesWithBundleTiers,
   prepareB2bLineItemsForDimensionalEngine,
 } from "@/lib/b2b-dimensional-quote-prep";
+import { normalizeB2bWeightCategory } from "@/lib/pricing/b2b-weight-helpers";
+import { hasExtremeWeightCategory, residentialInventoryLineScore } from "@/lib/pricing/weight-tiers";
 import {
   SPECIALTY_EQUIPMENT_DEFAULTS,
   SPECIALTY_PROJECT_BASE_DEFAULTS,
@@ -41,7 +43,14 @@ import {
   estateScheduleHeadline,
 } from "@/lib/quotes/estate-schedule";
 import { pickupDropoffFactorsFromPayload } from "@/lib/quotes/quote-address-display";
-import { generateNextQuoteId } from "@/lib/quotes/quote-id";
+import {
+  generateNextQuoteId,
+  getQuoteIdPrefix,
+  isQuoteIdUniqueViolation,
+  quoteNumericSuffixForHubSpot,
+} from "@/lib/quotes/quote-id";
+import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no";
+import { mergeResidentialIncludeLinesDeduped } from "@/lib/quotes/residential-tier-quote-display";
 import { normalizePhone } from "@/lib/phone";
 // ═══════════════════════════════════════════════
 // Types
@@ -52,6 +61,8 @@ interface InventoryItem {
   name?: string;
   quantity: number;
   weight_score?: number; // For custom items not in item_weights
+  weight_tier_code?: string;
+  actual_weight_lbs?: number;
   fragile?: boolean;
 }
 
@@ -143,8 +154,9 @@ interface QuoteInput {
   b2b_line_items?: {
     description: string;
     quantity: number;
-    weight_category?: "light" | "medium" | "heavy" | "extra_heavy";
+    weight_category?: string;
     weight_lbs?: number;
+    actual_weight_lbs?: number;
     fragile?: boolean;
     dimensions?: string;
     /** Per-line handling (threshold, room_placement, white_glove, carry_in_per_box, skid_drop, etc.) */
@@ -203,7 +215,12 @@ interface QuoteInput {
   event_return_rate_preset?: "auto" | "65" | "85" | "100" | "custom";
   event_return_rate_custom?: number;
   event_additional_services?: string[];
-  event_items?: { name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[];
+  event_items?: {
+    name: string;
+    quantity: number;
+    weight_category?: string;
+    actual_weight_lbs?: number;
+  }[];
   /** When "multi", use event_legs (≥2) for bundled round-trips; single-leg fields mirror first leg for DB compatibility */
   event_mode?: "single" | "multi";
   event_legs?: EventLegInput[];
@@ -268,7 +285,12 @@ export interface EventLegInput {
   event_leg_truck_type?: string;
   event_return_rate_preset?: "auto" | "65" | "85" | "100" | "custom";
   event_return_rate_custom?: number;
-  event_items?: { name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[];
+  event_items?: {
+    name: string;
+    quantity: number;
+    weight_category?: string;
+    actual_weight_lbs?: number;
+  }[];
   from_parking?: "dedicated" | "street" | "no_dedicated";
   to_parking?: "dedicated" | "street" | "no_dedicated";
   from_long_carry?: boolean;
@@ -811,14 +833,15 @@ async function residentialIncludes(
     });
 
   if (dbEss.length > 0) {
-    return {
-      essential: hydrate(dbEss),
-      signature: hydrate(dbSig.length > 0 ? dbSig : dbEss),
-      estate: hydrate(dbEst.length > 0 ? dbEst : dbSig.length > 0 ? dbSig : dbEss),
-    };
+    const essential = hydrate(dbEss);
+    const sigRaw = hydrate(dbSig.length > 0 ? dbSig : dbEss);
+    const estRaw = hydrate(dbEst.length > 0 ? dbEst : dbSig.length > 0 ? dbSig : dbEss);
+    const signature = mergeResidentialIncludeLinesDeduped(essential, sigRaw);
+    const estate = mergeResidentialIncludeLinesDeduped(signature, estRaw);
+    return { essential, signature, estate };
   }
 
-  // Hardcoded fallback — aligned with "Your Move Includes" (QuotePageClient)
+  // Hardcoded fallback — merged lists match tier cards + “Your Move Includes” (deduped across tiers)
   const essential = [
     truckLabel,
     crewLine,
@@ -829,39 +852,29 @@ async function residentialIncludes(
     "Standard valuation coverage",
     "Real-time GPS tracking",
   ];
-  const signature = [
-    truckLabel,
-    crewLine,
+  const signatureAdds = [
     "Full protective wrapping for all furniture",
-    "Basic disassembly & reassembly",
-    "Floor & door frame protection",
+    "Floor protection",
     "Mattress and TV protection included",
     "Room-of-choice placement throughout the home",
     "Wardrobe box for immediate use",
     "Debris and packaging removal at completion",
-    "All equipment included",
     "Enhanced valuation coverage",
-    "Real-time GPS tracking",
   ];
-  const estate = [
-    truckLabel,
-    crewLine,
+  const estateAdds = [
     "Dedicated move coordinator from booking to final placement",
     "Pre-move walkthrough with room-by-room plan",
-    "Full furniture wrapping and protection throughout",
     "Full disassembly & precision reassembly",
-    "Floor and property protection throughout",
     "All packing materials and supplies included",
     "White glove handling for furniture, art, and high-value items",
-    "Precision placement in every room",
     "Full replacement valuation coverage",
-    "Wardrobe box for immediate use",
-    "Debris and packaging removal at completion",
     "Pre-move inventory planning and oversight",
+    "Premium handling for art, antiques, and specialty items",
     "30-day post-move concierge support",
-    "Real-time GPS tracking",
     "Exclusive partner offers & perks",
   ];
+  const signature = mergeResidentialIncludeLinesDeduped(essential, signatureAdds);
+  const estate = mergeResidentialIncludeLinesDeduped(signature, estateAdds);
   return { essential, signature, estate };
 }
 
@@ -979,7 +992,11 @@ async function calcInventoryModifier(
         ? item.weight_score
         : await getItemWeight(sb, item.slug || item.name || "");
     const qty = item.quantity || 1;
-    itemScore += weight * qty;
+    itemScore += residentialInventoryLineScore({
+      weight_score: weight,
+      quantity: qty,
+      weight_tier_code: item.weight_tier_code,
+    });
     totalItems += qty;
   }
 
@@ -2341,6 +2358,9 @@ async function calcB2bOneoff(
         b2b_using_partner_rates: Boolean(partnerOrgId),
         b2b_partner_organization_id: partnerOrgId,
         b2b_line_items: items,
+        b2b_has_extreme_weight: hasExtremeWeightCategory(
+          items.map((it) => ({ weight_category: it.weight_category })),
+        ),
         b2b_stops: stops,
         b2b_handling_type: dimInput.handling_type,
         b2b_delivery_window: input.b2b_delivery_window?.trim() || null,
@@ -2459,7 +2479,16 @@ async function calcB2bOneoff(
 // EVENT — round-trip delivery + optional setup
 // ═══════════════════════════════════════════════
 
-const EVENT_WEIGHT_MAP: Record<string, number> = { light: 0.5, medium: 2.0, heavy: 5.0 };
+const EVENT_WEIGHT_MAP: Record<string, number> = {
+  light: 0.5,
+  standard: 1.0,
+  medium: 1.0,
+  heavy: 2.0,
+  very_heavy: 4.0,
+  super_heavy: 7.0,
+  extreme: 12.0,
+  extra_heavy: 4.0,
+};
 
 function buildEventIncludesList(input: QuoteInput): string[] {
   const lines: string[] = [
@@ -2523,7 +2552,8 @@ async function computeEventLegPrice(
 ) {
   let eventScore = 0;
   for (const item of input.eventItems ?? []) {
-    const w = EVENT_WEIGHT_MAP[item.weight_category] ?? 2.0;
+    const cat = normalizeB2bWeightCategory(item.weight_category);
+    const w = EVENT_WEIGHT_MAP[cat] ?? EVENT_WEIGHT_MAP.standard;
     eventScore += w * (item.quantity || 1);
   }
 
@@ -2979,6 +3009,8 @@ export async function POST(req: NextRequest) {
 
   if (input.service_type === "bin_rental") {
     const sb = createAdminClient();
+    const binHsToken = process.env.HUBSPOT_ACCESS_TOKEN ?? null;
+    const binQuoteIdOpts = binHsToken ? { hubspotAccessToken: binHsToken } : {};
     const config = await loadConfig(sb);
     const neighbourhood = await getNeighbourhood(sb, input.to_address);
     const result = await buildBinRentalQuoteResponse({
@@ -2987,8 +3019,9 @@ export async function POST(req: NextRequest) {
       input,
       isPreview,
       authUser: authUser ? { id: authUser.id, email: authUser.email } : null,
-      generateQuoteId: () => generateNextQuoteId(sb),
+      generateQuoteId: () => generateNextQuoteId(sb, binQuoteIdOpts),
       postalPrefix: neighbourhood.postalPrefix,
+      hubspotAccessToken: binHsToken,
     });
     return NextResponse.json(result.body, { status: result.status });
   }
@@ -3068,6 +3101,8 @@ export async function POST(req: NextRequest) {
   }
 
   const sb = createAdminClient();
+  const hubspotAccessToken = process.env.HUBSPOT_ACCESS_TOKEN ?? null;
+  const nextQuoteIdOpts = hubspotAccessToken ? { hubspotAccessToken } : {};
   const config = await loadConfig(sb);
 
   const serviceAreaCheckedTypes = new Set(["local_move", "long_distance", "white_glove"]);
@@ -3563,9 +3598,9 @@ export async function POST(req: NextRequest) {
     quoteId = "PREVIEW";
   } else if (isUpdate) {
     const { data: existing } = await sb.from("quotes").select("quote_id").eq("quote_id", input.quote_id!.trim()).maybeSingle();
-    quoteId = existing?.quote_id ?? (await generateNextQuoteId(sb));
+    quoteId = existing?.quote_id ?? (await generateNextQuoteId(sb, nextQuoteIdOpts));
   } else {
-    quoteId = await generateNextQuoteId(sb);
+    quoteId = await generateNextQuoteId(sb, nextQuoteIdOpts);
   }
 
   const primaryPrice = tiers ? tiers.essential.price : custom_price!.price;
@@ -3655,12 +3690,51 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: updateErr.message }, { status: 500 });
       }
     } else {
-      const { error: insertErr } = await sb.from("quotes").insert({
-        quote_id: quoteId,
-        ...quotePayload,
-      });
-      if (insertErr) {
+      const prefixForHubSpot = await getQuoteIdPrefix(sb);
+      const MAX_INSERT_ATTEMPTS = 6;
+      let insertQuoteId = quoteId;
+      let inserted = false;
+      for (let attempt = 0; attempt < MAX_INSERT_ATTEMPTS; attempt++) {
+        const { error: insertErr } = await sb.from("quotes").insert({
+          quote_id: insertQuoteId,
+          ...quotePayload,
+        });
+        if (!insertErr) {
+          quoteId = insertQuoteId;
+          inserted = true;
+          const dealHs = input.hubspot_deal_id?.trim();
+          if (dealHs && hubspotAccessToken) {
+            const jobNo = quoteNumericSuffixForHubSpot(insertQuoteId, prefixForHubSpot);
+            if (jobNo) {
+              patchHubSpotDealJobNo(hubspotAccessToken, dealHs, jobNo).catch((e) =>
+                console.warn("[quotes/generate] HubSpot job_no sync:", e),
+              );
+            }
+          }
+          break;
+        }
+        if (isQuoteIdUniqueViolation(insertErr) && attempt < MAX_INSERT_ATTEMPTS - 1) {
+          insertQuoteId = await generateNextQuoteId(sb, nextQuoteIdOpts);
+          continue;
+        }
+        if (isQuoteIdUniqueViolation(insertErr)) {
+          return NextResponse.json(
+            {
+              error:
+                "Could not assign a unique quote id after several attempts. Another coordinator may be creating a quote at the same time, or HubSpot job numbers are out of sync with OPS. Wait a moment and retry.",
+              code: "QUOTE_ID_DUPLICATE",
+              detail: insertErr.message,
+            },
+            { status: 409 },
+          );
+        }
         return NextResponse.json({ error: insertErr.message }, { status: 500 });
+      }
+      if (!inserted) {
+        return NextResponse.json(
+          { error: "Quote insert failed", code: "QUOTE_ID_INSERT_FAILED" },
+          { status: 500 },
+        );
       }
     }
   }

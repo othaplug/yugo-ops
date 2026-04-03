@@ -9,6 +9,12 @@ import {
   type BinBundleKey,
 } from "@/lib/pricing/bin-rental";
 import { normalizePhone } from "@/lib/phone";
+import {
+  getQuoteIdPrefix,
+  isQuoteIdUniqueViolation,
+  quoteNumericSuffixForHubSpot,
+} from "@/lib/quotes/quote-id";
+import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no";
 
 const TAX_RATE = 0.13;
 
@@ -80,8 +86,10 @@ export async function buildBinRentalQuoteResponse(opts: {
   authUser: { id: string; email?: string | null } | null;
   generateQuoteId: () => Promise<string>;
   postalPrefix: string | null;
+  hubspotAccessToken?: string | null;
 }): Promise<{ status: number; body: Record<string, unknown> }> {
-  const { sb, config, input, isPreview, authUser, generateQuoteId, postalPrefix } = opts;
+  const { sb, config, input, isPreview, authUser, generateQuoteId, postalPrefix, hubspotAccessToken } =
+    opts;
 
   const bundleRaw = input.bin_bundle_type || "2br";
   if (!isBinBundleKey(bundleRaw)) {
@@ -286,12 +294,48 @@ export async function buildBinRentalQuoteResponse(opts: {
         return { status: 500, body: { error: updateErr.message } };
       }
     } else {
-      const { error: insertErr } = await sb.from("quotes").insert({
-        quote_id: quoteId,
-        ...quotePayload,
-      });
-      if (insertErr) {
+      const prefixForHubSpot = await getQuoteIdPrefix(sb);
+      const MAX_INSERT_ATTEMPTS = 6;
+      let insertQuoteId = quoteId;
+      let inserted = false;
+      for (let attempt = 0; attempt < MAX_INSERT_ATTEMPTS; attempt++) {
+        const { error: insertErr } = await sb.from("quotes").insert({
+          quote_id: insertQuoteId,
+          ...quotePayload,
+        });
+        if (!insertErr) {
+          quoteId = insertQuoteId;
+          inserted = true;
+          const dealHs = input.hubspot_deal_id?.trim();
+          if (dealHs && hubspotAccessToken) {
+            const jobNo = quoteNumericSuffixForHubSpot(insertQuoteId, prefixForHubSpot);
+            if (jobNo) {
+              patchHubSpotDealJobNo(hubspotAccessToken, dealHs, jobNo).catch((e) =>
+                console.warn("[bin-rental] HubSpot job_no sync:", e),
+              );
+            }
+          }
+          break;
+        }
+        if (isQuoteIdUniqueViolation(insertErr) && attempt < MAX_INSERT_ATTEMPTS - 1) {
+          insertQuoteId = await generateQuoteId();
+          continue;
+        }
+        if (isQuoteIdUniqueViolation(insertErr)) {
+          return {
+            status: 409,
+            body: {
+              error:
+                "Could not assign a unique quote id after several attempts. Wait a moment and retry.",
+              code: "QUOTE_ID_DUPLICATE",
+              detail: insertErr.message,
+            },
+          };
+        }
         return { status: 500, body: { error: insertErr.message } };
+      }
+      if (!inserted) {
+        return { status: 500, body: { error: "Quote insert failed", code: "QUOTE_ID_INSERT_FAILED" } };
       }
     }
   }

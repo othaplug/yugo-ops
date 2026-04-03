@@ -70,13 +70,20 @@ import {
   synthesizeStopsFromAddresses,
   type B2BDimensionalQuoteInput,
   type B2BQuoteLineItem,
-  type B2BWeightCategory,
   type DeliveryVerticalRow,
 } from "@/lib/pricing/b2b-dimensional";
 import { mergeBundleTierIntoMergedRates } from "@/lib/b2b-bundle-line-items";
 import { prepareB2bLineItemsForDimensionalEngine } from "@/lib/b2b-dimensional-quote-prep";
 import { suggestB2bWeightTierFromDescription } from "@/lib/pricing/b2b-weight-helpers";
+import {
+  hasExtremeWeightCategory,
+  inferWeightTierFromLegacyScore,
+  residentialInventoryLineScore,
+  tierRequiresActualWeight,
+  weightTierSelectOptions,
+} from "@/lib/pricing/weight-tiers";
 import { QUOTE_SERVICE_TYPE_DEFINITIONS } from "@/lib/quote-service-types";
+import { quoteNumericSuffixForHubSpot } from "@/lib/quotes/quote-id";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 import { mapSpecialtyToQuoteTypes, type SpecialtyDetected } from "@/lib/leads/specialty-detect";
 import {
@@ -505,6 +512,7 @@ type B2bLineRow = {
   qty: number;
   weight_category?: string;
   weight_lbs?: number;
+  actual_weight_lbs?: number;
   fragile?: boolean;
   handling_type?: string;
   assembly_required?: boolean;
@@ -520,11 +528,26 @@ type B2bLineRow = {
   hookup_required?: boolean;
 };
 
+function inventoryItemToPayload(i: InventoryItemEntry) {
+  return {
+    slug: i.slug,
+    name: i.name,
+    quantity: i.quantity,
+    weight_score: i.weight_score,
+    fragile: i.fragile,
+    ...(i.weight_tier_code ? { weight_tier_code: i.weight_tier_code } : {}),
+    ...(i.actual_weight_lbs != null && i.actual_weight_lbs > 0
+      ? { actual_weight_lbs: Math.round(i.actual_weight_lbs) }
+      : {}),
+  };
+}
+
 function mapB2bEmbedLinesToQuoteRows(s: B2BJobsEmbedSnapshot): B2bLineRow[] {
   return s.lines.map((l) => ({
     description: l.description,
     qty: l.quantity,
     weight_category: l.weight_category,
+    actual_weight_lbs: l.actual_weight_lbs,
     fragile: l.fragile,
     handling_type: s.handlingType,
     unit_type: l.unit_type,
@@ -956,7 +979,10 @@ export default function QuoteFormClient({
   const [eventSetupInstructions, setEventSetupInstructions] = useState("");
   const [eventSameDay, setEventSameDay] = useState(false);
   const [eventPickupTimeAfter, setEventPickupTimeAfter] = useState("Evening 6–9 PM");
-  const [eventItems, setEventItems] = useState<{ name: string; quantity: number; weight_category: "light" | "medium" | "heavy" }[]>([]);
+  const [eventItems, setEventItems] = useState<
+    { name: string; quantity: number; weight_category: string; actual_weight_lbs?: number }[]
+  >([]);
+  const eventWeightTierOpts = useMemo(() => weightTierSelectOptions(), []);
   const [eventAdditionalServices, setEventAdditionalServices] = useState<string[]>([]);
   const [eventMulti, setEventMulti] = useState(false);
   const [eventLuxury, setEventLuxury] = useState(false);
@@ -1513,7 +1539,7 @@ export default function QuoteFormClient({
   }, []);
 
   const inventoryScore = useMemo(() => {
-    return inventoryItems.reduce((sum, i) => sum + i.weight_score * i.quantity, 0);
+    return inventoryItems.reduce((sum, i) => sum + residentialInventoryLineScore(i), 0);
   }, [inventoryItems]);
 
   const inventoryTotalItems = useMemo(() => {
@@ -1671,11 +1697,13 @@ export default function QuoteFormClient({
               const highOk = slug && conf === "high";
               if (highOk) {
                 const w = itemWeights.find((x) => x.slug === slug);
+                const ws = Number(w?.weight_score ?? row.weight_score ?? 1);
                 autoItems.push({
                   slug: slug!,
                   name: w?.item_name || String(row.matched_name || slug),
                   quantity: qty,
-                  weight_score: Number(w?.weight_score ?? row.weight_score ?? 1),
+                  weight_score: ws,
+                  weight_tier_code: inferWeightTierFromLegacyScore(ws),
                   fragile: false,
                 });
               } else {
@@ -1775,11 +1803,13 @@ export default function QuoteFormClient({
         const row = prev[index];
         if (!row?.matched_item) return prev;
         const w = itemWeights.find((x) => x.slug === row.matched_item);
+        const ws = Number(w?.weight_score ?? 1);
         const entry: InventoryItemEntry = {
           slug: row.matched_item,
           name: w?.item_name || row.matched_name || row.matched_item,
           quantity: row.quantity,
-          weight_score: Number(w?.weight_score ?? 1),
+          weight_score: ws,
+          weight_tier_code: inferWeightTierFromLegacyScore(ws),
           fragile: false,
         };
         setInventoryItems((inv) => [...inv, entry]);
@@ -2194,6 +2224,16 @@ export default function QuoteFormClient({
     [debouncedB2bLines, selectedB2bVertical, b2bVerticalExtras],
   );
 
+  const b2bHasExtremeWeight = useMemo(
+    () =>
+      hasExtremeWeightCategory(
+        effectiveB2bLinesPreview
+          .filter((l) => l.description.trim() && l.qty >= 1)
+          .map((l) => ({ weight_category: l.weight_category })),
+      ),
+    [effectiveB2bLinesPreview],
+  );
+
   /** Straight-line km from GTA core → platform zone surcharges (always applied on top of route pricing). */
   const b2bPlatformGtaZoneLines = useMemo(() => {
     const km = b2bDeliveryKmFromGta;
@@ -2249,10 +2289,16 @@ export default function QuoteFormClient({
       return {
         description: desc,
         quantity: Math.max(1, l.qty),
-        weight_category: l.weight_category as B2BWeightCategory | undefined,
+        weight_category: l.weight_category || undefined,
         weight_lbs:
           typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
             ? l.weight_lbs
+            : undefined,
+        actual_weight_lbs:
+          typeof l.actual_weight_lbs === "number" &&
+          Number.isFinite(l.actual_weight_lbs) &&
+          l.actual_weight_lbs > 0
+            ? Math.round(l.actual_weight_lbs)
             : undefined,
         fragile: !!l.fragile,
         handling_type: l.handling_type?.trim() || undefined,
@@ -2533,13 +2579,7 @@ export default function QuoteFormClient({
         clientBoxCount !== "" && clientBoxCount != null ? Number(clientBoxCount) : 0;
       base.specialty_items = specialtyItems.length > 0 ? specialtyItems : undefined;
       if (inventoryItems.length > 0) {
-        base.inventory_items = inventoryItems.map((i) => ({
-          slug: i.slug,
-          name: i.name,
-          quantity: i.quantity,
-          weight_score: i.weight_score,
-          fragile: i.fragile,
-        }));
+        base.inventory_items = inventoryItems.map(inventoryItemToPayload);
       }
     }
     if (serviceType === "local_move" || serviceType === "long_distance" || serviceType === "white_glove") {
@@ -2566,13 +2606,7 @@ export default function QuoteFormClient({
       base.office_crew_size = officeCrewSize || undefined;
       base.office_estimated_hours = officeEstHours || undefined;
       if (inventoryItems.length > 0) {
-        base.inventory_items = inventoryItems.map((i) => ({
-          slug: i.slug,
-          name: i.name,
-          quantity: i.quantity,
-          weight_score: i.weight_score,
-          fragile: i.fragile,
-        }));
+        base.inventory_items = inventoryItems.map(inventoryItemToPayload);
       }
     }
     if (serviceType === "single_item") {
@@ -2594,13 +2628,7 @@ export default function QuoteFormClient({
       base.stair_carry = stairCarry;
       base.stair_flights = stairFlights;
       if (inventoryItems.length > 0) {
-        base.inventory_items = inventoryItems.map((i) => ({
-          slug: i.slug,
-          name: i.name,
-          quantity: i.quantity,
-          weight_score: i.weight_score,
-          fragile: i.fragile,
-        }));
+        base.inventory_items = inventoryItems.map(inventoryItemToPayload);
       }
       base.client_box_count =
         clientBoxCount !== "" && clientBoxCount != null ? Number(clientBoxCount) : 0;
@@ -2705,15 +2733,16 @@ export default function QuoteFormClient({
               return {
                 description: desc,
                 quantity: Math.max(1, l.qty),
-                weight_category: (l.weight_category || undefined) as
-                  | "light"
-                  | "medium"
-                  | "heavy"
-                  | "extra_heavy"
-                  | undefined,
+                weight_category: l.weight_category || undefined,
                 weight_lbs:
                   typeof l.weight_lbs === "number" && Number.isFinite(l.weight_lbs) && l.weight_lbs > 0
                     ? Math.round(l.weight_lbs)
+                    : undefined,
+                actual_weight_lbs:
+                  typeof l.actual_weight_lbs === "number" &&
+                  Number.isFinite(l.actual_weight_lbs) &&
+                  l.actual_weight_lbs > 0
+                    ? Math.round(l.actual_weight_lbs)
                     : undefined,
                 fragile: l.fragile ? true : undefined,
                 handling_type: l.handling_type?.trim() || undefined,
@@ -2999,6 +3028,9 @@ export default function QuoteFormClient({
           quote_url: `${window.location.origin}/quote/${quoteId}`,
           dealstage: "quote_sent",
         };
+        const idPrefix = (config.quote_id_prefix || "YG-").trim() || "YG-";
+        const jobNoHs = quoteNumericSuffixForHubSpot(quoteId, idPrefix);
+        if (jobNoHs) dealProps.job_no = jobNoHs;
         if (firstName?.trim()) dealProps.firstname = firstName.trim();
         if (lastName?.trim()) dealProps.lastname = lastName.trim();
         if (fromAddress?.trim()) dealProps.pick_up_address = fromAddress.trim();
@@ -4917,7 +4949,7 @@ export default function QuoteFormClient({
                     <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Event Items</h3>
                     <div className="space-y-1.5">
                       {eventItems.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
+                        <div key={idx} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
                           <input
                             type="text"
                             value={item.name}
@@ -4930,23 +4962,62 @@ export default function QuoteFormClient({
                             min={1}
                             value={item.quantity}
                             onChange={(e) => setEventItems((prev) => prev.map((it, i) => i === idx ? { ...it, quantity: Number(e.target.value) || 1 } : it))}
-                            className="w-14 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-center text-[var(--tx)]"
+                            className="w-14 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-center text-[var(--tx)] shrink-0"
                           />
                           <select
-                            value={item.weight_category}
-                            onChange={(e) => setEventItems((prev) => prev.map((it, i) => i === idx ? { ...it, weight_category: e.target.value as "light" | "medium" | "heavy" } : it))}
-                            className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)]"
+                            value={item.weight_category || "standard"}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setEventItems((prev) =>
+                                prev.map((it, i) =>
+                                  i === idx
+                                    ? {
+                                        ...it,
+                                        weight_category: v,
+                                        ...(!tierRequiresActualWeight(v) ? { actual_weight_lbs: undefined } : {}),
+                                      }
+                                    : it,
+                                ),
+                              );
+                            }}
+                            className="text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)] min-w-[10rem] sm:max-w-[14rem]"
                           >
-                            <option value="light">Light</option>
-                            <option value="medium">Medium</option>
-                            <option value="heavy">Heavy</option>
+                            {eventWeightTierOpts.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                                {o.shortHint !== "Base" ? ` (${o.shortHint})` : ""}
+                              </option>
+                            ))}
                           </select>
+                          {tierRequiresActualWeight(item.weight_category || "") ? (
+                            <input
+                              type="number"
+                              min={1}
+                              placeholder="lbs"
+                              value={item.actual_weight_lbs ?? ""}
+                              onChange={(e) => {
+                                const n = Number(e.target.value);
+                                setEventItems((prev) =>
+                                  prev.map((it, i) =>
+                                    i === idx
+                                      ? {
+                                          ...it,
+                                          actual_weight_lbs:
+                                            Number.isFinite(n) && n > 0 ? Math.round(n) : undefined,
+                                        }
+                                      : it,
+                                  ),
+                                );
+                              }}
+                              className="w-20 text-[11px] bg-[var(--bg)] border border-[var(--brd)] rounded px-2 py-1.5 text-[var(--tx)] shrink-0"
+                            />
+                          ) : null}
                           <button type="button" onClick={() => setEventItems((prev) => prev.filter((_, i) => i !== idx))} className="text-[var(--tx3)] hover:text-red-400 text-[var(--text-base)] shrink-0">×</button>
                         </div>
                       ))}
                       <button
                         type="button"
-                        onClick={() => setEventItems((prev) => [...prev, { name: "", quantity: 1, weight_category: "medium" }])}
+                        onClick={() => setEventItems((prev) => [...prev, { name: "", quantity: 1, weight_category: "standard" }])}
                         className="flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
                       >
                         <Plus className="w-3 h-3" /> Add item
@@ -5706,6 +5777,18 @@ export default function QuoteFormClient({
                       </div>
                     ) : (serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") && b2bDimensionalPreview ? (
                       <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)]/80 p-4 space-y-2">
+                        {b2bHasExtremeWeight ? (
+                          <div className="p-3 border border-amber-500/50 bg-amber-500/10 dark:bg-amber-900/20 rounded-lg">
+                            <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-200 flex items-center gap-1.5">
+                              <Warning className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                              Admin review recommended
+                            </p>
+                            <p className="text-[10px] text-amber-800/90 dark:text-amber-200/90 mt-1 leading-snug">
+                              This quote includes at least one item over 800 lbs (extreme tier). Verify crew,
+                              equipment (lift gate, hydraulic lift, or crane), and pricing before sending.
+                            </p>
+                          </div>
+                        ) : null}
                         <p className="text-[11px] font-bold tracking-wide text-[var(--gold)]">
                           {b2bLivePreviewTitle}
                         </p>

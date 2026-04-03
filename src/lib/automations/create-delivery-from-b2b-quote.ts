@@ -140,6 +140,7 @@ export async function createDeliveryFromB2BQuote(
     tracking_code: trackingCode,
     payment_received_at: paidAt,
     estimated_duration_hours: estHours,
+    hubspot_deal_id: (quote.hubspot_deal_id as string | null | undefined)?.trim() || null,
   };
 
   const { data: created, error: insErr } = await supabase

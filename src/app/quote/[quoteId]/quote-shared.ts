@@ -83,7 +83,15 @@ export interface Quote {
   valuation_upgrade_cost: number | null;
   declaration_total: number | null;
   recommended_tier: string | null;
-  inventory_items?: { slug?: string; name?: string; quantity?: number; room?: string; weight_score?: number }[] | null;
+  inventory_items?: {
+    slug?: string;
+    name?: string;
+    quantity?: number;
+    room?: string;
+    weight_score?: number;
+    weight_tier_code?: string;
+    actual_weight_lbs?: number;
+  }[] | null;
   client_box_count?: number | null;
   walkthrough_based?: boolean | null;
   walkthrough_date?: string | null;

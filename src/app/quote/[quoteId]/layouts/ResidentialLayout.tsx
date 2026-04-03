@@ -227,9 +227,6 @@ export default function ResidentialLayout({
 
                   {!isCollapsed && (() => {
                     const configFeatures = tierFeaturesConfig?.[tierKey];
-                    const truckRaw = t.includes[0] ?? configFeatures?.[0]?.card ?? "";
-                    const truck = tierCardTruckBullet(truckRaw);
-                    const crew = t.includes[1] ?? configFeatures?.[1]?.card ?? "";
                     const useAdditive =
                       tierKey === "signature"
                         ? useAdditiveTierCards.signature
@@ -263,6 +260,9 @@ export default function ResidentialLayout({
                     }
 
                     if (tierKey === "essential" || !useAdditive) {
+                      const truckRaw = t.includes[0] ?? configFeatures?.[0]?.card ?? "";
+                      const truck = tierCardTruckBullet(truckRaw);
+                      const crew = t.includes[1] ?? configFeatures?.[1]?.card ?? "";
                       const bullets: string[] = [
                         truck,
                         crew,
@@ -283,7 +283,8 @@ export default function ResidentialLayout({
                     }
 
                     const deltaCards = additions.map((f) => f.card).filter(Boolean);
-                    const listBullets = [truck, crew, ...deltaCards].filter(Boolean);
+                    // “Everything in …, plus:” — list only tier-specific lines (truck/crew live in Essential).
+                    const listBullets = deltaCards;
                     return (
                       <div className="flex-1 min-h-0 flex flex-col mb-4 space-y-3">
                         {intro ? (

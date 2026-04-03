@@ -1,13 +1,29 @@
 ---
-description: All changes and implementations must go in the main yugo-ops directory
+description: All changes and implementations must go in the main yugo-ops directory (and mirror when two clones exist)
 alwaysApply: true
 ---
 
 # Use main yugo-ops directory for all changes
 
-For this project, **all code changes and implementations must be made in the main yugo-ops repository directory**, not in a worktree.
+For this project, **all code changes and implementations must be made in a main yugo-ops repository checkout**, not in a Claude/Cursor worktree under `.claude/worktrees/`.
 
-- **Main repository path:** `/Users/ochedagr8/Documents/yugo-ops`
-- **Important:** The user must **open this folder in Cursor** (File → Open Folder → `/Users/ochedagr8/Documents/yugo-ops`). If a worktree is open instead, edits cannot be written to the main repo and `git status` there will stay clean.
-- When the workspace root is the main repo, use normal relative paths (e.g. `src/...`) so all edits land where the user runs `git add` / `git push`.
-- If the user reports "nothing to commit" in the main repo, remind them to open `/Users/ochedagr8/Documents/yugo-ops` in Cursor and re-apply or copy changes there.
+## Canonical paths (same repo, different machines or clones)
+
+Apply edits in **whichever of these is the Cursor workspace root**, and **mirror the same change to the other path when both directories exist** on the machine (so `git status` / commits stay in sync across clones).
+
+- **`/Users/kog/Developer/yugo-ops`** — primary checkout (e.g. kog)
+- **`/Users/ochedagr8/Documents/yugo-ops`** — alternate checkout (e.g. other machine or user)
+
+When only one path exists, edit that one only. When the user explicitly asks for edits **in both**, after changing files under the open workspace, replicate the identical diff to the other root if that folder is present (same relative paths under `src/`, `supabase/`, `.cursor/`, etc.).
+
+## Worktrees
+
+If a **worktree** is open instead of a main clone, edits may not land where the user runs `git add` / `git push`. Prefer **File → Open Folder** on one of the canonical paths above.
+
+## Relative paths
+
+When the workspace root is a main clone, use normal relative paths (e.g. `src/...`) in tools and citations.
+
+## “Nothing to commit”
+
+If the user reports a clean `git status` in their main clone but expected changes, remind them to open the correct canonical folder in Cursor, or copy the same file edits from the workspace where changes were made into the other clone if they use two checkouts.

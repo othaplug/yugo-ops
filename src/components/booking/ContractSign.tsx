@@ -4,6 +4,12 @@ import React, { useState, useRef } from "react";
 import { Check, CaretDown as ChevronDown, CaretUp as ChevronUp, FileText, Calendar, MapPin, Ruler, Clock } from "@phosphor-icons/react";
 import { toTitleCase, formatAccessForDisplay, formatAddressForDisplay } from "@/lib/format-text";
 import { isClientLogisticsDeliveryServiceType } from "@/lib/quotes/b2b-quote-copy";
+import {
+  agreementCheckboxLabel,
+  agreementDocumentTitle,
+  buildBinRentalAgreementSections,
+  buildNonBinAgreementSections,
+} from "@/lib/contracts/agreement-terms";
 
 const WINE = "#5C1A33";
 const FOREST = "#2C3E2D";
@@ -70,6 +76,8 @@ export interface ContractQuoteData {
   dropoffStops?: { address: string; accessLine: string | null }[];
   /** B2B quote settled on Net invoice — no card deposit in this flow */
   b2bNet30Invoice?: boolean;
+  /** Residential tier when `serviceType` is `local_move` (tailors agreement copy). */
+  residentialTier?: string | null;
 }
 
 interface Props {
@@ -169,31 +177,6 @@ const AGREEMENT_HEADER: Record<string, { title: string; subtitle: string }> = {
   },
 };
 
-const SERVICE_DESCRIPTION: Record<string, string> = {
-  local_move:
-    "Professional local residential moving service including truck, crew, equipment, and all loading/unloading.",
-  long_distance:
-    "Full-service long distance move including professional packing, climate-controlled transport, and delivery.",
-  office_move:
-    "Commercial office relocation including equipment handling, IT setup coordination, and workstation management.",
-  single_item:
-    "Professional single item pickup and delivery with full protection and careful handling.",
-  white_glove:
-    "Premium white glove handling with enhanced protection, photo documentation, and dedicated care.",
-  specialty:
-    "Custom specialty service tailored to your specific project requirements and timeline.",
-  b2b_oneoff:
-    "Professional delivery service with careful handling and timely fulfillment.",
-  b2b_delivery:
-    "Professional commercial delivery with careful handling, documentation, and timely fulfillment.",
-  event:
-    "Event logistics including round-trip delivery between origin and venue, optional on-site setup, and coordinated return with the same crew.",
-  labour_only:
-    "On-site labour service at the address specified, including tools and professional crew as quoted.",
-  bin_rental:
-    "Plastic moving bin rental: delivery of empty bins to your location, use through the included rental period, and scheduled pickup of emptied and stacked bins. Wardrobe boxes supplied for move day are returned at pickup unless otherwise noted on your quote.",
-};
-
 function fmtPrice(n: number) {
   return n.toLocaleString("en-CA", {
     style: "currency",
@@ -234,7 +217,6 @@ export default function ContractSign({
   const balance = q.grandTotal - q.deposit;
   const cancellation = CANCELLATION_POLICY[q.serviceType] ?? CANCELLATION_POLICY.local_move;
   const balanceDue = BALANCE_DUE[q.serviceType] ?? "before service date";
-  const serviceDesc = SERVICE_DESCRIPTION[q.serviceType] ?? SERVICE_DESCRIPTION.local_move;
   const isBinRental = q.serviceType === "bin_rental";
   const isB2BDelivery = q.serviceType === "b2b_oneoff" || q.serviceType === "b2b_delivery";
   const isLogisticsDeliveryCopy = isClientLogisticsDeliveryServiceType(q.serviceType);
@@ -242,12 +224,28 @@ export default function ContractSign({
   const b2bNet30Invoice = Boolean(q.b2bNet30Invoice);
   const paidInFullAtBooking =
     !b2bNet30Invoice && q.grandTotal > 0 && balance <= 0.005;
-  const agreementHeader =
+  const agreementMeta =
     AGREEMENT_HEADER[q.serviceType] ??
     (isClientLogisticsDeliveryServiceType(q.serviceType)
       ? { title: "Delivery Service Agreement", subtitle: "Review the agreement, then sign to proceed to payment" }
       : { title: "Service Agreement", subtitle: "Review the agreement, then sign to proceed to payment" });
-  const serviceHeading = isBinRental ? "Bin Rental" : toTitleCase(q.serviceType);
+  const agreementHeader = {
+    title: agreementDocumentTitle(q.serviceType, q.residentialTier),
+    subtitle:
+      q.serviceType === "local_move" && q.residentialTier === "estate"
+        ? "Review your Estate move agreement, then sign to proceed to payment"
+        : q.serviceType === "local_move" && q.residentialTier === "signature"
+          ? "Review your Signature move agreement, then sign to proceed to payment"
+          : q.serviceType === "local_move" && q.residentialTier === "essential"
+            ? "Review your Essential move agreement, then sign to proceed to payment"
+            : agreementMeta.subtitle,
+  };
+  const agreementSignLabel = agreementCheckboxLabel(q.serviceType, q.residentialTier);
+  const serviceHeading = isBinRental
+    ? "Bin Rental"
+    : q.serviceType === "local_move" && q.packageLabel?.trim()
+      ? q.packageLabel.trim()
+      : toTitleCase(q.serviceType);
   const scheduleSectionTitle =
     isBinRental
       ? "Your rental schedule"
@@ -277,11 +275,14 @@ export default function ContractSign({
         body: JSON.stringify({
           quote_id: q.quoteId,
           typed_name: typedName.trim(),
-          agreement_version: isBinRental ? "1.2" : "1.1",
+          agreement_version: "1.3",
           user_agent: navigator.userAgent,
           contract_data: {
             service_type: q.serviceType,
+            residential_tier: q.residentialTier ?? null,
             package_label: q.packageLabel,
+            b2b_net30_invoice: b2bNet30Invoice,
+            paid_in_full_at_booking: paidInFullAtBooking,
             from_address: q.fromAddress,
             to_address: q.toAddress,
             move_date: q.moveDate,
@@ -776,7 +777,7 @@ export default function ContractSign({
             {/* ─── Pricing section ─── */}
             <div className="px-5 py-5 md:px-6 md:py-6">
               <p
-                className="text-[9px] font-bold tracking-[0.18em] uppercase mb-3"
+                className="text-[10px] font-bold tracking-[0.18em] uppercase mb-3"
                 style={{ color: `${FOREST}55` }}
               >
                 Investment Summary
@@ -835,7 +836,7 @@ export default function ContractSign({
                 }}
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-[13px] font-bold" style={{ color: WINE }}>Total</span>
+                  <span className="text-[14px] font-bold" style={{ color: WINE }}>Total</span>
                   <span className="font-hero text-[22px]" style={{ color: WINE }}>{fmtPrice(q.grandTotal)}</span>
                 </div>
               </div>
@@ -875,7 +876,7 @@ export default function ContractSign({
                 </div>
                 {!paidInFullAtBooking && !b2bNet30Invoice && (
                   <div className="flex justify-between items-baseline px-4">
-                    <span className="text-[11px]" style={{ color: `${FOREST}55` }}>
+                    <span className="text-[12px]" style={{ color: `${FOREST}55` }}>
                       Balance due {balanceDue}
                     </span>
                     <span className="text-[12px] font-medium tabular-nums" style={{ color: FOREST }}>
@@ -929,292 +930,38 @@ export default function ContractSign({
             className="p-4 rounded-xl text-[11px] leading-relaxed space-y-4 max-h-[50vh] overflow-y-auto"
             style={{ backgroundColor: CREAM, color: FOREST, border: `1px solid ${FOREST}12` }}
           >
-            {isBinRental ? (
-              <>
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    1. Bin rental service
-                  </h3>
-                  <p>{serviceDesc}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    2. Quoted fee &amp; scope
-                  </h3>
-                  <p>
-                    The total shown above ({fmtPrice(q.grandTotal)} incl. HST) is the agreed price for the bin
-                    rental package described in your quote (bin counts, accessories, delivery/pickup, and
-                    included rental period). There are no hourly moving rates in this agreement — this is a
-                    rental service, not a full residential move. If you add services (e.g., extra bins or
-                    extended rental), {companyDisplayName} will confirm pricing before charging.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    3. Delivery, pickup &amp; rental period
-                  </h3>
-                  <p>
-                    {br ? (
-                      <>
-                        Delivery, your reference move date, pickup, and the {br.cycleDays}-day included rental
-                        cycle are summarized in the schedule above. Bins must be emptied, stacked, and ready
-                        for pickup at the agreed location. Late returns beyond the included period, no-shows, or
-                        unprepared pickups may incur fees as stated in your quote or as communicated in writing.
-                      </>
-                    ) : (
-                      <>
-                        Delivery and pickup dates and the included rental period are as stated in your quote.
-                        Bins must be emptied, stacked, and ready for pickup. Late returns or unprepared pickups
-                        may incur additional fees as stated in your quote or as communicated in writing.
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    4. Payment
-                  </h3>
-                  <p>
-                    Full payment of {fmtPrice(q.grandTotal)} (incl. HST) is due when you complete checkout after
-                    signing, unless your coordinator confirms different terms in writing. Pricing is for the
-                    rental scope in your quote only.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    5. Card on file
-                  </h3>
-                  <p>
-                    I authorize {companyLegalName} to keep my payment card on file through Square&apos;s
-                    PCI-compliant systems and to charge fees I approve in writing, including reasonable
-                    charges for late returns, extra rental days, missing bins, or damaged equipment, in line
-                    with your quote and applicable law.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    6. Cancellation
-                  </h3>
-                  <p>{cancellation}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    7. Care of bins &amp; equipment
-                  </h3>
-                  <p>
-                    Bins remain {companyDisplayName}&apos;s property. You agree to use them only for normal household
-                    packing, to return all bins and zip ties supplied, and to report loss or damage promptly.
-                    Fees for repair or replacement of missing or damaged bins may apply as set out in your quote
-                    or as communicated before charging.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    8. Liability &amp; insurance
-                  </h3>
-                  <p>
-                    This agreement covers rental of bins and related logistics — not the full valuation and cargo
-                    terms that apply to a staffed move. {companyDisplayName} maintains commercial liability
-                    insurance; specifics are available on request. Contents you pack inside bins are your
-                    responsibility unless separate moving services are contracted.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    9. Access &amp; your responsibilities
-                  </h3>
-                  <p>
-                    You are responsible for safe and legal access for delivery and pickup (parking, elevator
-                    bookings, buzzer/entry, and someone available or instructions left as agreed). You must not
-                    overload bins beyond a safe weight, and must not use them for hazardous, illegal, or
-                    perishable goods. Failure to disclose access issues may delay service and could result in
-                    reasonable extra charges if approved in advance.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    10. Delays &amp; rescheduling
-                  </h3>
-                  <p>
-                    {companyDisplayName} is not liable for delays caused by weather, traffic, building access, or
-                    other circumstances outside its reasonable control. We will work with you to reschedule
-                    delivery or pickup as soon as practicable. Additional costs caused by client-requested
-                    changes or repeated access failures may apply if agreed in writing.
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    1. Service Description
-                  </h3>
-                  <p>{serviceDesc}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    2. Flat-Rate Guarantee
-                  </h3>
-                  <p>
-                    The total quoted above ({fmtPrice(q.grandTotal)} incl. HST) is a guaranteed flat
-                    rate. There are no hidden charges, hourly rates, or surprise fees. The quoted price
-                    is the price you pay, provided the scope of the{" "}
-                    {isLogisticsDeliveryCopy ? "delivery" : "move"} remains as described.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    3. Payment Terms
-                  </h3>
-                  <p>
-                    {b2bNet30Invoice ? (
-                      <>
-                        This delivery is confirmed on Net 30 invoice terms. The total quoted (
-                        {fmtPrice(q.grandTotal)} incl. HST) will appear on your invoice; no card payment is
-                        collected through this booking flow.
-                      </>
-                    ) : paidInFullAtBooking ? (
-                      <>
-                        The full amount of {fmtPrice(q.grandTotal)} (incl. HST) is due at the time of
-                        booking. No balance remains for this quoted scope unless you approve changes in
-                        writing. Payment will be charged to the card provided.
-                      </>
-                    ) : (
-                      <>
-                        A deposit of {fmtPrice(q.deposit)} is due at the time of booking. The remaining
-                        balance of {fmtPrice(balance)} is due {balanceDue}. Payment will be charged to the
-                        card provided.
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    {b2bNet30Invoice ? "4. Invoicing" : "4. Card-on-File Authorization"}
-                  </h3>
-                  <p>
-                    {b2bNet30Invoice ? (
-                      <>
-                        You agree to pay the quoted total per the invoice issued by {companyLegalName},
-                        within the Net 30 terms stated on your quote. Late fees or collection practices, if
-                        any, follow our standard commercial invoice policy as shared with your account.
-                      </>
-                    ) : (
-                      <>
-                        I authorize {companyLegalName} to securely store my payment card on file using
-                        Square&apos;s PCI-compliant vault and to charge the balance amount per the payment
-                        terms above. No additional charges will be made without prior authorization.
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    5. Cancellation Policy
-                  </h3>
-                  <p>{cancellation}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    6. Liability &amp; Insurance
-                  </h3>
-                  <p>
-                    Standard cargo liability coverage is included at $0.60 per pound per article.
-                    Enhanced full-value protection is available as an optional add-on. {companyDisplayName}{" "}
-                    carries $2,000,000 in commercial liability insurance.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    7. Scope Changes
-                  </h3>
-                  <p>
-                    If the actual scope differs from the quote (e.g., additional items, access issues
-                    not disclosed, or conditions beyond our control), {companyDisplayName} will communicate the impact
-                    and obtain your written approval before proceeding with any additional charges.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    8. Claims &amp; Damage Reporting
-                  </h3>
-                  <p>
-                    Any claims for loss or damage must be reported in writing within 48 hours of
-                    delivery completion. Claims submitted after this window may not be eligible for
-                    compensation. {companyDisplayName} will investigate all claims promptly and resolve them in
-                    accordance with the applicable liability coverage.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    9. Client Responsibilities
-                  </h3>
-                  <p>
-                    {isClientLogisticsDeliveryServiceType(q.serviceType) ? (
-                      <>
-                        The client is responsible for: (a) accurately describing all items in this shipment
-                        or delivery, including dimensions and special handling requirements; (b) declaring any
-                        items valued above $500 individually when required; (c) ensuring safe access for
-                        pickup and delivery (loading dock or door, elevator bookings, parking, permits, and
-                        clear paths); (d) removing or identifying hazardous materials, perishables, and
-                        prohibited items (firearms, chemicals, flammables) which {companyDisplayName} cannot
-                        transport. Failure to disclose access restrictions or shipment details may result in
-                        scope adjustments per Section 7.
-                      </>
-                    ) : q.serviceType === "office_move" ? (
-                      <>
-                        The client is responsible for: (a) accurately disclosing all equipment, furniture,
-                        and materials included in the relocation; (b) coordinating building and IT access; (c)
-                        ensuring elevator bookings, parking, and clear paths at origin and destination; (d)
-                        identifying hazardous or prohibited items {companyDisplayName} cannot transport.
-                        Failure to disclose access restrictions or scope details may result in adjustments
-                        per Section 7.
-                      </>
-                    ) : (
-                      <>
-                        The client is responsible for: (a) accurately disclosing all items to be moved,
-                        including dimensions and special handling requirements; (b) declaring any items
-                        valued above $500 individually; (c) ensuring building elevator bookings, parking
-                        permits, and clear access at both locations; (d) removing or identifying hazardous
-                        materials, perishables, and prohibited items (firearms, chemicals, flammables) which
-                        {companyDisplayName} cannot transport. Failure to disclose access restrictions or item
-                        details may result in scope adjustments per Section 7.
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">
-                    10. Delays &amp; Force Majeure
-                  </h3>
-                  <p>
-                    {companyDisplayName} shall not be liable for delays caused by circumstances beyond its reasonable
-                    control, including but not limited to severe weather, road closures, traffic
-                    conditions, building elevator breakdowns, labour disruptions, or government-imposed
-                    restrictions. In the event of a delay, {companyDisplayName} will notify the client promptly and
-                    reschedule at the earliest available date at no additional cost.
-                  </p>
-                </div>
-              </>
-            )}
+            {(isBinRental
+              ? buildBinRentalAgreementSections({
+                  companyLegalName,
+                  companyDisplayName,
+                  fmtPrice,
+                  grandTotal: q.grandTotal,
+                  cancellation,
+                  cycleDays: br?.cycleDays ?? 12,
+                  hasScheduleDetails: Boolean(br),
+                })
+              : buildNonBinAgreementSections({
+                  serviceType: q.serviceType,
+                  packageLabel: q.packageLabel,
+                  residentialTier: q.residentialTier,
+                  companyLegalName,
+                  companyDisplayName,
+                  isLogisticsDelivery: isLogisticsDeliveryCopy,
+                  b2bNet30Invoice,
+                  paidInFullAtBooking,
+                  fmtPrice,
+                  grandTotal: q.grandTotal,
+                  deposit: q.deposit,
+                  balance,
+                  balanceDue,
+                  cancellation,
+                })
+            ).map((section, idx) => (
+              <div key={idx}>
+                <h3 className="font-bold text-[12px] mb-1 uppercase tracking-wider">{section.title}</h3>
+                <p className="whitespace-pre-line">{section.body}</p>
+              </div>
+            ))}
 
             <div className="pt-2 border-t" style={{ borderColor: `${FOREST}12` }}>
               <p className="text-[10px]" style={{ color: `${FOREST}50` }}>
@@ -1248,17 +995,17 @@ export default function ContractSign({
           <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}80` }}>
             {isBinRental ? (
               <>
-                By signing below, I confirm that I have read this bin rental agreement, understand
-                the terms, and authorize {companyDisplayName} to deliver and pick up bins as scheduled.
+                By signing below, I confirm that I have read the {agreementSignLabel}, understand the
+                terms, and authorize {companyDisplayName} to deliver and pick up bins as scheduled.
               </>
             ) : isClientLogisticsDeliveryServiceType(q.serviceType) ? (
               <>
-                By signing below, I confirm that I have read the agreement, understand the terms, and
-                authorize {companyDisplayName} to complete this delivery as described.
+                By signing below, I confirm that I have read the {agreementSignLabel}, understand the terms,
+                and authorize {companyDisplayName} to complete this delivery as described.
               </>
             ) : (
               <>
-                By signing below, I confirm that I have read the service agreement, understand the
+                By signing below, I confirm that I have read the {agreementSignLabel}, understand the
                 terms, and authorize {companyDisplayName} to proceed with the service as described.
               </>
             )}
@@ -1307,15 +1054,14 @@ export default function ContractSign({
             <span className="text-[12px] leading-snug flex-1 min-w-0 pt-0.5" style={{ color: FOREST }}>
               {isBinRental ? (
                 <>
-                  I have read and agree to the <b>Bin Rental Agreement</b> above, including payment,
-                  rental period, card-on-file authorization, cancellation, care of bins, and all other
-                  terms.
+                  I have read and agree to the <b>{agreementSignLabel}</b> above, including payment,
+                  rental period, card-on-file authorization, cancellation, prohibited contents, care of bins,
+                  and all other terms.
                 </>
               ) : (
                 <>
-                  I have read and agree to the <b>Service Agreement</b> above, including the flat-rate
-                  guarantee, payment terms, card-on-file authorization, cancellation policy, and all
-                  other terms and conditions.
+                  I have read and agree to the <b>{agreementSignLabel}</b> above, including the quoted price,
+                  payment terms, cancellation policy, prohibited items, liability limits, and all other terms.
                 </>
               )}
             </span>

@@ -830,13 +830,13 @@ export default function UnifiedTrackingView({
             jobsPanelExpanded ? "max-sm:h-[46vh]" : "max-sm:h-[30vh]"
           } sm:max-h-[55vh] sm:h-auto`}
         >
-          <div className="sm:hidden shrink-0 flex justify-center pt-2.5 pb-0.5">
+          <div className="sm:hidden shrink-0 flex justify-center pt-1 pb-0">
             <button
               type="button"
               onClick={() => setJobsPanelExpanded((e) => !e)}
               aria-expanded={jobsPanelExpanded}
               aria-label={jobsPanelExpanded ? "Collapse jobs and teams panel" : "Expand jobs and teams panel"}
-              className="flex w-full max-w-[120px] items-center justify-center rounded-lg py-1.5 touch-manipulation active:bg-[var(--bg)]/40"
+              className="flex w-full max-w-[120px] items-center justify-center rounded-lg py-1 touch-manipulation active:bg-[var(--bg)]/40"
             >
               <span className="h-1 w-9 rounded-full bg-[var(--tx3)]/45" aria-hidden />
             </button>
@@ -846,7 +846,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("jobs")}
-              className={`flex-1 px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "jobs" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "jobs" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               {(() => {
                 const STALE_TAB_MS = 90 * 60 * 1000;
@@ -860,7 +860,7 @@ export default function UnifiedTrackingView({
             <button
               type="button"
               onClick={() => setActivePanel("teams")}
-              className={`flex-1 px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "teams" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
+              className={`flex-1 px-3 py-1.5 sm:py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${activePanel === "teams" ? "text-[var(--gold)] border-b-2 border-[var(--gold)]" : "text-[var(--tx3)] hover:text-[var(--tx2)]"}`}
             >
               Teams ({crews.length})
             </button>

@@ -65,10 +65,10 @@ export default async function SettingsTabPage({
             {/* Profile */}
             <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-                <h2 className="admin-section-h2 flex items-center gap-2.5">
-                  <Icon name="user" className="w-[16px] h-[16px]" /> Profile
+                <h2 className="admin-section-h2 flex items-center gap-2">
+                  <Icon name="user" className="w-[14px] h-[14px]" /> Profile
                 </h2>
-                <p className="text-[11px] text-[var(--tx3)] mt-0.5">Your name, contact details, and role</p>
+                <p className="text-[11px] text-[var(--tx3)] mt-1">Your name, contact details, and role</p>
               </div>
               <div className="px-5 py-5">
                 <PersonalSettingsForm
@@ -83,10 +83,10 @@ export default async function SettingsTabPage({
             {/* Email (separate card) */}
             <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-                <h2 className="admin-section-h2 flex items-center gap-2.5">
-                  <Icon name="mail" className="w-[16px] h-[16px]" /> Email Address
+                <h2 className="admin-section-h2 flex items-center gap-2">
+                  <Icon name="mail" className="w-[14px] h-[14px]" /> Email Address
                 </h2>
-                <p className="text-[11px] text-[var(--tx3)] mt-0.5">Changing your email will require verification</p>
+                <p className="text-[11px] text-[var(--tx3)] mt-1">Changing your email will require verification</p>
               </div>
               <div className="px-5 py-5">
                 <EditableEmailSection currentEmail={user?.email || ""} />
@@ -103,20 +103,20 @@ export default async function SettingsTabPage({
       <div className="space-y-6">
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-            <h2 className="admin-section-h2 flex items-center gap-2.5">
-              <Icon name="lock" className="w-[16px] h-[16px]" /> Security
+            <h2 className="admin-section-h2 flex items-center gap-2">
+              <Icon name="lock" className="w-[14px] h-[14px]" /> Security
             </h2>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Password and two-factor authentication</p>
+            <p className="text-[11px] text-[var(--tx3)] mt-1">Password and two-factor authentication</p>
           </div>
           <div className="px-5 py-5 space-y-4">
             <div>
-              <label className="block text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Change Password</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Change Password</label>
               <SettingsForm />
             </div>
             <div>
-              <label className="block text-[12px] font-bold tracking-wider uppercase text-[var(--tx)] mb-2">Two-Factor Authentication</label>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Two-Factor Authentication</label>
               <div className="flex items-center justify-between py-2.5 px-4 bg-[var(--bg)] border border-[var(--brd)] rounded-lg">
-                <span className="text-[12px] text-[var(--tx2)]">{platformUser?.two_factor_enabled ? "2FA is active, code sent to email on each login" : "2FA not enabled"}</span>
+                <span className="text-[13px] text-[var(--tx2)]">{platformUser?.two_factor_enabled ? "2FA is active, code sent to email on each login" : "2FA not enabled"}</span>
                 <Enable2FAButton enabled={platformUser?.two_factor_enabled} />
               </div>
             </div>
@@ -125,10 +125,10 @@ export default async function SettingsTabPage({
 
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-            <h2 className="admin-section-h2 flex items-center gap-2.5">
-              <Icon name="clock" className="w-[16px] h-[16px]" /> Login History
+            <h2 className="admin-section-h2 flex items-center gap-2">
+              <Icon name="clock" className="w-[14px] h-[14px]" /> Login History
             </h2>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5">Recent sign-in activity and active sessions</p>
+            <p className="text-[11px] text-[var(--tx3)] mt-1">Recent sign-in activity and active sessions</p>
           </div>
           <div className="px-5 py-5">
             <LoginHistoryPanel />
@@ -150,10 +150,10 @@ export default async function SettingsTabPage({
     return (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="admin-section-h2 flex items-center gap-2.5">
-            <Icon name="bell" className="w-[16px] h-[16px]" /> Notifications
+          <h2 className="admin-section-h2 flex items-center gap-2">
+            <Icon name="bell" className="w-[14px] h-[14px]" /> Notifications
           </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Manage how you receive updates</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1">Manage how you receive updates</p>
         </div>
         <div className="px-5 py-5">
           <NotificationToggles />
@@ -183,10 +183,10 @@ export default async function SettingsTabPage({
     return (
       <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
-          <h2 className="admin-section-h2 flex items-center gap-2.5">
-            <Icon name="plug" className="w-[16px] h-[16px]" /> Integrations
+          <h2 className="admin-section-h2 flex items-center gap-2">
+            <Icon name="plug" className="w-[14px] h-[14px]" /> Integrations
           </h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Connected services, APIs, and health monitoring</p>
+          <p className="text-[11px] text-[var(--tx3)] mt-1">Connected services, APIs, and health monitoring</p>
         </div>
         <div className="px-5 py-5">
           <IntegrationHealthPanel integrations={integrations} />

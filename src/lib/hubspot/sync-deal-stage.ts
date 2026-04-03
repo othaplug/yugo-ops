@@ -1,61 +1,63 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { LOGICAL_STAGE_PLATFORM_KEYS, YUGO_TRIGGER_TO_LOGICAL_STAGE } from "@/lib/hubspot/logical-deal-stages";
+import { resolveHubSpotStageInternalId } from "@/lib/hubspot/resolve-hubspot-stage-id";
 
 const HS_DEALS = "https://api.hubapi.com/crm/v3/objects/deals";
 
-/**
- * Stage mapping: Yugo move status → platform_config key for the HubSpot
- * pipeline stage internal ID. Falls back to env vars if the DB row is missing.
- */
-const STATUS_TO_CONFIG_KEY: Record<string, string> = {
-  quote_sent:  "hubspot_stage_quote_sent",
-  confirmed:   "hubspot_stage_deposit_received",
-  scheduled:   "hubspot_stage_booked",
-  in_progress: "hubspot_stage_booked",
-  completed:   "hubspot_stage_closed_won",
-  paid:        "hubspot_stage_closed_won",
-};
+function stringifyHubSpotProps(extra: Record<string, string | number | boolean> | undefined): Record<string, string> {
+  if (!extra) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(extra)) {
+    if (v === undefined || v === null) continue;
+    out[k] = typeof v === "boolean" ? (v ? "true" : "false") : String(v);
+  }
+  return out;
+}
 
 /**
- * Sync a move's status change to the linked HubSpot deal.
+ * Sync a HubSpot deal stage (and optional properties) from a Yugo lifecycle trigger.
  *
- * Call this **after** you update the status in Supabase.
- * It's fire-and-forget: failures are logged but never block the caller.
- *
- * @param hubspotDealId  The deal ID from `moves.hubspot_deal_id` (null = skip)
- * @param newStatus      The new Yugo move status value
+ * @param hubspotDealId   Deal ID from quotes/moves/deliveries
+ * @param yugoTrigger     e.g. sent, viewed, confirmed, scheduled, completed, cancelled, expired, quote_sent
+ * @param extraProperties Additional deal properties (HubSpot string values)
  */
 export async function syncDealStage(
   hubspotDealId: string | null | undefined,
-  newStatus: string,
+  yugoTrigger: string,
+  extraProperties?: Record<string, string | number | boolean>,
 ): Promise<void> {
-  if (!hubspotDealId) return;
-
-  const configKey = STATUS_TO_CONFIG_KEY[newStatus];
-  if (!configKey) return; // not a status we push to HubSpot
+  if (!hubspotDealId?.trim()) return;
 
   const token = process.env.HUBSPOT_ACCESS_TOKEN;
   if (!token) return;
 
+  const logical =
+    YUGO_TRIGGER_TO_LOGICAL_STAGE[yugoTrigger] ??
+    (LOGICAL_STAGE_PLATFORM_KEYS[yugoTrigger] ? yugoTrigger : null);
+  if (!logical) return;
+
   try {
     const sb = createAdminClient();
+    const stageId = await resolveHubSpotStageInternalId(sb, logical);
+    if (!stageId) return;
 
-    // Resolve the HubSpot internal stage ID from platform_config → env fallback
-    let stageId: string | undefined;
-    const { data } = await sb
-      .from("platform_config")
-      .select("value")
-      .eq("key", configKey)
-      .single();
+    const properties: Record<string, string> = {
+      dealstage: stageId,
+      ...stringifyHubSpotProps(extraProperties),
+    };
 
-    stageId = data?.value || process.env[configKey.toUpperCase()] || undefined;
-    if (!stageId) return; // stage not configured yet
-
-    const properties: Record<string, string> = { dealstage: stageId };
-    if (newStatus === "completed" || newStatus === "paid") {
+    if (
+      logical === "closed_won" ||
+      yugoTrigger === "completed" ||
+      yugoTrigger === "paid"
+    ) {
+      properties.closedate = new Date().toISOString();
+    }
+    if (logical === "closed_lost" && (yugoTrigger === "cancelled" || yugoTrigger === "expired")) {
       properties.closedate = new Date().toISOString();
     }
 
-    const res = await fetch(`${HS_DEALS}/${hubspotDealId}`, {
+    const res = await fetch(`${HS_DEALS}/${hubspotDealId.trim()}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -64,14 +66,14 @@ export async function syncDealStage(
       body: JSON.stringify({ properties }),
     });
 
-    // Log the sync attempt for debugging
     try {
       await sb.from("webhook_logs").insert({
         source: "hubspot_deal_stage_sync",
-        event_type: `stage_sync:${newStatus}`,
+        event_type: `stage_sync:${yugoTrigger}`,
         payload: {
           deal_id: hubspotDealId,
-          new_status: newStatus,
+          yugo_trigger: yugoTrigger,
+          logical_stage: logical,
           stage_id: stageId,
           hs_status: res.status,
         },
@@ -82,13 +84,12 @@ export async function syncDealStage(
       // ignore log failure
     }
   } catch (err) {
-    // Log but never block the calling operation
     try {
       const sb = createAdminClient();
       await sb.from("webhook_logs").insert({
         source: "hubspot_deal_stage_sync",
-        event_type: `stage_sync:${newStatus}`,
-        payload: { deal_id: hubspotDealId, new_status: newStatus },
+        event_type: `stage_sync:${yugoTrigger}`,
+        payload: { deal_id: hubspotDealId, yugo_trigger: yugoTrigger },
         status: "error",
         error: err instanceof Error ? err.message : "Unknown error",
       });
@@ -99,22 +100,51 @@ export async function syncDealStage(
 }
 
 /**
- * Convenience: fetch a move's `hubspot_deal_id` by its ID, then sync.
- * Use this in routes that only have the move ID in scope.
+ * Map a B2B delivery `status` (and optional `stage`) to a syncDealStage trigger, or null to skip.
  */
-export async function syncDealStageByMoveId(
-  moveId: string,
-  newStatus: string,
-): Promise<void> {
+export function deliveryStatusToHubspotTrigger(statusRaw: string | null | undefined): string | null {
+  const s = (statusRaw || "").toLowerCase().replace(/-/g, "_");
+  if (!s || s === "pending_approval" || s === "draft") return null;
+  if (s === "cancelled") return "cancelled";
+  if (s === "completed" || s === "delivered") return "completed";
+  if (
+    s === "dispatched" ||
+    s === "in_transit" ||
+    s === "en_route" ||
+    s === "en_route_to_pickup" ||
+    s === "en_route_to_destination" ||
+    s === "arrived_at_pickup" ||
+    s === "arrived_at_destination" ||
+    s === "loading" ||
+    s === "unloading" ||
+    s === "in_progress"
+  ) {
+    return "in_progress";
+  }
+  if (s === "confirmed" || s === "scheduled") return "scheduled";
+  return null;
+}
+
+export async function syncDealStageByMoveId(moveId: string, newStatus: string): Promise<void> {
   try {
     const sb = createAdminClient();
-    const { data } = await sb
-      .from("moves")
-      .select("hubspot_deal_id")
-      .eq("id", moveId)
-      .single();
+    const { data } = await sb.from("moves").select("hubspot_deal_id").eq("id", moveId).single();
     if (data?.hubspot_deal_id) {
       await syncDealStage(data.hubspot_deal_id, newStatus);
+    }
+  } catch {
+    // never block
+  }
+}
+
+export async function syncDealStageByDeliveryId(deliveryId: string, status: string | null | undefined): Promise<void> {
+  try {
+    const trigger = deliveryStatusToHubspotTrigger(status);
+    if (!trigger) return;
+    const sb = createAdminClient();
+    const { data } = await sb.from("deliveries").select("hubspot_deal_id").eq("id", deliveryId).maybeSingle();
+    if (data?.hubspot_deal_id) {
+      await syncDealStage(data.hubspot_deal_id, trigger);
     }
   } catch {
     // never block

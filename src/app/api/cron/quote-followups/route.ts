@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { runQuoteFollowupCronJob } from "@/lib/quote-followups/engine";
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 
 /**
  * Vercel Cron: runs daily at 11 AM EST (16:00 UTC).
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
   if (!followupEnabled) {
     const { data: expiredQuotes } = await supabase
       .from("quotes")
-      .select("quote_id")
+      .select("quote_id, hubspot_deal_id")
       .lt("expires_at", now.toISOString())
       .in("status", statusNotAcceptedOrExpired);
 
@@ -50,6 +51,10 @@ export async function GET(req: NextRequest) {
         .update({ status: "expired", updated_at: now.toISOString() })
         .in("quote_id", expiredIds);
       results.expired = expiredIds.length;
+      for (const q of expiredQuotes) {
+        const hid = (q as { hubspot_deal_id?: string | null }).hubspot_deal_id;
+        if (hid) syncDealStage(hid, "expired").catch(() => {});
+      }
     }
 
     return NextResponse.json({ ok: true, ...results });

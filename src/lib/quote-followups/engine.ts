@@ -7,6 +7,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getFeatureConfig } from "@/lib/platform-settings";
 import { sendQuoteFollowupSms } from "@/lib/quote-sms";
 import { logActivity } from "@/lib/activity";
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 
 const HS_TASKS = "https://api.hubapi.com/crm/v3/objects/tasks";
 const HS_ASSOC = "https://api.hubapi.com/crm/v4/objects/tasks";
@@ -501,7 +502,7 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
 
   const { data: expiredQuotes } = await supabase
     .from("quotes")
-    .select("quote_id")
+    .select("quote_id, hubspot_deal_id")
     .lt("expires_at", now.toISOString())
     .in("status", statusNotAcceptedOrExpired);
 
@@ -512,6 +513,10 @@ export async function runQuoteFollowupCronJob(): Promise<QuoteFollowupCronJobRes
       .update({ status: "expired", updated_at: now.toISOString() })
       .in("quote_id", expiredIds);
     results.expired = expiredIds.length;
+    for (const q of expiredQuotes) {
+      const hid = (q as { hubspot_deal_id?: string | null }).hubspot_deal_id;
+      if (hid) syncDealStage(hid, "expired").catch(() => {});
+    }
   }
 
   if (results.errors.length > 0) {

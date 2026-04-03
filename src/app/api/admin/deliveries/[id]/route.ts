@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/api-auth";
 import { createPartnerNotification } from "@/lib/notifications";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { collectB2BDeliveryCalibrationData } from "@/lib/learning/engine";
+import { syncDealStageByDeliveryId } from "@/lib/hubspot/sync-deal-stage";
 
 const STATUS_NOTIFICATIONS: Record<string, { title: (label: string) => string; icon: string }> = {
   confirmed: { title: (l) => `Delivery confirmed: ${l}`, icon: "check" },
@@ -121,6 +122,10 @@ export async function PATCH(
       { error: error.message || "Failed to update delivery" },
       { status: 500 },
     );
+  }
+
+  if ("status" in updates && data?.status && data.status !== existing?.status) {
+    syncDealStageByDeliveryId(id, String(data.status)).catch(() => {});
   }
 
   // Send partner notification if status changed

@@ -19,6 +19,7 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import DraftBanner from "@/components/ui/DraftBanner";
 import { Plus, Trash as Trash2, FileText } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
+import { residentialInventoryLineScore } from "@/lib/pricing/weight-tiers";
 
 interface Org {
   id: string;
@@ -372,7 +373,8 @@ export default function CreateMoveForm({
     }
   }, [crewId, crews]);
 
-  const inventoryScore = inventoryItems.reduce((sum, i) => sum + i.weight_score * i.quantity, 0) + boxCount * 0.3;
+  const inventoryScore =
+    inventoryItems.reduce((sum, i) => sum + residentialInventoryLineScore(i), 0) + boxCount * 0.3;
 
   const handleDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

@@ -16,8 +16,8 @@ export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
     iconName: "Armchair",
   },
   {
-    card: "Floor & door frame protection",
-    title: "Floor & door frame protection",
+    card: "Floor protection",
+    title: "Floor protection",
     desc: "Runners, booties, and corner guards throughout",
     iconName: "Home",
   },
@@ -46,29 +46,15 @@ export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
     iconName: "Trash2",
   },
   {
-    card: "All equipment included",
-    title: "All equipment included",
-    desc: "Dollies, straps, tools, nothing extra to rent",
-    iconName: "Toolbox",
-  },
-  {
     card: "Enhanced valuation coverage",
     title: "Enhanced valuation coverage",
     desc: "Up to $2,500 per item protection",
     iconName: "ShieldCheck",
   },
-  {
-    card: "Real-time GPS tracking",
-    title: "Real-time GPS tracking",
-    desc: "Follow your move live from any device",
-    iconName: "MapPin",
-  },
 ];
 
 /**
- * Estate tier: lines after “Everything in Signature, plus:” on the card.
- * Includes repeats (wardrobe, debris, GPS) so the estate card can mirror the reference list;
- * `expandResidentialTierFeaturesStorage` dedupes by card text when building the merged list for Inclusions.
+ * Estate tier: lines after “Everything in Signature, plus:” — only what Signature/Essential do not already cover.
  */
 export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
   {
@@ -84,22 +70,10 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     iconName: "ClipboardCheck",
   },
   {
-    card: "Full furniture wrapping and protection throughout",
-    title: "Full furniture wrapping",
-    desc: "Every piece individually wrapped and padded",
-    iconName: "Armchair",
-  },
-  {
     card: "Full disassembly & precision reassembly",
     title: "Full disassembly & precision reassembly",
     desc: "Complete furniture breakdown and expert reassembly",
     iconName: "Wrench",
-  },
-  {
-    card: "Floor and property protection throughout",
-    title: "Floor and property protection",
-    desc: "Runners, booties, and corner guards throughout",
-    iconName: "Home",
   },
   {
     card: "All packing materials and supplies included",
@@ -114,28 +88,10 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     iconName: "Star",
   },
   {
-    card: "Precision placement in every room",
-    title: "Precision placement in every room",
-    desc: "Every piece placed exactly where you want it",
-    iconName: "Compass",
-  },
-  {
     card: "Full replacement valuation coverage",
     title: "Full replacement valuation coverage",
     desc: "Maximum protection for your most valuable items",
     iconName: "ShieldCheck",
-  },
-  {
-    card: "Wardrobe box for immediate use",
-    title: "Wardrobe box for immediate use",
-    desc: "Hang your clothes directly, no folding needed",
-    iconName: "Shirt",
-  },
-  {
-    card: "Debris and packaging removal at completion",
-    title: "Debris and packaging removal",
-    desc: "We clear away all packing materials post-move",
-    iconName: "Trash2",
   },
   {
     card: "Pre-move inventory planning and oversight",
@@ -144,16 +100,16 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     iconName: "FrameCorners",
   },
   {
+    card: "Premium handling for art, antiques, and specialty items",
+    title: "Premium art & antique handling",
+    desc: "Art, antiques, and fragile items individually wrapped",
+    iconName: "Palette",
+  },
+  {
     card: "30-day post-move concierge support",
     title: "30-day concierge support",
     desc: "Post-move support and questions answered within 30 days",
     iconName: "Clock",
-  },
-  {
-    card: "Real-time GPS tracking",
-    title: "Real-time GPS tracking",
-    desc: "Follow your move live from any device",
-    iconName: "MapPin",
   },
   {
     card: "Exclusive partner offers & perks",
@@ -192,12 +148,106 @@ export const DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE: ResidentialTierFeaturesS
   estate: { additions: DEFAULT_ESTATE_ADDITIONS },
 };
 
-/** Append tier rows skipping duplicates by `card` text (case-insensitive). */
+/**
+ * Collapse the same perk under different tier wording when merging Essential + Signature + Estate
+ * (e.g. “All standard equipment” vs “All equipment included”, repeated GPS / debris / wardrobe in legacy DB).
+ */
+export function inclusionDedupeKey(f: TierFeature): string {
+  const c = f.card.trim().toLowerCase();
+  const t = f.title.trim().toLowerCase();
+  const blob = `${c} ${t}`;
+
+  if (blob.includes("real-time") && blob.includes("gps")) return "__gps_tracking";
+  if (blob.includes("gps") && (blob.includes("track") || blob.includes("tracking"))) return "__gps_tracking";
+
+  if (blob.includes("dedicated moving truck") || (blob.includes("truck") && blob.includes("dedicated"))) {
+    return "__dedicated_truck";
+  }
+  if (
+    (blob.includes("professional") && blob.includes("crew")) ||
+    (blob.includes("professional") && blob.includes("movers"))
+  ) {
+    return "__professional_crew";
+  }
+
+  if (blob.includes("wardrobe box")) return "__wardrobe_box";
+
+  if (blob.includes("debris") && blob.includes("packaging")) return "__debris_packaging_removal";
+
+  if (blob.includes("floor") && blob.includes("entryway")) return "__floor_entryway";
+  if (blob.includes("floor") && (blob.includes("protection") || blob.includes("property"))) {
+    return "__floor_protection_beyond_entry";
+  }
+
+  if (
+    blob.includes("wrapping") &&
+    blob.includes("furniture") &&
+    !blob.includes("for key furniture") &&
+    !blob.includes("protective wrapping for key")
+  ) {
+    return "__full_furniture_wrapping";
+  }
+
+  if (
+    (blob.includes("placement") && blob.includes("room")) ||
+    (blob.includes("placement") && blob.includes("throughout the home")) ||
+    (blob.includes("precision placement") && blob.includes("room"))
+  ) {
+    return "__room_placement";
+  }
+
+  if (
+    (blob.includes("all ") || blob.includes("standard ")) &&
+    blob.includes("equipment") &&
+    (blob.includes("included") || blob.includes("rent") || blob.includes("dollies"))
+  ) {
+    return "__equipment_included";
+  }
+
+  if (blob.includes("basic disassembly") && blob.includes("reassembly")) return "__basic_disassembly_reassembly";
+
+  return c;
+}
+
+/** Plain-text include line → same semantic key as `inclusionDedupeKey` (quote PDF / API tier lists). */
+export function inclusionDedupeKeyFromLine(line: string): string {
+  return inclusionDedupeKey({ card: line, title: line, desc: "", iconName: "Dot" });
+}
+
+/** Merge tier include strings: append `extra` rows whose semantic key is not already in `base`. */
+export function mergeResidentialIncludeLinesDeduped(base: string[], extra: string[]): string[] {
+  const keys = new Set(base.map(inclusionDedupeKeyFromLine));
+  const out = [...base];
+  for (const line of extra) {
+    const k = inclusionDedupeKeyFromLine(line);
+    if (!keys.has(k)) {
+      keys.add(k);
+      out.push(line);
+    }
+  }
+  return out;
+}
+
+/** Additive bullets for tier cards: only rows not already covered by the prior tier’s expanded perks. */
+export function filterAdditionsAgainstPrior(prior: TierFeature[], additions: TierFeature[]): TierFeature[] {
+  const priorKeys = new Set(prior.map((f) => inclusionDedupeKey(f)));
+  const out: TierFeature[] = [];
+  const seenAdditionKeys = new Set<string>();
+  for (const f of additions) {
+    const k = inclusionDedupeKey(f);
+    if (priorKeys.has(k) || seenAdditionKeys.has(k)) continue;
+    seenAdditionKeys.add(k);
+    out.push(f);
+  }
+  return out;
+}
+
+/** Append tier rows skipping duplicates by semantic inclusion key (first row wins). */
 function appendDedupedByCard(base: TierFeature[], extra: TierFeature[]): TierFeature[] {
-  const keys = new Set(base.map((f) => f.card.trim().toLowerCase()));
+  const keys = new Set(base.map((f) => inclusionDedupeKey(f)));
   const out = [...base];
   for (const f of extra) {
-    const k = f.card.trim().toLowerCase();
+    const k = inclusionDedupeKey(f);
     if (!keys.has(k)) {
       keys.add(k);
       out.push(f);
@@ -206,15 +256,54 @@ function appendDedupedByCard(base: TierFeature[], extra: TierFeature[]): TierFea
   return out;
 }
 
+/** Final pass for legacy full-tier arrays that repeat the same perk with identical or variant `card` text. */
+function dedupeResidentialTierFeatureRows(rows: TierFeature[]): TierFeature[] {
+  const seen = new Set<string>();
+  const out: TierFeature[] = [];
+  for (const f of rows) {
+    const k = inclusionDedupeKey(f);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(f);
+  }
+  return out;
+}
+
+/**
+ * Merge saved `additions` with code defaults: canonical order, override by `card` key (case-insensitive),
+ * then append rows in `parsed` whose `card` is not in defaults. Heals truncated platform_config JSON.
+ */
+function mergeAdditionsWithCanon(parsed: TierFeature[], canon: TierFeature[]): TierFeature[] {
+  const byKey = new Map<string, TierFeature>();
+  for (const f of parsed) {
+    byKey.set(f.card.trim().toLowerCase(), f);
+  }
+  const canonKeys = new Set(canon.map((c) => c.card.trim().toLowerCase()));
+  const out: TierFeature[] = [];
+  for (const c of canon) {
+    const k = c.card.trim().toLowerCase();
+    out.push(byKey.get(k) ?? c);
+  }
+  const seen = new Set(out.map((f) => f.card.trim().toLowerCase()));
+  for (const f of parsed) {
+    const k = f.card.trim().toLowerCase();
+    if (!canonKeys.has(k) && !seen.has(k)) {
+      seen.add(k);
+      out.push(f);
+    }
+  }
+  return out;
+}
+
 /** Expanded lists for InclusionsShowcase, hydration, etc. */
 export function expandResidentialTierFeaturesStorage(s: ResidentialTierFeaturesStorage): Record<(typeof TIER_ORDER)[number], TierFeature[]> {
-  const essential = s.essential;
+  const essential = dedupeResidentialTierFeatureRows(s.essential);
   const signatureFull = Array.isArray(s.signature)
-    ? s.signature
-    : appendDedupedByCard(essential, s.signature.additions);
+    ? dedupeResidentialTierFeatureRows(s.signature)
+    : dedupeResidentialTierFeatureRows(appendDedupedByCard(essential, s.signature.additions));
   const estateFull = Array.isArray(s.estate)
-    ? s.estate
-    : appendDedupedByCard(signatureFull, s.estate.additions);
+    ? dedupeResidentialTierFeatureRows(s.estate)
+    : dedupeResidentialTierFeatureRows(appendDedupedByCard(signatureFull, s.estate.additions));
   return { essential, signature: signatureFull, estate: estateFull };
 }
 
@@ -287,7 +376,7 @@ export function parseResidentialTierFeaturesStorage(raw: string | null | undefin
       if (cleaned.length >= 3) signature = cleaned;
     } else if (p.signature && typeof p.signature === "object" && !Array.isArray(p.signature)) {
       const adds = parseAdditionsArray((p.signature as { additions?: unknown }).additions);
-      if (adds) signature = { additions: adds };
+      if (adds) signature = { additions: mergeAdditionsWithCanon(adds, DEFAULT_SIGNATURE_ADDITIONS) };
     }
   }
 
@@ -302,7 +391,7 @@ export function parseResidentialTierFeaturesStorage(raw: string | null | undefin
       if (cleaned.length >= 3) estate = cleaned;
     } else if (p.estate && typeof p.estate === "object" && !Array.isArray(p.estate)) {
       const adds = parseAdditionsArray((p.estate as { additions?: unknown }).additions);
-      if (adds) estate = { additions: adds };
+      if (adds) estate = { additions: mergeAdditionsWithCanon(adds, DEFAULT_ESTATE_ADDITIONS) };
     }
   }
 
@@ -316,9 +405,17 @@ export function buildResidentialTierFeatureBundle(raw: string | null | undefined
     signature: !Array.isArray(storage.signature),
     estate: !Array.isArray(storage.estate),
   };
+  const essentialRows = dedupeResidentialTierFeatureRows(storage.essential);
+  const sigAdds =
+    useAdditiveCards.signature && !Array.isArray(storage.signature) ? storage.signature.additions : [];
+  const estAdds = useAdditiveCards.estate && !Array.isArray(storage.estate) ? storage.estate.additions : [];
   const cardAdditions = {
-    signature: useAdditiveCards.signature && !Array.isArray(storage.signature) ? storage.signature.additions : [],
-    estate: useAdditiveCards.estate && !Array.isArray(storage.estate) ? storage.estate.additions : [],
+    signature: useAdditiveCards.signature && !Array.isArray(storage.signature)
+      ? filterAdditionsAgainstPrior(essentialRows, sigAdds)
+      : [],
+    estate: useAdditiveCards.estate && !Array.isArray(storage.estate)
+      ? filterAdditionsAgainstPrior(full.signature, estAdds)
+      : [],
   };
   return { full, cardAdditions, useAdditiveCards };
 }

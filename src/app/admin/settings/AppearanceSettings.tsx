@@ -62,12 +62,12 @@ export default function AppearanceSettings() {
   };
 
   const fieldClass =
-    "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors";
+    "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
 
   const Row = ({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) => (
     <div className="flex items-center justify-between gap-4 py-3 border-b border-[var(--brd)] last:border-0">
       <div className="min-w-0">
-        <div className="text-[12px] font-semibold text-[var(--tx)]">{label}</div>
+        <div className="text-[13px] font-semibold text-[var(--tx)]">{label}</div>
         {desc && <div className="text-[10px] text-[var(--tx3)] mt-0.5">{desc}</div>}
       </div>
       <div className="shrink-0">{children}</div>

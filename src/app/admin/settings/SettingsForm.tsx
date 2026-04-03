@@ -60,12 +60,14 @@ export default function SettingsForm() {
   };
 
   const fieldClass =
-    "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] focus:border-[var(--gold)] outline-none transition-colors";
+    "w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--gold)] outline-none transition-colors";
+
+  const labelClass = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-3">
       <div>
-        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1">
+        <label className={labelClass}>
           Current Password
         </label>
         <input
@@ -78,7 +80,7 @@ export default function SettingsForm() {
         />
       </div>
       <div>
-        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1">
+        <label className={labelClass}>
           New Password
         </label>
         <input
@@ -91,7 +93,7 @@ export default function SettingsForm() {
         />
       </div>
       <div>
-        <label className="block text-[11px] font-semibold text-[var(--tx2)] mb-1">
+        <label className={labelClass}>
           Confirm New Password
         </label>
         <input
@@ -110,13 +112,13 @@ export default function SettingsForm() {
           autoComplete="new-password"
         />
         {confirmPassword && confirmPassword !== newPassword && (
-          <p className="text-[9px] text-[var(--red)] mt-1">Passwords do not match</p>
+          <p className="text-[10px] text-[var(--red)] mt-1.5">Passwords do not match</p>
         )}
       </div>
       <button
         onClick={handleChangePassword}
         disabled={loading}
-        className="w-full py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 mt-1"
+        className="w-full px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-all disabled:opacity-50 mt-1"
       >
         {loading ? "Updating..." : "Update Password"}
       </button>

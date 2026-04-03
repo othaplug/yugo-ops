@@ -11,6 +11,14 @@ import {
   parseQuantityFromLine,
   type MatchConfidence,
 } from "@/lib/inventory-search";
+import {
+  getWeightTier,
+  inferWeightTierFromLegacyScore,
+  normalizeB2bWeightCategory,
+  residentialInventoryLineScore,
+  tierRequiresActualWeight,
+  weightTierSelectOptions,
+} from "@/lib/pricing/weight-tiers";
 
 const fieldInput = "field-input-compact w-full";
 
@@ -20,6 +28,9 @@ export interface InventoryItemEntry {
   quantity: number;
   weight_score: number;
   defaultWeight?: number;   // original DB weight, preserved when coordinator overrides
+  /** Canonical weight tier; when unset, inferred from weight_score for scoring. */
+  weight_tier_code?: string;
+  actual_weight_lbs?: number;
   weightNote?: string;      // free-text note, e.g. "400 lbs, baby grand"
   room?: string;
   isCustom?: boolean;
@@ -58,39 +69,27 @@ const COMMERCIAL_ROOM_TABS = [
   { id: "all", label: "All" },
 ] as const;
 
-const CUSTOM_WEIGHT_OPTS = [
-  { label: "Light", value: 0.5 },
-  { label: "Medium", value: 1.0 },
-  { label: "Heavy", value: 2.0 },
-  { label: "Extra Heavy", value: 3.0 },
-] as const;
+const RES_WEIGHT_TIER_OPTS = weightTierSelectOptions();
 
-/** All selectable weight values for the override picker */
-const WEIGHT_OVERRIDE_OPTS = [
-  { label: "Very Light (0.3)", value: 0.3 },
-  { label: "Light (0.5)", value: 0.5 },
-  { label: "Medium (1.0)", value: 1.0 },
-  { label: "Mod. Heavy (1.5)", value: 1.5 },
-  { label: "Heavy (2.0)", value: 2.0 },
-  { label: "Very Heavy (2.5)", value: 2.5 },
-  { label: "Extra Heavy (3.0)", value: 3.0 },
-] as const;
-
-/** Short label shown on the weight badge chip */
-function weightLabel(score: number): string {
-  if (score <= 0.3) return "V.Light";
-  if (score <= 0.5) return "Light";
-  if (score <= 1.0) return "Medium";
-  if (score <= 1.5) return "Mod.Heavy";
-  if (score <= 2.0) return "Heavy";
-  if (score <= 2.5) return "V.Heavy";
-  return "Extra Heavy";
+/** Short label shown on the weight tier chip */
+function tierChipLabel(item: InventoryItemEntry): string {
+  const code =
+    item.weight_tier_code != null && item.weight_tier_code !== ""
+      ? normalizeB2bWeightCategory(item.weight_tier_code)
+      : inferWeightTierFromLegacyScore(item.weight_score);
+  return getWeightTier(code)?.label ?? code;
 }
 
-function weightChipClass(score: number): string {
-  if (score >= 3.0) return "bg-red-500/15 text-red-400 border-red-400/40";
-  if (score >= 2.0) return "bg-orange-500/15 text-orange-400 border-orange-400/40";
-  if (score >= 1.0) return "bg-yellow-500/10 text-yellow-500 border-yellow-500/30";
+function weightChipClass(item: InventoryItemEntry): string {
+  const code =
+    item.weight_tier_code != null && item.weight_tier_code !== ""
+      ? normalizeB2bWeightCategory(item.weight_tier_code)
+      : inferWeightTierFromLegacyScore(item.weight_score);
+  const t = getWeightTier(code);
+  const f = t?.priceFactor ?? 1;
+  if (f >= 2) return "bg-red-500/15 text-red-400 border-red-400/40";
+  if (f >= 1.35) return "bg-orange-500/15 text-orange-400 border-orange-400/40";
+  if (f > 1) return "bg-yellow-500/10 text-yellow-500 border-yellow-500/30";
   return "bg-[var(--bg)] text-[var(--tx3)] border-[var(--brd)]";
 }
 
@@ -149,7 +148,7 @@ export default function InventoryInput({
   const [search, setSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [customName, setCustomName] = useState("");
-  const [customWeight, setCustomWeight] = useState(1.0);
+  const [customTier, setCustomTier] = useState<string>("standard");
   const [editingWeightKey, setEditingWeightKey] = useState<string | null>(null);
   const [editingNoteKey, setEditingNoteKey] = useState<string | null>(null);
   const [customBoxInput, setCustomBoxInput] = useState("");
@@ -222,11 +221,13 @@ export default function InventoryInput({
   const addItem = useCallback(
     (w: ItemWeightRow, qty = 1) => {
       const fragile = nameImpliesFragile(w.item_name);
+      const ws = Number(w.weight_score);
       const entry: InventoryItemEntry = {
         slug: w.slug,
         name: w.item_name,
         quantity: qty,
-        weight_score: Number(w.weight_score),
+        weight_score: ws,
+        weight_tier_code: inferWeightTierFromLegacyScore(ws),
         room: w.room || "other",
         fragile,
       };
@@ -252,7 +253,8 @@ export default function InventoryInput({
     const entry: InventoryItemEntry = {
       name,
       quantity: 1,
-      weight_score: customWeight,
+      weight_score: 1,
+      weight_tier_code: normalizeB2bWeightCategory(customTier),
       isCustom: true,
       room: "other",
       fragile: nameImpliesFragile(name),
@@ -269,7 +271,7 @@ export default function InventoryInput({
       onChange([...value, entry]);
     }
     setCustomName("");
-  }, [customName, customWeight, value, onChange]);
+  }, [customName, customTier, value, onChange]);
 
   const updateQty = useCallback(
     (key: string, delta: number) => {
@@ -284,19 +286,43 @@ export default function InventoryInput({
     [value, onChange]
   );
 
-  /** Override the weight_score on an existing item. Preserves original as defaultWeight. */
-  const updateWeight = useCallback(
-    (key: string, newScore: number) => {
+  const updateWeightTier = useCallback(
+    (key: string, tierRaw: string) => {
+      const tierCode = normalizeB2bWeightCategory(tierRaw);
       onChange(
         value.map((i) => {
           if (itemKey(i) !== key) return i;
           const defaultWeight = i.defaultWeight ?? i.weight_score;
-          return { ...i, weight_score: newScore, defaultWeight };
-        })
+          const next: InventoryItemEntry = {
+            ...i,
+            weight_tier_code: tierCode,
+            defaultWeight,
+          };
+          if (!tierRequiresActualWeight(tierCode)) {
+            delete next.actual_weight_lbs;
+          }
+          return next;
+        }),
       );
       setEditingWeightKey(null);
     },
-    [value, onChange]
+    [value, onChange],
+  );
+
+  const updateActualWeightLbs = useCallback(
+    (key: string, lbs: number | undefined) => {
+      onChange(
+        value.map((i) => {
+          if (itemKey(i) !== key) return i;
+          return {
+            ...i,
+            actual_weight_lbs:
+              lbs != null && Number.isFinite(lbs) && lbs > 0 ? Math.round(lbs) : undefined,
+          };
+        }),
+      );
+    },
+    [value, onChange],
   );
 
   const updateNote = useCallback(
@@ -320,8 +346,8 @@ export default function InventoryInput({
   );
 
   const inventoryScore = useMemo(
-    () => value.reduce((sum, i) => sum + i.weight_score * i.quantity, 0),
-    [value]
+    () => value.reduce((sum, i) => sum + residentialInventoryLineScore(i), 0),
+    [value],
   );
 
   const boxScore = (boxCount ?? 0) * 0.3;
@@ -553,11 +579,13 @@ export default function InventoryInput({
                             fragile: existing.fragile || fragile,
                           };
                         } else {
+                          const ws = Number(row.match.weight_score);
                           next.push({
                             slug: row.match.slug,
                             name: row.match.item_name,
                             quantity: row.qty,
-                            weight_score: Number(row.match.weight_score),
+                            weight_score: ws,
+                            weight_tier_code: inferWeightTierFromLegacyScore(ws),
                             room: row.match.room || "other",
                             fragile,
                           });
@@ -597,18 +625,21 @@ export default function InventoryInput({
                 className={fieldInput}
               />
             </div>
-            <div className="w-full shrink-0 sm:w-32">
+            <div className="w-full shrink-0 sm:min-w-[11rem] sm:max-w-[14rem]">
               <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[var(--tx2)]">
-                Weight
+                Weight range
               </label>
               <select
-                value={customWeight}
-                onChange={(e) => setCustomWeight(Number(e.target.value))}
+                value={normalizeB2bWeightCategory(customTier)}
+                onChange={(e) => setCustomTier(e.target.value)}
                 className={fieldInput}
-                aria-label="Weight for custom item"
+                aria-label="Weight range for custom item"
               >
-                {CUSTOM_WEIGHT_OPTS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                {RES_WEIGHT_TIER_OPTS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                    {o.shortHint !== "Base" ? ` (${o.shortHint})` : ""}
+                  </option>
                 ))}
               </select>
             </div>
@@ -690,9 +721,14 @@ export default function InventoryInput({
             const key = itemKey(item);
             const isWeightEditing = editingWeightKey === key;
             const isNoteEditing = editingNoteKey === key;
-            const isOverridden =
-              item.defaultWeight !== undefined &&
-              item.defaultWeight !== item.weight_score;
+            const defaultTier = inferWeightTierFromLegacyScore(
+              item.defaultWeight ?? item.weight_score,
+            );
+            const effectiveTier =
+              item.weight_tier_code != null && item.weight_tier_code !== ""
+                ? normalizeB2bWeightCategory(item.weight_tier_code)
+                : inferWeightTierFromLegacyScore(item.weight_score);
+            const isOverridden = effectiveTier !== defaultTier;
             const qtyValidation = validateInventoryQuantity(
               item.slug || item.name || "",
               item.quantity,
@@ -706,9 +742,9 @@ export default function InventoryInput({
                 <div className="flex items-center gap-2 py-1 group">
                   <span
                     className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                      item.weight_score >= 2
+                      (getWeightTier(effectiveTier)?.priceFactor ?? 1) >= 1.35
                         ? "bg-orange-400"
-                        : item.weight_score <= 0.5
+                        : (getWeightTier(effectiveTier)?.priceFactor ?? 1) <= 1
                           ? "bg-[var(--tx3)]"
                           : "bg-[var(--gold)]"
                     }`}
@@ -725,32 +761,49 @@ export default function InventoryInput({
 
                   {/* Weight override badge */}
                   {isWeightEditing ? (
-                    <select
-                      ref={weightSelectRef}
-                      autoFocus
-                      value={item.weight_score}
-                      onChange={(e) => updateWeight(key, Number(e.target.value))}
-                      onBlur={() => setEditingWeightKey(null)}
-                      className="text-[9px] bg-[var(--card)] border border-[var(--gold)] rounded px-1 py-0.5 text-[var(--tx)] outline-none"
-                    >
-                      {item.defaultWeight !== undefined &&
-                        item.defaultWeight !== item.weight_score && (
-                          <option value={item.defaultWeight}>
-                            Reset to default ({item.defaultWeight})
-                          </option>
+                    <div className="flex flex-col gap-1 items-end min-w-[10rem]">
+                      <select
+                        ref={weightSelectRef}
+                        autoFocus
+                        value={effectiveTier}
+                        onChange={(e) => updateWeightTier(key, e.target.value)}
+                        onBlur={() => setEditingWeightKey(null)}
+                        className="text-[9px] bg-[var(--card)] border border-[var(--gold)] rounded px-1 py-0.5 text-[var(--tx)] outline-none w-full max-w-[14rem]"
+                      >
+                        {isOverridden && (
+                          <option value={defaultTier}>Reset to default ({getWeightTier(defaultTier)?.label})</option>
                         )}
-                      {WEIGHT_OVERRIDE_OPTS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
+                        {RES_WEIGHT_TIER_OPTS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      {tierRequiresActualWeight(effectiveTier) && (
+                        <input
+                          type="number"
+                          min={1}
+                          placeholder="Actual lbs"
+                          className="text-[9px] w-full max-w-[7rem] rounded border border-[var(--brd)] px-1 py-0.5 bg-[var(--bg)] text-[var(--tx)]"
+                          value={item.actual_weight_lbs ?? ""}
+                          onChange={(e) => {
+                            const n = Number(e.target.value);
+                            updateActualWeightLbs(
+                              key,
+                              Number.isFinite(n) && n > 0 ? n : undefined,
+                            );
+                          }}
+                        />
+                      )}
+                    </div>
                   ) : (
                     <button
                       type="button"
-                      title="Click to adjust weight"
+                      title="Click to adjust weight range"
                       onClick={() => setEditingWeightKey(key)}
-                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[10px] font-semibold transition-colors hover:opacity-80 ${weightChipClass(item.weight_score)}`}
+                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[10px] font-semibold transition-colors hover:opacity-80 ${weightChipClass(item)}`}
                     >
-                      {weightLabel(item.weight_score)}
+                      {tierChipLabel(item)}
                       {isOverridden && (
                         <span className="text-[var(--gold)] ml-0.5" title="Weight adjusted">✱</span>
                       )}

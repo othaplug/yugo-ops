@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, TemplateName } from "@/lib/email/send";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
+import { autoCreateHubSpotDealForSentQuote } from "@/lib/hubspot/auto-create-deal-for-quote";
 import { requireStaff } from "@/lib/api-auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
@@ -12,6 +13,7 @@ import { sendQuoteLinkSms } from "@/lib/quote-sms";
 import { updateLeadAfterQuoteSent } from "@/lib/leads/update-from-quote";
 import { pickupLocationsFromQuote, dropoffLocationsFromQuote } from "@/lib/quotes/quote-address-display";
 import { normalizePhone } from "@/lib/phone";
+import { getQuoteIdPrefix, quoteNumericSuffixForHubSpot } from "@/lib/quotes/quote-id";
 
 const SERVICE_TO_TEMPLATE: Record<string, string> = {
   local_move: "quote-residential",
@@ -362,45 +364,78 @@ export async function POST(req: NextRequest) {
         .eq("id", quote.contact_id);
     }
 
-    const dealIdRaw = hubspotDealId ?? quote.hubspot_deal_id;
-    const dealId = typeof dealIdRaw === "string" ? dealIdRaw : null;
-    if (dealId) {
-      const token = process.env.HUBSPOT_ACCESS_TOKEN;
-      if (token) {
-        const curatedPrice =
-          (quote.tiers as Record<string, { price: number }> | null)?.essential?.price ??
-          (quote.tiers as Record<string, { price: number }> | null)?.curated?.price ??
-          (quote.tiers as Record<string, { price: number }> | null)?.essentials?.price ??
-          quote.custom_price;
+    const bodyHs =
+      hubspotDealId != null && typeof hubspotDealId === "string" && hubspotDealId.trim()
+        ? hubspotDealId.trim()
+        : null;
+    if (bodyHs && !quote.hubspot_deal_id) {
+      await supabase.from("quotes").update({ hubspot_deal_id: bodyHs }).eq("quote_id", quoteId);
+      (quote as { hubspot_deal_id?: string }).hubspot_deal_id = bodyHs;
+    }
 
-        const fName = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
-        const lName = fullName ? fullName.split(/\s+/).slice(1).join(" ").trim() : "";
+    let effectiveDealId =
+      bodyHs ||
+      (typeof quote.hubspot_deal_id === "string" && quote.hubspot_deal_id.trim()
+        ? quote.hubspot_deal_id.trim()
+        : null);
 
-        const dealProps: Record<string, string> = {
-          quote_url: quoteUrl,
-        };
-        if (curatedPrice != null) dealProps.amount = String(curatedPrice);
-        if (fName) dealProps.firstname = fName;
-        if (lName) dealProps.lastname = lName;
-        if (quote.from_address?.trim()) dealProps.pick_up_address = quote.from_address.trim();
-        if (quote.to_address?.trim()) dealProps.drop_off_address = quote.to_address.trim();
-        if (quote.from_access?.trim()) dealProps.access_from = quote.from_access.trim();
-        if (quote.to_access?.trim()) dealProps.access_to = quote.to_access.trim();
-        if (quote.service_type?.trim()) dealProps.service_type = quote.service_type.trim();
-        if (quote.move_size?.trim()) dealProps.move_size = quote.move_size.trim();
-        if (quote.move_date?.trim()) dealProps.move_date = quote.move_date.trim();
-
-        fetch(`https://api.hubapi.com/crm/v3/objects/deals/${dealId}`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ properties: dealProps }),
-        }).catch(() => {});
-
-        syncDealStage(dealId, "quote_sent").catch(() => {});
+    const hsToken = process.env.HUBSPOT_ACCESS_TOKEN;
+    if (!effectiveDealId && hsToken) {
+      const lName = fullName ? fullName.split(/\s+/).slice(1).join(" ").trim() : "";
+      const created = await autoCreateHubSpotDealForSentQuote({
+        sb: supabase,
+        quote: quote as Record<string, unknown>,
+        quoteIdText: quoteId,
+        quoteUrl,
+        clientEmail,
+        firstName,
+        lastName: lName,
+        clientPhone: clientPhone || undefined,
+      });
+      if (created?.dealId) {
+        await supabase.from("quotes").update({ hubspot_deal_id: created.dealId }).eq("quote_id", quoteId);
+        effectiveDealId = created.dealId;
       }
+    }
+
+    if (effectiveDealId && hsToken) {
+      const idPrefix = await getQuoteIdPrefix(supabase);
+      const jobNoSuffix = quoteNumericSuffixForHubSpot(quoteId, idPrefix);
+
+      const curatedPrice =
+        (quote.tiers as Record<string, { price: number }> | null)?.essential?.price ??
+        (quote.tiers as Record<string, { price: number }> | null)?.curated?.price ??
+        (quote.tiers as Record<string, { price: number }> | null)?.essentials?.price ??
+        quote.custom_price;
+
+      const fName = fullName ? fullName.split(/\s+/)[0]!.trim() : "";
+      const lName = fullName ? fullName.split(/\s+/).slice(1).join(" ").trim() : "";
+
+      const dealProps: Record<string, string> = {
+        quote_url: quoteUrl,
+      };
+      if (jobNoSuffix) dealProps.job_no = jobNoSuffix;
+      if (curatedPrice != null) dealProps.amount = String(curatedPrice);
+      if (fName) dealProps.firstname = fName;
+      if (lName) dealProps.lastname = lName;
+      if (quote.from_address?.trim()) dealProps.pick_up_address = quote.from_address.trim();
+      if (quote.to_address?.trim()) dealProps.drop_off_address = quote.to_address.trim();
+      if (quote.from_access?.trim()) dealProps.access_from = quote.from_access.trim();
+      if (quote.to_access?.trim()) dealProps.access_to = quote.to_access.trim();
+      if (quote.service_type?.trim()) dealProps.service_type = quote.service_type.trim();
+      if (quote.move_size?.trim()) dealProps.move_size = quote.move_size.trim();
+      if (quote.move_date?.trim()) dealProps.move_date = quote.move_date.trim();
+
+      fetch(`https://api.hubapi.com/crm/v3/objects/deals/${effectiveDealId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${hsToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ properties: dealProps }),
+      }).catch(() => {});
+
+      syncDealStage(effectiveDealId, "quote_sent").catch(() => {});
     }
 
     await logAudit({

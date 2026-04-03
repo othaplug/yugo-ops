@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 
 /**
  * Marks quotes as expired when past expires_at (idempotent updates).
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   const { data: rows, error } = await admin
     .from("quotes")
-    .select("id, quote_id")
+    .select("id, quote_id, hubspot_deal_id")
     .in("status", ["sent", "viewed", "reactivated"])
     .lt("expires_at", now);
 
@@ -36,6 +37,11 @@ export async function GET(req: NextRequest) {
 
   if (upErr) {
     return NextResponse.json({ error: upErr.message }, { status: 500 });
+  }
+
+  for (const r of rows || []) {
+    const hid = (r as { hubspot_deal_id?: string | null }).hubspot_deal_id;
+    if (hid) syncDealStage(hid, "expired").catch(() => {});
   }
 
   return NextResponse.json({ updated: ids.length });

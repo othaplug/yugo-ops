@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowsClockwise as RefreshCw, PaperPlaneTilt as Send, CheckCircle, CircleNotch as Loader2, TrendUp as TrendingUp } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
+import { inferWeightTierFromLegacyScore } from "@/lib/pricing/weight-tiers";
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import { getVisibleAddons, ESTATE_ADDON_UI_LINES } from "@/lib/quotes/addon-visibility";
 import { quoteDetailDateLabel, quoteFormServiceDateLabel } from "@/lib/quotes/quote-field-labels";
@@ -206,11 +207,20 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
       const iw = itemWeights.find((w) => w.slug === item.slug);
       const name = item.name || iw?.item_name || item.slug || "";
       const slug = item.slug || undefined;
+      const ws = item.weight_score ?? iw?.weight_score ?? 1;
       return {
         slug,
         name,
         quantity: item.quantity || 1,
-        weight_score: item.weight_score ?? iw?.weight_score ?? 1,
+        weight_score: ws,
+        weight_tier_code:
+          typeof item.weight_tier_code === "string" && item.weight_tier_code
+            ? item.weight_tier_code
+            : inferWeightTierFromLegacyScore(Number(ws)),
+        actual_weight_lbs:
+          typeof item.actual_weight_lbs === "number" && item.actual_weight_lbs > 0
+            ? item.actual_weight_lbs
+            : undefined,
         isCustom: !slug && !!name,
       };
     });

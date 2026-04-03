@@ -27,7 +27,7 @@ export default function SettingsTabs({ isPartner }: { isPartner: boolean }) {
   return (
     <>
       {/* Desktop: vertical sidebar */}
-      <nav className="hidden sm:flex flex-col gap-0.5 w-[168px] shrink-0 sticky top-[4.5rem]">
+      <nav className="hidden sm:flex flex-col gap-0.5 w-44 shrink-0 sticky top-[4.5rem] pr-2 sm:pr-3 border-r border-[var(--brd)]/25">
         {TABS.map((tab) => {
           const TabIcon = tab.Icon;
           const active = activeTab === tab.id;
@@ -36,33 +36,33 @@ export default function SettingsTabs({ isPartner }: { isPartner: boolean }) {
             <Link
               key={tab.id}
               href={`/admin/settings/${tab.id}`}
-              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+              className={`group flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-all ${
                 active
                   ? "bg-[var(--gdim)] text-[var(--gold)]"
                   : "text-[var(--tx3)] hover:bg-[var(--gdim)]/50 hover:text-[var(--tx)]"
               }`}
             >
               <TabIcon
-                size={16}
+                size={15}
                 weight={active ? "fill" : "regular"}
                 className={`shrink-0 transition-colors ${active ? "text-[var(--gold)]" : "text-[var(--tx3)] group-hover:text-[var(--tx2)]"}`}
               />
-              <div className="min-w-0">
-                <div className={`text-[12px] font-semibold leading-tight truncate ${active ? "text-[var(--gold)]" : ""}`}>
+              <div className="min-w-0 flex-1">
+                <div className={`text-[11px] font-semibold leading-snug truncate ${active ? "text-[var(--gold)]" : ""}`}>
                   {label}
                 </div>
-                <div className="text-[10px] text-[var(--tx3)] leading-tight truncate mt-0.5 hidden lg:block">
+                <div className="text-[9px] text-[var(--tx3)] leading-tight mt-0.5 hidden xl:block line-clamp-2">
                   {tab.desc}
                 </div>
               </div>
-              {active && <span className="ml-auto w-1 h-1 rounded-full bg-[var(--gold)] shrink-0" />}
+              {active && <span className="ml-0.5 w-1 h-1 rounded-full bg-[var(--gold)] shrink-0 self-start mt-1.5" />}
             </Link>
           );
         })}
       </nav>
 
       {/* Mobile: horizontal scrollable pills */}
-      <div className="sm:hidden flex overflow-x-auto gap-1 pb-2 mb-4 -mx-1 px-1 scrollbar-hide w-full">
+      <div className="sm:hidden flex overflow-x-auto gap-1 pb-1 mb-4 -mx-1 px-1 scrollbar-hide w-full shrink-0">
         {TABS.map((tab) => {
           const TabIcon = tab.Icon;
           const active = activeTab === tab.id;

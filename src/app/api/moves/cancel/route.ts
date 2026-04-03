@@ -113,7 +113,7 @@ export async function POST(req: Request) {
 
     /* ── 3. HubSpot → Closed Lost ── */
     if (move.hubspot_deal_id) {
-      syncDealStage(move.hubspot_deal_id, "completed").catch(() => {});
+      syncDealStage(move.hubspot_deal_id, "cancelled").catch(() => {});
 
       const token = process.env.HUBSPOT_ACCESS_TOKEN;
       if (token) {

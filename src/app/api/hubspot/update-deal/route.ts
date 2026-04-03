@@ -1,25 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
+import { resolveHubSpotStageInternalId } from "@/lib/hubspot/resolve-hubspot-stage-id";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects/deals";
 
 /**
- * Map human-readable stage names → HubSpot internal pipeline stage IDs.
- * Populate these from HubSpot → Settings → Objects → Deals → Pipelines.
- * Each stage's internal ID is visible in the URL when you click on it.
- *
- * Stored in platform_config so admins can update without redeployment.
- * Fallback env vars are checked if the DB row doesn't exist.
+ * dealstage values in the request body → logical stage names (see logical-deal-stages.ts).
  */
-const STAGE_CONFIG_KEYS: Record<string, string> = {
-  new_lead:          "hubspot_stage_new_lead",
-  contacted:         "hubspot_stage_contacted",
-  quote_sent:        "hubspot_stage_quote_sent",
-  deposit_received:  "hubspot_stage_deposit_received",
-  booked:            "hubspot_stage_booked",
-  closed_won:        "hubspot_stage_closed_won",
-  closed_lost:       "hubspot_stage_closed_lost",
+const STAGE_NAME_TO_LOGICAL: Record<string, string> = {
+  new_lead: "new_lead",
+  contacted: "contacted",
+  quote_draft: "quote_draft",
+  quote_sent: "quote_sent",
+  quote_viewed: "quote_viewed",
+  deposit_received: "deposit_received",
+  booked: "booked",
+  scheduled: "scheduled",
+  in_progress: "in_progress",
+  closed_won: "closed_won",
+  closed_lost: "closed_lost",
+  cancelled: "closed_lost",
+  expired: "closed_lost",
 };
 
 const ALLOWED_PROPERTIES = new Set([
@@ -27,6 +29,8 @@ const ALLOWED_PROPERTIES = new Set([
   "total_price",
   "taxes",
   "quote_url",
+  /** Numeric suffix only; synced from OPS quote_id (e.g. YG-3009 -> 3009). */
+  "job_no",
   "opsplus_move_id",
   "square_invoice_id",
   "deposit_received_at",
@@ -178,19 +182,9 @@ async function resolveDealStage(
   sb: ReturnType<typeof createAdminClient>,
   value: string,
 ): Promise<string | null> {
-  const configKey = STAGE_CONFIG_KEYS[value];
-  if (!configKey) return null; // already an internal ID or unknown
-
-  const { data } = await sb
-    .from("platform_config")
-    .select("value")
-    .eq("key", configKey)
-    .single();
-
-  if (data?.value) return data.value;
-
-  const envKey = configKey.toUpperCase();
-  if (process.env[envKey]) return process.env[envKey]!;
-
+  const logical = STAGE_NAME_TO_LOGICAL[value];
+  if (logical) {
+    return resolveHubSpotStageInternalId(sb, logical);
+  }
   return null;
 }

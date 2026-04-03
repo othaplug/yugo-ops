@@ -4,16 +4,30 @@
  */
 
 import { extractMaxWeightLbsFromText } from "@/lib/leads/parse-text-metrics";
-import { inferB2bWeightCategoryFromLbs } from "./b2b-weight-helpers";
+import {
+  inferB2bWeightCategoryFromLbs,
+  normalizeB2bWeightCategory,
+} from "./b2b-weight-helpers";
+import {
+  calculateWeightSurchargeForLine,
+  getWeightTier,
+  pickLargerTruck,
+  recommendCrewFromWeightItems,
+  recommendTruckFromWeightItems,
+  type WeightTierCode,
+} from "./weight-tiers";
 
-export type B2BWeightCategory = "light" | "medium" | "heavy" | "extra_heavy";
+export type B2BWeightCategory = WeightTierCode;
 
 export interface B2BQuoteLineItem {
   description: string;
   quantity: number;
-  weight_category?: B2BWeightCategory;
+  /** Raw tier from API/UI; normalized in enrichB2bLineItems. */
+  weight_category?: string;
   /** Per-line weight when known (medical crew rules, parsing). */
   weight_lbs?: number;
+  /** Coordinator-entered actual weight for super heavy / extreme tiers. */
+  actual_weight_lbs?: number;
   fragile?: boolean;
   dimensions?: string;
   /** Per-line handling (dimensional engine); falls back to quote-level handling_type. */
@@ -233,22 +247,13 @@ export function synthesizeStopsFromAddresses(
   ];
 }
 
-function mapLegacyWeightCategory(cat: string | undefined): B2BWeightCategory | undefined {
-  const c = (cat || "").toLowerCase();
-  if (c === "standard" || c === "light") return "light";
-  if (c === "heavy") return "medium";
-  if (c === "very_heavy") return "heavy";
-  if (c === "oversized_fragile") return "extra_heavy";
-  return undefined;
-}
-
 function enrichB2bLineItems(
   lines: B2BQuoteLineItem[],
   verticalCode: string,
-  legacyWc?: B2BWeightCategory,
+  globalWc?: string,
 ): B2BQuoteLineItem[] {
   const vcode = verticalCode.trim().toLowerCase() || "furniture_retail";
-  const wcGlobal = legacyWc;
+  const wcGlobal = globalWc ? normalizeB2bWeightCategory(globalWc) : undefined;
   return lines.map((i) => {
     const ext = i as B2BQuoteLineItem & { haul_away_old?: boolean };
     const iNorm: B2BQuoteLineItem = {
@@ -256,19 +261,27 @@ function enrichB2bLineItems(
       haul_away: !!(i.haul_away || ext.haul_away_old),
     };
     const q = Math.max(1, iNorm.quantity || 1);
+    const actualLbs =
+      iNorm.actual_weight_lbs != null && Number.isFinite(iNorm.actual_weight_lbs)
+        ? Math.round(iNorm.actual_weight_lbs)
+        : undefined;
     let weight_lbs = iNorm.weight_lbs;
     if (weight_lbs == null || !Number.isFinite(weight_lbs)) {
       const fromText = extractMaxWeightLbsFromText(iNorm.description);
       if (fromText != null) weight_lbs = Math.round(fromText);
     }
-    let wc = iNorm.weight_category ?? wcGlobal;
-    if (!wc && weight_lbs != null && weight_lbs > 0) {
-      wc = inferB2bWeightCategoryFromLbs(weight_lbs, vcode);
+    let wcRaw = iNorm.weight_category ?? wcGlobal;
+    let wc = wcRaw ? normalizeB2bWeightCategory(wcRaw) : undefined;
+    const lbsHint = actualLbs ?? weight_lbs;
+    if (!wc && lbsHint != null && lbsHint > 0) {
+      wc = inferB2bWeightCategoryFromLbs(lbsHint, vcode);
     }
+    if (!wc) wc = "standard";
     return {
       ...iNorm,
       quantity: q,
       weight_category: wc,
+      actual_weight_lbs: actualLbs,
       weight_lbs: weight_lbs != null && Number.isFinite(weight_lbs) ? weight_lbs : undefined,
     };
   });
@@ -283,21 +296,16 @@ export function lineItemsFromQuotePayload(input: {
   omit_placeholder?: boolean;
 }): B2BQuoteLineItem[] {
   const vcode = (input.b2b_vertical_code || "furniture_retail").trim() || "furniture_retail";
+  const globalCat = input.b2b_weight_category?.trim() || undefined;
   if (input.b2b_line_items && input.b2b_line_items.length > 0) {
-    const wc = mapLegacyWeightCategory(input.b2b_weight_category);
-    return enrichB2bLineItems(input.b2b_line_items, vcode, wc);
+    return enrichB2bLineItems(input.b2b_line_items, vcode, globalCat);
   }
   if (input.b2b_items && input.b2b_items.length > 0) {
     const parsed = parseLegacyB2bItemStrings(input.b2b_items);
-    const wc = mapLegacyWeightCategory(input.b2b_weight_category);
-    return enrichB2bLineItems(parsed, vcode, wc);
+    return enrichB2bLineItems(parsed, vcode, globalCat);
   }
   if (input.omit_placeholder) return [];
-  return enrichB2bLineItems(
-    [{ description: "Delivery", quantity: 1 }],
-    vcode,
-    mapLegacyWeightCategory(input.b2b_weight_category),
-  );
+  return enrichB2bLineItems([{ description: "Delivery", quantity: 1 }], vcode, globalCat);
 }
 
 export function stopsFromQuotePayload(input: {
@@ -583,38 +591,42 @@ export function calculateB2BDimensionalPrice(args: {
   }
   totalPrice += handlingCharge;
 
-  const wlr = vc.weight_line_rates as Record<string, number> | undefined;
-  if (wlr && typeof wlr === "object" && dimOn) {
+  const weightBasePerItem = (() => {
+    if (usesTieredItems && Number.isFinite(perItemAfterBase) && perItemAfterBase > 0) {
+      return perItemAfterBase;
+    }
+    if (unitRate > 0) return unitRate;
+    const br = num(args.vertical.base_rate, 0);
+    const denom = Math.max(1, tierBillableUnits || totalUnits);
+    return Math.max(25, Math.round(br / Math.max(4, denom)));
+  })();
+
+  if (dimOn && items.length > 0) {
     for (const item of items) {
-      const cat = item.weight_category || "light";
-      const tierRate = num(wlr[String(cat)], 0);
-      if (tierRate > 0) {
-        const weightCharge = Math.round(item.quantity * tierRate * 100) / 100;
-        totalPrice += weightCharge;
+      const cat = item.weight_category || "standard";
+      const res = calculateWeightSurchargeForLine({
+        weight_category: cat,
+        basePricePerItem: weightBasePerItem,
+        quantity: item.quantity,
+        actual_weight_lbs: item.actual_weight_lbs,
+        weight_lbs: item.weight_lbs,
+      });
+      const tier = getWeightTier(cat);
+      const lbs = item.actual_weight_lbs ?? item.weight_lbs;
+      if (res.percentSurcharge > 0) {
+        totalPrice += res.percentSurcharge;
         breakdown.push({
-          label: `Weight surcharge (${item.description}): ${item.quantity} × ${fmtMoney(tierRate)}`,
-          amount: weightCharge,
+          label: `${item.quantity}× ${item.description} (${tier?.label ?? cat}${lbs ? `, ${lbs} lbs` : ""}) ${res.percentLabel}`.trim(),
+          amount: res.percentSurcharge,
         });
       }
-    }
-  }
-
-  const weightTiers = vc.weight_tiers as Record<string, number> | undefined;
-  if (!wlr && weightTiers && dimOn) {
-    for (const item of items) {
-      const tierKey =
-        item.weight_category === "heavy" || item.weight_category === "extra_heavy"
-          ? "heavy_over_60lbs"
-          : item.weight_category === "medium"
-            ? "medium_30_60lbs"
-            : "light_under_30lbs";
-      const tierRate = num(weightTiers[tierKey], 0);
-      if (tierRate > 0) {
-        const weightCharge = Math.round(item.quantity * tierRate * 100) / 100;
-        totalPrice += weightCharge;
+      if (res.perLbPortion > 0 && tier) {
+        totalPrice += res.perLbPortion;
+        const over =
+          lbs != null && lbs > tier.minLbs ? Math.round(lbs - tier.minLbs) : 0;
         breakdown.push({
-          label: `Weight surcharge (${item.description}): ${item.quantity} × ${fmtMoney(tierRate)}`,
-          amount: weightCharge,
+          label: `Per-lb over ${tier.minLbs} lb (${item.description}): ${over} lb × ${fmtMoney(tier.perLbRate ?? 0.5)}`,
+          amount: res.perLbPortion,
         });
       }
     }
@@ -685,24 +697,23 @@ export function calculateB2BDimensionalPrice(args: {
     breakdown.push({ label: "Returns pickup", amount: rp });
   }
 
-  const unitOver300Lb = items.some((i) => (i.weight_lbs ?? 0) > 300);
+  const unitOver300Lb = items.some((i) => {
+    const w = i.actual_weight_lbs ?? i.weight_lbs ?? 0;
+    return w > 300;
+  });
   const medicalNeedsThreeCrew = args.vertical.code === "medical_equipment" && unitOver300Lb;
-  const heavyItemNeedsThreeCrew = unitOver300Lb && args.vertical.code !== "medical_equipment";
   if (dimOn && medicalNeedsThreeCrew) {
     const hr = num(vc.crew_hourly_rate, 95);
     const mh = num(vc.min_hours, 3);
     const add = Math.round(1 * hr * mh * 100) / 100;
     totalPrice += add;
     breakdown.push({ label: "Third crew member (unit over 300 lb)", amount: add });
-  } else if (dimOn && heavyItemNeedsThreeCrew) {
-    const hr = num(vc.crew_hourly_rate, 75);
-    const mh = num(vc.min_hours, 2);
-    const add = Math.round(1 * hr * mh * 100) / 100;
-    totalPrice += add;
-    breakdown.push({ label: "Third crew member (item over 300 lb)", amount: add });
   }
 
-  const anyExtraHeavy = items.some((i) => i.weight_category === "extra_heavy");
+  const anyExtraHeavy = items.some((i) => {
+    const c = normalizeB2bWeightCategory(i.weight_category || "");
+    return c === "super_heavy" || c === "extreme";
+  });
   const ehl = vc.extra_heavy_labour as Record<string, unknown> | undefined;
   if (dimOn && anyExtraHeavy && ehl) {
     const ec = num(ehl.extra_crew, 0);
@@ -733,7 +744,13 @@ export function calculateB2BDimensionalPrice(args: {
     });
   }
 
-  const recommendedTruck = recommendTruckForB2B(items, totalUnits, vc);
+  const recommendedTruckByUnits = recommendTruckForB2B(items, totalUnits, vc);
+  const { truck: recommendedTruckByWeight, needsLiftGateNote } =
+    recommendTruckFromWeightItems(items);
+  const recommendedTruck = pickLargerTruck(
+    recommendedTruckByUnits,
+    recommendedTruckByWeight,
+  );
   const truck = (args.input.truck_override || recommendedTruck).toLowerCase().replace(/\s+/g, "");
   const truckRates = (vc.truck_rates as Record<string, number> | undefined) || {};
   const truckSurcharge = num(truckRates[truck], 0);
@@ -927,12 +944,16 @@ export function calculateB2BDimensionalPrice(args: {
   if (totalPrice < 200) totalPrice = 200;
 
   let crew = args.input.crew_override ?? num(vc.min_crew, 2);
+  const tierRecommendedCrew = recommendCrewFromWeightItems(items, crew);
   const th = num(vc.large_job_item_threshold, 0);
   const lc = num(vc.large_job_min_crew, 0);
   if (args.input.crew_override == null && th > 0 && lc > 0 && totalUnits >= th) {
     crew = Math.max(crew, lc);
   }
-  if (args.input.crew_override == null && (medicalNeedsThreeCrew || heavyItemNeedsThreeCrew)) {
+  if (args.input.crew_override == null) {
+    crew = Math.max(crew, tierRecommendedCrew);
+  }
+  if (args.input.crew_override == null && medicalNeedsThreeCrew) {
     crew = Math.max(crew, 3);
   }
   const estimatedHours =
@@ -945,6 +966,9 @@ export function calculateB2BDimensionalPrice(args: {
         ? `${truck.replace("ft", "")} ft truck`
         : truck;
   const includes: string[] = [`${crew}-person crew`, truckLabel, args.vertical.name];
+  if (needsLiftGateNote) {
+    includes.push("Lift gate recommended for load weight / equipment");
+  }
   if (args.input.handling_type) {
     includes.push(`${args.input.handling_type.replace(/_/g, " ")} handling`);
   }

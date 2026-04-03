@@ -157,7 +157,8 @@ export async function POST(req: NextRequest) {
   const sb = createAdminClient();
   const { data: configRows } = await sb.from("platform_config").select("key, value");
   const expiryDays = cfgNum(configRows ?? [], "quote_expiry_days", 7);
-  const quoteId = await generateNextQuoteId(sb);
+  const hsTok = process.env.HUBSPOT_ACCESS_TOKEN ?? null;
+  const quoteId = await generateNextQuoteId(sb, hsTok ? { hubspotAccessToken: hsTok } : {});
 
   let contactId: string | null = null;
   const { data: existingC } = await sb

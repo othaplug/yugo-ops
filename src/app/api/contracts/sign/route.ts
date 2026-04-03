@@ -17,6 +17,12 @@ import {
   setHeroTitle,
 } from "@/lib/pdf-brand";
 import { getCompanyDisplayName, getCompanyLegalName } from "@/lib/config";
+import {
+  agreementDocumentTitle,
+  buildBinRentalAgreementSections,
+  buildNonBinAgreementSections,
+} from "@/lib/contracts/agreement-terms";
+import { isClientLogisticsDeliveryServiceType } from "@/lib/quotes/b2b-quote-copy";
 
 interface ContractAddonData {
   name: string;
@@ -51,6 +57,10 @@ interface ContractData {
   tax: number;
   grand_total: number;
   deposit: number;
+  /** Residential tier for `local_move` (agreement copy). */
+  residential_tier?: string | null;
+  b2b_net30_invoice?: boolean;
+  paid_in_full_at_booking?: boolean;
   bin_rental_schedule?: BinRentalSchedulePdf;
   /** When present with length > 1, PDF lists each pickup instead of a single From line. */
   pickup_stops?: ContractStopPdf[];
@@ -80,6 +90,12 @@ const CANCELLATION_TEXT: Record<string, string> = {
     "72-hour cancellation policy. Custom crating materials non-refundable.",
   b2b_oneoff:
     "Full refund if cancelled 24+ hours before delivery. Non-refundable within 24 hours.",
+  b2b_delivery:
+    "Full refund if cancelled 24+ hours before delivery. Non-refundable within 24 hours.",
+  event:
+    "Full refund if cancelled 72+ hours before first delivery. Non-refundable within 72 hours.",
+  labour_only:
+    "Full refund if cancelled 48+ hours before service. Non-refundable within 48 hours.",
   bin_rental:
     "Full refund if cancelled 48+ hours before scheduled bin delivery. Fees may apply within 48 hours or after dispatch/delivery.",
 };
@@ -92,6 +108,9 @@ const BALANCE_DUE_TEXT: Record<string, string> = {
   white_glove: "upon delivery",
   specialty: "upon project completion",
   b2b_oneoff: "upon delivery",
+  b2b_delivery: "upon delivery",
+  event: "before final return date per quote",
+  labour_only: "before service date",
   bin_rental: "included in full payment at booking",
 };
 
@@ -133,12 +152,7 @@ function generateContractPdf(
   drawTopAccentBar(doc, true);
   let y = drawYugoHeader(doc, { yStart: 18, centerX, margin });
   setHeroTitle(doc, 14);
-  doc.text(
-    cd.service_type === "bin_rental" ? "Bin Rental Agreement" : "Service Agreement",
-    centerX,
-    y,
-    { align: "center" },
-  );
+  doc.text(agreementDocumentTitle(cd.service_type, cd.residential_tier), centerX, y, { align: "center" });
   y += 10;
 
   setBodyText(doc, 10);
@@ -267,60 +281,39 @@ function generateContractPdf(
   y += 8;
   setBodyText(doc, 9);
 
+  const cancellationPdf = CANCELLATION_TEXT[cd.service_type] ?? CANCELLATION_TEXT.local_move;
+  const balanceAmtPdf = cd.grand_total - cd.deposit;
+  const paidInFullPdf = cd.paid_in_full_at_booking === true || balanceAmtPdf <= 0.005;
+  const b2bNetPdf = cd.b2b_net30_invoice === true;
+  const isLogisticsPdf = isClientLogisticsDeliveryServiceType(cd.service_type);
+
   const terms =
     cd.service_type === "bin_rental"
-      ? [
-          {
-            title: "1. Bin rental service",
-            body: "Plastic moving bin rental: delivery of bins, use during the included rental period, and scheduled pickup of emptied and stacked bins, as described in your quote.",
-          },
-          {
-            title: "2. Quoted fee",
-            body: `Total ${fmtCurrency(cd.grand_total)} incl. HST covers the rental package in your quote. This is a rental service, not a staffed residential move unless separately contracted.`,
-          },
-          {
-            title: "3. Payment",
-            body: `Full payment of ${fmtCurrency(cd.grand_total)} incl. HST is due at booking unless your coordinator confirms otherwise in writing.`,
-          },
-          {
-            title: "4. Card on file",
-            body: `I authorize ${companyLegalName} to keep a card on file for approved charges such as late returns, extra rental days, or missing/damaged bins.`,
-          },
-          {
-            title: "5. Cancellation",
-            body: CANCELLATION_TEXT.bin_rental,
-          },
-          {
-            title: "6. Bins & liability",
-            body: "Bins remain company property. Reasonable fees may apply for loss, damage, or late return. Contents you pack are your responsibility unless separate moving coverage applies.",
-          },
-        ]
-      : [
-          {
-            title: "1. Flat-Rate Guarantee",
-            body: `The total quoted above (${fmtCurrency(cd.grand_total)} incl. HST) is a guaranteed flat rate. No hidden charges, hourly rates, or surprise fees.`,
-          },
-          {
-            title: "2. Payment Terms",
-            body: `A deposit of ${fmtCurrency(cd.deposit)} is due at booking. The remaining balance of ${fmtCurrency(cd.grand_total - cd.deposit)} is due ${balDue}.`,
-          },
-          {
-            title: "3. Card-on-File Authorization",
-            body: `I authorize ${companyLegalName} to securely store my payment card using Square's PCI-compliant vault and charge the balance per payment terms.`,
-          },
-          {
-            title: "4. Cancellation Policy",
-            body: CANCELLATION_TEXT[cd.service_type] ?? CANCELLATION_TEXT.local_move,
-          },
-          {
-            title: "5. Liability & Insurance",
-            body: "Standard coverage at $0.60/lb per article. Enhanced full-value protection available as add-on. Yugo carries $2M commercial liability insurance.",
-          },
-          {
-            title: "6. Scope Changes",
-            body: "Changes to scope will be communicated and require written approval before additional charges.",
-          },
-        ];
+      ? buildBinRentalAgreementSections({
+          companyLegalName,
+          companyDisplayName,
+          fmtPrice: fmtCurrency,
+          grandTotal: cd.grand_total,
+          cancellation: cancellationPdf,
+          cycleDays: brs?.cycle_days ?? 12,
+          hasScheduleDetails: Boolean(brs),
+        })
+      : buildNonBinAgreementSections({
+          serviceType: cd.service_type,
+          packageLabel: cd.package_label,
+          residentialTier: cd.residential_tier,
+          companyLegalName,
+          companyDisplayName,
+          isLogisticsDelivery: isLogisticsPdf,
+          b2bNet30Invoice: b2bNetPdf,
+          paidInFullAtBooking: paidInFullPdf,
+          fmtPrice: fmtCurrency,
+          grandTotal: cd.grand_total,
+          deposit: cd.deposit,
+          balance: balanceAmtPdf,
+          balanceDue: balDue,
+          cancellation: cancellationPdf,
+        });
 
   for (const term of terms) {
     checkPageBreak();

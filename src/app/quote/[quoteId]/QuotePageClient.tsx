@@ -634,6 +634,7 @@ export default function QuotePageClient({
     return {
       quoteId: quote.quote_id,
       serviceType: quote.service_type,
+      residentialTier: isResidential && selectedTier ? selectedTier : null,
       packageLabel,
       fromAddress: quoteForDisplay.from_address,
       toAddress: quoteForDisplay.to_address,
@@ -678,6 +679,8 @@ export default function QuotePageClient({
         : {}),
     };
   }, [
+    isResidential,
+    selectedTier,
     quote.quote_id,
     quote.service_type,
     quote.factors_applied,
@@ -2362,7 +2365,7 @@ function ConfirmDetailsSection({
         </div>
 
         <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
-          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
+          <p className="text-[12px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
             Your plan
           </p>
           <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
@@ -2589,7 +2592,7 @@ function ValuationProtectionCard({
                 )}
                 {tierData.max_per_item && (
                   <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                    <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
+                    <div className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
                     <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item)}</div>
                   </div>
                 )}
@@ -2603,7 +2606,7 @@ function ValuationProtectionCard({
             ) : (
               <>
                 <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
+                  <div className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
                   <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item ?? 10000)}</div>
                 </div>
                 <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>

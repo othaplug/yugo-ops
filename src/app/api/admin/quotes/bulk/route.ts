@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/api-auth";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
+import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 
 /** POST /api/admin/quotes/bulk — Bulk actions for quotes (resend, expire, delete) */
 export async function POST(req: NextRequest) {
@@ -38,11 +39,16 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "expire") {
+    const { data: expRows } = await admin.from("quotes").select("hubspot_deal_id").in("id", ids);
     const { error } = await admin
       .from("quotes")
       .update({ status: "expired", updated_at: new Date().toISOString() })
       .in("id", ids);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    for (const r of expRows ?? []) {
+      const hid = (r as { hubspot_deal_id?: string | null }).hubspot_deal_id;
+      if (hid) syncDealStage(hid, "expired").catch(() => {});
+    }
     return NextResponse.json({ ok: true, updated: ids.length });
   }
 
