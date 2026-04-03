@@ -1,6 +1,6 @@
 import { getClientEmailFooterTrs } from "@/lib/email/client-email-footer";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
-import { EMAIL_LOGO_GOLD_H, EMAIL_LOGO_GOLD_W } from "@/lib/email-templates";
+import { EMAIL_LOGO_GOLD_H, EMAIL_LOGO_GOLD_W, getEmailLogoOnDarkUrl } from "@/lib/email-templates";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
@@ -82,12 +82,14 @@ const INSTRUMENT_SERIF_FACE = `
 
 function quoteEmailLayout(innerHtml: string): string {
   const base = getEmailBaseUrl();
-  const logoUrl = `${base}/images/yugo-logo-cream.png`;
+  const logoUrl = getEmailLogoOnDarkUrl();
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="${INSTRUMENT_SERIF_LINK}" rel="stylesheet" />
   <style type="text/css">
@@ -97,13 +99,13 @@ function quoteEmailLayout(innerHtml: string): string {
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:${BG};">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG}" style="background-color:${BG};">
+<body style="margin:0;padding:0;background-color:${BG};color-scheme:dark;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG}" style="background-color:${BG};color-scheme:dark;">
   <tr>
-    <td align="center" style="padding:24px 16px 0;">
-      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:560px;width:100%;background-color:${BG};border:1px solid ${CARD_BORDER};">
+    <td align="center" bgcolor="${BG}" style="padding:24px 16px 0;background-color:${BG};color-scheme:dark;">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${BG}" style="max-width:560px;width:100%;background-color:${BG};border:1px solid ${CARD_BORDER};color-scheme:dark;">
         <tr>
-          <td class="eq-inner" style="padding:32px 36px 40px;background-color:${BG};color:${TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+          <td class="eq-inner" bgcolor="${BG}" style="padding:32px 36px 40px;background-color:${BG};color:${TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color-scheme:dark;">
             <div class="eq-hdr" align="center" style="margin:0 0 16px;">
               <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0;margin:0 auto;" />
               <div style="width:40px;height:1px;background-color:${ACCENT_ROSE_MUTED};margin:8px auto 0;line-height:0;font-size:0;">&nbsp;</div>

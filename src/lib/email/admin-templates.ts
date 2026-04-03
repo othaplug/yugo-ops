@@ -5,7 +5,7 @@
  */
 import { getEmailFooterStandaloneFragment } from "@/lib/email/client-email-footer";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { EMAIL_LOGO_BLACK_H, EMAIL_LOGO_BLACK_W, getEmailLogoBlackUrl } from "@/lib/email-templates";
+import { EMAIL_LOGO_BLACK_H, EMAIL_LOGO_BLACK_W, getEmailLogoWineUrl } from "@/lib/email-templates";
 
 const WINE = "#722F37";
 const ACCENT_ROSE = "#9E4A5C";
@@ -28,7 +28,7 @@ export function adminNotificationLayout(innerHtml: string, title?: string): stri
 <div style="max-width:520px;margin:0 auto;padding:40px 24px;">
   <div style="background:${CARD_BG};border-radius:16px;padding:28px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid ${BORDER};">
     <div style="text-align:center;margin-bottom:22px;">
-      <img src="${getEmailLogoBlackUrl()}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:inline-block;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;border:0;" />
+      <img src="${getEmailLogoWineUrl()}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:inline-block;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;border:0;" />
     </div>
     ${heading}
     <div style="font-size:14px;color:${TEXT};line-height:1.6;">

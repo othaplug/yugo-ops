@@ -22,22 +22,38 @@ const EMAIL_TX = "#FFFFFF";
 const EMAIL_TX2 = "#B0ADA8";
 const EMAIL_TX3 = "#666";
 
-/** Official Yugo logo URL for emails (cream wordmark on dark background). */
-export function getEmailLogoUrl(): string {
+/**
+ * Wine wordmark on light backgrounds (#FCF9F4, white cards, etc.).
+ * Asset: `public/images/yugo-logo-wine.png` (brand wine #5C1A33 on transparent).
+ */
+export function getEmailLogoWineUrl(): string {
+  const base = getEmailBaseUrl();
+  return `${base}/images/yugo-logo-wine.png`;
+}
+
+/**
+ * Light wordmark on dark email bodies (quote shell #080808, legacy black, dark mode).
+ * Cream preferred; swap to `yugo-logo-gold.png` here if brand requires gold on dark.
+ */
+export function getEmailLogoOnDarkUrl(): string {
   const base = getEmailBaseUrl();
   return `${base}/images/yugo-logo-cream.png`;
 }
 
-/** Dark logo for light email cards (Estate, admin notifications). */
+/** @deprecated Use {@link getEmailLogoOnDarkUrl}. */
+export function getEmailLogoUrl(): string {
+  return getEmailLogoOnDarkUrl();
+}
+
+/** @deprecated Use {@link getEmailLogoWineUrl}. */
 export function getEmailLogoBlackUrl(): string {
-  const base = getEmailBaseUrl();
-  return `${base}/images/yugo-logo-black.png`;
+  return getEmailLogoWineUrl();
 }
 
 /** Logo dimensions in HTML emails (~3.67:1). Keep compact so the mark doesn’t dominate the message. */
 export const EMAIL_LOGO_BLACK_W = 80;
 export const EMAIL_LOGO_BLACK_H = 22;
-/** Width/height for cream wordmark on dark (same slot as former gold asset). */
+/** Compact wordmark on dark backgrounds (cream/gold slot). */
 export const EMAIL_LOGO_GOLD_W = 62;
 export const EMAIL_LOGO_GOLD_H = 17;
 
@@ -92,7 +108,7 @@ export const EMAIL_FOOTER_COMPANY =
 
 /** Cream wordmark centered — dark email cards (#161616, promo black, legacy black). */
 function emailCardLogoCream(): string {
-  const logoUrl = getEmailLogoUrl();
+  const logoUrl = getEmailLogoOnDarkUrl();
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 22px;">
   <tr>
@@ -105,7 +121,7 @@ function emailCardLogoCream(): string {
 
 /** Cream wordmark + hairline — legacy premium black shell. */
 function emailCardLogoCreamLegacy(): string {
-  const logoUrl = getEmailLogoUrl();
+  const logoUrl = getEmailLogoOnDarkUrl();
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 24px;">
   <tr>
@@ -121,16 +137,16 @@ function emailCardLogoCreamLegacy(): string {
 </table>`;
 }
 
-/** Estate header: black logo in light mode, cream wordmark when client uses dark mode (prefers-color-scheme). */
+/** Estate: wine wordmark in light mode; cream on dark (prefers-color-scheme: dark). */
 function emailCardLogoEstate(): string {
-  const blackUrl = getEmailLogoBlackUrl();
-  const creamUrl = getEmailLogoUrl();
+  const wineUrl = getEmailLogoWineUrl();
+  const onDarkUrl = getEmailLogoOnDarkUrl();
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 20px;">
   <tr>
     <td align="center" style="padding:0;">
-      <img src="${blackUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" class="estate-email-logo-light" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
-      <img src="${creamUrl}" alt="" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" class="estate-email-logo-dark" style="display:none;border:0;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;margin:0 auto;" />
+      <img src="${wineUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" class="estate-email-logo-light" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
+      <img src="${onDarkUrl}" alt="" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" class="estate-email-logo-dark" style="display:none;border:0;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;margin:0 auto;" />
     </td>
   </tr>
 </table>`;
@@ -144,14 +160,14 @@ function getContactPhone(): string {
   return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) || "(647) 370-4525";
 }
 
-/** Black wordmark + wine–rose rule — premium transactional shell (not the Estate confirmation template). */
-function emailCardLogoBlackPremiumRule(): string {
-  const blackUrl = getEmailLogoBlackUrl();
+/** Wine wordmark + wine–rose rule — premium transactional cream shell (not Estate confirmation). */
+function emailCardLogoWinePremiumRule(): string {
+  const wineUrl = getEmailLogoWineUrl();
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 24px;">
   <tr>
     <td align="center" style="padding:0;">
-      <img src="${blackUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
+      <img src="${wineUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
     </td>
   </tr>
   <tr>
@@ -183,7 +199,7 @@ function premiumEmailWrapper(innerHtml: string, footerWhy: EmailFooterWhy): stri
       <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${PREMIUM_PAGE}" style="max-width:100%;background-color:${PREMIUM_PAGE};">
         <tr>
           <td bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${PREMIUM_FONT};color:${PREMIUM_BODY};-webkit-text-fill-color:${PREMIUM_BODY};font-size:15px;line-height:1.65;">
-            ${emailCardLogoBlackPremiumRule()}
+            ${emailCardLogoWinePremiumRule()}
             ${innerHtml}
           </td>
         </tr>
@@ -311,12 +327,12 @@ const ESTATE_EMAIL_DARK_MODE_CSS = `
 function estateLuxuryCreamLayout(innerHtml: string): string {
   return `
 ${ESTATE_EMAIL_DARK_MODE_CSS}
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${ESTATE_CREAM_PAGE};">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${ESTATE_CREAM_PAGE}" style="background-color:${ESTATE_CREAM_PAGE};color-scheme:light;">
   <tr>
-    <td class="estate-email-outer" align="center" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};">
-      <table class="estate-email-inner" width="580" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;width:580px;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);">
+    <td class="estate-email-outer" align="center" bgcolor="${ESTATE_CREAM_PAGE}" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};color-scheme:light;">
+      <table class="estate-email-inner" width="580" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${ESTATE_CREAM_CARD}" style="max-width:100%;width:580px;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);">
         <tr>
-          <td class="estate-email-content" style="padding:52px 48px 56px;font-family:${ESTATE_DM_SANS};color:${ESTATE_BODY};font-size:15px;line-height:1.78;">
+          <td class="estate-email-content" bgcolor="${ESTATE_CREAM_CARD}" style="padding:52px 48px 56px;font-family:${ESTATE_DM_SANS};color:${ESTATE_BODY};font-size:15px;line-height:1.78;">
             ${emailCardLogoEstate()}
             <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0 0 28px;">
               <tr>
@@ -381,13 +397,13 @@ export function statusUpdateEmailHtml(params: {
   const bottomPad = includeFooter ? "24px" : "40px";
   const footerBlock = includeFooter ? emailFooterRow("booking") : "";
   return `
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${PREMIUM_PAGE};">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PREMIUM_PAGE}" style="background-color:${PREMIUM_PAGE};color-scheme:light;">
   <tr>
-    <td align="center" style="padding:24px 16px ${bottomPad};">
-      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:100%;">
+    <td align="center" bgcolor="${PREMIUM_PAGE}" style="padding:24px 16px ${bottomPad};background-color:${PREMIUM_PAGE};color-scheme:light;">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${PREMIUM_PAGE}" style="max-width:100%;background-color:${PREMIUM_PAGE};">
         <tr>
-          <td style="padding:0;font-family:${EQ_SANS};">
-            ${emailCardLogoBlackPremiumRule()}
+          <td bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${EQ_SANS};background-color:${PREMIUM_PAGE};">
+            ${emailCardLogoWinePremiumRule()}
             <table width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="font-size:26px;font-weight:700;letter-spacing:0;text-transform:none;color:${PREMIUM_BODY};padding-bottom:16px;line-height:1.35;font-family:${PREMIUM_SERIF_HEADING};">${headline}</td>
@@ -409,7 +425,7 @@ export function statusUpdateEmailHtml(params: {
 
 /** Legacy: logo block for templates that embed their own wrapper (deprecated; use emailLayout). */
 function emailLogo() {
-  const logoUrl = getEmailLogoUrl();
+  const logoUrl = getEmailLogoOnDarkUrl();
   return `
     <div style="text-align:center;margin-bottom:28px">
       <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:inline-block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0" />

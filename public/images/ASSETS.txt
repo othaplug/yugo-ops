@@ -1,0 +1,5 @@
+Email and app wordmarks expected here (deploy or commit as needed):
+- yugo-logo-cream.png — light mark on dark backgrounds
+- yugo-logo-wine.png — wine (#5C1A33) mark on light / cream shells
+- yugo-logo-gold.png — optional alternate for dark
+- yugo-logo-black.png — legacy; PDF loader falls back if wine is missing

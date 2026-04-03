@@ -101,13 +101,17 @@ function formatDate(iso: string | null | undefined): string {
 }
 
 function loadYugoLogoBase64(): string {
-  try {
-    const logoPath = path.join(process.cwd(), "public", "images", "yugo-logo-black.png");
-    const base64 = fs.readFileSync(logoPath, { encoding: "base64" });
-    return `data:image/png;base64,${base64}`;
-  } catch {
-    return "";
+  const dir = path.join(process.cwd(), "public", "images");
+  for (const name of ["yugo-logo-wine.png", "yugo-logo-black.png"] as const) {
+    try {
+      const logoPath = path.join(dir, name);
+      const base64 = fs.readFileSync(logoPath, { encoding: "base64" });
+      return `data:image/png;base64,${base64}`;
+    } catch {
+      /* try next */
+    }
   }
+  return "";
 }
 
 function pdfHeader(doc: jsPDF, yStart: number, centerX: number, logoBase64?: string): number {

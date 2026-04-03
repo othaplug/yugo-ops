@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useContext } from "react";
 import { ThemeContext } from "@/app/admin/components/ThemeContext";
 
-export type LogoVariant = "gold" | "cream" | "black" | "auto";
+export type LogoVariant = "gold" | "cream" | "black" | "wine" | "auto";
 
 interface YugoLogoProps {
   size?: number;
@@ -21,6 +21,7 @@ const LOGO_SRC: Record<Exclude<LogoVariant, "auto">, string> = {
   gold: `/images/yugo-logo-gold.png?${LOGO_VERSION}`,
   cream: `/images/yugo-logo-cream.png?${LOGO_VERSION}`,
   black: `/images/yugo-logo-black.png?${LOGO_VERSION}`,
+  wine: `/images/yugo-logo-wine.png?${LOGO_VERSION}`,
 };
 
 function PlusMark({ size, color }: { size: number; color: string }) {
@@ -44,7 +45,7 @@ function PlusMark({ size, color }: { size: number; color: string }) {
   );
 }
 
-/** Yugo logo — always uses the gold image asset regardless of light/dark theme. */
+/** Yugo wordmark + plus. `variant="auto"` defaults to gold; pass `wine`, `cream`, or `black` for explicit assets. */
 export default function YugoLogo({
   size = 18,
   className = "",
@@ -55,13 +56,19 @@ export default function YugoLogo({
 }: YugoLogoProps) {
   useContext(ThemeContext); // kept for potential future theme-aware overrides
 
-  // Always use the gold image so the real logo asset appears in both light and dark admin.
   const resolvedVariant: Exclude<LogoVariant, "auto"> =
     variant === "auto" ? "gold" : variant;
 
   const src = LOGO_SRC[resolvedVariant];
 
-  const plusColor = resolvedVariant === "cream" ? "#F5F0E8" : resolvedVariant === "black" ? "#1A1A1A" : "#C9A962";
+  const plusColor =
+    resolvedVariant === "cream"
+      ? "#F5F0E8"
+      : resolvedVariant === "black"
+        ? "#1A1A1A"
+        : resolvedVariant === "wine"
+          ? "#5C1A33"
+          : "#C9A962";
 
   if (useImage && src) {
     return (
@@ -84,7 +91,14 @@ export default function YugoLogo({
     );
   }
 
-  const textColor = resolvedVariant === "cream" ? "#F5F0E8" : resolvedVariant === "black" ? "#1A1A1A" : "var(--gold)";
+  const textColor =
+    resolvedVariant === "cream"
+      ? "#F5F0E8"
+      : resolvedVariant === "black"
+        ? "#1A1A1A"
+        : resolvedVariant === "wine"
+          ? "#5C1A33"
+          : "var(--gold)";
 
   return (
     <span
