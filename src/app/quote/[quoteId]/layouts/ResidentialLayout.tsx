@@ -26,6 +26,19 @@ const ESTATE_TAGLINE = "rgba(255,255,255,0.82)";
 const ESTATE_TAX_LINE = "rgba(255,255,255,0.92)";
 const ESTATE_FOOTER = "rgba(255,255,255,0.78)";
 
+/** Tier cards: never show truck size (e.g. “20ft”) — one consistent client-facing line. */
+const TIER_CARD_TRUCK_LABEL = "Dedicated Moving Truck";
+
+function tierCardTruckBullet(fromQuoteOrConfig: string): string {
+  const raw = fromQuoteOrConfig.trim();
+  if (!raw) return TIER_CARD_TRUCK_LABEL;
+  const lower = raw.toLowerCase();
+  if (lower.includes("truck") || lower.includes("van") || /\d\s*ft/.test(lower)) {
+    return TIER_CARD_TRUCK_LABEL;
+  }
+  return raw;
+}
+
 interface Props {
   quote: Quote;
   tiers: Record<string, TierData>;
@@ -214,7 +227,8 @@ export default function ResidentialLayout({
 
                   {!isCollapsed && (() => {
                     const configFeatures = tierFeaturesConfig?.[tierKey];
-                    const truck = t.includes[0] ?? configFeatures?.[0]?.card ?? "";
+                    const truckRaw = t.includes[0] ?? configFeatures?.[0]?.card ?? "";
+                    const truck = tierCardTruckBullet(truckRaw);
                     const crew = t.includes[1] ?? configFeatures?.[1]?.card ?? "";
                     const useAdditive =
                       tierKey === "signature"
@@ -231,7 +245,9 @@ export default function ResidentialLayout({
                     const intro = (meta.inclusionsIntro ?? "").trim();
 
                     if (!configFeatures) {
-                      const bullets = t.includes.filter(Boolean);
+                      const bullets = t.includes
+                        .filter(Boolean)
+                        .map((line, i) => (i === 0 ? tierCardTruckBullet(line) : line));
                       return (
                         <div className="flex-1 min-h-0 flex flex-col mb-4">
                           <ul className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain space-y-2.5 pr-1 [scrollbar-gutter:stable]">
@@ -266,28 +282,20 @@ export default function ResidentialLayout({
                       );
                     }
 
-                    const basePair = [truck, crew].filter(Boolean);
                     const deltaCards = additions.map((f) => f.card).filter(Boolean);
+                    const listBullets = [truck, crew, ...deltaCards].filter(Boolean);
                     return (
                       <div className="flex-1 min-h-0 flex flex-col mb-4 space-y-3">
-                        <ul className="space-y-2.5 pr-1 [scrollbar-gutter:stable]">
-                          {basePair.map((inc, i) => (
-                            <li key={`base-${i}`} className="flex gap-2.5 items-start">
-                              <Check className="w-3.5 h-3.5 shrink-0 mt-[3px]" style={{ color: checkColor }} />
-                              <span className="text-[12px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
-                            </li>
-                          ))}
-                        </ul>
                         {intro ? (
                           <p
-                            className="text-[11px] md:text-[12px] font-semibold leading-snug pl-0.5 pr-1"
+                            className="text-[11px] md:text-[12px] font-bold leading-snug pl-0.5 pr-1 shrink-0"
                             style={{ color: cardFg ?? FOREST }}
                           >
                             {intro}
                           </p>
                         ) : null}
                         <ul className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain space-y-2.5 pr-1 [scrollbar-gutter:stable]">
-                          {deltaCards.map((inc, i) => (
+                          {listBullets.map((inc, i) => (
                             <li key={`add-${i}`} className="flex gap-2.5 items-start">
                               <Check className="w-3.5 h-3.5 shrink-0 mt-[3px]" style={{ color: checkColor }} />
                               <span className="text-[12px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>

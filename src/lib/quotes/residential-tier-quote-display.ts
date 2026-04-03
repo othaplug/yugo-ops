@@ -57,9 +57,19 @@ export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
     desc: "Up to $2,500 per item protection",
     iconName: "ShieldCheck",
   },
+  {
+    card: "Real-time GPS tracking",
+    title: "Real-time GPS tracking",
+    desc: "Follow your move live from any device",
+    iconName: "MapPin",
+  },
 ];
 
-/** Estate tier: lines after “Everything in Signature, plus:” (expanded = full Signature + these). */
+/**
+ * Estate tier: lines after “Everything in Signature, plus:” on the card.
+ * Includes repeats (wardrobe, debris, GPS) so the estate card can mirror the reference list;
+ * `expandResidentialTierFeaturesStorage` dedupes by card text when building the merged list for Inclusions.
+ */
 export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
   {
     card: "Dedicated move coordinator from booking to final placement",
@@ -116,6 +126,18 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     iconName: "ShieldCheck",
   },
   {
+    card: "Wardrobe box for immediate use",
+    title: "Wardrobe box for immediate use",
+    desc: "Hang your clothes directly, no folding needed",
+    iconName: "Shirt",
+  },
+  {
+    card: "Debris and packaging removal at completion",
+    title: "Debris and packaging removal",
+    desc: "We clear away all packing materials post-move",
+    iconName: "Trash2",
+  },
+  {
     card: "Pre-move inventory planning and oversight",
     title: "Pre-move inventory planning",
     desc: "Full inventory documented before and after your move",
@@ -128,6 +150,12 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     iconName: "Clock",
   },
   {
+    card: "Real-time GPS tracking",
+    title: "Real-time GPS tracking",
+    desc: "Follow your move live from any device",
+    iconName: "MapPin",
+  },
+  {
     card: "Exclusive partner offers & perks",
     title: "Exclusive partner offers & perks",
     desc: "Access to partner discounts and member benefits",
@@ -136,7 +164,12 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
 ];
 
 const DEFAULT_ESSENTIAL: TierFeature[] = [
-  { card: "Dedicated moving truck", title: "Dedicated moving truck", desc: "Climate-protected, equipped for your move", iconName: "Truck" },
+  {
+    card: "Dedicated Moving Truck",
+    title: "Dedicated Moving Truck",
+    desc: "Climate-protected, equipped for your move",
+    iconName: "Truck",
+  },
   { card: "Professional crew of [N]", title: "Professional crew of [N]", desc: "Licensed, insured, background-checked movers", iconName: "Users" },
   { card: "Protective wrapping for key furniture", title: "Protective wrapping for key furniture", desc: "Key pieces wrapped in quilted moving blankets", iconName: "Armchair" },
   { card: "Basic disassembly & reassembly", title: "Basic disassembly & reassembly", desc: "We take it apart and put it back together", iconName: "Wrench" },
@@ -159,11 +192,29 @@ export const DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE: ResidentialTierFeaturesS
   estate: { additions: DEFAULT_ESTATE_ADDITIONS },
 };
 
+/** Append tier rows skipping duplicates by `card` text (case-insensitive). */
+function appendDedupedByCard(base: TierFeature[], extra: TierFeature[]): TierFeature[] {
+  const keys = new Set(base.map((f) => f.card.trim().toLowerCase()));
+  const out = [...base];
+  for (const f of extra) {
+    const k = f.card.trim().toLowerCase();
+    if (!keys.has(k)) {
+      keys.add(k);
+      out.push(f);
+    }
+  }
+  return out;
+}
+
 /** Expanded lists for InclusionsShowcase, hydration, etc. */
 export function expandResidentialTierFeaturesStorage(s: ResidentialTierFeaturesStorage): Record<(typeof TIER_ORDER)[number], TierFeature[]> {
   const essential = s.essential;
-  const signatureFull = Array.isArray(s.signature) ? s.signature : [...essential, ...s.signature.additions];
-  const estateFull = Array.isArray(s.estate) ? s.estate : [...signatureFull, ...s.estate.additions];
+  const signatureFull = Array.isArray(s.signature)
+    ? s.signature
+    : appendDedupedByCard(essential, s.signature.additions);
+  const estateFull = Array.isArray(s.estate)
+    ? s.estate
+    : appendDedupedByCard(signatureFull, s.estate.additions);
   return { essential, signature: signatureFull, estate: estateFull };
 }
 
