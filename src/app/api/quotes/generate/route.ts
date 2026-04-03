@@ -50,12 +50,7 @@ import {
   quoteNumericSuffixForHubSpot,
 } from "@/lib/quotes/quote-id";
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no";
-import {
-  DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE,
-  expandResidentialTierFeaturesStorage,
-  hydrateResidentialIncludeTitles,
-  mergeResidentialIncludeLinesDeduped,
-} from "@/lib/quotes/residential-tier-quote-display";
+import { getResolvedMoveIncludeTitles } from "@/lib/quotes/residential-tier-quote-display";
 import { normalizePhone } from "@/lib/phone";
 // ═══════════════════════════════════════════════
 // Types
@@ -839,20 +834,17 @@ async function residentialIncludes(
 
   if (dbEss.length > 0) {
     const essential = hydrate(dbEss);
-    const sigRaw = hydrate(dbSig.length > 0 ? dbSig : dbEss);
-    const estRaw = hydrate(dbEst.length > 0 ? dbEst : dbSig.length > 0 ? dbSig : dbEss);
-    const signature = mergeResidentialIncludeLinesDeduped(essential, sigRaw);
-    const estate = mergeResidentialIncludeLinesDeduped(signature, estRaw);
+    const signature =
+      dbSig.length > 0 ? hydrate(dbSig) : getResolvedMoveIncludeTitles("signature", truckLabel, crewLine);
+    const estate =
+      dbEst.length > 0 ? hydrate(dbEst) : getResolvedMoveIncludeTitles("estate", truckLabel, crewLine);
     return { essential, signature, estate };
   }
 
-  // Hardcoded fallback — same key-based resolved lists as the client quote page
-  const expanded = expandResidentialTierFeaturesStorage(DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE);
-  const h = (rows: typeof expanded.essential) => hydrateResidentialIncludeTitles(rows, truckLabel, crewLine);
   return {
-    essential: h(expanded.essential),
-    signature: h(expanded.signature),
-    estate: h(expanded.estate),
+    essential: getResolvedMoveIncludeTitles("essential", truckLabel, crewLine),
+    signature: getResolvedMoveIncludeTitles("signature", truckLabel, crewLine),
+    estate: getResolvedMoveIncludeTitles("estate", truckLabel, crewLine),
   };
 }
 

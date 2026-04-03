@@ -7,15 +7,386 @@ export const QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY = "quote_residential_tier
 
 const TIER_KEYS = TIER_ORDER as unknown as readonly string[];
 
-/** Signature tier: lines shown after “Everything in Essential, plus:” on tier cards (merged into Essential by `key` for “Your Move Includes”). */
-export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
+export type ResidentialTierKey = (typeof TIER_ORDER)[number];
+
+export function normalizeResidentialTierKey(t: string | null | undefined): ResidentialTierKey {
+  const k = (t ?? "essential").toLowerCase().trim();
+  if (k === "signature" || k === "estate") return k;
+  return "essential";
+}
+
+/**
+ * Complete “Your Move Includes” rows per tier — no merge, no dedupe, not read from platform_config.
+ * Truck (row 0) and crew (row 1) titles/descriptions are filled from live quote data.
+ */
+export function getResolvedMoveIncludes(
+  selectedTier: string | null | undefined,
+  truckLabel: string,
+  crewSize: number | null,
+): TierFeature[] {
+  const tier = normalizeResidentialTierKey(selectedTier);
+  const n = crewSize ?? 2;
+  const crewTitle = `Professional crew of ${n}`;
+  const crewDesc = `${n} licensed, insured, background-checked movers`;
+  const base =
+    tier === "signature"
+      ? RESOLVED_SIGNATURE_MOVE_INCLUDES
+      : tier === "estate"
+        ? RESOLVED_ESTATE_MOVE_INCLUDES
+        : RESOLVED_ESSENTIAL_MOVE_INCLUDES;
+  return base.map((f, i) => {
+    if (i === 0) return { ...f, title: truckLabel };
+    if (i === 1) return { ...f, title: crewTitle, desc: crewDesc };
+    return { ...f };
+  });
+}
+
+/** Plain title lines for PDF / quote payloads (row 0 = truck, row 1 = crew line from caller). */
+export function getResolvedMoveIncludeTitles(tier: string | null | undefined, truckLabel: string, crewLine: string): string[] {
+  const rows = getResolvedMoveIncludes(tier, truckLabel, null);
+  return rows.map((f, i) => (i === 0 ? truckLabel : i === 1 ? crewLine : f.title));
+}
+
+const RESOLVED_ESSENTIAL_MOVE_INCLUDES: TierFeature[] = [
+  {
+    key: "truck",
+    card: "Dedicated moving truck",
+    title: "Dedicated moving truck",
+    desc: "Climate-protected, equipped for your move",
+    iconName: "Truck",
+  },
+  {
+    key: "crew",
+    card: "Professional crew",
+    title: "Professional crew",
+    desc: "Licensed, insured, background-checked movers",
+    iconName: "Users",
+  },
+  {
+    key: "wrapping",
+    card: "Protective wrapping for key furniture",
+    title: "Protective wrapping for key furniture",
+    desc: "Key pieces wrapped in quilted moving blankets",
+    iconName: "Package",
+  },
+  {
+    key: "assembly",
+    card: "Basic disassembly & reassembly",
+    title: "Basic disassembly & reassembly",
+    desc: "We take it apart and put it back together",
+    iconName: "Wrench",
+  },
+  {
+    key: "floor",
+    card: "Floor & entryway protection",
+    title: "Floor & entryway protection",
+    desc: "Runners, booties, and corner guards throughout",
+    iconName: "Home",
+  },
+  {
+    key: "equipment",
+    card: "All standard equipment included",
+    title: "All standard equipment included",
+    desc: "Dollies, straps, tools — nothing extra to rent",
+    iconName: "Toolbox",
+  },
+  {
+    key: "valuation",
+    card: "Standard valuation coverage",
+    title: "Standard valuation coverage",
+    desc: "Basic protection for your belongings",
+    iconName: "Shield",
+  },
+  {
+    key: "tracking",
+    card: "Real-time GPS tracking",
+    title: "Real-time GPS tracking",
+    desc: "Follow your move live from any device",
+    iconName: "MapPin",
+  },
+  {
+    key: "price",
+    card: "Guaranteed flat price",
+    title: "Guaranteed flat price",
+    desc: "The price you see is the price you pay",
+    iconName: "DollarSign",
+  },
+  {
+    key: "damage",
+    card: "Zero-damage commitment",
+    title: "Zero-damage commitment",
+    desc: "Your belongings, protected and insured",
+    iconName: "ShieldCheck",
+  },
+];
+
+const RESOLVED_SIGNATURE_MOVE_INCLUDES: TierFeature[] = [
+  {
+    key: "truck",
+    card: "Dedicated moving truck",
+    title: "Dedicated moving truck",
+    desc: "Climate-protected, equipped for your move",
+    iconName: "Truck",
+  },
+  {
+    key: "crew",
+    card: "Professional crew",
+    title: "Professional crew",
+    desc: "Licensed, insured, background-checked movers",
+    iconName: "Users",
+  },
   {
     key: "wrapping",
     card: "Full protective wrapping for all furniture",
     title: "Full protective wrapping for all furniture",
     desc: "Every piece individually wrapped and padded",
-    iconName: "Armchair",
+    iconName: "Package",
   },
+  {
+    key: "assembly",
+    card: "Full disassembly & reassembly",
+    title: "Full disassembly & reassembly",
+    desc: "Complete furniture breakdown and expert reassembly",
+    iconName: "Wrench",
+  },
+  {
+    key: "floor",
+    card: "Floor & door frame protection",
+    title: "Floor & door frame protection",
+    desc: "Runners, booties, and corner guards throughout",
+    iconName: "Home",
+  },
+  {
+    key: "equipment",
+    card: "All equipment included",
+    title: "All equipment included",
+    desc: "Dollies, straps, tools — nothing extra to rent",
+    iconName: "Toolbox",
+  },
+  {
+    key: "valuation",
+    card: "Enhanced valuation coverage",
+    title: "Enhanced valuation coverage",
+    desc: "Up to $2,500 per item protection",
+    iconName: "ShieldCheck",
+  },
+  {
+    key: "tracking",
+    card: "Real-time GPS tracking",
+    title: "Real-time GPS tracking",
+    desc: "Follow your move live from any device",
+    iconName: "MapPin",
+  },
+  {
+    key: "mattress_tv",
+    card: "Mattress and TV protection",
+    title: "Mattress and TV protection",
+    desc: "Dedicated covers for mattresses and screens",
+    iconName: "Shield",
+  },
+  {
+    key: "placement",
+    card: "Room-of-choice placement",
+    title: "Room-of-choice placement",
+    desc: "Every piece placed exactly where you want it",
+    iconName: "Home",
+  },
+  {
+    key: "wardrobe",
+    card: "Wardrobe box for immediate use",
+    title: "Wardrobe box for immediate use",
+    desc: "Hang your clothes directly, no folding needed",
+    iconName: "Shirt",
+  },
+  {
+    key: "debris",
+    card: "Debris and packaging removal",
+    title: "Debris and packaging removal",
+    desc: "We clear away all packing materials post-move",
+    iconName: "Trash2",
+  },
+  {
+    key: "price",
+    card: "Guaranteed flat price",
+    title: "Guaranteed flat price",
+    desc: "The price you see is the price you pay",
+    iconName: "DollarSign",
+  },
+  {
+    key: "damage",
+    card: "Zero-damage commitment",
+    title: "Zero-damage commitment",
+    desc: "Your belongings, protected and insured",
+    iconName: "ShieldCheck",
+  },
+];
+
+const RESOLVED_ESTATE_MOVE_INCLUDES: TierFeature[] = [
+  {
+    key: "truck",
+    card: "Dedicated moving truck",
+    title: "Dedicated moving truck",
+    desc: "Climate-protected, equipped for your move",
+    iconName: "Truck",
+  },
+  {
+    key: "crew",
+    card: "Professional crew",
+    title: "Professional crew",
+    desc: "Licensed, insured, background-checked movers",
+    iconName: "Users",
+  },
+  {
+    key: "coordinator",
+    card: "Dedicated move coordinator",
+    title: "Dedicated move coordinator",
+    desc: "One point of contact from booking through final placement",
+    iconName: "Phone",
+  },
+  {
+    key: "walkthrough",
+    card: "Pre-move walkthrough",
+    title: "Pre-move walkthrough",
+    desc: "Documented room-by-room plan before we touch anything",
+    iconName: "ClipboardCheck",
+  },
+  {
+    key: "wrapping",
+    card: "Full furniture wrapping and protection",
+    title: "Full furniture wrapping and protection",
+    desc: "Every piece individually wrapped, padded, and protected",
+    iconName: "Package",
+  },
+  {
+    key: "assembly",
+    card: "Complex disassembly & precision reassembly",
+    title: "Complex disassembly & precision reassembly",
+    desc: "Complete furniture breakdown and expert reassembly",
+    iconName: "Wrench",
+  },
+  {
+    key: "floor",
+    card: "Floor and property protection throughout",
+    title: "Floor and property protection throughout",
+    desc: "Premium runners, booties, and guards at every touchpoint",
+    iconName: "Home",
+  },
+  {
+    key: "packing",
+    card: "All packing materials and supplies included",
+    title: "All packing materials and supplies included",
+    desc: "Boxes, wrapping, and all protection materials provided",
+    iconName: "Package",
+  },
+  {
+    key: "packing_service",
+    card: "Full packing and unpacking service",
+    title: "Full packing and unpacking service",
+    desc: "Professional crew packs everything — and unpacks at your new home",
+    iconName: "Package",
+  },
+  {
+    key: "white_glove",
+    card: "White glove handling",
+    title: "White glove handling",
+    desc: "Specialist-level care for your most valued possessions",
+    iconName: "Star",
+  },
+  {
+    key: "art",
+    card: "Premium art and antique handling",
+    title: "Premium art and antique handling",
+    desc: "Museum-grade care for fine art, antiques, and specialty pieces",
+    iconName: "Eye",
+  },
+  {
+    key: "placement",
+    card: "Precision placement in every room",
+    title: "Precision placement in every room",
+    desc: "Every piece positioned exactly where you envision it",
+    iconName: "Home",
+  },
+  {
+    key: "valuation",
+    card: "Full replacement valuation coverage",
+    title: "Full replacement valuation coverage",
+    desc: "Maximum protection — up to $10,000 per item, $100,000 per shipment",
+    iconName: "ShieldCheck",
+  },
+  {
+    key: "equipment",
+    card: "All equipment included",
+    title: "All equipment included",
+    desc: "Professional-grade dollies, straps, tools, and specialty equipment",
+    iconName: "Toolbox",
+  },
+  {
+    key: "tracking",
+    card: "Real-time GPS tracking",
+    title: "Real-time GPS tracking",
+    desc: "Follow your move live from any device",
+    iconName: "MapPin",
+  },
+  {
+    key: "mattress_tv",
+    card: "Mattress and TV protection",
+    title: "Mattress and TV protection",
+    desc: "Dedicated covers for mattresses and screens",
+    iconName: "Shield",
+  },
+  {
+    key: "wardrobe",
+    card: "Wardrobe boxes included",
+    title: "Wardrobe boxes included",
+    desc: "5 wardrobe boxes for hanging clothes — no folding needed",
+    iconName: "Shirt",
+  },
+  {
+    key: "debris",
+    card: "Debris and packaging removal",
+    title: "Debris and packaging removal",
+    desc: "We clear away all packing materials post-move",
+    iconName: "Trash2",
+  },
+  {
+    key: "inventory",
+    card: "Pre-move inventory planning",
+    title: "Pre-move inventory planning",
+    desc: "Full inventory documented before and after your move",
+    iconName: "ClipboardCheck",
+  },
+  {
+    key: "concierge",
+    card: "30-day concierge support",
+    title: "30-day concierge support",
+    desc: "Post-move support and questions answered within 30 days",
+    iconName: "Phone",
+  },
+  {
+    key: "perks",
+    card: "Exclusive partner offers and perks",
+    title: "Exclusive partner offers and perks",
+    desc: "Access to partner discounts and member benefits",
+    iconName: "Gift",
+  },
+  {
+    key: "price",
+    card: "Guaranteed flat price",
+    title: "Guaranteed flat price",
+    desc: "The price you see is the price you pay",
+    iconName: "DollarSign",
+  },
+  {
+    key: "damage",
+    card: "Zero-damage commitment",
+    title: "Zero-damage commitment",
+    desc: "Your belongings, protected and insured",
+    iconName: "ShieldCheck",
+  },
+];
+
+/** Signature tier: lines after “Everything in Essential, plus:” on tier cards only (not merged into “Your Move Includes”). */
+export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
   {
     key: "mattress_tv",
     card: "Mattress and TV protection included",
@@ -52,40 +423,16 @@ export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
     iconName: "ShieldCheck",
     highlight: true,
   },
-  {
-    key: "assembly",
-    card: "Full disassembly & reassembly",
-    title: "Full disassembly & reassembly",
-    desc: "Complete furniture breakdown and expert reassembly",
-    iconName: "Wrench",
-  },
-  {
-    key: "floor",
-    card: "Floor & door frame protection",
-    title: "Floor & door frame protection",
-    desc: "Runners, booties, and corner guards throughout",
-    iconName: "Home",
-  },
-  {
-    key: "equipment",
-    card: "All equipment included",
-    title: "All equipment included",
-    desc: "Dollies, straps, tools — nothing extra to rent",
-    iconName: "Toolbox",
-  },
 ];
 
-/**
- * Estate tier: lines after “Everything in Signature, plus:” — canonical additive list (admin Tier feature lines).
- * No GPS or debris here; white glove covers art/antiques (no separate “premium art” line).
- */
+/** Estate tier: lines after “Everything in Signature, plus:” on tier cards only. */
 export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
   {
     key: "coordinator",
     card: "Dedicated move coordinator from booking to final placement",
     title: "Dedicated move coordinator",
     desc: "One point of contact from booking through final placement",
-    iconName: "UserCircle",
+    iconName: "Phone",
   },
   {
     key: "walkthrough",
@@ -95,32 +442,18 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     iconName: "ClipboardCheck",
   },
   {
-    key: "wrapping",
-    card: "Full furniture wrapping and protection throughout",
-    title: "Full furniture wrapping and protection throughout",
-    desc: "Every piece individually wrapped, padded, and protected",
-    iconName: "Armchair",
-  },
-  {
-    key: "assembly",
-    card: "Complex disassembly & precision reassembly",
-    title: "Complex disassembly & precision reassembly",
-    desc: "Complete furniture breakdown and expert reassembly",
-    iconName: "Wrench",
-  },
-  {
-    key: "floor",
-    card: "Floor and property protection throughout",
-    title: "Floor and property protection throughout",
-    desc: "Premium runners, booties, and corner guards at every touchpoint",
-    iconName: "Home",
+    key: "packing_service",
+    card: "Full packing and unpacking service",
+    title: "Full packing and unpacking service",
+    desc: "Professional crew packs everything — and unpacks at your new home",
+    iconName: "Package",
   },
   {
     key: "packing",
     card: "All packing materials and supplies included",
     title: "All packing materials and supplies included",
     desc: "Boxes, wrapping, and all protection materials provided",
-    iconName: "Suitcase",
+    iconName: "Package",
   },
   {
     key: "white_glove",
@@ -135,43 +468,29 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     card: "Premium art and antique handling",
     title: "Premium art and antique handling",
     desc: "Museum-grade care for fine art, antiques, and specialty pieces",
-    iconName: "FrameCorners",
-  },
-  {
-    key: "placement",
-    card: "Precision placement in every room",
-    title: "Precision placement in every room",
-    desc: "Every piece positioned exactly where you envision it",
-    iconName: "Compass",
+    iconName: "Eye",
   },
   {
     key: "valuation",
     card: "Full replacement valuation coverage",
     title: "Full replacement valuation coverage",
-    desc: "Maximum protection for your most valuable items",
+    desc: "Maximum protection — up to $10,000 per item, $100,000 per shipment",
     iconName: "ShieldCheck",
     highlight: true,
-  },
-  {
-    key: "equipment",
-    card: "All equipment included",
-    title: "All equipment included",
-    desc: "Professional-grade dollies, straps, tools, and specialty equipment",
-    iconName: "Toolbox",
   },
   {
     key: "inventory",
     card: "Pre-move inventory planning and oversight",
     title: "Pre-move inventory planning",
     desc: "Full inventory documented before and after your move",
-    iconName: "FrameCorners",
+    iconName: "ClipboardCheck",
   },
   {
     key: "concierge",
     card: "30-day post-move concierge support",
     title: "30-day concierge support",
     desc: "Post-move support and questions answered within 30 days",
-    iconName: "Clock",
+    iconName: "Phone",
   },
   {
     key: "perks",
@@ -255,97 +574,110 @@ export const DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE: ResidentialTierFeaturesS
 };
 
 /**
- * Collapse the same perk under different tier wording when merging Essential + Signature + Estate
- * (e.g. “All standard equipment” vs “All equipment included”, repeated GPS / debris / wardrobe in legacy DB).
+ * Stable merge id when `key` is omitted (legacy JSON, hand-edited admin rows).
+ * MUST align with canonical `TierFeature.key` values so Signature/Estate additions replace Essential rows
+ * instead of stacking (e.g. “key furniture” wrapping vs “all furniture” wrapping share `wrapping`).
  */
-export function inclusionDedupeKey(f: TierFeature): string {
-  const c = f.card.trim().toLowerCase();
-  const t = f.title.trim().toLowerCase();
-  const blob = `${c} ${t}`;
+export function inferFeatureKeyFromContent(f: TierFeature): string {
+  const blob = `${f.card} ${f.title} ${f.desc}`.toLowerCase().replace(/\s+/g, " ");
 
-  if (blob.includes("real-time") && blob.includes("gps")) return "__gps_tracking";
-  if (blob.includes("gps") && (blob.includes("track") || blob.includes("tracking"))) return "__gps_tracking";
-
-  if (blob.includes("dedicated moving truck") || (blob.includes("truck") && blob.includes("dedicated"))) {
-    return "__dedicated_truck";
-  }
+  if (blob.includes("concierge")) return "concierge";
+  if (blob.includes("coordinator")) return "coordinator";
+  if (blob.includes("walkthrough")) return "walkthrough";
+  if (blob.includes("partner") && (blob.includes("perk") || blob.includes("offer"))) return "perks";
   if (
-    (blob.includes("professional") && blob.includes("crew")) ||
-    (blob.includes("professional") && blob.includes("movers"))
+    blob.includes("inventory") &&
+    (blob.includes("pre-move") || blob.includes("planning") || blob.includes("documented") || blob.includes("oversight"))
   ) {
-    return "__professional_crew";
+    return "inventory";
   }
-
-  if (blob.includes("wardrobe box")) return "__wardrobe_box";
-
-  if (blob.includes("debris") && blob.includes("packaging")) return "__debris_packaging_removal";
-
-  // Whole-property floor line (Estate) vs entryway / general floor protection (Essential + Signature)
-  if (blob.includes("floor") && blob.includes("property")) return "__floor_property_throughout";
-  if (blob.includes("floor") && (blob.includes("entryway") || blob.includes("protection"))) {
-    return "__floor_protection_interior";
-  }
-
-  if (blob.includes("valuation")) return "__valuation_moving";
-
+  if (blob.includes("white glove") || blob.includes("white-glove")) return "white_glove";
   if (
-    blob.includes("wrapping") &&
-    blob.includes("furniture") &&
-    !blob.includes("for key furniture") &&
-    !blob.includes("protective wrapping for key")
+    (blob.includes("fine art") || blob.includes("premium art") || blob.includes("antique")) &&
+    (blob.includes("handling") || blob.includes("museum"))
   ) {
-    return "__full_furniture_wrapping";
+    return "art";
   }
+  if (blob.includes("packing material") || (blob.includes("packing") && blob.includes("supplies"))) return "packing";
+
+  if (blob.includes("mattress") && blob.includes("tv")) return "mattress_tv";
+  if (blob.includes("wardrobe")) return "wardrobe";
+  if (blob.includes("debris") || blob.includes("packaging removal")) return "debris";
 
   if (
-    (blob.includes("all ") || blob.includes("standard ")) &&
-    blob.includes("equipment") &&
-    (blob.includes("included") || blob.includes("rent") || blob.includes("dollies"))
-  ) {
-    return "__equipment_included";
-  }
-
-  if (blob.includes("basic disassembly") && blob.includes("reassembly")) return "__basic_disassembly_reassembly";
-  if (
-    blob.includes("reassembly") &&
-    (blob.includes("complex disassembly") ||
-      blob.includes("full disassembly") ||
-      blob.includes("precision reassembly"))
-  ) {
-    return "__premium_disassembly";
-  }
-
-  if (blob.includes("white glove")) return "__white_glove_handling";
-  if (blob.includes("premium handling") && (blob.includes("art") || blob.includes("antique"))) {
-    return "__white_glove_handling";
-  }
-
-  if (
-    blob.includes("precision placement") ||
-    (blob.includes("precision") && blob.includes("every room")) ||
     blob.includes("room-of-choice") ||
     blob.includes("room of choice") ||
-    (blob.includes("placement") && blob.includes("throughout the home"))
+    blob.includes("precision placement") ||
+    (blob.includes("placement") && blob.includes("throughout the home")) ||
+    (blob.includes("placed") && blob.includes("where you want")) ||
+    (blob.includes("positioned") && blob.includes("envision"))
   ) {
-    return "__furniture_placement";
+    return "placement";
   }
 
-  return c;
+  if (
+    blob.includes("gps") ||
+    (blob.includes("real-time") && blob.includes("track")) ||
+    (blob.includes("tracking") && (blob.includes("move") || blob.includes("live") || blob.includes("device")))
+  ) {
+    return "tracking";
+  }
+
+  if (blob.includes("valuation") || (blob.includes("released") && blob.includes("value"))) return "valuation";
+
+  if (blob.includes("disassembly") || blob.includes("reassembly")) return "assembly";
+
+  if (
+    blob.includes("wrapping") ||
+    (blob.includes("blanket") && blob.includes("furniture")) ||
+    (blob.includes("quilted") && blob.includes("moving"))
+  ) {
+    return "wrapping";
+  }
+
+  if (
+    blob.includes("floor") &&
+    (blob.includes("protection") || blob.includes("entryway") || blob.includes("property") || blob.includes("door frame"))
+  ) {
+    return "floor";
+  }
+
+  if (
+    blob.includes("equipment") ||
+    (blob.includes("dollies") && (blob.includes("strap") || blob.includes("included") || blob.includes("rent"))) ||
+    (blob.includes("tools") && blob.includes("rent"))
+  ) {
+    return "equipment";
+  }
+
+  if (blob.includes("truck") || blob.includes("sprinter") || /\d\s*ft/.test(blob)) return "truck";
+
+  if (blob.includes("crew") || (blob.includes("movers") && blob.includes("professional"))) return "crew";
+
+  if (blob.includes("flat price") || blob.includes("guaranteed flat")) return "price";
+  if (blob.includes("zero-damage") || blob.includes("zero damage")) return "damage";
+
+  return f.card.trim().toLowerCase() || "unknown";
+}
+
+/** @deprecated Prefer `inferFeatureKeyFromContent` — kept for callers that imported the old name. */
+export function inclusionDedupeKey(f: TierFeature): string {
+  return inferFeatureKeyFromContent(f);
 }
 
 /**
  * When `key` is set on a row, higher tiers replace lower tiers on that key (resolved inclusions).
- * Otherwise fall back to heuristic `inclusionDedupeKey` for legacy JSON without keys.
+ * Otherwise infer the same logical key from copy so legacy rows still merge correctly.
  */
 export function featureMergeKey(f: TierFeature): string {
   const k = f.key?.trim();
   if (k) return k.toLowerCase();
-  return inclusionDedupeKey(f);
+  return inferFeatureKeyFromContent(f);
 }
 
-/** Plain-text include line → same semantic key as `inclusionDedupeKey` (quote PDF / API tier lists). */
+/** Plain-text include line → same semantic key as tier feature merge (quote PDF / API tier lists). */
 export function inclusionDedupeKeyFromLine(line: string): string {
-  return inclusionDedupeKey({ card: line, title: line, desc: "", iconName: "Dot" });
+  return inferFeatureKeyFromContent({ card: line, title: line, desc: "", iconName: "Dot" });
 }
 
 /** Merge tier include strings: same semantic key → keep the later row (higher tier wins). */
@@ -383,7 +715,7 @@ export function filterTierCardAdditions(priorResolved: TierFeature[], additions:
 }
 
 /** Merge `extra` into `base`; when a merge key already exists, replace with the later row (tier upgrade). */
-function appendDedupedPreferLater(base: TierFeature[], extra: TierFeature[]): TierFeature[] {
+export function mergeTierFeatureListsPreferLater(base: TierFeature[], extra: TierFeature[]): TierFeature[] {
   const out = base.map((f) => ({ ...f }));
   const keyToIndex = new Map<string, number>();
   out.forEach((f, i) => keyToIndex.set(featureMergeKey(f), i));
@@ -399,6 +731,9 @@ function appendDedupedPreferLater(base: TierFeature[], extra: TierFeature[]): Ti
   }
   return out;
 }
+
+/** @deprecated Use `mergeTierFeatureListsPreferLater`. */
+const appendDedupedPreferLater = mergeTierFeatureListsPreferLater;
 
 /** Legacy full-tier arrays: one row per merge key (last occurrence wins, preserves rough order). */
 function dedupeResidentialTierFeatureRows(rows: TierFeature[]): TierFeature[] {

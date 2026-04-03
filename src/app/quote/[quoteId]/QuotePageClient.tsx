@@ -89,6 +89,7 @@ import {
   b2bVerticalUsesPackageLeadIcon,
   isClientLogisticsDeliveryServiceType,
 } from "@/lib/quotes/b2b-quote-copy";
+import { getResolvedMoveIncludes, mergeTierFeatureListsPreferLater } from "@/lib/quotes/residential-tier-quote-display";
 
 /* ═══════════════════════════════════════════════════
    Main Client Component
@@ -101,13 +102,6 @@ const TRUCK_LUXURY: Record<string, string> = {
   "24ft": "24ft full-capacity moving truck",
   "26ft": "26ft maximum-capacity moving truck",
 };
-
-/** Universal features appended to the bottom of every tier's 'Your Move Includes' section.
- *  These are NOT shown as tier card bullets — they apply to all tiers. */
-const UNIVERSAL_FEATURES: TierFeature[] = [
-  { card: "Guaranteed flat price", title: "Guaranteed flat price", desc: "The price you see is the price you pay", iconName: "DollarSign" },
-  { card: "Zero-damage commitment", title: "Zero-damage commitment", desc: "Your belongings, protected and insured", iconName: "EggCrack" },
-];
 
 /** Client delivery / B2B — replaces residential "Your Move Includes" copy. */
 const LOGISTICS_INCLUSION_FEATURES: TierFeature[] = [
@@ -163,12 +157,14 @@ const LOGISTICS_INCLUSION_FEATURES: TierFeature[] = [
 
 const UNIVERSAL_LOGISTICS_FEATURES: TierFeature[] = [
   {
+    key: "price",
     card: "Guaranteed flat price",
     title: "Guaranteed flat price",
     desc: "The price you see is the price you pay",
     iconName: "DollarSign",
   },
   {
+    key: "accountability",
     card: "Accountability",
     title: "Professional accountability",
     desc: "Your shipment, protected and documented",
@@ -1797,9 +1793,11 @@ const InclusionsShowcase = React.forwardRef<
         ? eventFeatures.filter(
             (feat) => feat.title !== "On-site setup and arrangement" || showEventSetupFeature,
           )
-        : (residentialTierFeatures[tier] ?? residentialTierFeatures.essential);
+        : variant === "residential"
+          ? getResolvedMoveIncludes(tier, truckLabel, crewSize)
+          : (residentialTierFeatures[tier] ?? residentialTierFeatures.essential);
 
-  // Hydrate dynamic truck & crew entries
+  // Hydrate dynamic truck & crew entries (residential “Your Move Includes” is fully resolved in getResolvedMoveIncludes)
   const hydratedFeatures =
     variant === "event"
       ? baseFeatures.map((f) => ({ ...f }))
@@ -1837,7 +1835,9 @@ const InclusionsShowcase = React.forwardRef<
             }
             return { ...f };
           })
-        : baseFeatures.map((f, i) => {
+        : variant === "residential"
+          ? baseFeatures.map((f) => ({ ...f }))
+          : baseFeatures.map((f, i) => {
             if (i === 0) return { ...f, title: truckLabel };
             if (i === 1) {
               return {
@@ -1849,9 +1849,10 @@ const InclusionsShowcase = React.forwardRef<
             return f;
           });
 
-  const universalTail =
-    variant === "event" ? [] : variant === "logistics" ? UNIVERSAL_LOGISTICS_FEATURES : UNIVERSAL_FEATURES;
-  const allItems = [...hydratedFeatures, ...universalTail];
+  const allItems =
+    variant === "logistics"
+      ? mergeTierFeatureListsPreferLater(hydratedFeatures, UNIVERSAL_LOGISTICS_FEATURES)
+      : hydratedFeatures;
   const hasMore = allItems.length > INITIAL_VISIBLE;
   const visibleItems = expanded || !hasMore ? allItems : allItems.slice(0, INITIAL_VISIBLE);
 

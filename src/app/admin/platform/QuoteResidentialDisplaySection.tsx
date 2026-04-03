@@ -250,6 +250,34 @@ export default function QuoteResidentialDisplaySection({
     }
   };
 
+  const clearOverridesPersisted = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/quote-display-config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ tierFeaturesJson: "", tierMetaOverridesJson: "" }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast(typeof data.error === "string" ? data.error : "Clear failed", "x");
+        return;
+      }
+      setStorage(parseResidentialTierFeaturesStorage(""));
+      setTierMetaForm(tierMetaFormFromMerged(mergeResidentialTierMetaFromConfig("")));
+      setJsonAdvanced("");
+      setJsonAdvancedError(null);
+      setMetaJsonAdvanced("");
+      setMetaJsonAdvancedError(null);
+      toast("Overrides cleared — code defaults are active in platform_config", "check");
+    } catch {
+      toast("Clear failed", "x");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const labelCls = "block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5";
   const inputCls =
     "w-full px-2.5 py-1.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/50";
@@ -267,15 +295,15 @@ export default function QuoteResidentialDisplaySection({
           Client quote — residential tiers
         </h2>
         <p className="text-[11px] text-[var(--tx3)] mt-1 max-w-2xl">
-          <strong className="font-semibold text-[var(--tx)]">Essential</strong> is the full list.{" "}
-          <strong className="font-semibold text-[var(--tx)]">Signature</strong> and{" "}
+          <strong className="font-semibold text-[var(--tx)]">Essential</strong> is the full bullet list on the Essential tier
+          card. <strong className="font-semibold text-[var(--tx)]">Signature</strong> and{" "}
           <strong className="font-semibold text-[var(--tx)]">Estate</strong> use{" "}
           <strong className="font-semibold text-[var(--tx)]">additions</strong> after “Everything in Essential / Signature,
-          plus:” on tier cards. Each line may include a <strong className="font-semibold text-[var(--tx)]">merge key</strong>{" "}
-          (e.g. <code className="text-[10px]">wrapping</code>): the same key as Essential replaces that row in “Your Move
-          Includes” instead of stacking duplicates. Use <strong className="font-semibold text-[var(--tx)]">highlight</strong> on
-          an addition to show it on the card even when it only upgrades a lower-tier key. Truck and crew (first two rows) are
-          still replaced on the live quote from quote data.
+          plus:” on those cards only. The client-facing <strong className="font-semibold text-[var(--tx)]">Your Move Includes</strong>{" "}
+          section uses built-in complete lists per selected tier (not merged from these rows). Optional{" "}
+          <strong className="font-semibold text-[var(--tx)]">merge key</strong> and{" "}
+          <strong className="font-semibold text-[var(--tx)]">highlight</strong> still apply to how additions appear on tier
+          cards. Truck and crew lines on cards still follow live quote data.
         </p>
       </div>
 
@@ -596,15 +624,9 @@ export default function QuoteResidentialDisplaySection({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setStorage(parseResidentialTierFeaturesStorage(""));
-              setTierMetaForm(tierMetaFormFromMerged(mergeResidentialTierMetaFromConfig("")));
-              setJsonAdvanced("");
-              setJsonAdvancedError(null);
-              setMetaJsonAdvanced("");
-              setMetaJsonAdvancedError(null);
-            }}
-            className="px-4 py-2.5 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] hover:border-[var(--gold)]"
+            onClick={() => void clearOverridesPersisted()}
+            disabled={saving}
+            className="px-4 py-2.5 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] hover:border-[var(--gold)] disabled:opacity-60"
           >
             Clear overrides (use code defaults)
           </button>
