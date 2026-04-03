@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { TIME_SLOTS_15MIN, formatTime12 } from "@/lib/calendar/types";
-import { X, CalendarBlank, Clock, Users, Note, Warning } from "@phosphor-icons/react";
+import { X } from "@phosphor-icons/react";
 
 interface Props {
   open: boolean;
@@ -161,7 +161,6 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
         style={{ maxHeight: "min(90dvh, 90vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="px-7 pt-7 pb-6 border-b border-[var(--brd)]/60 shrink-0">
           <div className="flex items-start justify-between">
             <div>
@@ -186,10 +185,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
           </div>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto px-7 py-6 space-y-5 min-h-0">
-
-          {/* Job type, card selectors */}
           <div>
             <p className={labelCls}>Job Type</p>
             <div className="grid grid-cols-3 gap-2.5">
@@ -215,7 +211,6 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
             </div>
           </div>
 
-          {/* Block reason (conditional) */}
           {jobType === "blocked" && (
             <div>
               <label className={labelCls}>Reason</label>
@@ -227,12 +222,8 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
             </div>
           )}
 
-          {/* Date */}
           <div>
-            <label className={labelCls}>
-              <CalendarBlank size={13} weight="bold" />
-              Date
-            </label>
+            <label className={labelCls}>Date</label>
             <input
               type="date"
               value={date}
@@ -241,13 +232,9 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
             />
           </div>
 
-          {/* Start / End */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>
-                <Clock size={13} weight="bold" />
-                Start
-              </label>
+              <label className={labelCls}>Start</label>
               <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputCls}>
                 {TIME_SLOTS_15MIN.map((t) => (
                   <option key={t} value={t}>{formatTime12(t)}</option>
@@ -255,10 +242,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
               </select>
             </div>
             <div>
-              <label className={labelCls}>
-                <Clock size={13} weight="bold" />
-                End
-              </label>
+              <label className={labelCls}>End</label>
               <select value={endTime} onChange={(e) => setEndTime(e.target.value)} className={inputCls}>
                 {TIME_SLOTS_15MIN.filter((t) => t > startTime).map((t) => (
                   <option key={t} value={t}>{formatTime12(t)}</option>
@@ -267,12 +251,8 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
             </div>
           </div>
 
-          {/* Team */}
           <div>
-            <label className={labelCls}>
-              <Users size={13} weight="bold" />
-              Team
-            </label>
+            <label className={labelCls}>Team</label>
             <select value={crewId} onChange={(e) => setCrewId(e.target.value)} className={inputCls}>
               <option value="">Select team…</option>
               {crews.map((c) => (
@@ -281,12 +261,8 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
             </select>
           </div>
 
-          {/* Notes */}
           <div>
-            <label className={labelCls}>
-              <Note size={13} weight="bold" />
-              Notes
-            </label>
+            <label className={labelCls}>Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -296,7 +272,6 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
             />
           </div>
 
-          {/* Availability status */}
           {crewId && date && (
             <div className={`rounded-xl px-4 py-3.5 text-[12px] border transition-colors duration-200 ${
               conflict.checking
@@ -309,8 +284,7 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
                 <span className="opacity-70">Checking availability…</span>
               ) : conflict.hasConflict ? (
                 <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <Warning size={14} weight="fill" />
+                  <div className="font-semibold">
                     {crewName} is booked during this time
                   </div>
                   <p className="text-[11px] opacity-75">{conflict.message}</p>
@@ -356,7 +330,6 @@ export default function ScheduleJobModal({ open, onClose, onScheduled, prefillDa
           )}
         </div>
 
-        {/* Footer */}
         <div className="px-7 py-5 border-t border-[var(--brd)]/60 flex items-center justify-end gap-3 shrink-0">
           <button
             type="button"

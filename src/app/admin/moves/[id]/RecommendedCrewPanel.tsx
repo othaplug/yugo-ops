@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Users, Star, ShieldCheck, Trophy, ArrowsClockwise, CircleNotch, Check, Warning,
-} from "@phosphor-icons/react";
+import { ArrowsClockwise, CircleNotch, Users } from "@phosphor-icons/react";
 
 interface CrewRecommendation {
   crew: {
@@ -96,8 +94,7 @@ export default function RecommendedCrewPanel({
 
   if (recommendations.length === 0) {
     return (
-      <div className="flex items-center gap-3 py-4 px-4 rounded-xl border border-[var(--brd)] bg-[var(--bg)]/40">
-        <Warning size={18} className="text-amber-400 shrink-0" />
+      <div className="py-4 px-4 rounded-xl border border-[var(--brd)] bg-[var(--bg)]/40">
         <p className="text-[12px] text-[var(--tx3)]">
           No crew profiles found. Once crew complete their first jobs, AI recommendations will appear here.
         </p>
@@ -131,7 +128,6 @@ export default function RecommendedCrewPanel({
             {isTop && (
               <div className="absolute -top-2 left-4">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
-                  <Trophy size={9} />
                   Top Match
                 </span>
               </div>
@@ -155,18 +151,14 @@ export default function RecommendedCrewPanel({
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--tx3)]">
-                  <div className="flex items-center gap-1">
-                    <Star size={11} className="text-amber-400" weight="fill" />
-                    <span>{rec.crew.avg_satisfaction?.toFixed(1) ?? "-"}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <ShieldCheck size={11} className="text-emerald-400" />
-                    <span>
-                      {rec.crew.damage_rate === 0
-                        ? "Zero damage"
-                        : `${(rec.crew.damage_rate * 100).toFixed(0)}% damage`}
-                    </span>
-                  </div>
+                  <span>
+                    Satisfaction {rec.crew.avg_satisfaction?.toFixed(1) ?? "—"}
+                  </span>
+                  <span>
+                    {rec.crew.damage_rate === 0
+                      ? "Zero damage"
+                      : `${(rec.crew.damage_rate * 100).toFixed(0)}% damage`}
+                  </span>
                   <span className="text-[var(--brd)]">·</span>
                   <span>{rec.crew.total_jobs} jobs</span>
                   <span className="text-[var(--brd)]">·</span>
@@ -179,7 +171,6 @@ export default function RecommendedCrewPanel({
               <div className="shrink-0">
                 {isAssigned ? (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    <Check size={12} weight="bold" />
                     Assigned
                   </span>
                 ) : (

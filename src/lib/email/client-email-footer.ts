@@ -19,6 +19,15 @@
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 
+/** Context line shown above legal copy; set per email type when building HTML. */
+export type EmailFooterWhy = "booking" | "partner" | "generic";
+
+const FOOTER_WHY_COPY: Record<EmailFooterWhy, string> = {
+  booking: "You're receiving this because you booked with Yugo.",
+  partner: "You're receiving this because your organization was invited as a Yugo partner.",
+  generic: "You're receiving this because you have a relationship with Yugo.",
+};
+
 const FOOTER_BG = "#FFFFFF";
 const FOOTER_TEXT = "#000000";
 const FOOTER_LEGAL_TEXT = "#555555";
@@ -161,7 +170,8 @@ function socialIconCell(url: string, iconUrl: string, alt: string): string {
  * Direct children of the outer client email `<table>` (black background).
  * Starts with optional top promo rows, then nav + social + white legal block.
  */
-export function getClientEmailFooterTrs(): string {
+export function getClientEmailFooterTrs(options?: { whyReceiving?: EmailFooterWhy }): string {
+  const whyLine = FOOTER_WHY_COPY[options?.whyReceiving ?? "booking"];
   const base = getEmailBaseUrl();
   const privacyUrl = `${base}/privacy`;
   const termsUrl = `${base}/legal/terms-of-use`;
@@ -227,6 +237,9 @@ __YUGO_FOOTER_TOP_PROMO__
         <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:560px;margin:0 auto;">
           <tr>
             <td style="padding:28px 24px 36px;font-family:${FOOTER_LEGAL_FONT};font-size:11px;line-height:1.65;color:${FOOTER_LEGAL_TEXT};text-align:center;">
+              <p style="margin:0 0 14px;font-size:10px;color:#666666;line-height:1.55;">
+                ${escapeHtml(whyLine)}
+              </p>
               <p style="margin:0 0 14px;">
                 This email was sent to <a href="mailto:__YUGO_FOOTER_RECIPIENT_MAILTO__" style="color:${FOOTER_LINK_BLUE};text-decoration:underline;">__YUGO_FOOTER_RECIPIENT__</a>.
               </p>

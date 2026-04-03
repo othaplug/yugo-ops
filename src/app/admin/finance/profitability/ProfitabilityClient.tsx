@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import {
   TrendUp as TrendingUp, TrendDown as TrendingDown, Warning as AlertTriangle, Download,
-  CaretDown as ChevronDown, ArrowsDownUp as ArrowUpDown, MagnifyingGlass as Search, Plus, Trash as Trash2, Check, X, PencilSimple as Pencil,
+  CaretDown as ChevronDown, ArrowsDownUp as ArrowUpDown, MagnifyingGlass as Search, Plus, Trash as Trash2, X, PencilSimple as Pencil,
 } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
 import type { CustomOverheadItem } from "@/lib/finance/calculateProfit";
@@ -185,8 +185,13 @@ function EditableCostCell({
           className="w-16 bg-[var(--bg)] border border-[var(--gold)] rounded px-1 py-0.5 text-[11px] text-[var(--tx)] tabular-nums outline-none"
           disabled={saving}
         />
-        <button onClick={commit} className="text-emerald-400 hover:text-emerald-300 p-0.5" disabled={saving}>
-          <Check weight="regular" className="w-3 h-3" />
+        <button
+          type="button"
+          onClick={commit}
+          className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 px-1 py-0.5"
+          disabled={saving}
+        >
+          Done
         </button>
         <button onClick={cancel} className="text-[var(--tx3)] hover:text-red-400 p-0.5">
           <X className="w-3 h-3" />
@@ -470,7 +475,7 @@ function OverheadEditor({
               : "bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:opacity-90"
           } disabled:opacity-50`}
         >
-          {saved ? <><Check weight="regular" className="w-3.5 h-3.5" /> Saved</> : saving ? "Saving…" : "Save Changes"}
+          {saved ? "Saved" : saving ? "Saving…" : "Save Changes"}
         </button>
       </div>
     </div>

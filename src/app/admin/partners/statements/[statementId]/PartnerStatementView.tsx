@@ -1,17 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Invoice,
-  CalendarBlank,
-  CheckCircle,
-  Clock,
-  Warning,
-  CurrencyDollar,
-  Buildings,
-  Truck,
-  LinkSimple,
-} from "@phosphor-icons/react";
+import { CalendarBlank, CurrencyDollar, LinkSimple } from "@phosphor-icons/react";
 import { useToast } from "@/app/admin/components/Toast";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -105,8 +95,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Invoice size={16} color="var(--gold)" />
+          <div className="mb-1">
             <span className="text-[11px] font-bold tracking-widest uppercase text-[var(--gold)]">
               Statement
             </span>
@@ -115,10 +104,7 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
             {statement.statement_number}
           </h1>
           {org && (
-            <p className="text-[13px] text-[var(--tx3)] mt-1 flex items-center gap-1.5">
-              <Buildings size={13} />
-              {org.name}
-            </p>
+            <p className="text-[13px] text-[var(--tx3)] mt-1">{org.name}</p>
           )}
         </div>
         <span
@@ -160,17 +146,13 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
           <span className="text-[13px] font-semibold text-[var(--tx)]">{periodLabel}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-[12px] text-[var(--tx3)] flex items-center gap-2">
-            <Clock size={13} /> Payment Terms
-          </span>
+          <span className="text-[12px] text-[var(--tx3)]">Payment Terms</span>
           <span className="text-[13px] font-semibold text-[var(--tx)]">
             {TERMS_LABELS[statement.payment_terms] || statement.payment_terms}
           </span>
         </div>
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-[12px] text-[var(--tx3)] flex items-center gap-2">
-            <Warning size={13} /> Due Date
-          </span>
+          <span className="text-[12px] text-[var(--tx3)]">Due Date</span>
           <span className="text-[13px] font-semibold text-[var(--tx)]">{dueDateLabel}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-3">
@@ -242,7 +224,6 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold text-white transition-all"
             style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)" }}
           >
-            <CheckCircle size={14} />
             {saving ? "Saving…" : "Mark as Paid"}
           </button>
         )}
@@ -263,7 +244,6 @@ export default function PartnerStatementView({ statement }: { statement: Stateme
           href={`/admin/partners/${org?.id}/billing`}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] hover:text-[var(--gold)] transition-all"
         >
-          <Truck size={14} />
           All Statements
         </a>
       </div>

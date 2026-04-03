@@ -31,7 +31,7 @@ async function main() {
   const base = getEmailBaseUrl();
 
   const html = estateConfirmationEmail({
-    clientName: "Alex Preview",
+    clientName: "Sample Customer",
     moveCode: "PREVIEW-ESTATE",
     moveDate,
     timeWindow: "Morning (7 AM – 12 PM)",

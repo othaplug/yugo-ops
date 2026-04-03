@@ -7,7 +7,6 @@ import { formatCurrency, calcHST } from "@/lib/format-currency";
 import DataTable, { type ColumnDef, type BulkAction } from "@/components/admin/DataTable";
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import { useToast } from "../components/Toast";
-import { ArrowSquareOut } from "@phosphor-icons/react";
 
 export default function InvoicesTable({
   invoices,
@@ -152,7 +151,6 @@ export default function InvoicesTable({
             onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--gold)] hover:underline"
           >
-            <ArrowSquareOut size={10} weight="regular" className="text-current shrink-0" aria-hidden />
             View
           </a>
         ) : null,

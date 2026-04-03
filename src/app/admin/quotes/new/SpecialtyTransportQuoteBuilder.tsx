@@ -16,7 +16,7 @@ import {
   type VehicleType,
   type ZoneTier,
 } from "@/lib/specialty-quote/cost-model";
-import { X, Truck, Wrench } from "@phosphor-icons/react";
+import { X, Truck } from "@phosphor-icons/react";
 
 const VEHICLE_OPTIONS: { value: VehicleType; label: string }[] = [
   { value: "sprinter", label: "Sprinter van" },
@@ -364,16 +364,11 @@ export default function SpecialtyTransportQuoteBuilder({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--brd)] shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-[var(--gold)]/15 flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-[var(--gold)]" weight="duotone" aria-hidden />
-            </div>
-            <div>
-              <h2 id="specialty-builder-title" className="text-[14px] font-bold text-[var(--tx)]">
-                Specialty Quote Builder
-              </h2>
-              <p className="text-[10px] text-[var(--tx3)]">One-off B2B / heavy transport (manual pricing)</p>
-            </div>
+          <div>
+            <h2 id="specialty-builder-title" className="text-[14px] font-bold text-[var(--tx)]">
+              Specialty Quote Builder
+            </h2>
+            <p className="text-[10px] text-[var(--tx3)]">One-off B2B / heavy transport (manual pricing)</p>
           </div>
           <button
             type="button"

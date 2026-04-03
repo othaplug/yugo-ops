@@ -47,23 +47,23 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
     const jobLabel = formatJobId(entityCode, jobType);
 
     const inner = `
-      <div style="font-size:9px;font-weight:700;color:#B8962E;letter-spacing:1.5px;text-transform:none;margin-bottom:8px;">Extra Item Request</div>
-      <div style="font-size:20px;font-weight:700;margin:0 0 12px;color:#F5F5F3;">Extra Item Request</div>
-      <p style="font-size:14px;color:#B0ADA8;margin:0 0 20px;">A new extra item request needs your approval.</p>
+      <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:1.5px;text-transform:none;margin-bottom:8px;">Extra Item Request</div>
+      <div style="font-size:20px;font-weight:700;margin:0 0 12px;color:#3A3532;">Extra Item Request</div>
+      <p style="font-size:14px;color:#6B635C;margin:0 0 20px;">A new extra item request needs your approval.</p>
       <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-bottom:24px;">
-        <tr><td style="padding:8px 0;color:#666;font-size:13px;width:110px;">Job</td><td style="padding:8px 0;color:#F5F5F3;font-size:13px;font-weight:600;">${jobLabel}</td></tr>
-        <tr><td style="padding:8px 0;color:#666;font-size:13px;">Requested by</td><td style="padding:8px 0;color:#F5F5F3;font-size:13px;">${byLabel}</td></tr>
-        <tr><td style="padding:8px 0;color:#666;font-size:13px;">Item</td><td style="padding:8px 0;color:#F5F5F3;font-size:13px;">${description}${qtyLabel}</td></tr>
-        <tr><td style="padding:8px 0;color:#666;font-size:13px;">Status</td><td style="padding:8px 0;color:#B8962E;font-size:13px;font-weight:600;">Pending Approval</td></tr>
+        <tr><td style="padding:8px 0;color:#6B635C;font-size:13px;width:110px;">Job</td><td style="padding:8px 0;color:#3A3532;font-size:13px;font-weight:600;">${jobLabel}</td></tr>
+        <tr><td style="padding:8px 0;color:#6B635C;font-size:13px;">Requested by</td><td style="padding:8px 0;color:#3A3532;font-size:13px;">${byLabel}</td></tr>
+        <tr><td style="padding:8px 0;color:#6B635C;font-size:13px;">Item</td><td style="padding:8px 0;color:#3A3532;font-size:13px;">${description}${qtyLabel}</td></tr>
+        <tr><td style="padding:8px 0;color:#6B635C;font-size:13px;">Status</td><td style="padding:8px 0;color:#5C1A33;font-size:13px;font-weight:600;">Pending Approval</td></tr>
       </table>
-      <p style="font-size:12px;color:#666;margin-top:20px;">Review and approve or reject this request in the admin portal.</p>
+      <p style="font-size:12px;color:#6B635C;margin-top:20px;">Review and approve or reject this request in the admin portal.</p>
     `;
     const emailFrom = await getEmailFrom();
     await resend.emails.send({
       from: emailFrom,
       to: adminEmail,
       subject: `Extra Item Request ${jobLabel}`,
-      html: emailLayout(inner),
+      html: emailLayout(inner, undefined, "generic"),
       headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
     });
   } catch {}

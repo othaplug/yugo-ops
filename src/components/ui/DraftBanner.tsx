@@ -1,6 +1,6 @@
 "use client";
 
-import { ClockCounterClockwise, X } from "@phosphor-icons/react";
+import { X } from "@phosphor-icons/react";
 
 interface DraftBannerProps {
   onRestore: () => void;
@@ -11,7 +11,6 @@ export default function DraftBanner({ onRestore, onDismiss }: DraftBannerProps) 
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-[var(--gold)]/10 border border-[var(--gold)]/30">
       <div className="flex items-center gap-2.5">
-        <ClockCounterClockwise size={16} className="text-[var(--gold)] shrink-0" weight="bold" />
         <span className="text-[12px] font-medium text-[var(--tx)]">
           You have an unsaved draft. Would you like to continue where you left off?
         </span>

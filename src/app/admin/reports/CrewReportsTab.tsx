@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { generateEODReportPDF } from "@/lib/pdf";
 import { toTitleCase } from "@/lib/format-text";
-import { Funnel, CaretDown } from "@phosphor-icons/react";
+import { CaretDown } from "@phosphor-icons/react";
 
 function getCrewName(crews: unknown): string {
   const crew = Array.isArray(crews) ? crews[0] : crews;
@@ -279,7 +279,6 @@ export default function CrewReportsTab({
               onClick={() => setFilterOpen((o) => !o)}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium text-[var(--tx)] hover:bg-[var(--gdim)]/30 transition-colors"
             >
-              <Funnel size={14} className="shrink-0 text-current" />
               <span>{dateLabel}</span>
               {hasActiveFilters && (
                 <span className="min-w-[18px] h-[18px] rounded-full bg-[var(--gold)]/20 text-[var(--gold)] text-[10px] font-bold flex items-center justify-center">

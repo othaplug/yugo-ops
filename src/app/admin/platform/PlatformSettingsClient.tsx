@@ -22,7 +22,7 @@ import DeliveryVerticalsPanel from "./DeliveryVerticalsPanel";
 import RateTemplatesPanel from "./RateTemplatesPanel";
 import { useRouter } from "next/navigation";
 import { PHONE_PLACEHOLDER } from "@/lib/phone";
-import { House, Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText, GasPump, Package } from "@phosphor-icons/react";
+import { Phone, EnvelopeSimple as Envelope, ShareNetwork, CaretDown, X, CurrencyDollar, ListBullets, UsersThree, DeviceMobile, Sliders, Handshake, UserCircleGear, ClipboardText, GasPump, Package } from "@phosphor-icons/react";
 import { DEFAULT_FUEL_PRICE_DIESEL, DEFAULT_FUEL_PRICE_GAS } from "@/lib/routing/fuel-config";
 
 const TABS = [
@@ -482,19 +482,14 @@ function BusinessInfoSection() {
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
       <div className="mb-4">
-        <h2 className="admin-section-h2 flex items-center gap-2">
-          <Icon name="building" className="w-[14px] h-[14px]" /> Business Information
-        </h2>
+        <h2 className="admin-section-h2">Business Information</h2>
         <p className="text-[11px] text-[var(--tx3)] mt-1">Company details used across quotes, invoices, emails, and customer-facing pages. Update here instead of in code.</p>
       </div>
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 space-y-6">
 
         {/* Core company details */}
         <div>
-          <div className={subheadCls}>
-            <House size={12} className="shrink-0 text-current" />
-            Company Details
-          </div>
+          <div className={subheadCls}>Company Details</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {inp("company_name", "Company Name", "HelloYugo")}
             {inp("company_legal_name", "Legal Name", "HelloYugo Inc.")}
@@ -506,10 +501,7 @@ function BusinessInfoSection() {
 
         {/* Contact info */}
         <div className="pt-4 border-t border-[var(--brd)]/30">
-          <div className={subheadCls}>
-            <Phone size={12} className="shrink-0 text-current" />
-            Contact &amp; Hours
-          </div>
+          <div className={subheadCls}>Contact &amp; Hours</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {inp("company_phone", "Main Phone", PHONE_PLACEHOLDER, "tel")}
             {inp("dispatch_phone", "Dispatch Phone", PHONE_PLACEHOLDER, "tel")}

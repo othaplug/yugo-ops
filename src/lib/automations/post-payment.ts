@@ -549,15 +549,18 @@ export async function runPostPaymentActions(
           const referrerFirstName = (ref.referrer_name || "").split(" ")[0] || "there";
           const referredFirstName = clientName.split(" ")[0] || "Your friend";
 
-          const referrerHtml = equinoxPromoLayout(`
-            <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${referrerFirstName}, your referral just booked.</h1>
-            <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0 0 28px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${referredFirstName} confirmed their move with Yugo. Your <strong style="color:#FFFFFF;">$${ref.referrer_credit} credit</strong> will be applied to your next booking.</p>
-            <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:24px;">
-              <div style="font-size:32px;font-weight:700;color:#FFFFFF;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;letter-spacing:-0.02em;">$${ref.referrer_credit}</div>
-              <div style="font-size:12px;color:#595959;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-top:6px;">Referral credit &middot; applied on next booking</div>
+          const referrerHtml = equinoxPromoLayout(
+            `
+            <h1 style="font-size:30px;font-weight:700;color:#3A3532;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${referrerFirstName}, your referral just booked.</h1>
+            <p style="font-size:15px;color:#6B635C;line-height:1.6;margin:0 0 28px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${referredFirstName} confirmed their move with Yugo. Your <strong style="color:#3A3532;">$${ref.referrer_credit} credit</strong> will be applied to your next booking.</p>
+            <div style="border-top:1px solid rgba(92,26,51,0.14);padding-top:24px;">
+              <div style="font-size:32px;font-weight:700;color:#3A3532;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;letter-spacing:-0.02em;">$${ref.referrer_credit}</div>
+              <div style="font-size:12px;color:#6B635C;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-top:6px;">Referral credit &middot; applied on next booking</div>
             </div>
-            ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
-          `);
+            ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#5C1A33;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
+          `,
+            "generic",
+          );
 
           await resend.emails.send({
             from: emailFrom,

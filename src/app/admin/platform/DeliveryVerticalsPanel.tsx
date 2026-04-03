@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { useToast } from "../components/Toast";
-import { Package, Plus, PencilSimple } from "@phosphor-icons/react";
+import { Plus, PencilSimple } from "@phosphor-icons/react";
 import {
   applyDimensionalFormToConfig,
   configToDimensionalForm,
@@ -154,10 +154,7 @@ export default function DeliveryVerticalsPanel({ isSuperAdmin = false }: { isSup
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="admin-section-h2 flex items-center gap-2">
-            <Package className="w-4 h-4 text-[var(--gold)]" weight="duotone" />
-            B2B verticals
-          </h2>
+          <h2 className="admin-section-h2">B2B verticals</h2>
           <p className="text-[11px] text-[var(--tx3)] mt-1">
             One-off B2B quotes pull base rates, item tiers, zone and schedule surcharges, per-line weight tiers, and volume discounts from here. Global accessory types that never count as billable pieces are edited under Pricing → B2B surcharges.
           </p>

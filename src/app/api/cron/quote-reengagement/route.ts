@@ -130,14 +130,17 @@ function buildReengagementEmail(opts: {
     ? new Date(opts.moveDate + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })
     : null;
 
-  return equinoxPromoLayout(`
-    <h1 style="font-size:30px;font-weight:700;color:#FFFFFF;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${opts.firstName}, your quote is back.</h1>
-    <p style="font-size:15px;color:#A3A3A3;line-height:1.6;margin:0 0 28px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your quote expired, but we&apos;re holding your original price for the next <strong style="color:#FFFFFF;">48 hours</strong>. After that, pricing resets.</p>
-    <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:24px;margin-bottom:8px;">
-      <div style="font-size:32px;font-weight:700;color:#FFFFFF;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;letter-spacing:-0.02em;margin-bottom:8px;">$${opts.price.toLocaleString()}</div>
-      ${moveDateLabel ? `<div style="font-size:12px;color:#595959;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Move date &middot; ${moveDateLabel}</div>` : ""}
+  return equinoxPromoLayout(
+    `
+    <h1 style="font-size:30px;font-weight:700;color:#3A3532;margin:0 0 18px;letter-spacing:-0.01em;line-height:1.15;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${opts.firstName}, your quote is back.</h1>
+    <p style="font-size:15px;color:#6B635C;line-height:1.6;margin:0 0 28px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your quote expired, but we&apos;re holding your original price for the next <strong style="color:#3A3532;">48 hours</strong>. After that, pricing resets.</p>
+    <div style="border-top:1px solid rgba(92,26,51,0.14);padding-top:24px;margin-bottom:8px;">
+      <div style="font-size:32px;font-weight:700;color:#3A3532;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;letter-spacing:-0.02em;margin-bottom:8px;">$${opts.price.toLocaleString()}</div>
+      ${moveDateLabel ? `<div style="font-size:12px;color:#6B635C;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Move date &middot; ${moveDateLabel}</div>` : ""}
     </div>
     ${equinoxPromoCta(opts.quoteUrl, "Book at Original Price")}
-    ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#737373;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
-  `);
+    ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#5C1A33;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
+  `,
+    "generic",
+  );
 }

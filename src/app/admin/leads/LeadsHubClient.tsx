@@ -15,11 +15,8 @@ import LeadResponseSlaCountdown from "./LeadResponseSlaCountdown";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
 import {
-  ArrowRight,
   ChartBar,
   CheckCircle,
-  Clock,
-  Funnel,
   Lightning,
   List,
   Phone,
@@ -353,7 +350,6 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
               <span className="shrink-0" title={COMPLETENESS_PATH_LABELS[path] || path}>
                 <PathIc className={`w-4 h-4 ${pathCls}`} weight="fill" aria-hidden />
               </span>
-              <Clock size={16} className="text-[var(--tx3)] shrink-0" aria-hidden />
               <LeadElapsedTimer createdAt={lead.created_at} />
               <span className="text-[var(--tx3)]" aria-hidden>
                 |
@@ -427,7 +423,6 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--gold)] text-white text-[11px] font-bold hover:opacity-90"
           >
             Send Quote
-            <ArrowRight size={14} weight="bold" aria-hidden />
           </Link>
           {(lead.requires_specialty_quote || heavyParsed) && (
             <Link
@@ -461,8 +456,7 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
 
   return (
     <div className="max-w-[1100px] mx-auto px-4 md:px-6 py-5 md:py-6">
-      <div className="mb-2 flex items-center gap-2">
-        <Funnel size={22} className="text-[var(--gold)]" weight="duotone" aria-hidden />
+      <div className="mb-2">
         <div>
           <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[var(--tx3)]">Revenue</p>
           <h1 className="font-hero text-xl md:text-2xl font-bold text-[var(--tx)] tracking-tight">Leads</h1>

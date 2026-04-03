@@ -15,7 +15,7 @@ import RecurringSchedulesView from "./RecurringSchedulesView";
 import ProjectsListClient from "../projects/ProjectsListClient";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
-import { Bell, Funnel } from "@phosphor-icons/react";
+import { Bell } from "@phosphor-icons/react";
 
 const PARTNER_TYPE_FILTERS: { key: string; label: string; categories: string[] }[] = [
   { key: "all", label: "All", categories: [] },
@@ -394,7 +394,6 @@ export default function AllDeliveriesView({
             onClick={() => setFilterOpen(!filterOpen)}
             className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-[var(--tx2)] border border-[var(--brd)]/50"
           >
-            <Funnel size={14} weight="regular" className="text-current" />
             Filters
             {activeFilterCount > 0 && <span className="min-w-[16px] h-[16px] rounded-full bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}
           </button>

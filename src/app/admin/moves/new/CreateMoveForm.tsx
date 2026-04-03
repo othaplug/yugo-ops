@@ -136,7 +136,9 @@ export default function CreateMoveForm({
   const [contactSearch, setContactSearch] = useState("");
   const [showContactDropdown, setShowContactDropdown] = useState(false);
   const contactDropdownRef = useRef<HTMLDivElement>(null);
-  const [dbContacts, setDbContacts] = useState<{ hubspot_id: string; name: string; email: string; phone: string; address: string; postal: string }[]>([]);
+  const [dbContacts, setDbContacts] = useState<
+    { hubspot_id: string; name: string; email: string; phone: string; company?: string; address: string; postal: string }[]
+  >([]);
   const contactSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -710,6 +712,7 @@ export default function CreateMoveForm({
                               setClientEmail(c.email || "");
                               setClientPhone(c.phone ? formatPhone(c.phone) : "");
                               if (c.address) setFromAddress(c.address);
+                              if (c.company?.trim()) setCompanyName(c.company.trim());
                               setContactSearch("");
                               setShowContactDropdown(false);
                               setDbContacts([]);

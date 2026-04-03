@@ -26,7 +26,7 @@ async function main() {
   const trackingUrl = `${base}/track/preview-move`;
 
   const common = {
-    clientName: "Alex Preview",
+    clientName: "Sample Customer",
     moveDate: "2026-05-15" as const,
     timeWindow: "Morning (7 AM – 12 PM)",
     fromAddress: "100 Queen St W, Toronto, ON",

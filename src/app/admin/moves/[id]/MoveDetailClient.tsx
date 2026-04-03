@@ -5,8 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BackButton from "../../components/BackButton";
-import { PencilSimple as Pencil, CaretDown as ChevronDown, Lock, Check, Warning, Recycle } from "@phosphor-icons/react";
-import { Icon } from "@/components/AppIcons";
+import { PencilSimple as Pencil, CaretDown as ChevronDown, Lock } from "@phosphor-icons/react";
 import MoveNotifyButton from "../MoveNotifyButton";
 import ResendTrackingLinkButton from "../ResendTrackingLinkButton";
 import MoveContactModal from "./MoveContactModal";
@@ -523,17 +522,9 @@ export default function MoveDetailClient({
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold tracking-wide bg-[var(--gdim)]/80 text-[var(--gold)] border border-[var(--gold)]/20">
-                {String(move.service_type || "").toLowerCase() === "bin_rental" ? (
-                  <>
-                    <Recycle className="w-[10px] h-[10px]" weight="regular" aria-hidden />
-                    Bin Rental
-                  </>
-                ) : (
-                  <>
-                    <Icon name={isOffice ? "building" : "home"} className="w-[10px] h-[10px]" />
-                    {isOffice ? "Office" : "Residential"} Move
-                  </>
-                )}
+                {String(move.service_type || "").toLowerCase() === "bin_rental"
+                  ? "Bin Rental"
+                  : `${isOffice ? "Office" : "Residential"} Move`}
               </span>
               <MoveNotifyButton move={move} />
               <ResendTrackingLinkButton move={move} />
@@ -1334,7 +1325,6 @@ export default function MoveDetailClient({
                   <div className="mb-2">
                     {fullyPaid ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--grn)]/12 text-[var(--grn)] border border-[var(--grn)]/20">
-                        <Check size={7} className="text-current" weight="bold" />
                         Paid
                       </span>
                     ) : balanceUnpaid ? (
@@ -1493,8 +1483,7 @@ export default function MoveDetailClient({
               return (
                 <div key={id} className="rounded-lg border border-[var(--brd)]/60 p-3 text-[11px] space-y-2 bg-[var(--bg)]/40">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-bold text-[var(--tx)] inline-flex items-center gap-2">
-                      <Recycle className="w-4 h-4 text-[var(--gold)] shrink-0" weight="regular" aria-hidden />
+                    <span className="font-bold text-[var(--tx)]">
                       {String(b.order_number ?? "Bin order")}
                     </span>
                     <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--tx3)]">{stLabel}</span>
@@ -1764,9 +1753,8 @@ function MoveProfitCard({ move }: { move: any }) {
         <div className="flex justify-between font-semibold"><span className="text-[var(--tx)]">Net Profit</span><span className={costs.netMargin >= 0 ? "text-emerald-400" : "text-red-400"}>{formatCurrency(costs.netProfit)} ({costs.netMargin}%)</span></div>
       </div>
       {costs.grossMargin < target && (
-        <div className="mt-3 flex items-center gap-1.5 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
-          <Warning className="w-3 h-3 shrink-0 text-current" />
-          Below Target Margin ({target}%)
+        <div className="mt-3 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
+          Below target margin ({target}%)
         </div>
       )}
     </div>

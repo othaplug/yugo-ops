@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowsClockwise as RefreshCw, PaperPlaneTilt as Send, CheckCircle, CircleNotch as Loader2, TrendUp as TrendingUp, Warning } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowsClockwise as RefreshCw, PaperPlaneTilt as Send, CheckCircle, CircleNotch as Loader2, TrendUp as TrendingUp } from "@phosphor-icons/react";
 import InventoryInput, { type InventoryItemEntry } from "@/components/inventory/InventoryInput";
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
 import { getVisibleAddons, ESTATE_ADDON_UI_LINES } from "@/lib/quotes/addon-visibility";
@@ -730,7 +730,7 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
               {/* Algorithm anomaly warnings */}
               {(livePreview.inventory_warnings?.length ?? 0) > 0 && (
                 <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 space-y-1 text-[11px]">
-                  <p className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5"><Warning size={13} /> Check inventory quantities</p>
+                  <p className="font-semibold text-amber-600 dark:text-amber-400">Check inventory quantities</p>
                   <ul className="list-disc list-inside text-[var(--tx2)]">
                     {livePreview.inventory_warnings.map((w: string, i: number) => (
                       <li key={i}>{w}</li>
@@ -740,13 +740,13 @@ export default function EditQuoteClient({ originalQuote, addons: allAddons, conf
               )}
               {livePreview.factors && typeof livePreview.factors.inventory_modifier === "number" && typeof livePreview.factors.inventory_max_modifier === "number" && livePreview.factors.inventory_modifier >= livePreview.factors.inventory_max_modifier && (
                 <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
-                  <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ Inventory at volume ceiling (×{Number(livePreview.factors.inventory_max_modifier).toFixed(2)})</p>
+                  <p className="font-semibold text-blue-600 dark:text-blue-400">Inventory at volume ceiling (×{Number(livePreview.factors.inventory_max_modifier).toFixed(2)})</p>
                   <p className="mt-0.5">Price is capped, consider manual adjustment.</p>
                 </div>
               )}
               {livePreview.factors && typeof livePreview.factors.labour_component === "number" && typeof livePreview.factors.subtotal_before_labour === "number" && Number(livePreview.factors.subtotal_before_labour) > 0 && Number(livePreview.factors.labour_component) > 0.5 * Number(livePreview.factors.subtotal_before_labour) && (
                 <div className="mt-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5 text-[11px] text-[var(--tx2)]">
-                  <p className="font-semibold text-blue-600 dark:text-blue-400">ℹ High labour component: {formatCurrency(livePreview.factors.labour_component)}</p>
+                  <p className="font-semibold text-blue-600 dark:text-blue-400">High labour component: {formatCurrency(livePreview.factors.labour_component)}</p>
                   <p className="mt-0.5">This move needs significantly more crew/time than standard.</p>
                 </div>
               )}

@@ -2,7 +2,6 @@
 
 import { toSentenceCase } from "@/lib/format-text";
 import Link from "next/link";
-import { TrendUp as TrendingUp, TrendDown as TrendingDown, Minus, ArrowUpRight } from "@phosphor-icons/react";
 
 export default function KpiCard({
   label,
@@ -30,16 +29,13 @@ export default function KpiCard({
   const inner = (
     <div className={href ? "group cursor-pointer" : "group cursor-default"}>
       <p
-        className={`text-[9px] font-bold tracking-[0.16em] mb-1 sm:mb-2 transition-colors flex items-center gap-1 ${
+        className={`text-[9px] font-bold tracking-[0.16em] mb-1 sm:mb-2 transition-colors ${
           href
             ? "text-[var(--tx3)]/60 group-hover:text-[var(--tx3)]"
             : "text-[var(--tx3)]/60"
         }`}
       >
         {toSentenceCase(label)}
-        {href && (
-          <ArrowUpRight className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 -translate-y-px group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-        )}
       </p>
       <p
         className={`text-[20px] sm:text-[28px] font-bold font-heading leading-none transition-opacity ${
@@ -57,14 +53,14 @@ export default function KpiCard({
             delta >= 0 ? "text-[var(--grn)]" : "text-red-500"
           }`}
         >
-          {delta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          <span aria-hidden>{delta >= 0 ? "\u2191" : "\u2193"}</span>
           {delta >= 0 ? "+" : ""}
           {delta}% vs prev
         </div>
       )}
       {delta === 0 && (
         <div className="inline-flex items-center gap-1 mt-2 text-[10px] text-[var(--tx3)]">
-          <Minus className="w-3 h-3" />
+          <span aria-hidden>—</span>
           No change
         </div>
       )}

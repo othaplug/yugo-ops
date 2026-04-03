@@ -102,7 +102,7 @@ export default function InboxClient({ messages }: { messages: Message[] }) {
           />
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {FILTERS.map((f) => (
             <button
               key={f.value}
