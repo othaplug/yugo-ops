@@ -41,7 +41,11 @@ interface Props {
    * Remaining items use the config card labels directly.
    */
   tierFeaturesConfig?: Record<string, TierFeature[]>;
-  /** Merged tier labels, taglines, and “Best for” lines (from code + platform_config). */
+  /** Signature/Estate-only bullets after the “Everything in … plus:” line (additive layout). */
+  tierCardAdditions?: { signature: TierFeature[]; estate: TierFeature[] };
+  /** When true for a tier, card shows truck/crew + intro + additions only (not the full merged list). */
+  useAdditiveTierCards?: { signature: boolean; estate: boolean };
+  /** Merged tier labels, taglines, “Best for”, and optional inclusions intro lines. */
   tierMetaMap: ResidentialQuoteTierMetaMap;
 }
 
@@ -53,6 +57,8 @@ export default function ResidentialLayout({
   recommendedTier = "signature",
   hasSelection = false,
   tierFeaturesConfig,
+  tierCardAdditions = { signature: [], estate: [] },
+  useAdditiveTierCards = { signature: false, estate: false },
   tierMetaMap,
 }: Props) {
   const raw = (recommendedTier ?? "signature").toString().toLowerCase().trim();
@@ -207,21 +213,82 @@ export default function ResidentialLayout({
                   )}
 
                   {!isCollapsed && (() => {
-                    // Use tierFeaturesConfig when available: keep dynamic truck+crew from
-                    // t.includes[0..1], then use card labels from config for the rest.
                     const configFeatures = tierFeaturesConfig?.[tierKey];
-                    const bullets: string[] = configFeatures
-                      ? [
-                          t.includes[0] ?? configFeatures[0]?.card ?? "",
-                          t.includes[1] ?? configFeatures[1]?.card ?? "",
-                          ...configFeatures.slice(2).map((f) => f.card),
-                        ].filter(Boolean)
-                      : t.includes;
+                    const truck = t.includes[0] ?? configFeatures?.[0]?.card ?? "";
+                    const crew = t.includes[1] ?? configFeatures?.[1]?.card ?? "";
+                    const useAdditive =
+                      tierKey === "signature"
+                        ? useAdditiveTierCards.signature
+                        : tierKey === "estate"
+                          ? useAdditiveTierCards.estate
+                          : false;
+                    const additions =
+                      tierKey === "signature"
+                        ? tierCardAdditions.signature
+                        : tierKey === "estate"
+                          ? tierCardAdditions.estate
+                          : [];
+                    const intro = (meta.inclusionsIntro ?? "").trim();
+
+                    if (!configFeatures) {
+                      const bullets = t.includes.filter(Boolean);
+                      return (
+                        <div className="flex-1 min-h-0 flex flex-col mb-4">
+                          <ul className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain space-y-2.5 pr-1 [scrollbar-gutter:stable]">
+                            {bullets.map((inc, i) => (
+                              <li key={`fb-${i}`} className="flex gap-2.5 items-start">
+                                <Check className="w-3.5 h-3.5 shrink-0 mt-[3px]" style={{ color: checkColor }} />
+                                <span className="text-[12px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    }
+
+                    if (tierKey === "essential" || !useAdditive) {
+                      const bullets: string[] = [
+                        truck,
+                        crew,
+                        ...configFeatures.slice(2).map((f) => f.card),
+                      ].filter(Boolean);
+                      return (
+                        <div className="flex-1 min-h-0 flex flex-col mb-4">
+                          <ul className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain space-y-2.5 pr-1 [scrollbar-gutter:stable]">
+                            {bullets.map((inc, i) => (
+                              <li key={`full-${i}`} className="flex gap-2.5 items-start">
+                                <Check className="w-3.5 h-3.5 shrink-0 mt-[3px]" style={{ color: checkColor }} />
+                                <span className="text-[12px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    }
+
+                    const basePair = [truck, crew].filter(Boolean);
+                    const deltaCards = additions.map((f) => f.card).filter(Boolean);
                     return (
-                      <div className="flex-1 min-h-0 flex flex-col mb-4">
+                      <div className="flex-1 min-h-0 flex flex-col mb-4 space-y-3">
+                        <ul className="space-y-2.5 pr-1 [scrollbar-gutter:stable]">
+                          {basePair.map((inc, i) => (
+                            <li key={`base-${i}`} className="flex gap-2.5 items-start">
+                              <Check className="w-3.5 h-3.5 shrink-0 mt-[3px]" style={{ color: checkColor }} />
+                              <span className="text-[12px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        {intro ? (
+                          <p
+                            className="text-[11px] md:text-[12px] font-semibold leading-snug pl-0.5 pr-1"
+                            style={{ color: cardFg ?? FOREST }}
+                          >
+                            {intro}
+                          </p>
+                        ) : null}
                         <ul className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain space-y-2.5 pr-1 [scrollbar-gutter:stable]">
-                          {bullets.map((inc, i) => (
-                            <li key={i} className="flex gap-2.5 items-start">
+                          {deltaCards.map((inc, i) => (
+                            <li key={`add-${i}`} className="flex gap-2.5 items-start">
                               <Check className="w-3.5 h-3.5 shrink-0 mt-[3px]" style={{ color: checkColor }} />
                               <span className="text-[12px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
                             </li>

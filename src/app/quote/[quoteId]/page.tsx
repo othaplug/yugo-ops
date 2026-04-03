@@ -4,7 +4,7 @@ import { getLegalBranding } from "@/lib/legal-branding";
 import { getCompanyPhone } from "@/lib/config";
 import type { TierFeature } from "./quote-shared";
 import {
-  mergeResidentialTierFeaturesFromConfig,
+  buildResidentialTierFeatureBundle,
   mergeResidentialTierMetaFromConfig,
   QUOTE_RESIDENTIAL_TIER_FEATURES_KEY,
   QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY,
@@ -155,9 +155,9 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
   const quoteDisplayRows = quoteDisplayCfgResult?.data ?? [];
   const quoteDisplayMap: Record<string, string> = {};
   for (const row of quoteDisplayRows) quoteDisplayMap[row.key] = row.value ?? "";
-  const residentialTierFeatures = mergeResidentialTierFeaturesFromConfig(
-    quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_FEATURES_KEY],
-  );
+  const residentialTierFeaturesRaw = quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_FEATURES_KEY];
+  const residentialTierBundle = buildResidentialTierFeatureBundle(residentialTierFeaturesRaw);
+  const residentialTierFeatures = residentialTierBundle.full;
   const residentialTierMeta = mergeResidentialTierMetaFromConfig(
     quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY],
   );
@@ -177,6 +177,8 @@ export default async function QuotePage({ params }: { params: Promise<{ quoteId:
       }}
       eventFeatures={eventFeatures}
       residentialTierFeatures={residentialTierFeatures}
+      residentialTierCardAdditions={residentialTierBundle.cardAdditions}
+      residentialTierUseAdditiveCards={residentialTierBundle.useAdditiveCards}
       residentialTierMeta={residentialTierMeta}
     />
   );

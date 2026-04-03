@@ -4,16 +4,19 @@ import { useState, useEffect, useCallback } from "react";
 import { useToast } from "../components/Toast";
 import { ListBullets, TextAa, Trash, Plus, CaretDown } from "@phosphor-icons/react";
 import {
-  mergeResidentialTierFeaturesFromConfig,
   mergeResidentialTierMetaFromConfig,
-  cloneResidentialTierFeatures,
-  tierFeaturesEqualToDefaults,
+  parseResidentialTierFeaturesStorage,
+  expandResidentialTierFeaturesStorage,
+  tierFeaturesStorageEqualToDefaults,
+  DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE,
   tierMetaFormFromMerged,
   tierMetaEqualToDefaults,
   serializeTierMetaOverrides,
   parseAdminTierMetaJson,
   MIN_TIER_FEATURE_ROWS,
+  MIN_SIGNATURE_ESTATE_ADDITION_ROWS,
   parseAdminTierFeaturesJson,
+  type ResidentialTierFeaturesStorage,
 } from "@/lib/quotes/residential-tier-quote-display";
 import { TIER_ORDER } from "@/app/quote/[quoteId]/quote-shared";
 import type { TierFeature } from "@/app/quote/[quoteId]/quote-shared";
@@ -31,6 +34,22 @@ const EMPTY_ROW: TierFeature = {
   iconName: "CheckCircle",
 };
 
+function cloneStorage(s: ResidentialTierFeaturesStorage): ResidentialTierFeaturesStorage {
+  return JSON.parse(JSON.stringify(s)) as ResidentialTierFeaturesStorage;
+}
+
+function editorRowsForTier(s: ResidentialTierFeaturesStorage, tier: (typeof TIER_ORDER)[number]): TierFeature[] {
+  if (tier === "essential") return s.essential;
+  if (tier === "signature") {
+    return Array.isArray(s.signature) ? s.signature : s.signature.additions;
+  }
+  return Array.isArray(s.estate) ? s.estate : s.estate.additions;
+}
+
+function isLegacyFullTier(s: ResidentialTierFeaturesStorage, tier: "signature" | "estate"): boolean {
+  return Array.isArray(s[tier]);
+}
+
 interface Props {
   initialTierFeaturesJson: string;
   initialTierMetaOverridesJson: string;
@@ -41,8 +60,8 @@ export default function QuoteResidentialDisplaySection({
   initialTierMetaOverridesJson,
 }: Props) {
   const { toast } = useToast();
-  const [featuresByTier, setFeaturesByTier] = useState<Record<string, TierFeature[]>>(() =>
-    cloneResidentialTierFeatures(mergeResidentialTierFeaturesFromConfig(initialTierFeaturesJson)),
+  const [storage, setStorage] = useState<ResidentialTierFeaturesStorage>(() =>
+    parseResidentialTierFeaturesStorage(initialTierFeaturesJson),
   );
   const [activeTier, setActiveTier] = useState<(typeof TIER_ORDER)[number]>("essential");
   const [tierMetaForm, setTierMetaForm] = useState(() =>
@@ -55,38 +74,121 @@ export default function QuoteResidentialDisplaySection({
   const [metaJsonAdvancedError, setMetaJsonAdvancedError] = useState<string | null>(null);
 
   useEffect(() => {
-    setFeaturesByTier(cloneResidentialTierFeatures(mergeResidentialTierFeaturesFromConfig(initialTierFeaturesJson)));
+    setStorage(parseResidentialTierFeaturesStorage(initialTierFeaturesJson));
     setTierMetaForm(tierMetaFormFromMerged(mergeResidentialTierMetaFromConfig(initialTierMetaOverridesJson)));
   }, [initialTierFeaturesJson, initialTierMetaOverridesJson]);
 
-  const syncJsonAdvancedFromModel = useCallback((f: Record<string, TierFeature[]>) => {
-    setJsonAdvanced(JSON.stringify(f, null, 2));
+  const syncJsonAdvancedFromModel = useCallback((s: ResidentialTierFeaturesStorage) => {
+    setJsonAdvanced(JSON.stringify(s, null, 2));
     setJsonAdvancedError(null);
   }, []);
 
+  const minRowsForActiveTier = (): number => {
+    if (activeTier === "essential") return MIN_TIER_FEATURE_ROWS;
+    if (isLegacyFullTier(storage, activeTier)) return MIN_TIER_FEATURE_ROWS;
+    return MIN_SIGNATURE_ESTATE_ADDITION_ROWS;
+  };
+
   const removeRow = (tier: (typeof TIER_ORDER)[number], index: number) => {
-    setFeaturesByTier((prev) => {
-      const list = prev[tier];
-      if (!list || list.length <= MIN_TIER_FEATURE_ROWS) return prev;
-      return { ...prev, [tier]: list.filter((_, i) => i !== index) };
+    setStorage((prev) => {
+      const next = cloneStorage(prev);
+      if (tier === "essential") {
+        const list = next.essential;
+        if (list.length <= MIN_TIER_FEATURE_ROWS) return prev;
+        next.essential = list.filter((_, i) => i !== index);
+        return next;
+      }
+      if (tier === "signature") {
+        if (Array.isArray(next.signature)) {
+          const list = next.signature;
+          if (list.length <= MIN_TIER_FEATURE_ROWS) return prev;
+          next.signature = list.filter((_, i) => i !== index);
+        } else {
+          const list = next.signature.additions;
+          if (list.length <= MIN_SIGNATURE_ESTATE_ADDITION_ROWS) return prev;
+          next.signature = { additions: list.filter((_, i) => i !== index) };
+        }
+        return next;
+      }
+      if (Array.isArray(next.estate)) {
+        const list = next.estate;
+        if (list.length <= MIN_TIER_FEATURE_ROWS) return prev;
+        next.estate = list.filter((_, i) => i !== index);
+      } else {
+        const list = next.estate.additions;
+        if (list.length <= MIN_SIGNATURE_ESTATE_ADDITION_ROWS) return prev;
+        next.estate = { additions: list.filter((_, i) => i !== index) };
+      }
+      return next;
     });
   };
 
   const addRow = (tier: (typeof TIER_ORDER)[number]) => {
-    setFeaturesByTier((prev) => ({
-      ...prev,
-      [tier]: [...(prev[tier] ?? []), { ...EMPTY_ROW }],
-    }));
+    setStorage((prev) => {
+      const next = cloneStorage(prev);
+      const row = { ...EMPTY_ROW };
+      if (tier === "essential") {
+        next.essential = [...next.essential, row];
+        return next;
+      }
+      if (tier === "signature") {
+        if (Array.isArray(next.signature)) {
+          next.signature = [...next.signature, row];
+        } else {
+          next.signature = { additions: [...next.signature.additions, row] };
+        }
+        return next;
+      }
+      if (Array.isArray(next.estate)) {
+        next.estate = [...next.estate, row];
+      } else {
+        next.estate = { additions: [...next.estate.additions, row] };
+      }
+      return next;
+    });
   };
 
   const updateRow = (tier: (typeof TIER_ORDER)[number], index: number, patch: Partial<TierFeature>) => {
-    setFeaturesByTier((prev) => ({
-      ...prev,
-      [tier]: (prev[tier] ?? []).map((r, i) => (i === index ? { ...r, ...patch } : r)),
-    }));
+    setStorage((prev) => {
+      const next = cloneStorage(prev);
+      const mapList = (list: TierFeature[]) => list.map((r, i) => (i === index ? { ...r, ...patch } : r));
+      if (tier === "essential") {
+        next.essential = mapList(next.essential);
+        return next;
+      }
+      if (tier === "signature") {
+        if (Array.isArray(next.signature)) {
+          next.signature = mapList(next.signature);
+        } else {
+          next.signature = { additions: mapList(next.signature.additions) };
+        }
+        return next;
+      }
+      if (Array.isArray(next.estate)) {
+        next.estate = mapList(next.estate);
+      } else {
+        next.estate = { additions: mapList(next.estate.additions) };
+      }
+      return next;
+    });
   };
 
-  const updateTierMeta = (tier: (typeof TIER_ORDER)[number], patch: { tagline?: string; footer?: string }) => {
+  const convertToAdditiveLists = () => {
+    setStorage((prev) => {
+      const full = expandResidentialTierFeaturesStorage(prev);
+      return {
+        essential: [...prev.essential],
+        signature: { additions: full.signature.slice(prev.essential.length) },
+        estate: { additions: full.estate.slice(full.signature.length) },
+      };
+    });
+    toast("Signature & Estate now use shorter “plus” lists on the quote", "check");
+  };
+
+  const updateTierMeta = (
+    tier: (typeof TIER_ORDER)[number],
+    patch: { tagline?: string; footer?: string; inclusionsIntro?: string },
+  ) => {
     setTierMetaForm((prev) => ({
       ...prev,
       [tier]: { ...prev[tier], ...patch },
@@ -115,15 +217,15 @@ export default function QuoteResidentialDisplaySection({
       setJsonAdvancedError(result.error);
       return;
     }
-    setFeaturesByTier(cloneResidentialTierFeatures(result.value));
+    setStorage(result.value);
     setJsonAdvancedError(null);
     toast("Applied JSON to feature lists", "check");
   };
 
   const persist = async () => {
-    const tierFeaturesPayload = tierFeaturesEqualToDefaults(featuresByTier)
+    const tierFeaturesPayload = tierFeaturesStorageEqualToDefaults(storage)
       ? ""
-      : JSON.stringify(featuresByTier, null, 2);
+      : JSON.stringify(storage, null, 2);
     const tierMetaPayload = tierMetaEqualToDefaults(tierMetaForm) ? "" : serializeTierMetaOverrides(tierMetaForm);
 
     setSaving(true);
@@ -153,7 +255,8 @@ export default function QuoteResidentialDisplaySection({
   const ta =
     "w-full min-h-[180px] px-3 py-2.5 bg-[var(--bg)] border border-[var(--brd)] rounded-lg font-mono text-[11px] leading-relaxed text-[var(--tx)] outline-none focus:border-[var(--gold)]/50";
 
-  const list = featuresByTier[activeTier] ?? [];
+  const list = editorRowsForTier(storage, activeTier);
+  const showConvert = isLegacyFullTier(storage, "signature") || isLegacyFullTier(storage, "estate");
 
   return (
     <section className="pt-6 border-t border-[var(--brd)]/30">
@@ -163,13 +266,31 @@ export default function QuoteResidentialDisplaySection({
           Client quote — residential tiers
         </h2>
         <p className="text-[11px] text-[var(--tx3)] mt-1 max-w-2xl">
-          Edit feature lines per tier. Use <strong className="font-semibold text-[var(--tx)]">Remove</strong> to drop a row
-          (minimum {MIN_TIER_FEATURE_ROWS} per tier). First two lines are still replaced on the live quote by truck and crew
-          wording from the quote data. Tagline and &quot;Best for&quot; are edited below for the selected tier.
+          <strong className="font-semibold text-[var(--tx)]">Essential</strong> is the full list.{" "}
+          <strong className="font-semibold text-[var(--tx)]">Signature</strong> and{" "}
+          <strong className="font-semibold text-[var(--tx)]">Estate</strong> use{" "}
+          <strong className="font-semibold text-[var(--tx)]">only extra lines</strong> shown after “Everything in Essential /
+          Signature, plus:” on tier cards (shorter cards). The expanded “Your move includes” section still shows the full merged
+          list. First two lines on each tier are still replaced on the live quote by truck and crew from the quote data.
         </p>
       </div>
 
       <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-5">
+        {showConvert ? (
+          <div className="rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 px-3 py-2.5 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[11px] text-[var(--tx2)] max-w-xl">
+              Config uses full Signature/Estate arrays (legacy). Convert to additive storage to match the shorter tier cards.
+            </p>
+            <button
+              type="button"
+              onClick={convertToAdditiveLists}
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--gold)] text-[var(--btn-text-on-accent)] text-[11px] font-semibold hover:opacity-90"
+            >
+              Convert to “plus” lists
+            </button>
+          </div>
+        ) : null}
+
         <div>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <label className={labelCls}>Tier feature lines</label>
@@ -177,11 +298,7 @@ export default function QuoteResidentialDisplaySection({
               <button
                 type="button"
                 className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
-                onClick={() =>
-                  setFeaturesByTier(
-                    cloneResidentialTierFeatures(mergeResidentialTierFeaturesFromConfig("")),
-                  )
-                }
+                onClick={() => setStorage(cloneStorage(DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE))}
               >
                 Reset lists to built-in defaults
               </button>
@@ -204,6 +321,13 @@ export default function QuoteResidentialDisplaySection({
               </button>
             ))}
           </div>
+
+          {activeTier !== "essential" && !isLegacyFullTier(storage, activeTier) ? (
+            <p className="text-[10px] text-[var(--tx3)] mb-3 max-w-2xl">
+              Edit only lines that are <strong className="text-[var(--tx2)]">not</strong> already covered by the lower tier.
+              Wording for “Everything in … plus:” is under Tier card copy → Inclusions intro.
+            </p>
+          ) : null}
 
           <ul className="space-y-2">
             {list.map((row, index) => (
@@ -263,10 +387,12 @@ export default function QuoteResidentialDisplaySection({
                   <button
                     type="button"
                     onClick={() => removeRow(activeTier, index)}
-                    disabled={list.length <= MIN_TIER_FEATURE_ROWS}
+                    disabled={list.length <= minRowsForActiveTier()}
                     title={
-                      list.length <= MIN_TIER_FEATURE_ROWS
-                        ? `At least ${MIN_TIER_FEATURE_ROWS} lines required`
+                      list.length <= minRowsForActiveTier()
+                        ? activeTier === "essential" || isLegacyFullTier(storage, activeTier as "signature" | "estate")
+                          ? `At least ${MIN_TIER_FEATURE_ROWS} lines required`
+                          : "At least one line or leave empty list"
                         : "Remove this line"
                     }
                     className="shrink-0 p-2 rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:text-[var(--red)] hover:border-[var(--red)]/40 disabled:opacity-40 disabled:pointer-events-none"
@@ -298,9 +424,9 @@ export default function QuoteResidentialDisplaySection({
                 type="button"
                 className="text-[10px] font-semibold text-[var(--gold)] hover:underline"
                 onClick={() => setTierMetaForm(tierMetaFormFromMerged(mergeResidentialTierMetaFromConfig("")))}
-                title="Restore tagline and best-for to built-in defaults for all tiers"
+                title="Restore tagline, best-for, and inclusions intros to built-in defaults for all tiers"
               >
-                Reset all tiers to built-in taglines &amp; best-for
+                Reset all tiers to built-in card copy
               </button>
             </div>
             <p className="text-[10px] text-[var(--tx3)]">
@@ -328,6 +454,24 @@ export default function QuoteResidentialDisplaySection({
                 aria-label={`Best for line for ${activeTier} tier`}
               />
             </div>
+            {(activeTier === "signature" || activeTier === "estate") && (
+              <div>
+                <label className="text-[9px] font-bold uppercase text-[var(--tx3)]">Inclusions intro</label>
+                <input
+                  type="text"
+                  value={tierMetaForm[activeTier].inclusionsIntro}
+                  onChange={(e) => updateTierMeta(activeTier, { inclusionsIntro: e.target.value })}
+                  className={inputCls}
+                  placeholder={
+                    activeTier === "signature" ? "Everything in Essential, plus:" : "Everything in Signature, plus:"
+                  }
+                  aria-label={`Inclusions intro for ${activeTier} tier`}
+                />
+                <p className="text-[9px] text-[var(--tx3)] mt-1">
+                  Line above the Signature/Estate-only bullet list (additive cards).
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -335,15 +479,16 @@ export default function QuoteResidentialDisplaySection({
           className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-3"
           onToggle={(e) => {
             const el = e.currentTarget;
-            if (el.open) syncJsonAdvancedFromModel(featuresByTier);
+            if (el.open) syncJsonAdvancedFromModel(storage);
           }}
         >
           <summary className="text-[11px] font-semibold text-[var(--tx)] cursor-pointer">
             Advanced: edit all tiers as JSON
           </summary>
           <p className="text-[10px] text-[var(--tx3)] mt-2 mb-2">
-            Paste a full <code className="text-[9px]">{`{ "essential": [...], "signature": [...], "estate": [...] }`}</code> object.
-            Each tier needs at least {MIN_TIER_FEATURE_ROWS} rows.
+            <code className="text-[9px]">essential</code> is a full array.{" "}
+            <code className="text-[9px]">signature</code> / <code className="text-[9px]">estate</code> may be{" "}
+            <code className="text-[9px]">{`{ "additions": [ ... ] }`}</code> (shorter cards) or a full array (legacy).
           </p>
           <textarea
             value={jsonAdvanced}
@@ -381,9 +526,7 @@ export default function QuoteResidentialDisplaySection({
             Advanced: tagline &amp; best-for as JSON (all tiers)
           </summary>
           <p className="text-[10px] text-[var(--tx3)] mt-2 mb-2">
-            Optional. Same shape as platform_config:{" "}
-            <code className="text-[9px]">{`{ "essential": { "tagline": "...", "footer": "..." }, ... }`}</code>. Tiers you omit
-            keep the values currently shown in the fields above.
+            Optional. Include <code className="text-[9px]">inclusionsIntro</code> on signature/estate for the “plus” line.
           </p>
           <textarea
             value={metaJsonAdvanced}
@@ -419,7 +562,7 @@ export default function QuoteResidentialDisplaySection({
           <button
             type="button"
             onClick={() => {
-              setFeaturesByTier(cloneResidentialTierFeatures(mergeResidentialTierFeaturesFromConfig("")));
+              setStorage(parseResidentialTierFeaturesStorage(""));
               setTierMetaForm(tierMetaFormFromMerged(mergeResidentialTierMetaFromConfig("")));
               setJsonAdvanced("");
               setJsonAdvancedError(null);

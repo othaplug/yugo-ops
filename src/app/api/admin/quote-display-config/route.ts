@@ -10,6 +10,17 @@ import { TIER_ORDER } from "@/app/quote/[quoteId]/quote-shared";
 const TIER_KEYS = TIER_ORDER as unknown as readonly string[];
 import { invalidateConfigCache } from "@/lib/config";
 
+function isValidTierFeatureRow(item: unknown): boolean {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+  const o = item as Record<string, unknown>;
+  return (
+    typeof o.card === "string" &&
+    typeof o.title === "string" &&
+    typeof o.desc === "string" &&
+    typeof o.iconName === "string"
+  );
+}
+
 function validateTierFeaturesJson(raw: string): { ok: true } | { ok: false; error: string } {
   const trimmed = raw.trim();
   if (!trimmed) return { ok: true };
@@ -30,28 +41,45 @@ function validateTierFeaturesJson(raw: string): { ok: true } | { ok: false; erro
   }
   for (const tier of TIER_ORDER) {
     if (!(tier in p)) continue;
-    const arr = p[tier];
-    if (!Array.isArray(arr)) {
-      return { ok: false, error: `Tier features: "${tier}" must be an array` };
-    }
-    for (let i = 0; i < arr.length; i++) {
-      const item = arr[i];
-      if (!item || typeof item !== "object" || Array.isArray(item)) {
-        return { ok: false, error: `Tier features: invalid row at ${tier}[${i}]` };
+    const block = p[tier];
+    if (tier === "essential") {
+      if (!Array.isArray(block)) {
+        return { ok: false, error: `Tier features: "essential" must be an array` };
       }
-      const o = item as Record<string, unknown>;
-      if (
-        typeof o.card !== "string" ||
-        typeof o.title !== "string" ||
-        typeof o.desc !== "string" ||
-        typeof o.iconName !== "string"
-      ) {
-        return { ok: false, error: `Tier features: ${tier}[${i}] needs card, title, desc, iconName (strings)` };
+      for (let i = 0; i < block.length; i++) {
+        if (!isValidTierFeatureRow(block[i])) {
+          return { ok: false, error: `Tier features: invalid row at essential[${i}]` };
+        }
       }
+      if (block.length > 0 && block.length < 3) {
+        return { ok: false, error: `Tier features: "essential" needs at least 3 rows` };
+      }
+      continue;
     }
-    if (arr.length > 0 && arr.length < 3) {
-      return { ok: false, error: `Tier features: "${tier}" needs at least 3 rows when provided` };
+    if (Array.isArray(block)) {
+      for (let i = 0; i < block.length; i++) {
+        if (!isValidTierFeatureRow(block[i])) {
+          return { ok: false, error: `Tier features: invalid row at ${tier}[${i}]` };
+        }
+      }
+      if (block.length > 0 && block.length < 3) {
+        return { ok: false, error: `Tier features: "${tier}" full array needs at least 3 rows` };
+      }
+      continue;
     }
+    if (block && typeof block === "object" && !Array.isArray(block)) {
+      const adds = (block as { additions?: unknown }).additions;
+      if (!Array.isArray(adds)) {
+        return { ok: false, error: `Tier features: "${tier}" must be an array or { "additions": [...] }` };
+      }
+      for (let i = 0; i < adds.length; i++) {
+        if (!isValidTierFeatureRow(adds[i])) {
+          return { ok: false, error: `Tier features: invalid row at ${tier}.additions[${i}]` };
+        }
+      }
+      continue;
+    }
+    return { ok: false, error: `Tier features: "${tier}" has invalid shape` };
   }
   return { ok: true };
 }
@@ -86,6 +114,9 @@ function validateMetaOverridesJson(raw: string): { ok: true } | { ok: false; err
     }
     if (b.footer !== undefined && typeof b.footer !== "string") {
       return { ok: false, error: `Tier meta: ${tier}.footer must be a string` };
+    }
+    if (b.inclusionsIntro !== undefined && typeof b.inclusionsIntro !== "string") {
+      return { ok: false, error: `Tier meta: ${tier}.inclusionsIntro must be a string` };
     }
   }
   return { ok: true };

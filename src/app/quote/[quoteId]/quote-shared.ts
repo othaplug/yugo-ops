@@ -128,10 +128,23 @@ export interface HighValueDeclaration {
 
 export const TIER_ORDER = ["essential", "signature", "estate"] as const;
 
-/** Tier card copy on the client quote (tagline + “Best for” footer can be overridden via platform_config). */
+/**
+ * Tier card copy on the client quote (tagline + “Best for” footer can be overridden via platform_config).
+ * `inclusionsIntro` — line above the bullet list on Signature/Estate (“Everything in Essential, plus:”).
+ */
 export type ResidentialQuoteTierMetaMap = Record<
   string,
-  { label: string; tagline: string; badge?: string; footer?: string; accent: string; bg: string; border: string }
+  {
+    label: string;
+    tagline: string;
+    badge?: string;
+    footer?: string;
+    /** Signature/Estate only: shown above “plus” bullets on tier cards. */
+    inclusionsIntro?: string;
+    accent: string;
+    bg: string;
+    border: string;
+  }
 >;
 
 export const TIER_META: ResidentialQuoteTierMetaMap = {
@@ -151,6 +164,7 @@ export const TIER_META: ResidentialQuoteTierMetaMap = {
     bg: "#FFFDF8",
     border: GOLD,
     footer: "Best for: complete home moves where time, flow, and peace of mind matter.",
+    inclusionsIntro: "Everything in Essential, plus:",
   },
   estate: {
     label: TIER_LABELS.estate,
@@ -159,6 +173,7 @@ export const TIER_META: ResidentialQuoteTierMetaMap = {
     bg: "#FDF8FA",
     border: WINE,
     footer: "Best for: high-value homes, art, antiques & complete transitions.",
+    inclusionsIntro: "Everything in Signature, plus:",
   },
 };
 

@@ -194,6 +194,8 @@ export default function QuotePageClient({
   branding,
   eventFeatures = null,
   residentialTierFeatures,
+  residentialTierCardAdditions = { signature: [], estate: [] },
+  residentialTierUseAdditiveCards = { signature: false, estate: false },
   residentialTierMeta,
 }: {
   quote: Quote;
@@ -205,6 +207,8 @@ export default function QuotePageClient({
   branding: { companyLegal: string; brand: string; email: string };
   eventFeatures?: TierFeature[] | null;
   residentialTierFeatures: Record<string, TierFeature[]>;
+  residentialTierCardAdditions?: { signature: TierFeature[]; estate: TierFeature[] };
+  residentialTierUseAdditiveCards?: { signature: boolean; estate: boolean };
   residentialTierMeta: ResidentialQuoteTierMetaMap;
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
@@ -1040,6 +1044,8 @@ export default function QuotePageClient({
               recommendedTier={recommendedTierNorm}
               hasSelection={false}
               tierFeaturesConfig={residentialTierFeatures}
+              tierCardAdditions={residentialTierCardAdditions}
+              useAdditiveTierCards={residentialTierUseAdditiveCards}
               tierMetaMap={residentialTierMeta}
             />
             <InclusionsShowcase
@@ -1881,9 +1887,9 @@ const InclusionsShowcase = React.forwardRef<
         </p>
       ) : null}
 
-      <div className="grid md:grid-cols-2 gap-x-5 gap-y-4 max-w-4xl mx-auto">
+      <div className="grid md:grid-cols-2 gap-x-5 gap-y-4 max-w-4xl mx-auto min-w-0 px-2">
         {visibleItems.map((item, i) => (
-          <div key={i} className="py-3 px-0 md:px-0.5">
+          <div key={i} className="py-3 px-6 md:px-0.5">
             <div className="min-w-0">
               <p className="text-[13px] font-semibold leading-snug" style={{ color: FOREST }}>
                 {item.title}
