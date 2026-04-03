@@ -133,47 +133,47 @@ const BALANCE_DUE: Record<string, string> = {
 const AGREEMENT_HEADER: Record<string, { title: string; subtitle: string }> = {
   local_move: {
     title: "Residential Move Agreement",
-    subtitle: "Review the agreement, then sign to proceed to payment",
+    subtitle: "Please review and sign to continue—your move is reserved once payment is complete.",
   },
   long_distance: {
     title: "Long Distance Move Agreement",
-    subtitle: "Review the agreement, then sign to proceed to payment",
+    subtitle: "Please review and sign to continue—we will hold your dates once payment is complete.",
   },
   office_move: {
     title: "Office Relocation Agreement",
-    subtitle: "Review the agreement, then sign to proceed to payment",
+    subtitle: "Please review and sign to continue your relocation on the terms we quoted.",
   },
   single_item: {
     title: "Delivery Service Agreement",
-    subtitle: "Review the agreement, then sign to proceed to payment",
+    subtitle: "Please review and sign to confirm this delivery.",
   },
   white_glove: {
     title: "White Glove Delivery Agreement",
-    subtitle: "Review the agreement, then sign to proceed to payment",
+    subtitle: "Please review and sign—white-glove service begins once you confirm below.",
   },
   specialty: {
     title: "Specialty Service Agreement",
-    subtitle: "Review the agreement, then sign to proceed to payment",
+    subtitle: "Please review and sign to confirm this specialty engagement.",
   },
   b2b_oneoff: {
     title: "Commercial Delivery Agreement",
-    subtitle: "Review the agreement, then sign to confirm your delivery booking",
+    subtitle: "Please review and sign to confirm this delivery on the terms quoted.",
   },
   b2b_delivery: {
     title: "Commercial Delivery Agreement",
-    subtitle: "Review the agreement, then sign to confirm your delivery booking",
+    subtitle: "Please review and sign to confirm this delivery on the terms quoted.",
   },
   event: {
     title: "Event Logistics Agreement",
-    subtitle: "Review the agreement, then sign to proceed to payment",
+    subtitle: "Please review and sign—we will hold your logistics window once you confirm.",
   },
   labour_only: {
     title: "Labour Service Agreement",
-    subtitle: "Review the agreement, then sign to proceed to payment",
+    subtitle: "Please review and sign to confirm your on-site crew booking.",
   },
   bin_rental: {
     title: "Bin Rental Agreement",
-    subtitle: "Review the bin rental agreement, then sign to proceed to payment",
+    subtitle: "Please review and sign—your bin delivery is confirmed once you complete payment.",
   },
 };
 
@@ -227,17 +227,23 @@ export default function ContractSign({
   const agreementMeta =
     AGREEMENT_HEADER[q.serviceType] ??
     (isClientLogisticsDeliveryServiceType(q.serviceType)
-      ? { title: "Delivery Service Agreement", subtitle: "Review the agreement, then sign to proceed to payment" }
-      : { title: "Service Agreement", subtitle: "Review the agreement, then sign to proceed to payment" });
+      ? {
+          title: "Delivery Service Agreement",
+          subtitle: "Please review and sign to confirm this delivery.",
+        }
+      : {
+          title: "Service Agreement",
+          subtitle: "Please review and sign to continue on the terms we quoted.",
+        });
   const agreementHeader = {
     title: agreementDocumentTitle(q.serviceType, q.residentialTier),
     subtitle:
       q.serviceType === "local_move" && q.residentialTier === "estate"
-        ? "Review your Estate move agreement, then sign to proceed to payment"
+        ? "Your Estate experience is outlined below—please review and sign to reserve your date."
         : q.serviceType === "local_move" && q.residentialTier === "signature"
-          ? "Review your Signature move agreement, then sign to proceed to payment"
+          ? "Your Signature move is outlined below—please review and sign to continue."
           : q.serviceType === "local_move" && q.residentialTier === "essential"
-            ? "Review your Essential move agreement, then sign to proceed to payment"
+            ? "Your Essential move is outlined below—please review and sign to continue."
             : agreementMeta.subtitle,
   };
   const agreementSignLabel = agreementCheckboxLabel(q.serviceType, q.residentialTier);
@@ -363,10 +369,10 @@ export default function ContractSign({
           </div>
           <div>
             <h2 className="font-heading text-[var(--text-base)] font-bold" style={{ color: FOREST }}>
-              Contract Signed
+              You&apos;re all set
             </h2>
             <p className="text-[12px]" style={{ color: `${FOREST}70` }}>
-              Signed by <b>{typedName}</b>
+              Agreement signed by <b>{typedName}</b>
               {signedAt && (
                 <>
                   {" "}on{" "}
@@ -915,11 +921,11 @@ export default function ContractSign({
         >
           {expanded ? (
             <>
-              <ChevronUp className="w-4 h-4" /> Hide Full Agreement
+              <ChevronUp className="w-4 h-4" /> Hide full terms
             </>
           ) : (
             <>
-              <ChevronDown className="w-4 h-4" /> View Full Agreement
+              <ChevronDown className="w-4 h-4" /> Read full agreement
             </>
           )}
         </button>
@@ -989,24 +995,24 @@ export default function ContractSign({
         {/* ── Signature section ── */}
         <div className="space-y-4">
           <p className="text-[12px] font-semibold" style={{ color: FOREST }}>
-            Electronic Signature
+            Your signature
           </p>
 
           <p className="text-[11px] leading-relaxed" style={{ color: `${FOREST}80` }}>
             {isBinRental ? (
               <>
-                By signing below, I confirm that I have read the {agreementSignLabel}, understand the
-                terms, and authorize {companyDisplayName} to deliver and pick up bins as scheduled.
+                By signing below, you confirm that you have read the {agreementSignLabel}, accept its
+                terms, and authorize {companyDisplayName} to deliver and collect your bins as scheduled.
               </>
             ) : isClientLogisticsDeliveryServiceType(q.serviceType) ? (
               <>
-                By signing below, I confirm that I have read the {agreementSignLabel}, understand the terms,
-                and authorize {companyDisplayName} to complete this delivery as described.
+                By signing below, you confirm that you have read the {agreementSignLabel}, accept its
+                terms, and authorize {companyDisplayName} to complete this delivery as quoted.
               </>
             ) : (
               <>
-                By signing below, I confirm that I have read the {agreementSignLabel}, understand the
-                terms, and authorize {companyDisplayName} to proceed with the service as described.
+                By signing below, you confirm that you have read the {agreementSignLabel}, accept its
+                terms, and authorize {companyDisplayName} to carry out the service we described together.
               </>
             )}
           </p>
@@ -1017,7 +1023,7 @@ export default function ContractSign({
               className="block text-[11px] font-semibold tracking-wider uppercase mb-1.5"
               style={{ color: FOREST }}
             >
-              Type Your Full Legal Name
+              Full legal name (as it should appear)
             </label>
             <input
               type="text"
@@ -1054,14 +1060,14 @@ export default function ContractSign({
             <span className="text-[12px] leading-snug flex-1 min-w-0 pt-0.5" style={{ color: FOREST }}>
               {isBinRental ? (
                 <>
-                  I have read and agree to the <b>{agreementSignLabel}</b> above, including payment,
-                  rental period, card-on-file authorization, cancellation, prohibited contents, care of bins,
-                  and all other terms.
+                  I have read the <b>{agreementSignLabel}</b> and agree to its terms—including payment, rental
+                  timing, card on file, cancellation, what may not go in the bins, and care of the equipment.
                 </>
               ) : (
                 <>
-                  I have read and agree to the <b>{agreementSignLabel}</b> above, including the quoted price,
-                  payment terms, cancellation policy, prohibited items, liability limits, and all other terms.
+                  I have read the <b>{agreementSignLabel}</b> and agree to its terms—including your quoted
+                  investment, payment and cancellation, what we cannot transport, liability, and the rest of
+                  the agreement above.
                 </>
               )}
             </span>
@@ -1113,7 +1119,7 @@ export default function ContractSign({
                   Processing&hellip;
                 </span>
               ) : (
-                "Sign & Continue to Payment"
+                "Sign & continue to payment"
               )}
             </button>
           </div>

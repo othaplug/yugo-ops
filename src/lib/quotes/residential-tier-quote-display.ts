@@ -54,7 +54,8 @@ export const DEFAULT_SIGNATURE_ADDITIONS: TierFeature[] = [
 ];
 
 /**
- * Estate tier: lines after “Everything in Signature, plus:” — only what Signature/Essential do not already cover.
+ * Estate tier: lines after “Everything in Signature, plus:” — canonical additive list (admin Tier feature lines).
+ * No GPS or debris here; white glove covers art/antiques (no separate “premium art” line).
  */
 export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
   {
@@ -70,10 +71,22 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     iconName: "ClipboardCheck",
   },
   {
-    card: "Full disassembly & precision reassembly",
-    title: "Full disassembly & precision reassembly",
-    desc: "Complete furniture breakdown and expert reassembly",
+    card: "Full furniture wrapping and protection throughout",
+    title: "Full furniture wrapping and protection throughout",
+    desc: "Every piece wrapped and protected end to end",
+    iconName: "Armchair",
+  },
+  {
+    card: "Complex disassembly & reassembly",
+    title: "Complex disassembly & reassembly",
+    desc: "Expert breakdown and reassembly for demanding pieces",
     iconName: "Wrench",
+  },
+  {
+    card: "Floor and property protection throughout",
+    title: "Floor and property protection throughout",
+    desc: "Runners, booties, and protection across your property",
+    iconName: "Home",
   },
   {
     card: "All packing materials and supplies included",
@@ -88,8 +101,14 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     iconName: "Star",
   },
   {
-    card: "Full replacement valuation coverage",
-    title: "Full replacement valuation coverage",
+    card: "Precision placement in every room",
+    title: "Precision placement in every room",
+    desc: "Exact placement where you want each piece",
+    iconName: "Compass",
+  },
+  {
+    card: "Full repair or replacement valuation coverage",
+    title: "Full repair or replacement valuation coverage",
     desc: "Maximum protection for your most valuable items",
     iconName: "ShieldCheck",
   },
@@ -98,12 +117,6 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     title: "Pre-move inventory planning",
     desc: "Full inventory documented before and after your move",
     iconName: "FrameCorners",
-  },
-  {
-    card: "Premium handling for art, antiques, and specialty items",
-    title: "Premium art & antique handling",
-    desc: "Art, antiques, and fragile items individually wrapped",
-    iconName: "Palette",
   },
   {
     card: "30-day post-move concierge support",
@@ -189,14 +202,6 @@ export function inclusionDedupeKey(f: TierFeature): string {
   }
 
   if (
-    (blob.includes("placement") && blob.includes("room")) ||
-    (blob.includes("placement") && blob.includes("throughout the home")) ||
-    (blob.includes("precision placement") && blob.includes("room"))
-  ) {
-    return "__room_placement";
-  }
-
-  if (
     (blob.includes("all ") || blob.includes("standard ")) &&
     blob.includes("equipment") &&
     (blob.includes("included") || blob.includes("rent") || blob.includes("dollies"))
@@ -205,6 +210,30 @@ export function inclusionDedupeKey(f: TierFeature): string {
   }
 
   if (blob.includes("basic disassembly") && blob.includes("reassembly")) return "__basic_disassembly_reassembly";
+  if (
+    blob.includes("reassembly") &&
+    (blob.includes("complex disassembly") ||
+      blob.includes("full disassembly") ||
+      blob.includes("precision reassembly"))
+  ) {
+    return "__premium_disassembly";
+  }
+
+  if (blob.includes("white glove")) return "__white_glove_handling";
+  if (blob.includes("premium handling") && (blob.includes("art") || blob.includes("antique"))) {
+    return "__white_glove_handling";
+  }
+
+  if (blob.includes("precision placement") || (blob.includes("precision") && blob.includes("every room"))) {
+    return "__precision_placement";
+  }
+  if (
+    blob.includes("room-of-choice") ||
+    blob.includes("room of choice") ||
+    (blob.includes("placement") && blob.includes("throughout the home"))
+  ) {
+    return "__room_choice_placement";
+  }
 
   return c;
 }

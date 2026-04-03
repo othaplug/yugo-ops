@@ -64,34 +64,34 @@ function serviceDescription(p: NonBinAgreementBuildParams): string {
   switch (serviceType) {
     case "local_move":
       if (tier === "estate") {
-        return `${companyDisplayName} will perform a local residential Estate move for the ${pkg} tier: dedicated coordination, premium handling for high-value furnishings, art, and specialty goods as described in your quote, plus truck, crew, equipment, and loading/unloading between the addresses above.`;
+        return `${companyDisplayName} will deliver an Estate-tier local residential move for the ${pkg} package: dedicated coordination, white-glove handling for fine furnishings, art, and specialty pieces as set out in your quote, with truck, crew, equipment, and careful loading and unloading between the residences above.`;
       }
       if (tier === "signature") {
-        return `${companyDisplayName} will perform a local residential Signature move for the ${pkg} tier: expanded protection and service inclusions as quoted, including truck, crew, equipment, and loading/unloading between the addresses above.`;
+        return `${companyDisplayName} will deliver a Signature-tier local residential move for the ${pkg} package: elevated protection and inclusions as quoted, with truck, crew, equipment, and attentive loading and unloading between the addresses above.`;
       }
       if (tier === "essential") {
-        return `${companyDisplayName} will perform a local residential Essential move for the ${pkg} tier: truck, crew, standard equipment, and loading/unloading between the addresses above, as described in your quote.`;
+        return `${companyDisplayName} will deliver an Essential-tier local residential move for the ${pkg} package: truck, crew, standard equipment, and professional loading and unloading between the addresses above, as described in your quote.`;
       }
-      return `${companyDisplayName} will provide professional local residential moving services including truck, crew, equipment, and loading/unloading for the ${pkg} scope in your quote.`;
+      return `${companyDisplayName} will provide a carefully scoped local residential move for the ${pkg} package—truck, crew, equipment, and loading and unloading—as described in your quote.`;
     case "long_distance":
-      return `${companyDisplayName} will provide long distance moving services between the origin and destination in your quote, including transport and access as specified (packing, storage, or delivery windows may apply per your quote).`;
+      return `${companyDisplayName} will oversee your long-distance relocation between the origin and destination in your quote, including transport and access as specified (packing, storage, or delivery timing may apply per your quotation).`;
     case "office_move":
-      return `${companyDisplayName} will relocate your workplace as quoted: furniture, fixtures, and equipment in scope, coordination of origin and destination access, and professional loading and unloading unless your quote states otherwise.`;
+      return `${companyDisplayName} will relocate your workplace with the same care we bring to private homes: furniture, fixtures, and equipment within scope, coordinated access at origin and destination, and professional loading and unloading unless your quote states otherwise.`;
     case "single_item":
-      return `${companyDisplayName} will pick up and deliver the item(s) described in your quote with professional handling and protection appropriate to the shipment.`;
+      return `${companyDisplayName} will collect and deliver the piece(s) in your quote with measured handling and protection suited to the shipment.`;
     case "white_glove":
-      return `${companyDisplayName} will provide white glove service as quoted: premium handling, inside placement, optional assembly or debris removal if included in your quote.`;
+      return `${companyDisplayName} will provide white-glove service as quoted: refined handling, inside placement, and optional assembly or debris removal where included.`;
     case "specialty":
-      return `${companyDisplayName} will perform the specialty project in your quote (for example crating, piano, art, or antique handling) according to the agreed scope, crew, and timeline.`;
+      return `${companyDisplayName} will execute the specialty engagement in your quote—for example crating, piano, art, or antique work—according to the agreed scope, crew, and schedule.`;
     case "b2b_oneoff":
     case "b2b_delivery":
-      return `${companyDisplayName} will complete the commercial pickup and delivery described in your quote, including handling and documentation as specified.`;
+      return `${companyDisplayName} will complete the commercial pickup and delivery in your quote with the documentation and handling standards specified.`;
     case "event":
-      return `${companyDisplayName} will provide event logistics as quoted: round-trip transport between venues (or legs listed), optional on-site setup or strike, and coordinated return as described.`;
+      return `${companyDisplayName} will manage event logistics as quoted: round-trip transport between venues (or the legs listed), optional on-site setup or strike, and a coordinated return—executed with the same precision we apply on private moves.`;
     case "labour_only":
-      return `${companyDisplayName} will supply on-site labour at the address and for the tasks in your quote (for example loading, unloading, or staging). Unless your quote explicitly includes transport, this agreement does not cover hauling goods in ${companyDisplayName}'s vehicles.`;
+      return `${companyDisplayName} will place an on-site crew at the address for the tasks in your quote (for example loading, unloading, or staging). Unless your quote explicitly includes transport, this agreement does not cover moving goods in ${companyDisplayName}'s vehicles.`;
     default:
-      return `${companyDisplayName} will provide the services described in your quote.`;
+      return `${companyDisplayName} will provide the services described in your quote, executed to the standard you expect from us.`;
   }
 }
 
@@ -101,24 +101,24 @@ function prohibitedItemsBody(p: NonBinAgreementBuildParams): string {
   const tier = normTier(residentialTier);
 
   const base = [
-    `Unless ${companyDisplayName} agrees in writing beforehand, we do not pack, load, or transport:`,
+    `For the safety of your home, our team, and every shipment we carry, the following categories fall outside what we pack, load, or transport unless ${companyDisplayName} confirms otherwise in writing:`,
     "",
-    "(a) Dangerous goods and hazardous materials — fuels, oils, solvents, paints and thinners, propane or other compressed gas (except as lawfully exempt), fireworks, ammunition, bulk household chemicals, pesticides, pool chemicals, and similar items regulated or unsafe in a moving vehicle.",
+    "(a) Dangerous goods and hazardous materials—fuels, oils, solvents, paints and thinners, propane or other compressed gas (except where lawfully exempt), fireworks, ammunition, bulk household chemicals, pesticides, pool chemicals, and similar items that are regulated or unsafe aboard our vehicles.",
     "",
-    "(b) Perishables — refrigerated or frozen food, open food, and other goods that may spoil or attract pests in transit.",
+    "(b) Perishables—refrigerated or frozen food, open food, and anything that may spoil or attract pests en route.",
     "",
     "(c) Living plants and animals.",
     "",
-    `(d) High-value and irreplaceable articles you should retain personally — cash, negotiable instruments, jewelry and watches (unless declared and coverage is agreed), passports, wills, and other critical originals; and any item you prefer not to place on the truck.`,
+    `(d) Irreplaceable valuables best kept with you—cash, negotiable instruments, jewelry and watches (unless declared and coverage is agreed), passports, wills, and other essential originals; and any piece you would prefer not to entrust to the truck.`,
     "",
-    `(e) Illegal goods or contraband. Firearms and ammunition must not be concealed in shipments; lawful arrangements, if any, must be confirmed in writing before move day.`,
+    `(e) Illegal goods or contraband. Firearms and ammunition must never be concealed in a shipment; any lawful arrangement must be confirmed in writing before move day.`,
     "",
-    `You agree to remove or identify any such items before our arrival. If prohibited or undisclosed goods are presented, ${companyDisplayName} may refuse them, adjust scope per Section 8, or pause service until the issue is resolved.`,
+    `We ask that you remove or clearly identify these items before we arrive. Should prohibited or undisclosed goods appear, ${companyDisplayName} may decline them, adjust scope under Section 8, or pause service until the matter is resolved—with your comfort and our duty of care both in mind.`,
   ];
 
   if (serviceType === "labour_only") {
     return [
-      `On-site crew will not handle dangerous goods or hazardous materials unless disclosed and approved in writing before the service date. You must remove or label fuels, solvents, bulk chemicals, ammunition, and similar items from areas where labour will work.`,
+      `Our crew will not handle dangerous goods or hazardous materials unless disclosed and approved in writing before the service date. Please remove or clearly label fuels, solvents, bulk chemicals, ammunition, and similar items from any area where our team will work.`,
       "",
       ...base.slice(1),
     ].join("\n");
@@ -128,7 +128,7 @@ function prohibitedItemsBody(p: NonBinAgreementBuildParams): string {
     return [
       ...base,
       "",
-      `Estate-tier moves: you agree to disclose in writing before move day any fine art, antiques, wine or spirit collections, items of exceptional value, and specialty pieces so ${companyDisplayName} can plan handling, inventory, and valuation coverage. Undisclosed high-value items may be subject to standard released-value limits.`,
+      `Estate-tier service: please share in writing, before move day, any fine art, antiques, wine or spirits collections, items of exceptional value, and specialty pieces so we may plan handling, inventory, and valuation with the attention they deserve. Pieces not disclosed may be subject to standard released-value limits.`,
     ].join("\n");
   }
 
@@ -136,7 +136,7 @@ function prohibitedItemsBody(p: NonBinAgreementBuildParams): string {
     return [
       ...base,
       "",
-      `Because this booking includes specialty or white glove handling, you agree to list condition notes, existing damage, and any conservation or installation requirements in writing before service. Packing of hazardous or perishable contents inside crated or blanket-wrapped pieces remains your responsibility unless explicitly contracted.`,
+      `With specialty or white-glove work, we ask for written condition notes, existing damage, and any conservation or installation requirements before we begin. Hazardous or perishable contents packed inside crated or blanket-wrapped pieces remain your responsibility unless we have explicitly agreed otherwise.`,
     ].join("\n");
   }
 
@@ -147,30 +147,30 @@ function clientResponsibilitiesBody(p: NonBinAgreementBuildParams): string {
   const { companyDisplayName, serviceType, isLogisticsDelivery } = p;
 
   if (isLogisticsDelivery) {
-    return `You are responsible for: (a) accurate shipment descriptions, dimensions, weights, and special handling needs; (b) declaring individual items above $500 in value when required for coverage; (c) safe pickup and delivery access (dock or door, elevator bookings, parking, permits, clear paths); (d) removing or identifying hazardous materials, perishables, and prohibited items ${companyDisplayName} cannot transport. Omissions may require scope or price adjustments as agreed in writing.`;
+    return `To honor the delivery we quoted, you agree to: (a) provide accurate shipment descriptions, dimensions, weights, and any special handling notes; (b) declare individual items above $500 in value when required for coverage; (c) ensure gracious access for pickup and delivery—dock or door, elevator bookings, parking, permits, and clear paths; (d) remove or flag hazardous materials, perishables, and items ${companyDisplayName} cannot carry. Omissions may call for scope or investment adjustments, always confirmed with you in writing.`;
   }
 
   if (serviceType === "office_move") {
-    return `You are responsible for: (a) an accurate inventory of furniture, equipment, and materials in scope; (b) IT disconnect/reconnect planning with your vendors unless ${companyDisplayName} is contracted for IT services; (c) building access, elevator reservations, parking, and clear paths at origin and destination; (d) identifying hazardous, confidential destruction, or prohibited items ${companyDisplayName} cannot move. Omissions may require schedule or scope adjustments as agreed in writing.`;
+    return `To keep your relocation seamless, you agree to: (a) share an accurate inventory of furniture, equipment, and materials in scope; (b) coordinate IT disconnect and reconnect with your vendors unless ${companyDisplayName} is engaged for IT work; (c) arrange building access, elevator reservations, parking, and unobstructed paths at origin and destination; (d) identify hazardous, confidential-destruction, or prohibited items we cannot move. Omissions may affect schedule or scope and will be addressed transparently in writing.`;
   }
 
   if (serviceType === "long_distance") {
-    return `You are responsible for: (a) accurate item lists and declared value for coverage; (b) compliance with any origin or destination access rules (elevators, long carry, parking); (c) removing perishables, hazardous materials, and prohibited items from the shipment; (d) being available or designating an authorized representative at delivery. Changes to delivery windows or storage may affect pricing as agreed in writing.`;
+    return `For a long-distance move done well, you agree to: (a) provide accurate item lists and declared values for coverage; (b) respect origin and destination access rules—elevators, long carry, parking; (c) clear perishables, hazardous materials, and prohibited items from the shipment; (d) be present or name an authorized representative at delivery. Changes to windows or storage may adjust pricing only with your written approval.`;
   }
 
   if (serviceType === "event") {
-    return `You are responsible for: (a) accurate manifests for outbound and return legs; (b) venue access, load-in windows, permits, and on-site contact; (c) ensuring no hazardous, pyrotechnic, or illegal materials are included without prior written approval; (d) confirming floor protection or venue rules are satisfied before crew arrival. Failures may delay service or require additional charges if approved in writing.`;
+    return `For an event executed without friction, you agree to: (a) supply accurate manifests for outbound and return legs; (b) secure venue access, load-in windows, permits, and a reliable on-site contact; (c) ensure no hazardous, pyrotechnic, or illegal materials are included without prior written consent; (d) confirm floor protection and venue rules are satisfied before our crew arrives. Shortfalls may delay service or incur additional costs only as agreed in writing.`;
   }
 
   if (serviceType === "labour_only") {
-    return `You are responsible for: (a) a safe, lawful work area; (b) accurate description of items to be handled and any weight or access limitations; (c) removing hazardous materials from the work area; (d) supervising fragile or sentimental items you choose to move yourself. ${companyDisplayName} is not liable for conditions not disclosed before the crew arrives.`;
+    return `You agree to: (a) maintain a safe, lawful workspace; (b) describe items and any weight or access limits honestly; (c) remove hazardous materials from the work area; (d) personally oversee fragile or sentimental pieces you wish to carry yourself. ${companyDisplayName} cannot be responsible for conditions we were not told about before the crew arrives.`;
   }
 
   if (serviceType === "specialty") {
-    return `You are responsible for: (a) disclosing dimensions, weight, structural condition, and path constraints (stairs, turns, surface protection); (b) securing permits or building approvals if required; (c) removing hazardous materials from the piece or area; (d) declaring value for insurance purposes when requested. Undisclosed conditions may require pausing work until resolved.`;
+    return `You agree to: (a) disclose dimensions, weight, structural condition, and path constraints—stairs, turns, surface protection; (b) obtain permits or building approvals where required; (c) clear hazardous materials from the piece or area; (d) declare value for insurance when we request it. Conditions we learn only on site may require a thoughtful pause until resolved.`;
   }
 
-  return `You are responsible for: (a) accurately disclosing all items to be moved, including dimensions and special handling; (b) declaring items valued above $500 individually when required for coverage; (c) building elevator bookings, parking, permits, and clear access at both locations; (d) removing or identifying hazardous materials, perishables, and prohibited items ${companyDisplayName} cannot transport. Failure to disclose access or inventory details may result in scope adjustments as agreed in writing.`;
+  return `You agree to: (a) disclose every item to be moved, with dimensions and special handling needs; (b) declare items valued above $500 individually when coverage requires it; (c) arrange elevator bookings, parking, permits, and clear access at both homes; (d) remove or identify hazardous materials, perishables, and items ${companyDisplayName} cannot transport. Surprises on access or inventory may lead to scope adjustments—always discussed and confirmed with you in writing.`;
 }
 
 export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { title: string; body: string }[] {
@@ -188,61 +188,61 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
   } = p;
 
   const paymentBody = b2bNet30Invoice
-    ? `This service is confirmed on Net 30 invoice terms. The total quoted (${fmtPrice(grandTotal)} incl. HST) will appear on your invoice; no card payment is collected through this booking flow unless you approve otherwise in writing.`
+    ? `Your booking is confirmed on Net 30 invoice terms. The total we quoted (${fmtPrice(grandTotal)} incl. HST) will appear on your invoice; no card is taken through this step unless you direct otherwise in writing.`
     : paidInFullAtBooking
-      ? `The full amount of ${fmtPrice(grandTotal)} (incl. HST) is due when you complete checkout after signing. No balance remains for this quoted scope unless you approve changes in writing. Payment will be charged to the card provided.`
-      : `A deposit of ${fmtPrice(deposit)} is due when you complete booking after signing. The remaining balance of ${fmtPrice(balance)} is due ${balanceDue}. Payment will be charged to the card provided.`;
+      ? `The full investment of ${fmtPrice(grandTotal)} (incl. HST) is due when you complete checkout after signing. Nothing further is owed on this quoted scope unless you approve a change in writing. We will charge the card you provide.`
+      : `A deposit of ${fmtPrice(deposit)} secures your date when you complete booking after signing. The remaining balance of ${fmtPrice(balance)} is due ${balanceDue}. We will charge the card you provide according to these terms.`;
 
   const authBody = b2bNet30Invoice
-    ? `You agree to pay the quoted total per the invoice issued by ${companyLegalName}, within the Net 30 terms stated on your quote. Any late fees or collection practices follow the commercial policy shared with your account.`
-    : `I authorize ${companyLegalName} to securely store my payment card on file using Square's PCI-compliant vault and to charge the balance per the payment terms above. No additional charges will be made without prior authorization.`;
+    ? `You agree to remit the quoted total on the invoice from ${companyLegalName}, within the Net 30 terms on your quote. Any late fees or collection steps follow the commercial policy already shared with your account.`
+    : `I authorize ${companyLegalName} to keep my payment card on file through Square's secure, PCI-compliant vault and to charge the balance according to the payment terms above. Nothing further is charged without your prior approval.`;
 
   const scopeNoun = p.isLogisticsDelivery ? "delivery" : p.serviceType === "labour_only" ? "labour" : "move";
 
   return [
     {
-      title: "1. Service description",
+      title: "1. Service Description",
       body: serviceDescription(p),
     },
     {
-      title: "2. Quoted price guarantee",
-      body: `The total quoted above (${fmtPrice(grandTotal)} incl. HST) is the agreed price for the ${scopeNoun} scope in your quote, provided access, inventory, and conditions match what was disclosed. There are no hidden surcharges beyond this package except changes you approve in writing.`,
+      title: "2. Your Quoted Investment",
+      body: `The total above (${fmtPrice(grandTotal)} incl. HST) is the agreed price for the ${scopeNoun} we outlined in your quote—provided access, inventory, and conditions match what you shared with us. There are no hidden surcharges in this package beyond changes you approve in writing.`,
     },
     {
-      title: "3. Payment terms",
+      title: "3. Payment Terms",
       body: paymentBody,
     },
     {
-      title: b2bNet30Invoice ? "4. Invoicing" : "4. Card-on-file authorization",
+      title: b2bNet30Invoice ? "4. Invoicing" : "4. Card-on-File Authorization",
       body: authBody,
     },
     {
-      title: "5. Cancellation policy",
+      title: "5. Cancellation Policy",
       body: cancellation,
     },
     {
-      title: "6. Liability and insurance",
-      body: `Standard cargo liability applies at $0.60 per pound per article unless upgraded coverage is purchased and noted on your quote. ${companyDisplayName} carries $2,000,000 in commercial liability insurance. Enhanced valuation or full-value protection, when selected, is governed by the add-on terms on your quote.`,
+      title: "6. Liability and Insurance",
+      body: `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`,
     },
     {
-      title: "7. Items we do not pack, load, or transport",
+      title: "7. What We Do Not Pack or Transport",
       body: prohibitedItemsBody(p),
     },
     {
-      title: "8. Scope changes",
-      body: `If the actual scope differs from the quote (for example additional items, undisclosed access, weight or cube over the agreed inventory, or conditions beyond our reasonable control), ${companyDisplayName} will explain the impact and obtain your written approval before additional charges apply.`,
+      title: "8. Changes to Scope",
+      body: `Should the day-of reality differ from the quote—additional pieces, access we were not told about, weight or volume beyond the agreed inventory, or circumstances outside reasonable control—${companyDisplayName} will walk you through the impact and secure your written approval before any further charges apply.`,
     },
     {
-      title: "9. Claims and damage reporting",
-      body: `Any claim for loss or damage must be reported in writing within 48 hours of completion of ${scopeNoun} service. Late reports may limit eligibility. ${companyDisplayName} will investigate promptly under the coverage that applies to your booking.`,
+      title: "9. Claims and Care of Your Goods",
+      body: `Please report any loss or damage in writing within 48 hours of ${scopeNoun} completion. Later notice may limit what we can resolve. ${companyDisplayName} will review every claim promptly under the coverage that applies to your booking.`,
     },
     {
-      title: "10. Your responsibilities",
+      title: "10. Your Part in a Smooth Experience",
       body: clientResponsibilitiesBody(p),
     },
     {
-      title: "11. Delays and force majeure",
-      body: `${companyDisplayName} is not liable for delays caused by events beyond its reasonable control, including severe weather, road closures, traffic, elevator failures, labour disruptions, or government restrictions. We will notify you and reschedule at the earliest reasonable time without penalty except where third-party costs cannot be avoided.`,
+      title: "11. When the Unexpected Happens",
+      body: `${companyDisplayName} cannot be responsible for delays arising from events outside reasonable control—severe weather, road closures, traffic, elevator outages, labour disruptions, or government orders. We will reach out quickly and reschedule for the earliest suitable time, without penalty on our side except where unavoidable third-party costs apply.`,
     },
   ];
 }
@@ -263,50 +263,50 @@ export function buildBinRentalAgreementSections(p: BinAgreementBuildParams): { t
 
   return [
     {
-      title: "1. Bin rental service",
-      body: `Plastic moving bin rental: delivery of empty bins to your location, use through the included rental period, and scheduled pickup of emptied and stacked bins, as described in your quote. Wardrobe boxes supplied for move day are returned at pickup unless otherwise noted on your quote.`,
+      title: "1. Bin Rental Service",
+      body: `A refined alternative to cardboard: premium plastic moving bins, delivered empty to your door, yours through the included rental period, then collected once emptied and neatly stacked—exactly as described in your quote. Wardrobe boxes supplied for move day return with pickup unless your quote notes otherwise.`,
     },
     {
-      title: "2. Quoted fee and scope",
-      body: `The total shown (${fmtPrice(grandTotal)} incl. HST) is the agreed price for the bin rental package in your quote (counts, accessories, delivery and pickup, and included rental period). This is equipment rental, not a full staffed residential move unless separately contracted. Additional bins or extended rental require written confirmation before charges.`,
+      title: "2. Your Quoted Investment",
+      body: `The total shown (${fmtPrice(grandTotal)} incl. HST) covers the bin program in your quote—quantities, accessories, delivery, pickup, and the rental window. This is equipment rental, not a full staffed residential move unless you have engaged us separately. Extra bins or extended time are confirmed in writing before any charge.`,
     },
     {
-      title: "3. Delivery, pickup, and rental period",
+      title: "3. Delivery, Pickup, and Timing",
       body: hasScheduleDetails
-        ? `Delivery, your reference move date, pickup, and the ${cycleDays}-day included rental cycle are summarized on your booking. Bins must be emptied, stacked, and ready at the agreed location. Late returns, no-shows, or unprepared pickups may incur fees as stated in your quote or confirmed in writing.`
-        : `Delivery and pickup dates and the included rental period are as stated in your quote. Bins must be emptied, stacked, and ready for pickup. Late returns or unprepared pickups may incur fees as stated in your quote or confirmed in writing.`,
+        ? `Delivery, your reference move date, pickup, and the ${cycleDays}-day rental cycle appear on your booking summary. Please have bins emptied, stacked, and ready at the agreed location. Late returns, missed appointments, or unprepared pickups may incur fees as your quote describes or as we confirm with you in writing.`
+        : `Delivery and pickup dates and your rental window are set out in your quote. Please have bins emptied, stacked, and ready. Late returns or unprepared pickups may incur fees as quoted or as confirmed in writing.`,
     },
     {
       title: "4. Payment",
-      body: `Full payment of ${fmtPrice(grandTotal)} (incl. HST) is due when you complete checkout after signing unless your coordinator confirms different terms in writing.`,
+      body: `The full amount of ${fmtPrice(grandTotal)} (incl. HST) is due when you complete checkout after signing, unless your coordinator arranges different terms in writing.`,
     },
     {
-      title: "5. Card on file",
-      body: `I authorize ${companyLegalName} to keep my payment card on file through Square's PCI-compliant systems and to charge fees I approve in writing, including reasonable charges for late returns, extra rental days, missing bins, or damaged equipment, consistent with your quote and applicable law.`,
+      title: "5. Card on File",
+      body: `I authorize ${companyLegalName} to retain my card on file through Square's secure, PCI-compliant systems and to charge only what you approve in writing—fairly, for example, for late returns, extra rental days, missing bins, or damaged equipment, in line with your quote and the law.`,
     },
     {
       title: "6. Cancellation",
       body: cancellation,
     },
     {
-      title: "7. Care of bins and equipment",
-      body: `Bins remain ${companyDisplayName}'s property. Use them only for normal household packing, return all bins and ties supplied, and report loss or damage promptly. Repair or replacement fees may apply as set out in your quote.`,
+      title: "7. Caring for the Bins",
+      body: `The bins remain ${companyDisplayName}'s property. Use them for ordinary household packing, return every bin and tie we supplied, and tell us promptly about loss or damage. Repair or replacement may be billed as your quote explains.`,
     },
     {
-      title: "8. Liability and insurance",
-      body: `This agreement covers rental logistics, not full moving valuation. ${companyDisplayName} maintains commercial liability insurance; details on request. Contents you place inside bins are your responsibility unless separate moving services are contracted.`,
+      title: "8. Liability and Insurance",
+      body: `This agreement covers rental logistics—not the full valuation stack of a staffed move. ${companyDisplayName} carries commercial liability insurance; we are happy to share particulars on request. What you pack inside the bins stays your responsibility unless you have contracted separate moving coverage.`,
     },
     {
-      title: "9. Prohibited bin contents",
-      body: `Do not place hazardous materials (fuels, solvents, paints, pesticides, ammunition, propane), perishable food, liquids that may leak, live animals, or illegal items in bins. You are responsible for contents; ${companyDisplayName} may refuse pickup or charge remediation if prohibited items are discovered.`,
+      title: "9. What Not to Place in Bins",
+      body: `Please keep hazardous materials (fuels, solvents, paints, pesticides, ammunition, propane), perishable food, liquids that could leak, live animals, and illegal items out of the bins. You remain responsible for contents; if prohibited items appear, ${companyDisplayName} may decline pickup or apply remediation charges as appropriate.`,
     },
     {
-      title: "10. Access and your responsibilities",
-      body: `You are responsible for safe, legal access for delivery and pickup (parking, elevator bookings, entry, and someone available or instructions as agreed). Do not overload bins beyond a safe carrying weight.`,
+      title: "10. Access and Your Home",
+      body: `Kindly ensure safe, lawful access for delivery and pickup—parking, elevator bookings, entry, and someone on hand or clear instructions as agreed. For the crew's safety, do not overload bins beyond a comfortable carrying weight.`,
     },
     {
-      title: "11. Delays and rescheduling",
-      body: `${companyDisplayName} is not liable for delays caused by weather, traffic, building access, or other circumstances outside its reasonable control. We will reschedule delivery or pickup as soon as practicable. Client-requested changes or repeated access failures may incur additional costs if agreed in writing.`,
+      title: "11. Delays and Rescheduling",
+      body: `${companyDisplayName} cannot be held liable for delays caused by weather, traffic, building access, or other matters outside reasonable control. We will reconnect with you and reschedule as soon as we can. Changes you request—or repeated access issues—may carry additional cost only when agreed in writing.`,
     },
   ];
 }

@@ -864,12 +864,14 @@ async function residentialIncludes(
   const estateAdds = [
     "Dedicated move coordinator from booking to final placement",
     "Pre-move walkthrough with room-by-room plan",
-    "Full disassembly & precision reassembly",
+    "Full furniture wrapping and protection throughout",
+    "Complex disassembly & reassembly",
+    "Floor and property protection throughout",
     "All packing materials and supplies included",
     "White glove handling for furniture, art, and high-value items",
-    "Full replacement valuation coverage",
+    "Precision placement in every room",
+    "Full repair or replacement valuation coverage",
     "Pre-move inventory planning and oversight",
-    "Premium handling for art, antiques, and specialty items",
     "30-day post-move concierge support",
     "Exclusive partner offers & perks",
   ];
