@@ -9,7 +9,7 @@ export interface GlobalModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
   /** Render without header (for custom layouts) */
   noHeader?: boolean;
   /** Remove the default p-5 / overflow-y-auto wrapper so children manage their own layout */
@@ -39,7 +39,17 @@ export default function GlobalModal({
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleEscape);
-    // Move focus into the modal on open
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, handleEscape]);
+
+  // Focus first focusable only when the dialog opens. Must not depend on onClose /
+  // handleEscape — unstable callbacks from parents would re-run this every render
+  // and steal focus from inputs after each keystroke.
+  useEffect(() => {
+    if (!open) return;
     const frame = requestAnimationFrame(() => {
       if (!containerRef.current) return;
       const focusable = containerRef.current.querySelector<HTMLElement>(
@@ -47,12 +57,8 @@ export default function GlobalModal({
       );
       (focusable ?? containerRef.current).focus();
     });
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", handleEscape);
-      cancelAnimationFrame(frame);
-    };
-  }, [open, handleEscape]);
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -61,6 +67,9 @@ export default function GlobalModal({
     maxWidth === "lg" ? "sm:max-w-lg" :
     maxWidth === "xl" ? "sm:max-w-xl" :
     maxWidth === "2xl" ? "sm:max-w-2xl" :
+    maxWidth === "3xl" ? "sm:max-w-3xl" :
+    maxWidth === "4xl" ? "sm:max-w-4xl" :
+    maxWidth === "5xl" ? "sm:max-w-5xl" :
     "sm:max-w-md";
 
   const modal = (

@@ -7,7 +7,7 @@ interface ModalOverlayProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
   noHeader?: boolean;
   noPadding?: boolean;
 }

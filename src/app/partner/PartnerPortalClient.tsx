@@ -28,6 +28,7 @@ import PartnerEditDeliveryModal from "./PartnerEditDeliveryModal";
 import PartnerSettingsPanel from "./PartnerSettingsPanel";
 import PartnerChangePasswordGate from "./PartnerChangePasswordGate";
 import PartnerPropertyManagementPortal from "./PartnerPropertyManagementPortal";
+import PartnerSignOut from "./PartnerSignOut";
 import { PartnerNotificationProvider, usePartnerNotifications } from "./PartnerNotificationContext";
 import { usePartnerOrgDisplayName } from "./PartnerOrgContext";
 import { ToastProvider, useToast } from "@/app/admin/components/Toast";
@@ -35,6 +36,7 @@ import YugoLogo from "@/components/YugoLogo";
 import Link from "next/link";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 interface PortalFeatures {
   projects?: boolean;
@@ -315,6 +317,33 @@ function PartnerPortalInner({ orgId, orgName, orgType, contactName, userEmail, p
     if (status === "paid" || status === "void" || status === "cancelled") return false;
     return new Date(inv.due_date + "T23:59:59") < new Date();
   });
+
+  if (!features.hasSelfServePortal) {
+    return (
+      <div
+        className={`min-h-screen flex flex-col items-center justify-center px-6 py-12 ${
+          partnerTheme === "dark" ? "bg-[var(--bg)]" : "bg-[#F5F3F0]"
+        }`}
+        data-theme={partnerTheme}
+      >
+        <div className="max-w-md w-full rounded-2xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center shadow-sm">
+          <div className="flex justify-center mb-4">
+            <YugoLogo size={24} variant="gold" />
+          </div>
+          <h1 className="font-semibold text-[var(--tx)] text-lg mb-2">
+            No self-serve portal for this partner type
+          </h1>
+          <p className="text-sm text-[var(--tx3)] leading-relaxed mb-6">
+            Your organization is set up without a partner dashboard. Coordinators will work with you directly for
+            referrals and commissions.
+          </p>
+          <div className="flex justify-center">
+            <PartnerSignOut />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (features.showPropertyManagementPortal) {
     return <PartnerPropertyManagementPortal orgId={orgId} orgName={headerOrgName} contactName={contactName} />;
@@ -1068,7 +1097,13 @@ function ReferralForm() {
       <div className="space-y-2">
         <input value={form.client_name} onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))} placeholder="Client full name" required className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
         <input value={form.client_email} onChange={(e) => setForm((f) => ({ ...f, client_email: e.target.value }))} placeholder="Client email" type="email" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
-        <input value={form.property} onChange={(e) => setForm((f) => ({ ...f, property: e.target.value }))} placeholder="Property address" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
+        <AddressAutocomplete
+          value={form.property}
+          onRawChange={(t) => setForm((f) => ({ ...f, property: t }))}
+          onChange={(r) => setForm((f) => ({ ...f, property: r.fullAddress }))}
+          placeholder="Property address"
+          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+        />
         <input value={form.move_date} onChange={(e) => setForm((f) => ({ ...f, move_date: e.target.value }))} placeholder="Target move date" type="date" className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white" />
         <select value={form.tier} onChange={(e) => setForm((f) => ({ ...f, tier: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] focus:border-[#C9A962] focus:outline-none transition-colors bg-white">
           <option value="standard">Essential</option>

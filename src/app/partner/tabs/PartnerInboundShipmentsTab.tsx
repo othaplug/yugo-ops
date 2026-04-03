@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { ShippingContainer, ArrowSquareOut } from "@phosphor-icons/react";
 import { INBOUND_SHIPMENT_STATUS_LABELS } from "@/lib/inbound-shipment-labels";
 
@@ -204,12 +205,21 @@ export default function PartnerInboundShipmentsTab() {
                 value={form.customer_phone}
                 onChange={(e) => setForm((f) => ({ ...f, customer_phone: e.target.value }))}
               />
-              <input
+              <AddressAutocomplete
                 required
                 placeholder="Delivery address"
                 className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 bg-[var(--bg)]"
                 value={form.customer_address}
-                onChange={(e) => setForm((f) => ({ ...f, customer_address: e.target.value }))}
+                onRawChange={(t) => setForm((f) => ({ ...f, customer_address: t }))}
+                onChange={(r) =>
+                  setForm((f) => ({
+                    ...f,
+                    customer_address: r.fullAddress,
+                    ...(r.postalCode && !f.customer_postal?.trim()
+                      ? { customer_postal: r.postalCode }
+                      : {}),
+                  }))
+                }
               />
               <input
                 placeholder="Postal"

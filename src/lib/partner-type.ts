@@ -1,7 +1,7 @@
 // ===================================================================
 // Partner Verticals & Profiles
-// 12 verticals → 2 dashboard profiles (delivery / referral)
-// Verticals grouped by rate card template for pricing
+// Verticals grouped by rate card template; three onboarding profiles:
+// delivery (ops partners), portfolio (PM / developer buildings), referral (commission)
 // ===================================================================
 
 export type PartnerVertical =
@@ -12,7 +12,7 @@ export type PartnerVertical =
   | "property_management_residential" | "property_management_commercial" | "developer_builder"
   | "realtor" | "property_manager" | "developer";
 
-export type PartnerProfile = "delivery" | "referral";
+export type PartnerProfile = "delivery" | "portfolio" | "referral";
 
 /** @deprecated Use PartnerVertical */
 export type PartnerType = PartnerVertical;
@@ -66,6 +66,13 @@ export const PARTNER_SEGMENT_GROUPS: {
           { value: "appliances", label: "Appliances" },
         ],
       },
+    ],
+  },
+  {
+    profile: "portfolio",
+    label: "Property & Portfolio",
+    description: "Buildings, contracts, tenant moves, and property-management portal",
+    groups: [
       {
         label: "Property & Portfolio",
         templateSlug: "property_management",
@@ -116,6 +123,40 @@ for (const segment of PARTNER_SEGMENT_GROUPS) {
 VERTICAL_LABELS["retail"] = "Retail";
 VERTICAL_LABELS["designer"] = "Designer";
 VERTICAL_LABELS["gallery"] = "Gallery";
+VERTICAL_LABELS["b2c"] = "Move client";
+VERTICAL_LABELS["b2b"] = "Business partner";
+
+/**
+ * Allowed values for `organizations.type` (Postgres `organizations_type_check`).
+ * Keep in sync with `supabase/migrations/*organizations_type*.sql`.
+ */
+export const ALLOWED_ORGANIZATION_TYPES: readonly string[] = [
+  "b2c",
+  "b2b",
+  "retail",
+  "designer",
+  "gallery",
+  ...ALL_VERTICALS,
+];
+
+const ALLOWED_ORGANIZATION_TYPE_SET = new Set<string>(ALLOWED_ORGANIZATION_TYPES);
+
+/** Lowercase trimmed slug for DB `organizations.type` (default: furniture_retailer). */
+export function normalizeOrganizationType(raw: unknown): string {
+  if (typeof raw !== "string") return "furniture_retailer";
+  const s = raw.trim().toLowerCase();
+  return s || "furniture_retailer";
+}
+
+export function isAllowedOrganizationType(type: string): boolean {
+  return ALLOWED_ORGANIZATION_TYPE_SET.has(type);
+}
+
+/** Appends fix instructions when Postgres rejects `organizations.type`. */
+export function augmentOrganizationsTypeCheckError(message: string): string {
+  if (!message.includes("organizations_type_check")) return message;
+  return `${message} Your database needs migration 20260402100000_organizations_type_pm_delivery_verticals.sql (or run \`supabase db push\` / paste that file into the Supabase SQL editor).`;
+}
 
 const REFERRAL_VERTICALS = new Set<string>(["realtor", "property_manager", "developer"]);
 
@@ -130,6 +171,16 @@ export function isPropertyManagementDeliveryVertical(type: string): boolean {
   return PM_DELIVERY_VERTICALS.has(resolveVertical(type));
 }
 
+/**
+ * Partner verticals that receive a self-serve login and dashboard.
+ * Referral realtors are coordinated offline — no portal login or in-app referral UI.
+ */
+export function partnerHasSelfServePortal(type: string): boolean {
+  const v = resolveVertical(type);
+  if (v === "realtor") return false;
+  return true;
+}
+
 const LEGACY_TYPE_MAP: Record<string, PartnerVertical> = {
   retail: "furniture_retailer",
   designer: "interior_designer",
@@ -142,9 +193,41 @@ export function resolveVertical(raw: string): string {
   return LEGACY_TYPE_MAP[t] || t;
 }
 
+function humanizeUnknownOrganizationType(slug: string): string {
+  return slug
+    .split("_")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+/**
+ * User-facing label for `organizations.type` / `organizations.vertical` (admin + partner UI).
+ * Does not emit raw DB slugs when a known mapping exists.
+ */
+export function organizationTypeLabel(raw: string | null | undefined): string {
+  const key = (raw || "").trim().toLowerCase();
+  if (!key) return "Partner";
+  const resolved = resolveVertical(key);
+  const label = VERTICAL_LABELS[resolved] || VERTICAL_LABELS[key];
+  if (label) return label;
+  return humanizeUnknownOrganizationType(resolved);
+}
+
+/**
+ * Referral-side org verticals onboarded from the Referral Partners admin hub (`/admin/partners/realtors`),
+ * not from the platform partner onboarding wizard (delivery + property & portfolio only).
+ */
+export const REFERRAL_HUB_ORG_TYPES = ["realtor", "property_manager", "developer"] as const;
+
+export function isReferralHubOrgVertical(type: string): boolean {
+  const v = resolveVertical(type);
+  return (REFERRAL_HUB_ORG_TYPES as readonly string[]).includes(v);
+}
+
 export function getPartnerProfile(type: string): PartnerProfile {
   const v = resolveVertical(type);
-  if (PM_DELIVERY_VERTICALS.has(v)) return "delivery";
+  if (PM_DELIVERY_VERTICALS.has(v)) return "portfolio";
   return REFERRAL_VERTICALS.has(v) ? "referral" : "delivery";
 }
 
@@ -153,20 +236,23 @@ export function getPartnerFeatures(type: string) {
   const profile = getPartnerProfile(type);
   const isDelivery = profile === "delivery";
   const isReferral = profile === "referral";
+  const hasSelfServePortal = partnerHasSelfServePortal(type);
+  const referralPortal = isReferral && hasSelfServePortal;
 
   const isDesigner = v === "interior_designer" || v === "designer";
   const isPmPortal = PM_DELIVERY_VERTICALS.has(v);
   return {
+    hasSelfServePortal,
     canCreateDelivery: isDelivery && !isPmPortal,
-    canSubmitReferral: isReferral,
+    canSubmitReferral: referralPortal,
     showProjects: v === "interior_designer" || v === "art_gallery" || v === "designer",
     showDayRates: !isDesigner && !isPmPortal,
-    showCommission: isReferral,
+    showCommission: referralPortal,
     showMoves: v === "interior_designer",
     showDeliveries: isDelivery && !isPmPortal,
-    showReferrals: isReferral,
+    showReferrals: referralPortal,
     showVendorReceiving: v === "interior_designer",
-    showMaterials: isReferral,
+    showMaterials: referralPortal,
     showPropertyManagementPortal: isPmPortal,
   };
 }

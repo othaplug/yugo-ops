@@ -6,25 +6,7 @@ import { Icon } from "@/components/AppIcons";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 import type { PartnerHealthRow } from "@/app/api/admin/partners/health/route";
-
-const TYPE_LABELS: Record<string, string> = {
-  furniture_retailer: "Furniture Retailer",
-  interior_designer: "Interior Designer",
-  cabinetry: "Cabinetry",
-  flooring: "Flooring",
-  art_gallery: "Art Gallery",
-  antique_dealer: "Antique Dealer",
-  hospitality: "Hospitality",
-  medical_equipment: "Medical Equipment",
-  av_technology: "AV / Technology",
-  appliances: "Appliances",
-  retail: "Retail",
-  designer: "Designer",
-  gallery: "Gallery",
-  realtor: "Realtor",
-  property_manager: "Property Manager",
-  developer: "Developer",
-};
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 const TYPE_CHIP_CLASSES: Record<string, string> = {
   retail: "bg-[rgba(74,124,229,0.14)] text-[#4A7CE5]",
@@ -43,6 +25,9 @@ const TYPE_CHIP_CLASSES: Record<string, string> = {
   realtor: "bg-[rgba(45,159,90,0.14)] text-[var(--grn)]",
   property_manager: "bg-[rgba(22,163,74,0.14)] text-[#16A34A]",
   developer: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
+  property_management_residential: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
+  property_management_commercial: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
+  developer_builder: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
 };
 
 function typeChipCls(type: string): string {
@@ -361,7 +346,7 @@ export default function PartnerHealthClient() {
                     <td className="px-4 py-3">
                       <div className="text-[13px] font-semibold text-[var(--tx)]">{p.name}</div>
                       <span className={`mt-1 inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${typeChipCls(p.type)}`}>
-                        {TYPE_LABELS[p.type] || (p.type === "b2b" ? "Other partner" : p.type.replace(/_/g, " "))}
+                        {p.type === "b2b" ? "Other partner" : organizationTypeLabel(p.type)}
                       </span>
                       {p.contact_name && (
                         <div className="mt-0.5 text-[11px] text-[var(--tx3)]">{p.contact_name}</div>

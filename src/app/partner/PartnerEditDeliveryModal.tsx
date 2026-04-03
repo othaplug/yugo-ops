@@ -6,6 +6,7 @@ import { X, Lock } from "@phosphor-icons/react";
 import { getDisplayLabel } from "@/lib/displayLabels";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 interface Delivery {
   id: string;
@@ -147,11 +148,22 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1">Pickup address</label>
-                <input value={form.pickup_address} onChange={(e) => set("pickup_address", e.target.value)} placeholder="Pickup location" className={fieldInput} />
+                <AddressAutocomplete
+                  value={form.pickup_address}
+                  onRawChange={(t) => set("pickup_address", t)}
+                  onChange={(r) => set("pickup_address", r.fullAddress)}
+                  placeholder="Pickup location"
+                  className={fieldInput}
+                />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-[var(--tx3)] mb-1">Delivery address <span className="text-red-500">*</span></label>
-                <input value={form.delivery_address} onChange={(e) => set("delivery_address", e.target.value)} className={fieldInput} />
+                <AddressAutocomplete
+                  value={form.delivery_address}
+                  onRawChange={(t) => set("delivery_address", t)}
+                  onChange={(r) => set("delivery_address", r.fullAddress)}
+                  className={fieldInput}
+                />
               </div>
             </div>
 

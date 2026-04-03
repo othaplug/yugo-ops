@@ -8,6 +8,12 @@ import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import {
+  applyHubSpotSuggestRow,
+  useHubSpotContactSuggest,
+  type HubSpotSuggestField,
+  type HubSpotSuggestRow,
+} from "@/hooks/useHubSpotContactSuggest";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import DraftBanner from "@/components/ui/DraftBanner";
@@ -174,6 +180,31 @@ export default function CreateMoveForm({
 
   // Office-only state
   const [companyName, setCompanyName] = useState("");
+
+  const [moveHsActive, setMoveHsActive] = useState<HubSpotSuggestField | null>(null);
+  const moveHsQuery = useMemo(() => {
+    if (moveHsActive === "business") return companyName;
+    if (moveHsActive === "contact") return clientName;
+    if (moveHsActive === "email") return clientEmail;
+    if (moveHsActive === "phone") return clientPhone;
+    return "";
+  }, [moveHsActive, companyName, clientName, clientEmail, clientPhone]);
+
+  const moveHsPick = useCallback((row: HubSpotSuggestRow) => {
+    const a = applyHubSpotSuggestRow(row);
+    if (a.businessName) setCompanyName(a.businessName);
+    if (a.contactName) setClientName(a.contactName);
+    if (a.email) setClientEmail(a.email);
+    if (a.phoneFormatted) setClientPhone(a.phoneFormatted);
+  }, []);
+
+  const moveHs = useHubSpotContactSuggest({
+    query: moveHsQuery,
+    activeField: moveHsActive,
+    setActiveField: setMoveHsActive,
+    onPick: moveHsPick,
+  });
+
   const [businessType, setBusinessType] = useState("");
   const [squareFootage, setSquareFootage] = useState("");
   const [workstationCount, setWorkstationCount] = useState("");
@@ -614,6 +645,7 @@ export default function CreateMoveForm({
           <div className="border-t border-[var(--brd)]/30 pt-3 pb-3" />
 
           {/* Client section */}
+          <div ref={moveHs.containerRef}>
           <div className="space-y-2">
             <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Client</h3>
             <Field label="Select to auto fill">
@@ -700,35 +732,50 @@ export default function CreateMoveForm({
             </Field>
             <div className="grid sm:grid-cols-3 gap-2">
               <Field label="Client Name *">
-                <input
-                  name="client_name"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Full name"
-                  required
-                  className={fieldInput}
-                />
+                <div className="relative">
+                  <input
+                    {...moveHs.bindField("contact")}
+                    name="client_name"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Full name"
+                    required
+                    className={fieldInput}
+                    autoComplete="name"
+                  />
+                  {moveHs.renderDropdown("contact")}
+                </div>
               </Field>
               <Field label="Email">
-                <input
-                  type="email"
-                  name="client_email"
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  placeholder="client@example.com"
-                  className={fieldInput}
-                />
+                <div className="relative">
+                  <input
+                    type="email"
+                    {...moveHs.bindField("email")}
+                    name="client_email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="client@example.com"
+                    className={fieldInput}
+                    autoComplete="email"
+                  />
+                  {moveHs.renderDropdown("email")}
+                </div>
               </Field>
               <Field label="Phone">
-                <input
-                  ref={clientPhoneInput.ref}
-                  type="tel"
-                  name="client_phone"
-                  value={clientPhone}
-                  onChange={clientPhoneInput.onChange}
-                  placeholder={PHONE_PLACEHOLDER}
-                  className={fieldInput}
-                />
+                <div className="relative">
+                  <input
+                    ref={clientPhoneInput.ref}
+                    type="tel"
+                    {...moveHs.bindField("phone")}
+                    name="client_phone"
+                    value={clientPhone}
+                    onChange={clientPhoneInput.onChange}
+                    placeholder={PHONE_PLACEHOLDER}
+                    className={fieldInput}
+                    autoComplete="tel"
+                  />
+                  {moveHs.renderDropdown("phone")}
+                </div>
               </Field>
             </div>
             {duplicateEmailMatch && (
@@ -769,7 +816,17 @@ export default function CreateMoveForm({
               <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Business Details</h3>
               <div className="grid sm:grid-cols-2 gap-2">
                 <Field label="Company Name">
-                  <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Business name" className={fieldInput} />
+                  <div className="relative">
+                    <input
+                      {...moveHs.bindField("business")}
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="Business name"
+                      className={fieldInput}
+                      autoComplete="organization"
+                    />
+                    {moveHs.renderDropdown("business")}
+                  </div>
                 </Field>
                 <Field label="Business Type">
                   <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className={fieldInput}>
@@ -780,6 +837,7 @@ export default function CreateMoveForm({
               </div>
             </div>
           </AnimatedSection>
+          </div>
 
           {/* Single Item: item info */}
           <AnimatedSection show={moveType === "single_item"}>
@@ -906,9 +964,10 @@ export default function CreateMoveForm({
                   />
                 </Field>
                 <Field label="Venue address (optional)">
-                  <input
+                  <AddressAutocomplete
                     value={venueAddress}
-                    onChange={(e) => setVenueAddress(e.target.value)}
+                    onRawChange={(t) => setVenueAddress(t)}
+                    onChange={(r) => setVenueAddress(r.fullAddress)}
                     placeholder="Defaults to “To” address if empty"
                     className={fieldInput}
                   />

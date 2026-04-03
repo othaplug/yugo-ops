@@ -6,6 +6,7 @@ import BackButton from "../../components/BackButton";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { formatCurrency } from "@/lib/format-currency";
 import { Check, Plus, Trash as Trash2 } from "@phosphor-icons/react";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 interface Partner {
   id: string;
@@ -157,7 +158,9 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
             <select value={partnerId} onChange={(e) => setPartnerId(e.target.value)} className={fieldInput}>
               <option value="">Select partner...</option>
               {partners.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} ({p.type})</option>
+                <option key={p.id} value={p.id}>
+                  {p.name} ({organizationTypeLabel(p.type)})
+                </option>
               ))}
             </select>
           </div>
@@ -260,7 +263,7 @@ export default function NewProjectForm({ partners, currentUserId, partnerFilter 
               <div className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
                 <span>Partner:</span>
                 <span className="font-semibold text-[var(--tx)]">{selectedPartner.name}</span>
-                <span className="text-[var(--tx3)] uppercase">({selectedPartner.type})</span>
+                <span className="text-[var(--tx3)]">({organizationTypeLabel(selectedPartner.type)})</span>
               </div>
             )}
 

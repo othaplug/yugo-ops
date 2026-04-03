@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { organizationTypeLabel } from "@/lib/partner-type";
 import ModalOverlay from "../components/ModalOverlay";
 import CreateButton from "../components/CreateButton";
 import { useToast } from "../components/Toast";
@@ -614,7 +615,7 @@ function ViewPartnersModal({ templateName, partners, onClose }: { templateName: 
               <a key={p.id} href={`/admin/clients/${p.id}`} className="flex items-center justify-between py-3 first:pt-0 hover:text-[var(--gold)] transition-colors">
                 <div>
                   <div className="text-[12px] font-semibold text-[var(--tx)]">{p.name}</div>
-                  <div className="text-[10px] text-[var(--tx3)] uppercase">{p.type || "Partner"}</div>
+                  <div className="text-[10px] text-[var(--tx3)]">{organizationTypeLabel(p.type)}</div>
                 </div>
                 <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${p.pricing_tier === "partner" ? "bg-[var(--gdim)] text-[var(--gold)]" : "bg-[var(--bgsub)] text-[var(--tx3)]"}`}>
                   {p.pricing_tier === "partner" ? "Partner ✦" : "Standard"}

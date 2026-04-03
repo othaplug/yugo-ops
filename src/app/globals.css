@@ -83,6 +83,8 @@
   --z-drawer: 300;
   --z-modal-backdrop: 99980;
   --z-modal: 99990;
+  /* Portaled lists tied to inputs inside modals (address autocomplete, etc.) */
+  --z-modal-dropdown: 99995;
   --z-toast: 99999;
   --z-top: 100000;
 

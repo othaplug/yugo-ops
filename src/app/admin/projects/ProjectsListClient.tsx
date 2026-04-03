@@ -9,6 +9,7 @@ import DataTable, { type ColumnDef } from "@/components/admin/DataTable";
 import { formatAdminCreatedAt } from "@/lib/date-format";
 import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 interface Project {
   id: string;
@@ -73,7 +74,9 @@ const projectColumns: ColumnDef<Project>[] = [
     render: (p) => (
       <div>
         <div className="text-[12px] font-medium text-[var(--tx)]">{p.organizations?.name || "-"}</div>
-        <div className="text-[10px] text-[var(--tx3)] uppercase">{p.organizations?.type || ""}</div>
+        <div className="text-[10px] text-[var(--tx3)]">
+          {p.organizations?.type ? organizationTypeLabel(p.organizations.type) : ""}
+        </div>
       </div>
     ),
   },

@@ -4,7 +4,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-templates";
 import { requireAuth } from "@/lib/api-auth";
-import { VERTICAL_LABELS } from "@/lib/partner-type";
+import {
+  VERTICAL_LABELS,
+  augmentOrganizationsTypeCheckError,
+  isAllowedOrganizationType,
+  normalizeOrganizationType,
+  partnerHasSelfServePortal,
+} from "@/lib/partner-type";
 import { getEmailFrom } from "@/lib/email/send";
 
 function generateTempPassword(): string {
@@ -47,9 +53,15 @@ export async function POST(req: NextRequest) {
       const contactNameTrimmed = (contact_name || "").trim();
       const phoneTrimmed = (phone || "").trim();
       const addressTrimmed = (address || "").trim();
-      const typeVal = type || "furniture_retailer";
+      const typeVal = normalizeOrganizationType(type);
+      if (!isAllowedOrganizationType(typeVal)) {
+        return NextResponse.json(
+          { error: `Invalid partner vertical "${typeof type === "string" ? type.trim() : type}".` },
+          { status: 400 },
+        );
+      }
       const typeLabel = VERTICAL_LABELS[String(typeVal)] || typeVal;
-      const tempPassword = generateTempPassword();
+      const selfServePortal = partnerHasSelfServePortal(typeVal);
 
       const templateId = await resolveTemplateId(admin, template_slug || null);
 
@@ -59,9 +71,6 @@ export async function POST(req: NextRequest) {
         .eq("email", emailTrimmed)
         .limit(1)
         .maybeSingle();
-
-      let orgId: string;
-      let userId: string;
 
       const orgFields = {
         name: nameTrimmed,
@@ -73,6 +82,32 @@ export async function POST(req: NextRequest) {
         address: addressTrimmed,
         ...(templateId ? { template_id: templateId } : {}),
       };
+
+      if (!selfServePortal) {
+        let orgId: string;
+        if (existingOrg) {
+          orgId = existingOrg.id;
+          const { error: orgUpErr } = await admin.from("organizations").update(orgFields).eq("id", orgId);
+          if (orgUpErr) {
+            return NextResponse.json({ error: augmentOrganizationsTypeCheckError(orgUpErr.message) }, { status: 400 });
+          }
+        } else {
+          const { data: newOrg, error: orgError } = await admin
+            .from("organizations")
+            .insert({ ...orgFields, health: "good" })
+            .select("id")
+            .single();
+          if (orgError) {
+            return NextResponse.json({ error: augmentOrganizationsTypeCheckError(orgError.message) }, { status: 400 });
+          }
+          orgId = newOrg!.id;
+        }
+        return NextResponse.json({ ok: true, id: orgId });
+      }
+
+      const tempPassword = generateTempPassword();
+      let orgId: string;
+      let userId: string;
 
       if (existingOrg?.user_id) {
         const { data: existingUsers } = await admin.auth.admin.listUsers();
@@ -137,7 +172,9 @@ export async function POST(req: NextRequest) {
           })
           .select("id")
           .single();
-        if (orgError) return NextResponse.json({ error: orgError.message }, { status: 400 });
+        if (orgError) {
+          return NextResponse.json({ error: augmentOrganizationsTypeCheckError(orgError.message) }, { status: 400 });
+        }
         orgId = newOrg!.id;
         await admin.from("partner_users").insert({ user_id: userId, org_id: orgId });
       }

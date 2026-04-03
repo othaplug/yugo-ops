@@ -9,6 +9,7 @@ import KpiCard from "@/components/ui/KpiCard";
 import SectionDivider from "@/components/ui/SectionDivider";
 import { Icon } from "@/components/AppIcons";
 import InvitePartnerModal from "@/app/admin/platform/InvitePartnerModal";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 interface Partner {
   id: string;
@@ -30,27 +31,6 @@ interface RealtorRow {
   created_at: string;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  // Legacy types
-  retail: "Retail",
-  designer: "Designer",
-  gallery: "Art Gallery",
-  // Canonical verticals
-  furniture_retailer: "Furniture Retailer",
-  interior_designer: "Interior Designer",
-  cabinetry: "Cabinetry",
-  flooring: "Flooring",
-  art_gallery: "Art Gallery",
-  antique_dealer: "Antique Dealer",
-  hospitality: "Hospitality",
-  medical_equipment: "Medical Equipment",
-  av_technology: "AV / Technology",
-  appliances: "Appliances",
-  realtor: "Realtor",
-  property_manager: "Property Manager",
-  developer: "Developer",
-};
-
 const TYPE_TAB_KEYS = ["all", "retail", "designer", "hospitality", "gallery", "realtor"] as const;
 
 /** Tab labels (realtor tab = referral partners; realtor is the primary channel) */
@@ -67,9 +47,9 @@ const TAB_TYPE_MAP: Record<string, string[]> = {
   realtor:      ["realtor", "property_manager", "developer"],
 };
 
-function getTypeLabel(type: string): string {
+function partnerListTypeLabel(type: string): string {
   if (type === "b2b") return "Other partner";
-  return TYPE_LABELS[type] || (type ? type.charAt(0).toUpperCase() + type.slice(1).toLowerCase() : "Other");
+  return organizationTypeLabel(type);
 }
 
 /** Distinct pill styles per partner type (Tailwind) */
@@ -90,6 +70,9 @@ const TYPE_CHIP_CLASSES: Record<string, string> = {
   realtor: "bg-[rgba(45,159,90,0.14)] text-[var(--grn)]",
   property_manager: "bg-[rgba(22,163,74,0.14)] text-[#16A34A]",
   developer: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
+  property_management_residential: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
+  property_management_commercial: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
+  developer_builder: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
   b2b: "bg-[rgba(113,113,122,0.18)] text-[var(--tx2)]",
 };
 
@@ -102,7 +85,7 @@ function PartnerTypeChip({ type }: { type: string }) {
     <span
       className={`inline-flex max-w-max items-center rounded-md px-2 py-0.5 text-[10px] font-semibold leading-tight !whitespace-nowrap ${typeChipClass(type)}`}
     >
-      {getTypeLabel(type || "")}
+      {partnerListTypeLabel(type || "")}
     </span>
   );
 }
@@ -132,7 +115,7 @@ const columns: ColumnDef<Partner>[] = [
   {
     id: "_partner_type_search",
     label: "Type",
-    accessor: (p) => `${p.type ?? ""} ${getTypeLabel(p.type || "")}`.trim(),
+    accessor: (p) => `${p.type ?? ""} ${partnerListTypeLabel(p.type || "")}`.trim(),
     alwaysHidden: true,
     sortable: false,
     render: (p) => <PartnerTypeChip type={p.type || ""} />,
@@ -289,7 +272,7 @@ export default function AllPartnersClient() {
     const allTab = { key: "all", label: "All Partners" };
     const typeTabsList = TYPE_TAB_KEYS.filter((k) => k !== "all").map((key) => ({
       key,
-      label: PARTNER_TAB_LABELS[key] ?? getTypeLabel(key),
+      label: PARTNER_TAB_LABELS[key] ?? partnerListTypeLabel(key),
     }));
     return [allTab, ...typeTabsList];
   }, []);
@@ -409,7 +392,7 @@ export default function AllPartnersClient() {
           defaultSortDir="desc"
           onRowClick={(p) => router.push(`/admin/clients/${p.id}`)}
           emptyMessage="No partners found"
-          emptySubtext={activeTab !== "all" ? `No ${getTypeLabel(activeTab)} partners yet` : undefined}
+          emptySubtext={activeTab !== "all" ? `No ${partnerListTypeLabel(activeTab)} partners yet` : undefined}
         />
       )}
 

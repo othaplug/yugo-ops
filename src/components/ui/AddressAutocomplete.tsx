@@ -351,7 +351,8 @@ export default function AddressAutocomplete({
               left: dropdownRect.left,
               width: dropdownRect.width,
               maxHeight: dropdownRect.maxHeight ?? 280,
-              zIndex: 9999,
+              /* Above GlobalModal (--z-modal 99990); below toasts (--z-toast) */
+              zIndex: "var(--z-modal-dropdown, 99995)",
               boxShadow: dropdownRect.above
                 ? "0 -4px 20px rgba(0,0,0,0.12)"
                 : "0 4px 20px rgba(0,0,0,0.12)",

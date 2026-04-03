@@ -25,6 +25,7 @@ import {
   getProjectItemStatusLabel,
   getProjectItemStatusUi,
 } from "@/lib/project-item-status";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -46,7 +47,13 @@ interface ProjectData {
   project_mgmt_fee: number | null;
   notes: string | null;
   created_at: string;
-  organizations: { name: string; type: string; email: string | null; contact_name: string | null } | null;
+  organizations: {
+    name: string;
+    type: string;
+    vertical?: string | null;
+    email: string | null;
+    contact_name: string | null;
+  } | null;
   phases: Phase[];
   inventory: InventoryItem[];
   timeline: TimelineEntry[];
@@ -518,7 +525,10 @@ function OverviewTab({ data, progressPct, completedPhases, totalPhases, projectE
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 space-y-2">
           <div className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-2">Details</div>
           {data.description && <InfoRow label="Description" value={data.description} />}
-          <InfoRow label="Partner" value={`${data.organizations?.name || "-"} (${data.organizations?.type || ""})`} />
+          <InfoRow
+            label="Partner"
+            value={`${data.organizations?.name || "-"} (${organizationTypeLabel(data.organizations?.vertical || data.organizations?.type)})`}
+          />
           {data.end_client_name && <InfoRow label="End Client" value={data.end_client_name} />}
           {data.end_client_contact && <InfoRow label="Contact" value={data.end_client_contact} />}
           {data.site_address && <InfoRow label="Site" value={data.site_address} />}
@@ -830,7 +840,13 @@ function PhasesTab({ data, onRefresh, projectId, showAddPhase, setShowAddPhase }
         <div className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-4 space-y-3">
           <input value={newPhaseName} onChange={(e) => setNewPhaseName(e.target.value)} placeholder="Phase name (e.g. Receiving, Delivery, Installation)…" className={fieldInput} autoFocus />
           <input type="date" value={newPhaseDate} onChange={(e) => setNewPhaseDate(e.target.value)} className={fieldInput} />
-          <input value={newPhaseAddress} onChange={(e) => setNewPhaseAddress(e.target.value)} placeholder="Delivery address for this phase (optional)" className={fieldInput} />
+          <AddressAutocomplete
+            value={newPhaseAddress}
+            onRawChange={(t) => setNewPhaseAddress(t)}
+            onChange={(r) => setNewPhaseAddress(r.fullAddress)}
+            placeholder="Delivery address for this phase (optional)"
+            className={fieldInput}
+          />
           <div className="flex gap-2">
             <button onClick={addPhase} className="px-4 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">Add Phase</button>
             <button onClick={() => setShowAddPhase(false)} className="px-4 py-2 rounded-lg text-[11px] font-semibold border border-[var(--brd)] text-[var(--tx3)]">Cancel</button>
@@ -1066,7 +1082,13 @@ function InventoryTab({ data, onRefresh, projectId, showAddItem, setShowAddItem,
             <input value={newItemContactPhone} onChange={(e) => setNewItemContactPhone(e.target.value)} placeholder="Vendor contact phone" className={fieldInput} />
             <input value={newItemContactEmail} onChange={(e) => setNewItemContactEmail(e.target.value)} placeholder="Vendor contact email" className={fieldInput} />
             <input value={newItemOrderNumber} onChange={(e) => setNewItemOrderNumber(e.target.value)} placeholder="Order number" className={fieldInput} />
-            <input value={newItemPickupAddress} onChange={(e) => setNewItemPickupAddress(e.target.value)} placeholder="Pickup address" className={fieldInput} />
+            <AddressAutocomplete
+              value={newItemPickupAddress}
+              onRawChange={(t) => setNewItemPickupAddress(t)}
+              onChange={(r) => setNewItemPickupAddress(r.fullAddress)}
+              placeholder="Pickup address"
+              className={fieldInput}
+            />
             <input value={newItemPickupWindow} onChange={(e) => setNewItemPickupWindow(e.target.value)} placeholder="Pickup window" className={fieldInput} />
             <select value={newItemPhase} onChange={(e) => setNewItemPhase(e.target.value)} className={fieldInput}>
               <option value="">No phase</option>

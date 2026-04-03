@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash, Sparkle } from "@phosphor-icons/react";
 import BackButton from "@/app/admin/components/BackButton";
 import SectionDivider from "@/components/ui/SectionDivider";
 import AddressAutocomplete, { type AddressResult } from "@/components/ui/AddressAutocomplete";
+import {
+  applyHubSpotSuggestRow,
+  useHubSpotContactSuggest,
+  type HubSpotSuggestField,
+  type HubSpotSuggestRow,
+} from "@/hooks/useHubSpotContactSuggest";
 
 type Partner = {
   id: string;
@@ -68,6 +74,51 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
   const [receivingFee, setReceivingFee] = useState("");
   const [totalPrice, setTotalPrice] = useState("");
   const [suggestLoading, setSuggestLoading] = useState(false);
+
+  const [senderHsActive, setSenderHsActive] = useState<HubSpotSuggestField | null>(null);
+  const senderHsQuery = useMemo(() => {
+    if (senderHsActive === "business") return businessName;
+    if (senderHsActive === "email") return businessEmail;
+    if (senderHsActive === "phone") return businessPhone;
+    return "";
+  }, [senderHsActive, businessName, businessEmail, businessPhone]);
+
+  const onSenderHubSpotPick = useCallback((row: HubSpotSuggestRow) => {
+    const a = applyHubSpotSuggestRow(row);
+    if (a.businessName) setBusinessName(a.businessName);
+    else if (a.contactName) setBusinessName(a.contactName);
+    if (a.email) setBusinessEmail(a.email);
+    if (a.phoneFormatted) setBusinessPhone(a.phoneFormatted);
+  }, []);
+
+  const senderHs = useHubSpotContactSuggest({
+    query: senderHsQuery,
+    activeField: senderHsActive,
+    setActiveField: setSenderHsActive,
+    onPick: onSenderHubSpotPick,
+  });
+
+  const [custHsActive, setCustHsActive] = useState<HubSpotSuggestField | null>(null);
+  const custHsQuery = useMemo(() => {
+    if (custHsActive === "contact") return customerName;
+    if (custHsActive === "email") return customerEmail;
+    if (custHsActive === "phone") return customerPhone;
+    return "";
+  }, [custHsActive, customerName, customerEmail, customerPhone]);
+
+  const onCustHubSpotPick = useCallback((row: HubSpotSuggestRow) => {
+    const a = applyHubSpotSuggestRow(row);
+    if (a.contactName) setCustomerName(a.contactName);
+    if (a.email) setCustomerEmail(a.email);
+    if (a.phoneFormatted) setCustomerPhone(a.phoneFormatted);
+  }, []);
+
+  const custHs = useHubSpotContactSuggest({
+    query: custHsQuery,
+    activeField: custHsActive,
+    setActiveField: setCustHsActive,
+    onPick: onCustHubSpotPick,
+  });
 
   const resolvedCarrier = carrierName === "Other" ? carrierOther.trim() || "Other" : carrierName;
 
@@ -231,28 +282,43 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
               ))}
             </select>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-3">
-              <input
-                required
-                placeholder="Business name"
-                className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-              />
-              <input
-                required
-                type="email"
-                placeholder="Contact email"
-                className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-                value={businessEmail}
-                onChange={(e) => setBusinessEmail(e.target.value)}
-              />
-              <input
-                placeholder="Contact phone"
-                className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-                value={businessPhone}
-                onChange={(e) => setBusinessPhone(e.target.value)}
-              />
+            <div ref={senderHs.containerRef} className="grid sm:grid-cols-2 gap-3">
+              <div className="relative sm:col-span-2">
+                <input
+                  {...senderHs.bindField("business")}
+                  required
+                  placeholder="Business name"
+                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  autoComplete="organization"
+                />
+                {senderHs.renderDropdown("business")}
+              </div>
+              <div className="relative">
+                <input
+                  type="email"
+                  {...senderHs.bindField("email")}
+                  required
+                  placeholder="Contact email"
+                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  value={businessEmail}
+                  onChange={(e) => setBusinessEmail(e.target.value)}
+                  autoComplete="email"
+                />
+                {senderHs.renderDropdown("email")}
+              </div>
+              <div className="relative">
+                <input
+                  {...senderHs.bindField("phone")}
+                  placeholder="Contact phone"
+                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  value={businessPhone}
+                  onChange={(e) => setBusinessPhone(e.target.value)}
+                  autoComplete="tel"
+                />
+                {senderHs.renderDropdown("phone")}
+              </div>
             </div>
           )}
           <label className="block text-sm">
@@ -399,29 +465,44 @@ export default function NewInboundShipmentClient({ partners }: { partners: Partn
               Partner will provide customer details after the shipment is confirmed received.
             </p>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-3">
-              <input
-                required={!customerLater}
-                placeholder="Name"
-                className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
-              <input
-                required={!customerLater}
-                type="email"
-                placeholder="Email"
-                className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-              />
-              <input
-                required={!customerLater}
-                placeholder="Phone"
-                className="rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-              />
+            <div ref={custHs.containerRef} className="grid sm:grid-cols-2 gap-3">
+              <div className="relative">
+                <input
+                  {...custHs.bindField("contact")}
+                  required={!customerLater}
+                  placeholder="Name"
+                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  autoComplete="name"
+                />
+                {custHs.renderDropdown("contact")}
+              </div>
+              <div className="relative">
+                <input
+                  required={!customerLater}
+                  type="email"
+                  {...custHs.bindField("email")}
+                  placeholder="Email"
+                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  autoComplete="email"
+                />
+                {custHs.renderDropdown("email")}
+              </div>
+              <div className="relative">
+                <input
+                  {...custHs.bindField("phone")}
+                  required={!customerLater}
+                  placeholder="Phone"
+                  className="w-full rounded-lg border border-[var(--brd)] px-3 py-2 text-sm bg-[var(--bg)]"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  autoComplete="tel"
+                />
+                {custHs.renderDropdown("phone")}
+              </div>
               <div className="sm:col-span-2">
                 <AddressAutocomplete
                   required={!customerLater}

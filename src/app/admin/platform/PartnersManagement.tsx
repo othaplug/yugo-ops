@@ -8,6 +8,7 @@ import InvitePartnerModal from "./InvitePartnerModal";
 import PartnerVerticalRatesEditor from "./PartnerVerticalRatesEditor";
 import ModalOverlay from "../components/ModalOverlay";
 import { CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 interface PortalUser {
   user_id: string;
@@ -37,25 +38,6 @@ interface PartnerData {
   totalMoves: number;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  retail: "Retail",
-  designer: "Designer",
-  gallery: "Gallery",
-  furniture_retailer: "Furniture Retailer",
-  interior_designer: "Interior Designer",
-  cabinetry: "Cabinetry",
-  flooring: "Flooring",
-  art_gallery: "Art Gallery",
-  antique_dealer: "Antique Dealer",
-  hospitality: "Hospitality",
-  medical_equipment: "Medical Equipment",
-  av_technology: "AV / Technology",
-  appliances: "Appliances",
-  realtor: "Realtor",
-  property_manager: "Property Manager",
-  developer: "Developer",
-};
-
 const TYPE_COLORS: Record<string, string> = {
   retail: "bg-[rgba(74,124,229,0.14)] text-[#4A7CE5]",
   designer: "bg-[rgba(139,92,246,0.14)] text-[#8B5CF6]",
@@ -73,6 +55,9 @@ const TYPE_COLORS: Record<string, string> = {
   realtor: "bg-[rgba(45,159,90,0.14)] text-[var(--grn)]",
   property_manager: "bg-[rgba(22,163,74,0.14)] text-[#16A34A]",
   developer: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
+  property_management_residential: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
+  property_management_commercial: "bg-[rgba(201,169,98,0.18)] text-[var(--gold)]",
+  developer_builder: "bg-[rgba(124,58,237,0.14)] text-[#7C3AED]",
 };
 
 export default function PartnersManagement() {
@@ -398,7 +383,7 @@ export default function PartnersManagement() {
                         <span
                           className={`inline-flex shrink-0 items-center rounded-md px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider !whitespace-nowrap ${typeColor}`}
                         >
-                          {TYPE_LABELS[partner.type] || (partner.type === "b2b" ? "Other partner" : partner.type.replace(/_/g, " "))}
+                          {partner.type === "b2b" ? "Other partner" : organizationTypeLabel(partner.type)}
                         </span>
                       </div>
                       <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate">

@@ -1,18 +1,30 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo, Fragment } from "react";
 import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
+import {
+  applyHubSpotSuggestRow,
+  useHubSpotContactSuggest,
+  type HubSpotSuggestField,
+  type HubSpotSuggestRow,
+} from "@/hooks/useHubSpotContactSuggest";
 import { Icon } from "@/components/AppIcons";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import {
   type PartnerProfile,
   PARTNER_SEGMENT_GROUPS,
   VERTICAL_TO_TEMPLATE_SLUG,
   TEMPLATE_SLUG_LABELS,
   isPropertyManagementDeliveryVertical,
+  organizationTypeLabel,
+  partnerHasSelfServePortal,
 } from "@/lib/partner-type";
+
+/** Platform onboarding: delivery + property & portfolio only (referral orgs use `/admin/partners/realtors`). */
+const WIZARD_SEGMENT_GROUPS = PARTNER_SEGMENT_GROUPS.filter((s) => s.profile !== "referral");
 
 function generatePassword(length = 12): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%";
@@ -33,6 +45,22 @@ const DELIVERY_TYPE_OPTIONS = [
   { id: "storage", label: "Storage" },
   { id: "crating", label: "Crating" },
 ];
+
+/** Property & portfolio onboarding — tenant moves only (stored in `delivery_types` for API compatibility). */
+const PM_TENANT_MOVE_SERVICE_OPTIONS = [
+  { id: "tenant_move_local", label: "Local & building moves" },
+  { id: "tenant_move_long_distance", label: "Long-distance moves" },
+  { id: "packing_unpacking", label: "Packing & unpacking" },
+  { id: "furniture_disassembly", label: "Furniture disassembly / reassembly" },
+  { id: "in_unit_white_glove", label: "White glove inside the unit" },
+  { id: "disposal_donation", label: "Disposal or donation pickup" },
+  { id: "storage_coordination", label: "Storage pickup & return" },
+  { id: "specialty_items", label: "Pianos, safes, or specialty items" },
+] as const;
+
+const PM_TENANT_SERVICE_LABELS: Record<string, string> = Object.fromEntries(
+  PM_TENANT_MOVE_SERVICE_OPTIONS.map((o) => [o.id, o.label])
+);
 
 const FREQUENCY_OPTIONS = [
   { value: "1_5", label: "1–5 / month" },
@@ -102,13 +130,41 @@ const PAYMENT_TERMS_DESCRIPTIONS: Record<string, string> = {
   prepay: "Partner pre-loads a credit balance. Deliveries draw down against credits.",
 };
 
-const STEPS = [
-  { id: 1, label: "Business", description: "Company profile & contact info" },
-  { id: 2, label: "Services", description: "Delivery types & preferences" },
-  { id: 3, label: "Billing", description: "Rate card & payment terms" },
-  { id: 4, label: "Portal", description: "Partner portal access" },
-  { id: 5, label: "Review", description: "Confirm & activate" },
-];
+/** Property-management delivery (portfolio) — operational billing labels; values unchanged for API. */
+const PM_BILLING_OPTIONS = [
+  { value: "per_delivery", label: "Per move / service invoice" },
+  { value: "monthly_statement", label: "Monthly portfolio statement" },
+  { value: "prepaid_credits", label: "Pre-paid credits / retainer" },
+] as const;
+
+const PM_PAYMENT_TERMS_DESCRIPTIONS: Record<string, string> = {
+  due_on_receipt: "Invoice per completed move or billable service. Due on receipt (short grace as configured).",
+  net_15: "Mid-month and month-end statements. Payment due on statement date.",
+  net_30: "Monthly statement on anchor day. Moves and services from the prior period are included.",
+  prepay: "Pre-loaded balance; moves and services draw down against credits.",
+};
+
+type OnboardingFlow = "delivery_pm" | "delivery_standard";
+
+/** Stable keys for wizard body; `portal` omitted when vertical has no self-serve portal (e.g. realtor). */
+type WizardStepKey = "business" | "mid" | "billing" | "portal" | "review";
+
+const STEP_META: Record<OnboardingFlow, { key: WizardStepKey; label: string; description: string }[]> = {
+  delivery_pm: [
+    { key: "business", label: "Business", description: "Company, buildings & contract" },
+    { key: "mid", label: "Operations", description: "Tenant-move services & site logistics" },
+    { key: "billing", label: "Contract billing", description: "Portfolio rates & payment terms" },
+    { key: "portal", label: "Portal", description: "Property management portal access" },
+    { key: "review", label: "Review", description: "Confirm & activate" },
+  ],
+  delivery_standard: [
+    { key: "business", label: "Business", description: "Company profile & contact info" },
+    { key: "mid", label: "Services", description: "Delivery types & preferences" },
+    { key: "billing", label: "Billing", description: "Rate card & payment terms" },
+    { key: "portal", label: "Portal", description: "Partner portal access" },
+    { key: "review", label: "Review", description: "Confirm & activate" },
+  ],
+};
 
 interface RateTemplate {
   id: string;
@@ -161,7 +217,6 @@ interface WizardState {
   email: string;
   phone: string;
   address: string;
-  website: string;
   howFound: string;
   referralSource: string;
   hubspotDealId: string;
@@ -217,7 +272,6 @@ const DEFAULT_STATE: WizardState = {
   email: "",
   phone: "",
   address: "",
-  website: "",
   howFound: "",
   referralSource: "",
   hubspotDealId: "",
@@ -255,6 +309,11 @@ const DEFAULT_STATE: WizardState = {
   pmAutoRenew: false,
   pmTenantCommsBy: "partner",
 };
+
+function getOnboardingFlow(state: Pick<WizardState, "profile" | "type">): OnboardingFlow {
+  if (state.profile === "portfolio" || isPropertyManagementDeliveryVertical(state.type)) return "delivery_pm";
+  return "delivery_standard";
+}
 
 interface PartnerOnboardingWizardProps {
   open: boolean;
@@ -374,32 +433,139 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
     setState((s) => ({ ...s, pmProperties: [...s.pmProperties, emptyPmProperty()] }));
   }, []);
 
-  const handleClose = () => {
+  const applyProfileChange = useCallback((profile: PartnerProfile) => {
+    setState((s) => {
+      const defaultType =
+        profile === "portfolio" ? "property_management_residential" : "furniture_retailer";
+
+      const pmCleared = {
+        pmProperties: [emptyPmProperty()],
+        pmContractType: "fixed_rate" as const,
+        pmContractStart: "",
+        pmContractEnd: "",
+        pmAutoRenew: false,
+        pmTenantCommsBy: "partner" as const,
+      };
+
+      const clearDeliveryOps = {
+        b2bDeliveryVerticals: [] as string[],
+        b2bVerticalUseDefaults: {} as WizardState["b2bVerticalUseDefaults"],
+        b2bVerticalCustom: {} as WizardState["b2bVerticalCustom"],
+        deliveryTypes: [] as string[],
+        deliveryFrequency: "",
+        preferredWindows: "",
+        pickupLocations: [""],
+        typicalItems: "",
+        specialRequirements: "",
+      };
+
+      const portalDefault = partnerHasSelfServePortal(defaultType);
+
+      if (profile === "portfolio") {
+        return {
+          ...s,
+          profile,
+          type: defaultType,
+          createPortalLogin: portalDefault,
+          billingMethod: "monthly_statement",
+          paymentTerms: "net_30",
+          billingAnchorDay: 15,
+          ...clearDeliveryOps,
+          ...pmCleared,
+        };
+      }
+
+      return {
+        ...s,
+        profile,
+        type: defaultType,
+        createPortalLogin: portalDefault,
+        billingMethod: "per_delivery",
+        paymentTerms: "due_on_receipt",
+        billingAnchorDay: 1,
+        ...pmCleared,
+      };
+    });
+  }, []);
+
+  const applyTypeChange = useCallback((type: string) => {
+    setState((s) => {
+      const wasPm = isPropertyManagementDeliveryVertical(s.type);
+      const nowPm = isPropertyManagementDeliveryVertical(type);
+      const portalOk = partnerHasSelfServePortal(type);
+      const base: Partial<WizardState> = {
+        type,
+        ...(portalOk ? {} : { createPortalLogin: false }),
+      };
+      const resetMoveServiceFields: Partial<WizardState> = {
+        deliveryTypes: [],
+        deliveryFrequency: "",
+        preferredWindows: "",
+        specialRequirements: "",
+        pickupLocations: [""],
+        typicalItems: "",
+      };
+      if (!wasPm && nowPm) {
+        return {
+          ...s,
+          ...base,
+          ...resetMoveServiceFields,
+          b2bDeliveryVerticals: [],
+          b2bVerticalUseDefaults: {},
+          b2bVerticalCustom: {},
+        };
+      }
+      if (wasPm && !nowPm) {
+        return { ...s, ...base, ...resetMoveServiceFields };
+      }
+      return { ...s, ...base };
+    });
+  }, []);
+
+  const handleClose = useCallback(() => {
     setStep(1);
     setState(DEFAULT_STATE);
     onClose();
-  };
+  }, [onClose]);
+
+  const activeSegments = WIZARD_SEGMENT_GROUPS.filter((s) => s.profile === state.profile);
+
+  const onboardingFlow = useMemo(() => getOnboardingFlow(state), [state.profile, state.type]);
+  const portalEligible = partnerHasSelfServePortal(state.type);
+  const steps = useMemo(() => {
+    const full = STEP_META[onboardingFlow];
+    return portalEligible ? full : full.filter((s) => s.key !== "portal");
+  }, [onboardingFlow, portalEligible]);
+
+  useEffect(() => {
+    setStep((s) => Math.min(s, Math.max(1, steps.length)));
+  }, [steps.length]);
 
   const canAdvance = (): boolean => {
-    if (step === 1) {
+    const cur = steps[step - 1];
+    if (!cur) return false;
+    if (cur.key === "business") {
       if (!state.name.trim() || !state.email.trim() || !state.contactName.trim()) return false;
-      if (isPropertyManagementDeliveryVertical(state.type)) {
+      if (state.profile === "portfolio" || isPropertyManagementDeliveryVertical(state.type)) {
         const hasBuilding = state.pmProperties.some((p) => p.building_name.trim() && p.address.trim());
         if (!hasBuilding) return false;
         if (!state.pmContractStart.trim() || !state.pmContractEnd.trim()) return false;
       }
       return true;
     }
-    if (step === 4) return !state.createPortalLogin || (!!state.password && state.password.length >= 8);
+    if (cur.key === "portal") {
+      return !state.createPortalLogin || (!!state.password && state.password.length >= 8);
+    }
     return true;
   };
 
   const handleSubmit = async () => {
+    const wantsPortalLogin = state.createPortalLogin && partnerHasSelfServePortal(state.type);
     if (!state.name.trim() || !state.email.trim()) {
       toast("Company name and email are required", "x");
       return;
     }
-    if (state.createPortalLogin && (!state.password || state.password.length < 8)) {
+    if (wantsPortalLogin && (!state.password || state.password.length < 8)) {
       toast("Password must be at least 8 characters", "x");
       return;
     }
@@ -446,7 +612,6 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
           email: state.email.trim(),
           phone: normalizePhone(state.phone).trim() || undefined,
           address: state.address.trim() || undefined,
-          website: state.website.trim() || undefined,
           how_found: state.howFound || undefined,
           referral_source: state.referralSource.trim() || undefined,
           hubspot_deal_id: state.hubspotDealId.trim() || undefined,
@@ -471,10 +636,10 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
           billing_email: state.billingEmail.trim() || undefined,
           tax_id: state.taxId.trim() || undefined,
           insurance_cert_required: state.insuranceCertRequired || undefined,
-          create_portal_login: state.createPortalLogin,
-          password: state.createPortalLogin ? state.password : undefined,
+          create_portal_login: wantsPortalLogin,
+          password: wantsPortalLogin ? state.password : undefined,
           activation_mode: state.activationMode,
-          send_setup_sms: state.sendSetupSms && !!state.phone,
+          send_setup_sms: wantsPortalLogin && state.sendSetupSms && !!state.phone,
           ...(b2b_delivery_verticals.length ? { b2b_delivery_verticals } : {}),
           ...(isPropertyManagementDeliveryVertical(state.type)
             ? {
@@ -516,22 +681,22 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
     }
   };
 
-  const activeSegments = PARTNER_SEGMENT_GROUPS.filter((s) => s.profile === state.profile);
-
-  const currentStep = STEPS.find((s) => s.id === step)!;
+  const currentStep = steps[step - 1]!;
 
   if (success) {
     return (
-      <ModalOverlay open={open} onClose={handleClose} title="Partner Onboarded" maxWidth="2xl" noPadding>
+      <ModalOverlay open={open} onClose={handleClose} title="Partner Onboarded" maxWidth="4xl" noPadding>
         <div className="py-16 px-8 flex flex-col items-center justify-center text-center">
           <div className="w-20 h-20 rounded-full bg-[var(--grn)]/10 border border-[var(--grn)]/30 flex items-center justify-center mb-6">
             <Icon name="check" className="w-9 h-9 text-[var(--grn)]" />
           </div>
           <h3 className="font-heading text-[22px] font-bold text-[var(--tx)] mb-2">Partner onboarded</h3>
           <p className="text-[var(--text-base)] text-[var(--tx3)] max-w-xs leading-relaxed">
-            {state.createPortalLogin
+            {state.createPortalLogin && partnerHasSelfServePortal(state.type)
               ? "An invitation email has been sent with their portal login credentials."
-              : "Partner saved as draft. Portal access can be added at any time."}
+              : !partnerHasSelfServePortal(state.type)
+                ? "Partner record is ready. This vertical is coordinated without a self-serve partner portal."
+                : "Partner saved as draft. Portal access can be added at any time."}
           </p>
         </div>
       </ModalOverlay>
@@ -539,7 +704,7 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
   }
 
   return (
-    <ModalOverlay open={open} onClose={handleClose} title="" maxWidth="2xl" noHeader noPadding>
+    <ModalOverlay open={open} onClose={handleClose} title="" maxWidth="4xl" noHeader noPadding>
       <div className="flex flex-col flex-1 min-h-0">
 
         {/* Header */}
@@ -563,55 +728,65 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
             </button>
           </div>
 
-          {/* Step progress */}
-          <div className="flex items-center gap-0">
-            {STEPS.map((s, i) => (
-              <div key={s.id} className="flex items-center flex-1">
-                <button
-                  type="button"
-                  onClick={() => step > s.id && setStep(s.id)}
-                  className="flex flex-col items-center gap-1.5 group shrink-0"
-                  style={{ cursor: step > s.id ? "pointer" : "default" }}
-                >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-200 ${
-                      step === s.id
-                        ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm shadow-[var(--gold)]/30 scale-110"
-                        : step > s.id
-                        ? "bg-[var(--grn)]/15 text-[var(--grn)] border border-[var(--grn)]/30"
-                        : "bg-[var(--brd)]/60 text-[var(--tx3)] border border-[var(--brd)]"
-                    }`}
-                  >
-                    {step > s.id ? <Icon name="check" className="w-3.5 h-3.5" /> : s.id}
-                  </div>
-                  <span
-                    className={`text-[10px] font-semibold tracking-wide hidden sm:block transition-colors duration-150 ${
-                      step === s.id ? "text-[var(--tx)]" : "text-[var(--tx3)]"
-                    }`}
-                  >
-                    {s.label}
-                  </span>
-                </button>
-                {i < STEPS.length - 1 && (
-                  <div className="flex-1 mx-2 mb-4">
-                    <div
-                      className={`h-px transition-all duration-500 ${
-                        step > s.id ? "bg-[var(--grn)]/40" : "bg-[var(--brd)]/50"
-                      }`}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+          {/* Step progress — centered row, connectors flex to spread across modal width */}
+          <div className="flex w-full justify-center pt-1">
+            <div className="flex w-full items-start px-1 sm:px-2 md:px-4">
+              {steps.map((s, i) => {
+                const idx = i + 1;
+                return (
+                  <Fragment key={s.key}>
+                    <button
+                      type="button"
+                      onClick={() => step > idx && setStep(idx)}
+                      className="flex min-w-[4.5rem] max-w-[6.5rem] sm:min-w-[5.25rem] sm:max-w-[7rem] flex-col items-center gap-2 group shrink-0"
+                      style={{ cursor: step > idx ? "pointer" : "default" }}
+                    >
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold transition-all duration-200 ${
+                          step === idx
+                            ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)] shadow-sm shadow-[var(--gold)]/30 scale-110"
+                            : step > idx
+                              ? "bg-[var(--grn)]/15 text-[var(--grn)] border border-[var(--grn)]/30"
+                              : "bg-[var(--brd)]/60 text-[var(--tx3)] border border-[var(--brd)]"
+                        }`}
+                      >
+                        {step > idx ? <Icon name="check" className="w-4 h-4" /> : idx}
+                      </div>
+                      <span
+                        className={`text-center text-[10px] font-semibold leading-snug tracking-wide transition-colors duration-150 sm:text-[11px] ${
+                          step === idx ? "text-[var(--tx)]" : "text-[var(--tx3)]"
+                        }`}
+                      >
+                        {s.label}
+                      </span>
+                    </button>
+                    {i < steps.length - 1 && (
+                      <div
+                        className="mx-2 mt-[1.125rem] flex min-w-[1rem] flex-1 items-center sm:mx-4 md:mx-6"
+                        aria-hidden
+                      >
+                        <div
+                          className={`h-px w-full transition-all duration-500 ${
+                            step > idx ? "bg-[var(--grn)]/40" : "bg-[var(--brd)]/50"
+                          }`}
+                        />
+                      </div>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* Step content */}
         <div className="flex-1 overflow-y-auto px-7 py-6 min-h-0">
-          {step === 1 && (
+          {currentStep.key === "business" && (
             <Step1BusinessDetails
               state={state}
               update={update}
+              applyProfileChange={applyProfileChange}
+              applyTypeChange={applyTypeChange}
               activeSegments={activeSegments}
               phoneInput={phoneInput}
               patchPmProperty={patchPmProperty}
@@ -619,7 +794,14 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
               togglePmUnitType={togglePmUnitType}
             />
           )}
-          {step === 2 && (
+          {currentStep.key === "mid" && onboardingFlow === "delivery_pm" && (
+            <Step2PmOperations
+              state={state}
+              update={update}
+              toggleDeliveryType={toggleDeliveryType}
+            />
+          )}
+          {currentStep.key === "mid" && onboardingFlow === "delivery_standard" && (
             <Step2ServicePreferences
               state={state}
               update={update}
@@ -629,22 +811,24 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
               setB2bVerticalUseDefaults={setB2bVerticalUseDefaults}
             />
           )}
-          {step === 3 && (
+          {currentStep.key === "billing" && (
             <Step3RateCardBilling
               state={state}
               update={update}
               templates={templates}
+              flow={onboardingFlow}
             />
           )}
-          {step === 4 && (
+          {currentStep.key === "portal" && (
             <Step4PortalAccess
               state={state}
               update={update}
               handleGeneratePassword={handleGeneratePassword}
+              flow={onboardingFlow}
             />
           )}
-          {step === 5 && (
-            <Step5Summary state={state} />
+          {currentStep.key === "review" && (
+            <Step5Summary state={state} flow={onboardingFlow} />
           )}
         </div>
 
@@ -671,10 +855,10 @@ export default function PartnerOnboardingWizard({ open, onClose }: PartnerOnboar
           <div className="flex-1" />
 
           <span className="text-[11px] text-[var(--tx3)] hidden sm:block">
-            Step {step} of {STEPS.length}
+            Step {step} of {steps.length}
           </span>
 
-          {step < 5 ? (
+          {step < steps.length ? (
             <button
               type="button"
               onClick={() => setStep((s) => s + 1)}
@@ -750,6 +934,8 @@ const PM_UNIT_OPTS = [
 function Step1BusinessDetails({
   state,
   update,
+  applyProfileChange,
+  applyTypeChange,
   activeSegments,
   phoneInput,
   patchPmProperty,
@@ -758,7 +944,9 @@ function Step1BusinessDetails({
 }: {
   state: WizardState;
   update: <K extends keyof WizardState>(key: K, val: WizardState[K]) => void;
-  activeSegments: typeof PARTNER_SEGMENT_GROUPS;
+  applyProfileChange: (profile: PartnerProfile) => void;
+  applyTypeChange: (type: string) => void;
+  activeSegments: typeof WIZARD_SEGMENT_GROUPS;
   phoneInput: ReturnType<typeof usePhoneInput>;
   patchPmProperty: (idx: number, patch: Partial<PmPropertyDraft>) => void;
   addPmProperty: () => void;
@@ -768,6 +956,38 @@ function Step1BusinessDetails({
   const [dedupResults, setDedupResults] = useState<DedupResults | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
+
+  const [hsActive, setHsActive] = useState<HubSpotSuggestField | null>(null);
+  const hsQuery = useMemo(() => {
+    if (hsActive === "business") return state.name;
+    if (hsActive === "contact") return state.contactName;
+    if (hsActive === "email") return state.email;
+    if (hsActive === "phone") return state.phone;
+    return "";
+  }, [hsActive, state.name, state.contactName, state.email, state.phone]);
+
+  const onHubSpotSuggestPick = useCallback(
+    (row: HubSpotSuggestRow) => {
+      const a = applyHubSpotSuggestRow(row);
+      if (a.businessName) update("name", a.businessName);
+      if (a.contactName) update("contactName", a.contactName);
+      if (a.email) update("email", a.email);
+      if (a.phoneFormatted) update("phone", a.phoneFormatted);
+      if (a.title) update("contactTitle", a.title);
+      update("hubspotContactId", a.hubspotId);
+      setDedupResults(null);
+      setBannerDismissed(true);
+      setAutoFilled(false);
+    },
+    [update],
+  );
+
+  const hsSuggest = useHubSpotContactSuggest({
+    query: hsQuery,
+    activeField: hsActive,
+    setActiveField: setHsActive,
+    onPick: onHubSpotSuggestPick,
+  });
 
   const handleDedupBlur = async () => {
     const emailTrim = state.email.trim().toLowerCase();
@@ -882,15 +1102,15 @@ function Step1BusinessDetails({
       dedupResults.square !== null ||
       dedupResults.opsPartnerId !== null);
 
-  const showPm = state.profile === "delivery" && isPropertyManagementDeliveryVertical(state.type);
+  const showPm = state.profile === "portfolio" || isPropertyManagementDeliveryVertical(state.type);
 
   return (
-    <div className="space-y-6">
+    <div ref={hsSuggest.containerRef} className="space-y-6">
       {/* Profile type */}
       <div>
         <p className={labelCls}>Partner Type</p>
-        <div className="grid grid-cols-2 gap-3">
-          {PARTNER_SEGMENT_GROUPS.map((seg) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {WIZARD_SEGMENT_GROUPS.map((seg) => (
             <label
               key={seg.profile}
               className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border cursor-pointer transition-all duration-150 ${
@@ -903,13 +1123,15 @@ function Step1BusinessDetails({
                 type="radio"
                 name="profile"
                 checked={state.profile === seg.profile}
-                onChange={() => {
-                  update("profile", seg.profile);
-                  update("type", seg.profile === "delivery" ? "furniture_retailer" : "realtor");
-                }}
+                onChange={() => applyProfileChange(seg.profile)}
                 className="accent-[var(--gold)]"
               />
-              <span className="text-[var(--text-base)] font-medium text-[var(--tx)]">{seg.label}</span>
+              <span className="flex flex-col gap-0.5">
+                <span className="text-[var(--text-base)] font-medium text-[var(--tx)]">{seg.label}</span>
+                <span className="text-[10px] font-normal text-[var(--tx3)] leading-snug normal-case tracking-normal">
+                  {seg.description}
+                </span>
+              </span>
             </label>
           ))}
         </div>
@@ -920,7 +1142,7 @@ function Step1BusinessDetails({
           <label className={labelCls}>Vertical *</label>
           <select
             value={state.type}
-            onChange={(e) => update("type", e.target.value)}
+            onChange={(e) => applyTypeChange(e.target.value)}
             className={inputCls}
           >
             {activeSegments.flatMap((seg) =>
@@ -937,14 +1159,23 @@ function Step1BusinessDetails({
 
         <div>
           <label className={labelCls}>Business Name *</label>
-          <input
-            type="text"
-            value={state.name}
-            onChange={(e) => update("name", e.target.value)}
-            onBlur={handleDedupBlur}
-            placeholder="e.g. Roche Bobois"
-            className={inputCls}
-          />
+          <div className="relative">
+            <input
+              type="text"
+              {...hsSuggest.bindField("business")}
+              value={state.name}
+              onChange={(e) => {
+                update("name", e.target.value);
+                setDedupResults(null);
+                setAutoFilled(false);
+              }}
+              onBlur={handleDedupBlur}
+              placeholder="e.g. Roche Bobois"
+              className={inputCls}
+              autoComplete="organization"
+            />
+            {hsSuggest.renderDropdown("business")}
+          </div>
         </div>
         <div>
           <label className={labelCls}>Legal Name (if different)</label>
@@ -959,14 +1190,23 @@ function Step1BusinessDetails({
 
         <div>
           <label className={labelCls}>Primary Contact Name *</label>
-          <input
-            type="text"
-            value={state.contactName}
-            onChange={(e) => update("contactName", e.target.value)}
-            onBlur={handleDedupBlur}
-            placeholder="e.g. Marie Dubois"
-            className={inputCls}
-          />
+          <div className="relative">
+            <input
+              type="text"
+              {...hsSuggest.bindField("contact")}
+              value={state.contactName}
+              onChange={(e) => {
+                update("contactName", e.target.value);
+                setDedupResults(null);
+                setAutoFilled(false);
+              }}
+              onBlur={handleDedupBlur}
+              placeholder="e.g. Marie Dubois"
+              className={inputCls}
+              autoComplete="name"
+            />
+            {hsSuggest.renderDropdown("contact")}
+          </div>
         </div>
         <div>
           <label className={labelCls}>Contact Title</label>
@@ -981,33 +1221,47 @@ function Step1BusinessDetails({
 
         <div>
           <label className={labelCls}>Email *</label>
-          <input
-            type="email"
-            value={state.email}
-            onChange={(e) => {
-              update("email", e.target.value);
-              setDedupResults(null);
-              setAutoFilled(false);
-            }}
-            onBlur={handleDedupBlur}
-            placeholder="contact@company.com"
-            className={inputCls}
-          />
+          <div className="relative">
+            <input
+              type="email"
+              {...hsSuggest.bindField("email")}
+              value={state.email}
+              onChange={(e) => {
+                update("email", e.target.value);
+                setDedupResults(null);
+                setAutoFilled(false);
+              }}
+              onBlur={handleDedupBlur}
+              placeholder="contact@company.com"
+              className={inputCls}
+              autoComplete="email"
+            />
+            {hsSuggest.renderDropdown("email")}
+          </div>
           {searching && (
             <p className="mt-1.5 text-[11px] text-[var(--tx3)]">Checking for existing contacts…</p>
           )}
         </div>
         <div>
           <label className={labelCls}>Phone</label>
-          <input
-            ref={phoneInput.ref}
-            type="tel"
-            value={state.phone}
-            onChange={phoneInput.onChange}
-            onBlur={handleDedupBlur}
-            placeholder={PHONE_PLACEHOLDER}
-            className={inputCls}
-          />
+          <div className="relative">
+            <input
+              ref={phoneInput.ref}
+              type="tel"
+              {...hsSuggest.bindField("phone")}
+              value={state.phone}
+              onChange={(e) => {
+                phoneInput.onChange(e);
+                setDedupResults(null);
+                setAutoFilled(false);
+              }}
+              onBlur={handleDedupBlur}
+              placeholder={PHONE_PLACEHOLDER}
+              className={inputCls}
+              autoComplete="tel"
+            />
+            {hsSuggest.renderDropdown("phone")}
+          </div>
         </div>
 
         {/* ── Dedup / auto-fill banner ── */}
@@ -1120,10 +1374,17 @@ function Step1BusinessDetails({
                   </div>
                   <div className="sm:col-span-2">
                     <label className={labelCls}>Address *</label>
-                    <input
-                      type="text"
+                    <AddressAutocomplete
                       value={prop.address}
-                      onChange={(e) => patchPmProperty(idx, { address: e.target.value })}
+                      onRawChange={(t) => patchPmProperty(idx, { address: t })}
+                      onChange={(r) =>
+                        patchPmProperty(idx, {
+                          address: r.fullAddress,
+                          ...(r.postalCode && !prop.postal_code.trim()
+                            ? { postal_code: r.postalCode }
+                            : {}),
+                        })
+                      }
                       className={inputCls}
                       placeholder="123 Lakeshore Blvd, Toronto, ON"
                     />
@@ -1327,25 +1588,15 @@ function Step1BusinessDetails({
 
         <div className="col-span-2">
           <label className={labelCls}>Business Address</label>
-          <input
-            type="text"
+          <AddressAutocomplete
             value={state.address}
-            onChange={(e) => update("address", e.target.value)}
+            onRawChange={(t) => update("address", t)}
+            onChange={(r) => update("address", r.fullAddress)}
             placeholder="123 Main St, Toronto, ON"
             className={inputCls}
           />
         </div>
 
-        <div>
-          <label className={labelCls}>Website</label>
-          <input
-            type="url"
-            value={state.website}
-            onChange={(e) => update("website", e.target.value)}
-            placeholder="https://..."
-            className={inputCls}
-          />
-        </div>
         <div>
           <label className={labelCls}>How did they find Yugo?</label>
           <select
@@ -1358,6 +1609,19 @@ function Step1BusinessDetails({
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+        </div>
+        <div>
+          <label className={labelCls}>
+            HubSpot Deal ID{" "}
+            <span className="normal-case font-normal tracking-normal text-[var(--tx3)]">- optional</span>
+          </label>
+          <input
+            type="text"
+            value={state.hubspotDealId}
+            onChange={(e) => update("hubspotDealId", e.target.value)}
+            placeholder="Link deal and mark as Won on activation"
+            className={inputCls}
+          />
         </div>
 
         {state.howFound === "referral" && (
@@ -1372,16 +1636,92 @@ function Step1BusinessDetails({
             />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
 
-        <div className="col-span-2">
-          <label className={labelCls}>HubSpot Deal ID <span className="normal-case font-normal tracking-normal text-[var(--tx3)]">- optional</span></label>
-          <input
-            type="text"
-            value={state.hubspotDealId}
-            onChange={(e) => update("hubspotDealId", e.target.value)}
-            placeholder="Link deal and mark as Won on activation"
+/* ── Step 2: PM portfolio operations (property & portfolio verticals) ── */
+function Step2PmOperations({
+  state,
+  update,
+  toggleDeliveryType,
+}: {
+  state: WizardState;
+  update: <K extends keyof WizardState>(key: K, val: WizardState[K]) => void;
+  toggleDeliveryType: (id: string) => void;
+}) {
+  const verticalLabel = organizationTypeLabel(state.type);
+  const buildingCount = state.pmProperties.filter((p) => p.building_name.trim() && p.address.trim()).length;
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-[var(--gold)]/35 bg-[var(--gold)]/5 px-4 py-3">
+        <p className="text-[12px] font-semibold text-[var(--tx)]">Property portfolio — {verticalLabel}</p>
+        <p className="text-[11px] text-[var(--tx3)] mt-1.5 leading-relaxed">
+          Buildings and contract terms were captured in step 1. Here, set the move services and logistics defaults for
+          this portfolio (not B2B retail vertical pricing).
+        </p>
+        {buildingCount > 0 && (
+          <p className="text-[11px] text-[var(--tx2)] mt-2 font-medium">
+            {buildingCount} propert{buildingCount === 1 ? "y" : "ies"} on contract
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className={labelCls}>Tenant move services</label>
+        <p className="text-[11px] text-[var(--tx3)] mb-2">
+          Move and in-unit service levels for residents under this portfolio contract. Building access and dock details
+          belong on each property in step 1.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {PM_TENANT_MOVE_SERVICE_OPTIONS.map((opt) => (
+            <label
+              key={opt.id}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all duration-150 ${
+                state.deliveryTypes.includes(opt.id)
+                  ? "border-[var(--gold)]/50 bg-[var(--gold)]/5 text-[var(--tx)]"
+                  : "border-[var(--brd)]/70 text-[var(--tx2)] hover:border-[var(--brd)]"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={state.deliveryTypes.includes(opt.id)}
+                onChange={() => toggleDeliveryType(opt.id)}
+                className="accent-[var(--gold)] shrink-0"
+              />
+              <span className="text-[13px] font-medium">{opt.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelCls}>Typical move volume</label>
+          <select
+            value={state.deliveryFrequency}
+            onChange={(e) => update("deliveryFrequency", e.target.value)}
             className={inputCls}
-          />
+          >
+            <option value="">Select…</option>
+            {FREQUENCY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Preferred scheduling windows</label>
+          <select
+            value={state.preferredWindows}
+            onChange={(e) => update("preferredWindows", e.target.value)}
+            className={inputCls}
+          >
+            <option value="">Select…</option>
+            {WINDOW_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
         </div>
       </div>
     </div>
@@ -1616,18 +1956,24 @@ function Step2ServicePreferences({
         <label className={labelCls}>Pickup Location(s)</label>
         <div className="space-y-2.5">
           {state.pickupLocations.map((loc, i) => (
-            <div key={i} className="flex gap-2.5">
-              <input
-                type="text"
-                value={loc}
-                onChange={(e) => {
-                  const next = [...state.pickupLocations];
-                  next[i] = e.target.value;
-                  update("pickupLocations", next);
-                }}
-                placeholder={`Pickup address ${i + 1}`}
-                className={`${inputCls} flex-1`}
-              />
+            <div key={i} className="flex gap-2.5 items-start">
+              <div className="flex-1 min-w-0">
+                <AddressAutocomplete
+                  value={loc}
+                  onRawChange={(t) => {
+                    const next = [...state.pickupLocations];
+                    next[i] = t;
+                    update("pickupLocations", next);
+                  }}
+                  onChange={(r) => {
+                    const next = [...state.pickupLocations];
+                    next[i] = r.fullAddress;
+                    update("pickupLocations", next);
+                  }}
+                  placeholder={`Pickup address ${i + 1}`}
+                  className={inputCls}
+                />
+              </div>
               {state.pickupLocations.length > 1 && (
                 <button
                   type="button"
@@ -1658,15 +2004,24 @@ function Step3RateCardBilling({
   state,
   update,
   templates,
+  flow,
 }: {
   state: WizardState;
   update: <K extends keyof WizardState>(key: K, val: WizardState[K]) => void;
   templates: RateTemplate[];
+  flow: OnboardingFlow;
 }) {
   const autoSlug = VERTICAL_TO_TEMPLATE_SLUG[state.type] || "";
   const effectiveSlug = state.templateSlug || autoSlug;
   const effectiveLabel = TEMPLATE_SLUG_LABELS[effectiveSlug] || effectiveSlug;
   const autoLabel = TEMPLATE_SLUG_LABELS[autoSlug] || autoSlug;
+
+  const billingOptions = flow === "delivery_pm" ? PM_BILLING_OPTIONS : BILLING_OPTIONS;
+  const termsDescriptions = flow === "delivery_pm" ? PM_PAYMENT_TERMS_DESCRIPTIONS : PAYMENT_TERMS_DESCRIPTIONS;
+  const paymentBlurb =
+    flow === "delivery_pm"
+      ? "Statements cover portfolio moves and contract services. A card on file may be charged on the billing anchor date."
+      : "A card on file will be requested after the partner is activated. Statements are auto-charged on the billing anchor date, no manual payments needed.";
 
   return (
     <div className="space-y-6">
@@ -1699,7 +2054,7 @@ function Step3RateCardBilling({
             onChange={(e) => update("billingMethod", e.target.value)}
             className={inputCls}
           >
-            {BILLING_OPTIONS.map((o) => (
+            {billingOptions.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
@@ -1711,10 +2066,8 @@ function Step3RateCardBilling({
             onChange={(e) => {
               const terms = e.target.value;
               update("paymentTerms", terms);
-              // Auto-set billing method and anchor day to match
               if (terms === "due_on_receipt") update("billingMethod", "per_delivery");
               else update("billingMethod", "monthly_statement");
-              // Net 15 always runs on 1st and 16th — lock anchor to 1
               if (terms === "net_15") update("billingAnchorDay", 1);
             }}
             className={inputCls}
@@ -1723,9 +2076,9 @@ function Step3RateCardBilling({
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-          {PAYMENT_TERMS_DESCRIPTIONS[state.paymentTerms] && (
+          {termsDescriptions[state.paymentTerms] && (
             <p className="text-[11px] text-[var(--tx3)] mt-1.5">
-              {PAYMENT_TERMS_DESCRIPTIONS[state.paymentTerms]}
+              {termsDescriptions[state.paymentTerms]}
             </p>
           )}
         </div>
@@ -1755,7 +2108,9 @@ function Step3RateCardBilling({
               ))}
             </select>
             <p className="text-[11px] text-[var(--tx3)] mt-1.5">
-              Statement generated on this day each month. Payment due on statement date. Deliveries completed in the prior 30 days are included.
+              {flow === "delivery_pm"
+                ? "Statement generated on this day each month. Billable moves and services from the prior period are included."
+                : "Statement generated on this day each month. Payment due on statement date. Deliveries completed in the prior 30 days are included."}
             </p>
           </div>
         )}
@@ -1814,9 +2169,7 @@ function Step3RateCardBilling({
           <Icon name="creditCard" className="w-4 h-4 mt-0.5 shrink-0 text-[var(--gold)]" />
           <div>
             <p className="text-[12px] font-semibold text-[var(--tx)]">Payment Method</p>
-            <p className="text-[11px] text-[var(--tx3)] mt-0.5">
-              A card on file will be requested after the partner is activated. Statements are auto-charged on the billing anchor date, no manual payments needed.
-            </p>
+            <p className="text-[11px] text-[var(--tx3)] mt-0.5">{paymentBlurb}</p>
           </div>
         </div>
       </div>
@@ -1829,13 +2182,21 @@ function Step4PortalAccess({
   state,
   update,
   handleGeneratePassword,
+  flow,
 }: {
   state: WizardState;
   update: <K extends keyof WizardState>(key: K, val: WizardState[K]) => void;
   handleGeneratePassword: () => void;
+  flow: OnboardingFlow;
 }) {
+  const portalHint =
+    flow === "delivery_pm"
+      ? "Property management portal: buildings, contracts, and tenant-move workflows."
+      : "Delivery partner portal: schedule work, invoices, calendar, and live map.";
+
   return (
     <div className="space-y-6">
+      <p className="text-[12px] text-[var(--tx3)] leading-relaxed">{portalHint}</p>
       <div>
         <label className={labelCls}>Create Portal Login for Primary Contact?</label>
         <div className="grid grid-cols-2 gap-3 mt-1">
@@ -1946,11 +2307,22 @@ const BILLING_LABELS: Record<string, string> = {
   monthly_statement: "Monthly statement",
   prepaid_credits: "Pre-paid credits",
 };
+const BILLING_LABELS_PM: Record<string, string> = {
+  per_delivery: "Per move / service invoice",
+  monthly_statement: "Monthly portfolio statement",
+  prepaid_credits: "Pre-paid credits / retainer",
+};
 const TERMS_LABELS: Record<string, string> = {
   due_on_receipt: "Due on Receipt, per-delivery, due immediately",
   net_15: "Net 15, statements 1st & 16th, due on statement date",
   net_30: "Net 30, monthly statement, due on statement date",
   prepay: "Pre-pay, credits pre-loaded",
+};
+const TERMS_LABELS_PM: Record<string, string> = {
+  due_on_receipt: "Due on Receipt — per move or service",
+  net_15: "Net 15 — portfolio statements 1st & 16th",
+  net_30: "Net 30 — monthly portfolio statement",
+  prepay: "Pre-pay / credits",
 };
 const DELIVERY_LABELS: Record<string, string> = Object.fromEntries(
   DELIVERY_TYPE_OPTIONS.map((o) => [o.id, o.label])
@@ -1977,10 +2349,21 @@ function SummarySection({ title, children }: { title: string; children: React.Re
   );
 }
 
-function Step5Summary({ state }: { state: WizardState }) {
+function Step5Summary({ state, flow }: { state: WizardState; flow: OnboardingFlow }) {
+  const billingLabels = flow === "delivery_pm" ? BILLING_LABELS_PM : BILLING_LABELS;
+  const termsLabels = flow === "delivery_pm" ? TERMS_LABELS_PM : TERMS_LABELS;
+
+  const servicesTitle = flow === "delivery_pm" ? "Portfolio operations" : "Services";
+  const billingTitle = flow === "delivery_pm" ? "Contract billing" : "Billing";
+
   return (
     <div className="space-y-4">
       <SummarySection title="Business">
+        <SummaryRow
+          label="Partner type"
+          value={state.profile === "portfolio" ? "Property & portfolio" : "Delivery"}
+        />
+        <SummaryRow label="Vertical" value={organizationTypeLabel(state.type)} />
         <SummaryRow label="Name" value={state.name} />
         <SummaryRow label="Legal Name" value={state.legalName} />
         <SummaryRow label="Contact" value={`${state.contactName}${state.contactTitle ? `, ${state.contactTitle}` : ""}`} />
@@ -1992,43 +2375,72 @@ function Step5Summary({ state }: { state: WizardState }) {
         <SummaryRow label="HubSpot Deal ID" value={state.hubspotDealId} />
       </SummarySection>
 
-      <SummarySection title="Services">
-        <SummaryRow
-          label="Delivery Types"
-          value={state.deliveryTypes.map((t) => DELIVERY_LABELS[t] || t).join(", ") || undefined}
-        />
-        <SummaryRow label="Frequency" value={FREQUENCY_OPTIONS.find((o) => o.value === state.deliveryFrequency)?.label} />
-        <SummaryRow label="Typical Items" value={state.typicalItems} />
-        <SummaryRow label="Special Requirements" value={state.specialRequirements} />
-        <SummaryRow label="Pickup Locations" value={state.pickupLocations.filter(Boolean).join(", ") || undefined} />
-        <SummaryRow
-          label="B2B delivery verticals"
-          value={
-            state.b2bDeliveryVerticals.length
-              ? state.b2bDeliveryVerticals
-                  .map((c) => B2B_DELIVERY_VERTICAL_OPTIONS.find((o) => o.id === c)?.label || c)
-                  .join(", ")
-              : undefined
-          }
-        />
+      <SummarySection title={servicesTitle}>
+        {flow === "delivery_pm" ? (
+          <>
+            <SummaryRow
+              label="Tenant move services"
+              value={
+                state.deliveryTypes.map((t) => PM_TENANT_SERVICE_LABELS[t] || DELIVERY_LABELS[t] || t).join(", ") ||
+                undefined
+              }
+            />
+            <SummaryRow label="Move volume" value={FREQUENCY_OPTIONS.find((o) => o.value === state.deliveryFrequency)?.label} />
+            <SummaryRow label="Scheduling windows" value={WINDOW_OPTIONS.find((o) => o.value === state.preferredWindows)?.label} />
+          </>
+        ) : (
+          <>
+            <SummaryRow
+              label="Delivery Types"
+              value={state.deliveryTypes.map((t) => DELIVERY_LABELS[t] || t).join(", ") || undefined}
+            />
+            <SummaryRow label="Frequency" value={FREQUENCY_OPTIONS.find((o) => o.value === state.deliveryFrequency)?.label} />
+            <SummaryRow label="Typical Items" value={state.typicalItems} />
+            <SummaryRow label="Special Requirements" value={state.specialRequirements} />
+            <SummaryRow label="Pickup Locations" value={state.pickupLocations.filter(Boolean).join(", ") || undefined} />
+            <SummaryRow
+              label="B2B delivery verticals"
+              value={
+                state.b2bDeliveryVerticals.length
+                  ? state.b2bDeliveryVerticals
+                      .map((c) => B2B_DELIVERY_VERTICAL_OPTIONS.find((o) => o.id === c)?.label || c)
+                      .join(", ")
+                  : undefined
+              }
+            />
+          </>
+        )}
       </SummarySection>
 
-      <SummarySection title="Billing">
-        <SummaryRow label="Billing Method" value={BILLING_LABELS[state.billingMethod]} />
-        <SummaryRow label="Payment Terms" value={TERMS_LABELS[state.paymentTerms]} />
+      <SummarySection title={billingTitle}>
+        <SummaryRow label="Billing Method" value={billingLabels[state.billingMethod]} />
+        <SummaryRow label="Payment Terms" value={termsLabels[state.paymentTerms]} />
         <SummaryRow label="Tax ID" value={state.taxId} />
         <SummaryRow label="Insurance Cert" value={state.insuranceCertRequired ? "Required" : undefined} />
       </SummarySection>
 
-      <SummarySection title="Portal Access">
-        <SummaryRow label="Portal Login" value={state.createPortalLogin ? "Yes. An invitation will be sent." : "No"} />
-        {state.sendSetupSms && <SummaryRow label="Setup SMS" value={`Will be sent to ${state.phone}`} />}
-      </SummarySection>
+      {partnerHasSelfServePortal(state.type) && (
+        <SummarySection title="Portal Access">
+          <SummaryRow
+            label="Portal Login"
+            value={
+              state.createPortalLogin ? "Yes. An invitation will be sent." : "No"
+            }
+          />
+          {state.sendSetupSms && state.createPortalLogin && (
+            <SummaryRow label="Setup SMS" value={`Will be sent to ${state.phone}`} />
+          )}
+        </SummarySection>
+      )}
 
       <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-amber-500/8 border border-amber-500/15">
         <Icon name="alertTriangle" className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
         <p className="text-[12px] text-amber-200/80 leading-relaxed">
-          Review everything above. If portal login is enabled, an invitation email will be sent immediately upon activation.
+          {partnerHasSelfServePortal(state.type) && state.createPortalLogin
+            ? "Review everything above. An invitation email will be sent immediately upon activation."
+            : partnerHasSelfServePortal(state.type)
+              ? "Review everything above. Portal access is off; you can add it later if needed."
+              : "Review everything above. This vertical is onboarded without a self-serve partner portal."}
         </p>
       </div>
     </div>

@@ -5,7 +5,7 @@ import { CaretLeft, X, CaretRight, Lock, NavigationArrow, ArrowSquareOut, SignOu
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
-import { VERTICAL_LABELS } from "@/lib/partner-type";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 type Theme = "light" | "dark" | "system";
 
@@ -214,7 +214,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   <div className="border-t border-[var(--brd,#E8E4DF)] px-4 py-2.5 flex items-center justify-between">
                     <span className="text-[12px] text-[var(--tx3,#524D47)]">{orgName}</span>
                     <span className="text-[11px] font-semibold text-[#C9A962] uppercase tracking-wide">
-                      {VERTICAL_LABELS[orgType] || orgType.replace(/_/g, " ")}
+                      {organizationTypeLabel(orgType)}
                     </span>
                   </div>
                 </div>
@@ -355,7 +355,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   <div className="text-[10px] font-semibold text-[var(--tx3,#524D47)] uppercase tracking-wider mb-0.5">Organization</div>
                   <div className="text-[var(--text-base)] font-semibold text-[var(--tx,#1A1A1A)]">{orgName}</div>
                   <div className="text-[12px] text-[var(--tx3,#524D47)]">
-                    {VERTICAL_LABELS[orgType] || orgType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} · {userEmail}
+                    {organizationTypeLabel(orgType)} · {userEmail}
                   </div>
                 </div>
               </div>

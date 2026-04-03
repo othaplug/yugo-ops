@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import {
+  applyHubSpotSuggestRow,
+  useHubSpotContactSuggest,
+  type HubSpotSuggestField,
+  type HubSpotSuggestRow,
+} from "@/hooks/useHubSpotContactSuggest";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { formatNumberInput, formatCurrency, parseNumberInput } from "@/lib/format-currency";
 import MultiStopAddressField, { type StopEntry } from "@/components/ui/MultiStopAddressField";
@@ -216,16 +222,6 @@ interface HubSpotContact {
   deal_ids: string[];
 }
 
-type HubSpotSuggestRow = {
-  hubspot_id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  company: string;
-  title: string;
-};
-
 type HubSpotMatchKind = "email" | "phone" | "company_name" | "company";
 
 export type B2BJobsDeliveryFormProps = {
@@ -270,23 +266,31 @@ export default function B2BJobsDeliveryForm({
   const formSnapshotRef = useRef({ businessName: "", contactName: "", contactPhone: "", contactEmail: "" });
   const dedupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const hubspotClientSuggestRef = useRef<HTMLDivElement | null>(null);
-  const hsSuggestSeqRef = useRef(0);
-  const [hsSuggestOpen, setHsSuggestOpen] = useState(false);
-  const [hsSuggestLoading, setHsSuggestLoading] = useState(false);
-  const [hsSuggestItems, setHsSuggestItems] = useState<HubSpotSuggestRow[]>([]);
-  const [hsSuggestHighlight, setHsSuggestHighlight] = useState(0);
-  const [hsSuggestNoResults, setHsSuggestNoResults] = useState(false);
-  const [hsSuggestSource, setHsSuggestSource] = useState<"business" | "contact" | "email">("business");
-
+  const [hsSuggestActive, setHsSuggestActive] = useState<HubSpotSuggestField | null>(null);
   const hsSuggestQuery = useMemo(() => {
-    const b = businessName.trim();
-    const c = contactName.trim();
-    const e = contactEmail.trim();
-    if (hsSuggestSource === "contact") return c;
-    if (hsSuggestSource === "email") return e;
-    return b;
-  }, [businessName, contactName, contactEmail, hsSuggestSource]);
+    if (hsSuggestActive === "business") return businessName;
+    if (hsSuggestActive === "contact") return contactName;
+    if (hsSuggestActive === "email") return contactEmail;
+    if (hsSuggestActive === "phone") return contactPhone;
+    return "";
+  }, [hsSuggestActive, businessName, contactName, contactEmail, contactPhone]);
+
+  const applyHubSpotSuggestionPick = useCallback((row: HubSpotSuggestRow) => {
+    const a = applyHubSpotSuggestRow(row);
+    if (a.businessName) setBusinessName(a.businessName);
+    if (a.contactName) setContactName(a.contactName);
+    if (a.email) setContactEmail(a.email);
+    if (a.phoneFormatted) setContactPhone(a.phoneFormatted);
+    setHsPendingMatch(null);
+    setHsLookupState("idle");
+  }, []);
+
+  const hsSuggest = useHubSpotContactSuggest({
+    query: hsSuggestQuery,
+    activeField: hsSuggestActive,
+    setActiveField: setHsSuggestActive,
+    onPick: applyHubSpotSuggestionPick,
+  });
 
   formSnapshotRef.current = { businessName, contactName, contactPhone, contactEmail };
 
@@ -362,159 +366,6 @@ export default function B2BJobsDeliveryForm({
     setHsPendingMatch(null);
     setHsLookupState("idle");
   }, []);
-
-  const applyHubSpotSuggestion = useCallback((row: HubSpotSuggestRow) => {
-    const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ");
-    const biz =
-      row.company?.trim() ||
-      (row as { business_name?: string }).business_name?.trim() ||
-      (row as { organization?: string }).organization?.trim() ||
-      "";
-    if (biz) setBusinessName(biz);
-    if (fullName) setContactName(fullName);
-    if (row.phone) setContactPhone(formatPhone(row.phone));
-    if (row.email) setContactEmail(row.email.trim().toLowerCase());
-    setHsSuggestOpen(false);
-    setHsSuggestNoResults(false);
-    setHsSuggestItems([]);
-    setHsPendingMatch(null);
-    setHsLookupState("idle");
-  }, []);
-
-  const onHubSpotSuggestKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!hsSuggestOpen || hsSuggestLoading) {
-        if (e.key === "Escape") setHsSuggestOpen(false);
-        return;
-      }
-      const n = hsSuggestItems.length;
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setHsSuggestOpen(false);
-        return;
-      }
-      if (n === 0) return;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setHsSuggestHighlight((i) => (i + 1) % n);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setHsSuggestHighlight((i) => (i - 1 + n) % n);
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        const row = hsSuggestItems[hsSuggestHighlight];
-        if (row) applyHubSpotSuggestion(row);
-      }
-    },
-    [hsSuggestOpen, hsSuggestLoading, hsSuggestItems, hsSuggestHighlight, applyHubSpotSuggestion],
-  );
-
-  useEffect(() => {
-    const q = hsSuggestQuery;
-    if (q.length < 2) {
-      setHsSuggestItems([]);
-      setHsSuggestOpen(false);
-      setHsSuggestLoading(false);
-      setHsSuggestNoResults(false);
-      return;
-    }
-
-    const t = setTimeout(() => {
-      const seq = ++hsSuggestSeqRef.current;
-      setHsSuggestLoading(true);
-      setHsSuggestItems([]);
-      setHsSuggestNoResults(false);
-      void (async () => {
-        try {
-          const res = await fetch("/api/hubspot/suggest", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: q }),
-          });
-          const data = (await res.json()) as { suggestions?: HubSpotSuggestRow[] };
-          const items = Array.isArray(data.suggestions) ? data.suggestions : [];
-          if (seq !== hsSuggestSeqRef.current) return;
-          setHsSuggestItems(items);
-          setHsSuggestNoResults(items.length === 0);
-          setHsSuggestOpen(true);
-        } catch {
-          if (seq === hsSuggestSeqRef.current) {
-            setHsSuggestItems([]);
-            setHsSuggestNoResults(true);
-            setHsSuggestOpen(true);
-          }
-        } finally {
-          if (seq === hsSuggestSeqRef.current) setHsSuggestLoading(false);
-        }
-      })();
-    }, 320);
-
-    return () => clearTimeout(t);
-  }, [hsSuggestQuery]);
-
-  useEffect(() => {
-    setHsSuggestHighlight(0);
-  }, [hsSuggestItems]);
-
-  useEffect(() => {
-    if (!hsSuggestOpen) return;
-    const onDocDown = (e: MouseEvent) => {
-      const w = hubspotClientSuggestRef.current;
-      if (w && !w.contains(e.target as Node)) setHsSuggestOpen(false);
-    };
-    document.addEventListener("mousedown", onDocDown);
-    return () => document.removeEventListener("mousedown", onDocDown);
-  }, [hsSuggestOpen]);
-
-  const renderHubSpotSuggestDropdown = (field: "business" | "contact" | "email") => {
-    if (!hsSuggestOpen || hsSuggestSource !== field) return null;
-    return (
-      <div
-        id="hubspot-b2b-suggest-listbox"
-        role="listbox"
-        className="absolute z-30 mt-1 left-0 right-0 max-h-[240px] overflow-y-auto rounded-lg border border-[var(--brd)] bg-[var(--card)] shadow-lg"
-      >
-        {hsSuggestLoading && (
-          <div className="flex items-center gap-2 px-3 py-2.5 text-[11px] text-[var(--tx3)]">
-            <SpinnerGap size={14} className="animate-spin shrink-0" aria-hidden />
-            Searching HubSpot…
-          </div>
-        )}
-        {!hsSuggestLoading && hsSuggestItems.length === 0 && hsSuggestNoResults && (
-          <div className="px-3 py-2.5 text-[11px] text-[var(--tx3)]">No matching contacts in HubSpot</div>
-        )}
-        {!hsSuggestLoading &&
-          hsSuggestItems.map((row, idx) => {
-            const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ");
-            const primary = row.company || fullName || row.email || "Contact";
-            const secondary = [fullName, row.email, row.phone ? formatPhone(row.phone) : ""]
-              .filter(Boolean)
-              .join(" · ");
-            const active = idx === hsSuggestHighlight;
-            return (
-              <button
-                key={`${row.hubspot_id}-${idx}`}
-                type="button"
-                role="option"
-                aria-selected={active}
-                onPointerDown={(ev) => ev.preventDefault()}
-                onClick={() => applyHubSpotSuggestion(row)}
-                className={`flex w-full items-start gap-2 text-left px-3 py-2 border-b border-[var(--brd)] last:border-0 ${
-                  active ? "bg-[var(--bg)]" : "hover:bg-[var(--bg)]"
-                }`}
-              >
-                <span className="min-w-0">
-                  <span className="block text-[12px] font-medium text-[var(--tx)] truncate">{primary}</span>
-                  {secondary ? (
-                    <span className="block text-[10px] text-[var(--tx3)] truncate">{secondary}</span>
-                  ) : null}
-                </span>
-              </button>
-            );
-          })}
-      </div>
-    );
-  };
 
   const selectedVertical = useMemo(
     () => verticals.find((v) => v.code === verticalCode) ?? null,
@@ -1699,89 +1550,73 @@ export default function B2BJobsDeliveryForm({
             </div>
           </div>
         )}
-        <div ref={hubspotClientSuggestRef} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div ref={hsSuggest.containerRef} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Field label={partnerOrgId.trim() ? "Business name" : "Business name *"}>
             <div className="relative">
               <input
+                {...hsSuggest.bindField("business")}
                 value={businessName}
                 onChange={(e) => {
                   setBusinessName(e.target.value);
                   clearHubSpotMatch();
                 }}
-                onFocus={() => {
-                  setHsSuggestSource("business");
-                  if (businessName.trim().length >= 2) setHsSuggestOpen(true);
-                }}
-                onKeyDown={onHubSpotSuggestKeyDown}
                 onBlur={scheduleHubSpotDedup}
                 className={fieldInput}
                 autoComplete="organization"
-                aria-autocomplete="list"
-                aria-expanded={hsSuggestOpen && hsSuggestSource === "business"}
-                aria-controls="hubspot-b2b-suggest-listbox"
               />
-              {renderHubSpotSuggestDropdown("business")}
+              {hsSuggest.renderDropdown("business")}
             </div>
           </Field>
           <Field label="Contact name *">
             <div className="relative">
               <input
+                {...hsSuggest.bindField("contact")}
                 value={contactName}
                 onChange={(e) => {
                   setContactName(e.target.value);
                   clearHubSpotMatch();
                 }}
-                onFocus={() => {
-                  setHsSuggestSource("contact");
-                  if (contactName.trim().length >= 2) setHsSuggestOpen(true);
-                }}
-                onKeyDown={onHubSpotSuggestKeyDown}
                 onBlur={scheduleHubSpotDedup}
                 className={fieldInput}
                 autoComplete="name"
-                aria-autocomplete="list"
-                aria-expanded={hsSuggestOpen && hsSuggestSource === "contact"}
-                aria-controls="hubspot-b2b-suggest-listbox"
               />
-              {renderHubSpotSuggestDropdown("contact")}
+              {hsSuggest.renderDropdown("contact")}
             </div>
           </Field>
           <Field label="Phone *">
-            <input
-              ref={contactPhoneInput.ref}
-              type="tel"
-              value={contactPhone}
-              onChange={(e) => {
-                contactPhoneInput.onChange(e);
-                clearHubSpotMatch();
-              }}
-              onBlur={scheduleHubSpotDedup}
-              placeholder={PHONE_PLACEHOLDER}
-              className={fieldInput}
-            />
+            <div className="relative">
+              <input
+                ref={contactPhoneInput.ref}
+                type="tel"
+                {...hsSuggest.bindField("phone")}
+                value={contactPhone}
+                onChange={(e) => {
+                  contactPhoneInput.onChange(e);
+                  clearHubSpotMatch();
+                }}
+                onBlur={scheduleHubSpotDedup}
+                placeholder={PHONE_PLACEHOLDER}
+                className={fieldInput}
+                autoComplete="tel"
+              />
+              {hsSuggest.renderDropdown("phone")}
+            </div>
           </Field>
           <Field label="Email">
             <div className="relative">
               <input
                 type="email"
+                {...hsSuggest.bindField("email")}
                 value={contactEmail}
                 onChange={(e) => {
                   setContactEmail(e.target.value);
                   clearHubSpotMatch();
                 }}
-                onFocus={() => {
-                  setHsSuggestSource("email");
-                  if (contactEmail.trim().length >= 2) setHsSuggestOpen(true);
-                }}
-                onKeyDown={onHubSpotSuggestKeyDown}
                 onBlur={scheduleHubSpotDedup}
                 className={fieldInput}
                 autoComplete="email"
-                aria-autocomplete="list"
-                aria-expanded={hsSuggestOpen && hsSuggestSource === "email"}
-                aria-controls="hubspot-b2b-suggest-listbox"
               />
-              {renderHubSpotSuggestDropdown("email")}
+              {hsSuggest.renderDropdown("email")}
             </div>
           </Field>
         </div>

@@ -23,7 +23,7 @@ import { formatJobId, getMoveCode, getMoveDetailPath } from "@/lib/move-code";
 import { getStatusLabel } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import { ScheduleDeliveryButton, ScheduleMoveItem } from "../../components/ScheduleItem";
-import { isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
+import { isPropertyManagementDeliveryVertical, organizationTypeLabel } from "@/lib/partner-type";
 
 interface MoveRow {
   id: string;
@@ -137,7 +137,9 @@ export default function ClientDetailClient({
               </span>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--tx2)]">
-              <span className="uppercase font-medium text-[var(--gold)]">{isClient ? "Move" : (client.type ?? "-")}</span>
+              <span className="font-medium text-[var(--gold)]">
+                {isClient ? "Move client" : organizationTypeLabel(client.vertical || client.type)}
+              </span>
               <button type="button" onClick={() => setContactModalOpen(true)} className="text-[var(--gold)] hover:underline font-medium">
                 {client.contact_name || "-"}
               </button>
@@ -338,7 +340,9 @@ export default function ClientDetailClient({
           )}
           <div>
             <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-1">{isClient ? "Type" : "Partner type"}</div>
-            <div className="text-[13px] font-semibold text-[var(--tx)] uppercase">{isClient ? "Move" : (client.type ?? "-")}</div>
+            <div className="text-[13px] font-semibold text-[var(--tx)]">
+              {isClient ? "Move client" : organizationTypeLabel(client.vertical || client.type)}
+            </div>
             {client.address && (
               <>
                 <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mt-3 mb-1">Address</div>

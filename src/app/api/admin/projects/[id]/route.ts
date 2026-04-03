@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     { data: timeline },
     { data: deliveries },
   ] = await Promise.all([
-    db.from("projects").select("*, organizations:partner_id(name, type, email, contact_name)").eq("id", id).single(),
+    db.from("projects").select("*, organizations:partner_id(name, type, vertical, email, contact_name)").eq("id", id).single(),
     db.from("project_phases").select("*").eq("project_id", id).order("phase_order"),
     db.from("project_inventory").select("*").eq("project_id", id).order("created_at"),
     db.from("project_timeline").select("*").eq("project_id", id).order("created_at", { ascending: false }),

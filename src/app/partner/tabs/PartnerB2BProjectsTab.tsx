@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -8,6 +8,7 @@ import { getDisplayLabel } from "@/lib/displayLabels";
 import { toTitleCase } from "@/lib/format-text";
 import { getTrackingUrl } from "@/lib/tracking-url";
 import { VendorStatusCompactTable } from "@/components/VendorStatusCompactTable";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import {
   Sparkle,
   Plus,
@@ -225,29 +226,6 @@ interface PartnerB2BProjectsTabProps {
   onScheduleDelivery?: (suggestedItems?: string) => void;
 }
 
-function abbreviateSuggestionRegion(
-  placeName: string,
-  context?: { id: string; text?: string; short_code?: string }[]
-): string {
-  const ctx = context ?? [];
-  const regionName = ctx.find((c) => c.id.startsWith("region."))?.text ?? "";
-  const regionShortCode = ctx.find((c) => c.id.startsWith("region."))?.short_code ?? "";
-  if (!regionName || !regionShortCode) return placeName;
-  const abbr = regionShortCode.includes("-")
-    ? regionShortCode.split("-").slice(1).join("-")
-    : regionShortCode;
-  if (!abbr || abbr === regionName) return placeName;
-  const parts = placeName.split(",");
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const trimmed = parts[i].trim();
-    if (trimmed === regionName || trimmed.startsWith(regionName + " ")) {
-      parts[i] = parts[i].replace(regionName, abbr);
-      break;
-    }
-  }
-  return parts.join(",");
-}
-
 export default function PartnerB2BProjectsTab({
   initialProjectId,
   onScheduleDelivery,
@@ -269,11 +247,6 @@ export default function PartnerB2BProjectsTab({
   const [npEndDate, setNpEndDate] = useState("");
   const [npSaving, setNpSaving] = useState(false);
   const [npError, setNpError] = useState("");
-  const [addressSuggestions, setAddressSuggestions] = useState<{
-    place_name: string;
-    context?: { id: string; text?: string; short_code?: string }[];
-  }[]>([]);
-  const addressDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Add item form ─────────────────────────────────────────────────────────
   const [showAddItem, setShowAddItem] = useState(false);
@@ -367,18 +340,6 @@ export default function PartnerB2BProjectsTab({
   }, [initialProjectId, viewProject]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-
-  const fetchAddressSuggestions = (val: string) => {
-    if (addressDebounce.current) clearTimeout(addressDebounce.current);
-    if (!val.trim() || val.length < 3) { setAddressSuggestions([]); return; }
-    addressDebounce.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/mapbox/geocode?q=${encodeURIComponent(val)}&limit=5`);
-        const data = await res.json();
-        setAddressSuggestions(data.features ?? []);
-      } catch { /* ignore */ }
-    }, 300);
-  };
 
   const createProject = async () => {
     if (!npName.trim()) { setNpError("Project name is required"); return; }
@@ -680,21 +641,15 @@ export default function PartnerB2BProjectsTab({
             <input value={npClientName} onChange={(e) => setNpClientName(e.target.value)} placeholder="Sarah & James Wilson"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
-          <div className="relative">
+          <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
-            <input value={npAddress} onChange={(e) => { setNpAddress(e.target.value); fetchAddressSuggestions(e.target.value); }}
+            <AddressAutocomplete
+              value={npAddress}
+              onRawChange={setNpAddress}
+              onChange={(r) => setNpAddress(r.fullAddress)}
               placeholder="Start typing address…"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
-            {addressSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-10 bg-white border border-[#E8E4DF] rounded-xl shadow-lg mt-1 overflow-hidden">
-                {addressSuggestions.map((s, i) => (
-                  <button key={i} type="button" onClick={() => { setNpAddress(s.place_name); setAddressSuggestions([]); }}
-                    className="w-full text-left px-4 py-2.5 text-[12px] text-[#1A1A1A] hover:bg-[#F5F3F0] transition-colors border-b border-[#E8E4DF]/50 last:border-0">
-                    {abbreviateSuggestionRegion(s.place_name, s.context)}
-                  </button>
-                ))}
-              </div>
-            )}
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -746,21 +701,15 @@ export default function PartnerB2BProjectsTab({
             <input value={epClientName} onChange={(e) => setEpClientName(e.target.value)} placeholder="Sarah & James Wilson"
               className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
           </div>
-          <div className="relative">
+          <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
-            <input value={epAddress} onChange={(e) => { setEpAddress(e.target.value); fetchAddressSuggestions(e.target.value); }}
+            <AddressAutocomplete
+              value={epAddress}
+              onRawChange={setEpAddress}
+              onChange={(r) => setEpAddress(r.fullAddress)}
               placeholder="Start typing address…"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
-            {addressSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-10 bg-white border border-[#E8E4DF] rounded-xl shadow-lg mt-1 overflow-hidden">
-                {addressSuggestions.map((s, i) => (
-                  <button key={i} type="button" onClick={() => { setEpAddress(s.place_name); setAddressSuggestions([]); }}
-                    className="w-full text-left px-4 py-2.5 text-[12px] text-[#1A1A1A] hover:bg-[#F5F3F0] transition-colors border-b border-[#E8E4DF]/50 last:border-0">
-                    {abbreviateSuggestionRegion(s.place_name, s.context)}
-                  </button>
-                ))}
-              </div>
-            )}
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+            />
           </div>
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Description</label>
@@ -884,8 +833,13 @@ export default function PartnerB2BProjectsTab({
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Pickup Address</label>
-                <input value={aiPickupAddr} onChange={(e) => setAiPickupAddr(e.target.value)} placeholder="200 King St W, Toronto"
-                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
+                <AddressAutocomplete
+                  value={aiPickupAddr}
+                  onRawChange={setAiPickupAddr}
+                  onChange={(r) => setAiPickupAddr(r.fullAddress)}
+                  placeholder="200 King St W, Toronto"
+                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none"
+                />
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Pickup Window</label>

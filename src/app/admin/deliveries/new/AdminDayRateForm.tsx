@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DeliveryDayForm from "@/components/delivery-day/DeliveryDayForm";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 interface Org {
   id: string;
@@ -61,7 +62,9 @@ export default function AdminDayRateForm({ organizations }: { organizations: Org
                   className="w-full text-left px-3 py-2.5 text-[13px] text-[var(--tx)] hover:bg-[var(--bg)] transition-colors border-b border-[var(--brd)] last:border-0"
                 >
                   <span className="font-semibold">{o.name}</span>
-                  {o.type && <span className="text-[var(--tx3)] ml-1">· {o.type}</span>}
+                  {o.type && (
+                    <span className="text-[var(--tx3)] ml-1">· {organizationTypeLabel(o.vertical || o.type)}</span>
+                  )}
                 </button>
               ))}
             </div>

@@ -2,18 +2,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import BackButton from "../../components/BackButton";
 import KpiCard from "@/components/ui/KpiCard";
 import { formatCurrency } from "@/lib/format-currency";
+import { REFERRAL_HUB_ORG_TYPES } from "@/lib/partner-type";
 
 export const metadata = { title: "Referral Partners" };
 
 import RealtorsTable from "./RealtorsTable";
+import RealtorPartnersSection from "./RealtorPartnersSection";
 
 export default async function RealtorsPage() {
   const db = createAdminClient();
-  const [refRes, orgRes, realtorsRes, movesRes] = await Promise.all([
+  const [refRes, orgRes, realtorsRes, movesRes, referralOrgRes] = await Promise.all([
     db.from("referrals").select("*").order("created_at", { ascending: false }),
     db.from("organizations").select("id, name"),
     db.from("realtors").select("id, agent_name, email, brokerage, created_at").order("agent_name"),
     db.from("moves").select("id, client_name"),
+    db
+      .from("organizations")
+      .select("id, name, contact_name, email, type")
+      .in("type", [...REFERRAL_HUB_ORG_TYPES])
+      .order("name"),
   ]);
   const referrals = refRes.data ?? [];
   const orgs = orgRes.data ?? [];
@@ -61,6 +68,8 @@ export default async function RealtorsPage() {
         <KpiCard label="Commission" value={formatCurrency(totalCommission)} sub="all time" />
         <KpiCard label="Realtors" value={String(realtors.length)} sub="partner agents" />
       </div>
+
+      <RealtorPartnersSection partners={referralOrgRes.data ?? []} />
 
       <RealtorsTable
         referrals={all}

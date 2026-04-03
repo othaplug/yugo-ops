@@ -5,6 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
+import {
+  applyHubSpotSuggestRow,
+  useHubSpotContactSuggest,
+  type HubSpotSuggestField,
+  type HubSpotSuggestRow,
+} from "@/hooks/useHubSpotContactSuggest";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { formatNumberInput, parseNumberInput } from "@/lib/format-currency";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
@@ -104,6 +110,28 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const customerPhoneInput = usePhoneInput(customerPhone, setCustomerPhone);
+
+  const [deliveryHsActive, setDeliveryHsActive] = useState<HubSpotSuggestField | null>(null);
+  const deliveryHsQuery = useMemo(() => {
+    if (deliveryHsActive === "contact") return customerName;
+    if (deliveryHsActive === "email") return customerEmail;
+    if (deliveryHsActive === "phone") return customerPhone;
+    return "";
+  }, [deliveryHsActive, customerName, customerEmail, customerPhone]);
+
+  const deliveryHsPick = useCallback((row: HubSpotSuggestRow) => {
+    const a = applyHubSpotSuggestRow(row);
+    if (a.contactName) setCustomerName(a.contactName);
+    if (a.email) setCustomerEmail(a.email);
+    if (a.phoneFormatted) setCustomerPhone(a.phoneFormatted);
+  }, []);
+
+  const deliveryHs = useHubSpotContactSuggest({
+    query: deliveryHsQuery,
+    activeField: deliveryHsActive,
+    setActiveField: setDeliveryHsActive,
+    onPick: deliveryHsPick,
+  });
   const [pickupAddress, setPickupAddress] = useState(pickupFromUrl);
   const [deliveryAddress, setDeliveryAddress] = useState(deliveryFromUrl);
   const [extraPickupStops, setExtraPickupStops] = useState<StopEntry[]>([]);
@@ -502,24 +530,50 @@ export default function NewDeliveryForm({ organizations, crews = [] }: { organiz
         )}
 
         {/* Section: Customer details */}
-        <section className="space-y-2">
+        <section ref={deliveryHs.containerRef} className="space-y-2">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--tx)]">Customer / Recipient</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Field label="Name *">
-              <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Full name" className={fieldInput} />
+              <div className="relative">
+                <input
+                  {...deliveryHs.bindField("contact")}
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Full name"
+                  className={fieldInput}
+                  autoComplete="name"
+                />
+                {deliveryHs.renderDropdown("contact")}
+              </div>
             </Field>
             <Field label="Email">
-              <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="email@example.com" className={fieldInput} />
+              <div className="relative">
+                <input
+                  type="email"
+                  {...deliveryHs.bindField("email")}
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className={fieldInput}
+                  autoComplete="email"
+                />
+                {deliveryHs.renderDropdown("email")}
+              </div>
             </Field>
             <Field label="Phone">
-              <input
-                ref={customerPhoneInput.ref}
-                type="tel"
-                value={customerPhone}
-                onChange={customerPhoneInput.onChange}
-                placeholder={PHONE_PLACEHOLDER}
-                className={fieldInput}
-              />
+              <div className="relative">
+                <input
+                  ref={customerPhoneInput.ref}
+                  type="tel"
+                  {...deliveryHs.bindField("phone")}
+                  value={customerPhone}
+                  onChange={customerPhoneInput.onChange}
+                  placeholder={PHONE_PLACEHOLDER}
+                  className={fieldInput}
+                  autoComplete="tel"
+                />
+                {deliveryHs.renderDropdown("phone")}
+              </div>
             </Field>
           </div>
         </section>

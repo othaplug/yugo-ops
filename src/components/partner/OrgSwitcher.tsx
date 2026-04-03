@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { CaretDown, Buildings, Check } from "@phosphor-icons/react";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 interface Org {
   id: string;
@@ -78,7 +79,7 @@ export default function OrgSwitcher({ currentOrgId }: { currentOrgId: string }) 
             >
               <div className="flex-1 min-w-0">
                 <p className="truncate font-medium text-[var(--tx1)]">{org.name}</p>
-                <p className="text-xs text-[var(--tx3)] uppercase">{org.type}</p>
+                <p className="text-xs text-[var(--tx3)]">{organizationTypeLabel(org.type)}</p>
               </div>
               {org.id === selectedId && (
                 <Check size={16} weight="bold" className="text-[var(--grn)] flex-shrink-0" />

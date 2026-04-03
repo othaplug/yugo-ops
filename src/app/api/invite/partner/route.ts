@@ -3,11 +3,19 @@ import { getResend } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { invitePartnerEmail, invitePartnerEmailText } from "@/lib/email-templates";
 import { requireAdmin } from "@/lib/api-auth";
-import { VERTICAL_LABELS, isPropertyManagementDeliveryVertical } from "@/lib/partner-type";
+import {
+  VERTICAL_LABELS,
+  augmentOrganizationsTypeCheckError,
+  isAllowedOrganizationType,
+  isPropertyManagementDeliveryVertical,
+  normalizeOrganizationType,
+  partnerHasSelfServePortal,
+} from "@/lib/partner-type";
 import { provisionPmPartnerPortfolio, type PmOnboardingInput } from "@/lib/partners/provision-pm-onboarding";
 import { getEmailFrom } from "@/lib/email/send";
 import { squareClient } from "@/lib/square";
 import { upsertPartnerB2BVerticalsFromOnboarding } from "@/lib/partners/partner-b2b-verticals";
+import { upsertHubSpotPartnerContact } from "@/lib/hubspot/upsert-partner-contact";
 
 async function maybeProvisionPmPortfolio(
   admin: ReturnType<typeof createAdminClient>,
@@ -94,16 +102,22 @@ export async function POST(req: NextRequest) {
     if (!email || typeof email !== "string" || !name || typeof name !== "string") {
       return NextResponse.json({ error: "Company name and email are required" }, { status: 400 });
     }
-    const wantsPortalLogin = create_portal_login !== false;
-    if (wantsPortalLogin && (!password || typeof password !== "string" || password.length < 8)) {
-      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
-    }
 
     const emailTrimmed = email.trim().toLowerCase();
     const nameTrimmed = (name || "").trim();
     const contactNameTrimmed = (contact_name || "").trim();
     const phoneTrimmed = (phone || "").trim();
-    const typeVal = type || "furniture_retailer";
+    const typeVal = normalizeOrganizationType(type);
+    if (!isAllowedOrganizationType(typeVal)) {
+      return NextResponse.json(
+        { error: `Invalid partner vertical "${typeof type === "string" ? type.trim() : type}".` },
+        { status: 400 },
+      );
+    }
+    const wantsPortalLogin = partnerHasSelfServePortal(typeVal) && create_portal_login !== false;
+    if (wantsPortalLogin && (!password || typeof password !== "string" || password.length < 8)) {
+      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+    }
     const typeLabel = VERTICAL_LABELS[String(typeVal)] || typeVal;
 
     const admin = createAdminClient();
@@ -127,13 +141,6 @@ export async function POST(req: NextRequest) {
 
     const templateId = await resolveTemplateId(admin, template_slug || null);
 
-    // If email is already linked to a user, do not add again — return error
-    const { data: existingAuthUsers } = await admin.auth.admin.listUsers();
-    const existingUser = existingAuthUsers?.users?.find((u) => u.email?.toLowerCase() === emailTrimmed);
-    if (existingUser) {
-      return NextResponse.json({ error: "A user with this email already exists." }, { status: 400 });
-    }
-
     // Check if org with this email already exists (invited partner)
     const { data: existingOrg } = await admin
       .from("organizations")
@@ -149,6 +156,7 @@ export async function POST(req: NextRequest) {
     const orgFields: Record<string, unknown> = {
       name: nameTrimmed,
       type: typeVal,
+      vertical: typeVal,
       contact_name: contactNameTrimmed,
       email: emailTrimmed,
       phone: phoneTrimmed,
@@ -193,7 +201,9 @@ export async function POST(req: NextRequest) {
           .insert({ ...orgFields, health: "good" })
           .select("id")
           .single();
-        if (orgError) return NextResponse.json({ error: orgError.message }, { status: 400 });
+        if (orgError) {
+          return NextResponse.json({ error: augmentOrganizationsTypeCheckError(orgError.message) }, { status: 400 });
+        }
         orgId = newOrg!.id;
       }
       // Update HubSpot deal if provided
@@ -206,6 +216,7 @@ export async function POST(req: NextRequest) {
         email: emailTrimmed,
         name: nameTrimmed,
         contactName: contactNameTrimmed,
+        contactTitle: typeof contact_title === "string" ? contact_title.trim() : "",
         phone: phoneTrimmed,
         businessType: typeVal,
         existingHubspotContactId: hubspot_contact_id || null,
@@ -217,40 +228,87 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, message: "Partner saved as draft" });
     }
 
-    if (existingOrg?.user_id) {
-      return NextResponse.json({ error: "A user with this email already exists." }, { status: 400 });
-    } else if (existingOrg) {
-      const { data: newUser, error: createError } = await admin.auth.admin.createUser({
-        email: emailTrimmed,
-        password,
-        email_confirm: true,
-        user_metadata: { full_name: contactNameTrimmed || nameTrimmed, must_change_password: true },
-      });
-      if (createError) {
-        return NextResponse.json({ error: createError.message }, { status: 400 });
-      }
-      userId = newUser.user.id;
-      orgId = existingOrg.id;
-      await admin
-        .from("organizations")
-        .update({ user_id: userId, ...orgFields })
-        .eq("id", orgId);
+    const { data: listData } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const existingUser =
+      listData?.users?.find((u) => u.email?.toLowerCase() === emailTrimmed) ?? null;
 
+    const upsertPartnerLink = async (uid: string, oid: string) => {
       await admin.from("partner_users").upsert(
-        { user_id: userId, org_id: orgId },
-        { onConflict: "user_id" }
+        { user_id: uid, org_id: oid },
+        { onConflict: "user_id,org_id" },
       );
-    } else {
-      const { data: newUser, error: createError } = await admin.auth.admin.createUser({
-        email: emailTrimmed,
+    };
+
+    const setAuthPasswordAndName = async (uid: string, meta: Record<string, unknown> | null | undefined) => {
+      await admin.auth.admin.updateUserById(uid, {
         password,
-        email_confirm: true,
-        user_metadata: { full_name: contactNameTrimmed || nameTrimmed, must_change_password: true },
+        user_metadata: {
+          ...(meta && typeof meta === "object" ? meta : {}),
+          full_name: contactNameTrimmed || nameTrimmed,
+          must_change_password: true,
+        },
       });
-      if (createError) {
-        return NextResponse.json({ error: createError.message }, { status: 400 });
+    };
+
+    if (existingOrg?.user_id) {
+      if (!existingUser) {
+        return NextResponse.json(
+          {
+            error:
+              "This partner email is linked to a missing login account. Contact support or use a different email.",
+          },
+          { status: 400 },
+        );
       }
-      userId = newUser.user.id;
+      if (existingOrg.user_id !== existingUser.id) {
+        return NextResponse.json(
+          {
+            error:
+              "This email is already used for a different portal login. Use another email or update the existing partner.",
+          },
+          { status: 400 },
+        );
+      }
+      userId = existingUser.id;
+      await setAuthPasswordAndName(userId, existingUser.user_metadata as Record<string, unknown>);
+      orgId = existingOrg.id;
+      await admin.from("organizations").update({ user_id: userId, ...orgFields }).eq("id", orgId);
+      await upsertPartnerLink(userId, orgId);
+    } else if (existingOrg) {
+      if (existingUser) {
+        userId = existingUser.id;
+        await setAuthPasswordAndName(userId, existingUser.user_metadata as Record<string, unknown>);
+      } else {
+        const { data: newUser, error: createError } = await admin.auth.admin.createUser({
+          email: emailTrimmed,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: contactNameTrimmed || nameTrimmed, must_change_password: true },
+        });
+        if (createError) {
+          return NextResponse.json({ error: createError.message }, { status: 400 });
+        }
+        userId = newUser.user.id;
+      }
+      orgId = existingOrg.id;
+      await admin.from("organizations").update({ user_id: userId, ...orgFields }).eq("id", orgId);
+      await upsertPartnerLink(userId, orgId);
+    } else {
+      if (existingUser) {
+        userId = existingUser.id;
+        await setAuthPasswordAndName(userId, existingUser.user_metadata as Record<string, unknown>);
+      } else {
+        const { data: newUser, error: createError } = await admin.auth.admin.createUser({
+          email: emailTrimmed,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: contactNameTrimmed || nameTrimmed, must_change_password: true },
+        });
+        if (createError) {
+          return NextResponse.json({ error: createError.message }, { status: 400 });
+        }
+        userId = newUser.user.id;
+      }
 
       const { data: newOrg, error: orgError } = await admin
         .from("organizations")
@@ -263,11 +321,10 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (orgError) {
-        return NextResponse.json({ error: orgError.message }, { status: 400 });
+        return NextResponse.json({ error: augmentOrganizationsTypeCheckError(orgError.message) }, { status: 400 });
       }
       orgId = newOrg!.id;
-
-      await admin.from("partner_users").insert({ user_id: userId, org_id: orgId });
+      await upsertPartnerLink(userId, orgId);
     }
 
     await maybeProvisionPmPortfolio(admin, orgId, typeVal, pm_onboarding, isActivating ? "active" : "draft");
@@ -279,6 +336,7 @@ export async function POST(req: NextRequest) {
       email: emailTrimmed,
       name: nameTrimmed,
       contactName: contactNameTrimmed,
+      contactTitle: typeof contact_title === "string" ? contact_title.trim() : "",
       phone: phoneTrimmed,
       businessType: typeVal,
       existingHubspotContactId: hubspot_contact_id || null,
@@ -352,6 +410,7 @@ async function syncPartnerToExternal({
   email,
   name,
   contactName,
+  contactTitle,
   phone,
   businessType,
   existingHubspotContactId,
@@ -362,6 +421,7 @@ async function syncPartnerToExternal({
   email: string;
   name: string;
   contactName: string;
+  contactTitle: string;
   phone: string;
   businessType: string;
   existingHubspotContactId: string | null;
@@ -371,35 +431,51 @@ async function syncPartnerToExternal({
   const updates: Record<string, unknown> = {};
   const token = process.env.HUBSPOT_ACCESS_TOKEN;
 
-  // ── HubSpot ──────────────────────────────────────────────────────────────
-  if (!existingHubspotContactId && token) {
+  // ── HubSpot: upsert when no pre-linked ID; refresh partner fields when linked ──
+  if (token) {
     try {
       const nameParts = contactName.trim().split(/\s+/);
       const firstname = nameParts[0] ?? "";
       const lastname = nameParts.slice(1).join(" ") || undefined;
+      const jobtitle = contactTitle.trim();
 
-      const hsRes = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          properties: {
-            email,
-            firstname,
-            ...(lastname ? { lastname } : {}),
-            company: name,
-            phone,
-            yugo_partner_status: "active",
-            yugo_partner_type: businessType,
+      if (existingHubspotContactId) {
+        const patchRes = await fetch(
+          `https://api.hubapi.com/crm/v3/objects/contacts/${existingHubspotContactId}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              properties: {
+                email,
+                firstname,
+                ...(lastname ? { lastname } : {}),
+                company: name,
+                phone,
+                ...(jobtitle ? { jobtitle } : {}),
+                yugo_partner_status: "active",
+                yugo_partner_type: businessType,
+              },
+            }),
           },
-        }),
-      });
-
-      if (hsRes.ok) {
-        const hsContact = await hsRes.json();
-        if (hsContact.id) updates.hubspot_contact_id = hsContact.id;
+        );
+        if (!patchRes.ok) {
+          // ignore — non-critical
+        }
+      } else {
+        const hsId = await upsertHubSpotPartnerContact(token, {
+          email,
+          firstname,
+          lastname,
+          company: name,
+          phone,
+          jobtitle: jobtitle || undefined,
+          businessType,
+        });
+        if (hsId) updates.hubspot_contact_id = hsId;
       }
     } catch {
       // non-critical

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { toTitleCase } from "@/lib/format-text";
 import CreateButton from "../components/CreateButton";
 import { X, MagnifyingGlass, PencilSimple, Play, Pause, Trash } from "@phosphor-icons/react";
+import { organizationTypeLabel } from "@/lib/partner-type";
 
 /* ─── Types ─────────────────────────────────────── */
 interface RecurringSchedule {
@@ -157,7 +158,7 @@ function AdminScheduleModal({
                     <button key={o.id} type="button" onClick={() => { setOrgId(o.id); setOrgSearch(o.name); setOrgDropOpen(false); }}
                       className="w-full text-left px-3 py-2.5 text-[12px] text-[var(--tx)] hover:bg-[var(--bg)] border-b border-[var(--brd)] last:border-0">
                       <span className="font-semibold">{o.name}</span>
-                      <span className="text-[var(--tx3)] ml-1">· {o.type}</span>
+                      <span className="text-[var(--tx3)] ml-1">· {organizationTypeLabel(o.type)}</span>
                     </button>
                   ))}
                 </div>
@@ -363,7 +364,9 @@ export default function RecurringSchedulesView({ initialScheduleId }: { initialS
                   <tr key={s.id} className="border-b border-[var(--brd)]/50 hover:bg-[var(--bg)]/50 transition-colors">
                     <td className="py-3 px-3 pl-4">
                       <div className="font-semibold text-[var(--tx)]">{s.organizations?.name || "-"}</div>
-                      <div className="text-[10px] text-[var(--tx3)] uppercase">{s.organizations?.type || ""}</div>
+                      <div className="text-[10px] text-[var(--tx3)]">
+                        {s.organizations?.type ? organizationTypeLabel(s.organizations.type) : ""}
+                      </div>
                     </td>
                     <td className="py-3 px-3">
                       <div className="font-medium text-[var(--tx)]">{s.schedule_name}</div>
