@@ -187,10 +187,13 @@ export function inclusionDedupeKey(f: TierFeature): string {
 
   if (blob.includes("debris") && blob.includes("packaging")) return "__debris_packaging_removal";
 
-  if (blob.includes("floor") && blob.includes("entryway")) return "__floor_entryway";
-  if (blob.includes("floor") && (blob.includes("protection") || blob.includes("property"))) {
-    return "__floor_protection_beyond_entry";
+  // Whole-property floor line (Estate) vs entryway / general floor protection (Essential + Signature)
+  if (blob.includes("floor") && blob.includes("property")) return "__floor_property_throughout";
+  if (blob.includes("floor") && (blob.includes("entryway") || blob.includes("protection"))) {
+    return "__floor_protection_interior";
   }
+
+  if (blob.includes("valuation")) return "__valuation_moving";
 
   if (
     blob.includes("wrapping") &&
@@ -224,15 +227,14 @@ export function inclusionDedupeKey(f: TierFeature): string {
     return "__white_glove_handling";
   }
 
-  if (blob.includes("precision placement") || (blob.includes("precision") && blob.includes("every room"))) {
-    return "__precision_placement";
-  }
   if (
+    blob.includes("precision placement") ||
+    (blob.includes("precision") && blob.includes("every room")) ||
     blob.includes("room-of-choice") ||
     blob.includes("room of choice") ||
     (blob.includes("placement") && blob.includes("throughout the home"))
   ) {
-    return "__room_choice_placement";
+    return "__furniture_placement";
   }
 
   return c;
@@ -243,14 +245,17 @@ export function inclusionDedupeKeyFromLine(line: string): string {
   return inclusionDedupeKey({ card: line, title: line, desc: "", iconName: "Dot" });
 }
 
-/** Merge tier include strings: append `extra` rows whose semantic key is not already in `base`. */
+/** Merge tier include strings: same semantic key → keep the later row (higher tier wins). */
 export function mergeResidentialIncludeLinesDeduped(base: string[], extra: string[]): string[] {
-  const keys = new Set(base.map(inclusionDedupeKeyFromLine));
   const out = [...base];
+  const keyToIndex = new Map<string, number>();
+  out.forEach((line, i) => keyToIndex.set(inclusionDedupeKeyFromLine(line), i));
   for (const line of extra) {
     const k = inclusionDedupeKeyFromLine(line);
-    if (!keys.has(k)) {
-      keys.add(k);
+    if (keyToIndex.has(k)) {
+      out[keyToIndex.get(k)!] = line;
+    } else {
+      keyToIndex.set(k, out.length);
       out.push(line);
     }
   }
@@ -271,30 +276,37 @@ export function filterAdditionsAgainstPrior(prior: TierFeature[], additions: Tie
   return out;
 }
 
-/** Append tier rows skipping duplicates by semantic inclusion key (first row wins). */
-function appendDedupedByCard(base: TierFeature[], extra: TierFeature[]): TierFeature[] {
-  const keys = new Set(base.map((f) => inclusionDedupeKey(f)));
-  const out = [...base];
+/** Merge `extra` into `base`; when a semantic key already exists, replace with the later row (tier upgrade). */
+function appendDedupedPreferLater(base: TierFeature[], extra: TierFeature[]): TierFeature[] {
+  const out = base.map((f) => ({ ...f }));
+  const keyToIndex = new Map<string, number>();
+  out.forEach((f, i) => keyToIndex.set(inclusionDedupeKey(f), i));
   for (const f of extra) {
     const k = inclusionDedupeKey(f);
-    if (!keys.has(k)) {
-      keys.add(k);
-      out.push(f);
+    if (keyToIndex.has(k)) {
+      const idx = keyToIndex.get(k)!;
+      out[idx] = { ...f };
+    } else {
+      keyToIndex.set(k, out.length);
+      out.push({ ...f });
     }
   }
   return out;
 }
 
-/** Final pass for legacy full-tier arrays that repeat the same perk with identical or variant `card` text. */
+/** Legacy full-tier arrays: one row per semantic key (last occurrence wins, preserves rough order). */
 function dedupeResidentialTierFeatureRows(rows: TierFeature[]): TierFeature[] {
-  const seen = new Set<string>();
+  const lastIdx = new Map<string, number>();
+  rows.forEach((f, i) => lastIdx.set(inclusionDedupeKey(f), i));
   const out: TierFeature[] = [];
-  for (const f of rows) {
+  const emitted = new Set<string>();
+  rows.forEach((f, i) => {
     const k = inclusionDedupeKey(f);
-    if (seen.has(k)) continue;
-    seen.add(k);
+    if (lastIdx.get(k) !== i) return;
+    if (emitted.has(k)) return;
+    emitted.add(k);
     out.push(f);
-  }
+  });
   return out;
 }
 
@@ -329,10 +341,10 @@ export function expandResidentialTierFeaturesStorage(s: ResidentialTierFeaturesS
   const essential = dedupeResidentialTierFeatureRows(s.essential);
   const signatureFull = Array.isArray(s.signature)
     ? dedupeResidentialTierFeatureRows(s.signature)
-    : dedupeResidentialTierFeatureRows(appendDedupedByCard(essential, s.signature.additions));
+    : dedupeResidentialTierFeatureRows(appendDedupedPreferLater(essential, s.signature.additions));
   const estateFull = Array.isArray(s.estate)
     ? dedupeResidentialTierFeatureRows(s.estate)
-    : dedupeResidentialTierFeatureRows(appendDedupedByCard(signatureFull, s.estate.additions));
+    : dedupeResidentialTierFeatureRows(appendDedupedPreferLater(signatureFull, s.estate.additions));
   return { essential, signature: signatureFull, estate: estateFull };
 }
 
