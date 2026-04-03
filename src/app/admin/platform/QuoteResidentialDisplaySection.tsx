@@ -7,6 +7,7 @@ import {
   mergeResidentialTierMetaFromConfig,
   parseResidentialTierFeaturesStorage,
   expandResidentialTierFeaturesStorage,
+  additionsRelativeToLowerTier,
   tierFeaturesStorageEqualToDefaults,
   DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE,
   tierMetaFormFromMerged,
@@ -178,8 +179,8 @@ export default function QuoteResidentialDisplaySection({
       const full = expandResidentialTierFeaturesStorage(prev);
       return {
         essential: [...prev.essential],
-        signature: { additions: full.signature.slice(prev.essential.length) },
-        estate: { additions: full.estate.slice(full.signature.length) },
+        signature: { additions: additionsRelativeToLowerTier(full.essential, full.signature) },
+        estate: { additions: additionsRelativeToLowerTier(full.signature, full.estate) },
       };
     });
     toast("Signature & Estate now use shorter “plus” lists on the quote", "check");
@@ -269,9 +270,12 @@ export default function QuoteResidentialDisplaySection({
           <strong className="font-semibold text-[var(--tx)]">Essential</strong> is the full list.{" "}
           <strong className="font-semibold text-[var(--tx)]">Signature</strong> and{" "}
           <strong className="font-semibold text-[var(--tx)]">Estate</strong> use{" "}
-          <strong className="font-semibold text-[var(--tx)]">only extra lines</strong> shown after “Everything in Essential /
-          Signature, plus:” on tier cards (shorter cards). The expanded “Your move includes” section still shows the full merged
-          list. First two lines on each tier are still replaced on the live quote by truck and crew from the quote data.
+          <strong className="font-semibold text-[var(--tx)]">additions</strong> after “Everything in Essential / Signature,
+          plus:” on tier cards. Each line may include a <strong className="font-semibold text-[var(--tx)]">merge key</strong>{" "}
+          (e.g. <code className="text-[10px]">wrapping</code>): the same key as Essential replaces that row in “Your Move
+          Includes” instead of stacking duplicates. Use <strong className="font-semibold text-[var(--tx)]">highlight</strong> on
+          an addition to show it on the card even when it only upgrades a lower-tier key. Truck and crew (first two rows) are
+          still replaced on the live quote from quote data.
         </p>
       </div>
 
@@ -324,8 +328,10 @@ export default function QuoteResidentialDisplaySection({
 
           {activeTier !== "essential" && !isLegacyFullTier(storage, activeTier) ? (
             <p className="text-[10px] text-[var(--tx3)] mb-3 max-w-2xl">
-              Edit only lines that are <strong className="text-[var(--tx2)]">not</strong> already covered by the lower tier.
-              Wording for “Everything in … plus:” is under Tier card copy → Inclusions intro.
+              Additions may <strong className="text-[var(--tx2)]">replace</strong> a lower-tier row when{" "}
+              <code className="text-[9px]">key</code> matches (set under Title/description). New keys appear on the card;
+              replacements stay off the card unless <code className="text-[9px]">highlight</code> is checked. Inclusions intro
+              is under Tier card copy.
             </p>
           ) : null}
 
@@ -346,6 +352,35 @@ export default function QuoteResidentialDisplaySection({
                         onChange={(e) => updateRow(activeTier, index, { card: e.target.value })}
                         className={inputCls}
                       />
+                    </div>
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="flex-1 min-w-[140px]">
+                        <label className="text-[9px] font-bold uppercase text-[var(--tx3)]">Merge key</label>
+                        <input
+                          type="text"
+                          value={row.key ?? ""}
+                          onChange={(e) =>
+                            updateRow(activeTier, index, {
+                              key: e.target.value.trim() ? e.target.value.trim() : undefined,
+                            })
+                          }
+                          className={inputCls}
+                          placeholder="e.g. wrapping, valuation"
+                          aria-label={`Merge key for feature ${index + 1}`}
+                        />
+                      </div>
+                      <label className="inline-flex items-center gap-2 pb-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={row.highlight === true}
+                          onChange={(e) =>
+                            updateRow(activeTier, index, { highlight: e.target.checked ? true : undefined })
+                          }
+                          className="rounded border-[var(--brd)]"
+                          aria-label={`Highlight on tier card for feature ${index + 1}`}
+                        />
+                        <span className="text-[10px] font-semibold text-[var(--tx2)]">Show on card if upgrade</span>
+                      </label>
                     </div>
                     <details className="group">
                       <summary className="text-[10px] font-semibold text-[var(--gold)] cursor-pointer list-none flex items-center gap-1">

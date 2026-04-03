@@ -11,6 +11,13 @@ export const CREAM = "#FAF7F2";
 
 /** Single feature entry used by both tier card bullets and the 'Your Move Includes' section. */
 export interface TierFeature {
+  /**
+   * Stable merge id: a Signature or Estate row with the same key replaces the lower-tier row
+   * (resolved “Your Move Includes” shows one line per key, not additive duplicates).
+   */
+  key?: string;
+  /** When true, show this line on the Signature/Estate tier card even if it only upgrades a lower-tier key. */
+  highlight?: boolean;
   /** Short label shown as a bullet point on the tier card. */
   card: string;
   /** Title shown in the 'Your Move Includes' expanded section. */

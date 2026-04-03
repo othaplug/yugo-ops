@@ -64,13 +64,13 @@ function serviceDescription(p: NonBinAgreementBuildParams): string {
   switch (serviceType) {
     case "local_move":
       if (tier === "estate") {
-        return `${companyDisplayName} will deliver an Estate-tier local residential move for the ${pkg} package: dedicated coordination, white-glove handling for fine furnishings, art, and specialty pieces as set out in your quote, with truck, crew, equipment, and careful loading and unloading between the residences above.`;
+        return `${companyDisplayName} will deliver an Estate-tier local residential move for the ${pkg} package: a private moving experience with dedicated coordination, pre-move walkthrough, white-glove handling for fine furnishings, art, and specialty pieces, full packing materials and supplies as quoted, precision placement, and 30-day concierge support, with truck, crew, equipment, and careful loading and unloading between the residences above.`;
       }
       if (tier === "signature") {
-        return `${companyDisplayName} will deliver a Signature-tier local residential move for the ${pkg} package: elevated protection and inclusions as quoted, with truck, crew, equipment, and attentive loading and unloading between the addresses above.`;
+        return `${companyDisplayName} will deliver a Signature-tier local residential move for the ${pkg} package: full-service handling with complete furniture wrapping, room-of-choice placement, mattress and TV protection, debris removal, and enhanced valuation coverage as quoted, with truck, crew, equipment, and attentive loading and unloading between the addresses above.`;
       }
       if (tier === "essential") {
-        return `${companyDisplayName} will deliver an Essential-tier local residential move for the ${pkg} package: truck, crew, standard equipment, and professional loading and unloading between the addresses above, as described in your quote.`;
+        return `${companyDisplayName} will deliver an Essential-tier local residential move for the ${pkg} package: efficient, professional handling with protective wrapping for key furniture, basic disassembly and reassembly, standard floor protection, truck, crew, standard equipment, and loading and unloading between the addresses above, as described in your quote.`;
       }
       return `${companyDisplayName} will provide a carefully scoped local residential move for the ${pkg} package—truck, crew, equipment, and loading and unloading—as described in your quote.`;
     case "long_distance":
@@ -199,6 +199,16 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
 
   const scopeNoun = p.isLogisticsDelivery ? "delivery" : p.serviceType === "labour_only" ? "labour" : "move";
 
+  const liabilityTier = normTier(p.residentialTier);
+  const liabilityBody =
+    p.serviceType === "local_move" && liabilityTier === "estate"
+      ? `Full replacement valuation coverage is included with your Estate package. Items are covered at full replacement value: repair by a professional restorer, replacement with an equivalent item at current market value, or a full cash settlement. Per-item coverage up to $10,000; per-shipment up to $100,000. Zero deductible. Items valued over $10,000 may be individually declared for additional coverage. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance.`
+      : p.serviceType === "local_move" && liabilityTier === "signature"
+        ? `Enhanced valuation coverage is included with your Signature package, providing up to $2,500 per item and $25,000 per shipment protection. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance.`
+        : p.serviceType === "local_move" && liabilityTier === "essential"
+          ? `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`
+          : `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`;
+
   return [
     {
       title: "1. Service Description",
@@ -222,7 +232,7 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
     },
     {
       title: "6. Liability and Insurance",
-      body: `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`,
+      body: liabilityBody,
     },
     {
       title: "7. What We Do Not Pack or Transport",

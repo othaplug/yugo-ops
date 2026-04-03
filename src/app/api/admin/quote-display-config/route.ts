@@ -13,12 +13,17 @@ import { invalidateConfigCache } from "@/lib/config";
 function isValidTierFeatureRow(item: unknown): boolean {
   if (!item || typeof item !== "object" || Array.isArray(item)) return false;
   const o = item as Record<string, unknown>;
-  return (
-    typeof o.card === "string" &&
-    typeof o.title === "string" &&
-    typeof o.desc === "string" &&
-    typeof o.iconName === "string"
-  );
+  if (
+    typeof o.card !== "string" ||
+    typeof o.title !== "string" ||
+    typeof o.desc !== "string" ||
+    typeof o.iconName !== "string"
+  ) {
+    return false;
+  }
+  if (o.key !== undefined && typeof o.key !== "string") return false;
+  if (o.highlight !== undefined && typeof o.highlight !== "boolean") return false;
+  return true;
 }
 
 function validateTierFeaturesJson(raw: string): { ok: true } | { ok: false; error: string } {

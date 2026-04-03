@@ -50,7 +50,12 @@ import {
   quoteNumericSuffixForHubSpot,
 } from "@/lib/quotes/quote-id";
 import { patchHubSpotDealJobNo } from "@/lib/hubspot/sync-deal-job-no";
-import { mergeResidentialIncludeLinesDeduped } from "@/lib/quotes/residential-tier-quote-display";
+import {
+  DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE,
+  expandResidentialTierFeaturesStorage,
+  hydrateResidentialIncludeTitles,
+  mergeResidentialIncludeLinesDeduped,
+} from "@/lib/quotes/residential-tier-quote-display";
 import { normalizePhone } from "@/lib/phone";
 // ═══════════════════════════════════════════════
 // Types
@@ -841,43 +846,14 @@ async function residentialIncludes(
     return { essential, signature, estate };
   }
 
-  // Hardcoded fallback — merged lists match tier cards + “Your Move Includes” (deduped across tiers)
-  const essential = [
-    truckLabel,
-    crewLine,
-    "Protective wrapping for key furniture",
-    "Basic disassembly & reassembly",
-    "Floor & entryway protection",
-    "All standard equipment included",
-    "Standard valuation coverage",
-    "Real-time GPS tracking",
-  ];
-  const signatureAdds = [
-    "Full protective wrapping for all furniture",
-    "Floor protection",
-    "Mattress and TV protection included",
-    "Room-of-choice placement throughout the home",
-    "Wardrobe box for immediate use",
-    "Debris and packaging removal at completion",
-    "Enhanced valuation coverage",
-  ];
-  const estateAdds = [
-    "Dedicated move coordinator from booking to final placement",
-    "Pre-move walkthrough with room-by-room plan",
-    "Full furniture wrapping and protection throughout",
-    "Complex disassembly & reassembly",
-    "Floor and property protection throughout",
-    "All packing materials and supplies included",
-    "White glove handling for furniture, art, and high-value items",
-    "Precision placement in every room",
-    "Full repair or replacement valuation coverage",
-    "Pre-move inventory planning and oversight",
-    "30-day post-move concierge support",
-    "Exclusive partner offers & perks",
-  ];
-  const signature = mergeResidentialIncludeLinesDeduped(essential, signatureAdds);
-  const estate = mergeResidentialIncludeLinesDeduped(signature, estateAdds);
-  return { essential, signature, estate };
+  // Hardcoded fallback — same key-based resolved lists as the client quote page
+  const expanded = expandResidentialTierFeaturesStorage(DEFAULT_RESIDENTIAL_TIER_FEATURES_STORAGE);
+  const h = (rows: typeof expanded.essential) => hydrateResidentialIncludeTitles(rows, truckLabel, crewLine);
+  return {
+    essential: h(expanded.essential),
+    signature: h(expanded.signature),
+    estate: h(expanded.estate),
+  };
 }
 
 // ═══════════════════════════════════════════════
