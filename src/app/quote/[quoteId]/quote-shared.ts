@@ -52,9 +52,16 @@ export function quoteArrivalTimeWindowLabel(quote: {
  * Unknown / empty move_size: show (do not hide without a classified size).
  * Walkthrough-based quotes should still render inventory UI — combine with `quote.walkthrough_based` at the call site.
  */
-const MOVE_SIZES_HIDE_QUOTE_INVENTORY_SECTION = new Set(["3br", "4br", "4br_plus", "5br_plus"]);
+const MOVE_SIZES_HIDE_QUOTE_INVENTORY_SECTION = new Set([
+  "3br",
+  "4br",
+  "4br_plus",
+  "5br_plus",
+]);
 
-export function shouldShowQuoteInventorySectionByMoveSize(moveSize: string | null | undefined): boolean {
+export function shouldShowQuoteInventorySectionByMoveSize(
+  moveSize: string | null | undefined,
+): boolean {
   const raw = (moveSize ?? "").trim().toLowerCase();
   if (!raw) return true;
   return !MOVE_SIZES_HIDE_QUOTE_INVENTORY_SECTION.has(raw);
@@ -145,15 +152,17 @@ export interface Quote {
   valuation_upgrade_cost: number | null;
   declaration_total: number | null;
   recommended_tier: string | null;
-  inventory_items?: {
-    slug?: string;
-    name?: string;
-    quantity?: number;
-    room?: string;
-    weight_score?: number;
-    weight_tier_code?: string;
-    actual_weight_lbs?: number;
-  }[] | null;
+  inventory_items?:
+    | {
+        slug?: string;
+        name?: string;
+        quantity?: number;
+        room?: string;
+        weight_score?: number;
+        weight_tier_code?: string;
+        actual_weight_lbs?: number;
+      }[]
+    | null;
   client_box_count?: number | null;
   walkthrough_based?: boolean | null;
   walkthrough_date?: string | null;
@@ -224,21 +233,25 @@ export const TIER_META: ResidentialQuoteTierMetaMap = {
     accent: FOREST,
     bg: "#FFFFFF",
     border: "#E2DDD5",
-    footer: "Best for: simple, well-prepared moves with minimal handling needs.",
+    footer:
+      "Best for: simple, well-prepared moves with minimal handling needs.",
   },
   signature: {
     label: TIER_LABELS.signature,
-    tagline: "A fully managed move, where everything is handled before you have to think about it.",
+    tagline:
+      "A fully managed move, where everything is handled before you have to think about it.",
     badge: "RECOMMENDED",
     accent: WINE,
     bg: "#FFFDF8",
     border: `${WINE}45`,
-    footer: "Best for: complete home moves where time, flow, and peace of mind matter.",
+    footer:
+      "Best for: complete home moves where time, flow, and peace of mind matter.",
     inclusionsIntro: "Everything in Essential, plus:",
   },
   estate: {
     label: TIER_LABELS.estate,
-    tagline: "A private standard, executed with intention from start to finish.",
+    tagline:
+      "A private standard, executed with intention from start to finish.",
     accent: WINE,
     bg: "#FDF8FA",
     border: WINE,
@@ -257,11 +270,13 @@ export const MOVE_SIZE_LABELS: Record<string, string> = {
   partial: "Partial Move",
 };
 
-
 /** @deprecated Prefer getDisplayLabel(_, "service_type") for new code */
 export const SERVICE_LABEL: Record<string, string> = SERVICE_TYPE_LABELS;
 
-export const HERO_CONFIG: Record<string, { headline: string; subtitle: string }> = {
+export const HERO_CONFIG: Record<
+  string,
+  { headline: string; subtitle: string }
+> = {
   local_move: {
     headline: "Your Move Quote is Ready",
     subtitle:
@@ -302,7 +317,8 @@ export const HERO_CONFIG: Record<string, { headline: string; subtitle: string }>
   },
   event: {
     headline: "Your Event Logistics Quote",
-    subtitle: "Round-trip event logistics, delivery, setup, and return handled by the same crew.",
+    subtitle:
+      "Round-trip event logistics, delivery, setup, and return handled by the same crew.",
   },
   labour_only: {
     headline: "Your Service Quote",
@@ -310,7 +326,8 @@ export const HERO_CONFIG: Record<string, { headline: string; subtitle: string }>
   },
   bin_rental: {
     headline: "Your Bin Rental Quote",
-    subtitle: "Eco-friendly plastic bins: delivered before your move, picked up after.",
+    subtitle:
+      "Eco-friendly plastic bins: delivered before your move, picked up after.",
   },
 };
 
@@ -386,17 +403,21 @@ export function addDays(d: Date, n: number) {
 export function calculateTieredDeposit(tier: string, total: number): number {
   switch (tier) {
     case "essential":
-      return Math.max(150, Math.round(total * 0.10));
+      return Math.max(150, Math.round(total * 0.1));
     case "signature":
       return Math.max(250, Math.round(total * 0.15));
     case "estate":
       return Math.max(500, Math.round(total * 0.25));
     default:
-      return Math.max(150, Math.round(total * 0.10));
+      return Math.max(150, Math.round(total * 0.1));
   }
 }
 
-export function calculateDeposit(serviceType: string, total: number, tier?: string): number {
+export function calculateDeposit(
+  serviceType: string,
+  total: number,
+  tier?: string,
+): number {
   if (serviceType === "local_move" && tier) {
     return calculateTieredDeposit(tier, total);
   }
@@ -404,7 +425,7 @@ export function calculateDeposit(serviceType: string, total: number, tier?: stri
     case "local_move":
       if (total < 500) return total;
       if (total < 3000) return 150;
-      return Math.max(150, Math.round(total * 0.10));
+      return Math.max(150, Math.round(total * 0.1));
     case "long_distance":
       return Math.round(total * 0.25);
     case "office_move":
@@ -426,7 +447,7 @@ export function calculateDeposit(serviceType: string, total: number, tier?: stri
     case "event":
       return Math.max(300, Math.round(total * 0.25));
     case "labour_only":
-      return Math.max(200, Math.round(total * 0.50));
+      return Math.max(200, Math.round(total * 0.5));
     case "bin_rental":
       return total;
     default:

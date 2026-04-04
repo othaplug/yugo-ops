@@ -30,7 +30,10 @@ const CTA_TYPE =
  * @param fontFamily — e.g. PREMIUM_FONT or Helvetica stack
  * @param display — block CTAs stretch in narrow clients when centered in a td
  */
-export function emailPrimaryCtaStyle(fontFamily: string, display: "inline-block" | "block"): string {
+export function emailPrimaryCtaStyle(
+  fontFamily: string,
+  display: "inline-block" | "block",
+): string {
   const box =
     display === "block"
       ? "display:block;text-align:center;width:100%;box-sizing:border-box;"

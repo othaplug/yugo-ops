@@ -14,8 +14,18 @@ const MOVE_SIZES = [
 ];
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const GOLD = "#B8962E";
@@ -36,7 +46,9 @@ interface Props {
   fullQuoteUrl?: string;
 }
 
-export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }: Props) {
+export default function EmbedQuoteCalculator({
+  fullQuoteUrl = "/quote-widget",
+}: Props) {
   const [moveSize, setMoveSize] = useState("2br");
   const [fromPostal, setFromPostal] = useState("");
   const [toPostal, setToPostal] = useState("");
@@ -53,10 +65,18 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
       const res = await fetch("/api/widget/estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moveSize, fromPostal: fromPostal.trim(), toPostal: toPostal.trim(), month }),
+        body: JSON.stringify({
+          moveSize,
+          fromPostal: fromPostal.trim(),
+          toPostal: toPostal.trim(),
+          month,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to estimate"); return; }
+      if (!res.ok) {
+        setError(data.error || "Failed to estimate");
+        return;
+      }
       setEstimate({ low: data.low, high: data.high });
       setIsPeakSeason([6, 7, 8].includes(Number(month)));
     } catch {
@@ -71,17 +91,36 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
   return (
     <div
       className="rounded-2xl overflow-hidden shadow-lg"
-      style={{ background: CREAM, fontFamily: "Inter, system-ui, sans-serif", maxWidth: 420 }}
+      style={{
+        background: CREAM,
+        fontFamily: "Inter, system-ui, sans-serif",
+        maxWidth: 420,
+      }}
     >
       {/* Header */}
       <div className="px-5 py-4" style={{ background: WINE }}>
-        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: GOLD, margin: "0 0 2px" }}>
+        <p
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+            color: GOLD,
+            margin: "0 0 2px",
+          }}
+        >
           Yugo Moving
         </p>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: 0 }}>
           Get Your Moving Quote
         </h2>
-        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", margin: "4px 0 0" }}>
+        <p
+          style={{
+            fontSize: 11,
+            color: "rgba(255,255,255,0.6)",
+            margin: "4px 0 0",
+          }}
+        >
           Flat rate. No surprises.
         </p>
       </div>
@@ -90,15 +129,35 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
       <div className="px-5 py-5 space-y-4">
         {/* Move size */}
         <div>
-          <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: FOREST, opacity: 0.6, marginBottom: 8 }}>
+          <label
+            style={{
+              display: "block",
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "1px",
+              textTransform: "uppercase",
+              color: FOREST,
+              opacity: 0.6,
+              marginBottom: 8,
+            }}
+          >
             Home Size
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 6,
+            }}
+          >
             {MOVE_SIZES.map((s) => (
               <button
                 key={s.key}
                 type="button"
-                onClick={() => { setMoveSize(s.key); setEstimate(null); }}
+                onClick={() => {
+                  setMoveSize(s.key);
+                  setEstimate(null);
+                }}
                 style={{
                   padding: "8px 6px",
                   borderRadius: 10,
@@ -118,15 +177,31 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
         </div>
 
         {/* Postal codes */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+        >
           <div>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: FOREST, opacity: 0.6, marginBottom: 6 }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                color: FOREST,
+                opacity: 0.6,
+                marginBottom: 6,
+              }}
+            >
               From Postal
             </label>
             <input
               type="text"
               value={fromPostal}
-              onChange={(e) => { setFromPostal(e.target.value.toUpperCase()); setEstimate(null); }}
+              onChange={(e) => {
+                setFromPostal(e.target.value.toUpperCase());
+                setEstimate(null);
+              }}
               placeholder="M5R 2A3"
               maxLength={7}
               style={{
@@ -143,13 +218,27 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
             />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: FOREST, opacity: 0.6, marginBottom: 6 }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                color: FOREST,
+                opacity: 0.6,
+                marginBottom: 6,
+              }}
+            >
               To Postal
             </label>
             <input
               type="text"
               value={toPostal}
-              onChange={(e) => { setToPostal(e.target.value.toUpperCase()); setEstimate(null); }}
+              onChange={(e) => {
+                setToPostal(e.target.value.toUpperCase());
+                setEstimate(null);
+              }}
               placeholder="M4W 1L4"
               maxLength={7}
               style={{
@@ -169,12 +258,26 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
 
         {/* Month */}
         <div>
-          <label style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: FOREST, opacity: 0.6, marginBottom: 6 }}>
+          <label
+            style={{
+              display: "block",
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "1px",
+              textTransform: "uppercase",
+              color: FOREST,
+              opacity: 0.6,
+              marginBottom: 6,
+            }}
+          >
             When
           </label>
           <select
             value={month}
-            onChange={(e) => { setMonth(e.target.value); setEstimate(null); }}
+            onChange={(e) => {
+              setMonth(e.target.value);
+              setEstimate(null);
+            }}
             style={{
               width: "100%",
               padding: "10px 12px",
@@ -187,7 +290,9 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
             }}
           >
             {MONTHS.map((m, i) => (
-              <option key={i + 1} value={i + 1}>{m} {new Date().getFullYear()}</option>
+              <option key={i + 1} value={i + 1}>
+                {m} {new Date().getFullYear()}
+              </option>
             ))}
           </select>
         </div>
@@ -202,15 +307,36 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
               border: `1.5px solid ${GOLD}30`,
             }}
           >
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: GOLD, margin: "0 0 4px" }}>
+            <p
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "1.5px",
+                textTransform: "uppercase",
+                color: GOLD,
+                margin: "0 0 4px",
+              }}
+            >
               Estimated Price
             </p>
-            <p style={{ fontSize: 26, fontWeight: 700, color: WINE, margin: 0 }}>
-              ${estimate.low.toLocaleString()} – ${estimate.high.toLocaleString()}
+            <p
+              style={{ fontSize: 26, fontWeight: 700, color: WINE, margin: 0 }}
+            >
+              ${estimate.low.toLocaleString()} – $
+              {estimate.high.toLocaleString()}
             </p>
             {isPeakSeason && (
-              <p style={{ fontSize: 11, color: FOREST, opacity: 0.6, margin: "6px 0 0", lineHeight: 1.4 }}>
-                You&apos;re booking in peak season. Moving a few weeks earlier could save $100–$150.
+              <p
+                style={{
+                  fontSize: 11,
+                  color: FOREST,
+                  opacity: 0.6,
+                  margin: "6px 0 0",
+                  lineHeight: 1.4,
+                }}
+              >
+                You&apos;re booking in peak season. Moving a few weeks earlier
+                could save $100–$150.
               </p>
             )}
           </div>
@@ -221,13 +347,18 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
           <SeasonalPricingPreview
             basePrice={Math.round((estimate.low + estimate.high) / 2)}
             selectedMonth={Number(month)}
-            onSelectMonth={(m) => { setMonth(String(m)); setEstimate(null); }}
+            onSelectMonth={(m) => {
+              setMonth(String(m));
+              setEstimate(null);
+            }}
             compact
           />
         )}
 
         {error && (
-          <p style={{ fontSize: 12, color: "#C0392B", margin: "0 0 4px" }}>{error}</p>
+          <p style={{ fontSize: 12, color: "#C0392B", margin: "0 0 4px" }}>
+            {error}
+          </p>
         )}
 
         {/* Buttons */}
@@ -251,7 +382,11 @@ export default function EmbedQuoteCalculator({ fullQuoteUrl = "/quote-widget" }:
               transition: "all 0.15s",
             }}
           >
-            {loading ? "Calculating…" : estimate ? "Recalculate" : "Get Instant Estimate"}
+            {loading
+              ? "Calculating…"
+              : estimate
+                ? "Recalculate"
+                : "Get Instant Estimate"}
           </button>
 
           {estimate && (

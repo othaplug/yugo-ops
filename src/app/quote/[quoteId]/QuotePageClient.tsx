@@ -370,10 +370,13 @@ export default function QuotePageClient({
   const shellBorderTopClass = wineQuoteChrome
     ? "border-[#66143D]/30"
     : "border-[#2C3E2D]/15";
-  /** Trust bar: stack on narrow viewports with light dividers */
-  const trustBarItemSepClass = wineQuoteChrome
-    ? "pb-5 border-b border-[#66143D]/25 sm:border-0 sm:pb-0"
-    : "pb-5 border-b border-[#2C3E2D]/12 sm:border-0 sm:pb-0";
+  /** Trust bar: 2+1 grid below sm; dividers only in that layout */
+  const trustBarTopLeftClass = wineQuoteChrome
+    ? "min-w-0 border-b border-r border-[#66143D]/25 pb-4 pr-2 sm:border-0 sm:pb-0 sm:pr-0"
+    : "min-w-0 border-b border-r border-[#2C3E2D]/12 pb-4 pr-2 sm:border-0 sm:pb-0 sm:pr-0";
+  const trustBarTopRightClass = wineQuoteChrome
+    ? "min-w-0 border-b border-[#66143D]/25 pb-4 pl-2 sm:border-0 sm:pb-0 sm:pl-0"
+    : "min-w-0 border-b border-[#2C3E2D]/12 pb-4 pl-2 sm:border-0 sm:pb-0 sm:pl-0";
   const residentialSolidCtaClass =
     "w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90";
 
@@ -728,7 +731,11 @@ export default function QuotePageClient({
         selectedTier === "estate"
           ? estateAddonDisplayName(addon.slug, addon.name)
           : addon.name;
-      list.push({ name: displayName, price: cost, quantity: sel.quantity ?? 1 });
+      list.push({
+        name: displayName,
+        price: cost,
+        quantity: sel.quantity ?? 1,
+      });
     }
     return list;
   }, [selectedAddons, allAddons, basePrice, selectedTier]);
@@ -1325,7 +1332,9 @@ export default function QuotePageClient({
               >
                 <p
                   className="text-[12px] font-bold tracking-wider uppercase sm:text-[13px]"
-                  style={{ color: isEstateFlow ? ESTATE_ON_WINE.primary : FOREST }}
+                  style={{
+                    color: isEstateFlow ? ESTATE_ON_WINE.primary : FOREST,
+                  }}
                 >
                   Guaranteed Price
                 </p>
@@ -1825,8 +1834,8 @@ export default function QuotePageClient({
         {/* ═══ SOCIAL PROOF + TRUST BAR ═══ */}
         <section className={`mb-10 pt-6 border-t ${shellBorderTopClass}`}>
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 sm:gap-4 text-center max-w-sm mx-auto sm:max-w-none">
-              <div className={trustBarItemSepClass}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 sm:gap-4 text-center max-w-md mx-auto sm:max-w-none">
+              <div className={trustBarTopLeftClass}>
                 <p
                   className="text-sm sm:text-[13px] font-bold tracking-tight"
                   style={{ color: shellInk.primary }}
@@ -1834,13 +1843,13 @@ export default function QuotePageClient({
                   360+ Reviews
                 </p>
                 <p
-                  className="text-[12px] leading-snug mt-1 max-w-[14rem] mx-auto sm:max-w-none"
+                  className="text-[11px] sm:text-[12px] leading-snug mt-1 mx-auto sm:max-w-none px-0.5"
                   style={{ color: shellInk.body }}
                 >
                   5-star rated on Google
                 </p>
               </div>
-              <div className={trustBarItemSepClass}>
+              <div className={trustBarTopRightClass}>
                 <p
                   className="text-sm sm:text-[13px] font-bold tracking-tight"
                   style={{ color: shellInk.primary }}
@@ -1848,13 +1857,13 @@ export default function QuotePageClient({
                   $2M Insurance
                 </p>
                 <p
-                  className="text-[12px] leading-snug mt-1 max-w-[14rem] mx-auto sm:max-w-none"
+                  className="text-[11px] sm:text-[12px] leading-snug mt-1 mx-auto sm:max-w-none px-0.5"
                   style={{ color: shellInk.body }}
                 >
                   Full cargo coverage
                 </p>
               </div>
-              <div className="pt-1 sm:pt-0">
+              <div className="col-span-2 min-w-0 pt-4 sm:col-span-1 sm:pt-0 px-2 sm:px-0">
                 <p
                   className="text-sm sm:text-[13px] font-bold tracking-tight"
                   style={{ color: shellInk.primary }}
@@ -1862,7 +1871,7 @@ export default function QuotePageClient({
                   Flat-Rate Guarantee
                 </p>
                 <p
-                  className="text-[12px] leading-snug mt-1 max-w-[16rem] mx-auto sm:max-w-none"
+                  className="text-[11px] sm:text-[12px] leading-snug mt-1 max-w-[18rem] mx-auto sm:max-w-none"
                   style={{ color: shellInk.body }}
                 >
                   No hidden fees on quoted scope.
@@ -4373,8 +4382,12 @@ function AddOnsSection({
   const keyAddons =
     popularOrSelected.length > 0
       ? [
-          ...popularOrSelected.filter((a) => PACKING_KIT_ADDON_SLUGS.has(a.slug)),
-          ...popularOrSelected.filter((a) => !PACKING_KIT_ADDON_SLUGS.has(a.slug)),
+          ...popularOrSelected.filter((a) =>
+            PACKING_KIT_ADDON_SLUGS.has(a.slug),
+          ),
+          ...popularOrSelected.filter(
+            (a) => !PACKING_KIT_ADDON_SLUGS.has(a.slug),
+          ),
         ].slice(0, KEY_COUNT)
       : addons.slice(0, KEY_COUNT);
   const hasMore = addons.length > keyAddons.length;
@@ -4486,240 +4499,250 @@ function AddOnsSection({
             >
               <div className="flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-start min-[420px]:gap-3">
                 <div className="flex items-start gap-3 min-w-0 flex-1">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={isOn}
-                  onClick={() => toggleAddon(addon)}
-                  data-no-min-height
-                  className="relative w-11 h-6 rounded-full transition-colors shrink-0 mt-0.5 flex-shrink-0"
-                  style={{
-                    backgroundColor: isOn
-                      ? estateChrome
-                        ? "#66143D"
-                        : FOREST
-                      : "#D5D0C8",
-                  }}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                      isOn ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isOn}
+                    onClick={() => toggleAddon(addon)}
+                    data-no-min-height
+                    className="relative w-11 h-6 rounded-full transition-colors shrink-0 mt-0.5 flex-shrink-0"
+                    style={{
+                      backgroundColor: isOn
+                        ? estateChrome
+                          ? "#66143D"
+                          : FOREST
+                        : "#D5D0C8",
+                    }}
+                  >
                     <span
-                      className="text-[13px] font-semibold"
-                      style={{
-                        color: isOn
-                          ? estateChrome
-                            ? ESTATE_ON_WINE.primary
-                            : WINE
-                          : estateChrome
-                            ? ESTATE_ON_WINE.primary
-                            : FOREST,
-                      }}
-                    >
-                      {estateChrome
-                        ? estateAddonDisplayName(addon.slug, addon.name)
-                        : addon.name}
-                    </span>
-                    {addon.is_popular && (
-                      <span
-                        className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
-                        style={
-                          estateChrome
-                            ? {
-                                color: ESTATE_ON_WINE.primary,
-                                backgroundColor: "rgba(249, 237, 228, 0.12)",
-                                borderColor: ESTATE_ON_WINE.borderSubtle,
-                              }
-                            : {
-                                color: FOREST,
-                                backgroundColor: "rgba(44, 62, 45, 0.08)",
-                                borderColor: "rgba(44, 62, 45, 0.18)",
-                              }
-                        }
-                      >
-                        Popular
-                      </span>
-                    )}
-                    {PACKING_KIT_ADDON_SLUGS.has(addon.slug) && (
-                      <span
-                        className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
-                        style={
-                          estateChrome
-                            ? {
-                                color: "#C8F0D8",
-                                backgroundColor: "rgba(74, 222, 128, 0.14)",
-                                borderColor: "rgba(134, 239, 172, 0.35)",
-                              }
-                            : {
-                                color: "#1F5C38",
-                                backgroundColor: "rgba(44, 122, 75, 0.1)",
-                                borderColor: "rgba(44, 122, 75, 0.28)",
-                              }
-                        }
-                      >
-                        Free delivery
-                      </span>
-                    )}
-                  </div>
-                  {addon.description && (
-                    <p
-                      className="text-[11px] mt-0.5 leading-snug"
-                      style={{
-                        color: estateChrome ? ESTATE_ON_WINE.body : FOREST_BODY,
-                      }}
-                    >
-                      {addon.description}
-                    </p>
-                  )}
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                        isOn ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
 
-                  {/* Packing kit contents expand — tier dropdown drives copy when kit is on */}
-                  {PACKING_KIT_ADDON_SLUGS.has(addon.slug) &&
-                    (moveSize ||
-                      (isOn &&
-                        addon.price_type === "tiered" &&
-                        !!addon.tiers?.length)) && (
-                    <div className="mt-1.5">
-                      <button
-                        type="button"
-                        data-no-min-height
-                        onClick={() => toggleContents(addon.id)}
-                        className={`${QUOTE_EYEBROW_CLASS} transition-opacity hover:opacity-70 inline-flex items-center gap-1.5`}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className="text-[13px] font-semibold"
                         style={{
-                          color: estateChrome ? ESTATE_ON_WINE.kicker : FOREST,
+                          color: isOn
+                            ? estateChrome
+                              ? ESTATE_ON_WINE.primary
+                              : WINE
+                            : estateChrome
+                              ? ESTATE_ON_WINE.primary
+                              : FOREST,
                         }}
                       >
-                        {expandedContents.has(addon.id) ? (
-                          <>
-                            Hide contents{" "}
-                            <ChevronUp
-                              className="w-3 h-3 shrink-0"
-                              aria-hidden
-                            />
-                          </>
-                        ) : (
-                          <>
-                            What&apos;s included{" "}
-                            <ChevronDown
-                              className="w-3 h-3 shrink-0"
-                              aria-hidden
-                            />
-                          </>
-                        )}
-                      </button>
-                      {expandedContents.has(addon.id) && (
-                        <p
-                          className="mt-2 text-[11px] leading-relaxed px-3 py-2.5 rounded-none border break-words"
+                        {estateChrome
+                          ? estateAddonDisplayName(addon.slug, addon.name)
+                          : addon.name}
+                      </span>
+                      {addon.is_popular && (
+                        <span
+                          className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
                           style={
                             estateChrome
                               ? {
-                                  color: ESTATE_ON_WINE.body,
-                                  backgroundColor: "rgba(43, 4, 22, 0.45)",
-                                  borderColor: "rgba(102, 20, 61, 0.45)",
+                                  color: ESTATE_ON_WINE.primary,
+                                  backgroundColor: "rgba(249, 237, 228, 0.12)",
+                                  borderColor: ESTATE_ON_WINE.borderSubtle,
                                 }
                               : {
-                                  color: FOREST_BODY,
-                                  backgroundColor: "#FAFAF8",
-                                  borderColor: `${FOREST}15`,
+                                  color: FOREST,
+                                  backgroundColor: "rgba(44, 62, 45, 0.08)",
+                                  borderColor: "rgba(44, 62, 45, 0.18)",
                                 }
                           }
                         >
-                          {PACKING_KIT_CONTENTS[packingKitContentsIdx] ??
-                            PACKING_KIT_CONTENTS[0]}
-                        </p>
+                          Popular
+                        </span>
+                      )}
+                      {PACKING_KIT_ADDON_SLUGS.has(addon.slug) && (
+                        <span
+                          className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
+                          style={
+                            estateChrome
+                              ? {
+                                  color: "#C8F0D8",
+                                  backgroundColor: "rgba(74, 222, 128, 0.14)",
+                                  borderColor: "rgba(134, 239, 172, 0.35)",
+                                }
+                              : {
+                                  color: "#1F5C38",
+                                  backgroundColor: "rgba(44, 122, 75, 0.1)",
+                                  borderColor: "rgba(44, 122, 75, 0.28)",
+                                }
+                          }
+                        >
+                          Free delivery
+                        </span>
                       )}
                     </div>
-                  )}
-
-                  {isOn && addon.price_type === "per_unit" && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateQty(addon.id, (sel?.quantity ?? 1) - 1)
-                        }
-                        className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
-                        style={{
-                          borderColor: estateChrome
-                            ? "rgba(249,237,228,0.35)"
-                            : "#D5D0C8",
-                          color: estateChrome ? ESTATE_ON_WINE.primary : FOREST,
-                        }}
-                      >
-                        &minus;
-                      </button>
-                      <span
-                        className="text-[13px] font-semibold w-6 text-center"
-                        style={{
-                          color: estateChrome ? ESTATE_ON_WINE.primary : FOREST,
-                        }}
-                      >
-                        {sel?.quantity ?? 1}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateQty(addon.id, (sel?.quantity ?? 1) + 1)
-                        }
-                        className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
-                        style={{
-                          borderColor: estateChrome
-                            ? "rgba(249,237,228,0.35)"
-                            : "#D5D0C8",
-                          color: estateChrome ? ESTATE_ON_WINE.primary : FOREST,
-                        }}
-                      >
-                        +
-                      </button>
-                      <span
-                        className="text-[11px] ml-1"
+                    {addon.description && (
+                      <p
+                        className="text-[11px] mt-0.5 leading-snug"
                         style={{
                           color: estateChrome
-                            ? ESTATE_ON_WINE.secondary
+                            ? ESTATE_ON_WINE.body
                             : FOREST_BODY,
                         }}
                       >
-                        {addon.unit_label ?? "units"}
-                      </span>
-                    </div>
-                  )}
+                        {addon.description}
+                      </p>
+                    )}
 
-                  {isOn && addon.price_type === "tiered" && addon.tiers && (
-                    <div className="mt-2 w-full min-w-0 max-w-full">
-                      <select
-                        value={sel?.tier_index ?? 0}
-                        onChange={(e) =>
-                          updateTierIdx(addon.id, parseInt(e.target.value))
-                        }
-                        className="text-[12px] rounded-none border px-3 py-2.5 w-full min-w-0 min-[420px]:w-auto min-[420px]:min-w-[12rem] min-[420px]:max-w-md"
-                        style={
-                          estateChrome
-                            ? {
-                                borderColor: "rgba(249,237,228,0.35)",
-                                color: ESTATE_ON_WINE.primary,
-                                backgroundColor: "rgba(43, 4, 22, 0.5)",
+                    {/* Packing kit contents expand — tier dropdown drives copy when kit is on */}
+                    {PACKING_KIT_ADDON_SLUGS.has(addon.slug) &&
+                      (moveSize ||
+                        (isOn &&
+                          addon.price_type === "tiered" &&
+                          !!addon.tiers?.length)) && (
+                        <div className="mt-1.5">
+                          <button
+                            type="button"
+                            data-no-min-height
+                            onClick={() => toggleContents(addon.id)}
+                            className={`${QUOTE_EYEBROW_CLASS} transition-opacity hover:opacity-70 inline-flex items-center gap-1.5`}
+                            style={{
+                              color: estateChrome
+                                ? ESTATE_ON_WINE.kicker
+                                : FOREST,
+                            }}
+                          >
+                            {expandedContents.has(addon.id) ? (
+                              <>
+                                Hide contents{" "}
+                                <ChevronUp
+                                  className="w-3 h-3 shrink-0"
+                                  aria-hidden
+                                />
+                              </>
+                            ) : (
+                              <>
+                                What&apos;s included{" "}
+                                <ChevronDown
+                                  className="w-3 h-3 shrink-0"
+                                  aria-hidden
+                                />
+                              </>
+                            )}
+                          </button>
+                          {expandedContents.has(addon.id) && (
+                            <p
+                              className="mt-2 text-[11px] leading-relaxed px-3 py-2.5 rounded-none border break-words"
+                              style={
+                                estateChrome
+                                  ? {
+                                      color: ESTATE_ON_WINE.body,
+                                      backgroundColor: "rgba(43, 4, 22, 0.45)",
+                                      borderColor: "rgba(102, 20, 61, 0.45)",
+                                    }
+                                  : {
+                                      color: FOREST_BODY,
+                                      backgroundColor: "#FAFAF8",
+                                      borderColor: `${FOREST}15`,
+                                    }
                               }
-                            : {
-                                borderColor: "#D5D0C8",
-                                color: FOREST,
-                                backgroundColor: "#FFFFFF",
-                              }
-                        }
-                      >
-                        {addon.tiers.map((t, i) => (
-                          <option key={i} value={i}>
-                            {t.label} - {fmtPrice(t.price)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
+                            >
+                              {PACKING_KIT_CONTENTS[packingKitContentsIdx] ??
+                                PACKING_KIT_CONTENTS[0]}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                    {isOn && addon.price_type === "per_unit" && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateQty(addon.id, (sel?.quantity ?? 1) - 1)
+                          }
+                          className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
+                          style={{
+                            borderColor: estateChrome
+                              ? "rgba(249,237,228,0.35)"
+                              : "#D5D0C8",
+                            color: estateChrome
+                              ? ESTATE_ON_WINE.primary
+                              : FOREST,
+                          }}
+                        >
+                          &minus;
+                        </button>
+                        <span
+                          className="text-[13px] font-semibold w-6 text-center"
+                          style={{
+                            color: estateChrome
+                              ? ESTATE_ON_WINE.primary
+                              : FOREST,
+                          }}
+                        >
+                          {sel?.quantity ?? 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateQty(addon.id, (sel?.quantity ?? 1) + 1)
+                          }
+                          className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
+                          style={{
+                            borderColor: estateChrome
+                              ? "rgba(249,237,228,0.35)"
+                              : "#D5D0C8",
+                            color: estateChrome
+                              ? ESTATE_ON_WINE.primary
+                              : FOREST,
+                          }}
+                        >
+                          +
+                        </button>
+                        <span
+                          className="text-[11px] ml-1"
+                          style={{
+                            color: estateChrome
+                              ? ESTATE_ON_WINE.secondary
+                              : FOREST_BODY,
+                          }}
+                        >
+                          {addon.unit_label ?? "units"}
+                        </span>
+                      </div>
+                    )}
+
+                    {isOn && addon.price_type === "tiered" && addon.tiers && (
+                      <div className="mt-2 w-full min-w-0 max-w-full">
+                        <select
+                          value={sel?.tier_index ?? 0}
+                          onChange={(e) =>
+                            updateTierIdx(addon.id, parseInt(e.target.value))
+                          }
+                          className="text-[12px] rounded-none border px-3 py-2.5 w-full min-w-0 min-[420px]:w-auto min-[420px]:min-w-[12rem] min-[420px]:max-w-md"
+                          style={
+                            estateChrome
+                              ? {
+                                  borderColor: "rgba(249,237,228,0.35)",
+                                  color: ESTATE_ON_WINE.primary,
+                                  backgroundColor: "rgba(43, 4, 22, 0.5)",
+                                }
+                              : {
+                                  borderColor: "#D5D0C8",
+                                  color: FOREST,
+                                  backgroundColor: "#FFFFFF",
+                                }
+                          }
+                        >
+                          {addon.tiers.map((t, i) => (
+                            <option key={i} value={i}>
+                              {t.label} - {fmtPrice(t.price)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="text-left min-[420px]:text-right shrink-0 min-[420px]:pt-0.5 w-full min-[420px]:w-auto pl-14 min-[420px]:pl-0">

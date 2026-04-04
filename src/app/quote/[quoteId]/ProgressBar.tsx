@@ -22,14 +22,24 @@ interface Props {
 
 const ESTATE_ROSE = "#66143D";
 
-export default function ProgressBar({ currentStep, onStepClick, estateMode = false }: Props) {
+export default function ProgressBar({
+  currentStep,
+  onStepClick,
+  estateMode = false,
+}: Props) {
   return (
     <div
       className={`sticky top-0 z-10 px-4 py-3 overflow-x-auto border-b ${
-        estateMode ? "border-[#66143D]/40 bg-[#2B0416]" : "border-[#2C3E2D]/10 bg-white"
+        estateMode
+          ? "border-[#66143D]/40 bg-[#2B0416]"
+          : "border-[#2C3E2D]/10 bg-white"
       }`}
     >
-      <ol role="list" className="flex items-center justify-center gap-1 md:gap-2 min-w-max" aria-label="Booking steps">
+      <ol
+        role="list"
+        className="flex items-center justify-center gap-1 md:gap-2 min-w-max"
+        aria-label="Booking steps"
+      >
         {STEPS.map((step, i) => {
           const stepNum = i + 1;
           const isComplete = currentStep > stepNum;
@@ -51,7 +61,11 @@ export default function ProgressBar({ currentStep, onStepClick, estateMode = fal
               aria-hidden="true"
             />
           ) : (
-            <span className="text-[10px] md:text-[11px] shrink-0" style={{ color: `${FOREST}25` }} aria-hidden="true">
+            <span
+              className="text-[10px] md:text-[11px] shrink-0"
+              style={{ color: `${FOREST}25` }}
+              aria-hidden="true"
+            >
               ·
             </span>
           );

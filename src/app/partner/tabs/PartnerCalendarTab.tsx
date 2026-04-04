@@ -2,8 +2,18 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { CaretLeft, CaretRight, Calendar, Clock } from "@phosphor-icons/react";
-import type { CalendarEvent, ViewMode, YearHeatData } from "@/lib/calendar/types";
-import { formatTime12, timeToMinutes, minutesToTime, STATUS_DOT_COLORS, JOB_COLORS } from "@/lib/calendar/types";
+import type {
+  CalendarEvent,
+  ViewMode,
+  YearHeatData,
+} from "@/lib/calendar/types";
+import {
+  formatTime12,
+  timeToMinutes,
+  minutesToTime,
+  STATUS_DOT_COLORS,
+  JOB_COLORS,
+} from "@/lib/calendar/types";
 import { CALENDAR_PILL_TEXT } from "@/lib/calendar/calendar-job-styles";
 import PartnerDeliveriesTab from "./PartnerDeliveriesTab";
 import { normalizeDeliveryItem } from "@/lib/delivery-items";
@@ -27,7 +37,10 @@ const DELIVERY_STATUS_LABELS: Record<string, string> = {
   new: "New",
 };
 function fmtDeliveryStatus(s: string) {
-  return DELIVERY_STATUS_LABELS[s.toLowerCase().replace(/-/g, "_")] || s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return (
+    DELIVERY_STATUS_LABELS[s.toLowerCase().replace(/-/g, "_")] ||
+    s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
 }
 
 /* ── Interfaces ────────────────────────────────── */
@@ -71,9 +84,25 @@ interface Props {
 /* ── Helpers ────────────────────────────────────── */
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+const STATUS_COLORS: Record<
+  string,
+  { bg: string; text: string; border: string }
+> = {
   scheduled: { bg: "#2C3E2D10", text: "#2C3E2D", border: "#2C3E2D" },
   confirmed: { bg: "#2C3E2D10", text: "#2C3E2D", border: "#2C3E2D" },
   in_progress: { bg: "#B8962E10", text: "#B8962E", border: "#B8962E" },
@@ -129,10 +158,22 @@ const DRAG_THRESHOLD = 6;
 function yToTime(y: number): string {
   const rawMins = DAY_START_HOUR * 60 + (y / HOUR_HEIGHT) * 60;
   const snapped = Math.round(rawMins / 15) * 15;
-  return minutesToTime(Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - 15, snapped)));
+  return minutesToTime(
+    Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - 15, snapped)),
+  );
 }
 
-export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = [], onSelectDate, onDeliveryClick, onShare, onDetailClick, onEditClick, onRescheduled, orgType = "" }: Props) {
+export default function PartnerCalendarTab({
+  deliveries,
+  upcomingDeliveries = [],
+  onSelectDate,
+  onDeliveryClick,
+  onShare,
+  onDetailClick,
+  onEditClick,
+  onRescheduled,
+  orgType = "",
+}: Props) {
   const [view, setView] = useState<ViewMode>("month");
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [monthYear, setMonthYear] = useState(() => {
@@ -168,10 +209,17 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
       endStr = selectedDate;
     }
     fetch(`/api/partner/calendar?start=${startStr}&end=${endStr}`)
-      .then((r) => r.ok ? r.json() : { events: [] })
+      .then((r) => (r.ok ? r.json() : { events: [] }))
       .then((d) => setCalendarEvents(d.events || []))
       .catch(() => setCalendarEvents([]));
-  }, [view, monthYear.year, monthYear.month, weekAnchor, selectedDate, yearView]);
+  }, [
+    view,
+    monthYear.year,
+    monthYear.month,
+    weekAnchor,
+    selectedDate,
+    yearView,
+  ]);
 
   const projectEventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
@@ -200,7 +248,11 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
       map[key].push(d);
     });
     for (const key of Object.keys(map)) {
-      map[key].sort((a, b) => (a.scheduled_start || a.time_slot || "99:99").localeCompare(b.scheduled_start || b.time_slot || "99:99"));
+      map[key].sort((a, b) =>
+        (a.scheduled_start || a.time_slot || "99:99").localeCompare(
+          b.scheduled_start || b.time_slot || "99:99",
+        ),
+      );
     }
     return map;
   }, [deliveries, statusFilter, typeFilter]);
@@ -223,23 +275,40 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
     return heat;
   }, [deliveries, yearView, statusFilter, typeFilter]);
 
-  const navigate = useCallback((dir: number) => {
-    if (view === "month") {
-      setMonthYear((prev) => {
-        let m = prev.month + dir;
-        let y = prev.year;
-        if (m < 0) { m = 11; y--; }
-        if (m > 11) { m = 0; y++; }
-        return { year: y, month: m };
-      });
-    } else if (view === "week") {
-      setWeekAnchor((prev) => { const n = new Date(prev); n.setDate(n.getDate() + dir * 7); return n; });
-    } else if (view === "day") {
-      setSelectedDate((prev) => { const d = new Date(prev + "T12:00:00"); d.setDate(d.getDate() + dir); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; });
-    } else if (view === "year") {
-      setYearView((prev) => prev + dir);
-    }
-  }, [view]);
+  const navigate = useCallback(
+    (dir: number) => {
+      if (view === "month") {
+        setMonthYear((prev) => {
+          let m = prev.month + dir;
+          let y = prev.year;
+          if (m < 0) {
+            m = 11;
+            y--;
+          }
+          if (m > 11) {
+            m = 0;
+            y++;
+          }
+          return { year: y, month: m };
+        });
+      } else if (view === "week") {
+        setWeekAnchor((prev) => {
+          const n = new Date(prev);
+          n.setDate(n.getDate() + dir * 7);
+          return n;
+        });
+      } else if (view === "day") {
+        setSelectedDate((prev) => {
+          const d = new Date(prev + "T12:00:00");
+          d.setDate(d.getDate() + dir);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        });
+      } else if (view === "year") {
+        setYearView((prev) => prev + dir);
+      }
+    },
+    [view],
+  );
 
   const goToday = useCallback(() => {
     const d = new Date();
@@ -251,14 +320,30 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
 
   const headerLabel = useMemo(() => {
     if (view === "year") return String(yearView);
-    if (view === "month") return new Date(monthYear.year, monthYear.month, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    if (view === "month")
+      return new Date(monthYear.year, monthYear.month, 1).toLocaleDateString(
+        "en-US",
+        { month: "long", year: "numeric" },
+      );
     if (view === "week") {
       const days = getWeekDays(weekAnchor);
-      const fm = days[0].date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      const lm = days[6].date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const fm = days[0].date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      const lm = days[6].date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
       return `${fm} – ${lm}`;
     }
-    return new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    return new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
   }, [view, yearView, monthYear, weekAnchor, selectedDate]);
 
   const switchToDay = useCallback((date: string) => {
@@ -271,9 +356,16 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
   /* ── Delivery Card ─────────────────────────── */
   const DeliveryCard = ({ d, compact }: { d: Delivery; compact?: boolean }) => {
     const style = getStatusStyle(d.status || "pending");
-    const isCompleted = ["delivered", "completed"].includes((d.status || "").toLowerCase());
+    const isCompleted = ["delivered", "completed"].includes(
+      (d.status || "").toLowerCase(),
+    );
     const isCancelled = (d.status || "").toLowerCase() === "cancelled";
-    const isProgress = ["dispatched", "in-transit", "in_transit", "in_progress"].includes((d.status || "").toLowerCase());
+    const isProgress = [
+      "dispatched",
+      "in-transit",
+      "in_transit",
+      "in_progress",
+    ].includes((d.status || "").toLowerCase());
     const timeStr = d.scheduled_start
       ? d.scheduled_end
         ? `${formatTime12(d.scheduled_start)}-${formatTime12(d.scheduled_end)}`
@@ -281,22 +373,43 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
       : d.time_slot || null;
 
     const itemCount = Array.isArray(d.items) ? d.items.length : 0;
-    const addr = d.delivery_address ? (d.delivery_address.length > 35 ? d.delivery_address.slice(0, 35) + "…" : d.delivery_address) : null;
+    const addr = d.delivery_address
+      ? d.delivery_address.length > 35
+        ? d.delivery_address.slice(0, 35) + "…"
+        : d.delivery_address
+      : null;
 
     if (compact) {
       return (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onDeliveryClick?.(d); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeliveryClick?.(d);
+          }}
           className={`w-full text-left flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] transition-colors hover:shadow-sm ${isCompleted ? "opacity-60" : ""} ${isCancelled ? "opacity-40 line-through" : ""}`}
-          style={{ borderLeft: `2.5px solid ${style.border}`, background: style.bg }}
+          style={{
+            borderLeft: `2.5px solid ${style.border}`,
+            background: style.bg,
+          }}
         >
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`} style={{ backgroundColor: style.border }} />
+          <span
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`}
+            style={{ backgroundColor: style.border }}
+          />
           <span className="truncate text-[#1A1A1A] dark:text-[var(--tx)]">
-            {timeStr && <span className="text-[#454545] dark:text-[var(--tx3)] mr-1 font-medium">{timeStr}</span>}
+            {timeStr && (
+              <span className="text-[#454545] dark:text-[var(--tx3)] mr-1 font-medium">
+                {timeStr}
+              </span>
+            )}
             {d.customer_name || d.delivery_number}
           </span>
-          {isCompleted && <span className="text-[#22C55E] ml-auto shrink-0 text-[10px] font-semibold">Done</span>}
+          {isCompleted && (
+            <span className="text-[#22C55E] ml-auto shrink-0 text-[10px] font-semibold">
+              Done
+            </span>
+          )}
         </button>
       );
     }
@@ -306,20 +419,42 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
         type="button"
         onClick={() => onDeliveryClick?.(d)}
         className={`w-full text-left p-3 rounded-xl transition-all hover:shadow-md cursor-pointer ${isCompleted ? "opacity-60" : ""} ${isCancelled ? "opacity-40" : ""}`}
-        style={{ borderLeft: `3px solid ${style.border}`, background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+        style={{
+          borderLeft: `3px solid ${style.border}`,
+          background: "white",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        }}
       >
         <div className="flex items-center gap-1.5 mb-1">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`} style={{ backgroundColor: style.border }} />
-          {timeStr && <span className="text-[11px] text-[#454545] font-medium">{timeStr}</span>}
+          <span
+            className={`w-2 h-2 rounded-full shrink-0 ${isProgress ? "animate-pulse" : ""}`}
+            style={{ backgroundColor: style.border }}
+          />
+          {timeStr && (
+            <span className="text-[11px] text-[#454545] font-medium">
+              {timeStr}
+            </span>
+          )}
         </div>
-        <div className={`text-[13px] font-semibold text-[#1A1A1A] ${isCancelled ? "line-through" : ""}`}>
-          {itemCount > 0 ? `${itemCount}pc ` : ""}{d.customer_name || d.delivery_number}
+        <div
+          className={`text-[13px] font-semibold text-[#1A1A1A] ${isCancelled ? "line-through" : ""}`}
+        >
+          {itemCount > 0 ? `${itemCount}pc ` : ""}
+          {d.customer_name || d.delivery_number}
         </div>
-        {addr && <div className="text-[11px] text-[#454545] mt-0.5 truncate">→ {addr}</div>}
+        {addr && (
+          <div className="text-[11px] text-[#454545] mt-0.5 truncate">
+            → {addr}
+          </div>
+        )}
         <div className="mt-1.5">
           <span
             className="inline-block text-[9px] font-bold px-2 py-0.5 rounded-full uppercase"
-            style={{ backgroundColor: style.bg, color: style.text, border: `1px solid ${style.border}30` }}
+            style={{
+              backgroundColor: style.bg,
+              color: style.text,
+              border: `1px solid ${style.border}30`,
+            }}
           >
             {fmtDeliveryStatus(d.status || "pending")}
           </span>
@@ -333,15 +468,29 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
     <div className="mb-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-[22px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] font-hero" suppressHydrationWarning>{headerLabel}</h3>
+          <h3
+            className="text-[22px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] font-hero"
+            suppressHydrationWarning
+          >
+            {headerLabel}
+          </h3>
           <div className="flex items-center gap-0.5">
-            <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors"
+            >
               <CaretLeft size={14} weight="regular" color="#4F4B47" />
             </button>
-            <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors">
+            <button
+              onClick={() => navigate(1)}
+              className="p-1.5 rounded-lg hover:bg-[#F5F3F0] dark:hover:bg-[var(--card)] transition-colors"
+            >
               <CaretRight size={14} weight="regular" color="#4F4B47" />
             </button>
-            <button onClick={goToday} className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] dark:border-[var(--brd)] text-[#454545] dark:text-[var(--tx3)] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors">
+            <button
+              onClick={goToday}
+              className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] dark:border-[var(--brd)] text-[#454545] dark:text-[var(--tx3)] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+            >
               Today
             </button>
           </div>
@@ -405,10 +554,21 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
     return (
       <div className="grid grid-cols-7 gap-px bg-[#E8E4DF] dark:bg-[var(--brd)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-xl overflow-hidden">
         {DAY_NAMES.map((d) => (
-          <div key={d} className="bg-[#F9F7F4] dark:bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-wider uppercase text-[#5C5853] dark:text-[var(--tx3)]/50">{d}</div>
+          <div
+            key={d}
+            className="bg-[#F9F7F4] dark:bg-[var(--bg)] py-2 text-center text-[9px] font-bold tracking-wider uppercase text-[#5C5853] dark:text-[var(--tx3)]/50"
+          >
+            {d}
+          </div>
         ))}
         {cells.map((day, i) => {
-          if (day === null) return <div key={`e-${i}`} className="bg-white dark:bg-[var(--card)] min-h-[90px]" />;
+          if (day === null)
+            return (
+              <div
+                key={`e-${i}`}
+                className="bg-white dark:bg-[var(--card)] min-h-[90px]"
+              />
+            );
           const dk = `${monthYear.year}-${String(monthYear.month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayDels = deliveriesByDate[dk] || [];
           const dayProjects = projectEventsByDate[dk] || [];
@@ -443,11 +603,17 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                     {e.name}: {e.description}
                   </button>
                 ))}
-                {dayDels.slice(0, Math.max(0, 3 - dayProjects.length)).map((d) => (
-                  <DeliveryCard key={d.id} d={d} compact />
-                ))}
-                {(dayDels.length + dayProjects.length) > 3 && (
-                  <button type="button" onClick={() => switchToDay(dk)} className="text-[8px] text-[#C9A962] font-semibold pl-1 hover:underline">
+                {dayDels
+                  .slice(0, Math.max(0, 3 - dayProjects.length))
+                  .map((d) => (
+                    <DeliveryCard key={d.id} d={d} compact />
+                  ))}
+                {dayDels.length + dayProjects.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => switchToDay(dk)}
+                    className="text-[8px] text-[#C9A962] font-semibold pl-1 hover:underline"
+                  >
                     +{dayDels.length + dayProjects.length - 3} more
                   </button>
                 )}
@@ -470,8 +636,15 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
 
   /* ── DAY VIEW (with draggable) ──────────────────────────────── */
   const dayTimelineRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ delivery: Delivery; startX: number; startY: number; isDragging: boolean } | null>(null);
-  const [draggingDelivery, setDraggingDelivery] = useState<Delivery | null>(null);
+  const dragRef = useRef<{
+    delivery: Delivery;
+    startX: number;
+    startY: number;
+    isDragging: boolean;
+  } | null>(null);
+  const [draggingDelivery, setDraggingDelivery] = useState<Delivery | null>(
+    null,
+  );
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [rescheduling, setRescheduling] = useState(false);
 
@@ -494,7 +667,10 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
       const res = await fetch(`/api/partner/deliveries/${d.id}/update`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scheduled_start: newStart, scheduled_end: newEnd }),
+        body: JSON.stringify({
+          scheduled_start: newStart,
+          scheduled_end: newEnd,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -556,18 +732,24 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
   const DayTimeline = () => {
     const dayDels = deliveriesByDate[selectedDate] || [];
     const dayProjects = projectEventsByDate[selectedDate] || [];
-    const HOURS = Array.from({ length: DAY_END_HOUR - DAY_START_HOUR + 1 }, (_, i) => DAY_START_HOUR + i);
+    const HOURS = Array.from(
+      { length: DAY_END_HOUR - DAY_START_HOUR + 1 },
+      (_, i) => DAY_START_HOUR + i,
+    );
     const isToday = selectedDate === todayKey;
     const now = new Date();
     const nowMins = now.getHours() * 60 + now.getMinutes();
-    const showNow = isToday && nowMins >= DAY_START_HOUR * 60 && nowMins <= DAY_END_HOUR * 60;
+    const showNow =
+      isToday && nowMins >= DAY_START_HOUR * 60 && nowMins <= DAY_END_HOUR * 60;
     const nowTop = ((nowMins - DAY_START_HOUR * 60) / 60) * HOUR_HEIGHT;
 
     return (
       <div className={draggingDelivery ? "select-none" : ""}>
         {dayDels.length === 0 && dayProjects.length === 0 ? (
           <div className="text-center py-16">
-            <div className="text-[var(--text-base)] text-[#4F4B47] dark:text-[var(--tx3)] mb-4">No deliveries or projects scheduled</div>
+            <div className="text-[var(--text-base)] text-[#4F4B47] dark:text-[var(--tx3)] mb-4">
+              No deliveries or projects scheduled
+            </div>
             <button
               onClick={() => onSelectDate?.(selectedDate)}
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[12px] font-semibold text-white transition-colors hover:opacity-90"
@@ -577,7 +759,11 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             </button>
           </div>
         ) : (
-          <div ref={dayTimelineRef} className="relative overflow-y-auto max-h-[calc(100vh-320px)]" style={{ minHeight: (DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT }}>
+          <div
+            ref={dayTimelineRef}
+            className="relative overflow-y-auto max-h-[calc(100vh-320px)]"
+            style={{ minHeight: (DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT }}
+          >
             {/* Project blocks (all-day, no time) */}
             {dayProjects.length > 0 && (
               <div className="mb-4 flex flex-wrap gap-2">
@@ -598,7 +784,11 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             )}
             {/* Hour lines */}
             {HOURS.map((h) => (
-              <div key={h} className="absolute w-full flex items-start" style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT }}>
+              <div
+                key={h}
+                className="absolute w-full flex items-start"
+                style={{ top: (h - DAY_START_HOUR) * HOUR_HEIGHT }}
+              >
                 <div className="w-16 shrink-0 text-right pr-3 text-[10px] text-[#5C5853] dark:text-[var(--tx3)] font-medium -mt-1.5">
                   {formatTime12(`${String(h).padStart(2, "0")}:00`)}
                 </div>
@@ -610,13 +800,19 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             {dayDels.map((d) => {
               const startTime = d.scheduled_start || d.time_slot || "08:00";
               const hasStructuredTime = !!d.scheduled_start;
-              const startMins = hasStructuredTime ? timeToMinutes(startTime) : 8 * 60;
+              const startMins = hasStructuredTime
+                ? timeToMinutes(startTime)
+                : 8 * 60;
               const dur = d.estimated_duration_hours || 1.5;
-              const top = ((startMins - DAY_START_HOUR * 60) / 60) * HOUR_HEIGHT;
+              const top =
+                ((startMins - DAY_START_HOUR * 60) / 60) * HOUR_HEIGHT;
               const height = Math.max(dur * HOUR_HEIGHT, 60);
               const style = getStatusStyle(d.status || "pending");
-              const isCompleted = ["delivered", "completed"].includes((d.status || "").toLowerCase());
-              const isCancelled = (d.status || "").toLowerCase() === "cancelled";
+              const isCompleted = ["delivered", "completed"].includes(
+                (d.status || "").toLowerCase(),
+              );
+              const isCancelled =
+                (d.status || "").toLowerCase() === "cancelled";
               const canDrag = !rescheduling && !isCompleted && !isCancelled;
               const isBeingDragged = draggingDelivery?.id === d.id;
 
@@ -629,11 +825,24 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                     if (!canDrag) return;
                     e.preventDefault();
                     e.stopPropagation();
-                    dragRef.current = { delivery: d, startX: e.clientX, startY: e.clientY, isDragging: false };
+                    dragRef.current = {
+                      delivery: d,
+                      startX: e.clientX,
+                      startY: e.clientY,
+                      isDragging: false,
+                    };
                   }}
-                  onClick={() => { if (!canDrag) onDeliveryClick?.(d); }}
+                  onClick={() => {
+                    if (!canDrag) onDeliveryClick?.(d);
+                  }}
                   className={`absolute left-16 right-2 rounded-xl overflow-hidden text-left hover:shadow-lg transition-all ${canDrag ? "cursor-grab" : "cursor-pointer"} ${isBeingDragged ? "opacity-30 pointer-events-none" : ""}`}
-                  style={{ top, height, borderLeft: `4px solid ${style.border}`, background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
+                  style={{
+                    top,
+                    height,
+                    borderLeft: `4px solid ${style.border}`,
+                    background: "white",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                  }}
                 >
                   <div className="p-3 h-full flex flex-col">
                     <div className="text-[12px] font-bold text-[#1A1A1A]">
@@ -642,12 +851,25 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                         : d.customer_name || d.delivery_number}
                     </div>
                     {d.delivery_address && (
-                      <div className="text-[11px] text-[#454545] mt-0.5 truncate">→ {d.delivery_address}</div>
+                      <div className="text-[11px] text-[#454545] mt-0.5 truncate">
+                        → {d.delivery_address}
+                      </div>
                     )}
                     <div className="flex items-center gap-2 mt-auto text-[10px] text-[#4F4B47]">
-                      {d.vehicle_type && <span className="inline-flex items-center gap-0.5">{d.vehicle_type}</span>}
-                      {d.estimated_duration_hours && <span className="inline-flex items-center gap-0.5"><Clock size={12} /> {d.estimated_duration_hours}h</span>}
-                      <span className="font-semibold" style={{ color: style.text }}>
+                      {d.vehicle_type && (
+                        <span className="inline-flex items-center gap-0.5">
+                          {d.vehicle_type}
+                        </span>
+                      )}
+                      {d.estimated_duration_hours && (
+                        <span className="inline-flex items-center gap-0.5">
+                          <Clock size={12} /> {d.estimated_duration_hours}h
+                        </span>
+                      )}
+                      <span
+                        className="font-semibold"
+                        style={{ color: style.text }}
+                      >
                         {fmtDeliveryStatus(d.status || "pending")}
                       </span>
                     </div>
@@ -658,8 +880,15 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
 
             {/* NOW line */}
             {showNow && (
-              <div className="absolute left-0 right-0 z-10 pointer-events-none flex items-center" style={{ top: nowTop }}>
-                <div className="w-16 text-right pr-1"><span className="text-[7px] font-bold text-red-500 bg-red-50 dark:bg-red-500/10 px-1 py-0.5 rounded">NOW</span></div>
+              <div
+                className="absolute left-0 right-0 z-10 pointer-events-none flex items-center"
+                style={{ top: nowTop }}
+              >
+                <div className="w-16 text-right pr-1">
+                  <span className="text-[7px] font-bold text-red-500 bg-red-50 dark:bg-red-500/10 px-1 py-0.5 rounded">
+                    NOW
+                  </span>
+                </div>
                 <div className="flex-1 h-[2px] bg-red-400/60" />
               </div>
             )}
@@ -681,10 +910,16 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                 borderColor: "#2C3E2D",
               }}
             >
-              {draggingDelivery.customer_name || draggingDelivery.delivery_number}
-              {(draggingDelivery.scheduled_start || draggingDelivery.time_slot) && (
+              {draggingDelivery.customer_name ||
+                draggingDelivery.delivery_number}
+              {(draggingDelivery.scheduled_start ||
+                draggingDelivery.time_slot) && (
                 <span className="ml-1 opacity-70 font-normal">
-                  {formatTime12(draggingDelivery.scheduled_start || draggingDelivery.time_slot || "08:00")}
+                  {formatTime12(
+                    draggingDelivery.scheduled_start ||
+                      draggingDelivery.time_slot ||
+                      "08:00",
+                  )}
                 </span>
               )}
             </div>
@@ -713,7 +948,10 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
     const HOUR_HEIGHT = 35;
     const START_HOUR = 6;
     const END_HOUR = 20;
-    const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+    const HOURS = Array.from(
+      { length: END_HOUR - START_HOUR + 1 },
+      (_, i) => START_HOUR + i,
+    );
 
     return (
       <div>
@@ -725,18 +963,41 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
             const projCount = (projectEventsByDate[key] || []).length;
             const count = delCount + projCount;
             return (
-              <button key={key} type="button" onClick={() => switchToDay(key)} className={`flex-1 py-2 text-center border-l border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 transition-colors ${isToday ? "bg-[#C9A962]/5" : ""}`}>
-                <div className={`text-[9px] font-bold uppercase ${isToday ? "text-[#C9A962]" : "text-[#5C5853] dark:text-[var(--tx3)]/50"}`}>{DAY_NAMES[i]} {date.getDate()}</div>
-                {count > 0 && <div className="text-[7px] text-[#2C3E2D] dark:text-[var(--gold)] font-semibold">{delCount > 0 && `${delCount} del${delCount > 1 ? "s" : ""}`}{delCount > 0 && projCount > 0 ? " · " : ""}{projCount > 0 && `${projCount} proj`}</div>}
+              <button
+                key={key}
+                type="button"
+                onClick={() => switchToDay(key)}
+                className={`flex-1 py-2 text-center border-l border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 transition-colors ${isToday ? "bg-[#C9A962]/5" : ""}`}
+              >
+                <div
+                  className={`text-[9px] font-bold uppercase ${isToday ? "text-[#C9A962]" : "text-[#5C5853] dark:text-[var(--tx3)]/50"}`}
+                >
+                  {DAY_NAMES[i]} {date.getDate()}
+                </div>
+                {count > 0 && (
+                  <div className="text-[7px] text-[#2C3E2D] dark:text-[var(--gold)] font-semibold">
+                    {delCount > 0 &&
+                      `${delCount} del${delCount > 1 ? "s" : ""}`}
+                    {delCount > 0 && projCount > 0 ? " · " : ""}
+                    {projCount > 0 && `${projCount} proj`}
+                  </div>
+                )}
               </button>
             );
           })}
         </div>
         <div className="overflow-y-auto max-h-[calc(100vh-340px)]">
-          <div className="flex" style={{ height: (END_HOUR - START_HOUR) * HOUR_HEIGHT }}>
+          <div
+            className="flex"
+            style={{ height: (END_HOUR - START_HOUR) * HOUR_HEIGHT }}
+          >
             <div className="w-12 shrink-0 relative">
               {HOURS.map((h) => (
-                <div key={h} className="absolute w-full text-right pr-1 text-[8px] text-[#5C5853] dark:text-[var(--tx3)] font-medium" style={{ top: (h - START_HOUR) * HOUR_HEIGHT - 4 }}>
+                <div
+                  key={h}
+                  className="absolute w-full text-right pr-1 text-[8px] text-[#5C5853] dark:text-[var(--tx3)] font-medium"
+                  style={{ top: (h - START_HOUR) * HOUR_HEIGHT - 4 }}
+                >
                   {h <= 12 ? `${h}AM` : `${h - 12}PM`}
                 </div>
               ))}
@@ -746,9 +1007,17 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
               const dayProjects = projectEventsByDate[key] || [];
               const isToday = key === todayKey;
               return (
-                <div key={key} className={`flex-1 relative border-l border-[#E8E4DF] dark:border-[var(--brd)] ${isToday ? "bg-[#C9A962]/3" : ""}`} onClick={() => switchToDay(key)}>
+                <div
+                  key={key}
+                  className={`flex-1 relative border-l border-[#E8E4DF] dark:border-[var(--brd)] ${isToday ? "bg-[#C9A962]/3" : ""}`}
+                  onClick={() => switchToDay(key)}
+                >
                   {HOURS.map((h) => (
-                    <div key={h} className="absolute w-full border-t border-[#F0EDE8] dark:border-[var(--brd)]/15" style={{ top: (h - START_HOUR) * HOUR_HEIGHT }} />
+                    <div
+                      key={h}
+                      className="absolute w-full border-t border-[#F0EDE8] dark:border-[var(--brd)]/15"
+                      style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
+                    />
                   ))}
                   {dayProjects.slice(0, 2).map((e, idx) => (
                     <div
@@ -769,14 +1038,34 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                     const startTime = d.scheduled_start || "08:00";
                     const startMins = timeToMinutes(startTime);
                     const dur = d.estimated_duration_hours || 1.5;
-                    const top = ((startMins - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+                    const top =
+                      ((startMins - START_HOUR * 60) / 60) * HOUR_HEIGHT;
                     const height = Math.max(dur * HOUR_HEIGHT, 22);
                     const style = getStatusStyle(d.status || "pending");
                     return (
-                      <button key={d.id} type="button" onClick={(e) => { e.stopPropagation(); onDeliveryClick?.(d); }} className="absolute left-0.5 right-0.5 rounded-md overflow-hidden text-left hover:brightness-95 cursor-pointer shadow-sm" style={{ top, height: Math.max(height, 22), borderLeft: `4px solid ${style.border}`, background: `${style.border}25` }}>
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeliveryClick?.(d);
+                        }}
+                        className="absolute left-0.5 right-0.5 rounded-md overflow-hidden text-left hover:brightness-95 cursor-pointer shadow-sm"
+                        style={{
+                          top,
+                          height: Math.max(height, 22),
+                          borderLeft: `4px solid ${style.border}`,
+                          background: `${style.border}25`,
+                        }}
+                      >
                         <div className="p-1 flex items-center gap-1">
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${["dispatched", "in-transit", "in_transit"].includes((d.status || "").toLowerCase()) ? "animate-pulse" : ""}`} style={{ backgroundColor: style.border }} />
-                          <span className="text-[8px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] truncate">{d.customer_name || d.delivery_number}</span>
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${["dispatched", "in-transit", "in_transit"].includes((d.status || "").toLowerCase()) ? "animate-pulse" : ""}`}
+                            style={{ backgroundColor: style.border }}
+                          />
+                          <span className="text-[8px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] truncate">
+                            {d.customer_name || d.delivery_number}
+                          </span>
                         </div>
                       </button>
                     );
@@ -791,10 +1080,18 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
           <div className="w-12 shrink-0" />
           {weekDays.map(({ key }) => {
             const count = (deliveriesByDate[key] || []).length;
-            const hrs = (deliveriesByDate[key] || []).reduce((sum, d) => sum + (d.estimated_duration_hours || 1.5), 0);
+            const hrs = (deliveriesByDate[key] || []).reduce(
+              (sum, d) => sum + (d.estimated_duration_hours || 1.5),
+              0,
+            );
             return (
-              <div key={key} className="flex-1 border-l border-[#E8E4DF] dark:border-[var(--brd)] px-1 py-1 text-center">
-                <div className="text-[7px] text-[#4F4B47] dark:text-[var(--tx3)]">{count > 0 ? `${count} · ${Math.round(hrs * 10) / 10}h` : "-"}</div>
+              <div
+                key={key}
+                className="flex-1 border-l border-[#E8E4DF] dark:border-[var(--brd)] px-1 py-1 text-center"
+              >
+                <div className="text-[7px] text-[#4F4B47] dark:text-[var(--tx3)]">
+                  {count > 0 ? `${count} · ${Math.round(hrs * 10) / 10}h` : "-"}
+                </div>
               </div>
             );
           })}
@@ -830,15 +1127,33 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
 
             return (
               <div key={mIdx}>
-                <button type="button" onClick={() => { setMonthYear({ year: yearView, month: mIdx }); setView("month"); }} className="text-[11px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] mb-1.5 hover:text-[#2C3E2D] dark:hover:text-[var(--gold)] transition-colors">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMonthYear({ year: yearView, month: mIdx });
+                    setView("month");
+                  }}
+                  className="text-[11px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] mb-1.5 hover:text-[#2C3E2D] dark:hover:text-[var(--gold)] transition-colors"
+                >
                   {name}
                 </button>
                 <div className="grid grid-cols-7 gap-[2px] min-w-0">
                   {DAY_LABELS.map((d, i) => (
-                    <div key={`h-${i}`} className="text-[6px] font-semibold text-[#4F4B47] dark:text-[var(--tx3)]/60 text-center">{d}</div>
+                    <div
+                      key={`h-${i}`}
+                      className="text-[6px] font-semibold text-[#4F4B47] dark:text-[var(--tx3)]/60 text-center"
+                    >
+                      {d}
+                    </div>
                   ))}
                   {cells.map((day, i) => {
-                    if (day === null) return <div key={`e-${i}`} className={`w-full min-h-[10px] aspect-square max-w-[20px] mx-auto rounded-[3px] ${emptyCellBg}`} />;
+                    if (day === null)
+                      return (
+                        <div
+                          key={`e-${i}`}
+                          className={`w-full min-h-[10px] aspect-square max-w-[20px] mx-auto rounded-[3px] ${emptyCellBg}`}
+                        />
+                      );
                     const dk = `${yearView}-${String(mIdx + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                     const count = yearHeat[dk] || 0;
                     const isToday = dk === todayKey;
@@ -848,8 +1163,16 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
                         type="button"
                         onClick={() => switchToDay(dk)}
                         className={`w-full min-h-[10px] aspect-square max-w-[20px] mx-auto rounded-[3px] transition-colors hover:ring-2 hover:ring-[#2C3E2D]/50 dark:hover:ring-[var(--gold)]/50 ${count === 0 ? emptyCellBg : ""} ${isToday ? "ring-2 ring-[#C9A962] dark:ring-[var(--gold)]" : ""}`}
-                        style={count > 0 ? { backgroundColor: getColor(count) } : undefined}
-                        title={count > 0 ? `${dk}: ${count} deliver${count > 1 ? "ies" : "y"}` : dk}
+                        style={
+                          count > 0
+                            ? { backgroundColor: getColor(count) }
+                            : undefined
+                        }
+                        title={
+                          count > 0
+                            ? `${dk}: ${count} deliver${count > 1 ? "ies" : "y"}`
+                            : dk
+                        }
                       />
                     );
                   })}
@@ -862,14 +1185,25 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
         {/* Summary */}
         <div className="mt-6 text-center">
           <div className="flex items-center gap-2 justify-center mb-2 flex-wrap">
-            <span className="text-[9px] text-[#454545] dark:text-[var(--tx3)]">Less</span>
+            <span className="text-[9px] text-[#454545] dark:text-[var(--tx3)]">
+              Less
+            </span>
             {[0, 1, 2, 4].map((n) => (
-              <div key={n} className={`w-4 h-4 rounded-[3px] ${n === 0 ? emptyCellBg : ""}`} style={n > 0 ? { backgroundColor: getColor(n) } : undefined} />
+              <div
+                key={n}
+                className={`w-4 h-4 rounded-[3px] ${n === 0 ? emptyCellBg : ""}`}
+                style={n > 0 ? { backgroundColor: getColor(n) } : undefined}
+              />
             ))}
-            <span className="text-[9px] text-[#454545] dark:text-[var(--tx3)]">More</span>
+            <span className="text-[9px] text-[#454545] dark:text-[var(--tx3)]">
+              More
+            </span>
           </div>
           <div className="text-[12px] text-[#454545] dark:text-[var(--tx3)] font-medium">
-            {yearView} Total: <span className="text-[#2C3E2D] dark:text-[var(--gold)] font-bold">{totalDeliveries} deliveries</span>
+            {yearView} Total:{" "}
+            <span className="text-[#2C3E2D] dark:text-[var(--gold)] font-bold">
+              {totalDeliveries} deliveries
+            </span>
           </div>
         </div>
       </div>
@@ -888,7 +1222,9 @@ export default function PartnerCalendarTab({ deliveries, upcomingDeliveries = []
       </div>
       {onShare && onDetailClick && onEditClick && orgType && (
         <div className="border-t border-[var(--brd)]/30 pt-6">
-          <h3 className="text-[17px] font-bold font-hero text-[var(--tx)] mb-4">Upcoming Deliveries</h3>
+          <h3 className="text-[17px] font-bold font-hero text-[var(--tx)] mb-4">
+            Upcoming Deliveries
+          </h3>
           <PartnerDeliveriesTab
             deliveries={upcomingDeliveries}
             label="upcoming"

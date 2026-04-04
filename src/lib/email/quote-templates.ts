@@ -1,5 +1,9 @@
 import { getClientEmailFooterTrs } from "@/lib/email/client-email-footer";
-import { EMAIL_FOREST_RULE, EMAIL_WINE, emailPrimaryCtaStyle } from "@/lib/email/email-brand-tokens";
+import {
+  EMAIL_FOREST_RULE,
+  EMAIL_WINE,
+  emailPrimaryCtaStyle,
+} from "@/lib/email/email-brand-tokens";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import {
   EMAIL_LOGO_BLACK_W,
@@ -8,8 +12,14 @@ import {
 } from "@/lib/email-templates";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
-import { TIER_LABELS as DISPLAY_TIER_LABELS, displayLabel } from "@/lib/displayLabels";
-import { getB2BQuoteEmailSubheading, quoteEmailCrewLine } from "@/lib/quotes/b2b-quote-copy";
+import {
+  TIER_LABELS as DISPLAY_TIER_LABELS,
+  displayLabel,
+} from "@/lib/displayLabels";
+import {
+  getB2BQuoteEmailSubheading,
+  quoteEmailCrewLine,
+} from "@/lib/quotes/b2b-quote-copy";
 
 /* Typography: hero = Instrument Serif + Georgia; light cream shell + wine wordmark (readable in light & dark mail clients). */
 /* ─── Light shell (main quote letter — wine logo, WCAG-friendly on cream) ─── */
@@ -39,14 +49,14 @@ const PAGE_INK = "#0A0A0A";
 const DARK_CARD_EYEBROW = `font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${ACCENT_CREAM};letter-spacing:0px;text-transform:uppercase;`;
 
 /* ─── Tier card backgrounds (user-specified) ─── */
-const CURATED_BG   = "#492A1D";  /* dark rust / brown  */
-const SIG_BG       = "#2B3929";  /* dark forest green  */
-const ESTATE_BG    = "#2B0416";  /* deep wine          */
+const CURATED_BG = "#492A1D"; /* dark rust / brown  */
+const SIG_BG = "#2B3929"; /* dark forest green  */
+const ESTATE_BG = "#2B0416"; /* deep wine          */
 
 /* ─── Tier accent colors (label, check marks) — cream/rose tones, no gold ─── */
-const CURATED_ACCENT  = "#E8C4A8";  /* warm peach on rust            */
-const SIG_ACCENT      = "#D8E3D8";  /* soft sage-cream on forest     */
-const ESTATE_ACCENT   = "#E8C4D0";  /* rose-cream on wine            */
+const CURATED_ACCENT = "#E8C4A8"; /* warm peach on rust            */
+const SIG_ACCENT = "#D8E3D8"; /* soft sage-cream on forest     */
+const ESTATE_ACCENT = "#E8C4D0"; /* rose-cream on wine            */
 
 /* ─── Tier card primary text (warm cream — legible on all three dark bgs) ─── */
 const TIER_TX = "#F5EEE6";
@@ -275,7 +285,11 @@ function flatRateBadge(): string {
 function expiryNote(expiresAt: string | null | undefined): string {
   if (!expiresAt) return "";
   const d = new Date(expiresAt);
-  const formatted = d.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" });
+  const formatted = d.toLocaleDateString("en-CA", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
   const textStyle = `font-size:13px;color:${EMAIL_WINE} !important;-webkit-text-fill-color:${EMAIL_WINE};font-weight:600;line-height:1.55;`;
   const boxStyle = `background-color:rgba(92,26,51,0.09);border-top:2px solid ${EMAIL_WINE};padding:14px 16px;`;
   return `
@@ -296,7 +310,8 @@ function expiryNote(expiresAt: string | null | undefined): string {
 }
 
 function ctaButton(url: string, label: string, sub?: string): string {
-  const font = "'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const font =
+    "'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 8px;">
       <tr>
@@ -311,10 +326,22 @@ function ctaButton(url: string, label: string, sub?: string): string {
 
 function whyYugoBlock(): string {
   const items = [
-    ["Flat-rate guarantee", "transparent pricing with nothing added on the day"],
-    ["Real-time tracking", "follow your crew from your phone, every step of the way"],
-    ["Dedicated coordinator", "a single point of contact from booking through the final placement"],
-    ["Fully insured", "WSIB coverage, $2M General Liability, and comprehensive cargo insurance"],
+    [
+      "Flat-rate guarantee",
+      "transparent pricing with nothing added on the day",
+    ],
+    [
+      "Real-time tracking",
+      "follow your crew from your phone, every step of the way",
+    ],
+    [
+      "Dedicated coordinator",
+      "a single point of contact from booking through the final placement",
+    ],
+    [
+      "Fully insured",
+      "WSIB coverage, $2M General Liability, and comprehensive cargo insurance",
+    ],
   ];
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 0;border-top:1px solid ${SHELL_BORDER};">
@@ -322,12 +349,16 @@ function whyYugoBlock(): string {
         <td style="padding-top:22px;">
           <div style="${SHELL_EYEBROW}margin-bottom:12px;">The Yugo difference</div>
           <table cellpadding="0" cellspacing="0" border="0" width="100%">
-            ${items.map(([strong, rest]) => `
+            ${items
+              .map(
+                ([strong, rest]) => `
               <tr>
                 <td style="padding:6px 0;font-size:10px;color:${EMAIL_WINE};vertical-align:top;width:18px;line-height:1.6;">—</td>
                 <td style="padding:6px 0;font-size:12px;color:${SHELL_TX2};line-height:1.6;"><strong style="color:${SHELL_TX};font-weight:600;">${strong}</strong> - ${rest}</td>
               </tr>
-            `).join("")}
+            `,
+              )
+              .join("")}
           </table>
         </td>
       </tr>
@@ -335,7 +366,10 @@ function whyYugoBlock(): string {
   `;
 }
 
-function questionsFooter(coordinatorName?: string | null, coordinatorPhone?: string | null): string {
+function questionsFooter(
+  coordinatorName?: string | null,
+  coordinatorPhone?: string | null,
+): string {
   const support = getClientSupportEmail();
   const contact = coordinatorName
     ? `Your coordinator ${coordinatorName} is available${coordinatorPhone ? ` at ${coordinatorPhone}` : ""} or by email at ${support}.`
@@ -371,7 +405,11 @@ function detailsPlain(rows: [string, string][]): string {
   `;
 }
 
-function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommendedTier?: string | null): string {
+function tierCards(
+  tiers: Record<string, QuoteTier>,
+  quoteUrl: string,
+  recommendedTier?: string | null,
+): string {
   const order = ["essential", "signature", "estate"];
   const rec = recommendedTier || "signature";
 
@@ -379,46 +417,56 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
   const tierBgs: Record<string, string> = {
     essential: CURATED_BG,
     signature: SIG_BG,
-    estate:    ESTATE_BG,
+    estate: ESTATE_BG,
   };
 
   /* Border: muted version of the accent, stronger on recommended */
   const tierBorderMuted: Record<string, string> = {
     essential: `${CURATED_ACCENT}50`,
     signature: `${SIG_ACCENT}50`,
-    estate:    `${ESTATE_ACCENT}50`,
+    estate: `${ESTATE_ACCENT}50`,
   };
   const tierBorderRec: Record<string, string> = {
     essential: CURATED_ACCENT,
     signature: SIG_ACCENT,
-    estate:    ESTATE_ACCENT,
+    estate: ESTATE_ACCENT,
   };
 
   const tierAccents: Record<string, string> = {
     essential: CURATED_ACCENT,
     signature: SIG_ACCENT,
-    estate:    ESTATE_ACCENT,
+    estate: ESTATE_ACCENT,
   };
 
   const badgeLabels: Record<string, Record<string, string>> = {
-    essential: { essential: "",  signature: "Upgrade available",        estate: "Premium option" },
-    signature: { essential: "",  signature: "RECOMMENDED",              estate: "For the ultimate experience" },
-    estate:    { essential: "",  signature: "",                         estate: "RECOMMENDED FOR YOU" },
+    essential: {
+      essential: "",
+      signature: "Upgrade available",
+      estate: "Premium option",
+    },
+    signature: {
+      essential: "",
+      signature: "RECOMMENDED",
+      estate: "For the ultimate experience",
+    },
+    estate: { essential: "", signature: "", estate: "RECOMMENDED FOR YOU" },
   };
 
   return order
     .filter((k) => tiers[k])
     .map((key) => {
-      const t         = tiers[key];
-      const label     = EMAIL_TIER_LABELS[key] ?? t.label ?? key;
-      const accent    = tierAccents[key] ?? DARK_TX3;
-      const isRec     = key === rec;
+      const t = tiers[key];
+      const label = EMAIL_TIER_LABELS[key] ?? t.label ?? key;
+      const accent = tierAccents[key] ?? DARK_TX3;
+      const isRec = key === rec;
       const badgeText = badgeLabels[rec]?.[key] ?? "";
-      const cardBg    = tierBgs[key] ?? CARD;
-      const borderClr = isRec ? tierBorderRec[key] : (tierBorderMuted[key] ?? CARD_BORDER);
-      const borderW   = isRec ? "2px" : "1px";
-      const padVal    = isRec ? "24px 22px" : "16px 18px";
-      const priceSz   = isRec ? "34px" : "22px";
+      const cardBg = tierBgs[key] ?? CARD;
+      const borderClr = isRec
+        ? tierBorderRec[key]
+        : (tierBorderMuted[key] ?? CARD_BORDER);
+      const borderW = isRec ? "2px" : "1px";
+      const padVal = isRec ? "24px 22px" : "16px 18px";
+      const priceSz = isRec ? "34px" : "22px";
 
       const badge = badgeText
         ? `<span style="display:inline-block;padding:2px 9px;font-size:7px;font-weight:700;background-color:${isRec ? accent : TIER_TX + "1A"};color:${isRec ? PAGE_INK : TIER_TX + "88"};margin-left:8px;letter-spacing:0;text-transform:none;vertical-align:middle;">${badgeText}</span>`
@@ -426,9 +474,13 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
 
       /* Checklist only on the recommended card */
       const includesRows = isRec
-        ? (t.includes || []).filter(Boolean).map((item) =>
-            `<tr><td style="color:${accent};font-size:10px;padding:4px 0;vertical-align:top;width:16px;line-height:1.5;">—</td><td style="color:${TIER_TX}CC;font-size:11px;padding:4px 0;line-height:1.5;">${item}</td></tr>`
-          ).join("")
+        ? (t.includes || [])
+            .filter(Boolean)
+            .map(
+              (item) =>
+                `<tr><td style="color:${accent};font-size:10px;padding:4px 0;vertical-align:top;width:16px;line-height:1.5;">—</td><td style="color:${TIER_TX}CC;font-size:11px;padding:4px 0;line-height:1.5;">${item}</td></tr>`,
+            )
+            .join("")
         : "";
 
       const cardContent = `
@@ -448,7 +500,9 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
     .join("");
 }
 
-function estateRecommendationNote(recommendedTier: string | null | undefined): string {
+function estateRecommendationNote(
+  recommendedTier: string | null | undefined,
+): string {
   if (recommendedTier !== "estate") return "";
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 20px;">
@@ -543,8 +597,12 @@ function addressRowsWithAccess(
 function residentialTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
-  const pickups = Array.isArray(d.pickupLocations) ? d.pickupLocations.filter((p) => p.address?.trim()) : [];
-  const dropoffs = Array.isArray(d.dropoffLocations) ? d.dropoffLocations.filter((p) => p.address?.trim()) : [];
+  const pickups = Array.isArray(d.pickupLocations)
+    ? d.pickupLocations.filter((p) => p.address?.trim())
+    : [];
+  const dropoffs = Array.isArray(d.dropoffLocations)
+    ? d.dropoffLocations.filter((p) => p.address?.trim())
+    : [];
   if (pickups.length > 1 || dropoffs.length > 1) {
     pickups.forEach((p, i) => {
       const label = pickups.length > 1 ? `Pickup ${i + 1}` : "From";
@@ -559,17 +617,28 @@ function residentialTemplate(d: QuoteTemplateData): string {
       if (pa) rows.push(["Access", pa]);
     });
   } else {
-    rows.push(...addressRowsWithAccess("From", d.fromAddress, d.fromAccess, "To", d.toAddress, d.toAccess));
+    rows.push(
+      ...addressRowsWithAccess(
+        "From",
+        d.fromAddress,
+        d.fromAccess,
+        "To",
+        d.toAddress,
+        d.toAccess,
+      ),
+    );
   }
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.distance) rows.push(["Distance", d.distance]);
-  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
-  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
+  if (d.estCrewSize != null && d.estCrewSize > 0)
+    rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  if (d.estHours != null && d.estHours > 0)
+    rows.push(["Est. duration", `~${d.estHours} hours`]);
   if (d.truckSize) rows.push(["Truck", d.truckSize]);
 
   return quoteEmailLayout(`
     ${subHeading("Your Moving Quote")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("We have prepared three flat-rate service options tailored to your move. Every package includes professional movers, a dedicated truck, and full protection. Choose the level of care that suits you best.")}
     ${flatRateBadge()}
     ${expiryNote(d.expiresAt)}
@@ -586,8 +655,12 @@ function residentialTemplate(d: QuoteTemplateData): string {
 /* Long Distance */
 function longDistanceTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
-  const pickups = Array.isArray(d.pickupLocations) ? d.pickupLocations.filter((p) => p.address?.trim()) : [];
-  const dropoffs = Array.isArray(d.dropoffLocations) ? d.dropoffLocations.filter((p) => p.address?.trim()) : [];
+  const pickups = Array.isArray(d.pickupLocations)
+    ? d.pickupLocations.filter((p) => p.address?.trim())
+    : [];
+  const dropoffs = Array.isArray(d.dropoffLocations)
+    ? d.dropoffLocations.filter((p) => p.address?.trim())
+    : [];
   if (pickups.length > 1 || dropoffs.length > 1) {
     pickups.forEach((p, i) => {
       const label = pickups.length > 1 ? `Pickup ${i + 1}` : "Origin";
@@ -596,26 +669,42 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
       if (pa) rows.push(["Access", pa]);
     });
     dropoffs.forEach((p, i) => {
-      const label = dropoffs.length > 1 ? `Destination ${i + 1}` : "Destination";
+      const label =
+        dropoffs.length > 1 ? `Destination ${i + 1}` : "Destination";
       rows.push([label, p.address]);
       const pa = formatAccessForDisplay(p.access ?? null);
       if (pa) rows.push(["Access", pa]);
     });
   } else {
-    rows.push(...addressRowsWithAccess("Origin", d.fromAddress, d.fromAccess, "Destination", d.toAddress, d.toAccess));
+    rows.push(
+      ...addressRowsWithAccess(
+        "Origin",
+        d.fromAddress,
+        d.fromAccess,
+        "Destination",
+        d.toAddress,
+        d.toAccess,
+      ),
+    );
   }
   if (d.distance) rows.push(["Distance", d.distance]);
   if (d.moveSize) rows.push(["Move Size", formatMoveSize(d.moveSize)]);
   rows.push(["Date", dateDisplay(d.moveDate)]);
-  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
-  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
+  if (d.estCrewSize != null && d.estCrewSize > 0)
+    rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  if (d.estHours != null && d.estHours > 0)
+    rows.push(["Est. duration", `~${d.estHours} hours`]);
   if (d.truckSize) rows.push(["Truck", d.truckSize]);
 
-  const price = d.customPrice ?? d.tiers?.essential?.price ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
+  const price =
+    d.customPrice ??
+    d.tiers?.essential?.price ??
+    d.tiers?.curated?.price ??
+    d.tiers?.essentials?.price;
 
   return quoteEmailLayout(`
     ${subHeading("Long Distance Quote")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Your long distance quote is ready. We have prepared a single flat rate based on your route and inventory. Everything is included, with nothing left to chance on moving day.")}
     ${flatRateBadge()}
     ${expiryNote(d.expiresAt)}
@@ -633,14 +722,23 @@ function longDistanceTemplate(d: QuoteTemplateData): string {
 function officeTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.companyName) rows.push(["Company", d.companyName]);
-  rows.push(...addressRowsWithAccess("Current Office", d.fromAddress, d.fromAccess, "New Office", d.toAddress, d.toAccess));
+  rows.push(
+    ...addressRowsWithAccess(
+      "Current Office",
+      d.fromAddress,
+      d.fromAccess,
+      "New Office",
+      d.toAddress,
+      d.toAccess,
+    ),
+  );
   rows.push(["Target Date", dateDisplay(d.moveDate)]);
 
   const price = d.customPrice;
 
   return quoteEmailLayout(`
     ${subHeading("Relocation Proposal")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Thank you for considering Yugo for your office relocation. We have prepared a tailored proposal that covers every detail, from project coordination to careful equipment handling.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
@@ -656,8 +754,12 @@ function singleItemTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.itemDescription) rows.push(["Item", d.itemDescription]);
   if (d.itemCategory) rows.push(["Category", d.itemCategory]);
-  const pickupsSi = Array.isArray(d.pickupLocations) ? d.pickupLocations.filter((p) => p.address?.trim()) : [];
-  const dropoffsSi = Array.isArray(d.dropoffLocations) ? d.dropoffLocations.filter((p) => p.address?.trim()) : [];
+  const pickupsSi = Array.isArray(d.pickupLocations)
+    ? d.pickupLocations.filter((p) => p.address?.trim())
+    : [];
+  const dropoffsSi = Array.isArray(d.dropoffLocations)
+    ? d.dropoffLocations.filter((p) => p.address?.trim())
+    : [];
   if (pickupsSi.length > 1 || dropoffsSi.length > 1) {
     pickupsSi.forEach((p, i) => {
       const label = pickupsSi.length > 1 ? `Pickup ${i + 1}` : "Pickup";
@@ -672,18 +774,32 @@ function singleItemTemplate(d: QuoteTemplateData): string {
       if (pa) rows.push(["Access", pa]);
     });
   } else {
-    rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
+    rows.push(
+      ...addressRowsWithAccess(
+        "Pickup",
+        d.fromAddress,
+        d.fromAccess,
+        "Delivery",
+        d.toAddress,
+        d.toAccess,
+      ),
+    );
   }
   rows.push(["Delivery Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0)
     rows.push(["Crew", quoteEmailCrewLine(d.estCrewSize, "single_item")]);
-  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
+  if (d.estHours != null && d.estHours > 0)
+    rows.push(["Est. duration", `~${d.estHours} hours`]);
 
-  const price = d.customPrice ?? d.tiers?.essential?.price ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
+  const price =
+    d.customPrice ??
+    d.tiers?.essential?.price ??
+    d.tiers?.curated?.price ??
+    d.tiers?.essentials?.price;
 
   return quoteEmailLayout(`
     ${subHeading("Your Delivery Quote")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Your delivery quote is ready. We will handle your item with the same care and attention we bring to every job, from pickup through final placement.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
@@ -698,8 +814,12 @@ function singleItemTemplate(d: QuoteTemplateData): string {
 function whiteGloveTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.itemDescription) rows.push(["Item", d.itemDescription]);
-  const pickupsWg = Array.isArray(d.pickupLocations) ? d.pickupLocations.filter((p) => p.address?.trim()) : [];
-  const dropoffsWg = Array.isArray(d.dropoffLocations) ? d.dropoffLocations.filter((p) => p.address?.trim()) : [];
+  const pickupsWg = Array.isArray(d.pickupLocations)
+    ? d.pickupLocations.filter((p) => p.address?.trim())
+    : [];
+  const dropoffsWg = Array.isArray(d.dropoffLocations)
+    ? d.dropoffLocations.filter((p) => p.address?.trim())
+    : [];
   if (pickupsWg.length > 1 || dropoffsWg.length > 1) {
     pickupsWg.forEach((p, i) => {
       const label = pickupsWg.length > 1 ? `Pickup ${i + 1}` : "Pickup";
@@ -714,18 +834,32 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
       if (pa) rows.push(["Access", pa]);
     });
   } else {
-    rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
+    rows.push(
+      ...addressRowsWithAccess(
+        "Pickup",
+        d.fromAddress,
+        d.fromAccess,
+        "Delivery",
+        d.toAddress,
+        d.toAccess,
+      ),
+    );
   }
   rows.push(["Delivery Date", dateDisplay(d.moveDate)]);
   if (d.estCrewSize != null && d.estCrewSize > 0)
     rows.push(["Crew", quoteEmailCrewLine(d.estCrewSize, "white_glove")]);
-  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
+  if (d.estHours != null && d.estHours > 0)
+    rows.push(["Est. duration", `~${d.estHours} hours`]);
 
-  const price = d.customPrice ?? d.tiers?.essential?.price ?? d.tiers?.curated?.price ?? d.tiers?.essentials?.price;
+  const price =
+    d.customPrice ??
+    d.tiers?.essential?.price ??
+    d.tiers?.curated?.price ??
+    d.tiers?.essentials?.price;
 
   return quoteEmailLayout(`
     ${subHeading("White Glove Service Quote")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Your white glove quote is ready. From custom crating to climate-controlled handling, every detail has been considered. Your most valued possessions deserve nothing less.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
@@ -740,16 +874,27 @@ function whiteGloveTemplate(d: QuoteTemplateData): string {
 function specialtyTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.projectType) rows.push(["Project Type", d.projectType]);
-  rows.push(...addressRowsWithAccess("From", d.fromAddress, d.fromAccess, "To", d.toAddress, d.toAccess));
+  rows.push(
+    ...addressRowsWithAccess(
+      "From",
+      d.fromAddress,
+      d.fromAccess,
+      "To",
+      d.toAddress,
+      d.toAccess,
+    ),
+  );
   rows.push(["Target Date", dateDisplay(d.moveDate)]);
-  if (d.estCrewSize != null && d.estCrewSize > 0) rows.push(["Crew", `${d.estCrewSize} professional movers`]);
-  if (d.estHours != null && d.estHours > 0) rows.push(["Est. duration", `~${d.estHours} hours`]);
+  if (d.estCrewSize != null && d.estCrewSize > 0)
+    rows.push(["Crew", `${d.estCrewSize} professional movers`]);
+  if (d.estHours != null && d.estHours > 0)
+    rows.push(["Est. duration", `~${d.estHours} hours`]);
 
   const price = d.customPrice;
 
   return quoteEmailLayout(`
     ${subHeading("Specialty Service Proposal")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Thank you for entrusting us with your specialty project. We have prepared a custom proposal with all the specialized equipment and care your project requires.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
@@ -806,7 +951,7 @@ function eventTemplate(d: QuoteTemplateData): string {
 
   return quoteEmailLayout(`
     ${subHeading("Event Logistics Quote")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText(intro)}
     ${expiryNote(d.expiresAt)}
     <div style="text-align:left;margin-bottom:20px">
@@ -836,21 +981,26 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
   }
   rows.push(["Date", dateDisplay(d.moveDate)]);
   if (d.labourCrewSize != null && d.labourHours != null) {
-    rows.push(["Crew", `${d.labourCrewSize} movers \u00d7 ${d.labourHours} hours`]);
+    rows.push([
+      "Crew",
+      `${d.labourCrewSize} movers \u00d7 ${d.labourHours} hours`,
+    ]);
   }
-  if (d.labourVisits != null && d.labourVisits >= 2) rows.push(["Visits", "2 visits scheduled"]);
+  if (d.labourVisits != null && d.labourVisits >= 2)
+    rows.push(["Visits", "2 visits scheduled"]);
 
   const total = d.customPrice ?? 0;
   const tax = Math.round(total * 0.13);
-  const deposit = Math.max(200, Math.round((total + tax) * 0.50));
+  const deposit = Math.max(200, Math.round((total + tax) * 0.5));
 
-  const labourNote = d.labourCrewSize && d.labourHours && d.labourRate
-    ? `${d.labourCrewSize} movers \u00d7 ${d.labourHours} hrs \u00d7 $${d.labourRate}/hr`
-    : "";
+  const labourNote =
+    d.labourCrewSize && d.labourHours && d.labourRate
+      ? `${d.labourCrewSize} movers \u00d7 ${d.labourHours} hrs \u00d7 $${d.labourRate}/hr`
+      : "";
 
   return quoteEmailLayout(`
     ${subHeading("Your Service Quote")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Your labour service quote is ready. A professional crew arrives fully equipped and ready to work. No truck required.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
@@ -877,7 +1027,10 @@ function binRentalTemplate(d: QuoteTemplateData): string {
           .join("")}</ul>`
       : `<p style="margin:0 0 16px;color:${SHELL_TX2};font-size:12px;line-height:1.55">Reusable plastic bins, wardrobe boxes on move day, zip ties (1 per bin).</p>`;
   if (d.binDropOffDate) {
-    rows.push(["Bin delivery", `${dateDisplay(d.binDropOffDate)} — ${d.binDeliveryAddress || d.toAddress || ""}`]);
+    rows.push([
+      "Bin delivery",
+      `${dateDisplay(d.binDropOffDate)} — ${d.binDeliveryAddress || d.toAddress || ""}`,
+    ]);
   }
   if (d.binMoveDate) {
     rows.push(["Your move", dateDisplay(d.binMoveDate)]);
@@ -905,7 +1058,7 @@ function binRentalTemplate(d: QuoteTemplateData): string {
 
   return quoteEmailLayout(`
     ${subHeading("Your Yugo Bin Rental Quote")}
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Your eco-friendly bin rental quote is ready.")}
     <p style="${SHELL_EYEBROW}margin:0 0 8px;">What&apos;s included</p>
     ${includeBullets}
@@ -933,7 +1086,16 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   if (d.b2bBusinessName) rows.push(["Business", d.b2bBusinessName]);
   if (d.b2bItems) rows.push(["Items", d.b2bItems]);
-  rows.push(...addressRowsWithAccess("Pickup", d.fromAddress, d.fromAccess, "Delivery", d.toAddress, d.toAccess));
+  rows.push(
+    ...addressRowsWithAccess(
+      "Pickup",
+      d.fromAddress,
+      d.fromAccess,
+      "Delivery",
+      d.toAddress,
+      d.toAccess,
+    ),
+  );
   rows.push(["Delivery Date", dateDisplay(d.moveDate)]);
 
   const total = d.customPrice ?? 0;
@@ -946,7 +1108,7 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
   return quoteEmailLayout(`
     ${subHeading("COMMERCIAL DELIVERY QUOTE")}
     <p style="font-size:14px;font-weight:600;color:${EMAIL_WINE};letter-spacing:0;margin:0 0 20px;line-height:1.5;">${scopeLine}</p>
-    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
+    ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`)}
     ${bodyText("Your commercial delivery quote is ready. One transparent flat rate with professional logistics from pickup through delivery.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
@@ -975,7 +1137,10 @@ const TEMPLATE_MAP: Record<string, (d: QuoteTemplateData) => string> = {
   "quote-b2boneoff": b2bOneOffTemplate,
 };
 
-export function renderQuoteTemplate(template: string, data: QuoteTemplateData): string {
+export function renderQuoteTemplate(
+  template: string,
+  data: QuoteTemplateData,
+): string {
   const renderer = TEMPLATE_MAP[template];
   if (!renderer) throw new Error(`Unknown quote template: ${template}`);
   return renderer(data);

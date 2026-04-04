@@ -11,11 +11,34 @@ const CREAM = "#FAF7F2";
  * These mirror the SEASON_MODS in the widget estimate API.
  */
 const SEASON_MODS: Record<number, number> = {
-  1: 0.88, 2: 0.88, 3: 0.92, 4: 0.95, 5: 1.0, 6: 1.1,
-  7: 1.15, 8: 1.15, 9: 1.05, 10: 0.95, 11: 0.9, 12: 0.88,
+  1: 0.88,
+  2: 0.88,
+  3: 0.92,
+  4: 0.95,
+  5: 1.0,
+  6: 1.1,
+  7: 1.15,
+  8: 1.15,
+  9: 1.05,
+  10: 0.95,
+  11: 0.9,
+  12: 0.88,
 };
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 const PEAK_MONTHS = [6, 7, 8];
 const OFF_PEAK_MONTHS = [1, 2, 12, 11];
@@ -42,11 +65,19 @@ export default function SeasonalPricingPreview({
     return Array.from({ length: 12 }, (_, i) => {
       const month = i + 1;
       const mod = SEASON_MODS[month] ?? 1.0;
-      const price = Math.round(basePrice * mod / 50) * 50;
+      const price = Math.round((basePrice * mod) / 50) * 50;
       const isPeak = PEAK_MONTHS.includes(month);
       const isOffPeak = OFF_PEAK_MONTHS.includes(month);
       const isPast = month < currentMonth;
-      return { month, name: MONTH_NAMES[i]!, price, mod, isPeak, isOffPeak, isPast };
+      return {
+        month,
+        name: MONTH_NAMES[i]!,
+        price,
+        mod,
+        isPeak,
+        isOffPeak,
+        isPast,
+      };
     });
   }, [basePrice, currentMonth]);
 
@@ -65,10 +96,18 @@ export default function SeasonalPricingPreview({
           borderRadius: 0,
           padding: "14px 16px",
           background: dark ? "rgba(249, 237, 228, 0.08)" : `${FOREST}04`,
-          borderLeft: dark ? "3px solid rgba(249,237,228,0.4)" : `3px solid ${FOREST}`,
-          borderTop: dark ? "1px solid rgba(249,237,228,0.15)" : `1px solid ${FOREST}10`,
-          borderRight: dark ? "1px solid rgba(249,237,228,0.15)" : `1px solid ${FOREST}10`,
-          borderBottom: dark ? "1px solid rgba(249,237,228,0.15)" : `1px solid ${FOREST}10`,
+          borderLeft: dark
+            ? "3px solid rgba(249,237,228,0.4)"
+            : `3px solid ${FOREST}`,
+          borderTop: dark
+            ? "1px solid rgba(249,237,228,0.15)"
+            : `1px solid ${FOREST}10`,
+          borderRight: dark
+            ? "1px solid rgba(249,237,228,0.15)"
+            : `1px solid ${FOREST}10`,
+          borderBottom: dark
+            ? "1px solid rgba(249,237,228,0.15)"
+            : `1px solid ${FOREST}10`,
         }}
       >
         <p
@@ -84,9 +123,19 @@ export default function SeasonalPricingPreview({
         >
           Price by Month
         </p>
-        <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 40 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            alignItems: "flex-end",
+            height: 40,
+          }}
+        >
           {months.map(({ month, price, isPeak, isPast }) => {
-            const height = Math.round(((price - minPrice) / (maxPrice - minPrice + 1)) * 28) + 8;
+            const height =
+              Math.round(
+                ((price - minPrice) / (maxPrice - minPrice + 1)) * 28,
+              ) + 8;
             const isSelected = month === selectedMonth;
             const bg = dark
               ? isSelected
@@ -131,9 +180,23 @@ export default function SeasonalPricingPreview({
             );
           })}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-          <span style={{ fontSize: 9, color: labelMuted2, opacity: dark ? 1 : 0.4 }}>Jan</span>
-          <span style={{ fontSize: 9, color: labelMuted2, opacity: dark ? 1 : 0.4 }}>Dec</span>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: 4,
+          }}
+        >
+          <span
+            style={{ fontSize: 9, color: labelMuted2, opacity: dark ? 1 : 0.4 }}
+          >
+            Jan
+          </span>
+          <span
+            style={{ fontSize: 9, color: labelMuted2, opacity: dark ? 1 : 0.4 }}
+          >
+            Dec
+          </span>
         </div>
         {cheapestMonth && !selectedMonthData?.isPeak && (
           <p
@@ -162,7 +225,11 @@ export default function SeasonalPricingPreview({
             }}
           >
             Peak season pricing applies. Moving in May or Sep saves ~$
-            {(selectedMonthData.price - (months.find((m) => m.month === 5)?.price ?? 0)).toLocaleString()}.
+            {(
+              selectedMonthData.price -
+              (months.find((m) => m.month === 5)?.price ?? 0)
+            ).toLocaleString()}
+            .
           </p>
         )}
       </div>
@@ -170,32 +237,94 @@ export default function SeasonalPricingPreview({
   }
 
   return (
-    <div style={{ background: CREAM, borderRadius: 16, padding: "20px 20px 16px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+    <div
+      style={{ background: CREAM, borderRadius: 16, padding: "20px 20px 16px" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 16,
+        }}
+      >
         <div>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: FOREST, opacity: 0.5, margin: "0 0 2px" }}>
+          <p
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "1.5px",
+              textTransform: "uppercase",
+              color: FOREST,
+              opacity: 0.5,
+              margin: "0 0 2px",
+            }}
+          >
             Seasonal Pricing
           </p>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: FOREST, margin: 0 }}>
+          <h3
+            style={{ fontSize: 16, fontWeight: 700, color: FOREST, margin: 0 }}
+          >
             Best time to move
           </h3>
         </div>
         {cheapestMonth && (
-          <div style={{ background: `${FOREST}15`, borderRadius: 8, padding: "4px 10px", textAlign: "center" }}>
-            <p style={{ fontSize: 9, color: FOREST, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", margin: "0 0 1px" }}>Cheapest</p>
-            <p style={{ fontSize: 13, fontWeight: 700, color: WINE, margin: 0 }}>{MONTH_NAMES[cheapestMonth.month - 1]}</p>
+          <div
+            style={{
+              background: `${FOREST}15`,
+              borderRadius: 8,
+              padding: "4px 10px",
+              textAlign: "center",
+            }}
+          >
+            <p
+              style={{
+                fontSize: 9,
+                color: FOREST,
+                fontWeight: 700,
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                margin: "0 0 1px",
+              }}
+            >
+              Cheapest
+            </p>
+            <p
+              style={{ fontSize: 13, fontWeight: 700, color: WINE, margin: 0 }}
+            >
+              {MONTH_NAMES[cheapestMonth.month - 1]}
+            </p>
           </div>
         )}
       </div>
 
       {/* Bar chart */}
-      <div style={{ display: "flex", gap: 5, alignItems: "flex-end", height: 64, marginBottom: 6 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 5,
+          alignItems: "flex-end",
+          height: 64,
+          marginBottom: 6,
+        }}
+      >
         {months.map(({ month, price, isPeak, isPast }) => {
-          const height = Math.round(((price - minPrice) / (maxPrice - minPrice + 1)) * 44) + 18;
+          const height =
+            Math.round(((price - minPrice) / (maxPrice - minPrice + 1)) * 44) +
+            18;
           const isSelected = month === selectedMonth;
           const isCheapest = month === cheapestMonth?.month;
           return (
-            <div key={month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+            <div
+              key={month}
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 3,
+              }}
+            >
               <button
                 type="button"
                 onClick={() => onSelectMonth?.(month)}
@@ -208,12 +337,12 @@ export default function SeasonalPricingPreview({
                   background: isSelected
                     ? FOREST
                     : isCheapest
-                    ? `${FOREST}40`
-                    : isPeak
-                    ? `${WINE}25`
-                    : isPast
-                    ? "#e8e4de"
-                    : `${FOREST}15`,
+                      ? `${FOREST}40`
+                      : isPeak
+                        ? `${WINE}25`
+                        : isPast
+                          ? "#e8e4de"
+                          : `${FOREST}15`,
                   cursor: onSelectMonth ? "pointer" : "default",
                   opacity: isPast ? 0.4 : 1,
                   transition: "all 0.15s",
@@ -230,7 +359,14 @@ export default function SeasonalPricingPreview({
       <div style={{ display: "flex", gap: 5 }}>
         {months.map(({ month, name, isPast }) => (
           <div key={month} style={{ flex: 1, textAlign: "center" }}>
-            <span style={{ fontSize: 8, fontWeight: 600, color: FOREST, opacity: isPast ? 0.3 : 0.5 }}>
+            <span
+              style={{
+                fontSize: 8,
+                fontWeight: 600,
+                color: FOREST,
+                opacity: isPast ? 0.3 : 0.5,
+              }}
+            >
               {name}
             </span>
           </div>
@@ -238,29 +374,89 @@ export default function SeasonalPricingPreview({
       </div>
 
       {/* Legend */}
-      <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+      <div
+        style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 10, height: 10, borderRadius: 2, background: `${WINE}25` }} />
-          <span style={{ fontSize: 10, color: FOREST, opacity: 0.6 }}>Peak (Jun–Aug)</span>
+          <div
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              background: `${WINE}25`,
+            }}
+          />
+          <span style={{ fontSize: 10, color: FOREST, opacity: 0.6 }}>
+            Peak (Jun–Aug)
+          </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 10, height: 10, borderRadius: 2, background: `${FOREST}40` }} />
-          <span style={{ fontSize: 10, color: FOREST, opacity: 0.6 }}>Best value</span>
+          <div
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              background: `${FOREST}40`,
+            }}
+          />
+          <span style={{ fontSize: 10, color: FOREST, opacity: 0.6 }}>
+            Best value
+          </span>
         </div>
         {selectedMonth && (
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 2, background: FOREST }} />
-            <span style={{ fontSize: 10, color: FOREST, opacity: 0.6 }}>Selected</span>
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 2,
+                background: FOREST,
+              }}
+            />
+            <span style={{ fontSize: 10, color: FOREST, opacity: 0.6 }}>
+              Selected
+            </span>
           </div>
         )}
       </div>
 
       {/* Insight */}
       {selectedMonthData?.isPeak && (
-        <div style={{ marginTop: 12, padding: "10px 12px", background: `${WINE}08`, borderRadius: 10, borderLeft: `3px solid ${WINE}` }}>
-          <p style={{ fontSize: 11, color: WINE, fontWeight: 600, margin: "0 0 2px" }}>Peak Season Notice</p>
-          <p style={{ fontSize: 11, color: FOREST, opacity: 0.7, margin: 0, lineHeight: 1.4 }}>
-            Moving in Jun–Aug costs ~15% more. Booking in May or September could save you ${((selectedMonthData.price) - Math.round(basePrice * 1.0 / 50) * 50).toLocaleString()}.
+        <div
+          style={{
+            marginTop: 12,
+            padding: "10px 12px",
+            background: `${WINE}08`,
+            borderRadius: 10,
+            borderLeft: `3px solid ${WINE}`,
+          }}
+        >
+          <p
+            style={{
+              fontSize: 11,
+              color: WINE,
+              fontWeight: 600,
+              margin: "0 0 2px",
+            }}
+          >
+            Peak Season Notice
+          </p>
+          <p
+            style={{
+              fontSize: 11,
+              color: FOREST,
+              opacity: 0.7,
+              margin: 0,
+              lineHeight: 1.4,
+            }}
+          >
+            Moving in Jun–Aug costs ~15% more. Booking in May or September could
+            save you $
+            {(
+              selectedMonthData.price -
+              Math.round((basePrice * 1.0) / 50) * 50
+            ).toLocaleString()}
+            .
           </p>
         </div>
       )}

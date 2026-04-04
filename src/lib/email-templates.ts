@@ -1,4 +1,7 @@
-import { getClientEmailFooterTrs, type EmailFooterWhy } from "@/lib/email/client-email-footer";
+import {
+  getClientEmailFooterTrs,
+  type EmailFooterWhy,
+} from "@/lib/email/client-email-footer";
 
 export type { EmailFooterWhy } from "@/lib/email/client-email-footer";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
@@ -78,7 +81,8 @@ const PREMIUM_FONT = "'DM Sans',Helvetica Neue,Helvetica,Arial,sans-serif";
  * - Eyebrows & section labels: sentence case, text-transform none, letter-spacing 0 — except invite/credential kickers (PREMIUM_EYEBROW_UPPER).
  * - Body: PREMIUM_FONT (sans).
  */
-const PREMIUM_SERIF_HEADING = "'Instrument Serif',Georgia,'Times New Roman',serif";
+const PREMIUM_SERIF_HEADING =
+  "'Instrument Serif',Georgia,'Times New Roman',serif";
 /** Wine subheads on invite & credential blocks: 12px, uppercase, letter-spacing 0 (explicit font-family for client consistency). */
 const PREMIUM_EYEBROW_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0px;text-transform:uppercase`;
 
@@ -150,10 +154,16 @@ function emailCardLogoEstate(): string {
 
 /** Client contact email and phone for footer. */
 function getContactEmail(): string {
-  return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) || "notifications@opsplus.co";
+  return (
+    (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_EMAIL) ||
+    "notifications@opsplus.co"
+  );
 }
 function getContactPhone(): string {
-  return (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) || "(647) 370-4525";
+  return (
+    (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_YUGO_PHONE) ||
+    "(647) 370-4525"
+  );
 }
 
 /** Wine wordmark + wine–rose rule — premium transactional cream shell (not Estate confirmation). */
@@ -187,7 +197,10 @@ function premiumSectionRule(): string {
   return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin:0;"><tr><td style="${hairlineTd}">&nbsp;</td></tr><tr><td style="${spacerTd}">&nbsp;</td></tr></table>`;
 }
 
-function premiumEmailWrapper(innerHtml: string, footerWhy: EmailFooterWhy): string {
+function premiumEmailWrapper(
+  innerHtml: string,
+  footerWhy: EmailFooterWhy,
+): string {
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PREMIUM_PAGE}" style="background-color:${PREMIUM_PAGE};color-scheme:light;">
   <tr>
@@ -215,7 +228,11 @@ function emailFooterRow(why: EmailFooterWhy = "booking"): string {
 /**
  * Transactional wrapper: warm cream page, flat content (no card border), shared footer.
  */
-export function emailLayout(innerHtml: string, _footerLoginUrl?: string, footerWhy: EmailFooterWhy = "booking"): string {
+export function emailLayout(
+  innerHtml: string,
+  _footerLoginUrl?: string,
+  footerWhy: EmailFooterWhy = "booking",
+): string {
   void _footerLoginUrl;
   return premiumEmailWrapper(innerHtml, footerWhy);
 }
@@ -223,13 +240,23 @@ export function emailLayout(innerHtml: string, _footerLoginUrl?: string, footerW
 /**
  * Promo / long-form transactional shell (quote follow-ups, nurture). Same premium shell as {@link emailLayout}.
  */
-export function equinoxPromoLayout(innerHtml: string, footerWhy: EmailFooterWhy = "generic"): string {
+export function equinoxPromoLayout(
+  innerHtml: string,
+  footerWhy: EmailFooterWhy = "generic",
+): string {
   return premiumEmailWrapper(innerHtml, footerWhy);
 }
 
-const PREMIUM_PROMO_CTA_ANCHOR_STYLE = emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block");
+const PREMIUM_PROMO_CTA_ANCHOR_STYLE = emailPrimaryCtaStyle(
+  PREMIUM_FONT,
+  "inline-block",
+);
 
-function equinoxPromoCtaTable(url: string, label: string, anchorStyle: string): string {
+function equinoxPromoCtaTable(
+  url: string,
+  label: string,
+  anchorStyle: string,
+): string {
   const hairlineTd = `border-top:1px solid ${PREMIUM_RULE};font-size:0;line-height:0;mso-line-height-rule:exactly;padding:0;height:1px;`;
   const spacerTd = `font-size:0;line-height:0;mso-line-height-rule:exactly;padding:0;height:12px;`;
   return `
@@ -255,7 +282,11 @@ export function equinoxPromoCta(url: string, label: string): string {
 
 /** Same layout as {@link equinoxPromoCta} with standardized track-move button typography. */
 export function equinoxPromoTrackMoveCta(url: string): string {
-  return equinoxPromoCtaTable(url, PREMIUM_TRACK_CTA_LABEL, emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block"));
+  return equinoxPromoCtaTable(
+    url,
+    PREMIUM_TRACK_CTA_LABEL,
+    emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block"),
+  );
 }
 
 /** Muted fine-print line beneath the CTA. */
@@ -350,7 +381,10 @@ ${ESTATE_EMAIL_DARK_MODE_CSS}
 }
 
 /** Previous Yugo look: cream wordmark in premium shell — quote follow-ups, reviews, low-satisfaction. */
-export function legacyEmailLayout(innerHtml: string, footerLoginUrl?: string): string {
+export function legacyEmailLayout(
+  innerHtml: string,
+  footerLoginUrl?: string,
+): string {
   void footerLoginUrl;
   return premiumEmailWrapper(innerHtml, "generic");
 }
@@ -371,15 +405,17 @@ export function statusUpdateEmailHtml(params: {
       ctaLabel === PREMIUM_TRACK_DELIVERY_CTA_LABEL ||
       ctaLabel === "Track your move" ||
       ctaLabel === "Track your delivery");
-  const ctaHtml = ctaUrl && ctaLabel
-    ? `
+  const ctaHtml =
+    ctaUrl && ctaLabel
+      ? `
     <tr>
       <td align="center" style="padding:8px 0 32px;">
         ${
           useCompactTrackCta
             ? premiumCompactWineCtaAnchor(
                 ctaUrl,
-                ctaLabel === "Track your delivery" || ctaLabel === PREMIUM_TRACK_DELIVERY_CTA_LABEL
+                ctaLabel === "Track your delivery" ||
+                  ctaLabel === PREMIUM_TRACK_DELIVERY_CTA_LABEL
                   ? PREMIUM_TRACK_DELIVERY_CTA_LABEL
                   : PREMIUM_TRACK_CTA_LABEL,
               )
@@ -388,7 +424,7 @@ export function statusUpdateEmailHtml(params: {
       </td>
     </tr>
   `
-    : "";
+      : "";
   const bottomPad = includeFooter ? "24px" : "40px";
   const footerBlock = includeFooter ? emailFooterRow("booking") : "";
   return `
@@ -460,7 +496,9 @@ export function deliveryNotificationEmail(delivery: {
   items_count?: number;
   trackUrl?: string;
 }) {
-  const trackUrl = delivery.trackUrl || `${getEmailBaseUrl()}/track/delivery/${delivery.delivery_number}`;
+  const trackUrl =
+    delivery.trackUrl ||
+    `${getEmailBaseUrl()}/track/delivery/${delivery.delivery_number}`;
   const items = delivery.items_count ?? 0;
   const inner = `
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -521,7 +559,13 @@ function formatStatusLabel(status: string): string {
     "in-transit": "In Progress",
     dispatched: "In Progress",
   };
-  return labels[status] || (status || "").replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return (
+    labels[status] ||
+    (status || "")
+      .replace(/_/g, " ")
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+  );
 }
 
 const LIVE_STAGE_LABELS: Record<string, string> = {
@@ -561,7 +605,9 @@ const STAGE_INDEX: Record<string, number> = {
 
 function moveStatusBarHtml(status: string, stage?: string | null): string {
   const isCancelled = (status || "").toLowerCase() === "cancelled";
-  const isCompleted = (status || "").toLowerCase() === "completed" || (status || "").toLowerCase() === "delivered";
+  const isCompleted =
+    (status || "").toLowerCase() === "completed" ||
+    (status || "").toLowerCase() === "delivered";
   const statusIdx = STATUS_INDEX[(status || "").toLowerCase()] ?? 0;
   const stageKey = stage ?? "";
   const stageIdx = stageKey ? (STAGE_INDEX[stageKey] ?? -1) : -1;
@@ -578,7 +624,8 @@ function moveStatusBarHtml(status: string, stage?: string | null): string {
     pct = 100;
     currentLabel = "Completed";
   } else if (statusIdx === 3 && stageIdx >= 0) {
-    const stageLabel = LIVE_STAGE_LABELS[stageKey] || stageKey.replace(/_/g, " ");
+    const stageLabel =
+      LIVE_STAGE_LABELS[stageKey] || stageKey.replace(/_/g, " ");
     currentLabel = stageLabel;
     pct = 60 + Math.round(((stageIdx + 1) / 6) * 40);
   } else {
@@ -623,7 +670,8 @@ export function moveNotificationEmail(move: {
   trackUrl?: string;
   changes_made?: string;
 }) {
-  const trackUrl = move.trackUrl || `${getEmailBaseUrl()}/track/move/${move.move_id}`;
+  const trackUrl =
+    move.trackUrl || `${getEmailBaseUrl()}/track/move/${move.move_id}`;
   const statusBarHtml = moveStatusBarHtml(move.status, move.stage);
   const inner = `
     <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Your move was updated</div>
@@ -684,7 +732,14 @@ export function changeRequestNotificationEmail(params: {
   portalUrl: string;
   feeCents?: number;
 }) {
-  const { client_name, status, type, description, portalUrl, feeCents = 0 } = params;
+  const {
+    client_name,
+    status,
+    type,
+    description,
+    portalUrl,
+    feeCents = 0,
+  } = params;
   const isApproved = status === "approved";
   const feeDollars = feeCents > 0 ? (feeCents / 100).toFixed(2) : "";
   const inner = `
@@ -714,7 +769,8 @@ export function inventoryChangeRequestAdminEmail(params: {
   netDelta: number;
   adminUrl: string;
 }) {
-  const { moveCode, clientName, addedCount, removedCount, netDelta, adminUrl } = params;
+  const { moveCode, clientName, addedCount, removedCount, netDelta, adminUrl } =
+    params;
   const deltaStr = `${netDelta >= 0 ? "+" : ""}$${netDelta}`;
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px;">Inventory change request</div>
@@ -742,7 +798,16 @@ export function inventoryChangeRequestClientEmail(params: {
   adminNote?: string | null;
   additionalDeposit?: number;
 }) {
-  const { clientName, status, netDelta, newTotal, portalUrl, declineReason, adminNote, additionalDeposit } = params;
+  const {
+    clientName,
+    status,
+    netDelta,
+    newTotal,
+    portalUrl,
+    declineReason,
+    adminNote,
+    additionalDeposit,
+  } = params;
   const isOk = status !== "declined";
   const headline =
     status === "declined"
@@ -820,7 +885,13 @@ export function inviteUserEmail(params: {
   return emailLayout(inner, loginUrl, "generic");
 }
 
-export function inviteUserEmailText(params: { name: string; email: string; roleLabel: string; tempPassword: string; loginUrl: string }) {
+export function inviteUserEmailText(params: {
+  name: string;
+  email: string;
+  roleLabel: string;
+  tempPassword: string;
+  loginUrl: string;
+}) {
   const { name, email, roleLabel, tempPassword, loginUrl } = params;
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
   return `YOU'RE INVITED
@@ -848,7 +919,8 @@ export function invitePartnerEmail(params: {
   tempPassword: string;
   loginUrl: string;
 }) {
-  const { contactName, companyName, email, typeLabel, tempPassword, loginUrl } = params;
+  const { contactName, companyName, email, typeLabel, tempPassword, loginUrl } =
+    params;
   const pwdPill = `<span style="font-family:'Courier New',Courier,monospace;font-size:13px;color:${PREMIUM_BODY};background:rgba(44,62,45,0.09);padding:6px 10px;border-radius:0;display:inline-block;">${tempPassword}</span>`;
   const inner = `
     <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Partner</div>
@@ -876,8 +948,16 @@ export function invitePartnerEmail(params: {
   return emailLayout(inner, loginUrl, "partner");
 }
 
-export function invitePartnerEmailText(params: { contactName: string; companyName: string; email: string; typeLabel: string; tempPassword: string; loginUrl: string }) {
-  const { contactName, companyName, email, typeLabel, tempPassword, loginUrl } = params;
+export function invitePartnerEmailText(params: {
+  contactName: string;
+  companyName: string;
+  email: string;
+  typeLabel: string;
+  tempPassword: string;
+  loginUrl: string;
+}) {
+  const { contactName, companyName, email, typeLabel, tempPassword, loginUrl } =
+    params;
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
   return `PARTNER ACCOUNT
 
@@ -904,7 +984,11 @@ Powered by Yugo | Learn more: ${baseUrl}/about`;
 }
 
 /** Email when an existing Yugo user is added to a partner (no new account, no temp password). */
-export function addedToPartnerEmail(params: { contactName: string; companyName: string; loginUrl: string }) {
+export function addedToPartnerEmail(params: {
+  contactName: string;
+  companyName: string;
+  loginUrl: string;
+}) {
   const { companyName, loginUrl } = params;
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px;">Portal access added</div>
@@ -917,7 +1001,11 @@ export function addedToPartnerEmail(params: { contactName: string; companyName: 
   return emailLayout(inner, loginUrl, "partner");
 }
 
-export function addedToPartnerEmailText(params: { contactName: string; companyName: string; loginUrl: string }) {
+export function addedToPartnerEmailText(params: {
+  contactName: string;
+  companyName: string;
+  loginUrl: string;
+}) {
   const { companyName, loginUrl } = params;
   return `Portal access added
 
@@ -953,7 +1041,13 @@ export function partnerPasswordResetEmail(params: {
   return emailLayout(inner, loginUrl, "partner");
 }
 
-export function partnerPasswordResetEmailText(params: { contactName: string; companyName: string; email: string; tempPassword: string; loginUrl: string }) {
+export function partnerPasswordResetEmailText(params: {
+  contactName: string;
+  companyName: string;
+  email: string;
+  tempPassword: string;
+  loginUrl: string;
+}) {
   const { contactName, companyName, email, tempPassword, loginUrl } = params;
   const baseUrl = loginUrl.replace(/\/login.*$/, "");
   return `PASSWORD RESET – Yugo Partner Portal
@@ -971,7 +1065,11 @@ For security, we recommend changing this password after you sign in. If you didn
 Powered by Yugo | Learn more: ${baseUrl}/about`;
 }
 
-export function welcomeEmail(client: { name: string; email: string; portalUrl: string }) {
+export function welcomeEmail(client: {
+  name: string;
+  email: string;
+  portalUrl: string;
+}) {
   const displayName = client.name || "Partner";
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px;">Partner portal access</div>
@@ -990,7 +1088,11 @@ export function welcomeEmail(client: { name: string; email: string; portalUrl: s
   return emailLayout(inner, undefined, "partner");
 }
 
-export function referralReceivedEmail(params: { agentName: string; clientName: string; property: string }) {
+export function referralReceivedEmail(params: {
+  agentName: string;
+  clientName: string;
+  property: string;
+}) {
   const { agentName, clientName, property } = params;
   const ref = clientName || property || "this property";
   const inner = `
@@ -1008,7 +1110,13 @@ export function referralReceivedEmail(params: { agentName: string; clientName: s
   return emailLayout(inner);
 }
 
-export function crewPortalInviteEmail(params: { name: string; email: string; loginUrl: string; phone: string; pin: string }) {
+export function crewPortalInviteEmail(params: {
+  name: string;
+  email: string;
+  loginUrl: string;
+  phone: string;
+  pin: string;
+}) {
   const { name, loginUrl, phone, pin } = params;
   const phoneDisplay = formatPhone(phone);
   const pinPill = `<span style="font-family:'Courier New',Courier,monospace;font-size:13px;color:${PREMIUM_BODY};background:rgba(44,62,45,0.09);padding:6px 10px;border-radius:0;display:inline-block;">${pin}</span>`;
@@ -1030,7 +1138,13 @@ export function crewPortalInviteEmail(params: { name: string; email: string; log
   return emailLayout(inner, loginUrl, "generic");
 }
 
-export function crewPortalInviteEmailText(params: { name: string; email: string; loginUrl: string; phone: string; pin: string }) {
+export function crewPortalInviteEmailText(params: {
+  name: string;
+  email: string;
+  loginUrl: string;
+  phone: string;
+  pin: string;
+}) {
   const { name, loginUrl, phone, pin } = params;
   const phoneDisplay = formatPhone(phone);
   return `CREW PORTAL ACCESS
@@ -1063,7 +1177,19 @@ export function bookingConfirmationEmail(params: {
   balanceRemaining: number;
   trackingUrl: string;
 }): string {
-  const { clientName, moveCode, moveDate, fromAddress, toAddress, tierLabel, serviceLabel, totalWithTax, depositPaid, balanceRemaining, trackingUrl } = params;
+  const {
+    clientName,
+    moveCode,
+    moveDate,
+    fromAddress,
+    toAddress,
+    tierLabel,
+    serviceLabel,
+    totalWithTax,
+    depositPaid,
+    balanceRemaining,
+    trackingUrl,
+  } = params;
   const name = (clientName || "").split(" ")[0];
 
   const dateDisplay = moveDate
@@ -1173,14 +1299,20 @@ function confirmDateDisplay(dateStr: string | null): string {
 }
 
 /** @deprecated Use essentialConfirmationEmail */
-export const essentialsConfirmationEmail = (p: TierConfirmationParams): string => essentialConfirmationEmail(p);
+export const essentialsConfirmationEmail = (
+  p: TierConfirmationParams,
+): string => essentialConfirmationEmail(p);
 /** @deprecated Use essentialConfirmationEmail */
-export const curatedConfirmationEmail = (p: TierConfirmationParams): string => essentialConfirmationEmail(p);
+export const curatedConfirmationEmail = (p: TierConfirmationParams): string =>
+  essentialConfirmationEmail(p);
 
 export function essentialConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
-  const firstName = (p.clientName || "").trim().split(/\s+/).filter(Boolean)[0] || "";
-  const headline = firstName ? `Your move is confirmed, ${firstName}.` : "Your move is confirmed.";
+  const firstName =
+    (p.clientName || "").trim().split(/\s+/).filter(Boolean)[0] || "";
+  const headline = firstName
+    ? `Your move is confirmed, ${firstName}.`
+    : "Your move is confirmed.";
   return emailLayout(`
     <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px">Move confirmed</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0;margin:0 0 12px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">${headline}</h1>
@@ -1237,12 +1369,16 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
 }
 
 /** @deprecated Use signatureConfirmationEmail */
-export const premierConfirmationEmail = (p: TierConfirmationParams): string => signatureConfirmationEmail(p);
+export const premierConfirmationEmail = (p: TierConfirmationParams): string =>
+  signatureConfirmationEmail(p);
 
 export function signatureConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
-  const firstName = (p.clientName || "").trim().split(/\s+/).filter(Boolean)[0] || "";
-  const headline = firstName ? `Your move is confirmed, ${firstName}.` : "Your move is confirmed.";
+  const firstName =
+    (p.clientName || "").trim().split(/\s+/).filter(Boolean)[0] || "";
+  const headline = firstName
+    ? `Your move is confirmed, ${firstName}.`
+    : "Your move is confirmed.";
   const includesHtml = (p.includes || [])
     .map(
       (inc) =>
@@ -1313,8 +1449,12 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
   const coordName = p.coordinatorName || "your coordinator";
   const firstName = (p.clientName || "").split(" ")[0];
   const estateCoordLinkStyle = `color:${ESTATE_WINE};text-decoration:underline;`;
-  const coordDigits = p.coordinatorPhone ? normalizePhone(p.coordinatorPhone) : "";
-  const phoneDisplay = p.coordinatorPhone ? formatPhone(p.coordinatorPhone) : "";
+  const coordDigits = p.coordinatorPhone
+    ? normalizePhone(p.coordinatorPhone)
+    : "";
+  const phoneDisplay = p.coordinatorPhone
+    ? formatPhone(p.coordinatorPhone)
+    : "";
   const coordPhoneHtml =
     phoneDisplay && coordDigits.length > 0
       ? `<a href="tel:+1${coordDigits}" style="${estateCoordLinkStyle}">${escapeHtml(phoneDisplay)}</a>`
@@ -1348,10 +1488,16 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
   const includesRows = [
     ...canonicalIncludes,
     ...(p.includes || []).filter(
-      (inc) => !canonicalIncludes.some((ci) => ci.toLowerCase().includes(inc.toLowerCase().slice(0, 20)))
+      (inc) =>
+        !canonicalIncludes.some((ci) =>
+          ci.toLowerCase().includes(inc.toLowerCase().slice(0, 20)),
+        ),
     ),
   ]
-    .map((inc) => `<tr><td style="padding:7px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:7px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">${inc}</td></tr>`)
+    .map(
+      (inc) =>
+        `<tr><td style="padding:7px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:7px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">${inc}</td></tr>`,
+    )
     .join("");
 
   return estateLuxuryCreamLayout(`
@@ -1384,11 +1530,15 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
         <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Destination</td>
         <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.toAddress}</td>
       </tr>
-      ${p.crewNames ? `
+      ${
+        p.crewNames
+          ? `
       <tr>
         <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Your crew</td>
         <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.crewNames}</td>
-      </tr>` : ""}
+      </tr>`
+          : ""
+      }
       <tr>
         <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Your vehicle</td>
         <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.truckDisplayName}</td>
@@ -1469,15 +1619,19 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
 
     <p style="font-family:${ESTATE_GEORGIA};font-size:16px;font-style:italic;color:${ESTATE_BODY_MUTED};margin:0 0 28px;line-height:1.6;">It&apos;s our privilege to handle your move.</p>
 
-    ${p.coordinatorName ? `
+    ${
+      p.coordinatorName
+        ? `
     <p style="font-size:16px;font-weight:700;color:${ESTATE_BODY};margin:0 0 4px;font-family:${ESTATE_DM_SANS};">${p.coordinatorName}</p>
     <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0 0 8px;font-family:${ESTATE_DM_SANS};">Move Coordinator, Yugo</p>
     <p style="font-size:13px;color:${ESTATE_BODY};margin:0;font-family:${ESTATE_DM_SANS};">
       ${coordContactLine}
     </p>
-    ` : `
+    `
+        : `
     <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0;font-family:${ESTATE_DM_SANS};">Yugo Estate Team</p>
-    `}
+    `
+    }
 
     <p style="font-family:${ESTATE_GEORGIA};font-size:11px;letter-spacing:0;text-transform:none;color:${ESTATE_WINE};margin:32px 0 0;line-height:1.4;">Yugo - The Art of Moving</p>
   `);
@@ -1548,12 +1702,19 @@ export function internalBookingAlertEmail(params: {
   );
 }
 
-export function verificationCodeEmail(params: { code: string; purpose: "email_change" | "2fa" }) {
+export function verificationCodeEmail(params: {
+  code: string;
+  purpose: "email_change" | "2fa";
+}) {
   const { code, purpose } = params;
-  const title = purpose === "email_change" ? "Verify your email change" : "Your Yugo login code";
-  const desc = purpose === "email_change"
-    ? "You requested to change your email address. Enter this code to confirm:"
-    : "Use this code to complete your sign-in. It expires in 15 minutes.";
+  const title =
+    purpose === "email_change"
+      ? "Verify your email change"
+      : "Your Yugo login code";
+  const desc =
+    purpose === "email_change"
+      ? "You requested to change your email address. Enter this code to confirm:"
+      : "Use this code to complete your sign-in. It expires in 15 minutes.";
   const inner = `
     <div style="${PREMIUM_EYEBROW_UPPER};margin-bottom:8px;">Account verification</div>
     <div style="font-size:20px;font-weight:600;margin:0 0 16px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">${title}</div>
@@ -1578,7 +1739,12 @@ function escapeHtml(s: string): string {
 }
 
 /** Claim submitted (client) — premium dark layout. */
-export function claimConfirmationEmailHtml(claimNumber: string, clientName: string, itemCount: number, totalClaimed: number): string {
+export function claimConfirmationEmailHtml(
+  claimNumber: string,
+  clientName: string,
+  itemCount: number,
+  totalClaimed: number,
+): string {
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px;">Claim received</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0;color:${PREMIUM_BODY};margin:0 0 12px;font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">Hi ${escapeHtml(clientName)}</h1>
@@ -1595,7 +1761,12 @@ export function claimConfirmationEmailHtml(claimNumber: string, clientName: stri
 }
 
 /** Claim filed on client's behalf by admin — premium dark layout. */
-export function claimCreatedByAdminEmailHtml(claimNumber: string, clientName: string, itemCount: number, totalClaimed: number): string {
+export function claimCreatedByAdminEmailHtml(
+  claimNumber: string,
+  clientName: string,
+  itemCount: number,
+  totalClaimed: number,
+): string {
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px;">Claim filed</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0;color:${PREMIUM_BODY};margin:0 0 12px;font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">Hi ${escapeHtml(clientName)}</h1>
@@ -1612,7 +1783,12 @@ export function claimCreatedByAdminEmailHtml(claimNumber: string, clientName: st
 }
 
 /** Claim approved — premium dark layout. */
-export function claimApprovalEmailHtml(claimNumber: string, clientName: string, approvedAmount: number, resolutionNotes: string): string {
+export function claimApprovalEmailHtml(
+  claimNumber: string,
+  clientName: string,
+  approvedAmount: number,
+  resolutionNotes: string,
+): string {
   const notesBlock = resolutionNotes
     ? `<p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 16px;"><strong>Resolution:</strong> ${escapeHtml(resolutionNotes)}</p>`
     : "";
@@ -1632,9 +1808,21 @@ export function claimApprovalEmailHtml(claimNumber: string, clientName: string, 
 }
 
 /** Claim status update — premium dark layout. */
-export function claimStatusUpdateEmailHtml(claimNumber: string, clientName: string, fromStatus: string, toStatus: string, notes: string | null): string {
-  const fromLabel = fromStatus.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-  const toLabel = toStatus.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+export function claimStatusUpdateEmailHtml(
+  claimNumber: string,
+  clientName: string,
+  fromStatus: string,
+  toStatus: string,
+  notes: string | null,
+): string {
+  const fromLabel = fromStatus.replace(
+    /\w\S*/g,
+    (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+  );
+  const toLabel = toStatus.replace(
+    /\w\S*/g,
+    (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+  );
   const notesBlock = notes
     ? `<p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 16px;"><strong>Notes:</strong> ${escapeHtml(notes)}</p>`
     : "";
@@ -1654,7 +1842,11 @@ export function claimStatusUpdateEmailHtml(claimNumber: string, clientName: stri
 }
 
 /** Claim denied — premium dark layout. */
-export function claimDenialEmailHtml(claimNumber: string, clientName: string, reason: string): string {
+export function claimDenialEmailHtml(
+  claimNumber: string,
+  clientName: string,
+  reason: string,
+): string {
   const inner = `
     <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px;">Claim review complete</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0;color:${PREMIUM_BODY};margin:0 0 12px;font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">Hi ${escapeHtml(clientName)}</h1>
@@ -1671,16 +1863,16 @@ export function claimDenialEmailHtml(claimNumber: string, clientName: string, re
 
 /* ─── PROJECT ITEM STATUS UPDATE EMAIL (partner-facing) ─── */
 const PROJECT_STATUS_ACCENT: Record<string, string> = {
-  ready_for_pickup:    "#F59E0B",
-  shipped:             "#3B82F6",
-  in_transit:          "#3B82F6",
-  received_warehouse:  "#10B981",
-  inspected:           "#10B981",
-  stored:              "#10B981",
-  scheduled_delivery:  "#8B5CF6",
-  delivered:           "#22C55E",
-  installed:           "#22C55E",
-  issue_reported:      "#EF4444",
+  ready_for_pickup: "#F59E0B",
+  shipped: "#3B82F6",
+  in_transit: "#3B82F6",
+  received_warehouse: "#10B981",
+  inspected: "#10B981",
+  stored: "#10B981",
+  scheduled_delivery: "#8B5CF6",
+  delivered: "#22C55E",
+  installed: "#22C55E",
+  issue_reported: "#EF4444",
 };
 
 export interface ProjectItemStatusEmailData {
@@ -1694,7 +1886,9 @@ export interface ProjectItemStatusEmailData {
   portalUrl: string;
 }
 
-export function projectItemStatusEmailHtml(d: ProjectItemStatusEmailData): string {
+export function projectItemStatusEmailHtml(
+  d: ProjectItemStatusEmailData,
+): string {
   const accent = PROJECT_STATUS_ACCENT[d.statusKey] || EMAIL_FOREST;
   const isIssue = d.statusKey === "issue_reported";
   const isDelivered = ["delivered", "installed"].includes(d.statusKey);

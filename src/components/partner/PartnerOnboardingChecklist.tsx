@@ -37,7 +37,10 @@ export default function PartnerOnboardingChecklist({
 
   useEffect(() => {
     try {
-      if (typeof window !== "undefined" && localStorage.getItem(storageKey(orgId))) {
+      if (
+        typeof window !== "undefined" &&
+        localStorage.getItem(storageKey(orgId))
+      ) {
         setSuppressed(true);
       }
     } finally {
@@ -57,20 +60,27 @@ export default function PartnerOnboardingChecklist({
         ]);
         if (!profRes.ok) {
           const j = await profRes.json().catch(() => ({}));
-          throw new Error((j as { error?: string }).error || "Could not load profile");
+          throw new Error(
+            (j as { error?: string }).error || "Could not load profile",
+          );
         }
         if (!dashRes.ok) {
           const j = await dashRes.json().catch(() => ({}));
-          throw new Error((j as { error?: string }).error || "Could not load dashboard");
+          throw new Error(
+            (j as { error?: string }).error || "Could not load dashboard",
+          );
         }
         const p = (await profRes.json()) as ProfileResponse;
         const d = (await dashRes.json()) as { deliveriesCount?: number };
         if (!cancelled) {
           setProfile(p);
-          setDeliveryCount(typeof d.deliveriesCount === "number" ? d.deliveriesCount : 0);
+          setDeliveryCount(
+            typeof d.deliveriesCount === "number" ? d.deliveriesCount : 0,
+          );
         }
       } catch (e) {
-        if (!cancelled) setLoadError(e instanceof Error ? e.message : "Something went wrong");
+        if (!cancelled)
+          setLoadError(e instanceof Error ? e.message : "Something went wrong");
       }
     })();
     return () => {
@@ -79,14 +89,23 @@ export default function PartnerOnboardingChecklist({
   }, [hydrated, suppressed, orgId]);
 
   const profileDone = Boolean(
-    profile && String(profile.phone ?? "").trim() && String(profile.email ?? "").trim()
+    profile &&
+    String(profile.phone ?? "").trim() &&
+    String(profile.email ?? "").trim(),
   );
   const deliveryDone = deliveryCount !== null && deliveryCount > 0;
-  const billingDone = Boolean(profile && String(profile.billing_email ?? "").trim());
+  const billingDone = Boolean(
+    profile && String(profile.billing_email ?? "").trim(),
+  );
 
   const items = useMemo(
     () => [
-      { id: "profile", label: "Profile set up", description: "Add phone and email for your organization", done: profileDone },
+      {
+        id: "profile",
+        label: "Profile set up",
+        description: "Add phone and email for your organization",
+        done: profileDone,
+      },
       {
         id: "delivery",
         label: "First delivery scheduled",
@@ -106,7 +125,7 @@ export default function PartnerOnboardingChecklist({
         done: portalExplored,
       },
     ],
-    [profileDone, deliveryDone, billingDone, portalExplored]
+    [profileDone, deliveryDone, billingDone, portalExplored],
   );
 
   const completed = items.filter((i) => i.done).length;
@@ -139,18 +158,31 @@ export default function PartnerOnboardingChecklist({
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
           style={{ backgroundColor: `${GOLD}22` }}
         >
-          <Sparkle className="h-6 w-6" style={{ color: GOLD }} weight="fill" aria-hidden />
+          <Sparkle
+            className="h-6 w-6"
+            style={{ color: GOLD }}
+            weight="fill"
+            aria-hidden
+          />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold leading-tight tracking-tight" style={{ color: TEXT }}>
+          <h2
+            className="text-lg font-semibold leading-tight tracking-tight"
+            style={{ color: TEXT }}
+          >
             Welcome{orgName ? `, ${orgName}` : ""}
           </h2>
-          <p className="mt-1 text-sm opacity-90">Complete these steps to get the most from your partner portal.</p>
+          <p className="mt-1 text-sm opacity-90">
+            Complete these steps to get the most from your partner portal.
+          </p>
         </div>
       </div>
 
       <div className="mt-5">
-        <div className="mb-1 flex items-center justify-between text-xs font-medium" style={{ color: TEXT }}>
+        <div
+          className="mb-1 flex items-center justify-between text-xs font-medium"
+          style={{ color: TEXT }}
+        >
           <span>Progress</span>
           <span>
             {completed}/{items.length}
@@ -175,7 +207,11 @@ export default function PartnerOnboardingChecklist({
           <li key={item.id} className="flex gap-3">
             <span className="mt-0.5 shrink-0" aria-hidden>
               {item.done ? (
-                <CheckCircle className="h-6 w-6" style={{ color: GOLD }} weight="fill" />
+                <CheckCircle
+                  className="h-6 w-6"
+                  style={{ color: GOLD }}
+                  weight="fill"
+                />
               ) : (
                 <Circle className="h-6 w-6 text-black/25" weight="duotone" />
               )}

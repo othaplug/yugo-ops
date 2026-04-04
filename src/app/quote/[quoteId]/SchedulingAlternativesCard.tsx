@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CalendarCheck, CircleNotch, CheckCircle, WarningCircle, Phone } from "@phosphor-icons/react";
+import {
+  CalendarCheck,
+  CircleNotch,
+  CheckCircle,
+  WarningCircle,
+  Phone,
+} from "@phosphor-icons/react";
 
 interface SchedulingAlternative {
   id: string;
@@ -29,14 +35,18 @@ export default function SchedulingAlternativesCard({
   accentColor = "#2C3E2D",
   forestColor = "#2C3E2D",
 }: SchedulingAlternativesCardProps) {
-  const [status, setStatus] = useState<"loading" | "available" | "partial" | "unavailable" | "selected" | "none">("loading");
+  const [status, setStatus] = useState<
+    "loading" | "available" | "partial" | "unavailable" | "selected" | "none"
+  >("loading");
   const [alternatives, setAlternatives] = useState<SchedulingAlternative[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/client/scheduling-status?moveId=${moveId}`, { credentials: "same-origin" })
+    fetch(`/api/client/scheduling-status?moveId=${moveId}`, {
+      credentials: "same-origin",
+    })
       .then((r) => r.json())
       .then((d: { status: string; alternatives?: SchedulingAlternative[] }) => {
         if (d.status === "partial" && d.alternatives?.length) {
@@ -74,7 +84,10 @@ export default function SchedulingAlternativesCard({
 
   if (status === "loading") {
     return (
-      <div className="mt-4 flex items-center gap-2 text-[12px]" style={{ color: `${forestColor}60` }}>
+      <div
+        className="mt-4 flex items-center gap-2 text-[12px]"
+        style={{ color: `${forestColor}60` }}
+      >
         <CircleNotch size={14} className="animate-spin" />
         Checking your time slot…
       </div>
@@ -87,14 +100,25 @@ export default function SchedulingAlternativesCard({
     return (
       <div
         className="mt-6 rounded-2xl border-2 p-6 text-center"
-        style={{ borderColor: `${accentColor}40`, backgroundColor: `${accentColor}08` }}
+        style={{
+          borderColor: `${accentColor}40`,
+          backgroundColor: `${accentColor}08`,
+        }}
       >
-        <CheckCircle size={28} className="mx-auto mb-3" style={{ color: accentColor }} />
-        <p className="text-[14px] font-bold mb-1" style={{ color: forestColor }}>
+        <CheckCircle
+          size={28}
+          className="mx-auto mb-3"
+          style={{ color: accentColor }}
+        />
+        <p
+          className="text-[14px] font-bold mb-1"
+          style={{ color: forestColor }}
+        >
           Time slot confirmed
         </p>
         <p className="text-[12px]" style={{ color: `${forestColor}70` }}>
-          We have your preferred time. You&apos;ll receive a confirmation email shortly.
+          We have your preferred time. You&apos;ll receive a confirmation email
+          shortly.
         </p>
       </div>
     );
@@ -104,17 +128,30 @@ export default function SchedulingAlternativesCard({
     return (
       <div
         className="mt-6 rounded-2xl border p-5"
-        style={{ borderColor: `${forestColor}20`, backgroundColor: `${forestColor}05` }}
+        style={{
+          borderColor: `${forestColor}20`,
+          backgroundColor: `${forestColor}05`,
+        }}
       >
         <div className="flex items-start gap-3">
-          <WarningCircle size={20} className="shrink-0 mt-0.5" style={{ color: accentColor }} />
+          <WarningCircle
+            size={20}
+            className="shrink-0 mt-0.5"
+            style={{ color: accentColor }}
+          />
           <div>
-            <p className="text-[13px] font-bold mb-1" style={{ color: forestColor }}>
+            <p
+              className="text-[13px] font-bold mb-1"
+              style={{ color: forestColor }}
+            >
               Time slot update needed
             </p>
-            <p className="text-[12px] leading-relaxed" style={{ color: `${forestColor}70` }}>
-              Your move is confirmed! Our coordinator is finalizing your crew and time slot.
-              You&apos;ll hear from us within 2 hours.
+            <p
+              className="text-[12px] leading-relaxed"
+              style={{ color: `${forestColor}70` }}
+            >
+              Your move is confirmed! Our coordinator is finalizing your crew
+              and time slot. You&apos;ll hear from us within 2 hours.
             </p>
             <a
               href="tel:+16473704525"
@@ -134,7 +171,10 @@ export default function SchedulingAlternativesCard({
   return (
     <div
       className="mt-6 rounded-2xl border p-5"
-      style={{ borderColor: `${accentColor}30`, backgroundColor: `${accentColor}05` }}
+      style={{
+        borderColor: `${accentColor}30`,
+        backgroundColor: `${accentColor}05`,
+      }}
     >
       <div className="flex items-center gap-2 mb-3">
         <CalendarCheck size={18} style={{ color: accentColor }} />
@@ -143,7 +183,8 @@ export default function SchedulingAlternativesCard({
         </p>
       </div>
       <p className="text-[12px] mb-4" style={{ color: `${forestColor}70` }}>
-        Your preferred time has limited availability. Please choose one of the alternatives below:
+        Your preferred time has limited availability. Please choose one of the
+        alternatives below:
       </p>
 
       <div className="space-y-2 mb-4">
@@ -152,18 +193,26 @@ export default function SchedulingAlternativesCard({
             key={alt.id}
             className="flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all"
             style={{
-              border: selected === alt.id ? `2px solid ${accentColor}` : `1px solid ${forestColor}20`,
-              backgroundColor: selected === alt.id ? `${accentColor}10` : "transparent",
+              border:
+                selected === alt.id
+                  ? `2px solid ${accentColor}`
+                  : `1px solid ${forestColor}20`,
+              backgroundColor:
+                selected === alt.id ? `${accentColor}10` : "transparent",
             }}
           >
             <div
               className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
               style={{
-                borderColor: selected === alt.id ? accentColor : `${forestColor}40`,
-                backgroundColor: selected === alt.id ? accentColor : "transparent",
+                borderColor:
+                  selected === alt.id ? accentColor : `${forestColor}40`,
+                backgroundColor:
+                  selected === alt.id ? accentColor : "transparent",
               }}
             >
-              {selected === alt.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+              {selected === alt.id && (
+                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+              )}
             </div>
             <input
               type="radio"
@@ -174,10 +223,16 @@ export default function SchedulingAlternativesCard({
               onChange={() => setSelected(alt.id)}
             />
             <div className="flex-1">
-              <span className="text-[13px] font-semibold block" style={{ color: forestColor }}>
+              <span
+                className="text-[13px] font-semibold block"
+                style={{ color: forestColor }}
+              >
                 {fmtDate(alt.alt_date)}
               </span>
-              <span className="text-[11px]" style={{ color: `${forestColor}60` }}>
+              <span
+                className="text-[11px]"
+                style={{ color: `${forestColor}60` }}
+              >
                 {alt.alt_window}
                 {alt.team_name ? ` · ${alt.team_name}` : ""}
               </span>

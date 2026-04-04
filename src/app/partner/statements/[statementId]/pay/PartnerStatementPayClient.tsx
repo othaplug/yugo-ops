@@ -3,11 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Script from "next/script";
 import Link from "next/link";
-import {
-  Invoice,
-  CheckCircle,
-  ArrowLeft,
-} from "@phosphor-icons/react";
+import { Invoice, CheckCircle, ArrowLeft } from "@phosphor-icons/react";
 
 const FOREST = "#2C3E2D";
 const GOLD = "#B8962E";
@@ -28,7 +24,9 @@ type SquareCard = {
 type SquarePayments = { card: (opts?: object) => Promise<SquareCard> };
 declare global {
   interface Window {
-    Square?: { payments: (appId: string, locationId: string) => SquarePayments };
+    Square?: {
+      payments: (appId: string, locationId: string) => SquarePayments;
+    };
   }
 }
 
@@ -137,7 +135,8 @@ export default function PartnerStatementPayClient({
     if (!sdkReady || initRef.current || alreadyPaid) return;
 
     const appIdFromEnv = process.env.NEXT_PUBLIC_SQUARE_APP_ID?.trim();
-    const locationIdFromEnv = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID?.trim();
+    const locationIdFromEnv =
+      process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID?.trim();
     if (appIdFromEnv && locationIdFromEnv) {
       initializeCard(appIdFromEnv, locationIdFromEnv);
       return;
@@ -149,7 +148,9 @@ export default function PartnerStatementPayClient({
         if (d.appId && d.locationId) {
           initializeCard(d.appId, d.locationId);
         } else {
-          setError("Payment is not configured. Please contact your coordinator.");
+          setError(
+            "Payment is not configured. Please contact your coordinator.",
+          );
         }
       })
       .catch(() =>
@@ -183,7 +184,10 @@ export default function PartnerStatementPayClient({
       const res = await fetch(`/api/partner/statements/${statement.id}/pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceId: tokenResult.token, amount: balanceOwing }),
+        body: JSON.stringify({
+          sourceId: tokenResult.token,
+          amount: balanceOwing,
+        }),
       });
 
       const data = await res.json();
@@ -196,19 +200,28 @@ export default function PartnerStatementPayClient({
       setSuccess(true);
       setReceiptUrl(data.receipt_url ?? null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "An unexpected error occurred.");
+      setError(
+        e instanceof Error ? e.message : "An unexpected error occurred.",
+      );
       setProcessing(false);
     }
   };
 
   const useSandbox = process.env.NEXT_PUBLIC_SQUARE_USE_SANDBOX === "true";
-  const squareScriptUrl = useSandbox ? SQUARE_SDK_SANDBOX : SQUARE_SDK_PRODUCTION;
+  const squareScriptUrl = useSandbox
+    ? SQUARE_SDK_SANDBOX
+    : SQUARE_SDK_PRODUCTION;
 
   /* ── Success state ── */
   if (success) {
     return (
       <div className="max-w-[520px] mx-auto px-5 py-20 text-center">
-        <CheckCircle size={60} weight="fill" style={{ color: "#22c55e" }} className="mx-auto mb-5" />
+        <CheckCircle
+          size={60}
+          weight="fill"
+          style={{ color: "#22c55e" }}
+          className="mx-auto mb-5"
+        />
         <h1 className="text-[28px] font-bold mb-2" style={{ color: FOREST }}>
           Payment received
         </h1>
@@ -223,7 +236,9 @@ export default function PartnerStatementPayClient({
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[13px] font-semibold text-white"
-              style={{ background: "linear-gradient(135deg, #22C55E, #16A34A)" }}
+              style={{
+                background: "linear-gradient(135deg, #22C55E, #16A34A)",
+              }}
             >
               <Invoice size={14} />
               View Receipt
@@ -269,10 +284,7 @@ export default function PartnerStatementPayClient({
             {statement.statement_number}
           </h1>
           {org && (
-            <p
-              className="text-[13px] mt-0.5"
-              style={{ color: `${FOREST}55` }}
-            >
+            <p className="text-[13px] mt-0.5" style={{ color: `${FOREST}55` }}>
               {org.name}
             </p>
           )}
@@ -315,13 +327,13 @@ export default function PartnerStatementPayClient({
                 className="flex items-center justify-between px-4 py-3 border-b last:border-0"
                 style={{ borderColor: `${FOREST}06` }}
               >
-                <span
-                  className="text-[12px]"
-                  style={{ color: `${FOREST}50` }}
-                >
+                <span className="text-[12px]" style={{ color: `${FOREST}50` }}>
                   {label}
                 </span>
-                <span className="text-[13px] font-semibold" style={{ color: FOREST }}>
+                <span
+                  className="text-[13px] font-semibold"
+                  style={{ color: FOREST }}
+                >
                   {value}
                 </span>
               </div>
@@ -338,7 +350,8 @@ export default function PartnerStatementPayClient({
               style={{ borderColor: `${FOREST}06` }}
             >
               <span className="text-[12px]" style={{ color: `${FOREST}50` }}>
-                Subtotal ({deliveries.length || statement.delivery_count} deliveries)
+                Subtotal ({deliveries.length || statement.delivery_count}{" "}
+                deliveries)
               </span>
               <span className="text-[13px]" style={{ color: FOREST }}>
                 {fmt(Number(statement.subtotal))}
@@ -359,7 +372,10 @@ export default function PartnerStatementPayClient({
               className="flex items-center justify-between px-4 py-3 border-b"
               style={{ borderColor: `${FOREST}06` }}
             >
-              <span className="text-[12px] font-semibold" style={{ color: FOREST }}>
+              <span
+                className="text-[12px] font-semibold"
+                style={{ color: FOREST }}
+              >
                 Total
               </span>
               <span className="text-[14px] font-bold" style={{ color: FOREST }}>
@@ -386,7 +402,10 @@ export default function PartnerStatementPayClient({
               <span className="text-[13px] font-bold" style={{ color: FOREST }}>
                 Balance owing
               </span>
-              <span className="text-[15px] font-bold" style={{ color: alreadyPaid ? "#22c55e" : WINE }}>
+              <span
+                className="text-[15px] font-bold"
+                style={{ color: alreadyPaid ? "#22c55e" : WINE }}
+              >
                 {alreadyPaid ? "Paid in full" : fmt(balanceOwing)}
               </span>
             </div>
@@ -407,7 +426,10 @@ export default function PartnerStatementPayClient({
               >
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b" style={{ borderColor: `${FOREST}07` }}>
+                    <tr
+                      className="border-b"
+                      style={{ borderColor: `${FOREST}07` }}
+                    >
                       {["#", "Date", "Description", "Price"].map((h, i) => (
                         <th
                           key={h}
@@ -477,7 +499,10 @@ export default function PartnerStatementPayClient({
                 style={{ color: "#22c55e" }}
                 className="mx-auto mb-3"
               />
-              <p className="text-[15px] font-bold mb-1" style={{ color: FOREST }}>
+              <p
+                className="text-[15px] font-bold mb-1"
+                style={{ color: FOREST }}
+              >
                 Paid in full
               </p>
               <p className="text-[12px]" style={{ color: `${FOREST}50` }}>
@@ -562,7 +587,8 @@ export default function PartnerStatementPayClient({
                 disabled={!cardReady || processing}
                 className="w-full py-4 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
-                  backgroundColor: cardReady && !processing ? WINE : `${WINE}60`,
+                  backgroundColor:
+                    cardReady && !processing ? WINE : `${WINE}60`,
                 }}
               >
                 {processing ? (
