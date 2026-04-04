@@ -1,12 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { useRouter } from "next/navigation";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import Link from "next/link";
 import { formatMoveDate } from "@/lib/date-format";
 import { formatCurrency, formatCompactCurrency } from "@/lib/format-currency";
-import { getStatusLabel, normalizeStatus, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_LINE_COLOR, DELIVERY_STATUS_LINE_COLOR } from "@/lib/move-status";
+import {
+  getStatusLabel,
+  normalizeStatus,
+  MOVE_STATUS_COLORS_ADMIN,
+  MOVE_STATUS_LINE_COLOR,
+  DELIVERY_STATUS_LINE_COLOR,
+} from "@/lib/move-status";
 import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import LiveActivityFeed from "./components/LiveActivityFeed";
 import { createButtonBaseClass } from "./components/CreateButton";
@@ -34,7 +46,10 @@ import {
 } from "@phosphor-icons/react";
 import { COMPLETENESS_PATH_LABELS } from "@/lib/leads/admin-labels";
 import RevenueForecastWidget from "@/components/admin/RevenueForecastWidget";
-import { buildPrecipAlertText, type MoveWeatherBrief } from "@/lib/weather/move-weather-brief";
+import {
+  buildPrecipAlertText,
+  type MoveWeatherBrief,
+} from "@/lib/weather/move-weather-brief";
 import { getLocalHourInAppTimezone } from "@/lib/business-timezone";
 import { formatDate, formatTime } from "@/lib/client-timezone";
 import type { DrivingTrafficBrief } from "@/lib/mapbox/driving-traffic-brief";
@@ -92,10 +107,27 @@ interface LiveSession {
   toAddress: string | null;
 }
 
-type MonthRevenue = { m: string; moves: number; deliveries: number; invoices: number };
+type MonthRevenue = {
+  m: string;
+  moves: number;
+  deliveries: number;
+  invoices: number;
+};
 
-type UnassignedJob = { id: string; name: string; date: string; type: "move" | "delivery"; code: string; href: string };
-type CrewCapacityDay = { date: string; label: string; total: number; booked: number };
+type UnassignedJob = {
+  id: string;
+  name: string;
+  date: string;
+  type: "move" | "delivery";
+  code: string;
+  href: string;
+};
+type CrewCapacityDay = {
+  date: string;
+  label: string;
+  total: number;
+  booked: number;
+};
 type QuotePipeline = {
   openCount: number;
   openValue: number;
@@ -104,8 +136,17 @@ type QuotePipeline = {
   conversionRate: number;
   expiringToday: number;
 };
-type TodayEarnings = { potential: number; collected: number; pending: number; jobCount: number };
-type SatisfactionData = { avgRating: number; count: number; pendingReviews: number };
+type TodayEarnings = {
+  potential: number;
+  collected: number;
+  pending: number;
+  jobCount: number;
+};
+type SatisfactionData = {
+  avgRating: number;
+  count: number;
+  pendingReviews: number;
+};
 
 type LeadAttentionPreviewRow = {
   id: string;
@@ -160,15 +201,20 @@ function getJobHref(job: Job): string {
 }
 
 function getJobLineColor(job: Job): string {
-  if (job.type === "delivery") return DELIVERY_STATUS_LINE_COLOR[job.status] || "var(--gold)";
+  if (job.type === "delivery")
+    return DELIVERY_STATUS_LINE_COLOR[job.status] || "var(--tx3)";
   const n = normalizeStatus(job.status) || "";
-  return MOVE_STATUS_LINE_COLOR[job.status] || MOVE_STATUS_LINE_COLOR[n] || "var(--gold)";
+  return (
+    MOVE_STATUS_LINE_COLOR[job.status] ||
+    MOVE_STATUS_LINE_COLOR[n] ||
+    "var(--tx3)"
+  );
 }
 
 function getJobStatusStyle(job: Job): string {
   if (job.type === "delivery") {
     const map: Record<string, string> = {
-      pending: "text-[var(--gold)] bg-[var(--gdim)]",
+      pending: "text-[var(--tx2)] bg-[var(--hover)]",
       scheduled: "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
       confirmed: "text-[#3B82F6] bg-[rgba(59,130,246,0.1)]",
       dispatched: "text-[var(--org)] bg-[rgba(212,138,41,0.1)]",
@@ -176,15 +222,22 @@ function getJobStatusStyle(job: Job): string {
       delivered: "text-[var(--grn)] bg-[rgba(45,159,90,0.1)]",
       cancelled: "text-[var(--red)] bg-[rgba(209,67,67,0.1)]",
     };
-    return map[job.status] || "text-[var(--tx3)] bg-[var(--gdim)]";
+    return map[job.status] || "text-[var(--tx3)] bg-[var(--hover)]";
   }
   const n = normalizeStatus(job.status) || "";
-  return MOVE_STATUS_COLORS_ADMIN[job.status] || MOVE_STATUS_COLORS_ADMIN[n] || "text-[var(--tx3)] bg-[var(--gdim)]";
+  return (
+    MOVE_STATUS_COLORS_ADMIN[job.status] ||
+    MOVE_STATUS_COLORS_ADMIN[n] ||
+    "text-[var(--tx3)] bg-[var(--hover)]"
+  );
 }
 
 function getJobStatusLabel(job: Job): string {
   if (job.type === "delivery") {
-    return job.status.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return job.status
+      .split(/[-_]/)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
   }
   return getStatusLabel(job.status);
 }
@@ -202,7 +255,10 @@ function formatActivityTime(createdAt: string): string {
 
 function getActivityHref(e: ActivityEvent): string {
   if (e.entity_type === "move") return `/admin/moves/${e.entity_id}`;
-  if (e.entity_type === "delivery") return e.entity_id ? `/admin/deliveries/${e.entity_id}` : "/admin/deliveries";
+  if (e.entity_type === "delivery")
+    return e.entity_id
+      ? `/admin/deliveries/${e.entity_id}`
+      : "/admin/deliveries";
   if (e.entity_type === "invoice") return "/admin/invoices";
   return "/admin";
 }
@@ -234,22 +290,22 @@ function formatAdminHeaderWeather(brief: MoveWeatherBrief): string {
 }
 
 const TAG_COLORS: Record<string, string> = {
-  retail: "text-[var(--gold)]/80",
-  Retail: "text-[var(--gold)]/80",
+  retail: "text-[var(--org)]/80",
+  Retail: "text-[var(--org)]/80",
   move: "text-[#3B82F6]/80",
   Move: "text-[#3B82F6]/80",
   delivery: "text-[var(--org)]/80",
   Delivery: "text-[var(--org)]/80",
-  office: "text-[var(--pur)]/80",
-  Office: "text-[var(--pur)]/80",
+  office: "text-violet-400/80",
+  Office: "text-violet-400/80",
   single_item: "text-[var(--grn)]/80",
   "Single Item": "text-[var(--grn)]/80",
   gallery: "text-[#3B82F6]/80",
   Gallery: "text-[#3B82F6]/80",
   hospitality: "text-[var(--org)]/80",
   Hospitality: "text-[var(--org)]/80",
-  designer: "text-[var(--pur)]/80",
-  Designer: "text-[var(--pur)]/80",
+  designer: "text-violet-400/80",
+  Designer: "text-violet-400/80",
 };
 
 /** Empty-state CTAs — intrinsic width, global `.admin-btn` sizing */
@@ -286,20 +342,37 @@ export default function AdminPageClient({
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const quickActionsRef = useRef<HTMLDivElement>(null);
-  const [trafficByMoveId, setTrafficByMoveId] = useState<Record<string, DrivingTrafficBrief>>({});
+  const [trafficByMoveId, setTrafficByMoveId] = useState<
+    Record<string, DrivingTrafficBrief>
+  >({});
   const [trafficLoading, setTrafficLoading] = useState(false);
-  const [weatherByMoveId, setWeatherByMoveId] = useState<Record<string, { brief: MoveWeatherBrief; alert: string | null }>>({});
+  const [weatherByMoveId, setWeatherByMoveId] = useState<
+    Record<string, { brief: MoveWeatherBrief; alert: string | null }>
+  >({});
   const [weatherLoading, setWeatherLoading] = useState(false);
-  const [hqWeather, setHqWeather] = useState<{ brief: MoveWeatherBrief; alert: string | null } | null>(null);
+  const [hqWeather, setHqWeather] = useState<{
+    brief: MoveWeatherBrief;
+    alert: string | null;
+  } | null>(null);
   const [hqWeatherLoading, setHqWeatherLoading] = useState(true);
   const [briefOpen, setBriefOpen] = useState(true);
 
-  const refresh = useCallback(async () => { router.refresh(); }, [router]);
-  const { containerRef: pullRef, pullDistance, refreshing } = usePullToRefresh({ onRefresh: refresh });
+  const refresh = useCallback(async () => {
+    router.refresh();
+  }, [router]);
+  const {
+    containerRef: pullRef,
+    pullDistance,
+    refreshing,
+  } = usePullToRefresh({ onRefresh: refresh });
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (quickActionsRef.current && !quickActionsRef.current.contains(e.target as Node)) setQuickActionsOpen(false);
+      if (
+        quickActionsRef.current &&
+        !quickActionsRef.current.contains(e.target as Node)
+      )
+        setQuickActionsOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -309,7 +382,10 @@ export default function AdminPageClient({
     const load = () => {
       fetch("/api/tracking/active")
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error("tracking"))))
-        .then((d) => { setLiveSessions(d.sessions || []); setLiveSessionsError(false); })
+        .then((d) => {
+          setLiveSessions(d.sessions || []);
+          setLiveSessionsError(false);
+        })
         .catch(() => setLiveSessionsError(true));
     };
     load();
@@ -341,7 +417,13 @@ export default function AdminPageClient({
   // ── Client-side weather fetch (moves + deliveries) ──
   const weatherInput = useMemo(() => {
     return [...todayJobs, ...upcomingJobs]
-      .filter((j) => !j.weatherBrief && j.fromAddress && j.fromAddress.length >= 4 && j.date)
+      .filter(
+        (j) =>
+          !j.weatherBrief &&
+          j.fromAddress &&
+          j.fromAddress.length >= 4 &&
+          j.date,
+      )
       .slice(0, 8)
       .map((j) => ({ id: j.id, fromAddress: j.fromAddress!, date: j.date }));
   }, [todayJobs, upcomingJobs]);
@@ -359,9 +441,16 @@ export default function AdminPageClient({
       body: JSON.stringify({ moves: weatherInput }),
     })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("weather"))))
-      .then((d: { weather?: Record<string, { brief: MoveWeatherBrief; alert: string | null }> }) => {
-        if (!cancelled) setWeatherByMoveId(d.weather || {});
-      })
+      .then(
+        (d: {
+          weather?: Record<
+            string,
+            { brief: MoveWeatherBrief; alert: string | null }
+          >;
+        }) => {
+          if (!cancelled) setWeatherByMoveId(d.weather || {});
+        },
+      )
       .catch(() => {
         if (!cancelled) setWeatherByMoveId({});
       })
@@ -371,7 +460,7 @@ export default function AdminPageClient({
     return () => {
       cancelled = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(weatherInput)]);
 
   const moveTrafficKey = useMemo(() => {
@@ -416,22 +505,46 @@ export default function AdminPageClient({
 
   const now = new Date();
   const hour = getLocalHourInAppTimezone(now);
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const dateStr = formatDate(now, { weekday: "long", month: "short", day: "numeric" });
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const dateStr = formatDate(now, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
 
   const summaryParts: string[] = [];
-  if (actionTasks.length > 0) summaryParts.push(`${actionTasks.length} task${actionTasks.length > 1 ? "s" : ""}`);
-  if (todayJobCount > 0) summaryParts.push(`${todayJobCount} job${todayJobCount > 1 ? "s" : ""} today`);
-  if (liveSessions.length > 0) summaryParts.push(`${liveSessions.length} crew${liveSessions.length > 1 ? "s" : ""} active`);
-  if (activeQuotesCount > 0) summaryParts.push(`${activeQuotesCount} open quote${activeQuotesCount > 1 ? "s" : ""}`);
+  if (actionTasks.length > 0)
+    summaryParts.push(
+      `${actionTasks.length} task${actionTasks.length > 1 ? "s" : ""}`,
+    );
+  if (todayJobCount > 0)
+    summaryParts.push(
+      `${todayJobCount} job${todayJobCount > 1 ? "s" : ""} today`,
+    );
+  if (liveSessions.length > 0)
+    summaryParts.push(
+      `${liveSessions.length} crew${liveSessions.length > 1 ? "s" : ""} active`,
+    );
+  if (activeQuotesCount > 0)
+    summaryParts.push(
+      `${activeQuotesCount} open quote${activeQuotesCount > 1 ? "s" : ""}`,
+    );
 
   const hasJobs = todayJobs.length > 0 || upcomingJobs.length > 0;
   const displayJobs = todayJobs.length > 0 ? todayJobs : upcomingJobs;
-  const scheduleLabel = todayJobs.length > 0 ? "Today\u2019s Schedule" : "Upcoming";
+  const scheduleLabel =
+    todayJobs.length > 0 ? "Today\u2019s Schedule" : "Upcoming";
 
   // Merge SSR weather_brief (from DB cron) + client-fetched weather (all job types)
   const allWeatherRows = useMemo(() => {
-    const rows: { id: string; subtitle: string; date: string; brief: MoveWeatherBrief; alert: string | null }[] = [];
+    const rows: {
+      id: string;
+      subtitle: string;
+      date: string;
+      brief: MoveWeatherBrief;
+      alert: string | null;
+    }[] = [];
     const seen = new Set<string>();
     for (const j of [...todayJobs, ...upcomingJobs]) {
       if (seen.has(j.id)) continue;
@@ -439,27 +552,41 @@ export default function AdminPageClient({
       const brief = j.weatherBrief || weatherByMoveId[j.id]?.brief || null;
       const alert = j.weatherAlert || weatherByMoveId[j.id]?.alert || null;
       if (brief) {
-        rows.push({ id: j.id, subtitle: j.subtitle, date: j.date, brief, alert: alert || buildPrecipAlertText(brief) });
+        rows.push({
+          id: j.id,
+          subtitle: j.subtitle,
+          date: j.date,
+          brief,
+          alert: alert || buildPrecipAlertText(brief),
+        });
       }
     }
     return rows
       .sort((a, b) => {
-        if (a.date !== b.date) return (a.date || "").localeCompare(b.date || "");
+        if (a.date !== b.date)
+          return (a.date || "").localeCompare(b.date || "");
         return a.subtitle.localeCompare(b.subtitle);
       })
       .slice(0, 12);
   }, [todayJobs, upcomingJobs, weatherByMoveId]);
 
   const trafficRows = useMemo(() => {
-    const out: { id: string; subtitle: string; date: string; brief: DrivingTrafficBrief }[] = [];
+    const out: {
+      id: string;
+      subtitle: string;
+      date: string;
+      brief: DrivingTrafficBrief;
+    }[] = [];
     for (const j of [...todayJobs, ...upcomingJobs]) {
       if (j.type !== "move") continue;
       const brief = trafficByMoveId[j.id];
-      if (brief) out.push({ id: j.id, subtitle: j.subtitle, date: j.date, brief });
+      if (brief)
+        out.push({ id: j.id, subtitle: j.subtitle, date: j.date, brief });
     }
     return out
       .sort((a, b) => {
-        if (a.date !== b.date) return (a.date || "").localeCompare(b.date || "");
+        if (a.date !== b.date)
+          return (a.date || "").localeCompare(b.date || "");
         return a.subtitle.localeCompare(b.subtitle);
       })
       .slice(0, 12);
@@ -487,908 +614,1412 @@ export default function AdminPageClient({
           ) : (
             <ArrowsClockwise
               size={15}
-              color="var(--gold)"
-              style={{ transform: `rotate(${(pullDistance / 72) * 180}deg)`, transition: "transform 0.1s" }}
+              color="var(--tx3)"
+              style={{
+                transform: `rotate(${(pullDistance / 72) * 180}deg)`,
+                transition: "transform 0.1s",
+              }}
               aria-hidden
             />
           )}
         </div>
       )}
 
-    <div className="max-w-[1200px] mx-auto w-full min-w-0 px-4 sm:px-5 md:px-6 py-5 sm:py-6 md:py-8 animate-fade-up">
-
-      {/* ── Header ── */}
-      <div className="mb-8 min-w-0">
-        <div className="flex items-start justify-between gap-3 sm:gap-4 min-w-0 w-full">
-          <div className="min-w-0 flex-1">
-            <h1 className="admin-page-hero text-[var(--tx)]">
-              {greeting}
-            </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--tx3)] font-medium">
-              <span>{dateStr}</span>
-              {hqWeatherLoading && (
+      <div className="max-w-[1200px] mx-auto w-full min-w-0 px-4 sm:px-5 md:px-6 py-5 sm:py-6 md:py-8 animate-fade-up">
+        {/* ── Header ── */}
+        <div className="mb-8 min-w-0">
+          <div className="flex items-start justify-between gap-3 sm:gap-4 min-w-0 w-full">
+            <div className="min-w-0 flex-1">
+              <h1 className="admin-page-hero text-[var(--tx)]">{greeting}</h1>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--tx3)] font-medium">
+                <span>{dateStr}</span>
+                {hqWeatherLoading && (
+                  <span
+                    className="inline-block h-3 w-[9.5rem] max-w-[55vw] rounded bg-[var(--brd)]/45 animate-pulse"
+                    aria-hidden
+                  />
+                )}
+                {!hqWeatherLoading && hqWeather?.brief && (
+                  <>
+                    <span className="text-[var(--brd)] select-none" aria-hidden>
+                      ·
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1 min-w-0"
+                      title={hqWeather.alert ?? undefined}
+                    >
+                      <CloudSun
+                        size={14}
+                        className="text-[var(--tx2)] shrink-0"
+                        weight="duotone"
+                        aria-hidden
+                      />
+                      <span className="truncate">
+                        {formatAdminHeaderWeather(hqWeather.brief)}
+                      </span>
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Quick Actions button */}
+              <div className="relative" ref={quickActionsRef}>
+                <button
+                  type="button"
+                  title="Quick Actions"
+                  aria-label="Quick Actions"
+                  onClick={() => setQuickActionsOpen((v) => !v)}
+                  className={`${createButtonBaseClass} gap-1.5`}
+                >
+                  <Plus size={15} weight="regular" className="text-current" />
+                </button>
+                {quickActionsOpen && (
+                  <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
+                    <p className="text-[10px] font-bold tracking-wide text-[var(--tx3)]/50 px-4 pt-2 pb-1.5">
+                      Create
+                    </p>
+                    {[
+                      { href: "/admin/quotes/new", label: "New Quote" },
+                      { href: "/admin/moves/new", label: "New Move" },
+                      { href: "/admin/deliveries/new", label: "New Delivery" },
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setQuickActionsOpen(false)}
+                        className="flex items-center px-4 py-2.5 text-[13px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                    <div className="border-t border-[var(--brd)]/50 my-1" />
+                    <p className="text-[10px] font-bold tracking-wide text-[var(--tx3)]/50 px-4 pt-1.5 pb-1.5">
+                      Navigate
+                    </p>
+                    {[
+                      { href: "/admin/deliveries", label: "Deliveries" },
+                      { href: "/admin/reports", label: "Reports" },
+                      { href: "/admin/calendar", label: "Calendar" },
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setQuickActionsOpen(false)}
+                        className="flex items-center px-4 py-2.5 text-[13px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)] transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* Summary pills */}
+          {summaryParts.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {summaryParts.map((part) => (
                 <span
-                  className="inline-block h-3 w-[9.5rem] max-w-[55vw] rounded bg-[var(--brd)]/45 animate-pulse"
-                  aria-hidden
-                />
-              )}
-              {!hqWeatherLoading && hqWeather?.brief && (
-                <>
-                  <span className="text-[var(--brd)] select-none" aria-hidden>
-                    ·
-                  </span>
-                  <span className="inline-flex items-center gap-1 min-w-0" title={hqWeather.alert ?? undefined}>
-                    <CloudSun size={14} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
-                    <span className="truncate">{formatAdminHeaderWeather(hqWeather.brief)}</span>
-                  </span>
-                </>
-              )}
+                  key={part}
+                  className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold bg-[var(--card)] border border-[var(--brd)]/60 text-[var(--tx3)]"
+                >
+                  {part}
+                </span>
+              ))}
             </div>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Quick Actions button */}
-            <div className="relative" ref={quickActionsRef}>
-              <button
-                type="button"
-                title="Quick Actions"
-                aria-label="Quick Actions"
-                onClick={() => setQuickActionsOpen((v) => !v)}
-                className={`${createButtonBaseClass} gap-1.5`}
-              >
-                <Plus size={15} weight="regular" className="text-current" />
-              </button>
-              {quickActionsOpen && (
-                <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-[var(--card)] border border-[var(--brd)] rounded-xl shadow-2xl py-1.5 overflow-hidden">
-                  <p className="text-[10px] font-bold tracking-wide text-[var(--tx3)]/50 px-4 pt-2 pb-1.5">Create</p>
-                  {[
-                    { href: "/admin/quotes/new", label: "New Quote" },
-                    { href: "/admin/moves/new", label: "New Move" },
-                    { href: "/admin/deliveries/new", label: "New Delivery" },
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setQuickActionsOpen(false)}
-                      className="flex items-center px-4 py-2.5 text-[13px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)] hover:text-[var(--gold)] transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                  <div className="border-t border-[var(--brd)]/50 my-1" />
-                  <p className="text-[10px] font-bold tracking-wide text-[var(--tx3)]/50 px-4 pt-1.5 pb-1.5">Navigate</p>
-                  {[
-                    { href: "/admin/deliveries", label: "Deliveries" },
-                    { href: "/admin/reports", label: "Reports" },
-                    { href: "/admin/calendar", label: "Calendar" },
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setQuickActionsOpen(false)}
-                      className="flex items-center px-4 py-2.5 text-[13px] font-semibold text-[var(--tx)] hover:bg-[var(--bg)] hover:text-[var(--gold)] transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
-        {/* Summary pills */}
-        {summaryParts.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {summaryParts.map((part) => (
-              <span
-                key={part}
-                className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold bg-[var(--card)] border border-[var(--brd)]/60 text-[var(--tx3)]"
-              >
-                {part}
+
+        {/* ── Daily Brief ── */}
+        {dailyBrief && (
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setBriefOpen((v) => !v)}
+              className="flex items-center gap-2 group w-full text-left"
+            >
+              <span className="text-[10px] font-bold tracking-wide text-[var(--tx2)]">
+                Daily Brief
               </span>
-            ))}
+              <CaretRight
+                weight="regular"
+                className={`w-2.5 h-2.5 text-[var(--tx3)] transition-transform duration-200 ${briefOpen ? "rotate-90" : ""}`}
+              />
+            </button>
+            {briefOpen && (
+              <p className="text-[12px] text-[var(--tx2)] leading-relaxed mt-2 pl-[22px]">
+                {dailyBrief}
+              </p>
+            )}
           </div>
         )}
-      </div>
 
-      {/* ── Daily Brief ── */}
-      {dailyBrief && (
-        <div className="mb-6">
-          <button
-            type="button"
-            onClick={() => setBriefOpen((v) => !v)}
-            className="flex items-center gap-2 group w-full text-left"
-          >
-            <span className="text-[10px] font-bold tracking-wide text-[var(--gold)]">Daily Brief</span>
-            <CaretRight
-              weight="regular"
-              className={`w-2.5 h-2.5 text-[var(--gold)]/50 transition-transform duration-200 ${briefOpen ? "rotate-90" : ""}`}
-            />
-          </button>
-          {briefOpen && (
-            <p className="text-[12px] text-[var(--tx2)] leading-relaxed mt-2 pl-[22px]">
-              {dailyBrief}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* ── Live Crew Banner (only when active) ── */}
-      {liveSessionsError && (
-        <div className="mb-3 text-[11px] text-[var(--tx3)] flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-          Live crew tracking unavailable — retrying
-        </div>
-      )}
-      {liveSessions.length > 0 && (
-        <div className="mb-6 flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
-            </span>
-            <span className="text-[10px] font-bold tracking-wide text-[var(--gold)]">Live</span>
+        {/* ── Live Crew Banner (only when active) ── */}
+        {liveSessionsError && (
+          <div className="mb-3 text-[11px] text-[var(--tx3)] flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+            Live crew tracking unavailable — retrying
           </div>
-          {liveSessions.map((s) => (
-            <Link
-              key={s.id}
-              href={s.jobType === "move" ? `/admin/moves/${s.jobId}` : `/admin/deliveries/${s.jobId}`}
-              className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--gold)]/20 bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition-colors"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
-              <span className="text-[11px] font-semibold text-[var(--tx)] whitespace-nowrap">
-                {s.teamName}
+        )}
+        {liveSessions.length > 0 && (
+          <div className="mb-6 flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-              <span className="text-[10px] text-[var(--tx3)] whitespace-nowrap">
-                {CREW_STATUS_TO_LABEL[s.status] || s.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} · {formatRelative(s.updatedAt)}
+              <span className="text-[10px] font-bold tracking-wide text-emerald-400">
+                Live
               </span>
-            </Link>
-          ))}
-          <Link href="/admin/crew" className="shrink-0 text-[10px] font-bold text-[var(--gold)] hover:underline whitespace-nowrap">
-            View map &rarr;
-          </Link>
-        </div>
-      )}
-
-      {/* ── Two Column Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8 min-w-0 w-full">
-
-        {/* ── LEFT: Schedule ── */}
-        <div className="min-w-0">
-
-          {/* ── Unassigned Jobs Alert ── */}
-          {unassignedJobs.length > 0 && (
-            <div className="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-500/10">
-                <Warning size={14} className="text-amber-400" weight="duotone" aria-hidden />
-                <span className="text-[11px] font-bold text-amber-400">
-                  {unassignedJobs.length} unassigned job{unassignedJobs.length > 1 ? "s" : ""} in the next 72h
-                </span>
-              </div>
-              <div className="divide-y divide-amber-500/10">
-                {unassignedJobs.slice(0, 5).map((job) => (
-                  <Link
-                    key={`unassigned-${job.id}`}
-                    href={job.href}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-amber-500/[0.04] transition-colors"
-                  >
-                    <span className="text-[10px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">
-                      {formatMoveDate(job.date)}
-                    </span>
-                    <span className={`text-[9px] font-bold capitalize ${job.type === "move" ? "text-[#3B82F6]/80" : "text-[var(--org)]/80"}`}>
-                      {job.type}
-                    </span>
-                    <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">{job.name}</span>
-                    <span className="text-[10px] font-mono text-[var(--tx3)]">{job.code}</span>
-                  </Link>
-                ))}
-              </div>
-              {unassignedJobs.length > 5 && (
-                <Link href="/admin/dispatch" className="flex items-center justify-center py-2 text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors border-t border-amber-500/10">
-                  View all {unassignedJobs.length} unassigned &rarr;
-                </Link>
-              )}
             </div>
-          )}
-
-          {/* ── Action Tasks (collapsible) ── */}
-          {actionTasks.length > 0 && (
-            <div className="mb-6">
-              <button
-                type="button"
-                onClick={() => setTasksOpen((v) => !v)}
-                className="flex items-center justify-between w-full min-w-0 mb-3 group"
+            {liveSessions.map((s) => (
+              <Link
+                key={s.id}
+                href={
+                  s.jobType === "move"
+                    ? `/admin/moves/${s.jobId}`
+                    : `/admin/deliveries/${s.jobId}`
+                }
+                className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--brd)] bg-[var(--hover)] hover:bg-[var(--card)] transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <CaretRight
-                    weight="regular"
-                    className={`w-3 h-3 text-[var(--tx3)] transition-transform duration-200 ${tasksOpen ? "rotate-90" : ""}`}
-                  />
-                  <h2 className="admin-section-h2 text-[var(--tx2)] group-hover:text-[var(--tx)] transition-colors">Tasks</h2>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)]">
-                    {actionTasks.length}
-                  </span>
-                </div>
-              </button>
-              {tasksOpen && (
-                <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/[0.03] divide-y divide-[var(--brd)]/30 overflow-hidden">
-                  {actionTasks.slice(0, showAllTasks ? undefined : 5).map((task) => (
-                      <Link
-                        key={`task-${task.id}`}
-                        href={task.href}
-                        className="group flex items-start gap-3 px-4 py-3.5 hover:bg-[var(--gold)]/[0.05] active:bg-[var(--gold)]/10 transition-colors touch-manipulation"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[12px] font-semibold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors">
-                            {task.title}
-                          </div>
-                          {task.subtitle && (
-                            <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">{task.subtitle}</div>
-                          )}
-                        </div>
-                        <span className="text-[9px] text-[var(--tx3)] shrink-0 mt-1">{formatActivityTime(task.createdAt)}</span>
-                      </Link>
-                  ))}
-                  {actionTasks.length > 5 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllTasks((v) => !v)}
-                      className="admin-view-all-link w-full justify-center py-3 hover:bg-[var(--gold)]/[0.05] rounded-none"
-                    >
-                      {showAllTasks ? "Show less" : `View all ${actionTasks.length} tasks`}
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-2 mb-4 min-w-0 w-full">
-            <h2 className="admin-section-h2 min-w-0 flex-1 basis-0 pr-1">{scheduleLabel}</h2>
-            <Link href="/admin/calendar" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
-              Calendar
-              <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[11px] font-semibold text-[var(--tx)] whitespace-nowrap">
+                  {s.teamName}
+                </span>
+                <span className="text-[10px] text-[var(--tx3)] whitespace-nowrap">
+                  {CREW_STATUS_TO_LABEL[s.status] ||
+                    s.status
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (c) => c.toUpperCase())}{" "}
+                  · {formatRelative(s.updatedAt)}
+                </span>
+              </Link>
+            ))}
+            <Link
+              href="/admin/crew"
+              className="shrink-0 text-[10px] font-bold text-[var(--tx2)] hover:underline whitespace-nowrap"
+            >
+              View map &rarr;
             </Link>
           </div>
+        )}
 
-          {hasJobs ? (
-            <div className="divide-y divide-[var(--brd)]/30">
-              {displayJobs.map((job) => {
-                const lineColor = getJobLineColor(job);
-                const statusStyle = getJobStatusStyle(job);
-                const statusLabel = getJobStatusLabel(job);
-                const tagColor = TAG_COLORS[job.tag] || "text-[var(--tx3)]";
-                const showDate = todayJobs.length === 0;
-
-                return (
+        {/* ── Two Column Grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8 min-w-0 w-full">
+          {/* ── LEFT: Schedule ── */}
+          <div className="min-w-0">
+            {/* ── Unassigned Jobs Alert ── */}
+            {unassignedJobs.length > 0 && (
+              <div className="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-500/10">
+                  <Warning
+                    size={14}
+                    className="text-amber-400"
+                    weight="duotone"
+                    aria-hidden
+                  />
+                  <span className="text-[11px] font-bold text-amber-400">
+                    {unassignedJobs.length} unassigned job
+                    {unassignedJobs.length > 1 ? "s" : ""} in the next 72h
+                  </span>
+                </div>
+                <div className="divide-y divide-amber-500/10">
+                  {unassignedJobs.slice(0, 5).map((job) => (
                     <Link
-                    key={`${job.type}-${job.id}`}
-                    href={getJobHref(job)}
-                    className="group flex items-start gap-3 py-4 px-1 hover:bg-[var(--card)]/40 active:bg-[var(--card)]/60 transition-colors touch-manipulation"
-                  >
-                    {/* Time / Date column */}
-                    <div className="shrink-0 w-[52px] pt-0.5 text-right">
-                      {showDate ? (
-                        <span className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">{job.date ? formatMoveDate(job.date) : "TBD"}</span>
-                      ) : (
-                        <span className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">{job.time}</span>
-                      )}
-                    </div>
-
-                    {/* Status line */}
-                    <div className="w-[3px] rounded-full shrink-0 self-stretch min-h-[44px]" style={{ backgroundColor: lineColor }} />
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${statusStyle}`}>
-                          {statusLabel}
-                        </span>
-                        <span className={`text-[9px] font-semibold capitalize tracking-wide ${tagColor}`}>
-                          {job.tag}
-                        </span>
-                      </div>
-                      <div className="text-[var(--text-base)] font-bold text-[var(--tx)] leading-snug group-hover:text-[var(--gold)] transition-colors">
+                      key={`unassigned-${job.id}`}
+                      href={job.href}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-amber-500/[0.04] transition-colors"
+                    >
+                      <span className="text-[10px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">
+                        {formatMoveDate(job.date)}
+                      </span>
+                      <span
+                        className={`text-[9px] font-bold capitalize ${job.type === "move" ? "text-[#3B82F6]/80" : "text-[var(--org)]/80"}`}
+                      >
+                        {job.type}
+                      </span>
+                      <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">
                         {job.name}
-                      </div>
-                      {job.subtitle && (
-                        <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate font-mono tabular-nums">
-                          {job.subtitle}
-                        </div>
-                      )}
-                      {job.weatherAlert && (
-                        <div className="flex items-start gap-1.5 mt-1.5 text-[10px] text-sky-400/90 leading-snug">
-                          <CloudRain size={14} className="shrink-0 mt-0.5" weight="duotone" aria-hidden />
-                          <span>{job.weatherAlert}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Arrow, always visible on mobile, hover-only on desktop */}
-                    <CaretRight weight="regular" className="shrink-0 w-4 h-4 text-[var(--tx3)]/40 md:opacity-0 md:group-hover:opacity-100 transition-opacity mt-3" />
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="py-12 text-center min-w-0 px-0">
-              <div className="text-[var(--text-base)] font-semibold text-[var(--tx)] mb-1">No jobs scheduled</div>
-              <p className="text-[12px] text-[var(--tx3)] mb-4 px-1">Get started by creating a quote or checking the calendar.</p>
-              <div className={ADMIN_DASH_CTA_ROW}>
-                <Link href="/admin/quotes/new" className="admin-btn admin-btn-primary">
-                  Create a quote
-                </Link>
-                <Link href="/admin/calendar" className="admin-btn admin-btn-ghost text-[var(--tx2)] hover:text-[var(--gold)]">
-                  View calendar
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* Upcoming preview (when showing today) */}
-          {todayJobs.length > 0 && upcomingJobs.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
-              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
-                <h3 className="text-[10px] font-bold tracking-wide text-[var(--tx3)]/50 min-w-0 flex-1 basis-0 truncate pr-1">
-                  Coming up
-                </h3>
-                <Link href="/admin/deliveries" className="admin-view-all-link shrink-0 whitespace-nowrap">
-                  All
-                </Link>
-              </div>
-              <div className="divide-y divide-[var(--brd)]/30">
-                {upcomingJobs.slice(0, 5).map((job) => {
-                  const upTagColor = TAG_COLORS[job.tag] || TAG_COLORS[job.tag?.toLowerCase()] || "text-[var(--tx3)]";
-                  return (
-                  <Link
-                    key={`up-${job.type}-${job.id}`}
-                    href={getJobHref(job)}
-                    className="flex items-center gap-3 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
-                  >
-                    <span className="text-[11px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">{job.date ? formatMoveDate(job.date) : "TBD"}</span>
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: getJobLineColor(job) }} />
-                    <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">{job.name}</span>
-                    <span className={`text-[9px] font-semibold capitalize ${upTagColor}`}>{job.tag}</span>
-                  </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── Weather & Route Conditions ── */}
-          {hasJobs && (
-            <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
-              <div className="flex items-center gap-2 mb-4 min-w-0 w-full">
-                <CloudRain size={14} className="text-sky-400/80 shrink-0" weight="duotone" aria-hidden />
-                <h2 className="admin-section-h2 min-w-0 flex-1 leading-snug">Weather &amp; Route Conditions</h2>
-              </div>
-
-              {(weatherLoading || trafficLoading) && allWeatherRows.length === 0 && trafficRows.length === 0 && (
-                <p className="text-[11px] text-[var(--tx3)] mb-3">Loading conditions…</p>
-              )}
-
-              {(allWeatherRows.length > 0 || trafficRows.length > 0) && (
-                <div className="space-y-3">
-                  {allWeatherRows.map(({ id, subtitle, date, brief: b, alert }) => {
-                    const popPct = b.precipProbabilityMax != null ? Math.round(b.precipProbabilityMax * 100) : null;
-                    const tr = trafficRows.find((r) => r.id === id);
-                    return (
-                      <div key={`wx-${id}`} className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)]/60 px-4 py-3">
-                        <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                          <span className="text-[11px] font-bold text-[var(--tx)] font-mono tracking-wide">{subtitle}</span>
-                          <span className="text-[10px] text-[var(--tx3)]">{date ? formatMoveDate(date) : ""}</span>
-                        </div>
-
-                        {alert && (
-                          <div className="mb-2 flex gap-1.5 rounded-lg border border-sky-500/15 bg-sky-500/[0.06] px-2.5 py-1.5">
-                            <CloudRain size={12} className="text-sky-400 shrink-0 mt-0.5" weight="duotone" aria-hidden />
-                            <p className="text-[10px] text-[var(--tx2)] leading-snug">{alert}</p>
-                          </div>
-                        )}
-
-                        <p className="text-[10px] text-[var(--tx2)] capitalize">{b.conditionsSummary}</p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[10px] text-[var(--tx2)]">
-                          <span className="inline-flex items-center gap-1">
-                            <Thermometer size={12} className="text-orange-300/90 shrink-0" aria-hidden />
-                            {b.tempLowC}°–{b.tempHighC}°C
-                            {b.feelsLikeAvgC != null && <span className="text-[var(--tx3)]">(feels ~{b.feelsLikeAvgC}°)</span>}
-                          </span>
-                          {b.windMaxKmh != null && (
-                            <span className="inline-flex items-center gap-1">
-                              <Wind size={12} className="text-sky-300/80 shrink-0" aria-hidden />
-                              {b.windMaxKmh} km/h
-                              {b.windGustMaxKmh != null && b.windGustMaxKmh > b.windMaxKmh && (
-                                <span className="text-[var(--tx3)]">gusts {b.windGustMaxKmh}</span>
-                              )}
-                            </span>
-                          )}
-                          {popPct != null && (
-                            <span className="inline-flex items-center gap-1">
-                              <Drop size={12} className="text-sky-400/70 shrink-0" aria-hidden />
-                              {popPct}% rain
-                            </span>
-                          )}
-                          {b.humidityAvg != null && (
-                            <span className="text-[var(--tx3)]">Humidity ~{b.humidityAvg}%</span>
-                          )}
-                        </div>
-                        <div className="mt-2 pt-1.5 border-t border-[var(--brd)]/25 flex gap-1.5">
-                          <Car size={12} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
-                          <p className="text-[10px] text-[var(--tx2)] leading-snug">{b.roadConditionsNote}</p>
-                        </div>
-
-                        {tr && (
-                          <div className="mt-2 pt-1.5 border-t border-[var(--brd)]/25">
-                            <div className="flex gap-1.5">
-                              <Car size={12} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
-                              <div className="text-[10px] text-[var(--tx2)] leading-snug space-y-0.5">
-                                <p>
-                                  {tr.brief.distanceKm} km · ~{tr.brief.durationTrafficMin} min
-                                  {tr.brief.trafficDelayMin >= 3 && (
-                                    <span className="text-amber-300"> (+{tr.brief.trafficDelayMin} min delay)</span>
-                                  )}
-                                  {tr.brief.congestionSummary === "heavy" && <span className="text-[var(--red)]"> · Heavy traffic</span>}
-                                  {tr.brief.congestionSummary === "mixed" && <span className="text-amber-300"> · Moderate traffic</span>}
-                                  {tr.brief.congestionSummary === "light" && <span className="text-[var(--grn)]"> · Light traffic</span>}
-                                </p>
-                                {tr.brief.closureNotes.length > 0 && (
-                                  <ul className="pl-3 list-disc text-[9px] text-amber-200/90 space-y-0.5">
-                                    {tr.brief.closureNotes.map((note, i) => (
-                                      <li key={i}>{note}</li>
-                                    ))}
-                                  </ul>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Traffic-only rows (moves with route data but no weather) */}
-                  {trafficRows.filter((r) => !allWeatherRows.some((w) => w.id === r.id)).map((row) => (
-                    <div key={`tr-${row.id}`} className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)]/60 px-4 py-3">
-                      <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                        <span className="text-[11px] font-bold text-[var(--tx)] font-mono tracking-wide">{row.subtitle}</span>
-                        <span className="text-[10px] text-[var(--tx3)]">{row.date ? formatMoveDate(row.date) : ""}</span>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <Car size={12} className="text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
-                        <div className="text-[10px] text-[var(--tx2)] leading-snug space-y-0.5">
-                          <p>
-                            {row.brief.distanceKm} km · ~{row.brief.durationTrafficMin} min
-                            {row.brief.trafficDelayMin >= 3 && (
-                              <span className="text-amber-300"> (+{row.brief.trafficDelayMin} min delay)</span>
-                            )}
-                            {row.brief.congestionSummary === "heavy" && <span className="text-[var(--red)]"> · Heavy traffic</span>}
-                            {row.brief.congestionSummary === "mixed" && <span className="text-amber-300"> · Moderate traffic</span>}
-                            {row.brief.congestionSummary === "light" && <span className="text-[var(--grn)]"> · Light traffic</span>}
-                          </p>
-                          {row.brief.closureNotes.length > 0 && (
-                            <ul className="pl-3 list-disc text-[9px] text-amber-200/90 space-y-0.5">
-                              {row.brief.closureNotes.map((note, i) => (
-                                <li key={i}>{note}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                      </span>
+                      <span className="text-[10px] font-mono text-[var(--tx3)]">
+                        {job.code}
+                      </span>
+                    </Link>
                   ))}
                 </div>
-              )}
-
-              {allWeatherRows.length === 0 && trafficRows.length === 0 && !weatherLoading && !trafficLoading && (
-                <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
-                  Forecasts and route conditions appear when jobs have pickup addresses. Ensure moves have a street address for the best intel.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ── RIGHT: Intelligence Column ── */}
-        <div className="min-w-0 space-y-0">
-
-          {/* Today's Earnings */}
-          {todayEarnings.jobCount > 0 && (
-            <div className="pb-6">
-              <div className="flex items-center gap-2 mb-3 min-w-0 w-full">
-                <CurrencyDollar size={14} className="text-[var(--grn)] shrink-0" weight="duotone" aria-hidden />
-                <h2 className="admin-section-h2 min-w-0 flex-1">Today&apos;s Earnings</h2>
-              </div>
-              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4">
-                <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">
-                    {formatCurrency(todayEarnings.potential)}
-                  </span>
-                  <span className="text-[10px] text-[var(--tx3)]">potential</span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="h-2 rounded-full bg-[var(--brd)]/30 overflow-hidden mb-2">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${todayEarnings.potential > 0 ? Math.round((todayEarnings.collected / todayEarnings.potential) * 100) : 0}%`,
-                      background: "var(--grn)",
-                    }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="flex items-center gap-1.5 text-[var(--grn)]">
-                    <CheckCircle size={11} weight="duotone" aria-hidden />
-                    {formatCurrency(todayEarnings.collected)} collected
-                  </span>
-                  <span className="flex items-center gap-1.5 text-[var(--tx3)]">
-                    <Clock size={11} weight="duotone" aria-hidden />
-                    {formatCurrency(todayEarnings.pending)} pending
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Revenue (multi-source) */}
-          <div className="pb-6">
-            <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
-              <h2 className="admin-section-h2 min-w-0 flex-1 basis-0 pr-1">Revenue</h2>
-              <Link href="/admin/revenue" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
-                Details
-                <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
-              </Link>
-            </div>
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[24px] font-bold font-heading text-[var(--tx)] tabular-nums">
-                {currentMonthRevenue >= 1000 ? `$${(currentMonthRevenue / 1000).toFixed(1)}K` : formatCurrency(currentMonthRevenue)}
-              </span>
-              {(currentMonthRevenue > 0 || revenuePctChange !== 0) && (
-                <span className={`text-[11px] font-semibold ${revenuePctChange >= 0 ? "text-[var(--grn)]" : "text-[var(--red)]"}`}>
-                  {revenuePctChange >= 0 ? "\u2191" : "\u2193"}{Math.abs(revenuePctChange)}%
-                </span>
-              )}
-            </div>
-            {currentMonthRevenue > 0 && <div className="text-[9px] text-[var(--tx3)] mb-1">Before HST (13%)</div>}
-
-            {/* Breakdown pills */}
-            {currentMonthRevenue > 0 && (
-              <div className="flex flex-wrap gap-x-3 gap-y-1 mb-3">
-                {revenueBreakdown.moves > 0 && (
-                  <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} />
-                    Moves {formatCompactCurrency(revenueBreakdown.moves)}
-                  </span>
-                )}
-                {revenueBreakdown.deliveries > 0 && (
-                  <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#3B82F6" }} />
-                    Deliveries {formatCompactCurrency(revenueBreakdown.deliveries)}
-                  </span>
-                )}
-                {revenueBreakdown.invoices > 0 && (
-                  <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22C55E" }} />
-                    Invoices {formatCompactCurrency(revenueBreakdown.invoices)}
-                  </span>
+                {unassignedJobs.length > 5 && (
+                  <Link
+                    href="/admin/dispatch"
+                    className="flex items-center justify-center py-2 text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors border-t border-amber-500/10"
+                  >
+                    View all {unassignedJobs.length} unassigned &rarr;
+                  </Link>
                 )}
               </div>
             )}
 
-            {/* Stacked bar chart */}
-            <div className="flex items-end gap-[3px] h-[56px] w-full min-w-0">
-              {(monthlyRevenue.length > 0 ? monthlyRevenue : [{ m: "\u2014", moves: 0, deliveries: 0, invoices: 0 }] as MonthRevenue[]).map((d, i) => {
-                const total = d.moves + d.deliveries + d.invoices;
-                const maxV = Math.max(1, ...monthlyRevenue.map((x) => x.moves + x.deliveries + x.invoices));
-                const pct = Math.round((total / maxV) * 100);
-                const isNow = monthlyRevenue.length > 0 && i === monthlyRevenue.length - 1;
-                const movePct = total > 0 ? (d.moves / total) * 100 : 0;
-                const dlvPct = total > 0 ? (d.deliveries / total) * 100 : 0;
-                const invPct = total > 0 ? (d.invoices / total) * 100 : 0;
-
-                return (
-                  <div key={`${d.m}-${i}`} className="flex-1 min-w-0 flex flex-col items-center gap-0.5 h-full group relative">
-                    <div className="flex-1 w-full flex items-end">
-                      <div
-                        className="w-full rounded-t overflow-hidden min-h-[2px] transition-all duration-300 flex flex-col-reverse"
-                        style={{ height: `${Math.max(pct, 6)}%` }}
+            {/* ── Action Tasks (collapsible) ── */}
+            {actionTasks.length > 0 && (
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={() => setTasksOpen((v) => !v)}
+                  className="flex items-center justify-between w-full min-w-0 mb-3 group"
+                >
+                  <div className="flex items-center gap-2">
+                    <CaretRight
+                      weight="regular"
+                      className={`w-3 h-3 text-[var(--tx3)] transition-transform duration-200 ${tasksOpen ? "rotate-90" : ""}`}
+                    />
+                    <h2 className="admin-section-h2 text-[var(--tx2)] group-hover:text-[var(--tx)] transition-colors">
+                      Tasks
+                    </h2>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--hover)] text-[var(--tx)] border border-[var(--brd)]/60">
+                      {actionTasks.length}
+                    </span>
+                  </div>
+                </button>
+                {tasksOpen && (
+                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] divide-y divide-[var(--brd)]/30 overflow-hidden">
+                    {actionTasks
+                      .slice(0, showAllTasks ? undefined : 5)
+                      .map((task) => (
+                        <Link
+                          key={`task-${task.id}`}
+                          href={task.href}
+                          className="group flex items-start gap-3 px-4 py-3.5 hover:bg-[var(--hover)] active:bg-[var(--card)] transition-colors touch-manipulation"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[12px] font-semibold text-[var(--tx)] leading-snug">
+                              {task.title}
+                            </div>
+                            {task.subtitle && (
+                              <div className="text-[10px] text-[var(--tx3)] mt-0.5 truncate">
+                                {task.subtitle}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[9px] text-[var(--tx3)] shrink-0 mt-1">
+                            {formatActivityTime(task.createdAt)}
+                          </span>
+                        </Link>
+                      ))}
+                    {actionTasks.length > 5 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllTasks((v) => !v)}
+                        className="admin-view-all-link w-full justify-center py-3 hover:bg-[var(--hover)] rounded-none"
                       >
-                        {invPct > 0 && (
-                          <div style={{ height: `${invPct}%`, background: isNow ? "#22C55E" : "rgba(34,197,94,0.25)" }} />
-                        )}
-                        {dlvPct > 0 && (
-                          <div style={{ height: `${dlvPct}%`, background: isNow ? "#3B82F6" : "rgba(59,130,246,0.25)" }} />
-                        )}
-                        {movePct > 0 && (
-                          <div style={{ height: `${movePct}%`, background: isNow ? "var(--gold)" : "rgba(255,255,255,0.08)" }} />
-                        )}
-                        {total === 0 && (
-                          <div className="w-full h-full" style={{ background: "rgba(255,255,255,0.04)" }} />
-                        )}
-                      </div>
-                    </div>
-                    <span className={`text-[8px] font-medium ${isNow ? "text-[var(--gold)]" : "text-[var(--tx3)]"}`}>{d.m}</span>
-
-                    {/* Tooltip */}
-                    {total > 0 && (
-                      <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
-                        <p className="text-[9px] font-bold text-[var(--tx)] mb-0.5">{d.m} ${total.toFixed(1)}K</p>
-                        {d.moves > 0 && <p className="text-[8px] text-[var(--gold)]">Moves ${d.moves.toFixed(1)}K</p>}
-                        {d.deliveries > 0 && <p className="text-[8px] text-[#3B82F6]">Deliveries ${d.deliveries.toFixed(1)}K</p>}
-                        {d.invoices > 0 && <p className="text-[8px] text-[#22C55E]">Invoices ${d.invoices.toFixed(1)}K</p>}
-                      </div>
+                        {showAllTasks
+                          ? "Show less"
+                          : `View all ${actionTasks.length} tasks`}
+                      </button>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                )}
+              </div>
+            )}
 
-          {/* Overdue (conditional), keep as alert banner */}
-          {overdueAmount > 0 && (
-            <div className="pt-6 border-t border-[var(--brd)]/30">
-              <Link href="/admin/invoices" className="group flex items-center justify-between gap-2 py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/10 hover:border-[var(--red)]/30 transition-all cursor-pointer min-w-0 w-full">
-                <div className="min-w-0 flex-1">
-                  <div className="text-[10px] font-bold tracking-wide text-[var(--red)]/80">Overdue</div>
-                  <div className="text-[18px] font-bold text-[var(--red)] tabular-nums group-hover:opacity-80 transition-opacity">{formatCompactCurrency(overdueAmount)}</div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] text-[var(--tx3)]">{overdueCount} invoice{overdueCount > 1 ? "s" : ""}</span>
-                  <ArrowUpRight weight="regular" className="w-3.5 h-3.5 text-[var(--red)]/30 group-hover:text-[var(--red)]/70 transition-colors" />
-                </div>
+            <div className="flex items-center justify-between gap-2 mb-4 min-w-0 w-full">
+              <h2 className="admin-section-h2 min-w-0 flex-1 basis-0 pr-1">
+                {scheduleLabel}
+              </h2>
+              <Link
+                href="/admin/calendar"
+                className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap"
+              >
+                Calendar
+                <CaretRight
+                  weight="regular"
+                  className="w-3 h-3 -mr-0.5 text-current opacity-80"
+                  aria-hidden
+                />
               </Link>
             </div>
-          )}
 
-          {/* Crew Capacity */}
-          {crewCapacity.length > 0 && crewCapacity[0].total > 0 && (
-            <div className="pt-6 border-t border-[var(--brd)]/30">
-              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <UsersThree size={14} className="text-[var(--tx2)] shrink-0" weight="duotone" aria-hidden />
-                  <h2 className="admin-section-h2 min-w-0">Crew Capacity</h2>
+            {hasJobs ? (
+              <div className="divide-y divide-[var(--brd)]/30">
+                {displayJobs.map((job) => {
+                  const lineColor = getJobLineColor(job);
+                  const statusStyle = getJobStatusStyle(job);
+                  const statusLabel = getJobStatusLabel(job);
+                  const tagColor = TAG_COLORS[job.tag] || "text-[var(--tx3)]";
+                  const showDate = todayJobs.length === 0;
+
+                  return (
+                    <Link
+                      key={`${job.type}-${job.id}`}
+                      href={getJobHref(job)}
+                      className="group flex items-start gap-3 py-4 px-1 hover:bg-[var(--card)]/40 active:bg-[var(--card)]/60 transition-colors touch-manipulation"
+                    >
+                      {/* Time / Date column */}
+                      <div className="shrink-0 w-[52px] pt-0.5 text-right">
+                        {showDate ? (
+                          <span className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">
+                            {job.date ? formatMoveDate(job.date) : "TBD"}
+                          </span>
+                        ) : (
+                          <span className="text-[12px] font-semibold text-[var(--tx2)] tabular-nums">
+                            {job.time}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Status line */}
+                      <div
+                        className="w-[3px] rounded-full shrink-0 self-stretch min-h-[44px]"
+                        style={{ backgroundColor: lineColor }}
+                      />
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold leading-tight ${statusStyle}`}
+                          >
+                            {statusLabel}
+                          </span>
+                          <span
+                            className={`text-[9px] font-semibold capitalize tracking-wide ${tagColor}`}
+                          >
+                            {job.tag}
+                          </span>
+                        </div>
+                        <div className="text-[var(--text-base)] font-bold text-[var(--tx)] leading-snug">
+                          {job.name}
+                        </div>
+                        {job.subtitle && (
+                          <div className="text-[11px] text-[var(--tx3)] mt-0.5 truncate font-mono tabular-nums">
+                            {job.subtitle}
+                          </div>
+                        )}
+                        {job.weatherAlert && (
+                          <div className="flex items-start gap-1.5 mt-1.5 text-[10px] text-sky-400/90 leading-snug">
+                            <CloudRain
+                              size={14}
+                              className="shrink-0 mt-0.5"
+                              weight="duotone"
+                              aria-hidden
+                            />
+                            <span>{job.weatherAlert}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Arrow, always visible on mobile, hover-only on desktop */}
+                      <CaretRight
+                        weight="regular"
+                        className="shrink-0 w-4 h-4 text-[var(--tx3)]/40 md:opacity-0 md:group-hover:opacity-100 transition-opacity mt-3"
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-12 text-center min-w-0 px-0">
+                <div className="text-[var(--text-base)] font-semibold text-[var(--tx)] mb-1">
+                  No jobs scheduled
                 </div>
-                <Link href="/admin/dispatch" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
-                  Dispatch
-                  <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
+                <p className="text-[12px] text-[var(--tx3)] mb-4 px-1">
+                  Get started by creating a quote or checking the calendar.
+                </p>
+                <div className={ADMIN_DASH_CTA_ROW}>
+                  <Link
+                    href="/admin/quotes/new"
+                    className="admin-btn admin-btn-primary"
+                  >
+                    Create a quote
+                  </Link>
+                  <Link
+                    href="/admin/calendar"
+                    className="admin-btn admin-btn-ghost text-[var(--tx2)] hover:text-[var(--tx)]"
+                  >
+                    View calendar
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming preview (when showing today) */}
+            {todayJobs.length > 0 && upcomingJobs.length > 0 && (
+              <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
+                <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+                  <h3 className="text-[10px] font-bold tracking-wide text-[var(--tx3)]/50 min-w-0 flex-1 basis-0 truncate pr-1">
+                    Coming up
+                  </h3>
+                  <Link
+                    href="/admin/deliveries"
+                    className="admin-view-all-link shrink-0 whitespace-nowrap"
+                  >
+                    All
+                  </Link>
+                </div>
+                <div className="divide-y divide-[var(--brd)]/30">
+                  {upcomingJobs.slice(0, 5).map((job) => {
+                    const upTagColor =
+                      TAG_COLORS[job.tag] ||
+                      TAG_COLORS[job.tag?.toLowerCase()] ||
+                      "text-[var(--tx3)]";
+                    return (
+                      <Link
+                        key={`up-${job.type}-${job.id}`}
+                        href={getJobHref(job)}
+                        className="flex items-center gap-3 py-2.5 px-1 hover:bg-[var(--card)]/30 transition-colors"
+                      >
+                        <span className="text-[11px] font-medium text-[var(--tx3)] tabular-nums w-[52px] text-right shrink-0">
+                          {job.date ? formatMoveDate(job.date) : "TBD"}
+                        </span>
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: getJobLineColor(job) }}
+                        />
+                        <span className="text-[12px] font-medium text-[var(--tx)] truncate flex-1">
+                          {job.name}
+                        </span>
+                        <span
+                          className={`text-[9px] font-semibold capitalize ${upTagColor}`}
+                        >
+                          {job.tag}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── Weather & Route Conditions ── */}
+            {hasJobs && (
+              <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
+                <div className="flex items-center gap-2 mb-4 min-w-0 w-full">
+                  <CloudRain
+                    size={14}
+                    className="text-sky-400/80 shrink-0"
+                    weight="duotone"
+                    aria-hidden
+                  />
+                  <h2 className="admin-section-h2 min-w-0 flex-1 leading-snug">
+                    Weather &amp; Route Conditions
+                  </h2>
+                </div>
+
+                {(weatherLoading || trafficLoading) &&
+                  allWeatherRows.length === 0 &&
+                  trafficRows.length === 0 && (
+                    <p className="text-[11px] text-[var(--tx3)] mb-3">
+                      Loading conditions…
+                    </p>
+                  )}
+
+                {(allWeatherRows.length > 0 || trafficRows.length > 0) && (
+                  <div className="space-y-3">
+                    {allWeatherRows.map(
+                      ({ id, subtitle, date, brief: b, alert }) => {
+                        const popPct =
+                          b.precipProbabilityMax != null
+                            ? Math.round(b.precipProbabilityMax * 100)
+                            : null;
+                        const tr = trafficRows.find((r) => r.id === id);
+                        return (
+                          <div
+                            key={`wx-${id}`}
+                            className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)]/60 px-4 py-3"
+                          >
+                            <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                              <span className="text-[11px] font-bold text-[var(--tx)] font-mono tracking-wide">
+                                {subtitle}
+                              </span>
+                              <span className="text-[10px] text-[var(--tx3)]">
+                                {date ? formatMoveDate(date) : ""}
+                              </span>
+                            </div>
+
+                            {alert && (
+                              <div className="mb-2 flex gap-1.5 rounded-lg border border-sky-500/15 bg-sky-500/[0.06] px-2.5 py-1.5">
+                                <CloudRain
+                                  size={12}
+                                  className="text-sky-400 shrink-0 mt-0.5"
+                                  weight="duotone"
+                                  aria-hidden
+                                />
+                                <p className="text-[10px] text-[var(--tx2)] leading-snug">
+                                  {alert}
+                                </p>
+                              </div>
+                            )}
+
+                            <p className="text-[10px] text-[var(--tx2)] capitalize">
+                              {b.conditionsSummary}
+                            </p>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[10px] text-[var(--tx2)]">
+                              <span className="inline-flex items-center gap-1">
+                                <Thermometer
+                                  size={12}
+                                  className="text-orange-300/90 shrink-0"
+                                  aria-hidden
+                                />
+                                {b.tempLowC}°–{b.tempHighC}°C
+                                {b.feelsLikeAvgC != null && (
+                                  <span className="text-[var(--tx3)]">
+                                    (feels ~{b.feelsLikeAvgC}°)
+                                  </span>
+                                )}
+                              </span>
+                              {b.windMaxKmh != null && (
+                                <span className="inline-flex items-center gap-1">
+                                  <Wind
+                                    size={12}
+                                    className="text-sky-300/80 shrink-0"
+                                    aria-hidden
+                                  />
+                                  {b.windMaxKmh} km/h
+                                  {b.windGustMaxKmh != null &&
+                                    b.windGustMaxKmh > b.windMaxKmh && (
+                                      <span className="text-[var(--tx3)]">
+                                        gusts {b.windGustMaxKmh}
+                                      </span>
+                                    )}
+                                </span>
+                              )}
+                              {popPct != null && (
+                                <span className="inline-flex items-center gap-1">
+                                  <Drop
+                                    size={12}
+                                    className="text-sky-400/70 shrink-0"
+                                    aria-hidden
+                                  />
+                                  {popPct}% rain
+                                </span>
+                              )}
+                              {b.humidityAvg != null && (
+                                <span className="text-[var(--tx3)]">
+                                  Humidity ~{b.humidityAvg}%
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 pt-1.5 border-t border-[var(--brd)]/25 flex gap-1.5">
+                              <Car
+                                size={12}
+                                className="text-[var(--tx2)] shrink-0 mt-0.5"
+                                weight="duotone"
+                                aria-hidden
+                              />
+                              <p className="text-[10px] text-[var(--tx2)] leading-snug">
+                                {b.roadConditionsNote}
+                              </p>
+                            </div>
+
+                            {tr && (
+                              <div className="mt-2 pt-1.5 border-t border-[var(--brd)]/25">
+                                <div className="flex gap-1.5">
+                                  <Car
+                                    size={12}
+                                    className="text-[var(--tx2)] shrink-0 mt-0.5"
+                                    weight="duotone"
+                                    aria-hidden
+                                  />
+                                  <div className="text-[10px] text-[var(--tx2)] leading-snug space-y-0.5">
+                                    <p>
+                                      {tr.brief.distanceKm} km · ~
+                                      {tr.brief.durationTrafficMin} min
+                                      {tr.brief.trafficDelayMin >= 3 && (
+                                        <span className="text-amber-300">
+                                          {" "}
+                                          (+{tr.brief.trafficDelayMin} min
+                                          delay)
+                                        </span>
+                                      )}
+                                      {tr.brief.congestionSummary ===
+                                        "heavy" && (
+                                        <span className="text-[var(--red)]">
+                                          {" "}
+                                          · Heavy traffic
+                                        </span>
+                                      )}
+                                      {tr.brief.congestionSummary ===
+                                        "mixed" && (
+                                        <span className="text-amber-300">
+                                          {" "}
+                                          · Moderate traffic
+                                        </span>
+                                      )}
+                                      {tr.brief.congestionSummary ===
+                                        "light" && (
+                                        <span className="text-[var(--grn)]">
+                                          {" "}
+                                          · Light traffic
+                                        </span>
+                                      )}
+                                    </p>
+                                    {tr.brief.closureNotes.length > 0 && (
+                                      <ul className="pl-3 list-disc text-[9px] text-amber-200/90 space-y-0.5">
+                                        {tr.brief.closureNotes.map(
+                                          (note, i) => (
+                                            <li key={i}>{note}</li>
+                                          ),
+                                        )}
+                                      </ul>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      },
+                    )}
+
+                    {/* Traffic-only rows (moves with route data but no weather) */}
+                    {trafficRows
+                      .filter((r) => !allWeatherRows.some((w) => w.id === r.id))
+                      .map((row) => (
+                        <div
+                          key={`tr-${row.id}`}
+                          className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)]/60 px-4 py-3"
+                        >
+                          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                            <span className="text-[11px] font-bold text-[var(--tx)] font-mono tracking-wide">
+                              {row.subtitle}
+                            </span>
+                            <span className="text-[10px] text-[var(--tx3)]">
+                              {row.date ? formatMoveDate(row.date) : ""}
+                            </span>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <Car
+                              size={12}
+                              className="text-[var(--tx2)] shrink-0 mt-0.5"
+                              weight="duotone"
+                              aria-hidden
+                            />
+                            <div className="text-[10px] text-[var(--tx2)] leading-snug space-y-0.5">
+                              <p>
+                                {row.brief.distanceKm} km · ~
+                                {row.brief.durationTrafficMin} min
+                                {row.brief.trafficDelayMin >= 3 && (
+                                  <span className="text-amber-300">
+                                    {" "}
+                                    (+{row.brief.trafficDelayMin} min delay)
+                                  </span>
+                                )}
+                                {row.brief.congestionSummary === "heavy" && (
+                                  <span className="text-[var(--red)]">
+                                    {" "}
+                                    · Heavy traffic
+                                  </span>
+                                )}
+                                {row.brief.congestionSummary === "mixed" && (
+                                  <span className="text-amber-300">
+                                    {" "}
+                                    · Moderate traffic
+                                  </span>
+                                )}
+                                {row.brief.congestionSummary === "light" && (
+                                  <span className="text-[var(--grn)]">
+                                    {" "}
+                                    · Light traffic
+                                  </span>
+                                )}
+                              </p>
+                              {row.brief.closureNotes.length > 0 && (
+                                <ul className="pl-3 list-disc text-[9px] text-amber-200/90 space-y-0.5">
+                                  {row.brief.closureNotes.map((note, i) => (
+                                    <li key={i}>{note}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                {allWeatherRows.length === 0 &&
+                  trafficRows.length === 0 &&
+                  !weatherLoading &&
+                  !trafficLoading && (
+                    <p className="text-[11px] text-[var(--tx3)] leading-relaxed">
+                      Forecasts and route conditions appear when jobs have
+                      pickup addresses. Ensure moves have a street address for
+                      the best intel.
+                    </p>
+                  )}
+              </div>
+            )}
+          </div>
+
+          {/* ── RIGHT: Intelligence Column ── */}
+          <div className="min-w-0 space-y-0">
+            {/* Today's Earnings */}
+            {todayEarnings.jobCount > 0 && (
+              <div className="pb-6">
+                <div className="flex items-center gap-2 mb-3 min-w-0 w-full">
+                  <CurrencyDollar
+                    size={14}
+                    className="text-[var(--grn)] shrink-0"
+                    weight="duotone"
+                    aria-hidden
+                  />
+                  <h2 className="admin-section-h2 min-w-0 flex-1">
+                    Today&apos;s Earnings
+                  </h2>
+                </div>
+                <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4">
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="text-[22px] font-bold font-heading text-[var(--tx)] tabular-nums">
+                      {formatCurrency(todayEarnings.potential)}
+                    </span>
+                    <span className="text-[10px] text-[var(--tx3)]">
+                      potential
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="h-2 rounded-full bg-[var(--brd)]/30 overflow-hidden mb-2">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${todayEarnings.potential > 0 ? Math.round((todayEarnings.collected / todayEarnings.potential) * 100) : 0}%`,
+                        background: "var(--grn)",
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="flex items-center gap-1.5 text-[var(--grn)]">
+                      <CheckCircle size={11} weight="duotone" aria-hidden />
+                      {formatCurrency(todayEarnings.collected)} collected
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[var(--tx3)]">
+                      <Clock size={11} weight="duotone" aria-hidden />
+                      {formatCurrency(todayEarnings.pending)} pending
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Revenue (multi-source) */}
+            <div className="pb-6">
+              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+                <h2 className="admin-section-h2 min-w-0 flex-1 basis-0 pr-1">
+                  Revenue
+                </h2>
+                <Link
+                  href="/admin/revenue"
+                  className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap"
+                >
+                  Details
+                  <CaretRight
+                    weight="regular"
+                    className="w-3 h-3 -mr-0.5 text-current opacity-80"
+                    aria-hidden
+                  />
                 </Link>
               </div>
-              <div className="grid grid-cols-3 gap-2 w-full min-w-0">
-                {crewCapacity.map((day) => {
-                  const free = day.total - day.booked;
-                  const pct = Math.round((day.booked / day.total) * 100);
-                  const isFull = free === 0;
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-[24px] font-bold font-heading text-[var(--tx)] tabular-nums">
+                  {currentMonthRevenue >= 1000
+                    ? `$${(currentMonthRevenue / 1000).toFixed(1)}K`
+                    : formatCurrency(currentMonthRevenue)}
+                </span>
+                {(currentMonthRevenue > 0 || revenuePctChange !== 0) && (
+                  <span
+                    className={`text-[11px] font-semibold ${revenuePctChange >= 0 ? "text-[var(--grn)]" : "text-[var(--red)]"}`}
+                  >
+                    {revenuePctChange >= 0 ? "\u2191" : "\u2193"}
+                    {Math.abs(revenuePctChange)}%
+                  </span>
+                )}
+              </div>
+              {currentMonthRevenue > 0 && (
+                <div className="text-[9px] text-[var(--tx3)] mb-1">
+                  Before HST (13%)
+                </div>
+              )}
+
+              {/* Breakdown pills */}
+              {currentMonthRevenue > 0 && (
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mb-3">
+                  {revenueBreakdown.moves > 0 && (
+                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: "var(--org)" }}
+                      />
+                      Moves {formatCompactCurrency(revenueBreakdown.moves)}
+                    </span>
+                  )}
+                  {revenueBreakdown.deliveries > 0 && (
+                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: "#3B82F6" }}
+                      />
+                      Deliveries{" "}
+                      {formatCompactCurrency(revenueBreakdown.deliveries)}
+                    </span>
+                  )}
+                  {revenueBreakdown.invoices > 0 && (
+                    <span className="flex items-center gap-1 text-[9px] font-medium text-[var(--tx3)]">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: "#22C55E" }}
+                      />
+                      Invoices{" "}
+                      {formatCompactCurrency(revenueBreakdown.invoices)}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Stacked bar chart */}
+              <div className="flex items-end gap-[3px] h-[56px] w-full min-w-0">
+                {(monthlyRevenue.length > 0
+                  ? monthlyRevenue
+                  : ([
+                      { m: "\u2014", moves: 0, deliveries: 0, invoices: 0 },
+                    ] as MonthRevenue[])
+                ).map((d, i) => {
+                  const total = d.moves + d.deliveries + d.invoices;
+                  const maxV = Math.max(
+                    1,
+                    ...monthlyRevenue.map(
+                      (x) => x.moves + x.deliveries + x.invoices,
+                    ),
+                  );
+                  const pct = Math.round((total / maxV) * 100);
+                  const isNow =
+                    monthlyRevenue.length > 0 &&
+                    i === monthlyRevenue.length - 1;
+                  const movePct = total > 0 ? (d.moves / total) * 100 : 0;
+                  const dlvPct = total > 0 ? (d.deliveries / total) * 100 : 0;
+                  const invPct = total > 0 ? (d.invoices / total) * 100 : 0;
+
                   return (
-                    <div key={day.date} className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] px-3 py-3 text-center">
-                      <div className="text-[9px] font-bold tracking-wide text-[var(--tx3)] mb-2">{day.label}</div>
-                      <div className="relative w-10 h-10 mx-auto mb-2">
-                        <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
-                          <circle cx="18" cy="18" r="15" fill="none" stroke="var(--brd)" strokeWidth="3" opacity="0.3" />
-                          <circle
-                            cx="18" cy="18" r="15" fill="none"
-                            stroke={isFull ? "var(--red)" : pct >= 60 ? "var(--gold)" : "var(--grn)"}
-                            strokeWidth="3"
-                            strokeDasharray={`${pct * 0.942} 100`}
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-[var(--tx)] tabular-nums">
-                          {day.booked}/{day.total}
-                        </span>
+                    <div
+                      key={`${d.m}-${i}`}
+                      className="flex-1 min-w-0 flex flex-col items-center gap-0.5 h-full group relative"
+                    >
+                      <div className="flex-1 w-full flex items-end">
+                        <div
+                          className="w-full rounded-t overflow-hidden min-h-[2px] transition-all duration-300 flex flex-col-reverse"
+                          style={{ height: `${Math.max(pct, 6)}%` }}
+                        >
+                          {invPct > 0 && (
+                            <div
+                              style={{
+                                height: `${invPct}%`,
+                                background: isNow
+                                  ? "#22C55E"
+                                  : "rgba(34,197,94,0.25)",
+                              }}
+                            />
+                          )}
+                          {dlvPct > 0 && (
+                            <div
+                              style={{
+                                height: `${dlvPct}%`,
+                                background: isNow
+                                  ? "#3B82F6"
+                                  : "rgba(59,130,246,0.25)",
+                              }}
+                            />
+                          )}
+                          {movePct > 0 && (
+                            <div
+                              style={{
+                                height: `${movePct}%`,
+                                background: isNow
+                                  ? "var(--org)"
+                                  : "rgba(212, 138, 41, 0.22)",
+                              }}
+                            />
+                          )}
+                          {total === 0 && (
+                            <div
+                              className="w-full h-full"
+                              style={{ background: "rgba(255,255,255,0.04)" }}
+                            />
+                          )}
+                        </div>
                       </div>
-                      <div className={`text-[10px] font-semibold ${isFull ? "text-[var(--red)]" : "text-[var(--grn)]"}`}>
-                        {isFull ? "Full" : `${free} available`}
-                      </div>
+                      <span
+                        className={`text-[8px] font-medium ${isNow ? "text-[var(--tx)]" : "text-[var(--tx3)]"}`}
+                      >
+                        {d.m}
+                      </span>
+
+                      {/* Tooltip */}
+                      {total > 0 && (
+                        <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-[var(--card)] border border-[var(--brd)] rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
+                          <p className="text-[9px] font-bold text-[var(--tx)] mb-0.5">
+                            {d.m} ${total.toFixed(1)}K
+                          </p>
+                          {d.moves > 0 && (
+                            <p className="text-[8px] text-[var(--org)]">
+                              Moves ${d.moves.toFixed(1)}K
+                            </p>
+                          )}
+                          {d.deliveries > 0 && (
+                            <p className="text-[8px] text-[#3B82F6]">
+                              Deliveries ${d.deliveries.toFixed(1)}K
+                            </p>
+                          )}
+                          {d.invoices > 0 && (
+                            <p className="text-[8px] text-[#22C55E]">
+                              Invoices ${d.invoices.toFixed(1)}K
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
-          )}
 
-          {/* Leads (speed to lead) */}
-          {leadPulse && (leadPulse.needsAttention > 0 || leadPulse.monthReceived > 0 || leadPulse.avgResponseMin != null) && (
-            <div className="pt-6 border-t border-[var(--brd)]/30">
-              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <h2 className="admin-section-h2 min-w-0">Leads</h2>
-                </div>
-                <Link href="/admin/leads" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
-                  Open
-                  <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
-                </Link>
-              </div>
-              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-[var(--tx3)]">Needs attention</span>
-                  <span className={`font-bold tabular-nums ${leadPulse.needsAttention > 0 ? "text-amber-400" : "text-[var(--tx)]"}`}>
-                    {leadPulse.needsAttention}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-[var(--tx3)]">This month (new)</span>
-                  <span className="font-bold text-[var(--tx)] tabular-nums">{leadPulse.monthReceived}</span>
-                </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-[var(--tx3)]">Avg response (min)</span>
-                  <span className="font-bold text-[var(--tx)] tabular-nums">
-                    {leadPulse.avgResponseMin != null ? leadPulse.avgResponseMin : "—"}
-                  </span>
-                </div>
-                {(leadPulse.attentionPreview?.length ?? 0) > 0 && (
-                  <ul className="pt-2 mt-2 border-t border-[var(--brd)]/40 space-y-2">
-                    {leadPulse.attentionPreview!.map((row) => {
-                      const path = row.completeness_path || "manual_review";
-                      const PathIcon =
-                        path === "auto_quote" ? CheckCircle : path === "needs_info" ? WarningCircle : XCircle;
-                      const pathColor =
-                        path === "auto_quote"
-                          ? "text-emerald-500"
-                          : path === "needs_info"
-                            ? "text-amber-400"
-                            : "text-red-400";
-                      const nm = [row.first_name, row.last_name].filter(Boolean).join(" ") || "Unknown";
-                      const sec = Math.max(0, Math.floor((Date.now() - new Date(row.created_at).getTime()) / 1000));
-                      const m = Math.floor(sec / 60);
-                      const timer = m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
-                      return (
-                        <li key={row.id}>
-                          <Link
-                            href={`/admin/leads/${row.id}`}
-                            className="flex items-start gap-2 rounded-lg p-2 -mx-2 hover:bg-[var(--gdim)]/50 text-left"
-                          >
-                            <PathIcon className={`w-4 h-4 shrink-0 mt-0.5 ${pathColor}`} weight="fill" aria-hidden />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                                <Clock className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0" aria-hidden />
-                                <span className="font-mono tabular-nums text-[var(--tx2)]">{timer}</span>
-                                <span className="font-semibold text-[var(--tx)] truncate">
-                                  {row.lead_number} · {nm}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-[var(--tx3)] mt-0.5">
-                                {COMPLETENESS_PATH_LABELS[path] || path}
-                                {row.service_type ? ` · ${row.service_type.replace(/_/g, " ")}` : ""}
-                              </p>
-                              {row.follow_up_sent_at ? (
-                                <p className="text-[10px] text-amber-400/90 mt-0.5">
-                                  Follow-up sent {formatRelative(row.follow_up_sent_at)}
-                                </p>
-                              ) : null}
-                            </div>
-                            <CaretRight className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0 mt-1" aria-hidden />
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Quote Pipeline */}
-          {(quotePipeline.openCount > 0 || quotePipeline.acceptedThisWeek > 0) && (
-            <div className="pt-6 border-t border-[var(--brd)]/30">
-              <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <Funnel size={14} className="text-[var(--tx2)] shrink-0" weight="duotone" aria-hidden />
-                  <h2 className="admin-section-h2 min-w-0">Quote Pipeline</h2>
-                </div>
-                <Link href="/admin/quotes" className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap">
-                  Quotes
-                  <CaretRight weight="regular" className="w-3 h-3 -mr-0.5 text-current opacity-80" aria-hidden />
-                </Link>
-              </div>
-              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-3">
-                {/* Funnel rows */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
-                      <span className="text-[11px] font-medium text-[var(--tx)]">Open quotes</span>
+            {/* Overdue (conditional), keep as alert banner */}
+            {overdueAmount > 0 && (
+              <div className="pt-6 border-t border-[var(--brd)]/30">
+                <Link
+                  href="/admin/invoices"
+                  className="group flex items-center justify-between gap-2 py-3 px-4 rounded-xl border border-[var(--red)]/15 bg-[var(--red)]/5 hover:bg-[var(--red)]/10 hover:border-[var(--red)]/30 transition-all cursor-pointer min-w-0 w-full"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-bold tracking-wide text-[var(--red)]/80">
+                      Overdue
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">{quotePipeline.openCount}</span>
-                      {quotePipeline.openValue > 0 && (
-                        <span className="text-[10px] text-[var(--tx3)] tabular-nums">{formatCompactCurrency(quotePipeline.openValue)}</span>
-                      )}
+                    <div className="text-[18px] font-bold text-[var(--red)] tabular-nums group-hover:opacity-80 transition-opacity">
+                      {formatCompactCurrency(overdueAmount)}
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Eye size={10} className="text-[#3B82F6]" aria-hidden />
-                      <span className="text-[11px] font-medium text-[var(--tx)]">Viewed</span>
-                    </div>
-                    <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">{quotePipeline.viewedCount}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={10} className="text-[var(--grn)]" weight="duotone" aria-hidden />
-                      <span className="text-[11px] font-medium text-[var(--tx)]">Accepted this week</span>
-                    </div>
-                    <span className="text-[11px] font-bold text-[var(--grn)] tabular-nums">{quotePipeline.acceptedThisWeek}</span>
-                  </div>
-                </div>
-
-                {/* Divider + stats */}
-                <div className="border-t border-[var(--brd)]/30 pt-2.5 flex items-center justify-between">
-                  <span className="text-[10px] text-[var(--tx3)]">30-day conversion</span>
-                  <span className="text-[12px] font-bold text-[var(--tx)] tabular-nums">{quotePipeline.conversionRate}%</span>
-                </div>
-
-                {quotePipeline.expiringToday > 0 && (
-                  <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/15 bg-amber-500/[0.06] px-2.5 py-1.5">
-                    <Clock size={11} className="text-amber-400 shrink-0" weight="duotone" aria-hidden />
-                    <span className="text-[10px] text-amber-300 font-medium">
-                      {quotePipeline.expiringToday} quote{quotePipeline.expiringToday > 1 ? "s" : ""} expiring today
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] text-[var(--tx3)]">
+                      {overdueCount} invoice{overdueCount > 1 ? "s" : ""}
                     </span>
+                    <ArrowUpRight
+                      weight="regular"
+                      className="w-3.5 h-3.5 text-[var(--red)]/30 group-hover:text-[var(--red)]/70 transition-colors"
+                    />
                   </div>
-                )}
+                </Link>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Revenue Forecast */}
-          <div className="pt-6 border-t border-[var(--brd)]/30">
-            <RevenueForecastWidget />
-          </div>
-
-          {/* Customer Satisfaction */}
-          {satisfaction.count > 0 && (
-            <div className="pt-6 border-t border-[var(--brd)]/30">
-              <div className="flex items-center gap-2 mb-3 min-w-0 w-full">
-                <Star size={14} className="text-[var(--gold)] shrink-0" weight="duotone" aria-hidden />
-                <h2 className="admin-section-h2 min-w-0 flex-1">Customer Satisfaction</h2>
-              </div>
-              <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 min-w-0">
-                <div className="flex items-center gap-4 mb-3 min-w-0 w-full">
-                  <div className="text-center shrink-0">
-                    <div className="text-[28px] font-bold font-heading text-[var(--tx)] tabular-nums leading-none">
-                      {satisfaction.avgRating.toFixed(1)}
-                    </div>
-                    <div className="flex items-center gap-0.5 mt-1 justify-center">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          size={10}
-                          weight={s <= Math.round(satisfaction.avgRating) ? "fill" : "regular"}
-                          className={s <= Math.round(satisfaction.avgRating) ? "text-[var(--gold)]" : "text-[var(--tx3)]/30"}
-                        />
-                      ))}
-                    </div>
+            {/* Crew Capacity */}
+            {crewCapacity.length > 0 && crewCapacity[0].total > 0 && (
+              <div className="pt-6 border-t border-[var(--brd)]/30">
+                <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <UsersThree
+                      size={14}
+                      className="text-[var(--tx2)] shrink-0"
+                      weight="duotone"
+                      aria-hidden
+                    />
+                    <h2 className="admin-section-h2 min-w-0">Crew Capacity</h2>
                   </div>
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex items-center justify-between gap-2 text-[10px] min-w-0">
-                      <span className="text-[var(--tx3)] truncate">Recent reviews</span>
-                      <span className="font-bold text-[var(--tx)] tabular-nums">{satisfaction.count}</span>
-                    </div>
-                    {satisfaction.pendingReviews > 0 && (
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-[var(--tx3)]">Awaiting response</span>
-                        <span className="font-bold text-amber-400 tabular-nums">{satisfaction.pendingReviews}</span>
+                  <Link
+                    href="/admin/dispatch"
+                    className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap"
+                  >
+                    Dispatch
+                    <CaretRight
+                      weight="regular"
+                      className="w-3 h-3 -mr-0.5 text-current opacity-80"
+                      aria-hidden
+                    />
+                  </Link>
+                </div>
+                <div className="grid grid-cols-3 gap-2 w-full min-w-0">
+                  {crewCapacity.map((day) => {
+                    const free = day.total - day.booked;
+                    const pct = Math.round((day.booked / day.total) * 100);
+                    const isFull = free === 0;
+                    return (
+                      <div
+                        key={day.date}
+                        className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] px-3 py-3 text-center"
+                      >
+                        <div className="text-[9px] font-bold tracking-wide text-[var(--tx3)] mb-2">
+                          {day.label}
+                        </div>
+                        <div className="relative w-10 h-10 mx-auto mb-2">
+                          <svg
+                            viewBox="0 0 36 36"
+                            className="w-10 h-10 -rotate-90"
+                          >
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="15"
+                              fill="none"
+                              stroke="var(--brd)"
+                              strokeWidth="3"
+                              opacity="0.3"
+                            />
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="15"
+                              fill="none"
+                              stroke={
+                                isFull
+                                  ? "var(--red)"
+                                  : pct >= 60
+                                    ? "var(--org)"
+                                    : "var(--grn)"
+                              }
+                              strokeWidth="3"
+                              strokeDasharray={`${pct * 0.942} 100`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-[var(--tx)] tabular-nums">
+                            {day.booked}/{day.total}
+                          </span>
+                        </div>
+                        <div
+                          className={`text-[10px] font-semibold ${isFull ? "text-[var(--red)]" : "text-[var(--grn)]"}`}
+                        >
+                          {isFull ? "Full" : `${free} available`}
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Leads (speed to lead) */}
+            {leadPulse &&
+              (leadPulse.needsAttention > 0 ||
+                leadPulse.monthReceived > 0 ||
+                leadPulse.avgResponseMin != null) && (
+                <div className="pt-6 border-t border-[var(--brd)]/30">
+                  <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <h2 className="admin-section-h2 min-w-0">Leads</h2>
+                    </div>
+                    <Link
+                      href="/admin/leads"
+                      className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap"
+                    >
+                      Open
+                      <CaretRight
+                        weight="regular"
+                        className="w-3 h-3 -mr-0.5 text-current opacity-80"
+                        aria-hidden
+                      />
+                    </Link>
+                  </div>
+                  <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-[var(--tx3)]">Needs attention</span>
+                      <span
+                        className={`font-bold tabular-nums ${leadPulse.needsAttention > 0 ? "text-amber-400" : "text-[var(--tx)]"}`}
+                      >
+                        {leadPulse.needsAttention}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-[var(--tx3)]">
+                        This month (new)
+                      </span>
+                      <span className="font-bold text-[var(--tx)] tabular-nums">
+                        {leadPulse.monthReceived}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-[var(--tx3)]">
+                        Avg response (min)
+                      </span>
+                      <span className="font-bold text-[var(--tx)] tabular-nums">
+                        {leadPulse.avgResponseMin != null
+                          ? leadPulse.avgResponseMin
+                          : "—"}
+                      </span>
+                    </div>
+                    {(leadPulse.attentionPreview?.length ?? 0) > 0 && (
+                      <ul className="pt-2 mt-2 border-t border-[var(--brd)]/40 space-y-2">
+                        {leadPulse.attentionPreview!.map((row) => {
+                          const path = row.completeness_path || "manual_review";
+                          const PathIcon =
+                            path === "auto_quote"
+                              ? CheckCircle
+                              : path === "needs_info"
+                                ? WarningCircle
+                                : XCircle;
+                          const pathColor =
+                            path === "auto_quote"
+                              ? "text-emerald-500"
+                              : path === "needs_info"
+                                ? "text-amber-400"
+                                : "text-red-400";
+                          const nm =
+                            [row.first_name, row.last_name]
+                              .filter(Boolean)
+                              .join(" ") || "Unknown";
+                          const sec = Math.max(
+                            0,
+                            Math.floor(
+                              (Date.now() -
+                                new Date(row.created_at).getTime()) /
+                                1000,
+                            ),
+                          );
+                          const m = Math.floor(sec / 60);
+                          const timer =
+                            m >= 60
+                              ? `${Math.floor(m / 60)}h ${m % 60}m`
+                              : `${m}m`;
+                          return (
+                            <li key={row.id}>
+                              <Link
+                                href={`/admin/leads/${row.id}`}
+                                className="flex items-start gap-2 rounded-lg p-2 -mx-2 hover:bg-[var(--gdim)]/50 text-left"
+                              >
+                                <PathIcon
+                                  className={`w-4 h-4 shrink-0 mt-0.5 ${pathColor}`}
+                                  weight="fill"
+                                  aria-hidden
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                                    <Clock
+                                      className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0"
+                                      aria-hidden
+                                    />
+                                    <span className="font-mono tabular-nums text-[var(--tx2)]">
+                                      {timer}
+                                    </span>
+                                    <span className="font-semibold text-[var(--tx)] truncate">
+                                      {row.lead_number} · {nm}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-[var(--tx3)] mt-0.5">
+                                    {COMPLETENESS_PATH_LABELS[path] || path}
+                                    {row.service_type
+                                      ? ` · ${row.service_type.replace(/_/g, " ")}`
+                                      : ""}
+                                  </p>
+                                  {row.follow_up_sent_at ? (
+                                    <p className="text-[10px] text-amber-400/90 mt-0.5">
+                                      Follow-up sent{" "}
+                                      {formatRelative(row.follow_up_sent_at)}
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <CaretRight
+                                  className="w-3.5 h-3.5 text-[var(--tx3)] shrink-0 mt-1"
+                                  aria-hidden
+                                />
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     )}
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="text-[var(--tx3)]">Rating</span>
-                      <span className={`font-bold tabular-nums ${satisfaction.avgRating >= 4.5 ? "text-[var(--grn)]" : satisfaction.avgRating >= 3.5 ? "text-[var(--gold)]" : "text-[var(--red)]"}`}>
-                        {satisfaction.avgRating >= 4.5 ? "Excellent" : satisfaction.avgRating >= 3.5 ? "Good" : "Needs attention"}
+                  </div>
+                </div>
+              )}
+
+            {/* Quote Pipeline */}
+            {(quotePipeline.openCount > 0 ||
+              quotePipeline.acceptedThisWeek > 0) && (
+              <div className="pt-6 border-t border-[var(--brd)]/30">
+                <div className="flex items-center justify-between gap-2 mb-3 min-w-0 w-full">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Funnel
+                      size={14}
+                      className="text-[var(--tx2)] shrink-0"
+                      weight="duotone"
+                      aria-hidden
+                    />
+                    <h2 className="admin-section-h2 min-w-0">Quote Pipeline</h2>
+                  </div>
+                  <Link
+                    href="/admin/quotes"
+                    className="admin-view-all-link shrink-0 gap-1 whitespace-nowrap"
+                  >
+                    Quotes
+                    <CaretRight
+                      weight="regular"
+                      className="w-3 h-3 -mr-0.5 text-current opacity-80"
+                      aria-hidden
+                    />
+                  </Link>
+                </div>
+                <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 space-y-3">
+                  {/* Funnel rows */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--org)]" />
+                        <span className="text-[11px] font-medium text-[var(--tx)]">
+                          Open quotes
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">
+                          {quotePipeline.openCount}
+                        </span>
+                        {quotePipeline.openValue > 0 && (
+                          <span className="text-[10px] text-[var(--tx3)] tabular-nums">
+                            {formatCompactCurrency(quotePipeline.openValue)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Eye size={10} className="text-[#3B82F6]" aria-hidden />
+                        <span className="text-[11px] font-medium text-[var(--tx)]">
+                          Viewed
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-bold text-[var(--tx)] tabular-nums">
+                        {quotePipeline.viewedCount}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle
+                          size={10}
+                          className="text-[var(--grn)]"
+                          weight="duotone"
+                          aria-hidden
+                        />
+                        <span className="text-[11px] font-medium text-[var(--tx)]">
+                          Accepted this week
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-bold text-[var(--grn)] tabular-nums">
+                        {quotePipeline.acceptedThisWeek}
                       </span>
                     </div>
                   </div>
+
+                  {/* Divider + stats */}
+                  <div className="border-t border-[var(--brd)]/30 pt-2.5 flex items-center justify-between">
+                    <span className="text-[10px] text-[var(--tx3)]">
+                      30-day conversion
+                    </span>
+                    <span className="text-[12px] font-bold text-[var(--tx)] tabular-nums">
+                      {quotePipeline.conversionRate}%
+                    </span>
+                  </div>
+
+                  {quotePipeline.expiringToday > 0 && (
+                    <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/15 bg-amber-500/[0.06] px-2.5 py-1.5">
+                      <Clock
+                        size={11}
+                        className="text-amber-400 shrink-0"
+                        weight="duotone"
+                        aria-hidden
+                      />
+                      <span className="text-[10px] text-amber-300 font-medium">
+                        {quotePipeline.expiringToday} quote
+                        {quotePipeline.expiringToday > 1 ? "s" : ""} expiring
+                        today
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Activity, live feed */}
-          <LiveActivityFeed initialEvents={activityEvents} />
+            {/* Revenue Forecast */}
+            <div className="pt-6 border-t border-[var(--brd)]/30">
+              <RevenueForecastWidget />
+            </div>
+
+            {/* Customer Satisfaction */}
+            {satisfaction.count > 0 && (
+              <div className="pt-6 border-t border-[var(--brd)]/30">
+                <div className="flex items-center gap-2 mb-3 min-w-0 w-full">
+                  <Star
+                    size={14}
+                    className="text-amber-400/90 shrink-0"
+                    weight="duotone"
+                    aria-hidden
+                  />
+                  <h2 className="admin-section-h2 min-w-0 flex-1">
+                    Customer Satisfaction
+                  </h2>
+                </div>
+                <div className="rounded-xl border border-[var(--brd)]/40 bg-[var(--card)] p-4 min-w-0">
+                  <div className="flex items-center gap-4 mb-3 min-w-0 w-full">
+                    <div className="text-center shrink-0">
+                      <div className="text-[28px] font-bold font-heading text-[var(--tx)] tabular-nums leading-none">
+                        {satisfaction.avgRating.toFixed(1)}
+                      </div>
+                      <div className="flex items-center gap-0.5 mt-1 justify-center">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            size={10}
+                            weight={
+                              s <= Math.round(satisfaction.avgRating)
+                                ? "fill"
+                                : "regular"
+                            }
+                            className={
+                              s <= Math.round(satisfaction.avgRating)
+                                ? "text-amber-400"
+                                : "text-[var(--tx3)]/30"
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2 text-[10px] min-w-0">
+                        <span className="text-[var(--tx3)] truncate">
+                          Recent reviews
+                        </span>
+                        <span className="font-bold text-[var(--tx)] tabular-nums">
+                          {satisfaction.count}
+                        </span>
+                      </div>
+                      {satisfaction.pendingReviews > 0 && (
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-[var(--tx3)]">
+                            Awaiting response
+                          </span>
+                          <span className="font-bold text-amber-400 tabular-nums">
+                            {satisfaction.pendingReviews}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-[var(--tx3)]">Rating</span>
+                        <span
+                          className={`font-bold tabular-nums ${satisfaction.avgRating >= 4.5 ? "text-[var(--grn)]" : satisfaction.avgRating >= 3.5 ? "text-[var(--org)]" : "text-[var(--red)]"}`}
+                        >
+                          {satisfaction.avgRating >= 4.5
+                            ? "Excellent"
+                            : satisfaction.avgRating >= 3.5
+                              ? "Good"
+                              : "Needs attention"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Activity, live feed */}
+            <LiveActivityFeed initialEvents={activityEvents} />
+          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 }

@@ -1,29 +1,42 @@
 import { getClientEmailFooterTrs } from "@/lib/email/client-email-footer";
-import { EMAIL_FOREST, emailPrimaryCtaStyle } from "@/lib/email/email-brand-tokens";
+import { EMAIL_FOREST_RULE, EMAIL_WINE, emailPrimaryCtaStyle } from "@/lib/email/email-brand-tokens";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
-import { EMAIL_LOGO_GOLD_H, EMAIL_LOGO_GOLD_W, getEmailLogoOnDarkUrl } from "@/lib/email-templates";
-import { getEmailBaseUrl } from "@/lib/email-base-url";
+import {
+  EMAIL_LOGO_BLACK_W,
+  EMAIL_LOGO_BLACK_H,
+  getEmailLogoWineUrl,
+} from "@/lib/email-templates";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { TIER_LABELS as DISPLAY_TIER_LABELS, displayLabel } from "@/lib/displayLabels";
 import { getB2BQuoteEmailSubheading, quoteEmailCrewLine } from "@/lib/quotes/b2b-quote-copy";
 
-/* Typography: hero = Instrument Serif + Georgia; kickers = 12px uppercase, letter-spacing 0; cream/rose accents on black (no gold). */
-/* ─── Brand tokens ─── */
-const BG = "#080808";
+/* Typography: hero = Instrument Serif + Georgia; light cream shell + wine wordmark (readable in light & dark mail clients). */
+/* ─── Light shell (main quote letter — wine logo, WCAG-friendly on cream) ─── */
+const SHELL_PAGE = "#FCF9F4";
+const SHELL_INNER = "#FFFFFF";
+const SHELL_BORDER = EMAIL_FOREST_RULE;
+const SHELL_TX = "#2A2523";
+const SHELL_TX2 = "#3E4D40";
+const SHELL_TX3 = "#5A6B5E";
+/** Wine kicker on cream (was illegible light grey on white / inverted clients). */
+const SHELL_EYEBROW = `font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${EMAIL_WINE};letter-spacing:0.08em;text-transform:uppercase;`;
+
+/* ─── Dark inset cards (labour/bin/price blocks on cream page) ─── */
 const CARD = "#111111";
 const CARD_BORDER = "#1E1E1E";
-/** Cream / off-white / rose accents for text & rules on near-black (replaces gold). */
 const ACCENT_CREAM = "#EDE6DC";
 const ACCENT_OFF_WHITE = "#F5F0E8";
 const ACCENT_ROSE = "#D4AAB5";
 const ACCENT_ROSE_MUTED = "#B88998";
-const TX = "#F0EDE8";
-const TX2 = "#A8A29C";
-const TX3 = "#5E5A56";
+const DARK_TX = "#F0EDE8";
+const DARK_TX2 = "#A8A29C";
+const DARK_TX3 = "#8A8580";
+/** Near-black for small UI on tier badges (text on accent). */
+const PAGE_INK = "#0A0A0A";
 
-/** Shared kicker/eyebrow on dark quote shell (12px, uppercase, 0 tracking). */
-const QUOTE_EYEBROW = `font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${ACCENT_CREAM};letter-spacing:0px;text-transform:uppercase;`;
+/** Kicker on dark inset cards only. */
+const DARK_CARD_EYEBROW = `font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${ACCENT_CREAM};letter-spacing:0px;text-transform:uppercase;`;
 
 /* ─── Tier card backgrounds (user-specified) ─── */
 const CURATED_BG   = "#492A1D";  /* dark rust / brown  */
@@ -80,34 +93,55 @@ const INSTRUMENT_SERIF_FACE = `
 }`;
 
 function quoteEmailLayout(innerHtml: string): string {
-  const base = getEmailBaseUrl();
-  const logoUrl = getEmailLogoOnDarkUrl();
+  const logoUrl = getEmailLogoWineUrl();
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="supported-color-schemes" content="dark" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="${INSTRUMENT_SERIF_LINK}" rel="stylesheet" />
   <style type="text/css">
     ${INSTRUMENT_SERIF_FACE}
+    html { color-scheme: light only; }
+    .yugo-quote-body { color-scheme: light only; }
+    /* Apple Mail / iOS “dark” mail view recolors light HTML — force readable cream shell */
+    @media (prefers-color-scheme: dark) {
+      .yugo-quote-body { background-color: ${SHELL_PAGE} !important; }
+      table.yugo-quote-page { background-color: ${SHELL_PAGE} !important; }
+      table.yugo-quote-page > tbody > tr > td { background-color: ${SHELL_PAGE} !important; }
+      table.yugo-quote-card,
+      table.yugo-quote-card > tbody > tr > td { background-color: ${SHELL_INNER} !important; }
+      td.eq-inner {
+        background-color: ${SHELL_INNER} !important;
+        color: ${SHELL_TX} !important;
+      }
+      td.yugo-quote-flat-bar {
+        background-color: rgba(92, 26, 51, 0.1) !important;
+        border-top: 2px solid ${EMAIL_WINE} !important;
+      }
+      td.yugo-quote-expiry-bar {
+        background-color: rgba(92, 26, 51, 0.1) !important;
+        border-top: 2px solid ${EMAIL_WINE} !important;
+      }
+    }
     @media only screen and (max-width:600px) {
       .eq-inner { padding: 24px 20px 28px !important; }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:${BG};color-scheme:dark;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG}" style="background-color:${BG};color-scheme:dark;">
+<body class="yugo-quote-body" style="margin:0;padding:0;background-color:${SHELL_PAGE};color-scheme:light;">
+<table class="yugo-quote-page" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${SHELL_PAGE}" style="background-color:${SHELL_PAGE};color-scheme:light;">
   <tr>
-    <td align="center" bgcolor="${BG}" style="padding:24px 16px 0;background-color:${BG};color-scheme:dark;">
-      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${BG}" style="max-width:560px;width:100%;background-color:${BG};border:1px solid ${CARD_BORDER};color-scheme:dark;">
+    <td align="center" bgcolor="${SHELL_PAGE}" style="padding:24px 16px 0;background-color:${SHELL_PAGE};color-scheme:light;">
+      <table class="yugo-quote-card" width="560" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${SHELL_INNER}" style="max-width:560px;width:100%;background-color:${SHELL_INNER};border:1px solid ${SHELL_BORDER};color-scheme:light;">
         <tr>
-          <td class="eq-inner" bgcolor="${BG}" style="padding:32px 36px 40px;background-color:${BG};color:${TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color-scheme:dark;">
+          <td class="eq-inner" bgcolor="${SHELL_INNER}" style="padding:32px 36px 40px;background-color:${SHELL_INNER};color:${SHELL_TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color-scheme:light;">
             <div class="eq-hdr" align="center" style="margin:0 0 16px;">
-              <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0;margin:0 auto;" />
-              <div style="width:40px;height:1px;background-color:${EMAIL_FOREST};opacity:0.35;margin:8px auto 0;line-height:0;font-size:0;">&nbsp;</div>
+              <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;border:0;margin:0 auto;-webkit-filter:none !important;filter:none !important;" />
+              <div style="width:48px;height:2px;background-color:${EMAIL_WINE};opacity:0.45;margin:10px auto 0;line-height:0;font-size:0;">&nbsp;</div>
             </div>
             ${innerHtml}
           </td>
@@ -115,7 +149,7 @@ function quoteEmailLayout(innerHtml: string): string {
       </table>
     </td>
   </tr>
-  ${getClientEmailFooterTrs()}
+  ${getClientEmailFooterTrs({ whyReceiving: "quote", variant: "transactional" })}
 </table>
 </body>
 </html>`;
@@ -219,11 +253,19 @@ function dateDisplay(dateStr: string | null | undefined): string {
 }
 
 function flatRateBadge(): string {
+  const labelStyle = `font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${EMAIL_WINE} !important;-webkit-text-fill-color:${EMAIL_WINE};letter-spacing:0.06em;text-transform:uppercase;`;
+  const barStyle = `border-top:2px solid ${EMAIL_WINE};background-color:rgba(92,26,51,0.08);padding:12px 16px 14px;`;
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 22px;">
       <tr>
-        <td align="center" style="border-top:2px solid ${EMAIL_FOREST};background-color:rgba(44,62,45,0.06);padding:10px 14px 12px;">
-          <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0px;text-transform:uppercase;">Guaranteed flat rate</span>
+        <td align="center" style="padding:0 8px;">
+          <table cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:280px;width:72%;margin:0 auto;" role="presentation">
+            <tr>
+              <td class="yugo-quote-flat-bar" align="center" style="${barStyle}">
+                <span style="${labelStyle}">Guaranteed flat rate</span>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
@@ -234,11 +276,19 @@ function expiryNote(expiresAt: string | null | undefined): string {
   if (!expiresAt) return "";
   const d = new Date(expiresAt);
   const formatted = d.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" });
+  const textStyle = `font-size:13px;color:${EMAIL_WINE} !important;-webkit-text-fill-color:${EMAIL_WINE};font-weight:600;line-height:1.55;`;
+  const boxStyle = `background-color:rgba(92,26,51,0.09);border-top:2px solid ${EMAIL_WINE};padding:14px 16px;`;
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 28px;">
       <tr>
-        <td style="background-color:#DC262618;border-top:2px solid #DC2626;padding:12px 16px;">
-          <span style="font-size:12px;color:#FCA5A5;font-weight:600;line-height:1.5;">Your rate is guaranteed until ${formatted}. Book before then to secure your date and price.</span>
+        <td align="center" style="padding:0 8px;">
+          <table cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:400px;width:88%;margin:0 auto;" role="presentation">
+            <tr>
+              <td class="yugo-quote-expiry-bar" style="${boxStyle}">
+                <span style="${textStyle}">Your rate is guaranteed until ${formatted}. Book before then to secure your date and price.</span>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
@@ -255,7 +305,7 @@ function ctaButton(url: string, label: string, sub?: string): string {
         </td>
       </tr>
     </table>
-    <p style="font-size:10px;color:${TX3};text-align:center;margin:0 0 24px;letter-spacing:0.02em;">${sub ?? "Booking takes less than two minutes"}</p>
+    <p style="font-size:10px;color:${SHELL_TX3};text-align:center;margin:0 0 24px;letter-spacing:0.02em;">${sub ?? "Booking takes less than two minutes"}</p>
   `;
 }
 
@@ -267,15 +317,15 @@ function whyYugoBlock(): string {
     ["Fully insured", "WSIB coverage, $2M General Liability, and comprehensive cargo insurance"],
   ];
   return `
-    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 0;border-top:1px solid ${CARD_BORDER};">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 0;border-top:1px solid ${SHELL_BORDER};">
       <tr>
         <td style="padding-top:22px;">
-          <div style="${QUOTE_EYEBROW}margin-bottom:12px;">The Yugo difference</div>
+          <div style="${SHELL_EYEBROW}margin-bottom:12px;">The Yugo difference</div>
           <table cellpadding="0" cellspacing="0" border="0" width="100%">
             ${items.map(([strong, rest]) => `
               <tr>
-                <td style="padding:6px 0;font-size:10px;color:${ACCENT_ROSE};vertical-align:top;width:18px;line-height:1.6;">—</td>
-                <td style="padding:6px 0;font-size:12px;color:${TX2};line-height:1.6;"><strong style="color:${TX};font-weight:600;">${strong}</strong> - ${rest}</td>
+                <td style="padding:6px 0;font-size:10px;color:${EMAIL_WINE};vertical-align:top;width:18px;line-height:1.6;">—</td>
+                <td style="padding:6px 0;font-size:12px;color:${SHELL_TX2};line-height:1.6;"><strong style="color:${SHELL_TX};font-weight:600;">${strong}</strong> - ${rest}</td>
               </tr>
             `).join("")}
           </table>
@@ -291,10 +341,10 @@ function questionsFooter(coordinatorName?: string | null, coordinatorPhone?: str
     ? `Your coordinator ${coordinatorName} is available${coordinatorPhone ? ` at ${coordinatorPhone}` : ""} or by email at ${support}.`
     : `Email us at ${support} and we will get back to you within a few hours.`;
   return `
-    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:24px;border-top:1px solid ${CARD_BORDER};">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:24px;border-top:1px solid ${SHELL_BORDER};">
       <tr>
         <td style="padding-top:18px;">
-          <p style="font-size:12px;color:${TX2};line-height:1.7;margin:0;"><strong style="color:${TX};font-weight:500;">We are here to help.</strong> ${contact}</p>
+          <p style="font-size:12px;color:${SHELL_TX2};line-height:1.7;margin:0;"><strong style="color:${SHELL_TX};font-weight:600;">We are here to help.</strong> ${contact}</p>
         </td>
       </tr>
     </table>
@@ -302,11 +352,11 @@ function questionsFooter(coordinatorName?: string | null, coordinatorPhone?: str
 }
 
 function detailRow(label: string, value: string, last = false): string {
-  const border = last ? "" : `border-bottom:1px solid ${CARD_BORDER};`;
+  const border = last ? "" : `border-bottom:1px solid ${SHELL_BORDER};`;
   return `
     <tr>
-      <td style="${border}color:${TX3};padding:9px 0;font-size:11px;vertical-align:top;line-height:1.5;width:40%;">${label}</td>
-      <td style="${border}color:${TX};font-weight:500;padding:9px 0;text-align:right;font-size:12px;line-height:1.5;text-decoration:none;vertical-align:top;">${value}</td>
+      <td style="${border}color:${SHELL_TX3};padding:9px 0;font-size:11px;vertical-align:top;line-height:1.5;width:40%;">${label}</td>
+      <td style="${border}color:${SHELL_TX};font-weight:600;padding:9px 0;text-align:right;font-size:12px;line-height:1.5;text-decoration:none;vertical-align:top;">${value}</td>
     </tr>`;
 }
 
@@ -314,8 +364,8 @@ function detailRow(label: string, value: string, last = false): string {
 function detailsPlain(rows: [string, string][]): string {
   if (rows.length === 0) return "";
   return `
-    <div style="${QUOTE_EYEBROW}margin-bottom:10px;">Move details</div>
-    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border-top:1px solid ${CARD_BORDER};margin-bottom:28px;">
+    <div style="${SHELL_EYEBROW}margin-bottom:10px;">Move details</div>
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border-top:1px solid ${SHELL_BORDER};margin-bottom:28px;">
       ${rows.map(([l, v], i) => detailRow(l, v, i === rows.length - 1)).join("")}
     </table>
   `;
@@ -361,7 +411,7 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
     .map((key) => {
       const t         = tiers[key];
       const label     = EMAIL_TIER_LABELS[key] ?? t.label ?? key;
-      const accent    = tierAccents[key] ?? TX3;
+      const accent    = tierAccents[key] ?? DARK_TX3;
       const isRec     = key === rec;
       const badgeText = badgeLabels[rec]?.[key] ?? "";
       const cardBg    = tierBgs[key] ?? CARD;
@@ -371,7 +421,7 @@ function tierCards(tiers: Record<string, QuoteTier>, quoteUrl: string, recommend
       const priceSz   = isRec ? "34px" : "22px";
 
       const badge = badgeText
-        ? `<span style="display:inline-block;padding:2px 9px;font-size:7px;font-weight:700;background-color:${isRec ? accent : TIER_TX + "1A"};color:${isRec ? BG : TIER_TX + "88"};margin-left:8px;letter-spacing:0;text-transform:none;vertical-align:middle;">${badgeText}</span>`
+        ? `<span style="display:inline-block;padding:2px 9px;font-size:7px;font-weight:700;background-color:${isRec ? accent : TIER_TX + "1A"};color:${isRec ? PAGE_INK : TIER_TX + "88"};margin-left:8px;letter-spacing:0;text-transform:none;vertical-align:middle;">${badgeText}</span>`
         : "";
 
       /* Checklist only on the recommended card */
@@ -416,9 +466,9 @@ function priceCard(label: string, price: number, note: string): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:28px;">
       <tr>
         <td align="center" style="background-color:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}55;padding:24px 22px;">
-          <div style="${QUOTE_EYEBROW}margin-bottom:10px;">${label}</div>
+          <div style="${DARK_CARD_EYEBROW}margin-bottom:10px;">${label}</div>
           <div style="font-family:${HERO_FONT};font-size:36px;font-weight:400;color:${ACCENT_OFF_WHITE};line-height:1;letter-spacing:0;">${formatCurrency(price)}</div>
-          <div style="font-size:11px;color:${TX3};margin-top:8px;letter-spacing:0;">${note}</div>
+          <div style="font-size:11px;color:${DARK_TX3};margin-top:8px;letter-spacing:0;">${note}</div>
         </td>
       </tr>
     </table>
@@ -428,12 +478,12 @@ function priceCard(label: string, price: number, note: string): string {
 function coordinatorBlock(name?: string | null, phone?: string | null): string {
   if (!name) return "";
   return `
-    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:20px 0 24px;border-top:1px solid ${CARD_BORDER};">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:20px 0 24px;border-top:1px solid ${SHELL_BORDER};">
       <tr>
         <td style="padding-top:16px;">
-          <div style="${QUOTE_EYEBROW}margin-bottom:8px;">Your coordinator</div>
-          <div style="font-size:14px;color:${TX};font-weight:500;">${name}</div>
-          ${phone ? `<div style="font-size:12px;color:${TX2};margin-top:3px;">${phone}</div>` : ""}
+          <div style="${SHELL_EYEBROW}margin-bottom:8px;">Your coordinator</div>
+          <div style="font-size:14px;color:${SHELL_TX};font-weight:600;">${name}</div>
+          ${phone ? `<div style="font-size:12px;color:${SHELL_TX2};margin-top:3px;">${phone}</div>` : ""}
         </td>
       </tr>
     </table>
@@ -443,15 +493,15 @@ function coordinatorBlock(name?: string | null, phone?: string | null): string {
 const HERO_FONT = "'Instrument Serif', Georgia, 'Times New Roman', serif";
 
 function heading(text: string): string {
-  return `<h1 style="font-family:${HERO_FONT};font-size:30px;font-weight:400;margin:0 0 14px;color:${TX};line-height:1.25;letter-spacing:0;">${text}</h1>`;
+  return `<h1 style="font-family:${HERO_FONT};font-size:30px;font-weight:400;margin:0 0 14px;color:${SHELL_TX};line-height:1.25;letter-spacing:0;">${text}</h1>`;
 }
 
 function subHeading(text: string): string {
-  return `<div style="${QUOTE_EYEBROW}margin:0 0 12px;">${text}</div>`;
+  return `<div style="${SHELL_EYEBROW}margin:0 0 12px;">${text}</div>`;
 }
 
 function bodyText(text: string): string {
-  return `<p style="font-size:13px;color:${TX2};line-height:1.75;margin:0 0 28px;">${text}</p>`;
+  return `<p style="font-size:13px;color:${SHELL_TX2};line-height:1.75;margin:0 0 28px;">${text}</p>`;
 }
 
 /**
@@ -713,7 +763,7 @@ function specialtyTemplate(d: QuoteTemplateData): string {
 /* Event */
 function eventTemplate(d: QuoteTemplateData): string {
   const intro = d.eventName
-    ? `Your event logistics quote for <strong style="color:${TX}">${d.eventName}</strong> is ready. We handle delivery, setup, and return, with the same crew each day so every detail is seamless.`
+    ? `Your event logistics quote for <strong style="color:${EMAIL_WINE}">${d.eventName}</strong> is ready. We handle delivery, setup, and return, with the same crew each day so every detail is seamless.`
     : "Your event logistics quote is ready. We handle delivery, setup, and return, with the same crew each day so every detail is taken care of.";
 
   const total = d.customPrice ?? 0;
@@ -730,19 +780,19 @@ function eventTemplate(d: QuoteTemplateData): string {
       ? legs
           .map(
             (leg) => `
-    <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid ${CARD_BORDER};text-align:left">
-      <div style="${QUOTE_EYEBROW}margin-bottom:8px;">${leg.label}</div>
-      <div style="font-size:11px;color:${TX2};line-height:1.7;margin-bottom:6px">
-        <strong style="color:${TX}">Delivery:</strong> ${leg.deliveryDay}<br/>
-        <strong style="color:${TX}">Return:</strong> ${leg.returnDay}<br/>
-        <strong style="color:${TX}">Origin:</strong> ${leg.origin}<br/>
-        <strong style="color:${TX}">Venue:</strong> ${leg.venue}<br/>
-        <strong style="color:${TX}">Crew:</strong> ${leg.crewLine}
+    <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid ${SHELL_BORDER};text-align:left">
+      <div style="${SHELL_EYEBROW}margin-bottom:8px;">${leg.label}</div>
+      <div style="font-size:11px;color:${SHELL_TX2};line-height:1.7;margin-bottom:6px">
+        <strong style="color:${SHELL_TX}">Delivery:</strong> ${leg.deliveryDay}<br/>
+        <strong style="color:${SHELL_TX}">Return:</strong> ${leg.returnDay}<br/>
+        <strong style="color:${SHELL_TX}">Origin:</strong> ${leg.origin}<br/>
+        <strong style="color:${SHELL_TX}">Venue:</strong> ${leg.venue}<br/>
+        <strong style="color:${SHELL_TX}">Crew:</strong> ${leg.crewLine}
       </div>
-      <div style="font-size:11px;color:${TX2};line-height:1.8">
+      <div style="font-size:11px;color:${SHELL_TX2};line-height:1.8">
         Delivery: ${formatCurrency(leg.delivery)}<br/>
         Return: ${formatCurrency(leg.ret)}<br/>
-        <strong style="color:${TX}">Subtotal:</strong> ${formatCurrency(leg.legSubtotal)}
+        <strong style="color:${SHELL_TX}">Subtotal:</strong> ${formatCurrency(leg.legSubtotal)}
       </div>
     </div>`,
           )
@@ -751,7 +801,7 @@ function eventTemplate(d: QuoteTemplateData): string {
 
   const setupLine =
     d.eventSetupFee && d.eventSetupFee > 0
-      ? `<div style="font-size:12px;color:${TX2};margin:12px 0;text-align:left"><strong style="color:${TX}">SETUP:</strong> ${formatCurrency(d.eventSetupFee)}</div>`
+      ? `<div style="font-size:12px;color:${SHELL_TX2};margin:12px 0;text-align:left"><strong style="color:${SHELL_TX}">SETUP:</strong> ${formatCurrency(d.eventSetupFee)}</div>`
       : "";
 
   return quoteEmailLayout(`
@@ -762,11 +812,11 @@ function eventTemplate(d: QuoteTemplateData): string {
     <div style="text-align:left;margin-bottom:20px">
       ${legsHtml}
       ${setupLine}
-      <div style="border-top:1px solid ${CARD_BORDER};padding-top:14px;margin-top:8px;font-size:12px;color:${TX2};line-height:1.9">
-        <div><strong style="color:${TX}">Total:</strong> ${formatCurrency(total)}</div>
+      <div style="border-top:1px solid ${SHELL_BORDER};padding-top:14px;margin-top:8px;font-size:12px;color:${SHELL_TX2};line-height:1.9">
+        <div><strong style="color:${SHELL_TX}">Total:</strong> ${formatCurrency(total)}</div>
         <div>HST (13%): ${formatCurrency(tax)}</div>
-        <div><strong style="color:${TX}">Grand Total:</strong> ${formatCurrency(grand)}</div>
-        <div style="margin-top:6px">Deposit to confirm: <strong style="color:${ACCENT_CREAM}">${formatCurrency(deposit)}</strong></div>
+        <div><strong style="color:${SHELL_TX}">Grand Total:</strong> ${formatCurrency(grand)}</div>
+        <div style="margin-top:6px">Deposit to confirm: <strong style="color:${EMAIL_WINE}">${formatCurrency(deposit)}</strong></div>
       </div>
     </div>
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
@@ -805,11 +855,11 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
     <div style="background:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}44;border-radius:0;padding:24px;text-align:center;margin-bottom:24px">
-      <div style="${QUOTE_EYEBROW}margin-bottom:8px;">Labour service</div>
-      ${labourNote ? `<div style="font-size:12px;color:${TX2};margin-bottom:10px">${labourNote}</div>` : ""}
+      <div style="${DARK_CARD_EYEBROW}margin-bottom:8px;">Labour service</div>
+      ${labourNote ? `<div style="font-size:12px;color:${DARK_TX2};margin-bottom:10px">${labourNote}</div>` : ""}
       <div style="font-family:${HERO_FONT};font-size:32px;font-weight:700;color:${ACCENT_OFF_WHITE};letter-spacing:0;">${formatCurrency(total)}</div>
-      <div style="font-size:11px;color:${TX3};margin-top:6px">+${formatCurrency(tax)} HST &middot; Total ${formatCurrency(total + tax)}</div>
-      <div style="font-size:11px;color:${TX3};margin-top:4px">Deposit to book: <strong style="color:${TX}">${formatCurrency(deposit)}</strong> (50%)</div>
+      <div style="font-size:11px;color:${DARK_TX3};margin-top:6px">+${formatCurrency(tax)} HST &middot; Total ${formatCurrency(total + tax)}</div>
+      <div style="font-size:11px;color:${DARK_TX3};margin-top:4px">Deposit to book: <strong style="color:${DARK_TX}">${formatCurrency(deposit)}</strong> (50%)</div>
     </div>
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Quote & Book")}
@@ -822,10 +872,10 @@ function binRentalTemplate(d: QuoteTemplateData): string {
   const rows: [string, string][] = [];
   const includeBullets =
     d.binIncludeLines && d.binIncludeLines.length > 0
-      ? `<ul style="margin:0 0 16px;padding-left:18px;color:${TX2};font-size:12px;line-height:1.55">${d.binIncludeLines
+      ? `<ul style="margin:0 0 16px;padding-left:18px;color:${SHELL_TX2};font-size:12px;line-height:1.55">${d.binIncludeLines
           .map((line) => `<li style="margin-bottom:4px">${line}</li>`)
           .join("")}</ul>`
-      : `<p style="margin:0 0 16px;color:${TX2};font-size:12px;line-height:1.55">Reusable plastic bins, wardrobe boxes on move day, zip ties (1 per bin).</p>`;
+      : `<p style="margin:0 0 16px;color:${SHELL_TX2};font-size:12px;line-height:1.55">Reusable plastic bins, wardrobe boxes on move day, zip ties (1 per bin).</p>`;
   if (d.binDropOffDate) {
     rows.push(["Bin delivery", `${dateDisplay(d.binDropOffDate)} — ${d.binDeliveryAddress || d.toAddress || ""}`]);
   }
@@ -848,7 +898,7 @@ function binRentalTemplate(d: QuoteTemplateData): string {
       ? d.binLineItems
           .map(
             (l) =>
-              `<tr><td style="padding:6px 0;border-bottom:1px solid ${CARD_BORDER};color:${TX2}">${l.label}</td><td style="padding:6px 0;border-bottom:1px solid ${CARD_BORDER};text-align:right">${formatCurrency(l.amount)}</td></tr>`,
+              `<tr><td style="padding:6px 0;border-bottom:1px solid ${SHELL_BORDER};color:${SHELL_TX2}">${l.label}</td><td style="padding:6px 0;border-bottom:1px solid ${SHELL_BORDER};text-align:right;color:${SHELL_TX}">${formatCurrency(l.amount)}</td></tr>`,
           )
           .join("")
       : "";
@@ -857,23 +907,23 @@ function binRentalTemplate(d: QuoteTemplateData): string {
     ${subHeading("Your Yugo Bin Rental Quote")}
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Your eco-friendly bin rental quote is ready.")}
-    <p style="${QUOTE_EYEBROW}margin:0 0 8px;">What&apos;s included</p>
+    <p style="${SHELL_EYEBROW}margin:0 0 8px;">What&apos;s included</p>
     ${includeBullets}
     ${expiryNote(d.expiresAt)}
-    <p style="${QUOTE_EYEBROW}margin:0 0 8px;">Your schedule</p>
+    <p style="${SHELL_EYEBROW}margin:0 0 8px;">Your schedule</p>
     ${detailsPlain(rows)}
     <div style="text-align:left;margin:16px 0">
-      <p style="font-size:11px;font-weight:700;color:${TX};text-transform:none;letter-spacing:0;margin:0 0 8px">Quote</p>
-      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="font-size:12px;color:${TX2}">
+      <p style="font-size:11px;font-weight:700;color:${SHELL_TX};text-transform:none;letter-spacing:0;margin:0 0 8px">Quote</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="font-size:12px;color:${SHELL_TX2}">
         ${quoteLines}
-        <tr><td style="padding:8px 0;font-weight:600;color:${TX}">Subtotal</td><td style="padding:8px 0;text-align:right">${formatCurrency(subtotal)}</td></tr>
-        <tr><td style="padding:8px 0;font-weight:600;color:${TX}">HST (13%)</td><td style="padding:8px 0;text-align:right">${formatCurrency(tax)}</td></tr>
-        <tr><td style="padding:10px 0 0;font-weight:700;color:${TX}">Total</td><td style="padding:10px 0 0;text-align:right;font-weight:700;color:${ACCENT_CREAM}">${formatCurrency(grand)}</td></tr>
+        <tr><td style="padding:8px 0;font-weight:600;color:${SHELL_TX}">Subtotal</td><td style="padding:8px 0;text-align:right;color:${SHELL_TX}">${formatCurrency(subtotal)}</td></tr>
+        <tr><td style="padding:8px 0;font-weight:600;color:${SHELL_TX}">HST (13%)</td><td style="padding:8px 0;text-align:right;color:${SHELL_TX}">${formatCurrency(tax)}</td></tr>
+        <tr><td style="padding:10px 0 0;font-weight:700;color:${SHELL_TX}">Total</td><td style="padding:10px 0 0;text-align:right;font-weight:700;color:${EMAIL_WINE}">${formatCurrency(grand)}</td></tr>
       </table>
     </div>
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "View Quote & Book")}
-    <p style="font-size:11px;color:${TX3};text-align:center;margin:0 0 16px;line-height:1.6">This quote is valid for 7 days. Full payment confirms your rental.</p>
+    <p style="font-size:11px;color:${SHELL_TX3};text-align:center;margin:0 0 16px;line-height:1.6">This quote is valid for 7 days. Full payment confirms your rental.</p>
     ${questionsFooter(d.coordinatorName, d.coordinatorPhone)}
   `);
 }
@@ -895,7 +945,7 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
 
   return quoteEmailLayout(`
     ${subHeading("COMMERCIAL DELIVERY QUOTE")}
-    <p style="font-size:14px;font-weight:600;color:${ACCENT_OFF_WHITE};letter-spacing:0;margin:0 0 20px;line-height:1.5;">${scopeLine}</p>
+    <p style="font-size:14px;font-weight:600;color:${EMAIL_WINE};letter-spacing:0;margin:0 0 20px;line-height:1.5;">${scopeLine}</p>
     ${heading(`Hi${d.clientName ? ` ${d.clientName}` : ""}`,)}
     ${bodyText("Your commercial delivery quote is ready. One transparent flat rate with professional logistics from pickup through delivery.")}
     ${expiryNote(d.expiresAt)}
@@ -903,8 +953,8 @@ function b2bOneOffTemplate(d: QuoteTemplateData): string {
     ${priceCard("Delivery All Inclusive", total, `+${formatCurrency(tax)} HST \u00b7 Full payment at booking (card) or Net 30 when invoiced`)}
     ${coordinatorBlock(d.coordinatorName, d.coordinatorPhone)}
     ${ctaButton(d.quoteUrl, "VIEW QUOTE & CONFIRM")}
-    <p style="font-size:11px;color:${TX3};text-align:center;margin:0 0 20px;line-height:1.6">
-      Planning regular deliveries? Our <strong style="color:${TX}">Partner Program</strong> offers priority scheduling, volume pricing, and a dedicated portal.
+    <p style="font-size:11px;color:${SHELL_TX3};text-align:center;margin:0 0 20px;line-height:1.6">
+      Planning regular deliveries? Our <strong style="color:${EMAIL_WINE}">Partner Program</strong> offers priority scheduling, volume pricing, and a dedicated portal.
     </p>
     ${questionsFooter(d.coordinatorName, d.coordinatorPhone)}
   `);

@@ -52,6 +52,7 @@ import {
 } from "./lifecycle-templates";
 
 import { getNotificationsFromEmail } from "@/lib/config";
+import { getClientSupportEmail } from "@/lib/email/client-support-email";
 
 const DEFAULT_FROM = "Yugo <notifications@opsplus.co>";
 
@@ -178,6 +179,36 @@ interface SendWithTemplate extends SendEmailBaseOptions {
 }
 
 export type SendEmailOptions = SendWithHtml | SendWithTemplate;
+
+/** Quote / quote-reminder templates — used for inbox placement + reply-to. */
+function isQuoteRelatedTemplate(template: string | undefined): boolean {
+  return Boolean(template?.startsWith("quote"));
+}
+
+/** Minimal HTML → text for multipart/alternative (improves deliverability vs. HTML-only). */
+function roughPlainTextFromHtml(html: string): string {
+  const stripped = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|h[1-6]|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&middot;/gi, " · ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"');
+  return stripped
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, 120_000);
+}
 
 export interface SendEmailResult {
   success: boolean;
@@ -307,19 +338,24 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
     tags.push({ name: "template", value: opts.template });
   }
 
+  const quoteRelated = isQuoteRelatedTemplate(opts.template);
+  const plainText =
+    quoteRelated && html.length > 0 ? roughPlainTextFromHtml(html) : undefined;
+
   const { data: result, error } = await resend.emails.send({
     from: fromAddr,
     to: [opts.to],
     subject: opts.subject,
     html,
+    text: plainText,
     attachments: opts.attachments?.map((a) => ({
       filename: a.filename,
       content: typeof a.content === "string" ? a.content : a.content.toString("base64"),
     })),
-    replyTo: opts.replyTo,
+    replyTo: opts.replyTo ?? (quoteRelated ? getClientSupportEmail() : undefined),
     tags: tags.length > 0 ? tags : undefined,
     headers: {
-      Precedence: "auto",
+      /* Omit non-standard Precedence — can contribute to bulk/promotions heuristics in some clients */
       "X-Auto-Response-Suppress": "All",
     },
   });

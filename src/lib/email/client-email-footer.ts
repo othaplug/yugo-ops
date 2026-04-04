@@ -22,12 +22,23 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 
 /** Context line shown above legal copy; set per email type when building HTML. */
-export type EmailFooterWhy = "booking" | "partner" | "generic";
+export type EmailFooterWhy = "booking" | "partner" | "generic" | "quote";
 
 const FOOTER_WHY_COPY: Record<EmailFooterWhy, string> = {
   booking: "You're receiving this because you booked with Yugo.",
   partner: "You're receiving this because your organization was invited as a Yugo partner.",
   generic: "You're receiving this because you have a relationship with Yugo.",
+  quote: "You're receiving this because you requested a moving quote from Yugo.",
+};
+
+/** {@link getClientEmailFooterTrs} options */
+export type ClientEmailFooterOptions = {
+  whyReceiving?: EmailFooterWhy;
+  /**
+   * `transactional` omits the social icon row and marketing-style nav (preferences / unsubscribe),
+   * and uses quote-focused copy — reduces Gmail “Promotions” signals vs. newsletter-style footers.
+   */
+  variant?: "full" | "transactional";
 };
 
 const FOOTER_BG = "#FFFFFF";
@@ -170,11 +181,13 @@ function socialIconCell(url: string, iconUrl: string, alt: string): string {
 }
 
 /**
- * Direct children of the outer client email `<table>` (black background).
- * Starts with optional top promo rows, then nav + social + white legal block.
+ * Direct children of the outer client email `<table>`.
+ * Starts with optional top promo rows, then nav + optional social row + white legal block.
  */
-export function getClientEmailFooterTrs(options?: { whyReceiving?: EmailFooterWhy }): string {
-  const whyLine = FOOTER_WHY_COPY[options?.whyReceiving ?? "booking"];
+export function getClientEmailFooterTrs(options?: ClientEmailFooterOptions): string {
+  const variant = options?.variant ?? "full";
+  const whyKey = options?.whyReceiving ?? "booking";
+  const whyLine = FOOTER_WHY_COPY[whyKey];
   const base = getEmailBaseUrl();
   const privacyUrl = `${base}/privacy`;
   const termsUrl = `${base}/legal/terms-of-use`;
@@ -212,6 +225,33 @@ export function getClientEmailFooterTrs(options?: { whyReceiving?: EmailFooterWh
     </tr></table>
   </td></tr>`;
 
+  const navTransactional = `
+              ${navLink(mailtoContact, "CONTACT US")}
+              <span style="color:${FOOTER_HR};margin:0 12px;font-size:11px;">|</span>
+              ${navLink(privacyUrl, "PRIVACY POLICY")}
+              <span style="color:${FOOTER_HR};margin:0 12px;font-size:11px;">|</span>
+              ${navLink(termsUrl, "TERMS")}`;
+  const navFull = `
+              ${navLink(mailtoContact, "CONTACT US")}
+              <span style="color:${FOOTER_HR};margin:0 12px;font-size:11px;">|</span>
+              ${navLink(privacyUrl, "PRIVACY POLICY")}
+              <span style="color:${FOOTER_HR};margin:0 12px;font-size:11px;">|</span>
+              ${navLink(mailtoPrefs, "EMAIL PREFERENCES")}
+              <span style="color:${FOOTER_HR};margin:0 12px;font-size:11px;">|</span>
+              ${navLink(mailtoUnsub, "UNSUBSCRIBE")}`;
+
+  const addressBookParagraph =
+    variant === "transactional"
+      ? `<p style="margin:0 0 14px;">
+                Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book so messages about your quote and booking reach your inbox.
+              </p>`
+      : `<p style="margin:0 0 14px;">
+                Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book to ensure you receive updates about your move, offers, and exclusive perks.
+              </p>`;
+
+  const navRow = variant === "transactional" ? navTransactional : navFull;
+  const socialBlock = variant === "transactional" ? "" : `${socialRowInner}${hrRow()}`;
+
   return `
 __YUGO_FOOTER_TOP_PROMO__
     <tr>
@@ -220,18 +260,11 @@ __YUGO_FOOTER_TOP_PROMO__
           ${hrRow()}
           <tr>
             <td align="center" style="padding:18px 16px 20px;font-family:${FOOTER_NAV_FONT};background-color:${FOOTER_BG};">
-              ${navLink(mailtoContact, "CONTACT US")}
-              <span style="color:${FOOTER_HR};margin:0 12px;font-size:11px;">|</span>
-              ${navLink(privacyUrl, "PRIVACY POLICY")}
-              <span style="color:${FOOTER_HR};margin:0 12px;font-size:11px;">|</span>
-              ${navLink(mailtoPrefs, "EMAIL PREFERENCES")}
-              <span style="color:${FOOTER_HR};margin:0 12px;font-size:11px;">|</span>
-              ${navLink(mailtoUnsub, "UNSUBSCRIBE")}
+              ${navRow}
             </td>
           </tr>
           ${hrRow()}
-          ${socialRowInner}
-          ${hrRow()}
+          ${socialBlock}
         </table>
       </td>
     </tr>
@@ -246,9 +279,7 @@ __YUGO_FOOTER_TOP_PROMO__
               <p style="margin:0 0 14px;">
                 This email was sent to <a href="mailto:__YUGO_FOOTER_RECIPIENT_MAILTO__" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">__YUGO_FOOTER_RECIPIENT__</a>.
               </p>
-              <p style="margin:0 0 14px;">
-                Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book to ensure you receive updates about your move, offers, and exclusive perks.
-              </p>
+              ${addressBookParagraph}
               <p style="margin:0;">
                 <strong style="color:${FOOTER_LEGAL_TEXT};font-weight:600;">Yugo Inc.</strong>
                 <a href="${mapsUrl}" style="color:${FOOTER_LINK_WINE};text-decoration:underline;margin-left:6px;">${addrLine1} ${addrLine2}, ${addrLine3}, Canada</a>

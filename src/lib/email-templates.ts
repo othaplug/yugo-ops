@@ -55,9 +55,9 @@ export function getEmailLogoBlackUrl(): string {
   return getEmailLogoWineUrl();
 }
 
-/** Logo dimensions in HTML emails (~3.67:1). Keep compact so the mark doesn’t dominate the message. */
-export const EMAIL_LOGO_BLACK_W = 80;
-export const EMAIL_LOGO_BLACK_H = 22;
+/** Logo dimensions in HTML emails (~3.7:1). Shared by quote + premium shells; keep readable without dominating. */
+export const EMAIL_LOGO_BLACK_W = 96;
+export const EMAIL_LOGO_BLACK_H = 26;
 /** Compact wordmark on dark backgrounds (cream/gold slot). */
 export const EMAIL_LOGO_GOLD_W = 62;
 export const EMAIL_LOGO_GOLD_H = 17;

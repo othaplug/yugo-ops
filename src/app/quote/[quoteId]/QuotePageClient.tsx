@@ -370,6 +370,10 @@ export default function QuotePageClient({
   const shellBorderTopClass = wineQuoteChrome
     ? "border-[#66143D]/30"
     : "border-[#2C3E2D]/15";
+  /** Trust bar: stack on narrow viewports with light dividers */
+  const trustBarItemSepClass = wineQuoteChrome
+    ? "pb-5 border-b border-[#66143D]/25 sm:border-0 sm:pb-0"
+    : "pb-5 border-b border-[#2C3E2D]/12 sm:border-0 sm:pb-0";
   const residentialSolidCtaClass =
     "w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90";
 
@@ -1821,44 +1825,44 @@ export default function QuotePageClient({
         {/* ═══ SOCIAL PROOF + TRUST BAR ═══ */}
         <section className={`mb-10 pt-6 border-t ${shellBorderTopClass}`}>
           <div>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 sm:gap-4 text-center max-w-sm mx-auto sm:max-w-none">
+              <div className={trustBarItemSepClass}>
                 <p
-                  className="text-[13px] font-bold"
+                  className="text-sm sm:text-[13px] font-bold tracking-tight"
                   style={{ color: shellInk.primary }}
                 >
                   360+ Reviews
                 </p>
                 <p
-                  className="text-[12px] leading-snug"
+                  className="text-[12px] leading-snug mt-1 max-w-[14rem] mx-auto sm:max-w-none"
                   style={{ color: shellInk.body }}
                 >
                   5-star rated on Google
                 </p>
               </div>
-              <div>
+              <div className={trustBarItemSepClass}>
                 <p
-                  className="text-[13px] font-bold"
+                  className="text-sm sm:text-[13px] font-bold tracking-tight"
                   style={{ color: shellInk.primary }}
                 >
                   $2M Insurance
                 </p>
                 <p
-                  className="text-[12px] leading-snug"
+                  className="text-[12px] leading-snug mt-1 max-w-[14rem] mx-auto sm:max-w-none"
                   style={{ color: shellInk.body }}
                 >
                   Full cargo coverage
                 </p>
               </div>
-              <div>
+              <div className="pt-1 sm:pt-0">
                 <p
-                  className="text-[13px] font-bold"
+                  className="text-sm sm:text-[13px] font-bold tracking-tight"
                   style={{ color: shellInk.primary }}
                 >
                   Flat-Rate Guarantee
                 </p>
                 <p
-                  className="text-[12px] leading-snug"
+                  className="text-[12px] leading-snug mt-1 max-w-[16rem] mx-auto sm:max-w-none"
                   style={{ color: shellInk.body }}
                 >
                   No hidden fees on quoted scope.

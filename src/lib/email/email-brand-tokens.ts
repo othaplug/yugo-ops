@@ -5,6 +5,12 @@
 
 export const EMAIL_FOREST = "#2C3E2D";
 
+/** Wine wordmark / headings on cream (#FCF9F4) — matches web quote WINE. */
+export const EMAIL_WINE = "#5C1A33";
+
+/** Secondary wine / rose accent (Estate rail). */
+export const EMAIL_ROSE = "#66143D";
+
 /** Hairline / section rules on cream (#FCF9F4). */
 export const EMAIL_FOREST_RULE = "rgba(44,62,45,0.14)";
 

@@ -14,7 +14,7 @@ import {
   LEAD_SOURCE_LABELS,
   LEAD_STATUS_LABELS,
 } from "@/lib/leads/admin-labels";
-import { ArrowRight, Phone } from "@phosphor-icons/react";
+import { CaretRight, Phone } from "@phosphor-icons/react";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 import LeadResponseSlaCountdown from "../LeadResponseSlaCountdown";
 
@@ -274,24 +274,24 @@ export default function LeadDetailClient({
       <div className="flex flex-wrap gap-2 mb-6">
         <Link
           href={quoteHref}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--gold)] text-white text-[12px] font-bold hover:opacity-90"
+          className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[var(--tx)]/25 text-[12px] font-semibold text-[var(--tx)] tracking-wide uppercase hover:bg-[var(--hover)]"
         >
-          Send Quote
-          <ArrowRight size={16} weight="bold" aria-hidden />
+          Send quote
+          <CaretRight size={16} weight="bold" className="opacity-80" aria-hidden />
         </Link>
         {(requiresSpec || heavyParsed) && (
           <Link
             href={specialtyQuoteHref}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--gold)]/50 text-[var(--gold)] text-[12px] font-bold hover:bg-[var(--gold)]/10"
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx2)] hover:bg-[var(--hover)]"
           >
-            Specialty Quote Builder
-            <ArrowRight size={16} weight="bold" aria-hidden />
+            Specialty builder
+            <CaretRight size={16} weight="bold" className="opacity-70" aria-hidden />
           </Link>
         )}
         {tel ? (
           <a
             href={tel}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx2)] hover:bg-[var(--gdim)]"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx2)] hover:bg-[var(--hover)]"
           >
             <Phone size={16} aria-hidden />
             Call
@@ -300,7 +300,7 @@ export default function LeadDetailClient({
         {sms ? (
           <a
             href={sms}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx2)] hover:bg-[var(--gdim)]"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx2)] hover:bg-[var(--hover)]"
           >
             SMS
           </a>
@@ -308,7 +308,7 @@ export default function LeadDetailClient({
         <button
           type="button"
           onClick={handleCallLogged}
-          className="px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx2)] hover:bg-[var(--gdim)]"
+          className="px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx2)] hover:bg-[var(--hover)]"
         >
           Log call
         </button>
@@ -428,7 +428,7 @@ export default function LeadDetailClient({
         <button
           type="button"
           onClick={handleNote}
-          className="px-3 py-1.5 rounded-lg bg-[var(--gdim)] text-[12px] font-semibold text-[var(--tx2)] border border-[var(--brd)]"
+          className="px-3 py-1.5 rounded-lg bg-[var(--hover)] text-[12px] font-semibold text-[var(--tx2)] border border-[var(--brd)]"
         >
           Save note
         </button>
@@ -438,7 +438,7 @@ export default function LeadDetailClient({
         <h2 className="text-[11px] font-bold tracking-[0.16em] uppercase text-[var(--tx3)] mb-3">Activity</h2>
         <ul className="space-y-3">
           {activities.map((a) => (
-            <li key={a.id} className="border-l-2 border-[var(--gold)]/40 pl-3 text-[12px] text-[var(--tx2)]">
+            <li key={a.id} className="border-l-2 border-[var(--brd)] pl-3 text-[12px] text-[var(--tx2)]">
               <div className="font-semibold text-[var(--tx)]">
                 {LEAD_ACTIVITY_LABELS[a.activity_type] || a.activity_type}
               </div>
