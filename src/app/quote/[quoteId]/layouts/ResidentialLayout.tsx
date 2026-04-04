@@ -201,27 +201,24 @@ export default function ResidentialLayout({
           const taxLineColor = isEstate ? ESTATE_TAX_LINE : LIGHT_TAX_LINE;
           const footerColor = isEstate ? ESTATE_FOOTER : LIGHT_FOOTER;
 
-          const cardBorderColor = onWineSurface
-            ? isSelected
-              ? "#66143D"
-              : isRecommended
-                ? "rgba(249,237,228,0.38)"
-                : "rgba(249,237,228,0.2)"
-            : isSelected
-              ? FOREST
-              : isRecommended
-                ? `${FOREST}40`
-                : `${FOREST}12`;
+          const cardLiftShadow = isEstate
+            ? "none"
+            : onWineSurface
+              ? isSelected
+                ? "0 10px 40px rgba(0,0,0,0.26)"
+                : "0 6px 24px rgba(0,0,0,0.14)"
+              : isSelected
+                ? "0 12px 40px rgba(44,62,45,0.12)"
+                : "0 2px 16px rgba(44,62,45,0.06)";
 
           return (
             <div
               key={tierKey}
-              className={`relative flex h-full min-h-0 flex-col rounded-none overflow-hidden transition-all duration-300 ease-in-out border ${
-                isSelected ? "border-2" : "border"
-              } ${isCollapsed ? "opacity-60" : ""}`}
+              className={`relative flex h-full min-h-0 flex-col rounded-none overflow-hidden transition-all duration-300 ease-in-out border-0 ${
+                isCollapsed ? "opacity-60" : ""
+              }`}
               style={{
-                borderColor: cardBorderColor,
-                boxShadow: "none",
+                boxShadow: cardLiftShadow,
               }}
             >
               {/* Card body, no badge strip */}

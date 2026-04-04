@@ -1878,17 +1878,31 @@ export default function QuotePageClient({
                 </p>
               </div>
             </div>
-            <div
-              className={`mt-4 pt-3 text-center border-t ${shellBorderTopClass}`}
-            >
+            <div className="mt-6 flex items-center justify-center gap-3 sm:gap-4 max-w-lg mx-auto px-2">
+              <div
+                className="flex-1 min-w-[1.5rem] h-px max-w-[4.5rem] sm:max-w-none"
+                style={{
+                  backgroundColor: wineQuoteChrome
+                    ? "rgba(249, 237, 228, 0.28)"
+                    : "rgba(44, 62, 45, 0.18)",
+                }}
+              />
               <p
-                className="text-[11px] font-medium"
-                style={{ color: shellInk.secondary }}
+                className="text-center text-balance text-[12px] sm:text-[13px] font-semibold leading-snug tracking-tight shrink-0 max-w-[20rem] sm:max-w-[22rem]"
+                style={{ color: shellInk.primary }}
               >
                 {isB2BDeliveryQuoteServiceType(quote.service_type)
-                  ? "Trusted By Leading Toronto Businesses"
-                  : "Trusted By Leading Toronto Businesses And Homeowners"}
+                  ? "Trusted by leading Toronto businesses"
+                  : "Trusted by leading Toronto businesses and homeowners"}
               </p>
+              <div
+                className="flex-1 min-w-[1.5rem] h-px max-w-[4.5rem] sm:max-w-none"
+                style={{
+                  backgroundColor: wineQuoteChrome
+                    ? "rgba(249, 237, 228, 0.28)"
+                    : "rgba(44, 62, 45, 0.18)",
+                }}
+              />
             </div>
           </div>
         </section>

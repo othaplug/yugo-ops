@@ -564,12 +564,7 @@ export default function QuoteWidgetClient() {
       >
         {/* ── Header ── */}
         <div className="px-6 sm:px-8 pt-6 pb-3 flex items-center justify-between">
-          <YugoLogo
-            size={18}
-            variant="gold"
-            onLightBackground
-            hidePlus={false}
-          />
+          <YugoLogo size={18} variant="gold" onLightBackground />
           {step > 0 && !submitted && (
             <button
               onClick={goBack}

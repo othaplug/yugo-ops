@@ -45,14 +45,14 @@ function PlusMark({ size, color }: { size: number; color: string }) {
   );
 }
 
-/** Yugo wordmark + plus. `variant="auto"` defaults to gold; pass `wine`, `cream`, or `black` for explicit assets. */
+/** Yugo wordmark. Optional `+` via `hidePlus={false}`. `variant="auto"` defaults to gold. */
 export default function YugoLogo({
   size = 18,
   className = "",
   variant = "auto",
   useImage = true,
   onLightBackground: _onLightBackground = false,
-  hidePlus = false,
+  hidePlus = true,
 }: YugoLogoProps) {
   useContext(ThemeContext); // kept for potential future theme-aware overrides
 
