@@ -2,7 +2,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
 import { getEmailFrom } from "@/lib/email/send";
 import { formatJobId } from "@/lib/move-code";
-import { emailLayout } from "@/lib/email-templates";
+import { EMAIL_FOREST } from "@/lib/email/email-brand-tokens";
+import { emailNestedKvRow } from "@/lib/email/email-kv-layout";
+import { escapeHtmlEmail } from "@/lib/email/email-link-utils";
+import { emailLayout, PREMIUM_FONT } from "@/lib/email-templates";
 
 interface ExtraItemNotifyPayload {
   jobId: string;
@@ -46,17 +49,47 @@ export async function notifyExtraItemRequest(payload: ExtraItemNotifyPayload): P
     const resend = getResend();
     const jobLabel = formatJobId(entityCode, jobType);
 
+    const kicker = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px`;
+    const rowLbl = `padding:6px 12px 6px 0;color:#6B635C;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`;
+    const rowVal = `padding:6px 0;color:#3A3532;font-size:13px;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`;
+    const rowValStrong = `${rowVal};font-weight:600`;
+    const rowValForest = `${rowVal};font-weight:600;color:${EMAIL_FOREST}`;
+    const div = "1px solid rgba(44,62,45,0.12)";
     const inner = `
-      <div style="font-size:9px;font-weight:700;color:#2C3E2D;letter-spacing:1.5px;text-transform:none;margin-bottom:8px;">Extra Item Request</div>
-      <div style="font-size:20px;font-weight:700;margin:0 0 12px;color:#3A3532;">Extra Item Request</div>
-      <p style="font-size:14px;color:#6B635C;margin:0 0 20px;">A new extra item request needs your approval.</p>
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-bottom:24px;">
-        <tr><td style="padding:8px 0;color:#6B635C;font-size:13px;width:110px;">Job</td><td style="padding:8px 0;color:#3A3532;font-size:13px;font-weight:600;">${jobLabel}</td></tr>
-        <tr><td style="padding:8px 0;color:#6B635C;font-size:13px;">Requested by</td><td style="padding:8px 0;color:#3A3532;font-size:13px;">${byLabel}</td></tr>
-        <tr><td style="padding:8px 0;color:#6B635C;font-size:13px;">Item</td><td style="padding:8px 0;color:#3A3532;font-size:13px;">${description}${qtyLabel}</td></tr>
-        <tr><td style="padding:8px 0;color:#6B635C;font-size:13px;">Status</td><td style="padding:8px 0;color:#2C3E2D;font-size:13px;font-weight:600;">Pending Approval</td></tr>
+      <div style="${kicker}">Extra item request</div>
+      <div style="font-size:20px;font-weight:700;margin:0 0 12px;color:#3A3532;font-family:'Instrument Serif',Georgia,serif;">Extra item request</div>
+      <p style="font-size:14px;color:#6B635C;margin:0 0 20px;line-height:1.62;font-family:${PREMIUM_FONT};">A new extra item request needs your approval.</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-bottom:24px;font-family:${PREMIUM_FONT};">
+        ${emailNestedKvRow({
+          borderTop: "none",
+          labelStyle: rowLbl,
+          valueStyle: rowValStrong,
+          label: "Job",
+          valueHtml: escapeHtmlEmail(jobLabel),
+        })}
+        ${emailNestedKvRow({
+          borderTop: div,
+          labelStyle: rowLbl,
+          valueStyle: rowVal,
+          label: "Requested by",
+          valueHtml: escapeHtmlEmail(byLabel),
+        })}
+        ${emailNestedKvRow({
+          borderTop: div,
+          labelStyle: rowLbl,
+          valueStyle: rowVal,
+          label: "Item",
+          valueHtml: escapeHtmlEmail(`${description}${qtyLabel}`),
+        })}
+        ${emailNestedKvRow({
+          borderTop: div,
+          labelStyle: rowLbl,
+          valueStyle: rowValForest,
+          label: "Status",
+          valueHtml: "Pending approval",
+        })}
       </table>
-      <p style="font-size:12px;color:#6B635C;margin-top:20px;">Review and approve or reject this request in the admin portal.</p>
+      <p style="font-size:12px;color:#6B635C;margin-top:20px;line-height:1.6;font-family:${PREMIUM_FONT};">Review and approve or reject this request in the admin portal.</p>
     `;
     const emailFrom = await getEmailFrom();
     await resend.emails.send({

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import YugoLogo from "@/components/YugoLogo";
-import { WINE, FOREST, GOLD, CREAM, TEXT_MUTED_ON_LIGHT } from "@/lib/client-theme";
+import { WINE, FOREST, CREAM, TEXT_MUTED_ON_LIGHT } from "@/lib/client-theme";
 
 export default function ClientPage() {
   return (
     <div className="min-h-screen font-sans flex items-center justify-center px-5" style={{ backgroundColor: CREAM }}>
       <div className="max-w-md text-center">
-        <YugoLogo size={22} variant="gold" className="mb-6 inline-block" />
+        <YugoLogo size={22} variant="wine" className="mb-6 inline-block" />
         <h1 className="font-hero text-xl md:text-2xl font-bold mb-3" style={{ color: WINE }}>
           Track Your Move
         </h1>
@@ -21,7 +21,7 @@ export default function ClientPage() {
         <Link
           href="/login"
           className="inline-block px-4 py-2 rounded-lg text-[12px] font-semibold border-2 transition-colors hover:bg-[#2C3E2D] hover:text-[#F9EDE4]"
-          style={{ borderColor: GOLD, color: GOLD }}
+          style={{ borderColor: FOREST, color: FOREST }}
         >
           Back to sign in
         </Link>

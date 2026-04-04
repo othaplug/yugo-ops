@@ -20,9 +20,15 @@ export const STATUS_TO_TIMELINE: Record<
   dispatched: { label: "Crew dispatched", icon: "Truck" },
   en_route_to_pickup: { label: "Crew en route to your home", icon: "Truck" },
   arrived_at_pickup: { label: "Crew arrived at your home", icon: "MapPin" },
-  walkthrough_complete: { label: "Inventory walkthrough complete", icon: "ClipboardText" },
+  walkthrough_complete: {
+    label: "Inventory walkthrough complete",
+    icon: "ClipboardText",
+  },
   loading: { label: "Loading started", icon: "stack" },
-  en_route_to_destination: { label: "Loading complete, en route to new home", icon: "Truck" },
+  en_route_to_destination: {
+    label: "Loading complete, en route to new home",
+    icon: "Truck",
+  },
   arrived_at_destination: { label: "Arrived at new home", icon: "MapPin" },
   unloading: { label: "Unloading started", icon: "stack" },
   completed: { label: "Move complete", icon: "CheckCircle" },
@@ -37,7 +43,10 @@ export const STATUS_TO_TIMELINE_DELIVERY: Record<
   dispatched: { label: "Crew dispatched", icon: "Truck" },
   en_route_to_pickup: { label: "Crew en route to pickup", icon: "Truck" },
   arrived_at_pickup: { label: "Crew arrived at pickup", icon: "MapPin" },
-  walkthrough_complete: { label: "Walkthrough complete", icon: "ClipboardText" },
+  walkthrough_complete: {
+    label: "Walkthrough complete",
+    icon: "ClipboardText",
+  },
   loading: { label: "Loading started", icon: "stack" },
   en_route_to_destination: { label: "En route to drop-off", icon: "Truck" },
   arrived_at_destination: { label: "Arrived at drop-off", icon: "MapPin" },
@@ -80,7 +89,9 @@ export default function LiveMoveTimeline({
 
   const fetchTimeline = useCallback(async () => {
     try {
-      const res = await fetch(`/api/track/moves/${moveId}/timeline?token=${token}`);
+      const res = await fetch(
+        `/api/track/moves/${moveId}/timeline?token=${token}`,
+      );
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.entries)) setEntries(data.entries);
@@ -98,7 +109,9 @@ export default function LiveMoveTimeline({
 
   if (entries.length === 0) return null;
 
-  const isLive = !["completed", "delivered", "cancelled"].includes(currentStatus);
+  const isLive = !["completed", "delivered", "cancelled"].includes(
+    currentStatus,
+  );
   const currentEntry = entries.find((e) => e.status === "current");
 
   // Colors matching the client portal light theme
@@ -107,33 +120,58 @@ export default function LiveMoveTimeline({
   const FOREST = "#1C3A2B";
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${FOREST}15` }}>
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ border: `1px solid ${FOREST}15` }}
+    >
       {/* Header */}
       <div
         className="px-4 py-4 flex items-center justify-between gap-3"
         style={{ background: `linear-gradient(135deg, ${GOLD}0C, ${GOLD}06)` }}
       >
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1" style={{ color: GOLD }}>
+          <p
+            className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
+            style={{ color: GOLD }}
+          >
             {isLive ? "Live" : useDeliveryCopy ? "Delivery" : "Move"} Timeline
           </p>
           <h3 className="text-[15px] font-bold" style={{ color: FOREST }}>
-            {useDeliveryCopy ? "Your Delivery, Step by Step" : "Your Move, Step by Step"}
+            {useDeliveryCopy
+              ? "Your Delivery, Step by Step"
+              : "Your Move, Step by Step"}
           </h3>
         </div>
         {isLive && (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: `${GREEN}14`, border: `1px solid ${GREEN}30` }}>
+          <span
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+            style={{ background: `${GREEN}14`, border: `1px solid ${GREEN}30` }}
+          >
             <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: GREEN }} />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: GREEN }} />
+              <span
+                className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                style={{ background: GREEN }}
+              />
+              <span
+                className="relative inline-flex rounded-full h-1.5 w-1.5"
+                style={{ background: GREEN }}
+              />
             </span>
-            <span className="text-[10px] font-semibold" style={{ color: GREEN }}>Live</span>
+            <span
+              className="text-[10px] font-semibold"
+              style={{ color: GREEN }}
+            >
+              Live
+            </span>
           </span>
         )}
       </div>
 
       {/* Timeline */}
-      <div className="px-4 py-5 space-y-0" style={{ backgroundColor: "#F9EDE4" }}>
+      <div
+        className="px-4 py-5 space-y-0"
+        style={{ backgroundColor: "#F9EDE4" }}
+      >
         {entries.map((entry, index) => {
           const isLast = index === entries.length - 1;
           const isCurrent = entry.status === "current";
@@ -144,12 +182,19 @@ export default function LiveMoveTimeline({
           const dotBg = isDone ? GREEN : isCurrent ? GOLD : "transparent";
           const dotBorder = isDone ? GREEN : isCurrent ? GOLD : `${FOREST}25`;
           // Connector: gold for completed→current transition, faint for upcoming
-          const connectorColor = isDone ? `${GREEN}50` : isCurrent ? `${GOLD}40` : `${FOREST}12`;
+          const connectorColor = isDone
+            ? `${GREEN}50`
+            : isCurrent
+              ? `${GOLD}40`
+              : `${FOREST}12`;
 
           return (
             <div key={entry.id || index} className="flex gap-3.5">
               {/* Dot + connector column */}
-              <div className="flex flex-col items-center shrink-0" style={{ width: 20 }}>
+              <div
+                className="flex flex-col items-center shrink-0"
+                style={{ width: 20 }}
+              >
                 {/* Dot */}
                 <div
                   className="shrink-0 rounded-full z-10"
@@ -161,8 +206,8 @@ export default function LiveMoveTimeline({
                     boxShadow: isCurrent
                       ? `0 0 0 4px ${GOLD}20`
                       : isDone
-                      ? `0 0 0 3px ${GREEN}14`
-                      : "none",
+                        ? `0 0 0 3px ${GREEN}14`
+                        : "none",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -212,13 +257,20 @@ export default function LiveMoveTimeline({
                     <p
                       className="text-[13px] font-semibold leading-tight"
                       style={{
-                        color: isDone ? FOREST : isCurrent ? GOLD : `${FOREST}50`,
+                        color: isDone
+                          ? FOREST
+                          : isCurrent
+                            ? GOLD
+                            : `${FOREST}50`,
                       }}
                     >
                       {entry.label}
                     </p>
                     {isCurrent && (
-                      <p className="text-[10px] font-semibold mt-0.5" style={{ color: `${GOLD}90` }}>
+                      <p
+                        className="text-[10px] font-semibold mt-0.5"
+                        style={{ color: `${GOLD}90` }}
+                      >
                         In progress
                       </p>
                     )}
@@ -239,7 +291,10 @@ export default function LiveMoveTimeline({
       </div>
 
       {isLive && currentEntry && (
-        <div className="px-4 py-3" style={{ background: `${GOLD}06`, borderTop: `1px solid ${GOLD}15` }}>
+        <div
+          className="px-4 py-3"
+          style={{ background: `${GOLD}06`, borderTop: `1px solid ${GOLD}15` }}
+        >
           <p className="text-[11px]" style={{ color: `${FOREST}55` }}>
             Updates automatically every 30 seconds
           </p>

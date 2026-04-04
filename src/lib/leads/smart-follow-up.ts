@@ -82,8 +82,8 @@ export async function sendSmartFollowUp(
   const first = (lead.first_name || "there").trim() || "there";
 
   const emailHtml = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"/></head>
-<body style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;">
+<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body class="email-outer-gutter" style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;width:100%;max-width:600px;box-sizing:border-box;margin:0 auto;padding:16px 20px;">
   <p>Hi ${first.replace(/</g, "&lt;")},</p>
   <p>Thanks for reaching out to Yugo. We would like to get your personalized quote ready.</p>
   <p>To make sure we give you the most accurate price, we need a few details:</p>

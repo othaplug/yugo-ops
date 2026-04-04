@@ -30,12 +30,20 @@ export async function GET(req: NextRequest) {
   const twoDaysOut = toDateStr(2);
   const oneDayOut = toDateStr(1);
 
-  const results = { sent72hr: 0, sentBalance72hr: 0, sentBalance48hr: 0, sent24hr: 0, errors: [] as string[] };
+  const results = {
+    sent72hr: 0,
+    sentBalance72hr: 0,
+    sentBalance48hr: 0,
+    sent24hr: 0,
+    errors: [] as string[],
+  };
 
   /* ── T-72 Hour Emails ── */
   const { data: moves72 } = await supabase
     .from("moves")
-    .select("id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at")
+    .select(
+      "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at",
+    )
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", threeDaysOut)
     .is("pre_move_72hr_sent", null);
@@ -87,7 +95,9 @@ export async function GET(req: NextRequest) {
           results.errors.push(`72hr:${move.move_code}:${result.error}`);
         }
       } catch (err) {
-        results.errors.push(`72hr:${move.move_code}:${err instanceof Error ? err.message : String(err)}`);
+        results.errors.push(
+          `72hr:${move.move_code}:${err instanceof Error ? err.message : String(err)}`,
+        );
       }
 
       // T-72hr Balance Reminder (piggy-backs on same date window)
@@ -116,7 +126,9 @@ export async function GET(req: NextRequest) {
             results.errors.push(`bal72:${move.move_code}:${balResult.error}`);
           }
         } catch (err) {
-          results.errors.push(`bal72:${move.move_code}:${err instanceof Error ? err.message : String(err)}`);
+          results.errors.push(
+            `bal72:${move.move_code}:${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       }
     }
@@ -125,7 +137,9 @@ export async function GET(req: NextRequest) {
   /* ── T-48 Hour Balance Payment Email ── */
   const { data: moves48 } = await supabase
     .from("moves")
-    .select("id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at")
+    .select(
+      "id, move_code, client_name, client_email, scheduled_date, balance_amount, balance_paid_at, deposit_paid_at",
+    )
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", twoDaysOut)
     .is("balance_reminder_48hr_sent", null)
@@ -171,7 +185,9 @@ export async function GET(req: NextRequest) {
           results.errors.push(`bal48:${move.move_code}:${result.error}`);
         }
       } catch (err) {
-        results.errors.push(`bal48:${move.move_code}:${err instanceof Error ? err.message : String(err)}`);
+        results.errors.push(
+          `bal48:${move.move_code}:${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
   }
@@ -179,12 +195,14 @@ export async function GET(req: NextRequest) {
   /* ── T-24 Hour Emails ── */
   const { data: moves24 } = await supabase
     .from("moves")
-    .select(`
+    .select(
+      `
       id, move_code, client_name, client_email, client_phone,
       scheduled_date, scheduled_time, from_address, to_address,
       crew_id, crew_size, truck_info, arrival_window,
       crews:crew_id(name, members)
-    `)
+    `,
+    )
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", oneDayOut)
     .is("pre_move_24hr_sent", null);
@@ -195,8 +213,10 @@ export async function GET(req: NextRequest) {
       .select("key, value")
       .in("key", ["coordinator_name", "coordinator_phone"]);
 
-    const coordinatorName = coordConfig?.find((c) => c.key === "coordinator_name")?.value || null;
-    const coordinatorPhone = coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
+    const coordinatorName =
+      coordConfig?.find((c) => c.key === "coordinator_name")?.value || null;
+    const coordinatorPhone =
+      coordConfig?.find((c) => c.key === "coordinator_phone")?.value || null;
 
     for (const move of moves24) {
       if (!move.client_email) continue;
@@ -204,8 +224,11 @@ export async function GET(req: NextRequest) {
       const trackToken = signTrackToken("move", move.id);
       const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
 
-      const crewRaw = move.crews as { name: string; members: string[] } | { name: string; members: string[] }[] | null;
-      const crew = Array.isArray(crewRaw) ? crewRaw[0] ?? null : crewRaw;
+      const crewRaw = move.crews as
+        | { name: string; members: string[] }
+        | { name: string; members: string[] }[]
+        | null;
+      const crew = Array.isArray(crewRaw) ? (crewRaw[0] ?? null) : crewRaw;
       const crewLeadName = crew?.name || null;
       const crewSize = move.crew_size ?? (crew?.members?.length || null);
 
@@ -254,19 +277,24 @@ export async function GET(req: NextRequest) {
           results.errors.push(`24hr:${move.move_code}:${result.error}`);
         }
       } catch (err) {
-        results.errors.push(`24hr:${move.move_code}:${err instanceof Error ? err.message : String(err)}`);
+        results.errors.push(
+          `24hr:${move.move_code}:${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
   }
 
   if (results.errors.length > 0) {
-    await supabase.from("webhook_logs").insert({
-      source: "cron_pre_move_emails",
-      event_type: "partial_failure",
-      payload: results,
-      status: "error",
-      error: results.errors.join("; ").slice(0, 500),
-    }).then(() => {});
+    await supabase
+      .from("webhook_logs")
+      .insert({
+        source: "cron_pre_move_emails",
+        event_type: "partial_failure",
+        payload: results,
+        status: "error",
+        error: results.errors.join("; ").slice(0, 500),
+      })
+      .then(() => {});
   }
 
   return NextResponse.json({

@@ -42,9 +42,17 @@ export type ClientEmailFooterOptions = {
    * unsubscribe) — reduces Gmail “Promotions” signals vs. newsletter-style footers.
    */
   variant?: "full" | "transactional";
+  /**
+   * Vertical space above the footer so the legal block sits below the first viewport in most clients.
+   * Background should match the email’s outer page color (not the footer band).
+   */
+  spacerBackground?: string;
 };
 
-const FOOTER_BG = "#FFFFFF";
+/** Match premium / finalize page cream so footer bands are not a stark white slab. */
+const FOOTER_BG = "#FCF9F4";
+/** Empty vertical band before the footer nav (encourages scroll before legal). */
+const FOOTER_TOP_SPACER_PX = 320;
 const FOOTER_TEXT = "#000000";
 const FOOTER_LEGAL_TEXT = "#555555";
 /** Body / nav text links — brand wine (not default blue). */
@@ -164,7 +172,7 @@ function buildReferFriendTopRows(params: {
     ${hrRow()}
     <tr>
       <td align="center" style="padding:0;font-family:${FOOTER_NAV_FONT};background-color:${FOOTER_BG};">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:560px;margin:0 auto;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:600px;width:100%;margin:0 auto;">
           <tr><td align="center" style="padding:20px 12px;">${link}</td></tr>
         </table>
       </td>
@@ -188,6 +196,7 @@ export function getClientEmailFooterTrs(
   options?: ClientEmailFooterOptions,
 ): string {
   const variant = options?.variant ?? "transactional";
+  const spacerBg = options?.spacerBackground ?? FOOTER_BG;
   const whyKey = options?.whyReceiving ?? "booking";
   const whyLine = FOOTER_WHY_COPY[whyKey];
   const base = getEmailBaseUrl();
@@ -258,8 +267,11 @@ export function getClientEmailFooterTrs(
   return `
 __YUGO_FOOTER_TOP_PROMO__
     <tr>
+      <td aria-hidden="true" height="${FOOTER_TOP_SPACER_PX}" style="padding:0;background-color:${spacerBg};height:${FOOTER_TOP_SPACER_PX}px;font-size:0;line-height:0;mso-line-height-rule:exactly;">&nbsp;</td>
+    </tr>
+    <tr>
       <td align="center" style="padding:0;background-color:${FOOTER_BG};">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:560px;margin:0 auto;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:600px;width:100%;margin:0 auto;">
           ${hrRow()}
           <tr>
             <td align="center" style="padding:18px 16px 20px;font-family:${FOOTER_NAV_FONT};background-color:${FOOTER_BG};">
@@ -273,7 +285,7 @@ __YUGO_FOOTER_TOP_PROMO__
     </tr>
     <tr>
       <td align="center" style="padding:0;background-color:${FOOTER_BG};">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:560px;margin:0 auto;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:600px;width:100%;margin:0 auto;">
           <tr>
             <td style="padding:28px 24px 36px;font-family:${FOOTER_LEGAL_FONT};font-size:11px;line-height:1.65;color:${FOOTER_LEGAL_TEXT};text-align:center;">
               <p style="margin:0 0 14px;font-size:10px;color:#666666;line-height:1.55;">

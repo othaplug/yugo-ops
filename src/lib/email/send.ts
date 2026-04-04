@@ -53,6 +53,9 @@ import {
 
 import { getNotificationsFromEmail } from "@/lib/config";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
+import { finalizeClientEmailHtml } from "@/lib/email/finalize-client-html";
+
+export { finalizeClientEmailHtml } from "@/lib/email/finalize-client-html";
 
 const DEFAULT_FROM = "Yugo <notifications@opsplus.co>";
 
@@ -78,7 +81,6 @@ export type TemplateName =
   | "quote-followup-2"
   | "quote-followup-2-warm"
   | "quote-followup-2-essentials"
-  | "quote-followup-2-cold"
   | "quote-followup-2-essential"
   | "quote-followup-2-curated"
   | "quote-followup-3"
@@ -128,7 +130,6 @@ type TemplateDataMap = {
   "quote-followup-2": QuoteFollowup2Data;
   "quote-followup-2-warm": QuoteFollowup2Data;
   "quote-followup-2-essentials": QuoteFollowup2Data;
-  "quote-followup-2-cold": QuoteFollowup2Data;
   "quote-followup-2-essential": QuoteFollowup2Data;
   "quote-followup-2-curated": QuoteFollowup2Data;
   "quote-followup-3": QuoteFollowup3Data;
@@ -236,7 +237,6 @@ function renderTemplate(template: string, data: unknown): string {
     "quote-followup-2": quoteFollowup2Email,
     "quote-followup-2-warm": quoteFollowup2Email,
     "quote-followup-2-essentials": quoteFollowup2Email,
-    "quote-followup-2-cold": quoteFollowup2Email,
     "quote-followup-2-essential": quoteFollowup2Email,
     "quote-followup-2-curated": quoteFollowup2Email,
     "quote-followup-3": quoteFollowup3Email,
@@ -289,52 +289,9 @@ export async function getEmailFrom(): Promise<string> {
   }
 }
 
-const INSTRUMENT_SERIF_LINK =
-  "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap";
-/** Matches premium transactional table background so gutters are not a solid black slab in Gmail. */
-const EMAIL_DOC_BG = "#FCF9F4";
-
-const INSTRUMENT_SERIF_FACE = `
-@font-face {
-  font-family: 'Instrument Serif';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url(https://fonts.gstatic.com/s/instrumentserif/v5/jizBRFtNs2ka5fXjeivQ4LroWlx-6zUTjnTLgNs.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Instrument Serif';
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url(https://fonts.gstatic.com/s/instrumentserif/v5/jizHRFtNs2ka5fXjeivQ4LroWlx-6zAjjH7Motmp5g.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}`;
-
-/** Wraps email HTML fragment in full document with Instrument Serif so all client-facing emails can use the hero font. */
-function wrapClientEmailDocument(innerHtml: string): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light" />
-  <meta name="supported-color-schemes" content="light" />
-  <link href="${INSTRUMENT_SERIF_LINK}" rel="stylesheet" />
-  <style type="text/css">${INSTRUMENT_SERIF_FACE}</style>
-</head>
-<body style="margin:0;padding:0;background:${EMAIL_DOC_BG};color-scheme:light;">
-  ${innerHtml}
-</body>
-</html>`;
-}
-
 export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult> {
   let html = opts.html ?? renderTemplate(opts.template!, opts.data);
-  if (!html.trimStart().startsWith("<!DOCTYPE")) {
-    html = wrapClientEmailDocument(html);
-  }
+  html = finalizeClientEmailHtml(html);
 
   const resend = getResend();
   const fromAddr = opts.from ?? await getEmailFrom();

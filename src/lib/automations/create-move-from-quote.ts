@@ -246,8 +246,7 @@ export async function createMoveFromQuote(
   ].filter(Boolean);
   const accessNotes = accessParts.length > 0 ? accessParts.join("\n") : null;
 
-  const moveType =
-    SERVICE_TO_MOVE_TYPE[quote.service_type] ?? "residential";
+  const moveType = SERVICE_TO_MOVE_TYPE[quote.service_type] ?? "residential";
 
   const sharedStatic = {
     service_type: quote.service_type,
@@ -261,10 +260,13 @@ export async function createMoveFromQuote(
 
     from_access: quote.from_access,
     to_access: quote.to_access,
-    from_parking: (quote as { from_parking?: string }).from_parking ?? "dedicated",
+    from_parking:
+      (quote as { from_parking?: string }).from_parking ?? "dedicated",
     to_parking: (quote as { to_parking?: string }).to_parking ?? "dedicated",
-    from_long_carry: (quote as { from_long_carry?: boolean }).from_long_carry ?? false,
-    to_long_carry: (quote as { to_long_carry?: boolean }).to_long_carry ?? false,
+    from_long_carry:
+      (quote as { from_long_carry?: boolean }).from_long_carry ?? false,
+    to_long_carry:
+      (quote as { to_long_carry?: boolean }).to_long_carry ?? false,
     access_notes: accessNotes,
 
     quote_id: quote.id,
@@ -314,8 +316,7 @@ export async function createMoveFromQuote(
   });
 
   const eventTitleForNotes =
-    (eventQuoteMeta as { event_name?: string | null }).event_name?.trim() ||
-    "";
+    (eventQuoteMeta as { event_name?: string | null }).event_name?.trim() || "";
 
   function pushEventPair(
     rows: RowInsert[],
@@ -358,7 +359,9 @@ export async function createMoveFromQuote(
       est_crew_size: opts.crew ?? null,
       est_hours: opts.hours ?? null,
       internal_notes: mkInternal("delivery"),
-      ...(opts.isFirstOverall ? buildFinancialPrimary() : buildFinancialSibling()),
+      ...(opts.isFirstOverall
+        ? buildFinancialPrimary()
+        : buildFinancialSibling()),
     });
 
     rows.push({
@@ -458,8 +461,11 @@ export async function createMoveFromQuote(
     const specialtyB2b = factors.specialty_b2b_transport === true;
     const specNotes = specialtyB2b
       ? [
-          typeof factors.specialty_handling_notes === "string" ? factors.specialty_handling_notes.trim() : "",
-          Array.isArray(factors.specialty_equipment_keys) && (factors.specialty_equipment_keys as string[]).length
+          typeof factors.specialty_handling_notes === "string"
+            ? factors.specialty_handling_notes.trim()
+            : "",
+          Array.isArray(factors.specialty_equipment_keys) &&
+          (factors.specialty_equipment_keys as string[]).length
             ? `Equipment flags: ${(factors.specialty_equipment_keys as string[]).join(", ")}`
             : "",
           `Specialty B2B transport · Quote ${input.quoteId}`,
@@ -479,7 +485,9 @@ export async function createMoveFromQuote(
         distance_km: quote.distance_km ?? null,
         est_crew_size: (quote.est_crew_size as number) ?? null,
         est_hours:
-          (typeof factors.est_job_hours === "number" ? factors.est_job_hours : null) ??
+          (typeof factors.est_job_hours === "number"
+            ? factors.est_job_hours
+            : null) ??
           (quote.est_hours as number) ??
           null,
         truck_primary: (quote.truck_primary as string) ?? null,

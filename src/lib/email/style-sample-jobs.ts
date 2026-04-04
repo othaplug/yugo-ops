@@ -450,11 +450,6 @@ export function getStyleSampleTemplateJobs(ctx: StyleSampleRecipientContext): St
       data: { ...fq2Base, tier: "essential" },
     },
     {
-      template: "quote-followup-2-cold",
-      subject: "[Yugo sample] Quote follow-up 2 (cold)",
-      data: { ...fq2Base, moveDate: null, includeInlinePrices: true },
-    },
-    {
       template: "quote-followup-2-essential",
       subject: "[Yugo sample] Quote follow-up 2 (essential)",
       data: { ...fq2Base, tier: "essential" },
@@ -619,6 +614,7 @@ export function getStyleSampleHtmlJobs(ctx: StyleSampleRecipientContext): StyleS
         ctaUrl: track,
         ctaLabel: "Track move",
         includeFooter: true,
+        eyebrow: "Live update",
       }),
     },
     {

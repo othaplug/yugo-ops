@@ -1,24 +1,33 @@
 import {
   getClientEmailFooterTrs,
+  type ClientEmailFooterOptions,
   type EmailFooterWhy,
 } from "@/lib/email/client-email-footer";
 
 export type { EmailFooterWhy } from "@/lib/email/client-email-footer";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import {
+  EMAIL_DM_SANS_STACK,
   EMAIL_FOREST,
   EMAIL_FOREST_RULE,
+  EMAIL_PREMIUM_ISLAND,
+  EMAIL_PREMIUM_MUTED_FILL,
+  EMAIL_PREMIUM_PAGE,
   emailPrimaryCtaStyle,
 } from "@/lib/email/email-brand-tokens";
+import { emailNestedKvRow } from "@/lib/email/email-kv-layout";
+import { emailMapLinkHtml, escapeHtmlEmail } from "@/lib/email/email-link-utils";
+import { EMAIL_FLUID_MAX_WIDTH_PX } from "@/lib/email/email-responsive-css";
 import { getEmailBaseUrl } from "./email-base-url";
-import { formatCurrency } from "./format-currency";
+import { formatCurrencyEmail } from "./format-currency";
 import { formatPhone, normalizePhone } from "./phone";
 
 /* ═══ Client emails: Equinox-style transaction shell (bordered dark card, logo inside card). Table-based. ═══ */
 const EQ_PAGE_BG = "#121212";
 const EQ_CARD_BG = "#161616";
 const EQ_CARD_BORDER = "rgba(255,255,255,0.22)";
-export const EQ_SANS = "Helvetica Neue,Helvetica,Arial,sans-serif";
+/** @deprecated Prefer {@link PREMIUM_FONT} — same stack, kept for older imports. */
+export const EQ_SANS = EMAIL_DM_SANS_STACK;
 
 /* ═══ Legacy premium: full-width black + cream wordmark (quote follow-ups, reviews, low-sat). ═══ */
 const EMAIL_BG = "#000000";
@@ -65,15 +74,37 @@ export const EMAIL_LOGO_BLACK_H = 26;
 export const EMAIL_LOGO_GOLD_W = 62;
 export const EMAIL_LOGO_GOLD_H = 17;
 
-/** Cream transactional shell (aligned with Estate palette; estate template HTML is unchanged). */
-const PREMIUM_PAGE = "#FCF9F4";
+/** Cream transactional shell (aligned with quote page + {@link EMAIL_PREMIUM_PAGE}). */
+const PREMIUM_PAGE = EMAIL_PREMIUM_PAGE;
 const PREMIUM_BODY = "#3A3532";
 const PREMIUM_BODY_MUTED = "#6B635C";
 const PREMIUM_RULE = EMAIL_FOREST_RULE;
-const PREMIUM_MUTED_FILL = "#EBEBEB";
+const PREMIUM_MUTED_FILL = EMAIL_PREMIUM_MUTED_FILL;
 /** Gray / summary callouts — tight inset (credential cards, OTP, claims, deposit rows). */
 const PREMIUM_CALLOUT_PAD = "12px 14px";
-const PREMIUM_FONT = "'DM Sans',Helvetica Neue,Helvetica,Arial,sans-serif";
+
+/** Shared with quote HTML — DM Sans first for premium clean feel. */
+export const PREMIUM_FONT = EMAIL_DM_SANS_STACK;
+
+function premiumCredentialTable(rowsInner: string): string {
+  return `<div style="background:${EMAIL_PREMIUM_ISLAND};border:1px solid ${PREMIUM_RULE};padding:${PREMIUM_CALLOUT_PAD};margin:0 0 16px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;width:100%;">${rowsInner}</table>
+  </div>`;
+}
+
+/** Label + value on one row (invite / onboarding) — labels are literal uppercase. */
+const CRED_INLINE_LBL = `font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};letter-spacing:0.06em;text-transform:uppercase;font-family:${PREMIUM_FONT};margin-right:14px;white-space:nowrap;vertical-align:middle;`;
+
+function premiumCredentialInlineRow(
+  borderTopCss: string | null,
+  labelUpper: string,
+  valueHtml: string,
+): string {
+  const bt = borderTopCss ? `border-top:${borderTopCss};` : "";
+  return `<tr><td style="padding:10px 0;${bt}font-family:${PREMIUM_FONT};font-size:12px;line-height:1.55;vertical-align:middle;color:${PREMIUM_BODY};">
+    <span style="${CRED_INLINE_LBL}">${labelUpper}</span><span style="vertical-align:middle;">${valueHtml}</span>
+  </td></tr>`;
+}
 /**
  * Email typography (premium / cream templates):
  * - Display titles & large hero lines: PREMIUM_SERIF_HEADING, sentence case in copy, text-transform none, letter-spacing 0.
@@ -84,7 +115,7 @@ const PREMIUM_FONT = "'DM Sans',Helvetica Neue,Helvetica,Arial,sans-serif";
 const PREMIUM_SERIF_HEADING =
   "'Instrument Serif',Georgia,'Times New Roman',serif";
 /** Wine subheads on invite & credential blocks: 12px, uppercase, letter-spacing 0 (explicit font-family for client consistency). */
-const PREMIUM_EYEBROW_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0px;text-transform:uppercase`;
+const PREMIUM_EYEBROW_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.08em;text-transform:uppercase`;
 
 /** Canonical label for premium tracking CTAs (all caps for plaintext + clients that ignore text-transform). */
 export const PREMIUM_TRACK_CTA_LABEL = "TRACK YOUR MOVE";
@@ -176,13 +207,6 @@ function emailCardLogoWinePremiumRule(): string {
       <img src="${wineUrl}" alt="Yugo" width="${EMAIL_LOGO_BLACK_W}" height="${EMAIL_LOGO_BLACK_H}" style="display:block;border:0;max-width:${EMAIL_LOGO_BLACK_W}px;height:auto;margin:0 auto;" />
     </td>
   </tr>
-  <tr>
-    <td align="center" style="padding:14px 16px 0;">
-      <table width="72" cellpadding="0" cellspacing="0" border="0" role="presentation">
-        <tr><td style="height:2px;background:linear-gradient(90deg,${EMAIL_FOREST},#4A6B4E,${EMAIL_FOREST});font-size:0;line-height:0;">&nbsp;</td></tr>
-      </table>
-    </td>
-  </tr>
 </table>`;
 }
 
@@ -204,10 +228,10 @@ function premiumEmailWrapper(
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PREMIUM_PAGE}" style="background-color:${PREMIUM_PAGE};color-scheme:light;">
   <tr>
-    <td align="center" bgcolor="${PREMIUM_PAGE}" style="padding:36px 20px 48px;background-color:${PREMIUM_PAGE};color-scheme:light;">
-      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${PREMIUM_PAGE}" style="max-width:100%;background-color:${PREMIUM_PAGE};">
+    <td class="email-outer-gutter" align="center" bgcolor="${PREMIUM_PAGE}" style="padding:36px 20px 48px;background-color:${PREMIUM_PAGE};color-scheme:light;">
+      <table class="email-fluid-inner" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${PREMIUM_PAGE}" style="max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;width:100%;background-color:${PREMIUM_PAGE};">
         <tr>
-          <td bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${PREMIUM_FONT};color:${PREMIUM_BODY};-webkit-text-fill-color:${PREMIUM_BODY};font-size:15px;line-height:1.65;">
+          <td bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${PREMIUM_FONT};color:${PREMIUM_BODY};-webkit-text-fill-color:${PREMIUM_BODY};font-size:15px;line-height:1.62;">
             ${emailCardLogoWinePremiumRule()}
             ${innerHtml}
           </td>
@@ -215,14 +239,17 @@ function premiumEmailWrapper(
       </table>
     </td>
   </tr>
-  ${emailFooterRow(footerWhy)}
+  ${emailFooterRow(footerWhy, { spacerBackground: PREMIUM_PAGE })}
 </table>
   `;
 }
 
 /** Equinox-style footer rows (tokens replaced at send time). */
-function emailFooterRow(why: EmailFooterWhy = "booking"): string {
-  return getClientEmailFooterTrs({ whyReceiving: why });
+function emailFooterRow(
+  why: EmailFooterWhy = "booking",
+  footerOpts?: Omit<ClientEmailFooterOptions, "whyReceiving">,
+): string {
+  return getClientEmailFooterTrs({ whyReceiving: why, ...footerOpts });
 }
 
 /**
@@ -311,9 +338,9 @@ function estateDivider(): string {
   return `<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:36px 0 32px;border-top:1px solid rgba(92,26,51,0.14);font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
 }
 
-/** Estate section eyebrow — sentence case, Instrument Serif. */
+/** Estate section kicker — uppercase, wine, Instrument Serif. */
 function estateLabel(text: string): string {
-  return `<p style="font-family:${ESTATE_GEORGIA};font-size:11px;font-weight:700;letter-spacing:0;color:${ESTATE_WINE};text-transform:none;margin:0 0 20px;line-height:1.4;">${text}</p>`;
+  return `<p style="font-family:${ESTATE_GEORGIA};font-size:11px;font-weight:700;letter-spacing:0.1em;color:${ESTATE_WINE} !important;-webkit-text-fill-color:${ESTATE_WINE};text-transform:uppercase;margin:0 0 22px;line-height:1.45;">${escapeHtmlEmail(text)}</p>`;
 }
 
 /**
@@ -355,8 +382,8 @@ function estateLuxuryCreamLayout(innerHtml: string): string {
 ${ESTATE_EMAIL_DARK_MODE_CSS}
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${ESTATE_CREAM_PAGE}" style="background-color:${ESTATE_CREAM_PAGE};color-scheme:light;">
   <tr>
-    <td class="estate-email-outer" align="center" bgcolor="${ESTATE_CREAM_PAGE}" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};color-scheme:light;">
-      <table class="estate-email-inner" width="580" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${ESTATE_CREAM_CARD}" style="max-width:100%;width:580px;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);">
+    <td class="estate-email-outer email-outer-gutter" align="center" bgcolor="${ESTATE_CREAM_PAGE}" style="padding:36px 20px 60px;background-color:${ESTATE_CREAM_PAGE};color-scheme:light;">
+      <table class="estate-email-inner email-fluid-inner" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${ESTATE_CREAM_CARD}" style="max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;width:100%;background-color:${ESTATE_CREAM_CARD};border:1px solid rgba(92,26,51,0.16);">
         <tr>
           <td class="estate-email-content" bgcolor="${ESTATE_CREAM_CARD}" style="padding:52px 48px 56px;font-family:${ESTATE_DM_SANS};color:${ESTATE_BODY};font-size:15px;line-height:1.78;">
             ${emailCardLogoEstate()}
@@ -375,7 +402,10 @@ ${ESTATE_EMAIL_DARK_MODE_CSS}
       </table>
     </td>
   </tr>
-  ${emailFooterRow()}
+  ${getClientEmailFooterTrs({
+    whyReceiving: "booking",
+    spacerBackground: ESTATE_CREAM_PAGE,
+  })}
 </table>
   `;
 }
@@ -389,7 +419,7 @@ export function legacyEmailLayout(
   return premiumEmailWrapper(innerHtml, "generic");
 }
 
-/** Minimal status email (crew on the way, arrived, etc.): headline, body, optional CTA. Table-based, full-width dark. */
+/** Minimal status email (crew on the way, arrived, etc.): cream shell, quote-parity typography, optional CTA. */
 export function statusUpdateEmailHtml(params: {
   headline: string;
   body: string;
@@ -397,8 +427,17 @@ export function statusUpdateEmailHtml(params: {
   ctaLabel?: string;
   /** Set false for live move/delivery tracking pings (no legal footer). Default true. */
   includeFooter?: boolean;
+  /** Kicker above headline (e.g. "Live update"). Escaped; omit or leave empty to hide. */
+  eyebrow?: string;
 }): string {
-  const { headline, body, ctaUrl, ctaLabel, includeFooter = true } = params;
+  const {
+    headline,
+    body,
+    ctaUrl,
+    ctaLabel,
+    includeFooter = true,
+    eyebrow = "",
+  } = params;
   const useCompactTrackCta =
     !!ctaLabel &&
     (ctaLabel === PREMIUM_TRACK_CTA_LABEL ||
@@ -409,7 +448,7 @@ export function statusUpdateEmailHtml(params: {
     ctaUrl && ctaLabel
       ? `
     <tr>
-      <td align="center" style="padding:8px 0 32px;">
+      <td align="center" style="padding:12px 0 40px;">
         ${
           useCompactTrackCta
             ? premiumCompactWineCtaAnchor(
@@ -426,21 +465,33 @@ export function statusUpdateEmailHtml(params: {
   `
       : "";
   const bottomPad = includeFooter ? "24px" : "40px";
-  const footerBlock = includeFooter ? emailFooterRow("booking") : "";
+  const footerBlock = includeFooter
+    ? emailFooterRow("booking", { spacerBackground: PREMIUM_PAGE })
+    : "";
+  const eyebrowTrim = eyebrow.trim();
+  const eyebrowBlock =
+    eyebrowTrim.length > 0
+      ? `<tr>
+      <td style="padding:0 0 10px;">
+        <div style="${PREMIUM_EYEBROW_UPPER};margin:0;">${escapeHtml(eyebrowTrim)}</div>
+      </td>
+    </tr>`
+      : "";
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PREMIUM_PAGE}" style="background-color:${PREMIUM_PAGE};color-scheme:light;">
   <tr>
-    <td align="center" bgcolor="${PREMIUM_PAGE}" style="padding:24px 16px ${bottomPad};background-color:${PREMIUM_PAGE};color-scheme:light;">
-      <table width="560" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${PREMIUM_PAGE}" style="max-width:100%;background-color:${PREMIUM_PAGE};">
+    <td class="email-outer-gutter" align="center" bgcolor="${PREMIUM_PAGE}" style="padding:24px 16px ${bottomPad};background-color:${PREMIUM_PAGE};color-scheme:light;">
+      <table class="email-fluid-inner" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="${PREMIUM_PAGE}" style="max-width:${EMAIL_FLUID_MAX_WIDTH_PX}px;width:100%;background-color:${PREMIUM_PAGE};">
         <tr>
-          <td bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${EQ_SANS};background-color:${PREMIUM_PAGE};">
+          <td bgcolor="${PREMIUM_PAGE}" style="padding:0;font-family:${PREMIUM_FONT};background-color:${PREMIUM_PAGE};color:${PREMIUM_BODY};-webkit-text-fill-color:${PREMIUM_BODY};">
             ${emailCardLogoWinePremiumRule()}
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+              ${eyebrowBlock}
               <tr>
-                <td style="font-size:26px;font-weight:700;letter-spacing:0;text-transform:none;color:${PREMIUM_BODY};padding-bottom:16px;line-height:1.35;font-family:${PREMIUM_SERIF_HEADING};">${headline}</td>
+                <td style="font-size:22px;font-weight:700;letter-spacing:0;text-transform:none;color:${PREMIUM_BODY} !important;-webkit-text-fill-color:${PREMIUM_BODY};padding:0 0 14px;line-height:1.3;font-family:${PREMIUM_SERIF_HEADING};">${headline}</td>
               </tr>
               <tr>
-                <td style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;">${body}</td>
+                <td style="font-size:14px;color:${PREMIUM_BODY_MUTED} !important;-webkit-text-fill-color:${PREMIUM_BODY_MUTED};line-height:1.62;font-family:${PREMIUM_FONT};padding:0 0 36px;">${body}</td>
               </tr>
               ${ctaHtml}
             </table>
@@ -481,7 +532,7 @@ const STATUS_COLORS: Record<string, string> = {
 function statusBadge(status: string) {
   const s = (status || "").replace("-", " ");
   const c = STATUS_COLORS[status] || EMAIL_FOREST;
-  return `<span style="display:inline-block;padding:4px 10px;border-radius:0;font-size:11px;font-weight:600;background:${c}22;color:${c}">${s.charAt(0).toUpperCase() + s.slice(1)}</span>`;
+  return `<span style="display:inline-block;padding:4px 10px;border-radius:0;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;background:${c}22;color:${c}">${s}</span>`;
 }
 
 export function deliveryNotificationEmail(delivery: {
@@ -508,27 +559,45 @@ export function deliveryNotificationEmail(delivery: {
       <tr>
         <td style="padding:0 0 8px;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr><td style="font-size:9px;color:${PREMIUM_BODY_MUTED};text-transform:none;font-weight:700;letter-spacing:0;padding-bottom:8px;">Current status</td></tr>
+            <tr><td style="font-size:9px;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;padding-bottom:8px;font-family:${PREMIUM_FONT};">Current status</td></tr>
             <tr><td style="padding-bottom:16px;">${statusBadge(delivery.status)}</td></tr>
             <tr>
               <td>
-                <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td width="50%" style="font-size:12px;color:${PREMIUM_BODY_MUTED};padding:4px 8px 4px 0;vertical-align:top;">Delivery to:</td>
-                    <td width="50%" style="font-size:12px;font-weight:600;color:${PREMIUM_BODY};padding:4px 0;vertical-align:top;">${delivery.delivery_address || "-"}</td>
-                  </tr>
-                  <tr>
-                    <td style="font-size:12px;color:${PREMIUM_BODY_MUTED};padding:4px 8px 4px 0;vertical-align:top;">Pickup from:</td>
-                    <td style="font-size:12px;font-weight:600;color:${PREMIUM_BODY};padding:4px 0;vertical-align:top;">${delivery.pickup_address || "-"}</td>
-                  </tr>
-                  <tr>
-                    <td style="font-size:12px;color:${PREMIUM_BODY_MUTED};padding:4px 8px 4px 0;vertical-align:top;">Date &amp; window:</td>
-                    <td style="font-size:12px;font-weight:600;color:${PREMIUM_BODY};padding:4px 0;vertical-align:top;">${delivery.scheduled_date || "-"} &middot; ${delivery.delivery_window || "-"}</td>
-                  </tr>
-                  <tr>
-                    <td style="font-size:12px;color:${PREMIUM_BODY_MUTED};padding:4px 8px 4px 0;vertical-align:top;">Items:</td>
-                    <td style="font-size:12px;font-weight:600;color:${PREMIUM_BODY};padding:4px 0;vertical-align:top;">${items} items</td>
-                  </tr>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+                  ${emailNestedKvRow({
+                    borderTop: "none",
+                    labelStyle: `padding:4px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+                    valueStyle: `padding:4px 0;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+                    label: "Delivery to",
+                    valueHtml: delivery.delivery_address
+                      ? emailMapLinkHtml(delivery.delivery_address)
+                      : "—",
+                  })}
+                  ${emailNestedKvRow({
+                    borderTop: `1px solid ${PREMIUM_RULE}`,
+                    labelStyle: `padding:4px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+                    valueStyle: `padding:4px 0;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+                    label: "Pickup from",
+                    valueHtml: delivery.pickup_address
+                      ? emailMapLinkHtml(delivery.pickup_address)
+                      : "—",
+                  })}
+                  ${emailNestedKvRow({
+                    borderTop: `1px solid ${PREMIUM_RULE}`,
+                    labelStyle: `padding:4px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+                    valueStyle: `padding:4px 0;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+                    label: "Date & window",
+                    valueHtml: escapeHtmlEmail(
+                      `${delivery.scheduled_date || "—"} · ${delivery.delivery_window || "—"}`,
+                    ),
+                  })}
+                  ${emailNestedKvRow({
+                    borderTop: `1px solid ${PREMIUM_RULE}`,
+                    labelStyle: `padding:4px 8px 4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`,
+                    valueStyle: `padding:4px 0;font-size:12px;font-weight:600;color:${PREMIUM_BODY};text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`,
+                    label: "Items",
+                    valueHtml: escapeHtmlEmail(`${items} items`),
+                  })}
                 </table>
               </td>
             </tr>
@@ -644,11 +713,11 @@ function moveStatusBarHtml(status: string, stage?: string | null): string {
       }
     </style>
     <div style="margin:20px 0 24px">
-      <div style="font-size:9px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:none;letter-spacing:0;margin-bottom:8px">Current stage</div>
+      <div style="font-size:9px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;font-family:${PREMIUM_FONT};">Current stage</div>
       <div style="height:10px;background:${PREMIUM_MUTED_FILL};border-radius:0;overflow:hidden;">
         <div class="move-bar-fill" style="height:100%;width:${pct}%;min-width:${pct > 0 ? 4 : 0}px;background:linear-gradient(90deg,${EMAIL_FOREST},#5A7A5E);border-radius:0"></div>
       </div>
-      <div style="font-size:12px;font-weight:600;color:${labelColor};margin-top:8px;letter-spacing:0">${currentLabel}</div>
+      <div style="font-size:12px;font-weight:600;color:${labelColor};margin-top:8px;letter-spacing:0.04em;text-transform:uppercase;font-family:${PREMIUM_FONT};">${currentLabel}</div>
     </div>
   `;
 }
@@ -716,8 +785,8 @@ export function invoiceEmail(invoice: {
     <div style="font-size:14px;font-weight:600;margin-bottom:16px;color:${PREMIUM_BODY};">${invoice.invoice_number}</div>
     ${premiumSectionRule()}
     <div style="text-align:center;padding:8px 0 16px;">
-      <div style="font-size:9px;color:${PREMIUM_BODY_MUTED};text-transform:none;font-weight:700;margin-bottom:8px;">Amount due</div>
-      <div style="font-family:${PREMIUM_SERIF_HEADING};font-size:28px;font-weight:700;color:${EMAIL_FOREST};">${formatCurrency(invoice.amount)}</div>
+      <div style="font-size:9px;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:8px;font-family:${PREMIUM_FONT};">Amount due</div>
+      <div style="font-family:${PREMIUM_SERIF_HEADING};font-size:28px;font-weight:700;color:${EMAIL_FOREST};">${formatCurrencyEmail(invoice.amount)}</div>
       <div style="font-size:10px;color:${PREMIUM_BODY_MUTED};margin-top:4px;">Due: ${invoice.due_date}</div>
     </div>
   `;
@@ -873,10 +942,18 @@ export function inviteUserEmail(params: {
     <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to join Yugo as a <strong style="color:${EMAIL_FOREST};">${roleLabel}</strong>. Your account has been created, sign in with the temporary password below and you&apos;ll be prompted to set a new password.</p>
     ${premiumSectionRule()}
     <div style="${PREMIUM_EYEBROW_UPPER};margin:0 0 16px;">Your credentials</div>
-    <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin:0 0 16px;">
-      <div style="font-size:12px;color:${PREMIUM_BODY};margin-bottom:6px;line-height:1.4;"><strong>Email:</strong> <a href="mailto:${email}" style="color:${EMAIL_FOREST};">${email}</a></div>
-      <div style="font-size:12px;color:${PREMIUM_BODY};line-height:1.4;"><strong>Temporary password:</strong><br/><span style="display:inline-block;margin-top:6px;">${pwdPill}</span></div>
-    </div>
+    ${premiumCredentialTable(`
+      ${premiumCredentialInlineRow(
+        null,
+        "EMAIL",
+        `<a href="mailto:${encodeURIComponent(email)}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-weight:600;">${escapeHtmlEmail(email)}</a>`,
+      )}
+      ${premiumCredentialInlineRow(
+        `1px solid ${PREMIUM_RULE}`,
+        "TEMPORARY PASSWORD",
+        pwdPill,
+      )}
+    `)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
       <a href="${loginUrl}" style="${emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block")}">LOG IN TO CONTINUE SETUP</a>
     </td></tr></table>
@@ -901,8 +978,8 @@ Welcome to Yugo${name ? `, ${name}` : ""}
 You've been invited to join Yugo as a ${roleLabel}. Your account has been created. Sign in with the temporary password below and you'll be prompted to set a new password.
 
 YOUR CREDENTIALS:
-Email: ${email}
-Temporary password: ${tempPassword}
+EMAIL: ${email}
+TEMPORARY PASSWORD: ${tempPassword}
 
 LOG IN TO CONTINUE SETUP: ${loginUrl}
 
@@ -929,10 +1006,18 @@ export function invitePartnerEmail(params: {
     <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px;"><strong style="color:${EMAIL_FOREST};">${companyName}</strong> is set up as a <strong style="color:${EMAIL_FOREST};">${typeLabel}</strong> partner with Yugo${contactName ? `. Welcome, ${contactName}.` : "."} Sign in with the temporary password below; you&apos;ll be prompted to set a new password.</p>
     ${premiumSectionRule()}
     <div style="${PREMIUM_EYEBROW_UPPER};margin:0 0 16px;">Your credentials</div>
-    <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin:0 0 16px;">
-      <div style="font-size:12px;color:${PREMIUM_BODY};margin-bottom:6px;line-height:1.4;"><strong>Email:</strong> <a href="mailto:${email}" style="color:${EMAIL_FOREST};">${email}</a></div>
-      <div style="font-size:12px;color:${PREMIUM_BODY};line-height:1.4;"><strong>Temporary password:</strong><br/><span style="display:inline-block;margin-top:6px;">${pwdPill}</span></div>
-    </div>
+    ${premiumCredentialTable(`
+      ${premiumCredentialInlineRow(
+        null,
+        "EMAIL",
+        `<a href="mailto:${encodeURIComponent(email)}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-weight:600;">${escapeHtmlEmail(email)}</a>`,
+      )}
+      ${premiumCredentialInlineRow(
+        `1px solid ${PREMIUM_RULE}`,
+        "TEMPORARY PASSWORD",
+        pwdPill,
+      )}
+    `)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:28px;">
       <a href="${loginUrl}" style="${emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block")}">ACCESS YOUR PARTNER PORTAL</a>
     </td></tr></table>
@@ -968,8 +1053,8 @@ Your account is ready. Here's everything you need to get started.
 ${companyName} is set up as a ${typeLabel} partner with Yugo${contactName ? `. Welcome, ${contactName}.` : "."} Sign in with the temporary password below; you'll be prompted to set a new password.
 
 YOUR CREDENTIALS:
-Email: ${email}
-Temporary password: ${tempPassword}
+EMAIL: ${email}
+TEMPORARY PASSWORD: ${tempPassword}
 
 ACCESS YOUR PARTNER PORTAL: ${loginUrl}
 
@@ -1029,10 +1114,18 @@ export function partnerPasswordResetEmail(params: {
     <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 20px;">A new temporary password has been set for your <strong style="color:${EMAIL_FOREST};">${companyName}</strong> partner portal access${contactName ? ` (${contactName})` : ""}. Sign in with the credentials below and you&apos;ll be prompted to set a new password.</p>
     ${premiumSectionRule()}
     <div style="${PREMIUM_EYEBROW_UPPER};margin:0 0 16px;">Your credentials</div>
-    <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin:0 0 16px;">
-      <div style="font-size:12px;color:${PREMIUM_BODY};margin-bottom:6px;line-height:1.4;"><strong>Email:</strong> <a href="mailto:${email}" style="color:${EMAIL_FOREST};">${email}</a></div>
-      <div style="font-size:12px;color:${PREMIUM_BODY};line-height:1.4;"><strong>New temporary password:</strong><br/><span style="display:inline-block;margin-top:6px;">${pwdPill}</span></div>
-    </div>
+    ${premiumCredentialTable(`
+      ${premiumCredentialInlineRow(
+        null,
+        "EMAIL",
+        `<a href="mailto:${encodeURIComponent(email)}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-weight:600;">${escapeHtmlEmail(email)}</a>`,
+      )}
+      ${premiumCredentialInlineRow(
+        `1px solid ${PREMIUM_RULE}`,
+        "NEW TEMPORARY PASSWORD",
+        pwdPill,
+      )}
+    `)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
       <a href="${loginUrl}" style="${emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block")}">ACCESS YOUR PARTNER PORTAL</a>
     </td></tr></table>
@@ -1055,8 +1148,8 @@ export function partnerPasswordResetEmailText(params: {
 A new temporary password has been set for your ${companyName} partner portal access${contactName ? ` (${contactName})` : ""}. Sign in with the credentials below and you'll be prompted to set a new password.
 
 YOUR CREDENTIALS:
-Email: ${email}
-New temporary password: ${tempPassword}
+EMAIL: ${email}
+NEW TEMPORARY PASSWORD: ${tempPassword}
 
 ACCESS YOUR PARTNER PORTAL: ${loginUrl}
 
@@ -1101,7 +1194,7 @@ export function referralReceivedEmail(params: {
     <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 20px;">Your referral for <strong style="color:${EMAIL_FOREST};">${ref}</strong> has been received and added to our pipeline.</p>
     ${premiumSectionRule()}
     <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
-      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:none;font-weight:700;letter-spacing:0;margin-bottom:6px;">Status</div>
+      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:6px;font-family:${PREMIUM_FONT};">Status</div>
       <div style="font-size:13px;color:${PREMIUM_BODY};font-weight:600;">In pipeline – your team is on it</div>
       <div style="font-size:12px;color:${PREMIUM_BODY_MUTED};margin-top:4px;line-height:1.5;">We&apos;ll be in touch as we process the lead and coordinate the move.</div>
     </div>
@@ -1126,10 +1219,18 @@ export function crewPortalInviteEmail(params: {
     <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 20px;">You&apos;ve been invited to log in to the Yugo Crew Portal to start jobs, update status, and share your location with dispatch.</p>
     ${premiumSectionRule()}
     <div style="${PREMIUM_EYEBROW_UPPER};margin:0 0 16px;">Your login</div>
-    <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
-      <div style="font-size:12px;color:${PREMIUM_BODY};margin-bottom:6px;line-height:1.4;"><strong>Phone:</strong> ${phoneDisplay}</div>
-      <div style="font-size:12px;color:${PREMIUM_BODY};line-height:1.4;"><strong>PIN:</strong><br/><span style="display:inline-block;margin-top:6px;">${pinPill}</span></div>
-    </div>
+    ${premiumCredentialTable(`
+      ${premiumCredentialInlineRow(
+        null,
+        "PHONE",
+        escapeHtmlEmail(phoneDisplay),
+      )}
+      ${premiumCredentialInlineRow(
+        `1px solid ${PREMIUM_RULE}`,
+        "PIN",
+        pinPill,
+      )}
+    `)}
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding-bottom:24px;">
       <a href="${loginUrl}" style="${emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block")}">LOG IN TO CREW PORTAL</a>
     </td></tr></table>
@@ -1154,7 +1255,7 @@ Welcome to the Crew Portal${name ? `, ${name}` : ""}
 You've been invited to log in to the Yugo Crew Portal to start jobs, update status, and share your location with dispatch.
 
 YOUR LOGIN:
-Phone: ${phoneDisplay}
+PHONE: ${phoneDisplay}
 PIN: ${pin}
 
 LOG IN TO CREW PORTAL: ${loginUrl}
@@ -1205,9 +1306,16 @@ export function bookingConfirmationEmail(params: {
     name.length > 0
       ? `Your move is confirmed, ${name}.`
       : "Your move is confirmed.";
+  const pBorder = `1px solid ${PREMIUM_RULE}`;
+  const pLbl = `padding:5px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;line-height:1.35;font-family:${PREMIUM_FONT}`;
+  const pVal = `padding:5px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;line-height:1.35;font-family:${PREMIUM_FONT};letter-spacing:0`;
+  const pValGr = `${pVal};color:#2D7A4F`;
+  const svcEsc = escapeHtmlEmail(
+    `${serviceLabel}${tierLabel ? ` - ${tierLabel}` : ""}`,
+  );
   return equinoxPromoLayout(
     `
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px;">Booking confirmed</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;font-family:${PREMIUM_FONT};">Booking confirmed</div>
     <h1 style="font-size:28px;font-weight:700;color:${PREMIUM_BODY};margin:0 0 14px;letter-spacing:0;line-height:1.2;font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">${headline}</h1>
     <p style="font-size:15px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 28px;font-family:${PREMIUM_FONT};">Your deposit is in and your ${serviceLabel.toLowerCase()} is confirmed. Here are your details.</p>
 
@@ -1216,38 +1324,62 @@ export function bookingConfirmationEmail(params: {
       <tr>
         <td style="padding:0;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px;border-collapse:collapse;font-family:${PREMIUM_FONT};">
-            <tr>
-              <td style="color:${PREMIUM_BODY_MUTED};padding:8px 0;vertical-align:top;">Booking</td>
-              <td style="color:${PREMIUM_BODY};font-weight:600;padding:8px 0;text-align:right;vertical-align:top;letter-spacing:0;">${moveCode}</td>
-            </tr>
-            <tr>
-              <td style="color:${PREMIUM_BODY_MUTED};padding:8px 0;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">Service</td>
-              <td style="color:${PREMIUM_BODY};font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">${serviceLabel}${tierLabel ? ` - ${tierLabel}` : ""}</td>
-            </tr>
-            <tr>
-              <td style="color:${PREMIUM_BODY_MUTED};padding:8px 0;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">Date</td>
-              <td style="color:${PREMIUM_BODY};font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">${dateDisplay}</td>
-            </tr>
-            <tr>
-              <td style="color:${PREMIUM_BODY_MUTED};padding:8px 0;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">From</td>
-              <td style="color:${PREMIUM_BODY};font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">${fromAddress}</td>
-            </tr>
-            <tr>
-              <td style="color:${PREMIUM_BODY_MUTED};padding:8px 0;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">To</td>
-              <td style="color:${PREMIUM_BODY};font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">${toAddress}</td>
-            </tr>
-            <tr>
-              <td style="color:#2D7A4F;font-weight:600;padding:8px 0;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">Deposit paid</td>
-              <td style="color:#2D7A4F;font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">${formatCurrency(depositPaid)}</td>
-            </tr>
-            <tr>
-              <td style="color:${PREMIUM_BODY_MUTED};padding:8px 0;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">Balance remaining</td>
-              <td style="color:${PREMIUM_BODY};font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">${formatCurrency(balanceRemaining)}</td>
-            </tr>
-            <tr>
-              <td style="color:${PREMIUM_BODY_MUTED};padding:8px 0;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">Total (incl. HST)</td>
-              <td style="color:${PREMIUM_BODY};font-weight:600;padding:8px 0;text-align:right;vertical-align:top;border-top:1px solid ${PREMIUM_RULE};">${formatCurrency(totalWithTax)}</td>
-            </tr>
+            ${emailNestedKvRow({
+              borderTop: "none",
+              labelStyle: pLbl,
+              valueStyle: pVal,
+              label: "Booking",
+              valueHtml: escapeHtmlEmail(moveCode),
+            })}
+            ${emailNestedKvRow({
+              borderTop: pBorder,
+              labelStyle: pLbl,
+              valueStyle: pVal,
+              label: "Service",
+              valueHtml: svcEsc,
+            })}
+            ${emailNestedKvRow({
+              borderTop: pBorder,
+              labelStyle: pLbl,
+              valueStyle: pVal,
+              label: "Date",
+              valueHtml: escapeHtmlEmail(dateDisplay),
+            })}
+            ${emailNestedKvRow({
+              borderTop: pBorder,
+              labelStyle: pLbl,
+              valueStyle: pVal,
+              label: "From",
+              valueHtml: emailMapLinkHtml(fromAddress),
+            })}
+            ${emailNestedKvRow({
+              borderTop: pBorder,
+              labelStyle: pLbl,
+              valueStyle: pVal,
+              label: "To",
+              valueHtml: emailMapLinkHtml(toAddress),
+            })}
+            ${emailNestedKvRow({
+              borderTop: pBorder,
+              labelStyle: pLbl,
+              valueStyle: pValGr,
+              label: "Deposit paid",
+              valueHtml: formatCurrencyEmail(depositPaid),
+            })}
+            ${emailNestedKvRow({
+              borderTop: pBorder,
+              labelStyle: pLbl,
+              valueStyle: pVal,
+              label: "Balance remaining",
+              valueHtml: formatCurrencyEmail(balanceRemaining),
+            })}
+            ${emailNestedKvRow({
+              borderTop: pBorder,
+              labelStyle: pLbl,
+              valueStyle: pVal,
+              label: "Total (incl. HST)",
+              valueHtml: formatCurrencyEmail(totalWithTax),
+            })}
           </table>
         </td>
       </tr>
@@ -1313,8 +1445,12 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
   const headline = firstName
     ? `Your move is confirmed, ${firstName}.`
     : "Your move is confirmed.";
+  const tB = `1px solid ${PREMIUM_RULE}`;
+  const tL = `padding:4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const tV = `padding:4px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const tVg = `${tV};color:#2D7A4F`;
   return emailLayout(`
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px">Move confirmed</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;font-family:${PREMIUM_FONT};">Move confirmed</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0;margin:0 0 12px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">${headline}</h1>
     <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px">
       Your move is confirmed. Here are your details:
@@ -1322,20 +1458,64 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
 
     ${premiumSectionRule()}
     <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:0;">
-      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:none;font-weight:700;letter-spacing:0;margin-bottom:10px">Move details</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Date:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">From:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">To:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${p.toAddress}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Plan:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">Essential</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Crew:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Vehicle:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Total:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed flat rate)</td></tr>
+      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Move details</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${emailNestedKvRow({
+          borderTop: "none",
+          labelStyle: tL,
+          valueStyle: tV,
+          label: "Date",
+          valueHtml: escapeHtmlEmail(`${dateStr} · ${p.timeWindow}`),
+        })}
+        ${emailNestedKvRow({
+          borderTop: tB,
+          labelStyle: tL,
+          valueStyle: tV,
+          label: "From",
+          valueHtml: emailMapLinkHtml(p.fromAddress),
+        })}
+        ${emailNestedKvRow({
+          borderTop: tB,
+          labelStyle: tL,
+          valueStyle: tV,
+          label: "To",
+          valueHtml: emailMapLinkHtml(p.toAddress),
+        })}
+        ${emailNestedKvRow({
+          borderTop: tB,
+          labelStyle: tL,
+          valueStyle: tV,
+          label: "Plan",
+          valueHtml: "Essential",
+        })}
+        ${emailNestedKvRow({
+          borderTop: tB,
+          labelStyle: tL,
+          valueStyle: tV,
+          label: "Crew",
+          valueHtml: escapeHtmlEmail(`${p.crewSize} professional movers`),
+        })}
+        ${emailNestedKvRow({
+          borderTop: tB,
+          labelStyle: tL,
+          valueStyle: tV,
+          label: "Vehicle",
+          valueHtml: escapeHtmlEmail(p.truckDisplayName),
+        })}
+        ${emailNestedKvRow({
+          borderTop: tB,
+          labelStyle: tL,
+          valueStyle: tV,
+          label: "Total",
+          valueHtml: escapeHtmlEmail(
+            `${formatCurrencyEmail(p.totalWithTax)} (guaranteed flat rate)`,
+          ),
+        })}
       </table>
     </td></tr></table>
 
     ${premiumSectionRule()}
-    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:none;font-weight:700;letter-spacing:0;margin-bottom:10px">What to expect</div>
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">What to expect</div>
     <div style="font-size:13px;color:${PREMIUM_BODY};line-height:1.8">
       <div>&middot; Our crew will arrive within your time window</div>
       <div>&middot; All moving blankets, equipment, and floor protection included</div>
@@ -1343,7 +1523,7 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
     </div>
 
     ${premiumSectionRule()}
-    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:none;font-weight:700;letter-spacing:0;margin-bottom:10px">What to prepare</div>
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">What to prepare</div>
     <div style="font-size:13px;color:${PREMIUM_BODY};line-height:1.8">
       <div>&middot; Have boxes packed and sealed</div>
       <div>&middot; Clear pathways for the crew</div>
@@ -1351,10 +1531,22 @@ export function essentialConfirmationEmail(p: TierConfirmationParams): string {
     </div>
 
     ${premiumSectionRule()}
-    <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#2D7A4F;font-weight:600;padding:2px 0">Deposit paid:</td><td style="color:#2D7A4F;font-weight:600;padding:2px 0;text-align:right">${formatCurrency(p.depositPaid)}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:2px 0">Balance remaining:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:2px 0;text-align:right">${formatCurrency(p.balanceRemaining)}</td></tr>
+    <div style="background:${EMAIL_PREMIUM_ISLAND};border:1px solid ${PREMIUM_RULE};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${emailNestedKvRow({
+          borderTop: "none",
+          labelStyle: tL,
+          valueStyle: tVg,
+          label: "Deposit paid",
+          valueHtml: formatCurrencyEmail(p.depositPaid),
+        })}
+        ${emailNestedKvRow({
+          borderTop: tB,
+          labelStyle: tL,
+          valueStyle: tV,
+          label: "Balance remaining",
+          valueHtml: formatCurrencyEmail(p.balanceRemaining),
+        })}
       </table>
     </div>
 
@@ -1385,8 +1577,13 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
         `<div style="font-size:12px;color:${PREMIUM_BODY};line-height:2">${inc}</div>`,
     )
     .join("");
+  const sB = `1px solid ${PREMIUM_RULE}`;
+  const sL = `padding:4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const sV = `padding:4px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const sVf = `${sV};color:${EMAIL_FOREST}`;
+  const sVg = `${sV};color:#2D7A4F`;
   return emailLayout(`
-    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;text-transform:none;margin-bottom:8px">Booking confirmed</div>
+    <div style="font-size:10px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;font-family:${PREMIUM_FONT};">Booking confirmed</div>
     <h1 style="font-size:28px;font-weight:700;letter-spacing:0;margin:0 0 12px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">${headline}</h1>
     <p style="font-size:14px;color:${PREMIUM_BODY_MUTED};line-height:1.6;margin:0 0 24px">
       Everything is set. No surprises - just a smooth, professional move.
@@ -1394,26 +1591,70 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
 
     ${premiumSectionRule()}
     <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td style="padding:0;">
-      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:none;font-weight:700;letter-spacing:0;margin-bottom:10px">Your signature move</div>
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Date:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${dateStr} &middot; ${p.timeWindow}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">From:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${p.fromAddress}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">To:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${p.toAddress}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Plan:</td><td style="color:${EMAIL_FOREST};font-weight:600;padding:4px 0;text-align:right">Signature</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Crew:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${p.crewSize} professional movers</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Vehicle:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${p.truckDisplayName}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Total:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0;text-align:right">${formatCurrency(p.totalWithTax)} (guaranteed - no surprises)</td></tr>
+      <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Your signature move</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${emailNestedKvRow({
+          borderTop: "none",
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Date",
+          valueHtml: escapeHtmlEmail(`${dateStr} · ${p.timeWindow}`),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "From",
+          valueHtml: emailMapLinkHtml(p.fromAddress),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "To",
+          valueHtml: emailMapLinkHtml(p.toAddress),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sVf,
+          label: "Plan",
+          valueHtml: "Signature",
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Crew",
+          valueHtml: escapeHtmlEmail(`${p.crewSize} professional movers`),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Vehicle",
+          valueHtml: escapeHtmlEmail(p.truckDisplayName),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Total",
+          valueHtml: escapeHtmlEmail(
+            `${formatCurrencyEmail(p.totalWithTax)} (guaranteed - no surprises)`,
+          ),
+        })}
       </table>
     </td></tr></table>
 
     ${premiumSectionRule()}
-    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:none;font-weight:700;letter-spacing:0;margin-bottom:10px">What&apos;s included</div>
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">What&apos;s included</div>
     <div style="font-size:12px;line-height:2">
       ${includesHtml || `<span style="color:${PREMIUM_BODY_MUTED}">Details confirmed with your coordinator.</span>`}
     </div>
 
     ${premiumSectionRule()}
-    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:none;font-weight:700;letter-spacing:0;margin-bottom:10px">Before your move</div>
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Before your move</div>
     <div style="font-size:13px;color:${PREMIUM_BODY};line-height:1.8">
       <div>&middot; You&apos;ll receive a reminder 48 hours before</div>
       <div>&middot; A day-before SMS with your crew details and ETA window</div>
@@ -1421,7 +1662,7 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
     </div>
 
     ${premiumSectionRule()}
-    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:none;font-weight:700;letter-spacing:0;margin-bottom:10px">Your tracking page</div>
+    <div style="font-size:10px;color:${EMAIL_FOREST};text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:10px;font-family:${PREMIUM_FONT};">Your tracking page</div>
     <div style="font-size:13px;color:${PREMIUM_BODY_MUTED};line-height:1.6">
       Follow your move in real-time on move day:
     </div>
@@ -1430,10 +1671,22 @@ export function signatureConfirmationEmail(p: TierConfirmationParams): string {
       ${premiumCompactWineCtaAnchor(p.trackingUrl, PREMIUM_TRACK_CTA_LABEL, "block")}
     </td></tr></table>
 
-    <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#2D7A4F;font-weight:600;padding:2px 0">Deposit paid:</td><td style="color:#2D7A4F;font-weight:600;padding:2px 0;text-align:right">${formatCurrency(p.depositPaid)}</td></tr>
-        <tr><td style="color:${PREMIUM_BODY_MUTED};padding:2px 0">Balance remaining:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:2px 0;text-align:right">${formatCurrency(p.balanceRemaining)}</td></tr>
+    <div style="background:${EMAIL_PREMIUM_ISLAND};border:1px solid ${PREMIUM_RULE};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;font-size:12px;border-collapse:collapse">
+        ${emailNestedKvRow({
+          borderTop: "none",
+          labelStyle: sL,
+          valueStyle: sVg,
+          label: "Deposit paid",
+          valueHtml: formatCurrencyEmail(p.depositPaid),
+        })}
+        ${emailNestedKvRow({
+          borderTop: sB,
+          labelStyle: sL,
+          valueStyle: sV,
+          label: "Balance remaining",
+          valueHtml: formatCurrencyEmail(p.balanceRemaining),
+        })}
       </table>
     </div>
 
@@ -1448,7 +1701,7 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
   const dateStr = confirmDateDisplay(p.moveDate);
   const coordName = p.coordinatorName || "your coordinator";
   const firstName = (p.clientName || "").split(" ")[0];
-  const estateCoordLinkStyle = `color:${ESTATE_WINE};text-decoration:underline;`;
+  const estateCoordLinkStyle = `color:${ESTATE_WINE} !important;-webkit-text-fill-color:${ESTATE_WINE};text-decoration:underline;font-weight:600;`;
   const coordDigits = p.coordinatorPhone
     ? normalizePhone(p.coordinatorPhone)
     : "";
@@ -1496,16 +1749,25 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
   ]
     .map(
       (inc) =>
-        `<tr><td style="padding:7px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:7px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">${inc}</td></tr>`,
+        `<tr><td style="padding:10px 0;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">${escapeHtmlEmail(inc)}</td></tr>`,
     )
     .join("");
+
+  const eTableOuter = `1px solid rgba(92,26,51,0.16)`;
+  const eDiv = `1px solid rgba(92,26,51,0.12)`;
+  const eLbl = `padding:12px 14px 12px 16px;font-size:11px;font-weight:700;color:${ESTATE_BODY_MUTED} !important;-webkit-text-fill-color:${ESTATE_BODY_MUTED};text-transform:uppercase;letter-spacing:0.08em;width:38%;vertical-align:top;font-family:${ESTATE_DM_SANS};line-height:1.4`;
+  const eVal = `padding:12px 16px 12px 8px;font-size:14px;color:${ESTATE_BODY} !important;-webkit-text-fill-color:${ESTATE_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${ESTATE_DM_SANS};line-height:1.45`;
+  const ePayDiv = `1px solid rgba(92,26,51,0.12)`;
+  const ePayLbl = `padding:12px 16px;font-size:11px;font-weight:700;color:${ESTATE_BODY_MUTED} !important;-webkit-text-fill-color:${ESTATE_BODY_MUTED};text-transform:uppercase;letter-spacing:0.08em;width:58%;vertical-align:middle;font-family:${ESTATE_DM_SANS}`;
+  const ePayValGr = `padding:12px 16px;font-size:14px;color:#2D7A4F;font-weight:600;text-align:right;vertical-align:middle;white-space:nowrap;font-family:${ESTATE_DM_SANS}`;
+  const ePayValFs = `padding:12px 16px;font-size:14px;color:${EMAIL_FOREST};font-weight:600;text-align:right;vertical-align:middle;white-space:nowrap;font-family:${ESTATE_DM_SANS}`;
 
   return estateLuxuryCreamLayout(`
     <p style="font-family:${ESTATE_DM_SANS};font-size:15px;color:${ESTATE_BODY_MUTED};margin:0 0 36px;line-height:1.6;">Dear ${firstName || p.clientName || ""},</p>
 
-    <h1 style="font-family:${ESTATE_GEORGIA};font-size:30px;font-weight:400;color:${ESTATE_WINE};margin:0 0 20px;line-height:1.35;letter-spacing:0;">Welcome to your<br/>Yugo Estate experience.</h1>
+    <h1 style="font-family:${ESTATE_GEORGIA};font-size:30px;font-weight:700;color:${ESTATE_WINE} !important;-webkit-text-fill-color:${ESTATE_WINE};margin:0 0 22px;line-height:1.32;letter-spacing:0;">Welcome to your<br/>Yugo Estate experience.</h1>
 
-    <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 0;line-height:1.78;">
+    <p style="font-size:15px;color:${ESTATE_BODY} !important;-webkit-text-fill-color:${ESTATE_BODY};margin:0 0 0;line-height:1.78;">
       Thank you for entrusting Yugo with your move. Your Estate experience has been confirmed, and every detail is being prepared with care.
     </p>
 
@@ -1513,47 +1775,69 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
 
     ${estateLabel("Your estate move")}
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;border-collapse:collapse;">
-      <tr>
-        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;width:38%;vertical-align:top;">Date</td>
-        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;">${dateStr}</td>
-      </tr>
-      <tr>
-        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Time</td>
-        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.timeWindow} - your crew will arrive promptly</td>
-      </tr>
-      <tr>
-        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Origin</td>
-        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.fromAddress}</td>
-      </tr>
-      <tr>
-        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Destination</td>
-        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.toAddress}</td>
-      </tr>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-size:14px;border-collapse:collapse;border:${eTableOuter};margin:0 0 4px;">
+      ${emailNestedKvRow({
+        borderTop: "none",
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Date",
+        valueHtml: escapeHtml(dateStr),
+      })}
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Time",
+        valueHtml: escapeHtml(
+          `${p.timeWindow} - your crew will arrive promptly`,
+        ),
+      })}
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Origin",
+        valueHtml: emailMapLinkHtml(p.fromAddress, ESTATE_WINE),
+      })}
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Destination",
+        valueHtml: emailMapLinkHtml(p.toAddress, ESTATE_WINE),
+      })}
       ${
         p.crewNames
-          ? `
-      <tr>
-        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Your crew</td>
-        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.crewNames}</td>
-      </tr>`
+          ? emailNestedKvRow({
+              borderTop: eDiv,
+              labelStyle: eLbl,
+              valueStyle: eVal,
+              label: "Your crew",
+              valueHtml: escapeHtml(p.crewNames),
+            })
           : ""
       }
-      <tr>
-        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Your vehicle</td>
-        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${p.truckDisplayName}</td>
-      </tr>
-      <tr>
-        <td style="color:${ESTATE_BODY_MUTED};padding:10px 0;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">Your coordinator</td>
-        <td style="color:${ESTATE_BODY};font-weight:600;padding:10px 0;text-align:right;vertical-align:top;border-top:1px solid rgba(92,26,51,0.07);">${coordName}</td>
-      </tr>
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Your vehicle",
+        valueHtml: escapeHtml(p.truckDisplayName),
+      })}
+      ${emailNestedKvRow({
+        borderTop: eDiv,
+        labelStyle: eLbl,
+        valueStyle: eVal,
+        label: "Your coordinator",
+        valueHtml: escapeHtml(coordName),
+      })}
     </table>
 
     ${estateDivider()}
 
     ${estateLabel("Your estate experience includes")}
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;border:${eTableOuter};margin:0 0 4px;">
       ${includesRows}
     </table>
 
@@ -1565,12 +1849,12 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
       Within the next 24 hours, ${p.coordinatorName ? `<strong>${p.coordinatorName}</strong>` : "your coordinator"} will reach out personally to:
     </p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin-bottom:28px;">
-      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Schedule your pre-move walkthrough (in-person or virtual)</td></tr>
-      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Confirm any items requiring special handling</td></tr>
-      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Review your timeline and any access requirements</td></tr>
-      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Answer every question you have</td></tr>
-      <tr><td style="padding:6px 0;vertical-align:top;width:18px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:6px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.6;">Send your welcome package</td></tr>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;margin-bottom:28px;border:${eTableOuter};">
+      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">Schedule your pre-move walkthrough (in-person or virtual)</td></tr>
+      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">Confirm any items requiring special handling</td></tr>
+      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">Review your timeline and any access requirements</td></tr>
+      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">Answer every question you have</td></tr>
+      <tr><td style="padding:10px 16px 10px 20px;vertical-align:top;width:20px;font-size:14px;color:${ESTATE_WINE};">&#10022;</td><td style="padding:10px 20px 10px 0;font-size:14px;color:${ESTATE_BODY};line-height:1.65;">Send your welcome package</td></tr>
     </table>
 
     <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 16px;line-height:1.78;">
@@ -1586,33 +1870,39 @@ export function estateConfirmationEmail(p: TierConfirmationParams): string {
 
     <p style="font-size:15px;color:${ESTATE_BODY};margin:0 0 24px;line-height:1.78;">Follow every step in real-time:</p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:16px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:8px;">
       <tr>
         <td>
-          <a href="${p.trackingUrl}" style="${emailPrimaryCtaStyle(ESTATE_DM_SANS, "inline-block")}">${PREMIUM_TRACK_CTA_LABEL}</a>
+          <a href="${p.trackingUrl.replace(/&/g, "&amp;")}" style="${emailPrimaryCtaStyle(ESTATE_DM_SANS, "inline-block")}">${PREMIUM_TRACK_CTA_LABEL}</a>
         </td>
       </tr>
     </table>
+    <p style="font-size:12px;color:${ESTATE_BODY_MUTED};margin:0 0 4px;font-family:${ESTATE_DM_SANS};line-height:1.5;">
+      <a href="${p.trackingUrl.replace(/&/g, "&amp;")}" style="${estateCoordLinkStyle}">Open your move tracker</a>
+    </p>
 
     ${estateDivider()}
 
     ${estateLabel("Investment")}
 
-    <p style="font-family:${ESTATE_GEORGIA};font-size:28px;color:${ESTATE_WINE};margin:0 0 10px;line-height:1.2;letter-spacing:0;">${formatCurrency(p.totalWithTax)}</p>
+    <p style="font-family:${ESTATE_GEORGIA};font-size:28px;color:${ESTATE_WINE};margin:0 0 10px;line-height:1.2;letter-spacing:0;">${formatCurrencyEmail(p.totalWithTax)}</p>
     <p style="font-size:13px;color:${ESTATE_BODY_MUTED};margin:0 0 20px;line-height:1.65;">This is your guaranteed rate. No hourly charges. No surprises. No hidden fees.</p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;border-collapse:collapse;table-layout:fixed;width:100%;">
-      <tr>
-        <td style="color:#2D7A4F;font-weight:600;padding:12px 16px 12px 0;vertical-align:middle;width:58%;">Deposit paid</td>
-        <td align="right" style="color:#2D7A4F;font-weight:600;padding:12px 0;vertical-align:middle;text-align:right;white-space:nowrap;">${formatCurrency(p.depositPaid)}</td>
-      </tr>
-      <tr>
-        <td colspan="2" style="padding:0;border-top:1px solid rgba(92,26,51,0.12);font-size:0;line-height:0;">&nbsp;</td>
-      </tr>
-      <tr>
-        <td style="color:${ESTATE_BODY_MUTED};padding:12px 16px 12px 0;vertical-align:middle;">Balance remaining</td>
-        <td align="right" style="color:${EMAIL_FOREST};font-weight:600;padding:12px 0;vertical-align:middle;text-align:right;white-space:nowrap;">${formatCurrency(p.balanceRemaining)}</td>
-      </tr>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="font-size:14px;border-collapse:collapse;table-layout:fixed;width:100%;border:${eTableOuter};">
+      ${emailNestedKvRow({
+        borderTop: "none",
+        labelStyle: ePayLbl,
+        valueStyle: ePayValGr,
+        label: "Deposit paid",
+        valueHtml: formatCurrencyEmail(p.depositPaid),
+      })}
+      ${emailNestedKvRow({
+        borderTop: ePayDiv,
+        labelStyle: ePayLbl,
+        valueStyle: ePayValFs,
+        label: "Balance remaining",
+        valueHtml: formatCurrencyEmail(p.balanceRemaining),
+      })}
     </table>
 
     ${estateDivider()}
@@ -1674,22 +1964,85 @@ export function internalBookingAlertEmail(params: {
       })
     : "TBD";
 
+  const ib = `1px solid ${PREMIUM_RULE}`;
+  const il = `padding:4px 0;font-size:11px;font-weight:700;color:${PREMIUM_BODY_MUTED};text-transform:uppercase;letter-spacing:0.06em;width:34%;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const iv = `padding:4px 0;font-size:12px;color:${PREMIUM_BODY};font-weight:600;text-align:right;vertical-align:top;font-family:${PREMIUM_FONT}`;
+  const ivf = `${iv};color:${EMAIL_FOREST}`;
+  const ivg = `${iv};color:#2D7A4F`;
+  const routeHtml = `${emailMapLinkHtml(fromAddress)}<span style="color:${PREMIUM_BODY_MUTED};font-weight:600;"> &rarr; </span>${emailMapLinkHtml(toAddress)}`;
+
   return emailLayout(
     `
     <div style="font-size:10px;font-weight:700;color:#2D7A4F;letter-spacing:0;text-transform:none;margin-bottom:8px">New booking</div>
     <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:${PREMIUM_BODY};font-family:${PREMIUM_SERIF_HEADING};text-transform:none;">${clientName} - ${serviceLabel}${tierLabel ? ` (${tierLabel})` : ""}</h1>
 
     ${premiumSectionRule()}
-    <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:16px">
-      <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0;width:100px">Move:</td><td style="color:${EMAIL_FOREST};font-weight:600;padding:4px 0">${moveCode}</td></tr>
-      <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Client:</td><td style="color:${PREMIUM_BODY};padding:4px 0">${clientName}</td></tr>
-      <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Email:</td><td style="color:${PREMIUM_BODY};padding:4px 0">${clientEmail}</td></tr>
-      <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Phone:</td><td style="color:${PREMIUM_BODY};padding:4px 0">${clientPhone ? formatPhone(clientPhone) : "-"}</td></tr>
-      <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Date:</td><td style="color:${PREMIUM_BODY};padding:4px 0">${dateDisplay}</td></tr>
-      <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Route:</td><td style="color:${PREMIUM_BODY};padding:4px 0">${fromAddress} &rarr; ${toAddress}</td></tr>
-      <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Total:</td><td style="color:${PREMIUM_BODY};font-weight:600;padding:4px 0">${formatCurrency(totalWithTax)}</td></tr>
-      <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Deposit:</td><td style="color:#2D7A4F;font-weight:600;padding:4px 0">${formatCurrency(depositPaid)}</td></tr>
-      <tr><td style="color:${PREMIUM_BODY_MUTED};padding:4px 0">Square:</td><td style="color:${PREMIUM_BODY};padding:4px 0;font-size:10px;font-family:monospace">${paymentId}</td></tr>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:16px;font-family:${PREMIUM_FONT};">
+      ${emailNestedKvRow({
+        borderTop: "none",
+        labelStyle: il,
+        valueStyle: ivf,
+        label: "Move",
+        valueHtml: escapeHtmlEmail(moveCode),
+      })}
+      ${emailNestedKvRow({
+        borderTop: ib,
+        labelStyle: il,
+        valueStyle: iv,
+        label: "Client",
+        valueHtml: escapeHtmlEmail(clientName),
+      })}
+      ${emailNestedKvRow({
+        borderTop: ib,
+        labelStyle: il,
+        valueStyle: iv,
+        label: "Email",
+        valueHtml: `<a href="mailto:${encodeURIComponent(clientEmail)}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-weight:600;">${escapeHtmlEmail(clientEmail)}</a>`,
+      })}
+      ${emailNestedKvRow({
+        borderTop: ib,
+        labelStyle: il,
+        valueStyle: iv,
+        label: "Phone",
+        valueHtml: clientPhone
+          ? escapeHtmlEmail(formatPhone(clientPhone))
+          : "—",
+      })}
+      ${emailNestedKvRow({
+        borderTop: ib,
+        labelStyle: il,
+        valueStyle: iv,
+        label: "Date",
+        valueHtml: escapeHtmlEmail(dateDisplay),
+      })}
+      ${emailNestedKvRow({
+        borderTop: ib,
+        labelStyle: il,
+        valueStyle: iv,
+        label: "Route",
+        valueHtml: routeHtml,
+      })}
+      ${emailNestedKvRow({
+        borderTop: ib,
+        labelStyle: il,
+        valueStyle: iv,
+        label: "Total",
+        valueHtml: formatCurrencyEmail(totalWithTax),
+      })}
+      ${emailNestedKvRow({
+        borderTop: ib,
+        labelStyle: il,
+        valueStyle: ivg,
+        label: "Deposit",
+        valueHtml: formatCurrencyEmail(depositPaid),
+      })}
+      ${emailNestedKvRow({
+        borderTop: ib,
+        labelStyle: il,
+        valueStyle: `${iv};font-size:10px;font-family:monospace;font-weight:400`,
+        label: "Square",
+        valueHtml: escapeHtmlEmail(paymentId),
+      })}
     </table>
 
     <div style="background:${PREMIUM_MUTED_FILL};padding:${PREMIUM_CALLOUT_PAD};margin-bottom:16px;">

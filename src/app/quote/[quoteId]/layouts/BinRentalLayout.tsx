@@ -1,6 +1,6 @@
 "use client";
 
-import { Recycle, SealCheck, MapPin, CalendarBlank, Clock } from "@phosphor-icons/react";
+import { Recycle, MapPin, CalendarBlank, Clock } from "@phosphor-icons/react";
 import {
   type Quote,
   WINE,
@@ -61,13 +61,6 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
             ? `Valid through ${new Date(quote.expires_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}`
             : "Valid 7 days"}
         </p>
-        <div
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide uppercase mx-auto"
-          style={{ backgroundColor: `${FOREST}18`, color: FOREST }}
-        >
-          <SealCheck className="w-4 h-4" weight="fill" aria-hidden />
-          Guaranteed price — no surprises
-        </div>
       </div>
 
       <div

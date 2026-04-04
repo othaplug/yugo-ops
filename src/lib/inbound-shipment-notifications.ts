@@ -44,7 +44,7 @@ function itemSummary(row: InboundShipmentNotifyRow): string {
 }
 
 function wrapHtml(title: string, inner: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"/></head><body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.5;color:#1a1a1a;max-width:560px;margin:0 auto;padding:24px;">
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head><body class="email-outer-gutter" style="font-family:system-ui,-apple-system,sans-serif;line-height:1.5;color:#1a1a1a;width:100%;max-width:600px;box-sizing:border-box;margin:0 auto;padding:24px;">
   <h1 style="font-size:18px;margin:0 0 16px;">${title}</h1>
   ${inner}
   <p style="margin-top:24px;font-size:12px;color:#666;">Yugo — White glove logistics</p>

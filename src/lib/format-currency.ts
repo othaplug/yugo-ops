@@ -8,6 +8,13 @@ export function formatCurrency(value: number | string | null | undefined): strin
   return `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
+/** HTML emails and receipts — always two decimals for alignment and trust. */
+export function formatCurrencyEmail(value: number | string | null | undefined): string {
+  const n = typeof value === "string" ? parseFloat(value) : Number(value);
+  if (Number.isNaN(n)) return "$0.00";
+  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 /**
  * Compact format for dashboards: $1.8K, $25K, or full amount if under $1K
  */

@@ -1,11 +1,9 @@
+"use client";
+
 import {
   Check,
   CaretRight as ChevronRight,
-  Target,
-  Crown,
   Star,
-  SketchLogo,
-  type Icon as LucideIcon,
 } from "@phosphor-icons/react";
 import {
   type Quote,
@@ -23,17 +21,15 @@ import {
 } from "../quote-shared";
 import type { PremiumSurfaceInk } from "../quote-premium-shell";
 import { ESTATE_ROSE } from "../estate-quote-ui";
-import { SIGNATURE_ON_SHELL, SIGNATURE_CTA } from "../signature-quote-ui";
+import {
+  SIGNATURE_ON_SHELL,
+  SIGNATURE_CTA,
+  SIGNATURE_PAGE_BG,
+} from "../signature-quote-ui";
 
 /** Estate card face — Yugo wine (#5C1A33) shifting to deeper wine for depth. */
 const ESTATE_CARD_WINE_DEEP = "#3D1522";
 const ESTATE_CARD_WINE_HIGHLIGHT = "#6B2848";
-
-const TIER_ICONS: Record<string, LucideIcon> = {
-  essential: Target,
-  signature: Crown,
-  estate: SketchLogo,
-};
 
 /** Tier card subcopy on cream / white */
 const LIGHT_TAGLINE = FOREST_BODY;
@@ -43,7 +39,7 @@ const LIGHT_FOOTER = FOREST_MUTED;
 const ESTATE_TAGLINE = "rgba(255,255,255,0.82)";
 const ESTATE_TAX_LINE = "rgba(255,255,255,0.92)";
 const ESTATE_FOOTER = "rgba(255,255,255,0.78)";
-/** Headings, icons, checks on Estate dark card (off-white — no gold). */
+/** Headings and checks on Estate dark card (off-white — no gold). */
 const ESTATE_ACCENT_LIGHT = "rgba(255,255,255,0.92)";
 /** Yugo brand palette — inline “Recommended” suffix (light: leather; Estate: off-white). */
 const BRAND_LEATHER = "#492A1D";
@@ -178,7 +174,7 @@ export default function ResidentialLayout({
             }
           >
             <Star
-              className="w-4 h-4 shrink-0"
+              className="hidden sm:block w-4 h-4 shrink-0"
               style={{ color: d ? d.kicker : WINE }}
               weight="fill"
               aria-hidden
@@ -220,7 +216,7 @@ export default function ResidentialLayout({
             }
           >
             <Star
-              className="w-4 h-4 shrink-0"
+              className="hidden sm:block w-4 h-4 shrink-0"
               style={{ color: d ? d.kicker : WINE }}
               weight="fill"
               aria-hidden
@@ -248,25 +244,59 @@ export default function ResidentialLayout({
           const isRecommended = tierKey === recTier;
 
           const isEstate = tierKey === "estate";
+          const isSignature = tierKey === "signature";
 
           const isCollapsed = hasSelection && !isSelected;
 
-          const cardFg = isEstate ? "rgba(255,255,255,0.9)" : undefined;
-          const checkColor = isEstate ? ESTATE_ACCENT_LIGHT : FOREST;
-          const depositColor = isEstate ? ESTATE_ACCENT_LIGHT : FOREST_MUTED;
-          const taglineColor = isEstate ? ESTATE_TAGLINE : LIGHT_TAGLINE;
-          const taxLineColor = isEstate ? ESTATE_TAX_LINE : LIGHT_TAX_LINE;
-          const footerColor = isEstate ? ESTATE_FOOTER : LIGHT_FOOTER;
+          const sig = SIGNATURE_ON_SHELL;
+          const cardFg = isEstate
+            ? "rgba(255,255,255,0.9)"
+            : isSignature
+              ? sig.primary
+              : undefined;
+          const checkColor = isEstate
+            ? ESTATE_ACCENT_LIGHT
+            : isSignature
+              ? sig.kicker
+              : FOREST;
+          const depositColor = isEstate
+            ? ESTATE_ACCENT_LIGHT
+            : isSignature
+              ? sig.muted
+              : FOREST_MUTED;
+          const taglineColor = isEstate
+            ? ESTATE_TAGLINE
+            : isSignature
+              ? sig.body
+              : LIGHT_TAGLINE;
+          const taxLineColor = isEstate
+            ? ESTATE_TAX_LINE
+            : isSignature
+              ? sig.secondary
+              : LIGHT_TAX_LINE;
+          const footerColor = isEstate
+            ? ESTATE_FOOTER
+            : isSignature
+              ? sig.muted
+              : LIGHT_FOOTER;
 
           const cardLiftShadow = isEstate
             ? "none"
-            : d
-              ? isSelected
-                ? "0 10px 40px rgba(0,0,0,0.26)"
-                : "0 6px 24px rgba(0,0,0,0.14)"
-              : isSelected
-                ? "0 12px 40px rgba(44,62,45,0.12)"
-                : "0 2px 16px rgba(44,62,45,0.06)";
+            : isSignature
+              ? d
+                ? isSelected
+                  ? "0 10px 40px rgba(0,0,0,0.26)"
+                  : "0 6px 24px rgba(0,0,0,0.14)"
+                : isSelected
+                  ? "0 12px 40px rgba(0,0,0,0.18)"
+                  : "0 2px 16px rgba(0,0,0,0.12)"
+              : d
+                ? isSelected
+                  ? "0 10px 40px rgba(0,0,0,0.26)"
+                  : "0 6px 24px rgba(0,0,0,0.14)"
+                : isSelected
+                  ? "0 12px 40px rgba(44,62,45,0.12)"
+                  : "0 2px 16px rgba(44,62,45,0.06)";
 
           return (
             <div
@@ -288,54 +318,57 @@ export default function ResidentialLayout({
                         borderWidth: 0,
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
                       }
-                    : { backgroundColor: meta.bg }
+                    : isSignature
+                      ? {
+                          backgroundColor: SIGNATURE_PAGE_BG,
+                          borderWidth: 0,
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+                        }
+                      : { backgroundColor: meta.bg }
                 }
               >
                 <div
                   className={`p-6 md:p-8 flex flex-col h-full min-h-0 min-w-0 transition-all duration-300 ${isCollapsed ? "!p-5" : ""}`}
                 >
                   <div className="flex min-w-0 flex-shrink-0 flex-row flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                    <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
-                      {(() => {
-                        const TierIcon = TIER_ICONS[tierKey];
-                        return TierIcon ? (
-                          <TierIcon
-                            className="h-6 w-6 shrink-0"
-                            style={{
-                              color: isEstate
-                                ? ESTATE_ACCENT_LIGHT
-                                : meta.accent,
-                            }}
-                            strokeWidth={1.5}
-                            aria-hidden
-                          />
-                        ) : null;
-                      })()}
-                      <h3 className="font-heading text-[19px] sm:text-[20px] font-bold leading-tight min-w-0 flex-1">
+                    <h3
+                      className="min-w-0 flex-1 text-[15px] sm:text-[16px] font-bold uppercase tracking-[0.12em] leading-none [font-family:var(--font-body)]"
+                    >
+                      <span
+                        style={{
+                          color: isEstate
+                            ? ESTATE_ACCENT_LIGHT
+                            : isSignature
+                              ? sig.primary
+                              : meta.accent,
+                        }}
+                      >
+                        {meta.label}
+                      </span>
+                      {isRecommended ? (
                         <span
+                          className="font-bold uppercase tracking-[0.12em] text-[7px] sm:text-[8px] align-baseline whitespace-nowrap [font-family:var(--font-body)]"
                           style={{
-                            color: isEstate ? ESTATE_ACCENT_LIGHT : meta.accent,
+                            color: isEstate
+                              ? BRAND_OFF_WHITE
+                              : isSignature
+                                ? sig.kicker
+                                : BRAND_LEATHER,
                           }}
                         >
-                          {meta.label}
+                          {" "}
+                          · RECOMMENDED
                         </span>
-                        {isRecommended ? (
-                          <span
-                            className="font-medium uppercase tracking-[0.12em] text-[7px] sm:text-[8px] align-middle whitespace-nowrap"
-                            style={{
-                              color: isEstate ? BRAND_OFF_WHITE : BRAND_LEATHER,
-                            }}
-                          >
-                            {" "}
-                            · RECOMMENDED
-                          </span>
-                        ) : null}
-                      </h3>
-                    </div>
+                      ) : null}
+                    </h3>
                     <span
                       className="font-hero shrink-0 text-right text-[clamp(1.35rem,1.05rem+2vw,1.875rem)] font-bold leading-none tabular-nums"
                       style={{
-                        color: isEstate ? ESTATE_ACCENT_LIGHT : meta.accent,
+                        color: isEstate
+                          ? ESTATE_ACCENT_LIGHT
+                          : isSignature
+                            ? sig.primary
+                            : meta.accent,
                       }}
                     >
                       {fmtPrice(t.price)}
@@ -502,12 +535,17 @@ export default function ResidentialLayout({
                       } ${isCollapsed ? "mt-auto" : ""}`}
                       style={
                         isSelected
-                          ? { backgroundColor: selectedTierCtaBg }
+                          ? {
+                              backgroundColor:
+                                isSignature ? SIGNATURE_CTA : selectedTierCtaBg,
+                            }
                           : {
                               backgroundColor: "transparent",
                               color: isEstate
                                 ? ESTATE_ACCENT_LIGHT
-                                : meta.accent,
+                                : isSignature
+                                  ? sig.primary
+                                  : meta.accent,
                             }
                       }
                     >

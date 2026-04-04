@@ -310,7 +310,7 @@ const RESOLVED_ESTATE_MOVE_INCLUDES: TierFeature[] = [
     key: "valuation",
     card: "Full replacement valuation coverage",
     title: "Full replacement valuation coverage",
-    desc: "Maximum protection — up to $10,000 per item, $100,000 per shipment",
+    desc: "Maximum protection — up to $10,000 per item, $100,000 per move",
     iconName: "ShieldCheck",
   },
   {
@@ -474,7 +474,7 @@ export const DEFAULT_ESTATE_ADDITIONS: TierFeature[] = [
     key: "valuation",
     card: "Full replacement valuation coverage",
     title: "Full replacement valuation coverage",
-    desc: "Maximum protection — up to $10,000 per item, $100,000 per shipment",
+    desc: "Maximum protection — up to $10,000 per item, $100,000 per move",
     iconName: "ShieldCheck",
     highlight: true,
   },

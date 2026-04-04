@@ -5,7 +5,10 @@ import { getEmailFrom } from "@/lib/email/send";
 import { sendSMS } from "@/lib/sms/sendSMS";
 import { signTrackToken } from "@/lib/track-token";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
-import { equinoxPromoLayout, equinoxPromoFinePrint } from "@/lib/email-templates";
+import {
+  equinoxPromoLayout,
+  equinoxPromoFinePrint,
+} from "@/lib/email-templates";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { getCompanyDisplayName } from "@/lib/config";
@@ -130,8 +133,7 @@ export async function runPostPaymentActions(
 
   const selectedTier = move.tier_selected || quote.selected_tier;
   const tierLabel = TIER_LABELS[selectedTier ?? ""] ?? selectedTier ?? "";
-  const serviceLabel =
-    SERVICE_LABELS[quote.service_type] ?? quote.service_type;
+  const serviceLabel = SERVICE_LABELS[quote.service_type] ?? quote.service_type;
   const totalWithTax = Number(move.amount) || 0;
   const depositAmount = input.amount;
   const balanceAmount = totalWithTax - depositAmount;
@@ -196,9 +198,7 @@ export async function runPostPaymentActions(
             addonRevenue += record.tiers?.[sel.tier_index ?? 0]?.price ?? 0;
             break;
           case "percent":
-            addonRevenue += Math.round(
-              basePrice * (record.percent_value ?? 0),
-            );
+            addonRevenue += Math.round(basePrice * (record.percent_value ?? 0));
             break;
         }
       }
@@ -211,7 +211,11 @@ export async function runPostPaymentActions(
      Promise.allSettled, they never block other actions.
      ═══════════════════════════════════════════════════════ */
 
-  const actionDefs: { name: string; critical: boolean; fn: () => Promise<void> }[] = [
+  const actionDefs: {
+    name: string;
+    critical: boolean;
+    fn: () => Promise<void>;
+  }[] = [
     /* ── 1. HubSpot deal update ── */
     {
       name: "hubspot_deal_update",
@@ -264,15 +268,20 @@ export async function runPostPaymentActions(
           "24ft": "24ft Full-Size Moving Truck",
           "26ft": "26ft Maximum-Capacity Truck",
         };
-        const truckKey = (move.truck_info as string) || (quote.truck_primary as string) || "";
-        const truckDisplayName = TRUCK_DISPLAY[truckKey] || truckKey || "Dedicated moving truck";
+        const truckKey =
+          (move.truck_info as string) || (quote.truck_primary as string) || "";
+        const truckDisplayName =
+          TRUCK_DISPLAY[truckKey] || truckKey || "Dedicated moving truck";
 
-        const tierData = tier && quote.tiers
-          ? (quote.tiers as Record<string, { includes: string[] }>)[tier]
-          : null;
+        const tierData =
+          tier && quote.tiers
+            ? (quote.tiers as Record<string, { includes: string[] }>)[tier]
+            : null;
         const includes = tierData?.includes ?? [];
-        const crewSize = (move.crew_size as number) || (quote.est_crew_size as number) || 3;
-        const timeWindow = (move.arrival_window as string) || "Morning (7 AM – 12 PM)";
+        const crewSize =
+          (move.crew_size as number) || (quote.est_crew_size as number) || 3;
+        const timeWindow =
+          (move.arrival_window as string) || "Morning (7 AM – 12 PM)";
 
         const confirmParams: TierConfirmationParams = {
           clientName,
@@ -295,7 +304,10 @@ export async function runPostPaymentActions(
           coordinatorEmail: (move.coordinator_email as string) || null,
         };
 
-        const templateFns: Record<string, (p: TierConfirmationParams) => string> = {
+        const templateFns: Record<
+          string,
+          (p: TierConfirmationParams) => string
+        > = {
           essential: essentialConfirmationEmail,
           curated: essentialConfirmationEmail,
           signature: signatureConfirmationEmail,
@@ -307,12 +319,15 @@ export async function runPostPaymentActions(
         const templateFn = templateFns[tier] ?? signatureConfirmationEmail;
 
         const estateDateLabel = quote.move_date
-          ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })
+          ? new Date(quote.move_date + "T00:00:00").toLocaleDateString(
+              "en-CA",
+              {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              },
+            )
           : input.moveCode;
 
         const subjects: Record<string, string> = {
@@ -324,7 +339,8 @@ export async function runPostPaymentActions(
           essentials: `Your Yugo move is confirmed, ${input.moveCode}`,
           premier: `Your Yugo Signature move is confirmed, ${input.moveCode}`,
         };
-        const subject = subjects[tier] ?? `Booking confirmed, ${input.moveCode}`;
+        const subject =
+          subjects[tier] ?? `Booking confirmed, ${input.moveCode}`;
 
         const html = templateFn(confirmParams);
         const emailFrom = await getEmailFrom();
@@ -418,9 +434,13 @@ export async function runPostPaymentActions(
         if (tier !== "estate") return;
 
         const { notifyAdmins } = await import("@/lib/notifications/dispatch");
-        const { estateBookingAdminEmailHtml } = await import("@/lib/email/admin-templates");
+        const { estateBookingAdminEmailHtml } =
+          await import("@/lib/email/admin-templates");
         const dateLabel = quote.move_date
-          ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })
+          ? new Date(quote.move_date + "T00:00:00").toLocaleDateString(
+              "en-CA",
+              { month: "short", day: "numeric" },
+            )
           : "TBD";
 
         await notifyAdmins("quote_accepted", {
@@ -524,29 +544,34 @@ export async function runPostPaymentActions(
           .eq("id", referralId);
 
         // Increment referral_count on referrer's contact record
-        await supabase.rpc("increment_referral_count", { contact_email: ref.referrer_email }).then(
-          () => {},
-          async () => {
-            // Fallback if RPC not available: fetch and update manually
-            const { data: contact } = await supabase
-              .from("contacts")
-              .select("referral_count")
-              .eq("email", ref.referrer_email)
-              .single();
-            if (contact) {
-              await supabase
+        await supabase
+          .rpc("increment_referral_count", {
+            contact_email: ref.referrer_email,
+          })
+          .then(
+            () => {},
+            async () => {
+              // Fallback if RPC not available: fetch and update manually
+              const { data: contact } = await supabase
                 .from("contacts")
-                .update({ referral_count: (contact.referral_count ?? 0) + 1 })
-                .eq("email", ref.referrer_email);
-            }
-          }
-        );
+                .select("referral_count")
+                .eq("email", ref.referrer_email)
+                .single();
+              if (contact) {
+                await supabase
+                  .from("contacts")
+                  .update({ referral_count: (contact.referral_count ?? 0) + 1 })
+                  .eq("email", ref.referrer_email);
+              }
+            },
+          );
 
         // Email referrer to notify their referral booked
         if (ref.referrer_email) {
           const resend = getResend();
           const emailFrom = await getEmailFrom();
-          const referrerFirstName = (ref.referrer_name || "").split(" ")[0] || "there";
+          const referrerFirstName =
+            (ref.referrer_name || "").split(" ")[0] || "there";
           const referredFirstName = clientName.split(" ")[0] || "Your friend";
 
           const referrerHtml = equinoxPromoLayout(
@@ -575,9 +600,7 @@ export async function runPostPaymentActions(
   ];
 
   /* ── Execute all actions in parallel ── */
-  const results = await Promise.allSettled(
-    actionDefs.map((a) => a.fn()),
-  );
+  const results = await Promise.allSettled(actionDefs.map((a) => a.fn()));
 
   /* ── Map results ── */
   const actionResults = results.map((r, i) => ({
@@ -648,17 +671,25 @@ export async function runPostPaymentActionsB2BDelivery(
 
   if (qErr || !quote) {
     return {
-      actions: [{ name: "data_fetch", status: "rejected", error: "quote missing" }],
+      actions: [
+        { name: "data_fetch", status: "rejected", error: "quote missing" },
+      ],
     };
   }
 
-  const contact = quote.contacts as { name: string; email: string | null; phone: string | null } | null;
+  const contact = quote.contacts as {
+    name: string;
+    email: string | null;
+    phone: string | null;
+  } | null;
   const clientName = contact?.name || "";
   const hubspotDealId = quote.hubspot_deal_id as string | null;
   const selectedTier = quote.selected_tier;
   let basePrice = 0;
   if (selectedTier && quote.tiers) {
-    const tierData = (quote.tiers as Record<string, { price: number }>)[selectedTier];
+    const tierData = (quote.tiers as Record<string, { price: number }>)[
+      selectedTier
+    ];
     basePrice = tierData?.price ?? 0;
   } else {
     basePrice = Number(quote.custom_price) || 0;
@@ -666,9 +697,14 @@ export async function runPostPaymentActionsB2BDelivery(
   const totalWithTax = Math.round(basePrice * 1.13);
   const depositAmount = input.amount;
   const tierLabel = TIER_LABELS[selectedTier ?? ""] ?? selectedTier ?? "";
-  const serviceLabel = SERVICE_LABELS[quote.service_type as string] ?? quote.service_type;
+  const serviceLabel =
+    SERVICE_LABELS[quote.service_type as string] ?? quote.service_type;
 
-  const actionDefs: { name: string; critical: boolean; fn: () => Promise<void> }[] = [
+  const actionDefs: {
+    name: string;
+    critical: boolean;
+    fn: () => Promise<void>;
+  }[] = [
     {
       name: "hubspot_deal_update",
       critical: true,
@@ -677,23 +713,26 @@ export async function runPostPaymentActionsB2BDelivery(
         await syncDealStage(hubspotDealId, "confirmed");
         const token = process.env.HUBSPOT_ACCESS_TOKEN;
         if (!token) return;
-        await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            properties: {
-              amount: String(totalWithTax),
-              deposit_received_at: new Date().toISOString(),
-              square_invoice_id: input.paymentId,
-              opsplus_move_id: input.deliveryId,
-              contract_signed: "true",
-              package_type: tierLabel || serviceLabel,
+        await fetch(
+          `https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
             },
-          }),
-        });
+            body: JSON.stringify({
+              properties: {
+                amount: String(totalWithTax),
+                deposit_received_at: new Date().toISOString(),
+                square_invoice_id: input.paymentId,
+                opsplus_move_id: input.deliveryId,
+                contract_signed: "true",
+                package_type: tierLabel || serviceLabel,
+              },
+            }),
+          },
+        );
       },
     },
     {
@@ -760,7 +799,10 @@ export async function runPostPaymentActionsB2BDelivery(
   const actionResults = results.map((r, i) => ({
     name: actionDefs[i].name,
     status: r.status as "fulfilled" | "rejected",
-    error: r.status === "rejected" ? String((r as PromiseRejectedResult).reason) : undefined,
+    error:
+      r.status === "rejected"
+        ? String((r as PromiseRejectedResult).reason)
+        : undefined,
   }));
 
   return { actions: actionResults };

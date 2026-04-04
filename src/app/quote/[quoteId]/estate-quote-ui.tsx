@@ -197,7 +197,7 @@ export const EstateExperienceSection = React.forwardRef<
             <div className="grid md:grid-cols-2 gap-6">
               <EstateFeatureCard
                 title="Full Replacement Valuation"
-                description="Up to $10,000 per item, $100,000 per shipment. Zero deductible."
+                description="Up to $10,000 per item, $100,000 per move. Zero deductible."
               />
               <EstateFeatureCard
                 title="All Packing Materials Included"
@@ -216,17 +216,6 @@ export const EstateExperienceSection = React.forwardRef<
         </div>
 
         <div className="mt-16 pt-8 border-t border-[#66143D]/30 flex flex-wrap gap-8 justify-center">
-          <div className="text-center">
-            <p
-              className="text-lg font-serif"
-              style={{ color: ESTATE_ON_WINE.primary }}
-            >
-              Guaranteed Flat Price
-            </p>
-            <p className="text-sm" style={{ color: ESTATE_ON_WINE.muted }}>
-              The price you see is the price you pay
-            </p>
-          </div>
           <div className="text-center">
             <p
               className="text-lg font-serif"

@@ -4,6 +4,9 @@ import {
   EMAIL_FOREST_CALLOUT_BG,
   EMAIL_FOREST_CALLOUT_BORDER,
   EMAIL_FOREST_RULE,
+  EMAIL_PREMIUM_MUTED_FILL,
+  EMAIL_PREMIUM_TABLE_HEAD,
+  EMAIL_WINE,
   emailPrimaryCtaStyle,
 } from "@/lib/email/email-brand-tokens";
 import {
@@ -12,9 +15,13 @@ import {
   equinoxPromoLayout,
   equinoxPromoCta,
   equinoxPromoFinePrint,
+  PREMIUM_FONT,
   PREMIUM_TRACK_CTA_LABEL,
 } from "@/lib/email-templates";
-import { formatCurrency } from "@/lib/format-currency";
+import { emailNestedKvRow } from "@/lib/email/email-kv-layout";
+import { emailMapLinkHtml, escapeHtmlEmail } from "@/lib/email/email-link-utils";
+import { humanizePaymentProcessorMessage } from "@/lib/email/payment-error-message";
+import { formatCurrencyEmail } from "@/lib/format-currency";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { formatPhone } from "@/lib/phone";
 
@@ -23,7 +30,7 @@ import { formatPhone } from "@/lib/phone";
    ═══════════════════════════════════════════════════════════
    Typography: display h1 / EQ_H1 = HERO_SERIF (Instrument Serif, Georgia), sentence case,
    letter-spacing 0. Primary CTAs = forest fill + white type (10px uppercase, 1.2px tracking).
-   Accent kickers use forest on cream (GOLD_EYEBROW_UPPER), 12px uppercase + 0 tracking.
+   Accent kickers use forest on cream (FOREST_EYEBROW_UPPER), 12px uppercase + tracked (quote parity).
    Track links use PREMIUM_TRACK_CTA_LABEL on CTAs.
    ═══════════════════════════════════════════════════════════ */
 
@@ -45,7 +52,6 @@ function dateDisplay(dateStr: string | null | undefined): string {
   });
 }
 
-const EQ_SANS = "Helvetica Neue,Helvetica,Arial,sans-serif";
 /** Display headlines — Instrument Serif with Georgia fallback. */
 const HERO_SERIF = "'Instrument Serif',Georgia,'Times New Roman',serif";
 /** Cream `equinoxPromoLayout` page — dark text (not #FFFFFF / #DDDDDD, which disappear on #FCF9F4). */
@@ -56,42 +62,68 @@ const PROMO_CREAM_RULE = EMAIL_FOREST_RULE;
 const CONTRACT_DIVIDER = "rgba(44,62,45,0.12)";
 const CONTRACT_DIVIDER_STRONG = "rgba(44,62,45,0.22)";
 const CONTRACT_TABLE_OUTER = `1px solid ${PROMO_CREAM_RULE}`;
-const PROMO_CREAM_FILL = "#EBEBEB";
+const PROMO_CREAM_FILL = EMAIL_PREMIUM_MUTED_FILL;
 const PROMO_CREAM_CALLOUT_PAD = "12px 14px";
-/** Ivory band behind contract table titles (before CONTRACT_HDR_*). */
-const EQ_CREME_HEAD = "#FAF9F6";
+/** Warm island band behind contract table titles (quote page parity). */
+const EQ_CREME_HEAD = EMAIL_PREMIUM_TABLE_HEAD;
 const PROMO_CREAM_H1 = `font-size:30px;font-weight:700;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};margin:0 0 18px;letter-spacing:0;line-height:1.15;text-transform:none;font-family:${HERO_SERIF}`;
-const PROMO_CREAM_P = `font-size:15px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.6;margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif`;
+const PROMO_CREAM_P = `font-size:15px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.62;margin:0;font-family:${PREMIUM_FONT}`;
 /** `emailLayout` / `legacyEmailLayout` = cream shell — must not use white/#A3A3A3 (invisible on #FCF9F4). */
-const EQ_H1 = `font-size:28px;font-weight:700;margin:0 0 12px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};letter-spacing:0;text-transform:none;line-height:1.25;font-family:${HERO_SERIF}`;
-const EQ_LEAD = `font-size:14px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.65;margin:0 0 26px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif`;
+const EQ_H1 = `font-size:28px;font-weight:700;margin:0 0 12px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};letter-spacing:0;text-transform:none;line-height:1.22;font-family:${HERO_SERIF}`;
+const EQ_LEAD = `font-size:14px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.62;margin:0 0 24px;font-family:${PREMIUM_FONT}`;
 /** Review / legacy blocks on same cream wrapper as {@link legacyEmailLayout}. */
 const CREAM_REVIEW_H1 = `font-size:22px;font-weight:700;margin:0 0 10px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};line-height:1.28;font-family:'Instrument Serif',Georgia,'Times New Roman',serif`;
-const CREAM_REVIEW_P = `font-size:14px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.72;margin:0 0 24px`;
-const CREAM_REVIEW_SMALL = `font-size:11px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.65;text-align:center`;
+const CREAM_REVIEW_P = `font-size:14px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.65;margin:0 0 22px;font-family:${PREMIUM_FONT}`;
+const CREAM_REVIEW_SMALL = `font-size:11px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.62;text-align:center;font-family:${PREMIUM_FONT}`;
 /** Red / urgent kicker — 12px caps, 0 tracking (Gmail-safe). */
-const ALERT_EYEBROW_UPPER = `font-family:${EQ_SANS};font-size:12px;font-weight:700;color:#D14343 !important;-webkit-text-fill-color:#D14343;letter-spacing:0px;text-transform:uppercase;margin-bottom:8px`;
-/** Section kicker on cream. */
-const GOLD_EYEBROW_UPPER = `font-family:${EQ_SANS};font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0px;text-transform:uppercase;margin-bottom:8px`;
+const ALERT_EYEBROW_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#D14343 !important;-webkit-text-fill-color:#D14343;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px`;
+/** Section kicker on cream (forest; legacy name was “gold”). */
+const FOREST_EYEBROW_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px`;
 /** Amber kicker (low-sat, warnings). */
-const AMBER_EYEBROW_UPPER = `font-family:${EQ_SANS};font-size:12px;font-weight:700;color:#D48A29 !important;-webkit-text-fill-color:#D48A29;letter-spacing:0px;text-transform:uppercase;margin-bottom:8px`;
+const AMBER_EYEBROW_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#D48A29 !important;-webkit-text-fill-color:#D48A29;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px`;
 /** Success kicker (payment received, move complete). */
-const SUCCESS_EYEBROW_UPPER = `font-family:${EQ_SANS};font-size:12px;font-weight:700;color:#2D9F5A !important;-webkit-text-fill-color:#2D9F5A;letter-spacing:0px;text-transform:uppercase;margin-bottom:8px`;
+const SUCCESS_EYEBROW_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#2D9F5A !important;-webkit-text-fill-color:#2D9F5A;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px`;
 /** Wine kicker (cancellation and heavy tone). */
-const WINE_EYEBROW_UPPER = `font-family:${EQ_SANS};font-size:12px;font-weight:700;color:#5C1A33 !important;-webkit-text-fill-color:#5C1A33;letter-spacing:0px;text-transform:uppercase;margin-bottom:8px`;
+const WINE_EYEBROW_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#5C1A33 !important;-webkit-text-fill-color:#5C1A33;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px`;
 /** Summary / contract table title row (full width). */
-const CONTRACT_HDR_FULL = `background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0px;text-transform:uppercase;font-family:${EQ_SANS}`;
+const CONTRACT_HDR_FULL = `background-color:${EQ_CREME_HEAD};padding:11px 16px;font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;font-family:${PREMIUM_FONT}`;
 /** Two-column table header cells (description / amount). */
-const CONTRACT_HDR_SPLIT = `background-color:${EQ_CREME_HEAD};padding:10px 14px;font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0px;text-transform:uppercase;font-family:${EQ_SANS}`;
+const CONTRACT_HDR_SPLIT = `background-color:${EQ_CREME_HEAD};padding:10px 14px;font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;font-family:${PREMIUM_FONT}`;
 /** Total / footer row label inside contract tables. */
-const CONTRACT_TOTAL_LABEL = `border-top:1px solid ${CONTRACT_DIVIDER_STRONG};padding:14px 16px;font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0px;text-transform:uppercase;font-family:${EQ_SANS}`;
-const CALLOUT_TOP_FOREST = `background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:16px;margin-bottom:20px;font-family:${EQ_SANS}`;
+const CONTRACT_TOTAL_LABEL = `border-top:1px solid ${CONTRACT_DIVIDER_STRONG};padding:14px 16px;font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;font-family:${PREMIUM_FONT}`;
+const ACCESS_NOTE_LABEL = `<span style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase;font-family:${PREMIUM_FONT};">Access</span>`;
+const CALLOUT_TOP_FOREST = `background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:16px;margin-bottom:20px;font-family:${PREMIUM_FONT}`;
 
-const EQ_PANEL = `background:#1C1C1C;border:1px solid ${PROMO_CREAM_RULE};border-radius:0;padding:20px;margin-bottom:20px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif`;
-/** Cream label inside charcoal {@link EQ_PANEL} — 12px uppercase, 0 tracking. */
-const PANEL_KICKER_GOLD_UPPER = `font-family:${EQ_SANS};font-size:12px;font-weight:700;color:#E8DFD8;letter-spacing:0px;text-transform:uppercase;margin-bottom:12px`;
-/** Copy on {@link EQ_PANEL} charcoal — cream-muted is too dark on #1C1C1C. */
-const EQ_ON_DARK_PANEL = "#B8B5B0";
+const KV_DIV = `1px solid ${CONTRACT_DIVIDER}`;
+const LKV_LABEL = `padding:6px 0 6px 14px;font-size:11px;font-weight:600;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};text-transform:uppercase;letter-spacing:0.06em;font-family:${PREMIUM_FONT};vertical-align:top;width:38%`;
+const LKV_LABEL_TOP = `${LKV_LABEL};vertical-align:top`;
+const LKV_VALUE = `padding:6px 14px 6px 10px;font-size:12px;color:${PROMO_CREAM_BODY};text-align:right;font-family:${PREMIUM_FONT};font-weight:600;vertical-align:top`;
+const LKV_VALUE_TOP = `${LKV_VALUE};vertical-align:top`;
+const LKV_VALUE_REF = `padding:6px 14px 6px 10px;font-size:12px;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-align:right;font-family:${PREMIUM_FONT};font-weight:700;vertical-align:top`;
+const LKV_VALUE_GREEN = `padding:6px 14px 6px 10px;font-size:12px;color:#2D9F5A;text-align:right;font-family:${PREMIUM_FONT};font-weight:700;vertical-align:top`;
+
+function creamContractKvRow(
+  label: string,
+  valueHtml: string,
+  valueStyle: string,
+  labelStyle: string = LKV_LABEL,
+): string {
+  return emailNestedKvRow({
+    borderTop: KV_DIV,
+    labelStyle,
+    valueStyle,
+    label,
+    valueHtml,
+  });
+}
+
+/** Wine inset panel (pre-move checklist, card-on-file explainer, partner notices). */
+const WINE_INSET_RULE = "rgba(255,255,255,0.2)";
+const EQ_PANEL = `background:${EMAIL_WINE};border:1px solid ${WINE_INSET_RULE};border-radius:0;padding:20px;margin-bottom:20px;font-family:${PREMIUM_FONT}`;
+/** Light kicker on wine {@link EQ_PANEL} — 12px uppercase, tracked. */
+const PANEL_KICKER_ON_WINE_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#E8DFD8;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px`;
+/** Body copy on wine inset panels. */
+const EQ_ON_WINE_PANEL = "rgba(255,255,255,0.88)";
 
 function creamSupportMailtoLink(): string {
   const e = getClientSupportEmail();
@@ -107,11 +139,11 @@ function ctaButton(url: string, label: string, sub?: string): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0 ${sub ? "6px" : "16px"};">
       <tr>
         <td align="center" style="text-align:center;">
-          <a href="${url}" style="${emailPrimaryCtaStyle(EQ_SANS, "inline-block")}">${label.toUpperCase()}</a>
+          <a href="${url}" style="${emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block")}">${label.toUpperCase()}</a>
         </td>
       </tr>
     </table>
-    ${sub ? `<p style="font-size:10px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};text-align:center;margin:0 0 16px;letter-spacing:0.02em;font-family:${EQ_SANS};">${sub}</p>` : ""}
+    ${sub ? `<p style="font-size:10px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};text-align:center;margin:0 0 16px;letter-spacing:0.02em;font-family:${PREMIUM_FONT};">${sub}</p>` : ""}
   `;
 }
 
@@ -132,7 +164,7 @@ function starRatingLinks(reviewUrl: string, reviewRedirectUrl: string): string {
   const link4 = hrefAttr(`${reviewRedirectUrl}${rsep}rating=4`);
   const link5 = hrefAttr(`${reviewRedirectUrl}${rsep}rating=5`);
   return `
-    <div style="font-family:${EQ_SANS};font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0px;text-transform:uppercase;line-height:1.45;margin-bottom:10px;text-align:center">Rate your experience</div>
+    <div style="font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0.08em;text-transform:uppercase;line-height:1.45;margin-bottom:10px;text-align:center">Rate your experience</div>
     <div style="margin:0 0 24px;text-align:center">
       <a href="${link1}" style="${starStyle}" title="1 star">1</a>
       <a href="${link2}" style="${starStyle}" title="2 stars">2</a>
@@ -167,27 +199,27 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
     toAccessLabel !== "None"
   )
     accessNotes.push(
-      `<strong>Access:</strong> Pickup: ${fromAccessLabel}; Drop-off: ${toAccessLabel} - please reserve the elevator/loading dock.`,
+      `${ACCESS_NOTE_LABEL} <span style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase;font-family:${PREMIUM_FONT};">PICKUP:</span> ${fromAccessLabel}; <span style="font-size:11px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0.07em;text-transform:uppercase;font-family:${PREMIUM_FONT};">DROP-OFF:</span> ${toAccessLabel} — please reserve the elevator/loading dock.`,
     );
   else if (fromAccessLabel && fromAccessLabel !== "None")
     accessNotes.push(
-      `<strong>Access:</strong> ${fromAccessLabel} - please reserve the elevator/loading dock.`,
+      `${ACCESS_NOTE_LABEL} ${fromAccessLabel} - please reserve the elevator/loading dock.`,
     );
   else if (toAccessLabel && toAccessLabel !== "None")
     accessNotes.push(
-      `<strong>Access:</strong> ${toAccessLabel} - please reserve the elevator/loading dock.`,
+      `${ACCESS_NOTE_LABEL} ${toAccessLabel} - please reserve the elevator/loading dock.`,
     );
 
   return emailLayout(`
-    <div style="${GOLD_EYEBROW_UPPER}">Three days to go</div>
+    <div style="${FOREST_EYEBROW_UPPER}">Three days to go</div>
     <h1 style="${EQ_H1}">Your move is almost here${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="${EQ_LEAD}">
       Your move is confirmed for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>. A little preparation goes a long way. Here is a quick checklist to make the day as smooth as possible.
     </p>
 
     <div style="${EQ_PANEL}">
-      <div style="${GOLD_EYEBROW_UPPER}margin-bottom:14px;">Pre-move checklist</div>
-      <div style="font-size:13px;color:${EQ_ON_DARK_PANEL};line-height:2;font-family:${EQ_SANS}">
+      <div style="${PANEL_KICKER_ON_WINE_UPPER}margin-bottom:14px;">Pre-move checklist</div>
+      <div style="font-size:13px;color:${EQ_ON_WINE_PANEL};line-height:2;font-family:${PREMIUM_FONT}">
         <div>— Book elevator or loading dock at both locations</div>
         <div>— Reserve parking access for our truck</div>
         <div>— Finish packing any remaining boxes</div>
@@ -202,7 +234,7 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
       accessNotes.length > 0
         ? `
       <div style="${CALLOUT_TOP_FOREST}">
-        <div style="${GOLD_EYEBROW_UPPER};margin-bottom:8px">Access notes</div>
+        <div style="${FOREST_EYEBROW_UPPER};margin-bottom:8px">Access notes</div>
         <div style="font-size:12px;color:${PROMO_CREAM_BODY};line-height:1.6">
           ${accessNotes.join("<br/>")}
         </div>
@@ -211,17 +243,15 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
         : ""
     }
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:22px;font-family:${EQ_SANS}">
-      <tr>
-        <td colspan="2" style="${CONTRACT_HDR_FULL}">Move details</td>
-      </tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Reference</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${EMAIL_FOREST};font-weight:700">${d.moveCode}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.fromAddress}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED};vertical-align:top">To</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.toAddress}</td></tr>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:22px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Move details</td></tr>
+      ${creamContractKvRow("Reference", escapeHtmlEmail(d.moveCode), LKV_VALUE_REF)}
+      ${creamContractKvRow("From", emailMapLinkHtml(d.fromAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+      ${creamContractKvRow("To", emailMapLinkHtml(d.toAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
     </table>
 
     ${ctaButton(d.trackingUrl, PREMIUM_TRACK_CTA_LABEL)}
-    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${EQ_SANS}">
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       We are here if you need anything. Email ${creamSupportMailtoLink()} or reach your coordinator directly.
     </p>
   `);
@@ -246,36 +276,32 @@ export interface PreMove24hrData {
 
 export function preMove24hrEmail(d: PreMove24hrData): string {
   return emailLayout(`
-    <div style="${GOLD_EYEBROW_UPPER}">Tomorrow&apos;s the day</div>
+    <div style="${FOREST_EYEBROW_UPPER}">Tomorrow&apos;s the day</div>
     <h1 style="${EQ_H1}">Your crew is confirmed${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="${EQ_LEAD}">
       Everything is in place for your move tomorrow. Your arrival window and crew details are below.
     </p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:18px;font-family:${EQ_SANS}">
-      <tr>
-        <td colspan="2" style="${CONTRACT_HDR_FULL}">Crew details</td>
-      </tr>
-      ${d.crewLeadName ? `<tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Crew lead</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY};font-weight:600">${d.crewLeadName}</td></tr>` : ""}
-      ${d.crewSize ? `<tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Crew size</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY};font-weight:600">${d.crewSize} movers</td></tr>` : ""}
-      ${d.truckInfo ? `<tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Truck</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY};font-weight:600">${d.truckInfo}</td></tr>` : ""}
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Arrival</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${EMAIL_FOREST};font-weight:700">${d.arrivalWindow ?? "Morning window - your coordinator will confirm the exact time"}</td></tr>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:18px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Crew details</td></tr>
+      ${d.crewLeadName ? creamContractKvRow("Crew lead", escapeHtmlEmail(d.crewLeadName), LKV_VALUE) : ""}
+      ${d.crewSize ? creamContractKvRow("Crew size", `${d.crewSize} movers`, LKV_VALUE) : ""}
+      ${d.truckInfo ? creamContractKvRow("Truck", escapeHtmlEmail(d.truckInfo), LKV_VALUE) : ""}
+      ${creamContractKvRow("Arrival", escapeHtmlEmail(d.arrivalWindow ?? "Morning window - your coordinator will confirm the exact time"), LKV_VALUE_REF)}
     </table>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:20px;font-family:${EQ_SANS}">
-      <tr>
-        <td colspan="2" style="${CONTRACT_HDR_FULL}">Move details</td>
-      </tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Date</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY};font-weight:600">${dateDisplay(d.moveDate)}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.fromAddress}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED};vertical-align:top">To</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.toAddress}</td></tr>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:20px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Move details</td></tr>
+      ${creamContractKvRow("Date", escapeHtmlEmail(dateDisplay(d.moveDate)), LKV_VALUE)}
+      ${creamContractKvRow("From", emailMapLinkHtml(d.fromAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+      ${creamContractKvRow("To", emailMapLinkHtml(d.toAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
     </table>
 
     ${
       d.coordinatorName
         ? `
       <div style="${CALLOUT_TOP_FOREST}">
-        <div style="${GOLD_EYEBROW_UPPER};margin-bottom:6px">Your coordinator</div>
+        <div style="${FOREST_EYEBROW_UPPER};margin-bottom:6px">Your coordinator</div>
         <div style="font-size:13px;color:${PROMO_CREAM_BODY};margin-top:4px">${d.coordinatorName}${d.coordinatorPhone ? ` &middot; ${formatPhone(d.coordinatorPhone)}` : ""}</div>
         <div style="font-size:11px;color:${PROMO_CREAM_MUTED};margin-top:4px">Available by phone or text if you need anything before tomorrow.</div>
       </div>
@@ -284,7 +310,7 @@ export function preMove24hrEmail(d: PreMove24hrData): string {
     }
 
     ${ctaButton(d.trackingUrl, "TRACK YOUR MOVE LIVE")}
-    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${EQ_SANS}">
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       Your crew will call approximately 30 minutes before they arrive.
     </p>
   `);
@@ -309,14 +335,18 @@ export function balanceReceiptEmail(d: BalanceReceiptData): string {
       Your payment has been completed. Your account for this move is now paid in full.
     </p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:24px;font-family:${EQ_SANS}">
-      <tr>
-        <td colspan="2" style="${CONTRACT_HDR_FULL}">Payment summary</td>
-      </tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Reference</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${EMAIL_FOREST};font-weight:700">${d.moveCode}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Balance paid</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:#2D9F5A;font-weight:700">${formatCurrency(d.amount)}</td></tr>
-      ${d.paymentMethod ? `<tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Payment method</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.paymentMethod}</td></tr>` : ""}
-      <tr><td style="${CONTRACT_TOTAL_LABEL}">Total paid</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER_STRONG};padding:14px 16px;font-size:14px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;font-family:${EQ_SANS}">${formatCurrency(d.totalPaid)}</td></tr>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:24px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Payment summary</td></tr>
+      ${creamContractKvRow("Reference", escapeHtmlEmail(d.moveCode), LKV_VALUE_REF)}
+      ${creamContractKvRow("Balance paid", formatCurrencyEmail(d.amount), LKV_VALUE_GREEN)}
+      ${d.paymentMethod ? creamContractKvRow("Payment method", escapeHtmlEmail(d.paymentMethod), LKV_VALUE) : ""}
+      ${emailNestedKvRow({
+        borderTop: `1px solid ${CONTRACT_DIVIDER_STRONG}`,
+        labelStyle: `${CONTRACT_TOTAL_LABEL};border-top:0;padding:10px 0 10px 14px`,
+        valueStyle: `padding:10px 14px 10px 10px;font-size:14px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;font-family:${PREMIUM_FONT};text-align:right;vertical-align:middle`,
+        label: "Total paid",
+        valueHtml: formatCurrencyEmail(d.totalPaid),
+      })}
     </table>
 
     ${ctaButton(d.trackingUrl, "View move details")}
@@ -343,25 +373,23 @@ export function moveCompleteEmail(d: MoveCompleteData): string {
       Your move is complete. It was a privilege to take care of your home and belongings today. Your documents and receipts are ready in your portal whenever you need them.
     </p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:24px;font-family:${EQ_SANS}">
-      <tr>
-        <td colspan="2" style="${CONTRACT_HDR_FULL}">Move summary</td>
-      </tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Reference</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${EMAIL_FOREST};font-weight:700">${d.moveCode}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.fromAddress}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED};vertical-align:top">To</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.toAddress}</td></tr>
-      ${d.completedDate ? `<tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Completed</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:#2D9F5A;font-weight:700">${dateDisplay(d.completedDate)}</td></tr>` : ""}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:24px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Move summary</td></tr>
+      ${creamContractKvRow("Reference", escapeHtmlEmail(d.moveCode), LKV_VALUE_REF)}
+      ${creamContractKvRow("From", emailMapLinkHtml(d.fromAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+      ${creamContractKvRow("To", emailMapLinkHtml(d.toAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+      ${d.completedDate ? creamContractKvRow("Completed", escapeHtmlEmail(dateDisplay(d.completedDate)), LKV_VALUE_GREEN) : ""}
     </table>
 
-    <div style="margin-bottom:22px;font-family:${EQ_SANS}">
-      <div style="${GOLD_EYEBROW_UPPER};margin-bottom:10px">Your documents</div>
+    <div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
+      <div style="${FOREST_EYEBROW_UPPER};margin-bottom:10px">Your documents</div>
       <p style="font-size:13px;color:${PROMO_CREAM_MUTED};line-height:1.65;margin:0">
         Your move summary, invoice, and receipt are available to download directly from your portal. We keep these secure and accessible at any time.
       </p>
     </div>
 
-    <div style="margin-bottom:24px;font-family:${EQ_SANS}">
-      <div style="${GOLD_EYEBROW_UPPER};margin-bottom:10px">What&apos;s next</div>
+    <div style="margin-bottom:24px;font-family:${PREMIUM_FONT}">
+      <div style="${FOREST_EYEBROW_UPPER};margin-bottom:10px">What&apos;s next</div>
       <div style="font-size:13px;color:${PROMO_CREAM_MUTED};line-height:1.85">
         <div>1. Download your documents from the portal</div>
         <div>2. A brief follow-up will arrive by email shortly</div>
@@ -385,7 +413,7 @@ export interface ReviewRequestData {
 
 export function reviewRequestEmail(d: ReviewRequestData): string {
   return legacyEmailLayout(`
-    <div style="${GOLD_EYEBROW_UPPER}">How was your experience?</div>
+    <div style="${FOREST_EYEBROW_UPPER}">How was your experience?</div>
     <div role="heading" aria-level="1" style="${CREAM_REVIEW_H1}">How was your move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</div>
     <p style="${CREAM_REVIEW_P}">
       Your feedback means a great deal to us and to families looking for a mover they can trust. A brief review is the best way to share your experience.
@@ -394,7 +422,7 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
       <tr>
         <td align="center">
-          <a href="${d.googleReviewUrl}" style="${emailPrimaryCtaStyle(EQ_SANS, "inline-block")}">
+          <a href="${d.googleReviewUrl}" style="${emailPrimaryCtaStyle(PREMIUM_FONT, "inline-block")}">
             SHARE YOUR EXPERIENCE
           </a>
         </td>
@@ -407,7 +435,7 @@ export function reviewRequestEmail(d: ReviewRequestData): string {
       <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:20px;">
         <tr>
           <td style="background-color:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:16px;text-align:center;">
-            <div style="${GOLD_EYEBROW_UPPER};margin-bottom:8px;text-align:center;">Know someone moving?</div>
+            <div style="${FOREST_EYEBROW_UPPER};margin-bottom:8px;text-align:center;">Know someone moving?</div>
             <div style="font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:24px;font-weight:400;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};margin-bottom:8px;">Give $50. Get $50.</div>
             <p style="font-size:12px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin:0 0 16px;line-height:1.6;">Share your referral link and you both receive $50 off a future move.</p>
             <a href="${d.referralUrl}" style="display:inline-block;background-color:transparent;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};padding:10px 24px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-decoration:none;border:1px solid ${EMAIL_FOREST};text-transform:uppercase;">
@@ -447,7 +475,7 @@ export const reviewRequestEssentialsEmail = (
 
 export function reviewRequestCuratedEmail(d: ReviewRequestTierData): string {
   return legacyEmailLayout(`
-    <div style="${GOLD_EYEBROW_UPPER}">How was your experience?</div>
+    <div style="${FOREST_EYEBROW_UPPER}">How was your experience?</div>
     <div role="heading" aria-level="1" style="${CREAM_REVIEW_H1}">How was your move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</div>
     <p style="${CREAM_REVIEW_P}">
       It was a pleasure taking care of your move today. We hope you are already settling in comfortably.
@@ -468,7 +496,7 @@ export const reviewRequestPremierEmail = (d: ReviewRequestTierData): string =>
 
 export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
   return legacyEmailLayout(`
-    <div style="${GOLD_EYEBROW_UPPER}">Your experience matters</div>
+    <div style="${FOREST_EYEBROW_UPPER}">Your experience matters</div>
     <div role="heading" aria-level="1" style="${CREAM_REVIEW_H1}">How was your move${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}?</div>
     <p style="${CREAM_REVIEW_P}">
       It was truly a pleasure taking care of your move today. We hope you are already settling in and feeling at home.
@@ -485,7 +513,7 @@ export function reviewRequestSignatureEmail(d: ReviewRequestTierData): string {
 
 export function reviewRequestEstateEmail(d: ReviewRequestTierData): string {
   return legacyEmailLayout(`
-    <div style="${GOLD_EYEBROW_UPPER}">A note of gratitude</div>
+    <div style="${FOREST_EYEBROW_UPPER}">A note of gratitude</div>
     <div role="heading" aria-level="1" style="${CREAM_REVIEW_H1}">${firstName(d.clientName) ? `${firstName(d.clientName)}, it was our privilege` : "It was our privilege"}</div>
     <p style="${CREAM_REVIEW_P}">
       Thank you for entrusting Yugo with your home and belongings. Every detail of your move matters to us, and we hope today reflected that.
@@ -510,7 +538,7 @@ export function reviewRequestReminderEmail(
   d: ReviewRequestReminderData,
 ): string {
   return legacyEmailLayout(`
-    <div style="${GOLD_EYEBROW_UPPER}">A gentle reminder</div>
+    <div style="${FOREST_EYEBROW_UPPER}">A gentle reminder</div>
     <div role="heading" aria-level="1" style="${CREAM_REVIEW_H1}">A moment for your review${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</div>
     <p style="${CREAM_REVIEW_P}">
       We know settling in keeps you busy. Whenever you have a moment, your review would mean the world to our team and to families searching for a mover they can trust.
@@ -535,8 +563,9 @@ export interface LowSatisfactionData {
 
 export function lowSatisfactionEmail(d: LowSatisfactionData): string {
   const support = getClientSupportEmail();
-  const coordMail = d.coordinatorEmail
-    ? `<div style="margin-top:4px"><a href="mailto:${d.coordinatorEmail}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-size:13px;">${d.coordinatorEmail}</a></div>`
+  const coordEmailRaw = (d.coordinatorEmail || "").trim();
+  const coordMail = coordEmailRaw
+    ? `<div style="margin-top:4px"><a href="mailto:${coordEmailRaw.replace(/&/g, "&amp;")}" style="color:rgba(255,255,255,0.95) !important;-webkit-text-fill-color:rgba(255,255,255,0.95);text-decoration:underline;font-size:13px;font-weight:600;">${escapeHtmlEmail(coordEmailRaw)}</a></div>`
     : "";
   return legacyEmailLayout(`
     <div style="${AMBER_EYEBROW_UPPER}">We are here for you</div>
@@ -545,11 +574,11 @@ export function lowSatisfactionEmail(d: LowSatisfactionData): string {
       We understand your experience fell short of what you deserved, and we sincerely apologize. This is not the standard we hold ourselves to, and we are committed to making it right.
     </p>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:0;padding:14px 16px;margin-bottom:20px">
-      <div style="font-size:13px;color:#B8B5B0;line-height:1.7">
+    <div style="background:${EMAIL_WINE};border:1px solid ${WINE_INSET_RULE};border-radius:0;padding:14px 16px;margin-bottom:20px">
+      <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.7">
         <div>Your dedicated coordinator is available to resolve this personally:</div>
-        ${d.coordinatorName ? `<div style="color:#E8E5E0;font-weight:600;margin-top:8px">${d.coordinatorName}</div>` : ""}
-        ${d.coordinatorPhone ? `<div style="margin-top:4px"><a href="tel:${String(d.coordinatorPhone).replace(/\s/g, "").replace(/[()]/g, "")}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-size:13px;">${formatPhone(d.coordinatorPhone)}</a></div>` : ""}
+        ${d.coordinatorName ? `<div style="color:rgba(255,255,255,0.98);font-weight:600;margin-top:8px">${escapeHtmlEmail(d.coordinatorName)}</div>` : ""}
+        ${d.coordinatorPhone ? `<div style="margin-top:4px"><a href="tel:${String(d.coordinatorPhone).replace(/\s/g, "").replace(/[()]/g, "")}" style="color:rgba(255,255,255,0.95) !important;-webkit-text-fill-color:rgba(255,255,255,0.95);text-decoration:underline;font-size:13px;font-weight:600;">${escapeHtmlEmail(formatPhone(d.coordinatorPhone))}</a></div>` : ""}
         ${coordMail}
       </div>
     </div>
@@ -574,26 +603,59 @@ export interface InternalLowSatAlertData {
 }
 
 export function internalLowSatAlertEmail(d: InternalLowSatAlertData): string {
+  const emailRaw = (d.clientEmail || "").trim();
+  const emailCell = emailRaw
+    ? `<a href="mailto:${emailRaw.replace(/&/g, "&amp;")}" style="color:rgba(255,255,255,0.95) !important;-webkit-text-fill-color:rgba(255,255,255,0.95);text-decoration:underline;font-weight:600;">${escapeHtmlEmail(emailRaw)}</a>`
+    : "—";
+  const wineKvLabel =
+    "padding:5px 8px 5px 0;color:rgba(255,255,255,0.72);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;width:38%;vertical-align:top";
+  const wineKvVal =
+    "padding:5px 0;color:rgba(255,255,255,0.95);font-size:12px;text-align:right;font-weight:600;vertical-align:top";
+  const wineKvRule = `1px solid ${WINE_INSET_RULE}`;
   return legacyEmailLayout(`
     <div style="${ALERT_EYEBROW_UPPER}">Low satisfaction alert</div>
-    <div role="heading" aria-level="1" style="font-size:20px;font-weight:700;margin:0 0 20px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-family:${HERO_SERIF}">${d.moveCode} - ${d.clientName}</div>
+    <div role="heading" aria-level="1" style="font-size:20px;font-weight:700;margin:0 0 20px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-family:${HERO_SERIF}">${escapeHtmlEmail(d.moveCode)} — ${escapeHtmlEmail(d.clientName)}</div>
 
     <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.2);border-radius:0;padding:14px;margin-bottom:20px">
-      <div style="font-size:12px;color:#D14343;font-weight:600">NPS/Satisfaction Score: ${d.npsScore ?? "N/A"}/5</div>
-      <div style="font-size:12px;color:#B8B5B0;margin-top:4px">This client reported a low satisfaction score. Follow up immediately.</div>
+      <div style="font-size:12px;color:#D14343;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">NPS/SATISFACTION SCORE: ${d.npsScore ?? "N/A"}/5</div>
+      <div style="font-size:12px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-top:4px">This client reported a low satisfaction score. Follow up immediately.</div>
     </div>
 
-    <div style="background:#1E1E1E;border:1px solid #2A2A2A;border-radius:0;padding:20px;margin-bottom:20px">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#666;padding:4px 0">Client:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientName}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Email:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientEmail}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Phone:</td><td style="color:#E8E5E0;padding:4px 0">${d.clientPhone ? formatPhone(d.clientPhone) : "-"}</td></tr>
-        <tr><td style="color:#666;padding:4px 0">Move Date:</td><td style="color:#E8E5E0;padding:4px 0">${d.moveDate ? dateDisplay(d.moveDate) : "-"}</td></tr>
+    <div style="background:${EMAIL_WINE};border:1px solid ${WINE_INSET_RULE};border-radius:0;padding:20px;margin-bottom:20px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:12px;border-collapse:collapse;font-family:${PREMIUM_FONT}">
+        ${emailNestedKvRow({
+          borderTop: "none",
+          labelStyle: wineKvLabel,
+          valueStyle: wineKvVal,
+          label: "Client",
+          valueHtml: escapeHtmlEmail(d.clientName),
+        })}
+        ${emailNestedKvRow({
+          borderTop: wineKvRule,
+          labelStyle: wineKvLabel,
+          valueStyle: wineKvVal,
+          label: "Email",
+          valueHtml: emailCell,
+        })}
+        ${emailNestedKvRow({
+          borderTop: wineKvRule,
+          labelStyle: wineKvLabel,
+          valueStyle: wineKvVal,
+          label: "Phone",
+          valueHtml: d.clientPhone ? escapeHtmlEmail(formatPhone(d.clientPhone)) : "—",
+        })}
+        ${emailNestedKvRow({
+          borderTop: wineKvRule,
+          labelStyle: wineKvLabel,
+          valueStyle: wineKvVal,
+          label: "Move date",
+          valueHtml: d.moveDate ? escapeHtmlEmail(dateDisplay(d.moveDate)) : "—",
+        })}
       </table>
     </div>
 
     <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:14px">
-      <div style="${GOLD_EYEBROW_UPPER};margin-bottom:4px">Action required</div>
+      <div style="${FOREST_EYEBROW_UPPER};margin-bottom:4px">Action required</div>
       <div style="font-size:12px;color:#B8B5B0;margin-top:4px">Contact the client within 2 hours. Review request has been suppressed.</div>
     </div>
   `);
@@ -645,17 +707,14 @@ export interface QuoteFollowup2Data {
   serviceLabel: string;
   moveDate: string | null;
   expiresAt: string | null;
-  /** variant hint: warm | essential | cold (default) */
+  /** variant hint: warm | essential (default) */
   tier?: string | null;
-  /** set from cold variant — show inline urgency line */
-  includeInlinePrices?: boolean;
   addons?: string[];
 }
 
 export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
   const name = firstName(d.clientName);
-  const isCold = d.includeInlinePrices;
-  const isWarm = !isCold && d.tier;
+  const isWarm = !!d.tier;
 
   let heading: string;
   let body: string;
@@ -667,7 +726,9 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
       0,
       Math.ceil((new Date(d.expiresAt).getTime() - Date.now()) / 86400000),
     );
-    return days <= 1 ? "Offer ends today." : `Offer ends in ${days} days.`;
+    if (days <= 0) return "QUOTE EXPIRES TODAY";
+    if (days === 1) return "QUOTE EXPIRES IN 1 DAY";
+    return `QUOTE EXPIRES IN ${days} DAYS`;
   })();
 
   if (isWarm) {
@@ -677,11 +738,6 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
     body =
       "Your preferred package is still available. Secure your date and rate whenever you are ready.";
     ctaLabel = "Complete My Booking";
-  } else if (isCold) {
-    heading = name ? `A note for you, ${name}.` : "A note about your quote.";
-    body =
-      "Your Yugo quote is still available for a few more days. One guaranteed flat rate, no hourly charges, nothing added at the end.";
-    ctaLabel = "View Your Quote";
   } else {
     heading = name ? `A gentle reminder, ${name}.` : "A gentle reminder.";
     body = d.moveDate
@@ -693,7 +749,7 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
   return equinoxPromoLayout(
     `
     <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${heading}</div>
-    <p style="${PROMO_CREAM_P}">${body}${expiryText ? `<br/><br/><span style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};font-weight:600;">${expiryText}</span>` : ""}</p>
+    <p style="${PROMO_CREAM_P}">${body}${expiryText ? `<br/><br/><span style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:13px;">${expiryText}</span>` : ""}</p>
     ${equinoxPromoCta(d.quoteUrl, ctaLabel)}
     ${equinoxPromoFinePrint(`Need to adjust anything? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a>`)}
   `,
@@ -733,30 +789,28 @@ export function cancellationConfirmEmail(d: CancellationConfirmData): string {
       Move reference <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${d.moveCode}</strong> has been cancelled. Details are below.
     </p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:22px;font-family:${EQ_SANS}">
-      <tr>
-        <td colspan="2" style="${CONTRACT_HDR_FULL}">Cancelled move</td>
-      </tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Reference</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${EMAIL_FOREST};font-weight:700">${d.moveCode}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED};vertical-align:top">From</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.fromAddress}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED};vertical-align:top">To</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.toAddress}</td></tr>
-      ${d.moveDate ? `<tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED}">Date</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${dateDisplay(d.moveDate)}</td></tr>` : ""}
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_MUTED};vertical-align:top">Reason</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:11px 16px;font-size:12px;color:${PROMO_CREAM_BODY}">${d.cancellationReason}</td></tr>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:22px;font-family:${PREMIUM_FONT}">
+      <tr><td style="${CONTRACT_HDR_FULL}">Cancelled move</td></tr>
+      ${creamContractKvRow("Reference", escapeHtmlEmail(d.moveCode), LKV_VALUE_REF)}
+      ${creamContractKvRow("From", emailMapLinkHtml(d.fromAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+      ${creamContractKvRow("To", emailMapLinkHtml(d.toAddress), LKV_VALUE_TOP, LKV_LABEL_TOP)}
+      ${d.moveDate ? creamContractKvRow("Date", escapeHtmlEmail(dateDisplay(d.moveDate)), LKV_VALUE) : ""}
+      ${creamContractKvRow("Reason", escapeHtmlEmail(d.cancellationReason), LKV_VALUE_TOP, LKV_LABEL_TOP)}
     </table>
 
     ${
       d.refundAmount && d.refundAmount > 0
         ? `
-      <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.22);border-radius:0;padding:20px;margin-bottom:22px;font-family:${EQ_SANS}">
+      <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.22);border-radius:0;padding:20px;margin-bottom:22px;font-family:${PREMIUM_FONT}">
         <div style="${SUCCESS_EYEBROW_UPPER};margin-bottom:8px">Refund issued</div>
-        <div style="font-size:26px;font-weight:700;color:#2D9F5A;margin-bottom:8px">${formatCurrency(d.refundAmount)}</div>
+        <div style="font-size:26px;font-weight:700;color:#2D9F5A;margin-bottom:8px">${formatCurrencyEmail(d.refundAmount)}</div>
         <div style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.6">
           Refunds typically post within 3&ndash;5 business days; your bank may take up to 7 business days.
         </div>
       </div>
     `
         : `
-      <div style="background:rgba(212,138,41,0.08);border:1px solid rgba(212,138,41,0.22);border-radius:0;padding:16px;margin-bottom:22px;font-family:${EQ_SANS}">
+      <div style="background:rgba(212,138,41,0.08);border:1px solid rgba(212,138,41,0.22);border-radius:0;padding:16px;margin-bottom:22px;font-family:${PREMIUM_FONT}">
         <div style="font-size:12px;color:#D48A29;line-height:1.6">
           Per our cancellation policy, no refund applies. Email ${creamSupportMailtoLink()} with questions.
         </div>
@@ -813,24 +867,24 @@ export interface BalanceReminder72hrData {
 
 export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
   return emailLayout(`
-    <div style="${GOLD_EYEBROW_UPPER}">Balance due</div>
+    <div style="${FOREST_EYEBROW_UPPER}">Balance due</div>
     <h1 style="${EQ_H1}">Remaining balance${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="${EQ_LEAD}">
-      Amount <strong style="color:${EMAIL_FOREST}">${formatCurrency(d.balanceAmount)}</strong> is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
+      Amount <strong style="color:${EMAIL_FOREST}">${formatCurrencyEmail(d.balanceAmount)}</strong> is due before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
     </p>
 
     <div style="${EQ_PANEL}">
-      <div style="${PANEL_KICKER_GOLD_UPPER};margin-bottom:12px">Automatic payment</div>
-      <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:16px;font-family:${EQ_SANS}">
-        <div style="${PANEL_KICKER_GOLD_UPPER};margin-bottom:8px">Card on file</div>
-        <div style="font-size:12px;color:${EQ_ON_DARK_PANEL};line-height:1.65">
-          We will charge <strong style="color:#E8E5E0;font-weight:600;">${formatCurrency(d.balanceAmount)}</strong> approximately 48 hours before your move. No action required.
+      <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:12px">Automatic payment</div>
+      <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:16px;font-family:${PREMIUM_FONT}">
+        <div style="${FOREST_EYEBROW_UPPER};margin-bottom:8px">Card on file</div>
+        <div style="font-size:12px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.65">
+          We will charge <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${formatCurrencyEmail(d.balanceAmount)}</strong> approximately 48 hours before your move. No action required.
         </div>
       </div>
     </div>
 
     ${ctaButton(d.trackingUrl, "View move details")}
-    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${EQ_SANS}">
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       Questions? Email ${creamSupportMailtoLink()} or call your coordinator.
     </p>
   `);
@@ -850,22 +904,22 @@ export interface BalanceReminder48hrData {
 export function balanceReminder48hrEmail(d: BalanceReminder48hrData): string {
   return emailLayout(`
     <div style="${AMBER_EYEBROW_UPPER}">Balance due soon</div>
-    <h1 style="${EQ_H1}">${formatCurrency(d.balanceAmount)} due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
+    <h1 style="${EQ_H1}">${formatCurrencyEmail(d.balanceAmount)} due${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</h1>
     <p style="${EQ_LEAD}">
       Your remaining balance will be charged to the card on file before your move on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.moveDate)}</strong>.
     </p>
 
-    <div style="margin-bottom:22px;font-family:${EQ_SANS}">
+    <div style="margin-bottom:22px;font-family:${PREMIUM_FONT}">
       <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:22px;text-align:center">
-        <div style="${GOLD_EYEBROW_UPPER}margin-bottom:10px;">Scheduled charge</div>
-        <div style="font-size:28px;font-weight:700;color:${EMAIL_FOREST};margin-bottom:10px;letter-spacing:0">${formatCurrency(d.balanceAmount)}</div>
+        <div style="${FOREST_EYEBROW_UPPER}margin-bottom:10px;">Scheduled charge</div>
+        <div style="font-size:28px;font-weight:700;color:${EMAIL_FOREST};margin-bottom:10px;letter-spacing:0">${formatCurrencyEmail(d.balanceAmount)}</div>
         <div style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.65">
           Charge date: <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${dateDisplay(d.autoChargeDate)}</strong>. No action needed.
         </div>
       </div>
     </div>
 
-    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${EQ_SANS}">
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       Questions? Email ${creamSupportMailtoLink()} or call your coordinator.
     </p>
   `);
@@ -891,19 +945,31 @@ export function balanceAutoChargeReceiptEmail(
       Your card on file was charged for the remaining balance on move <strong style="color:${EMAIL_FOREST}">${d.moveCode}</strong>.
     </p>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:20px;font-family:${EQ_SANS}">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:${CONTRACT_TABLE_OUTER};margin-bottom:20px;font-family:${PREMIUM_FONT}">
       <tr>
-        <td style="${CONTRACT_HDR_SPLIT};width:58%;">Description</td>
-        <td align="right" style="${CONTRACT_HDR_SPLIT}">Amount</td>
+        <td style="padding:0;background-color:${EQ_CREME_HEAD};">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;width:100%;">
+            <tr>
+              <td style="${CONTRACT_HDR_SPLIT}">Description</td>
+              <td align="right" style="${CONTRACT_HDR_SPLIT}">Amount</td>
+            </tr>
+          </table>
+        </td>
       </tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:12px 14px;font-size:12px;color:${PROMO_CREAM_BODY}">Base balance</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:12px 14px;font-size:12px;color:${PROMO_CREAM_BODY}">${formatCurrency(d.baseBalance)}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:12px 14px;font-size:12px;color:${PROMO_CREAM_MUTED}">Processing fee (3.3%)</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:12px 14px;font-size:12px;color:${PROMO_CREAM_BODY}">${formatCurrency(d.processingFee)}</td></tr>
-      <tr><td style="border-top:1px solid ${CONTRACT_DIVIDER};padding:12px 14px;font-size:12px;color:${PROMO_CREAM_MUTED}">Transaction fee</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER};padding:12px 14px;font-size:12px;color:${PROMO_CREAM_BODY}">${formatCurrency(d.transactionFee)}</td></tr>
-      <tr><td style="${CONTRACT_TOTAL_LABEL};padding:14px 14px">Total</td><td align="right" style="border-top:1px solid ${CONTRACT_DIVIDER_STRONG};padding:14px 14px;font-size:15px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;font-family:${EQ_SANS}">${formatCurrency(d.totalCharged)}</td></tr>
+      ${creamContractKvRow("Base balance", formatCurrencyEmail(d.baseBalance), LKV_VALUE, LKV_LABEL)}
+      ${creamContractKvRow("Processing fee (3.3%)", formatCurrencyEmail(d.processingFee), LKV_VALUE, LKV_LABEL)}
+      ${creamContractKvRow("Transaction fee", formatCurrencyEmail(d.transactionFee), LKV_VALUE, LKV_LABEL)}
+      ${emailNestedKvRow({
+        borderTop: `1px solid ${CONTRACT_DIVIDER_STRONG}`,
+        labelStyle: `${CONTRACT_TOTAL_LABEL};border-top:0;padding:10px 0 10px 14px`,
+        valueStyle: `padding:10px 14px 10px 10px;font-size:15px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0;font-family:${PREMIUM_FONT};text-align:right;vertical-align:middle`,
+        label: "Total",
+        valueHtml: formatCurrencyEmail(d.totalCharged),
+      })}
     </table>
 
-    <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.22);border-radius:0;padding:16px;margin-bottom:22px;text-align:center;font-family:${EQ_SANS}">
-      <div style="font-family:${EQ_SANS};font-size:12px;font-weight:700;color:#2D9F5A !important;-webkit-text-fill-color:#2D9F5A;letter-spacing:0px;text-transform:uppercase;">Your account is paid in full.</div>
+    <div style="background:rgba(45,159,90,0.08);border:1px solid rgba(45,159,90,0.22);border-radius:0;padding:16px;margin-bottom:22px;text-align:center;font-family:${PREMIUM_FONT}">
+      <div style="font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#2D9F5A !important;-webkit-text-fill-color:#2D9F5A;letter-spacing:0px;text-transform:uppercase;">Your account is paid in full.</div>
     </div>
 
     ${ctaButton(d.trackingUrl, "View move details")}
@@ -923,15 +989,15 @@ export function balanceChargeFailedClientEmail(
     <div style="${ALERT_EYEBROW_UPPER}">Payment failed</div>
     <div role="heading" aria-level="1" style="${EQ_H1}">Action required${firstName(d.clientName) ? `, ${firstName(d.clientName)}` : ""}</div>
     <p style="${EQ_LEAD}">
-      We could not charge your card on file for <strong style="color:#D14343">${formatCurrency(d.balanceAmount)}</strong> (move <strong style="color:${EMAIL_FOREST}">${d.moveCode}</strong>).
+      We could not charge your card on file for <strong style="color:#D14343">${formatCurrencyEmail(d.balanceAmount)}</strong> (move <strong style="color:${EMAIL_FOREST}">${d.moveCode}</strong>).
     </p>
 
-    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.25);border-radius:0;padding:${PROMO_CREAM_CALLOUT_PAD};margin-bottom:22px;text-align:center;font-family:${EQ_SANS}">
+    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.25);border-radius:0;padding:${PROMO_CREAM_CALLOUT_PAD};margin-bottom:22px;text-align:center;font-family:${PREMIUM_FONT}">
       <div style="font-size:13px;color:#D14343 !important;-webkit-text-fill-color:#D14343;font-weight:600;margin-bottom:8px;line-height:1.35">Please contact us before your move.</div>
       <div style="font-size:15px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:700;letter-spacing:0;line-height:1.3">1-833-333-YUGO (9846)</div>
     </div>
 
-    <p style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.65;text-align:center;font-family:${EQ_SANS}">
+    <p style="font-size:12px;color:${PROMO_CREAM_MUTED};line-height:1.65;text-align:center;font-family:${PREMIUM_FONT}">
       Or email ${creamSupportMailtoLink()}; your coordinator will follow up.
     </p>
   `);
@@ -950,30 +1016,53 @@ export interface BalanceChargeFailedAdminData {
 export function balanceChargeFailedAdminEmail(
   d: BalanceChargeFailedAdminData,
 ): string {
-  const rowLabel = `border-top:1px solid ${PROMO_CREAM_RULE};padding:8px 12px;font-size:12px;line-height:1.35;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};vertical-align:top`;
-  const rowValue = `border-top:1px solid ${PROMO_CREAM_RULE};padding:8px 12px;font-size:12px;line-height:1.35;text-align:right;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600`;
+  const errHuman = escapeHtmlEmail(
+    humanizePaymentProcessorMessage(d.errorMessage),
+  );
+  const admDiv = `1px solid ${PROMO_CREAM_RULE}`;
+  const admLbl = `padding:6px 0 6px 12px;font-size:11px;font-weight:600;line-height:1.35;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};vertical-align:top;text-transform:uppercase;letter-spacing:0.06em;font-family:${PREMIUM_FONT};width:38%`;
+  const admVal = `padding:6px 12px 6px 8px;font-size:12px;line-height:1.35;text-align:right;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;vertical-align:top`;
+  const admValRed = `padding:6px 12px 6px 8px;font-size:12px;line-height:1.35;text-align:right;color:#D14343 !important;-webkit-text-fill-color:#D14343;font-weight:700;vertical-align:top`;
   return emailLayout(`
     <div style="${ALERT_EYEBROW_UPPER}">Urgent</div>
-    <div role="heading" aria-level="1" style="${EQ_H1}">${d.moveCode} - charge failed</div>
+    <div role="heading" aria-level="1" style="${EQ_H1}">${escapeHtmlEmail(d.moveCode)} — charge failed</div>
 
-    <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.22);border-radius:0;padding:${PROMO_CREAM_CALLOUT_PAD};margin-bottom:16px;font-family:${EQ_SANS}">
-      <div style="font-size:12px;color:#D14343 !important;-webkit-text-fill-color:#D14343;font-weight:600;line-height:1.35">Auto-charge ${formatCurrency(d.balanceAmount)} failed</div>
-      <div style="font-size:11px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-top:6px;line-height:1.45">Error: ${d.errorMessage}</div>
+    <div style="background:rgba(209,67,67,0.1);border:1px solid rgba(209,67,67,0.22);border-radius:0;padding:${PROMO_CREAM_CALLOUT_PAD};margin-bottom:16px;font-family:${PREMIUM_FONT}">
+      <div style="font-size:12px;color:#D14343 !important;-webkit-text-fill-color:#D14343;font-weight:700;line-height:1.35;text-transform:uppercase;letter-spacing:0.05em">Auto-charge failed — ${formatCurrencyEmail(d.balanceAmount)}</div>
+      <div style="font-size:11px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-top:8px;line-height:1.45"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};">Error:</span> ${errHuman}</div>
     </div>
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid ${PROMO_CREAM_RULE};margin-bottom:16px;font-family:${EQ_SANS}">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid ${PROMO_CREAM_RULE};margin-bottom:16px;font-family:${PREMIUM_FONT}">
       <tr>
-        <td colspan="2" style="background-color:${EQ_CREME_HEAD};padding:10px 12px;font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0;text-transform:uppercase;">Client</td>
+        <td style="background-color:${EQ_CREME_HEAD};padding:10px 12px;font-size:12px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};letter-spacing:0.06em;text-transform:uppercase;font-family:${PREMIUM_FONT};">Client</td>
       </tr>
-      <tr><td style="${rowLabel}">Name</td><td style="${rowValue}">${d.clientName}</td></tr>
-      <tr><td style="${rowLabel}">Email</td><td style="${rowValue}">${wineMailtoAddress(d.clientEmail)}</td></tr>
-      <tr><td style="${rowLabel}">Phone</td><td style="${rowValue}">${d.clientPhone ? formatPhone(d.clientPhone) : "-"}</td></tr>
-      <tr><td style="${rowLabel}">Move date</td><td style="${rowValue}">${d.moveDate ? dateDisplay(d.moveDate) : "-"}</td></tr>
-      <tr><td style="${rowLabel}">Balance</td><td style="border-top:1px solid ${PROMO_CREAM_RULE};padding:8px 12px;font-size:12px;line-height:1.35;text-align:right;color:#D14343 !important;-webkit-text-fill-color:#D14343;font-weight:700">${formatCurrency(d.balanceAmount)}</td></tr>
+      ${emailNestedKvRow({ borderTop: admDiv, labelStyle: admLbl, valueStyle: admVal, label: "Name", valueHtml: escapeHtmlEmail(d.clientName) })}
+      ${emailNestedKvRow({ borderTop: admDiv, labelStyle: admLbl, valueStyle: admVal, label: "Email", valueHtml: wineMailtoAddress(d.clientEmail) })}
+      ${emailNestedKvRow({
+        borderTop: admDiv,
+        labelStyle: admLbl,
+        valueStyle: admVal,
+        label: "Phone",
+        valueHtml: d.clientPhone ? escapeHtmlEmail(formatPhone(d.clientPhone)) : "—",
+      })}
+      ${emailNestedKvRow({
+        borderTop: admDiv,
+        labelStyle: admLbl,
+        valueStyle: admVal,
+        label: "Move date",
+        valueHtml: d.moveDate ? escapeHtmlEmail(dateDisplay(d.moveDate)) : "—",
+      })}
+      ${emailNestedKvRow({
+        borderTop: admDiv,
+        labelStyle: admLbl,
+        valueStyle: admValRed,
+        label: "Balance",
+        valueHtml: formatCurrencyEmail(d.balanceAmount),
+      })}
     </table>
 
-    <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:${PROMO_CREAM_CALLOUT_PAD};font-family:${EQ_SANS}">
-      <div style="${GOLD_EYEBROW_UPPER};margin-bottom:6px">Action required</div>
+    <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:${PROMO_CREAM_CALLOUT_PAD};font-family:${PREMIUM_FONT}">
+      <div style="${FOREST_EYEBROW_UPPER};margin-bottom:6px">Action required</div>
       <div style="font-size:12px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.45">Contact the client immediately. Move is imminent and balance is unpaid.</div>
     </div>
   `);
@@ -1002,7 +1091,7 @@ export function partnerStatementDueEmail(d: PartnerStatementDueData): string {
       Hi ${firstName(d.partnerName) || d.partnerName}, statement <strong style="color:${EMAIL_FOREST}">${d.statementNumber}</strong> is due: <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">$${amt} CAD</strong>.
     </p>
     ${ctaButton(d.paymentUrl, "Pay statement")}
-    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${EQ_SANS}">
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       Questions? Email ${creamSupportMailtoLink()}.
     </p>
   `,
@@ -1045,17 +1134,19 @@ export interface PartnerStatementChargeFailedData {
 export function partnerStatementChargeFailedEmail(
   d: PartnerStatementChargeFailedData,
 ): string {
-  const amt = Number(d.amount).toFixed(2);
+  const procMsg = escapeHtmlEmail(
+    humanizePaymentProcessorMessage(d.errorMessage),
+  );
   return emailLayout(
     `
     <div style="${ALERT_EYEBROW_UPPER}">Urgent</div>
     <div role="heading" aria-level="1" style="${EQ_H1}">Partner charge failed</div>
     <p style="${EQ_LEAD}">
-      Card declined for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${d.partnerName}</strong>, statement <strong style="color:${EMAIL_FOREST}">${d.statementNumber}</strong> (<strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">$${amt}</strong>).
+      Card declined for <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${escapeHtmlEmail(d.partnerName)}</strong>, statement <strong style="color:${EMAIL_FOREST}">${escapeHtmlEmail(d.statementNumber)}</strong> (<strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${formatCurrencyEmail(d.amount)}</strong>).
     </p>
-    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.22);border-radius:0;padding:${PROMO_CREAM_CALLOUT_PAD};margin-bottom:22px;font-family:${EQ_SANS}">
+    <div style="background:rgba(209,67,67,0.08);border:1px solid rgba(209,67,67,0.22);border-radius:0;padding:${PROMO_CREAM_CALLOUT_PAD};margin-bottom:22px;font-family:${PREMIUM_FONT}">
       <div style="${ALERT_EYEBROW_UPPER};margin-bottom:6px">Processor message</div>
-      <div style="font-size:12px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};line-height:1.45">${d.errorMessage}</div>
+      <div style="font-size:12px;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};line-height:1.45">${procMsg}</div>
     </div>
   `,
     undefined,
@@ -1082,7 +1173,7 @@ export function partnerStatementChargeFailedPartnerEmail(
       We could not charge the card on file for statement <strong style="color:${EMAIL_FOREST}">${d.statementNumber}</strong> (<strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">$${amt} CAD</strong>).
     </p>
     ${ctaButton(d.updateCardUrl, "Update payment method")}
-    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${EQ_SANS}">
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       Updating your card restores automatic billing for future statements.
     </p>
   `,
@@ -1107,13 +1198,13 @@ export function partnerCardExpiringEmail(d: PartnerCardExpiringData): string {
       Hi ${firstName(d.partnerName) || d.partnerName}, your <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${d.cardBrand} ending in ${d.cardLastFour}</strong> on file for partner billing expires soon.
     </p>
     <div style="${EQ_PANEL}">
-      <div style="${PANEL_KICKER_GOLD_UPPER}">Why update now</div>
-      <div style="font-size:12px;color:${EQ_ON_DARK_PANEL};line-height:1.65">
+      <div style="${PANEL_KICKER_ON_WINE_UPPER}">Why update now</div>
+      <div style="font-size:12px;color:${EQ_ON_WINE_PANEL};line-height:1.65">
         Automatic statement charges use this card. An expired card can delay payouts and require manual follow-up.
       </div>
     </div>
     ${ctaButton(d.updateCardUrl, "Update card on file")}
-    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${EQ_SANS}">
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       ${creamSupportMailtoLink()} · Partner billing
     </p>
   `,
@@ -1162,13 +1253,13 @@ export function clientCardExpiringEmail(d: ClientCardExpiringData): string {
       The card on file for <strong style="color:${EMAIL_FOREST}">${ref}</strong> expires before we can charge your remaining balance. Update it so payment runs on schedule.
     </p>
     <div style="${EQ_PANEL}">
-      <div style="${PANEL_KICKER_GOLD_UPPER}">Automatic balance charge</div>
-      <div style="font-size:12px;color:${EQ_ON_DARK_PANEL};line-height:1.65">
+      <div style="${PANEL_KICKER_ON_WINE_UPPER}">Automatic balance charge</div>
+      <div style="font-size:12px;color:${EQ_ON_WINE_PANEL};line-height:1.65">
         We charge the remaining balance to the card on file before move day. An expired card may delay service until billing is resolved.
       </div>
     </div>
     ${ctaButton(d.updateCardUrl, PREMIUM_TRACK_CTA_LABEL)}
-    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${EQ_SANS}">
+    <p style="font-size:11px;color:${PROMO_CREAM_MUTED};text-align:center;font-family:${PREMIUM_FONT}">
       Use your move portal from the button above, or email ${creamSupportMailtoLink()} for help.
     </p>
   `);
@@ -1238,10 +1329,10 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
                       : "Special offer";
             return `
           <div style="border-top:1px solid ${PROMO_CREAM_RULE};padding:16px 0;">
-            <div style="font-size:13px;font-weight:600;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-bottom:4px;">${p.title} <span style="font-size:10px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};font-weight:400;">- ${offerLabel}</span></div>
-            ${p.description ? `<div style="font-size:13px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-bottom:8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${p.description}</div>` : ""}
-            ${p.redemption_code ? `<span style="font-family:monospace;font-size:12px;font-weight:700;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};letter-spacing:0;">${p.redemption_code}</span>` : ""}
-            ${p.redemption_url ? `<a href="${p.redemption_url}" style="font-size:12px;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-left:${p.redemption_code ? "12px" : "0"};">Redeem</a>` : ""}
+            <div style="font-size:13px;font-weight:600;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-bottom:4px;text-transform:capitalize;">${escapeHtmlEmail(p.title)} <span style="font-size:10px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};font-weight:400;text-transform:none;">— ${offerLabel}</span></div>
+            ${p.description ? `<div style="font-size:13px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-bottom:8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">${escapeHtmlEmail(p.description)}</div>` : ""}
+            ${p.redemption_code ? `<span style="font-family:monospace;font-size:12px;font-weight:700;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};letter-spacing:0;">${escapeHtmlEmail(p.redemption_code)}</span>` : ""}
+            ${p.redemption_url ? `<a href="${hrefAttr(p.redemption_url)}" style="font-size:11px;font-weight:700;color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-left:${p.redemption_code ? "12px" : "0"};letter-spacing:0.08em;text-transform:uppercase;">REDEEM</a>` : ""}
           </div>
         `;
           })
@@ -1253,7 +1344,7 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
       <p style="font-size:15px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.6;margin:28px 0 8px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Know someone planning a move? Share your code and they receive <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">$${d.referredDiscount} off</strong>. You earn a <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">$${d.referrerCredit} credit</strong> as our thank you.</p>
       <div style="border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:20px;text-align:center;margin-bottom:8px;background:${PROMO_CREAM_FILL};">
         <div style="font-family:monospace;font-size:22px;font-weight:700;letter-spacing:0;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};">${d.referralCode}</div>
-        <div style="font-size:11px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-top:6px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your referral code</div>
+        <div style="font-size:11px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-top:6px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Your referral code</div>
       </div>
     `
     : "";
@@ -1306,7 +1397,7 @@ export function moveAnniversaryEmail(d: MoveAnniversaryEmailData): string {
       <p style="${PROMO_CREAM_P};margin:28px 0 8px;">Planning another move, or know someone who is? Your referral code gives them <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">$${d.referredDiscount} off</strong>.</p>
       <div style="border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:20px;text-align:center;background:${PROMO_CREAM_FILL};">
         <div style="font-family:monospace;font-size:22px;font-weight:700;letter-spacing:0;color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};">${d.referralCode}</div>
-        <div style="font-size:11px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-top:6px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Your referral code</div>
+        <div style="font-size:11px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};margin-top:6px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Your referral code</div>
       </div>
     `
         : ""

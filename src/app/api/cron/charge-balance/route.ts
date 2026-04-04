@@ -6,6 +6,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { getSquarePaymentConfig } from "@/lib/square-config";
 import { finalizeBalancePaymentSettlement } from "@/lib/complete-balance-payment";
+import { humanizePaymentProcessorMessage } from "@/lib/email/payment-error-message";
 
 const HS_BASE = "https://api.hubapi.com/crm/v3/objects";
 const HS_TASKS = `${HS_BASE}/tasks`;
@@ -158,7 +159,7 @@ export async function GET(req: NextRequest) {
         await createHubSpotTask(
           move.hubspot_deal_id,
           `URGENT: Balance payment failed ${move.move_code}`,
-          `Auto-charge for $${balanceAmount.toFixed(2)} balance failed. Move is tomorrow. Error: ${errorMsg}. Contact client immediately.`,
+          `Auto-charge for $${balanceAmount.toFixed(2)} balance failed. Move is tomorrow. Error: ${humanizePaymentProcessorMessage(errorMsg)}. Contact client immediately.`,
         );
       }
     }

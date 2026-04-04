@@ -22,7 +22,10 @@ export type TrackingStatus =
   | "arrived"
   | "delivering";
 
-const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; notifyPartner: boolean }> = {
+const CONFIG: Record<
+  string,
+  { notifyClient: boolean; notifyAdmin: boolean; notifyPartner: boolean }
+> = {
   en_route_to_pickup: {
     notifyClient: true,
     notifyAdmin: true,
@@ -76,7 +79,10 @@ const CONFIG: Record<string, { notifyClient: boolean; notifyAdmin: boolean; noti
 };
 
 /** Email headline: move copy never references delivery; delivery copy never references a move. */
-function headlineForTrackingCheckpoint(status: TrackingStatus, jobType: "move" | "delivery"): string {
+function headlineForTrackingCheckpoint(
+  status: TrackingStatus,
+  jobType: "move" | "delivery",
+): string {
   if (jobType === "move") {
     switch (status) {
       case "en_route_to_pickup":
@@ -124,31 +130,52 @@ export async function notifyOnCheckpoint(
   teamName: string,
   jobName: string,
   fromAddress?: string,
-  toAddress?: string
+  toAddress?: string,
 ): Promise<void> {
-  let cfg = CONFIG[status] || { notifyClient: false, notifyAdmin: false, notifyPartner: false };
-  if (jobType === "delivery" && (status === "en_route_to_pickup" || status === "en_route")) {
+  let cfg = CONFIG[status] || {
+    notifyClient: false,
+    notifyAdmin: false,
+    notifyPartner: false,
+  };
+  if (
+    jobType === "delivery" &&
+    (status === "en_route_to_pickup" || status === "en_route")
+  ) {
     cfg = { ...cfg, notifyClient: false };
   }
   const admin = createAdminClient();
 
-  const adminMessage = status === "completed"
-    ? `${teamName} completed ${jobName}`
-    : status === "en_route_to_pickup" || status === "en_route"
-      ? `${teamName} started en route to pickup for ${jobName}`
-      : status === "arrived_at_pickup"
-        ? `${teamName} arrived at pickup ${fromAddress || "-"}`
-        : status === "en_route_to_destination"
-          ? `${teamName} en route to destination ${toAddress || "-"}`
-          : status === "arrived_at_destination" || status === "arrived"
-            ? `${teamName} arrived at ${toAddress || "-"}`
-            : `${teamName} ${status}`;
+  const adminMessage =
+    status === "completed"
+      ? `${teamName} completed ${jobName}`
+      : status === "en_route_to_pickup" || status === "en_route"
+        ? `${teamName} started en route to pickup for ${jobName}`
+        : status === "arrived_at_pickup"
+          ? `${teamName} arrived at pickup ${fromAddress || "-"}`
+          : status === "en_route_to_destination"
+            ? `${teamName} en route to destination ${toAddress || "-"}`
+            : status === "arrived_at_destination" || status === "arrived"
+              ? `${teamName} arrived at ${toAddress || "-"}`
+              : `${teamName} ${status}`;
 
   if (cfg.notifyAdmin) {
     try {
-      const entityId = jobType === "move"
-        ? (await admin.from("moves").select("move_code").eq("id", jobId).single()).data?.move_code || jobId
-        : (await admin.from("deliveries").select("delivery_number").eq("id", jobId).single()).data?.delivery_number || jobId;
+      const entityId =
+        jobType === "move"
+          ? (
+              await admin
+                .from("moves")
+                .select("move_code")
+                .eq("id", jobId)
+                .single()
+            ).data?.move_code || jobId
+          : (
+              await admin
+                .from("deliveries")
+                .select("delivery_number")
+                .eq("id", jobId)
+                .single()
+            ).data?.delivery_number || jobId;
       await admin.from("status_events").insert({
         entity_type: jobType,
         entity_id: entityId,
@@ -172,7 +199,13 @@ export async function notifyOnCheckpoint(
   let moveClientName: string | undefined;
 
   if (jobType === "move") {
-    const { data: move } = await admin.from("moves").select("id, client_email, move_code, from_address, to_address, client_name").eq("id", jobId).single();
+    const { data: move } = await admin
+      .from("moves")
+      .select(
+        "id, client_email, move_code, from_address, to_address, client_name",
+      )
+      .eq("id", jobId)
+      .single();
     if (move) {
       clientEmail = move.client_email || null;
       trackUrl = `${getEmailBaseUrl()}/track/move/${move.move_code || move.id}?token=${signTrackToken("move", move.id)}`;
@@ -182,11 +215,20 @@ export async function notifyOnCheckpoint(
       moveClientName = move.client_name || undefined;
     }
   } else {
-    const { data: delivery } = await admin.from("deliveries").select("id, delivery_number, client_name, customer_email").eq("id", jobId).single();
+    const { data: delivery } = await admin
+      .from("deliveries")
+      .select("id, delivery_number, client_name, customer_email")
+      .eq("id", jobId)
+      .single();
     if (delivery) {
       const custEmail = (delivery.customer_email || "").trim() || null;
       if (delivery.client_name) {
-        const { data: org } = await admin.from("organizations").select("email").eq("name", delivery.client_name).limit(1).maybeSingle();
+        const { data: org } = await admin
+          .from("organizations")
+          .select("email")
+          .eq("name", delivery.client_name)
+          .limit(1)
+          .maybeSingle();
         partnerEmail = org?.email || custEmail;
       } else {
         partnerEmail = custEmail;
@@ -196,9 +238,12 @@ export async function notifyOnCheckpoint(
     }
   }
 
-  const subject = status === "completed"
-    ? jobType === "delivery" ? `Your delivery is complete - ${formatJobId(moveCode || jobId, jobType)}` : `Your move is complete - ${formatJobId(moveCode || jobId, jobType)}`
-    : `Your crew update - ${formatJobId(moveCode || jobId, jobType)}`;
+  const subject =
+    status === "completed"
+      ? jobType === "delivery"
+        ? `Your delivery is complete - ${formatJobId(moveCode || jobId, jobType)}`
+        : `Your move is complete - ${formatJobId(moveCode || jobId, jobType)}`
+      : `Your crew update - ${formatJobId(moveCode || jobId, jobType)}`;
 
   const headline = headlineForTrackingCheckpoint(status, jobType);
   const body =
@@ -219,11 +264,13 @@ export async function notifyOnCheckpoint(
         : PREMIUM_TRACK_CTA_LABEL
       : undefined,
     includeFooter: false,
+    eyebrow: status === "completed" ? "Complete" : "Live update",
   });
 
   const toSend: string[] = [];
   if (cfg.notifyClient && clientEmail) toSend.push(clientEmail);
-  if (cfg.notifyPartner && partnerEmail && !toSend.includes(partnerEmail)) toSend.push(partnerEmail);
+  if (cfg.notifyPartner && partnerEmail && !toSend.includes(partnerEmail))
+    toSend.push(partnerEmail);
   if (toSend.length === 0) return;
 
   // For move completion, send full "move complete" email (with portal/documents link) to client

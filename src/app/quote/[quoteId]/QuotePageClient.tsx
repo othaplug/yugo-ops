@@ -12,7 +12,6 @@ import SchedulingAlternativesCard from "./SchedulingAlternativesCard";
 import SeasonalPricingPreview from "@/components/SeasonalPricingPreview";
 import {
   Check,
-  Clock,
   CaretDown as ChevronDown,
   CaretUp as ChevronUp,
   Plus,
@@ -28,6 +27,7 @@ import {
   type ValuationTier,
   type ValuationUpgrade,
   type HighValueDeclaration,
+  findValuationUpgrade,
   TAX_RATE,
   WINE,
   CREAM,
@@ -212,13 +212,6 @@ const LOGISTICS_INCLUSION_FEATURES: TierFeature[] = [
 
 const UNIVERSAL_LOGISTICS_FEATURES: TierFeature[] = [
   {
-    key: "price",
-    card: "Guaranteed flat price",
-    title: "Guaranteed flat price",
-    desc: "The price you see is the price you pay",
-    iconName: "DollarSign",
-  },
-  {
     key: "accountability",
     card: "Accountability",
     title: "Professional accountability",
@@ -348,9 +341,10 @@ export default function QuotePageClient({
   const [invoiceConfirmError, setInvoiceConfirmError] = useState<string | null>(
     null,
   );
-  const [valuationUpgradeSelected, setValuationUpgradeSelected] = useState(
-    !!quote.valuation_upgraded,
-  );
+  /** Opt-in only; do not hydrate from `valuation_upgraded` (stale/coordinator flags caused false “upgrade added”). */
+  const [valuationUpgradeSelected, setValuationUpgradeSelected] =
+    useState(false);
+  const prevSelectedTierRef = useRef<string | null>(null);
   const [declarations, setDeclarations] = useState<HighValueDeclaration[]>([]);
 
   // Referral code state
@@ -688,9 +682,14 @@ export default function QuotePageClient({
 
   const activeUpgrade = useMemo(() => {
     if (!valuationUpgradeSelected) return null;
-    return (
-      valuationUpgrades.find((u) => u.from_package === currentPackage) ?? null
-    );
+    const toTier =
+      currentPackage === "essential"
+        ? "enhanced"
+        : currentPackage === "signature"
+          ? "full_replacement"
+          : null;
+    if (!toTier) return null;
+    return findValuationUpgrade(valuationUpgrades, currentPackage, toTier);
   }, [valuationUpgradeSelected, valuationUpgrades, currentPackage]);
 
   const declarationFeeTotal = useMemo(
@@ -977,6 +976,11 @@ export default function QuotePageClient({
 
   const handleSelectTier = useCallback(
     (tierKey: string) => {
+      if (prevSelectedTierRef.current !== tierKey) {
+        setValuationUpgradeSelected(false);
+        setDeclarations([]);
+        prevSelectedTierRef.current = tierKey;
+      }
       setSelectedTier(tierKey);
       setConfirmed(true);
       setSelectedAddons((prev) => {
@@ -1224,14 +1228,13 @@ export default function QuotePageClient({
     >
       {expiringSoon && (
         <div
-          className="sticky top-0 z-50 px-4 py-2.5 text-center text-[13px] font-medium"
+          className="sticky top-0 z-50 px-4 py-2.5 text-center text-[12px] sm:text-[13px] font-medium tracking-[0.02em] leading-snug"
           style={{
-            backgroundColor: "#FFF8E1",
-            color: "#8B6914",
-            borderBottom: `1px solid ${FOREST}33`,
+            backgroundColor: "rgba(244, 250, 245, 0.95)",
+            color: FOREST,
+            borderBottom: "1px solid rgba(44, 62, 45, 0.12)",
           }}
         >
-          <Clock className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
           This quote expires on {expiryDateStr}. Book now to secure your rate.
         </div>
       )}
@@ -1356,44 +1359,6 @@ export default function QuotePageClient({
               : "bg-[#FFFBF7] text-gray-900 -mx-5 md:-mx-6 px-5 md:px-6 pt-3 pb-10 mb-2 rounded-b-md"
           }
         >
-          <div
-            className={`mb-8 py-3 ${currentStep >= 2 && !booked ? "mt-3" : "mt-4"}`}
-            style={{ backgroundColor: "transparent" }}
-          >
-            <div className="flex justify-center w-full min-w-0 px-1 sm:px-0">
-              <div
-                className="box-border w-full min-w-0 max-w-full sm:w-fit sm:max-w-2xl sm:mx-auto rounded-none px-4 py-3.5 text-center sm:px-5 border-t-2"
-                style={
-                  premiumShell
-                    ? {
-                        backgroundColor: "rgba(249, 237, 228, 0.08)",
-                        borderTopColor: shellInk.kicker,
-                      }
-                    : {
-                        backgroundColor: `${FOREST}05`,
-                        borderTopColor: FOREST,
-                      }
-                }
-              >
-                <p
-                  className="text-[12px] font-bold tracking-wider uppercase sm:text-[13px]"
-                  style={{
-                    color: premiumShell ? shellInk.primary : FOREST,
-                  }}
-                >
-                  Guaranteed Price
-                </p>
-                <p
-                  className="text-[11px] leading-snug sm:text-[12px]"
-                  style={{ color: premiumShell ? shellInk.body : FOREST }}
-                >
-                  The price you see is the price you pay. No hourly surprises.
-                  No hidden fees.
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* ═══ SEASONAL PRICING BANNER ═══ */}
           {(() => {
             if (booked || !quote.move_date) return null;
@@ -2523,137 +2488,129 @@ const InclusionsShowcase = React.forwardRef<
             : "contents"
         }
       >
-      <div className="text-center mb-6 max-w-xl mx-auto">
-        <p
-          className={`${QUOTE_EYEBROW_CLASS} mb-2`}
-          style={{
-            color:
-              premiumInclusions && inclusionInk
-                ? inclusionInk.kicker
-                : FOREST_MUTED,
-          }}
-        >
-          {variant === "logistics"
-            ? "Delivery"
-            : variant === "event"
-              ? "Event"
-              : "Move"}{" "}
-          inclusions
-        </p>
-        <h2
-          className={`${QUOTE_SECTION_H2_CLASS} mb-2`}
-          style={{
-            color:
-              premiumInclusions && inclusionInk
-                ? inclusionInk.primary
-                : WINE,
-          }}
-        >
-          {sectionTitle}
-        </h2>
-        <p
-          className="text-[12px] leading-relaxed"
-          style={{
-            color:
-              premiumInclusions && inclusionInk
-                ? inclusionInk.body
-                : FOREST_BODY,
-          }}
-        >
-          {sectionSub}
-        </p>
-      </div>
-
-      <hr
-        className="border-0 h-px max-w-xs mx-auto mb-8"
-        style={{
-          backgroundColor: premiumInclusions ? inclusionRule : `${FOREST}12`,
-        }}
-      />
-
-      {truckPricingNote ? (
-        <p
-          className="text-center text-[11px] font-semibold max-w-lg mx-auto mb-6 px-2"
-          style={{
-            color:
-              premiumInclusions && inclusionInk
-                ? inclusionInk.primary
-                : FOREST,
-          }}
-        >
-          {truckPricingNote}
-        </p>
-      ) : null}
-
-      <div
-        className={`grid md:grid-cols-2 gap-x-6 md:gap-x-10 gap-y-4 min-w-0 ${
-          premiumInclusions
-            ? "w-full"
-            : "max-w-4xl mx-auto px-2"
-        }`}
-      >
-        {visibleItems.map((item, i) => (
-          <div
-            key={i}
-            className={
-              premiumInclusions
-                ? "py-3 px-1 sm:px-2 md:px-3"
-                : "py-3 px-6 md:px-0.5"
-            }
+        <div className="text-center mb-6 max-w-xl mx-auto">
+          <p
+            className={`${QUOTE_EYEBROW_CLASS} mb-2`}
+            style={{
+              color:
+                premiumInclusions && inclusionInk
+                  ? inclusionInk.kicker
+                  : FOREST_MUTED,
+            }}
           >
-            <div className="min-w-0">
-              <p
-                className="text-[13px] font-semibold leading-snug"
-                style={{
-                  color:
-                    premiumInclusions && inclusionInk
-                      ? inclusionInk.primary
-                      : FOREST,
-                }}
-              >
-                {item.title}
-              </p>
-              <p
-                className="text-[11px] mt-0.5 leading-snug"
-                style={{
-                  color:
-                    premiumInclusions && inclusionInk
-                      ? inclusionInk.secondary
-                      : FOREST_BODY,
-                }}
-              >
-                {item.desc}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+            {variant === "logistics"
+              ? "Delivery"
+              : variant === "event"
+                ? "Event"
+                : "Move"}{" "}
+            inclusions
+          </p>
+          <h2
+            className={`${QUOTE_SECTION_H2_CLASS} mb-2`}
+            style={{
+              color:
+                premiumInclusions && inclusionInk ? inclusionInk.primary : WINE,
+            }}
+          >
+            {sectionTitle}
+          </h2>
+          <p
+            className="text-[12px] leading-relaxed"
+            style={{
+              color:
+                premiumInclusions && inclusionInk
+                  ? inclusionInk.body
+                  : FOREST_BODY,
+            }}
+          >
+            {sectionSub}
+          </p>
+        </div>
 
-      {hasMore && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className={`flex w-fit mx-auto mt-6 items-center gap-2 ${QUOTE_EYEBROW_CLASS} py-1 transition-opacity hover:opacity-70`}
+        <hr
+          className="border-0 h-px max-w-xs mx-auto mb-8"
           style={{
-            color:
-              premiumInclusions && inclusionInk
-                ? inclusionInk.kicker
-                : FOREST,
+            backgroundColor: premiumInclusions ? inclusionRule : `${FOREST}12`,
           }}
-        >
-          {expanded ? (
-            <>
-              Show less
-              <ChevronUp className="w-3.5 h-3.5 shrink-0" aria-hidden />
-            </>
-          ) : (
-            <>
-              View all {allItems.length} features
-              <ChevronDown className="w-3.5 h-3.5 shrink-0" aria-hidden />
-            </>
-          )}
-        </button>
-      )}
+        />
+
+        {truckPricingNote ? (
+          <p
+            className="text-center text-[11px] font-semibold max-w-lg mx-auto mb-6 px-2"
+            style={{
+              color:
+                premiumInclusions && inclusionInk
+                  ? inclusionInk.primary
+                  : FOREST,
+            }}
+          >
+            {truckPricingNote}
+          </p>
+        ) : null}
+
+        <div className="grid md:grid-cols-2 gap-x-6 md:gap-x-10 gap-y-4 min-w-0 max-w-4xl mx-auto w-full px-2 box-border">
+          {visibleItems.map((item, i) => (
+            <div
+              key={i}
+              className={
+                premiumInclusions
+                  ? "py-3 px-1 sm:px-2 md:px-3"
+                  : "py-3 px-6 md:px-0.5"
+              }
+            >
+              <div className="min-w-0">
+                <p
+                  className="text-[13px] font-semibold leading-snug"
+                  style={{
+                    color:
+                      premiumInclusions && inclusionInk
+                        ? inclusionInk.primary
+                        : FOREST,
+                  }}
+                >
+                  {item.title}
+                </p>
+                <p
+                  className="text-[11px] mt-0.5 leading-snug"
+                  style={{
+                    color:
+                      premiumInclusions && inclusionInk
+                        ? inclusionInk.secondary
+                        : FOREST_BODY,
+                  }}
+                >
+                  {item.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className={`flex w-fit mx-auto mt-6 items-center gap-2 ${QUOTE_EYEBROW_CLASS} py-1 transition-opacity hover:opacity-70`}
+            style={{
+              color:
+                premiumInclusions && inclusionInk
+                  ? inclusionInk.kicker
+                  : FOREST,
+            }}
+          >
+            {expanded ? (
+              <>
+                Show less
+                <ChevronUp className="w-3.5 h-3.5 shrink-0" aria-hidden />
+              </>
+            ) : (
+              <>
+                View all {allItems.length} features
+                <ChevronDown className="w-3.5 h-3.5 shrink-0" aria-hidden />
+              </>
+            )}
+          </button>
+        )}
       </div>
     </section>
   );
@@ -3323,10 +3280,7 @@ function ConfirmDetailsSection({
                 >
                   From
                 </p>
-                <p
-                  className="text-lg"
-                  style={{ color: shellText!.primary }}
-                >
+                <p className="text-lg" style={{ color: shellText!.primary }}>
                   {formatAddressForDisplay(fromRow.address)}
                 </p>
                 {accessLabel(fromRow.access) ? (
@@ -3356,10 +3310,7 @@ function ConfirmDetailsSection({
                 >
                   To
                 </p>
-                <p
-                  className="text-lg"
-                  style={{ color: shellText!.primary }}
-                >
+                <p className="text-lg" style={{ color: shellText!.primary }}>
                   {formatAddressForDisplay(toRow.address)}
                 </p>
                 {accessLabel(toRow.access) ? (
@@ -3382,17 +3333,11 @@ function ConfirmDetailsSection({
               <p style={{ color: shellText!.primary }}>
                 {quote.est_crew_size ?? 3} professional movers
               </p>
-              <p
-                className="text-sm"
-                style={{ color: shellText!.secondary }}
-              >
+              <p className="text-sm" style={{ color: shellText!.secondary }}>
                 {truckLine}
               </p>
-              <p
-                className="text-sm"
-                style={{ color: shellText!.secondary }}
-              >
-                Full replacement protection
+              <p className="text-sm" style={{ color: shellText!.secondary }}>
+                {protectionLabel}
               </p>
             </div>
             <div className={`border-t pt-6 ${confirmHairlineBorder}`}>
@@ -3474,10 +3419,7 @@ function ConfirmDetailsSection({
                     : "border-[#F0D8E2]/35 bg-[#66143D]/35"
                 }`}
               >
-                <p
-                  className="text-sm"
-                  style={{ color: shellText!.primary }}
-                >
+                <p className="text-sm" style={{ color: shellText!.primary }}>
                   Deposit to reserve:{" "}
                   <span className="text-[14px] [font-family:var(--font-body)]">
                     {fmtPrice(deposit)}
@@ -3686,6 +3628,96 @@ function ConfirmDetailsSection({
                   </span>
                 </Fragment>
               ))}
+            </div>
+
+            <div
+              className="max-w-md mx-auto w-full border-t pt-5 mt-5 space-y-2"
+              style={{ borderColor: inkRule }}
+            >
+              <p
+                className={`${QUOTE_EYEBROW_CLASS} mb-1 text-center`}
+                style={{ color: inkMuted }}
+              >
+                Investment
+              </p>
+              <div className="space-y-2 text-[13px]" style={{ color: ink }}>
+                <div className="flex justify-between gap-4">
+                  <span>{packageLabel}</span>
+                  <span className="tabular-nums font-semibold shrink-0">
+                    {fmtPrice(basePrice)}
+                  </span>
+                </div>
+                {addonTotal > 0 ? (
+                  <div
+                    className="flex justify-between gap-4 text-[12px]"
+                    style={{ color: inkBody }}
+                  >
+                    <span>Add-ons</span>
+                    <span className="tabular-nums">{fmtPrice(addonTotal)}</span>
+                  </div>
+                ) : null}
+                {valuationCost > 0 ? (
+                  <div
+                    className="flex justify-between gap-4 text-[12px]"
+                    style={{ color: inkBody }}
+                  >
+                    <span>Protection & declarations</span>
+                    <span className="tabular-nums">
+                      {fmtPrice(valuationCost)}
+                    </span>
+                  </div>
+                ) : null}
+                {referralDiscountAmt > 0 ? (
+                  <div
+                    className="flex justify-between gap-4 text-[12px]"
+                    style={{ color: inkBody }}
+                  >
+                    <span>Referral discount</span>
+                    <span className="tabular-nums">
+                      −{fmtPrice(referralDiscountAmt)}
+                    </span>
+                  </div>
+                ) : null}
+                <div
+                  className="flex justify-between gap-4 text-[12px]"
+                  style={{ color: inkBody }}
+                >
+                  <span>Subtotal (before HST)</span>
+                  <span className="tabular-nums">
+                    {fmtPrice(taxableSubtotal)}
+                  </span>
+                </div>
+                <div
+                  className="flex justify-between gap-4 text-[12px]"
+                  style={{ color: inkBody }}
+                >
+                  <span>HST (13%)</span>
+                  <span className="tabular-nums">{fmtPrice(tax)}</span>
+                </div>
+                <div
+                  className={`flex justify-between gap-4 text-base font-semibold pt-2 border-t ${confirmSubtleDivider}`}
+                  style={{ color: ink }}
+                >
+                  <span>Total</span>
+                  <span className="tabular-nums">{fmtPrice(grandTotal)}</span>
+                </div>
+              </div>
+              <div
+                className="mt-4 p-3 rounded-none border"
+                style={{
+                  borderColor: `${FOREST}22`,
+                  backgroundColor: "rgba(244, 250, 245, 0.65)",
+                }}
+              >
+                <p className="text-[13px] font-medium" style={{ color: ink }}>
+                  Deposit to reserve:{" "}
+                  <span className="tabular-nums">{fmtPrice(deposit)}</span>
+                </p>
+                <p className="text-[11px] mt-1" style={{ color: inkBody }}>
+                  Balance of {fmtPrice(balanceDue)} due 48 hours before your
+                  move
+                </p>
+              </div>
             </div>
           </>
         ) : null}
@@ -3908,9 +3940,7 @@ function ValuationProtectionCard({
   const tierData = valuationTiers.find((t) => t.tier_slug === activeTierSlug);
   const upgradeTarget = UPGRADE_TARGET[currentPackage];
   const upgradeData = upgradeTarget
-    ? valuationUpgrades.find(
-        (u) => u.from_package === currentPackage && u.to_tier === upgradeTarget,
-      )
+    ? findValuationUpgrade(valuationUpgrades, currentPackage, upgradeTarget)
     : null;
   const upgradeTierData = upgradeTarget
     ? valuationTiers.find((t) => t.tier_slug === upgradeTarget)
@@ -4064,7 +4094,7 @@ function ValuationProtectionCard({
                     className={`${QUOTE_EYEBROW_CLASS} shrink-0`}
                     style={{ color: inkMuted }}
                   >
-                    Per shipment
+                    {journeyCopy === "delivery" ? "Per shipment" : "Per move"}
                   </span>
                   <span
                     className="font-bold tabular-nums text-right"
@@ -4096,7 +4126,7 @@ function ValuationProtectionCard({
                   className={`${QUOTE_EYEBROW_CLASS} shrink-0`}
                   style={{ color: inkMuted }}
                 >
-                  Per shipment
+                  {journeyCopy === "delivery" ? "Per shipment" : "Per move"}
                 </span>
                 <span
                   className="font-bold tabular-nums text-right"
@@ -4224,8 +4254,8 @@ function ValuationProtectionCard({
           </p>
           {upgradeData.assumed_shipment_value > 0 && (
             <p className="text-[11px]" style={{ color: inkMuted }}>
-              Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total
-              shipment value
+              Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total{" "}
+              {journeyCopy === "delivery" ? "shipment" : "move"} value
             </p>
           )}
 
@@ -4248,7 +4278,9 @@ function ValuationProtectionCard({
               style={
                 premiumChrome
                   ? {
-                      backgroundColor: upgradeSelected ? "transparent" : valAccent,
+                      backgroundColor: upgradeSelected
+                        ? "transparent"
+                        : valAccent,
                       color: shellText!.primary,
                       border: upgradeSelected
                         ? valAccentBorderSelected
@@ -4377,7 +4409,9 @@ function ValuationProtectionCard({
                   backgroundColor: premiumChrome ? valInputBg : undefined,
                 }}
                 onFocus={(e) =>
-                  (e.target.style.borderColor = premiumChrome ? valAccent : FOREST)
+                  (e.target.style.borderColor = premiumChrome
+                    ? valAccent
+                    : FOREST)
                 }
                 onBlur={(e) =>
                   (e.target.style.borderColor = premiumChrome
@@ -4406,7 +4440,9 @@ function ValuationProtectionCard({
                   backgroundColor: premiumChrome ? valInputBg : undefined,
                 }}
                 onFocus={(e) =>
-                  (e.target.style.borderColor = premiumChrome ? valAccent : FOREST)
+                  (e.target.style.borderColor = premiumChrome
+                    ? valAccent
+                    : FOREST)
                 }
                 onBlur={(e) =>
                   (e.target.style.borderColor = premiumChrome
@@ -4560,11 +4596,11 @@ function AddOnsSection({
   const premiumChrome = premiumShellKind !== "none";
   const shellText = premiumShellInk(premiumShellKind);
   const premiumBorder = premiumShellSectionBorderClass(premiumShellKind);
-  const addonRowBorderClass =
+  const addonListDivideClass =
     premiumShellKind === "wine"
-      ? "border-[#66143D]/30"
+      ? "divide-[#66143D]/30"
       : premiumShellKind === "signature"
-        ? "border-[#4A6B52]/35"
+        ? "divide-[#4A6B52]/35"
         : "";
   const addonRowOnBgClass =
     premiumShellKind === "wine"
@@ -4610,7 +4646,9 @@ function AddOnsSection({
   return (
     <section className={`mb-10 pt-6 border-t ${premiumBorder}`}>
       <div
-        className={`mb-6 mx-auto ${
+        className={`${premiumChrome ? "mb-10" : "mb-6"} mx-auto${
+          estateVoiceChrome ? " pb-2" : ""
+        } ${
           premiumChrome && estateVoiceChrome
             ? "max-w-3xl px-1 text-left md:text-left"
             : premiumChrome
@@ -4632,10 +4670,7 @@ function AddOnsSection({
             >
               Personalize Your Experience
             </h2>
-            <p
-              className="text-lg mb-8"
-              style={{ color: shellText.secondary }}
-            >
+            <p className="text-lg mb-8" style={{ color: shellText.secondary }}>
               {ESTATE_ADDON_SECTION_PREAMBLE.body}
             </p>
           </>
@@ -4685,7 +4720,11 @@ function AddOnsSection({
       </div>
 
       <div
-        className={premiumChrome ? "space-y-4" : "divide-y divide-[#2C3E2D]/10"}
+        className={
+          premiumChrome
+            ? `divide-y ${addonListDivideClass}`
+            : "divide-y divide-[#2C3E2D]/10"
+        }
       >
         {visibleAddons.map((addon) => {
           const sel = selectedAddons.get(addon.id);
@@ -4730,13 +4769,13 @@ function AddOnsSection({
           return (
             <div
               key={addon.id}
-              className={`py-4 transition-colors ${
+              className={`py-3 transition-colors ${
                 premiumChrome
-                  ? `px-4 rounded-lg border ${addonRowBorderClass} ${isOn ? addonRowOnBgClass : ""}`
+                  ? `first:pt-0 px-4 ${isOn ? addonRowOnBgClass : ""}`
                   : `first:pt-0 ${isOn ? "bg-[#FFFCF6]/80" : ""}`
               }`}
             >
-              <div className="flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-start min-[420px]:gap-3">
+              <div className="flex flex-col gap-1.5 min-[420px]:flex-row min-[420px]:items-start min-[420px]:gap-3">
                 <div className="flex items-start gap-3 min-w-0 flex-1">
                   <button
                     type="button"
@@ -4778,44 +4817,14 @@ function AddOnsSection({
                           ? estateAddonDisplayName(addon.slug, addon.name)
                           : addon.name}
                       </span>
-                      {addon.is_popular && (
-                        <span
-                          className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
-                          style={
-                            premiumChrome
-                              ? {
-                                  color: shellText!.primary,
-                                  backgroundColor: "rgba(249, 237, 228, 0.12)",
-                                  borderColor: shellText!.borderSubtle,
-                                }
-                              : {
-                                  color: FOREST,
-                                  backgroundColor: "rgba(44, 62, 45, 0.08)",
-                                  borderColor: "rgba(44, 62, 45, 0.18)",
-                                }
-                          }
-                        >
-                          Popular
-                        </span>
-                      )}
                       {PACKING_KIT_ADDON_SLUGS.has(addon.slug) && (
                         <span
-                          className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
-                          style={
-                            premiumChrome
-                              ? {
-                                  color: "#C8F0D8",
-                                  backgroundColor: "rgba(74, 222, 128, 0.14)",
-                                  borderColor: "rgba(134, 239, 172, 0.35)",
-                                }
-                              : {
-                                  color: "#1F5C38",
-                                  backgroundColor: "rgba(44, 122, 75, 0.1)",
-                                  borderColor: "rgba(44, 122, 75, 0.28)",
-                                }
-                          }
+                          className="font-medium uppercase tracking-[0.12em] text-[7px] sm:text-[8px] inline-flex items-center shrink-0 whitespace-nowrap"
+                          style={{
+                            color: premiumChrome ? "#C8F0D8" : "#492A1D",
+                          }}
                         >
-                          Free delivery
+                          · Free delivery
                         </span>
                       )}
                     </div>
@@ -4823,9 +4832,7 @@ function AddOnsSection({
                       <p
                         className="text-[11px] mt-0.5 leading-snug"
                         style={{
-                          color: premiumChrome
-                            ? shellText!.body
-                            : FOREST_BODY,
+                          color: premiumChrome ? shellText!.body : FOREST_BODY,
                         }}
                       >
                         {addon.description}
@@ -4845,9 +4852,7 @@ function AddOnsSection({
                             onClick={() => toggleContents(addon.id)}
                             className={`${QUOTE_EYEBROW_CLASS} transition-opacity hover:opacity-70 inline-flex items-center gap-1.5`}
                             style={{
-                              color: premiumChrome
-                                ? shellText!.kicker
-                                : FOREST,
+                              color: premiumChrome ? shellText!.kicker : FOREST,
                             }}
                           >
                             {expandedContents.has(addon.id) ? (
@@ -4876,12 +4881,14 @@ function AddOnsSection({
                                   ? premiumShellKind === "signature"
                                     ? {
                                         color: shellText!.body,
-                                        backgroundColor: "rgba(21, 38, 26, 0.55)",
+                                        backgroundColor:
+                                          "rgba(21, 38, 26, 0.55)",
                                         borderColor: "rgba(74, 107, 82, 0.5)",
                                       }
                                     : {
                                         color: shellText!.body,
-                                        backgroundColor: "rgba(43, 4, 22, 0.45)",
+                                        backgroundColor:
+                                          "rgba(43, 4, 22, 0.45)",
                                         borderColor: "rgba(102, 20, 61, 0.45)",
                                       }
                                   : {
@@ -4899,30 +4906,24 @@ function AddOnsSection({
                       )}
 
                     {isOn && addon.price_type === "per_unit" && (
-                      <div className="flex items-center gap-2 mt-2">
+                      <span className="mt-2 inline-flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() =>
                             updateQty(addon.id, (sel?.quantity ?? 1) - 1)
                           }
-                          className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
+                          className="min-h-7 min-w-7 rounded-none border-0 bg-transparent p-0 text-[15px] font-bold leading-none flex items-center justify-center transition-opacity hover:opacity-70"
                           style={{
-                            borderColor: premiumChrome
-                              ? "rgba(249,237,228,0.35)"
-                              : "#D5D0C8",
-                            color: premiumChrome
-                              ? shellText!.primary
-                              : FOREST,
+                            color: premiumChrome ? shellText!.primary : FOREST,
                           }}
+                          aria-label="Decrease quantity"
                         >
                           &minus;
                         </button>
                         <span
-                          className="text-[13px] font-semibold w-6 text-center"
+                          className="text-[13px] font-semibold w-6 text-center tabular-nums leading-none"
                           style={{
-                            color: premiumChrome
-                              ? shellText!.primary
-                              : FOREST,
+                            color: premiumChrome ? shellText!.primary : FOREST,
                           }}
                         >
                           {sel?.quantity ?? 1}
@@ -4932,20 +4933,16 @@ function AddOnsSection({
                           onClick={() =>
                             updateQty(addon.id, (sel?.quantity ?? 1) + 1)
                           }
-                          className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
+                          className="min-h-7 min-w-7 rounded-none border-0 bg-transparent p-0 text-[15px] font-bold leading-none flex items-center justify-center transition-opacity hover:opacity-70"
                           style={{
-                            borderColor: premiumChrome
-                              ? "rgba(249,237,228,0.35)"
-                              : "#D5D0C8",
-                            color: premiumChrome
-                              ? shellText!.primary
-                              : FOREST,
+                            color: premiumChrome ? shellText!.primary : FOREST,
                           }}
+                          aria-label="Increase quantity"
                         >
                           +
                         </button>
                         <span
-                          className="text-[11px] ml-1"
+                          className="text-[11px] ml-0.5 leading-none"
                           style={{
                             color: premiumChrome
                               ? shellText!.secondary
@@ -4954,7 +4951,7 @@ function AddOnsSection({
                         >
                           {addon.unit_label ?? "units"}
                         </span>
-                      </div>
+                      </span>
                     )}
 
                     {isOn && addon.price_type === "tiered" && addon.tiers && (
@@ -4996,10 +4993,11 @@ function AddOnsSection({
                   </div>
                 </div>
 
-                <div className="text-left min-[420px]:text-right shrink-0 min-[420px]:pt-0.5 w-full min-[420px]:w-auto pl-14 min-[420px]:pl-0">
+                <div className="text-left min-[420px]:text-right shrink-0 min-[420px]:pt-0 w-full min-[420px]:w-auto pl-14 min-[420px]:pl-0">
                   <span
-                    className={`text-[13px] font-bold ${premiumChrome ? "font-serif" : ""}`}
+                    className="text-[13px] font-bold tabular-nums leading-none"
                     style={{
+                      fontFamily: "var(--font-body)",
                       color: isOn
                         ? premiumChrome
                           ? shellText!.primary
@@ -5126,7 +5124,8 @@ function AddOnsSection({
               >
                 <span>Total</span>
                 <span
-                  className={`tabular-nums text-[15px] ${premiumChrome ? "font-serif" : ""}`}
+                  className="tabular-nums text-[15px] leading-none"
+                  style={{ fontFamily: "var(--font-body)" }}
                 >
                   {fmtPrice(grandTotal)}
                 </span>

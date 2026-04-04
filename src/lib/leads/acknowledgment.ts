@@ -45,8 +45,8 @@ export async function sendLeadAcknowledgment(lead: {
       .join("<br/>");
 
     const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"/></head>
-<body style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;">
+<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body class="email-outer-gutter" style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;width:100%;max-width:600px;box-sizing:border-box;margin:0 auto;padding:16px 20px;">
   <p>Hi ${first.replace(/</g, "&lt;")},</p>
   <p>Thank you for reaching out. We've received your moving inquiry and are preparing your personalized quote.</p>
   <p>A member of our team will be in touch within the hour.<br/>

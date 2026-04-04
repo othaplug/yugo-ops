@@ -14,13 +14,20 @@ type Crew = { current_lat: number; current_lng: number; name?: string } | null;
  * Smooth position interpolation for the crew marker.
  * Animates from old → new position over ANIM_MS milliseconds.
  */
-function useAnimatedPosition(target: { lat: number; lng: number } | null, durationMs = 2000) {
+function useAnimatedPosition(
+  target: { lat: number; lng: number } | null,
+  durationMs = 2000,
+) {
   const [pos, setPos] = useState(target);
   const prevRef = useRef(target);
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!target) { setPos(null); prevRef.current = null; return; }
+    if (!target) {
+      setPos(null);
+      prevRef.current = null;
+      return;
+    }
 
     const prev = prevRef.current;
     prevRef.current = target;
@@ -57,18 +64,26 @@ const ROUTE_GOLD = "#2C3E2D";
 const CREW_RED = "#DC2626";
 
 /** Bearing in degrees (0 = north, 90 = east) from point A → point B. */
-function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
+function calcBearing(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLng = toRad(to.lng - from.lng);
   const lat1 = toRad(from.lat);
   const lat2 = toRad(to.lat);
   const y = Math.sin(dLng) * Math.cos(lat2);
-  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
 /** Tracks heading from consecutive raw GPS positions. */
-function useBearing(rawLat: number | null | undefined, rawLng: number | null | undefined): number | null {
+function useBearing(
+  rawLat: number | null | undefined,
+  rawLng: number | null | undefined,
+): number | null {
   const [bearing, setBearing] = useState<number | null>(null);
   const prevRef = useRef<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
@@ -136,7 +151,11 @@ function FitBoundsController({
     if (hasPickup && pickup) points.push([pickup.lng, pickup.lat]);
 
     if (points.length === 0) {
-      map.flyTo({ center: [center.longitude, center.latitude], zoom: 10, duration: 0 });
+      map.flyTo({
+        center: [center.longitude, center.latitude],
+        zoom: 10,
+        duration: 0,
+      });
       return;
     }
 
@@ -145,7 +164,20 @@ function FitBoundsController({
     const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
     const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
     map.fitBounds([sw, ne], { padding: 80, maxZoom: 15, duration: 500 });
-  }, [mapRef, crew?.current_lat, crew?.current_lng, dropoff?.lat, dropoff?.lng, pickup?.lat, pickup?.lng, hasCrew, hasDropoff, hasPickup, center.latitude, center.longitude]);
+  }, [
+    mapRef,
+    crew?.current_lat,
+    crew?.current_lng,
+    dropoff?.lat,
+    dropoff?.lng,
+    pickup?.lat,
+    pickup?.lng,
+    hasCrew,
+    hasDropoff,
+    hasPickup,
+    center.latitude,
+    center.longitude,
+  ]);
 
   return null;
 }
@@ -197,20 +229,28 @@ export function TrackLiveMapMapbox({
 
   // Last known location freshness
   const isLocationStale = lastLocationAt
-    ? (Date.now() - new Date(lastLocationAt).getTime()) > 5 * 60 * 1000  // >5 min
+    ? Date.now() - new Date(lastLocationAt).getTime() > 5 * 60 * 1000 // >5 min
     : false;
   const lastSeenLabel = lastLocationAt
     ? (() => {
-        const sec = Math.floor((Date.now() - new Date(lastLocationAt).getTime()) / 1000);
+        const sec = Math.floor(
+          (Date.now() - new Date(lastLocationAt).getTime()) / 1000,
+        );
         if (sec < 60) return "Just now";
         if (sec < 120) return "1 min ago";
         if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
         return `${Math.floor(sec / 3600)}h ago`;
       })()
     : null;
-  const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(null);
-  const [completedCoords, setCompletedCoords] = useState<[number, number][] | null>(null);
-  const [remainingCoords, setRemainingCoords] = useState<[number, number][] | null>(null);
+  const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(
+    null,
+  );
+  const [completedCoords, setCompletedCoords] = useState<
+    [number, number][] | null
+  >(null);
+  const [remainingCoords, setRemainingCoords] = useState<
+    [number, number][] | null
+  >(null);
 
   // During pickup stages: route runs from crew → pickup address.
   // During destination stages: route runs from pickup → dropoff (full planned route).
@@ -227,21 +267,34 @@ export function TrackLiveMapMapbox({
     try {
       const res = await fetch(url);
       const data = await res.json();
-      const coordsList = data?.routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;
+      const coordsList = data?.routes?.[0]?.geometry?.coordinates as
+        | [number, number][]
+        | undefined;
       if (Array.isArray(coordsList) && coordsList.length >= 2) {
         setRouteCoords(coordsList);
       } else {
         setRouteCoords(null);
       }
     } catch (err) {
-      console.warn("[TrackLiveMap] Failed to fetch directions, using straight line", err);
+      console.warn(
+        "[TrackLiveMap] Failed to fetch directions, using straight line",
+        err,
+      );
       setRouteCoords(null);
     }
-  // During pickup phase we re-fetch as crew moves (every ~30s via parent poll)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeOrigin?.lat, routeOrigin?.lng, routeDest?.lat, routeDest?.lng, mapboxAccessToken]);
+    // During pickup phase we re-fetch as crew moves (every ~30s via parent poll)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    routeOrigin?.lat,
+    routeOrigin?.lng,
+    routeDest?.lat,
+    routeDest?.lng,
+    mapboxAccessToken,
+  ]);
 
-  useEffect(() => { fetchRoute(); }, [fetchRoute]);
+  useEffect(() => {
+    fetchRoute();
+  }, [fetchRoute]);
 
   // Split route into completed and remaining based on animated crew position
   useEffect(() => {
@@ -255,7 +308,9 @@ export function TrackLiveMapMapbox({
     let splitIdx = 0;
     for (let i = 0; i < routeCoords.length; i++) {
       const [lng, lat] = routeCoords[i];
-      const dist = Math.sqrt((lng - animatedCrew.lng) ** 2 + (lat - animatedCrew.lat) ** 2);
+      const dist = Math.sqrt(
+        (lng - animatedCrew.lng) ** 2 + (lat - animatedCrew.lat) ** 2,
+      );
       if (dist < minDist) {
         minDist = dist;
         splitIdx = i;
@@ -294,7 +349,10 @@ export function TrackLiveMapMapbox({
       properties: {},
       geometry: {
         type: "LineString" as const,
-        coordinates: [[routeOrigin.lng, routeOrigin.lat], [routeDest.lng, routeDest.lat]] as [number, number][],
+        coordinates: [
+          [routeOrigin.lng, routeOrigin.lat],
+          [routeDest.lng, routeDest.lat],
+        ] as [number, number][],
       },
     };
   }, [routeCoords, routeOrigin, routeDest]);
@@ -307,7 +365,12 @@ export function TrackLiveMapMapbox({
       style={{ width: "100%", height: "100%" }}
       mapStyle="mapbox://styles/mapbox/light-v11"
     >
-      <FitBoundsController crew={crew} pickup={pickup ?? null} dropoff={dropoff ?? null} center={center} />
+      <FitBoundsController
+        crew={crew}
+        pickup={pickup ?? null}
+        dropoff={dropoff ?? null}
+        center={center}
+      />
       <MapResizeOnSignal signal={resizeSignal} />
 
       {/* Completed route: solid gold */}
@@ -361,11 +424,18 @@ export function TrackLiveMapMapbox({
           - During pickup phase: gold pulsing "active destination" pin
           - During destination phase: small green dot (origin reference) */}
       {pickup && (
-        <Marker longitude={pickup.lng} latitude={pickup.lat} anchor={isPickupPhase ? "bottom" : "center"}>
+        <Marker
+          longitude={pickup.lng}
+          latitude={pickup.lat}
+          anchor={isPickupPhase ? "bottom" : "center"}
+        >
           {isPickupPhase ? (
             <div className="flex flex-col items-center">
               <div className="w-9 h-9 rounded-full bg-[#2C3E2D] border-2 border-white shadow-lg flex items-center justify-center relative">
-                <div className="absolute -inset-1.5 rounded-full bg-[#2C3E2D] opacity-25 animate-ping" style={{ animationDuration: "2s" }} />
+                <div
+                  className="absolute -inset-1.5 rounded-full bg-[#2C3E2D] opacity-25 animate-ping"
+                  style={{ animationDuration: "2s" }}
+                />
                 <Sun size={16} color="#FFFFFF" aria-hidden />
               </div>
               <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#2C3E2D] -mt-0.5" />
@@ -379,7 +449,10 @@ export function TrackLiveMapMapbox({
       {/* Destination, Home icon (dark, pin-style); dimmed during pickup phase */}
       {dropoff && (
         <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="bottom">
-          <div className="flex flex-col items-center" style={{ opacity: isPickupPhase ? 0.45 : 1 }}>
+          <div
+            className="flex flex-col items-center"
+            style={{ opacity: isPickupPhase ? 0.45 : 1 }}
+          >
             <div className="w-9 h-9 rounded-full bg-[#1A1A1A] border-2 border-white shadow-lg flex items-center justify-center">
               <House size={16} color="#FFFFFF" aria-hidden />
             </div>
@@ -400,8 +473,15 @@ export function TrackLiveMapMapbox({
 
       {/* Crew, directional arrow rotated to heading */}
       {hasPosition && animatedCrew && (
-        <Marker longitude={animatedCrew.lng} latitude={animatedCrew.lat} anchor="center">
-          <div className="relative flex items-center justify-center" style={{ width: 44, height: 44 }}>
+        <Marker
+          longitude={animatedCrew.lng}
+          latitude={animatedCrew.lat}
+          anchor="center"
+        >
+          <div
+            className="relative flex items-center justify-center"
+            style={{ width: 44, height: 44 }}
+          >
             {/* Pulse ring */}
             {!isLocationStale && (
               <span
@@ -492,16 +572,25 @@ export function TrackLiveMapMapbox({
             className="rounded-lg px-3 py-2 shadow-lg text-white max-w-[220px]"
             style={{ background: "rgba(74, 21, 40, 0.92)" }}
           >
-            <span className="text-lg font-bold tabular-nums">{etaOverlayMinutes} min</span>
-            <span className="text-[11px] ml-1.5 opacity-85">estimated arrival</span>
+            <span className="text-lg font-bold tabular-nums">
+              {etaOverlayMinutes} min
+            </span>
+            <span className="text-[11px] ml-1.5 opacity-85">
+              estimated arrival
+            </span>
             {distanceRemainingM != null && distanceRemainingM > 0 && (
-              <p className="text-[10px] opacity-80 mt-0.5">{formatDistClientM(distanceRemainingM)} remaining</p>
+              <p className="text-[10px] opacity-80 mt-0.5">
+                {formatDistClientM(distanceRemainingM)} remaining
+              </p>
             )}
-            {isNavigating && <p className="text-[9px] opacity-70 mt-1">Crew is navigating in the Yugo app</p>}
+            {isNavigating && (
+              <p className="text-[9px] opacity-70 mt-1">
+                Crew is navigating in the Yugo app
+              </p>
+            )}
           </div>
         </div>
       )}
-
     </Map>
   );
 }

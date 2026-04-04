@@ -194,6 +194,39 @@ export interface ValuationUpgrade {
   assumed_shipment_value: number;
 }
 
+/** DB rows may still use legacy `from_package` values from older migrations. */
+const VALUATION_FROM_PACKAGE_ALIASES: Record<string, readonly string[]> = {
+  essential: ["essential", "essentials", "curated"],
+  signature: ["signature", "premier"],
+  estate: ["estate"],
+};
+
+export function valuationUpgradeMatchesPackage(
+  rowFromPackage: string,
+  tierKey: string,
+): boolean {
+  const key = tierKey.toLowerCase();
+  const aliases = VALUATION_FROM_PACKAGE_ALIASES[key];
+  const norm = rowFromPackage.toLowerCase();
+  if (aliases) return aliases.includes(norm);
+  return norm === key;
+}
+
+/** Match the client protection card: same package + target tier (and legacy from_package names). */
+export function findValuationUpgrade(
+  upgrades: ValuationUpgrade[],
+  packageKey: string,
+  toTier: string,
+): ValuationUpgrade | null {
+  return (
+    upgrades.find(
+      (u) =>
+        valuationUpgradeMatchesPackage(u.from_package, packageKey) &&
+        u.to_tier === toTier,
+    ) ?? null
+  );
+}
+
 export interface HighValueDeclaration {
   id?: string;
   item_name: string;
