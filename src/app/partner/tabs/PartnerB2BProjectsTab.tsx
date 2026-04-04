@@ -188,7 +188,7 @@ const ROOMS = [
 
 // Vendor-accent colors for the Gantt chart (cycles)
 const VENDOR_COLORS = [
-  "#C9A962", "#3B82F6", "#10B981", "#8B5CF6", "#F59E0B",
+  "#2C3E2D", "#3B82F6", "#10B981", "#8B5CF6", "#F59E0B",
   "#EF4444", "#06B6D4", "#EC4899", "#6366F1", "#14B8A6",
 ];
 
@@ -634,12 +634,12 @@ export default function PartnerB2BProjectsTab({
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
             <input value={npName} onChange={(e) => setNpName(e.target.value)} placeholder="e.g. Wilson Residence"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" autoFocus />
           </div>
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Client Name</label>
             <input value={npClientName} onChange={(e) => setNpClientName(e.target.value)} placeholder="Sarah & James Wilson"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" />
           </div>
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
@@ -648,26 +648,26 @@ export default function PartnerB2BProjectsTab({
               onRawChange={setNpAddress}
               onChange={(r) => setNpAddress(r.fullAddress)}
               placeholder="Start typing address…"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Start Date</label>
               <input type="date" value={npStartDate} onChange={(e) => setNpStartDate(e.target.value)}
-                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" />
             </div>
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Target End Date</label>
               <input type="date" value={npEndDate} onChange={(e) => setNpEndDate(e.target.value)}
-                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" />
             </div>
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setShowNewProject(false)}
               className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#454545] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={createProject} disabled={npSaving}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
               {npSaving ? "Creating…" : "Create Project"}
             </button>
           </div>
@@ -694,12 +694,12 @@ export default function PartnerB2BProjectsTab({
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Project Name *</label>
             <input value={epName} onChange={(e) => setEpName(e.target.value)} placeholder="e.g. Wilson Residence"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" autoFocus />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" autoFocus />
           </div>
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Client Name</label>
             <input value={epClientName} onChange={(e) => setEpClientName(e.target.value)} placeholder="Sarah & James Wilson"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" />
           </div>
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Site Address</label>
@@ -708,31 +708,31 @@ export default function PartnerB2BProjectsTab({
               onRawChange={setEpAddress}
               onChange={(r) => setEpAddress(r.fullAddress)}
               placeholder="Start typing address…"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors"
             />
           </div>
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Description</label>
             <textarea value={epDescription} onChange={(e) => setEpDescription(e.target.value)} placeholder="Project description"
-              rows={2} className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors resize-none" />
+              rows={2} className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Start Date</label>
               <input type="date" value={epStartDate} onChange={(e) => setEpStartDate(e.target.value)}
-                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" />
             </div>
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Target End Date</label>
               <input type="date" value={epEndDate} onChange={(e) => setEpEndDate(e.target.value)}
-                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" />
             </div>
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setShowEditProject(false)}
               className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#454545] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={updateProject} disabled={epSaving}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
               {epSaving ? "Saving…" : "Save changes"}
             </button>
           </div>
@@ -758,7 +758,7 @@ export default function PartnerB2BProjectsTab({
             <div className="flex items-center justify-between mb-1">
               <label className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Item Name *</label>
               <button type="button" onClick={addItemRow}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C9A962] hover:underline">
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2C3E2D] hover:underline">
                 <Plus className="w-3.5 h-3.5" /> Add item
               </button>
             </div>
@@ -768,10 +768,10 @@ export default function PartnerB2BProjectsTab({
                   <div className="grid grid-cols-[1fr_56px_44px] gap-2 items-end">
                     <input value={row.name} onChange={(e) => updateItemRow(idx, "name", e.target.value)}
                       placeholder="e.g. Cloud Sectional Sofa"
-                      className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+                      className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors"
                       autoFocus={idx === 0} />
                     <input type="number" min="1" value={row.qty} onChange={(e) => updateItemRow(idx, "qty", e.target.value)}
-                      className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors"
+                      className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors"
                       aria-label="Quantity" />
                     <button type="button" onClick={() => removeItemRow(idx)} title="Remove item"
                       className={`p-2.5 rounded-lg border transition-colors ${aiItems.length > 1 ? "border-[#E8E4DF] text-[#454545] hover:bg-red-50 hover:border-red-200 hover:text-red-500" : "border-transparent text-[#9CA3AF] cursor-default"}`}
@@ -783,14 +783,14 @@ export default function PartnerB2BProjectsTab({
                     <div className="flex items-center gap-2">
                       <input value={row.dimensions} onChange={(e) => updateItemRow(idx, "dimensions", e.target.value)}
                         placeholder='e.g. 84 × 42 × 30"'
-                        className="flex-1 text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none"
+                        className="flex-1 text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] outline-none"
                         autoFocus />
                       <button type="button" onClick={() => toggleItemDims(idx)}
                         className="text-[11px] text-[#454545] hover:underline shrink-0">− Hide</button>
                     </div>
                   ) : (
                     <button type="button" onClick={() => toggleItemDims(idx)}
-                      className="text-[11px] text-[#C9A962] hover:underline">
+                      className="text-[11px] text-[#2C3E2D] hover:underline">
                       + Add dimensions (optional)
                     </button>
                   )}
@@ -804,12 +804,12 @@ export default function PartnerB2BProjectsTab({
             <div className="flex items-center justify-between mb-1">
               <label className="text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Vendor *</label>
               <button type="button" onClick={() => setAiShowContact(!aiShowContact)}
-                className="text-[11px] text-[#C9A962] hover:underline">
+                className="text-[11px] text-[#2C3E2D] hover:underline">
                 {aiShowContact ? "– Hide contact details" : "+ Add vendor contact"}
               </button>
             </div>
             <input value={aiVendorName} onChange={(e) => setAiVendorName(e.target.value)} placeholder="e.g. Poliform, RH, local vendor"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" />
           </div>
 
           {aiShowContact && (
@@ -818,18 +818,18 @@ export default function PartnerB2BProjectsTab({
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Contact Name</label>
                   <input value={aiContactName} onChange={(e) => setAiContactName(e.target.value)} placeholder="Sales rep name"
-                    className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
+                    className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] outline-none" />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Phone</label>
                   <input value={aiContactPhone} onChange={(e) => setAiContactPhone(e.target.value)} placeholder="+1 (647) …"
-                    className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
+                    className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] outline-none" />
                 </div>
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Email</label>
                 <input value={aiContactEmail} onChange={(e) => setAiContactEmail(e.target.value)} placeholder="vendor@example.com"
-                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
+                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] outline-none" />
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Pickup Address</label>
@@ -838,13 +838,13 @@ export default function PartnerB2BProjectsTab({
                   onRawChange={setAiPickupAddr}
                   onChange={(r) => setAiPickupAddr(r.fullAddress)}
                   placeholder="200 King St W, Toronto"
-                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none"
+                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] outline-none"
                 />
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wide text-[#454545] mb-1">Pickup Window</label>
                 <input value={aiPickupWindow} onChange={(e) => setAiPickupWindow(e.target.value)} placeholder="Mon–Fri 9am–4pm, loading dock"
-                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none" />
+                  className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] outline-none" />
               </div>
             </div>
           )}
@@ -854,12 +854,12 @@ export default function PartnerB2BProjectsTab({
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Order Number</label>
               <input value={aiOrderNum} onChange={(e) => setAiOrderNum(e.target.value)} placeholder="PF-4521"
-                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" />
             </div>
             <div>
               <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Room Destination</label>
               <select value={aiRoom} onChange={(e) => setAiRoom(e.target.value)}
-                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
+                className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#2C3E2D] outline-none">
                 <option value="">Select room…</option>
                 {ROOMS.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
@@ -870,7 +870,7 @@ export default function PartnerB2BProjectsTab({
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Delivery Method</label>
             <select value={aiDeliveryMethod} onChange={(e) => setAiDeliveryMethod(e.target.value)}
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#C9A962] outline-none">
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] focus:border-[#2C3E2D] outline-none">
               {Object.entries(DELIVERY_METHOD_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
@@ -879,23 +879,23 @@ export default function PartnerB2BProjectsTab({
           <div>
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Declared Value ($)</label>
             <input type="number" min="0" value={aiValue} onChange={(e) => setAiValue(e.target.value)} placeholder="8,200"
-              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none transition-colors" />
+              className="w-full text-[var(--text-base)] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none transition-colors" />
           </div>
 
           {/* Special handling */}
           <div className="space-y-2">
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A]">Special Handling</label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={aiCrating} onChange={(e) => setAiCrating(e.target.checked)} className="w-4 h-4 accent-[#C9A962]" />
+              <input type="checkbox" checked={aiCrating} onChange={(e) => setAiCrating(e.target.checked)} className="w-4 h-4 accent-[#2C3E2D]" />
               <span className="text-[13px] text-[#444]">Crating required</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={aiAssembly} onChange={(e) => setAiAssembly(e.target.checked)} className="w-4 h-4 accent-[#C9A962]" />
+              <input type="checkbox" checked={aiAssembly} onChange={(e) => setAiAssembly(e.target.checked)} className="w-4 h-4 accent-[#2C3E2D]" />
               <span className="text-[13px] text-[#444]">Assembly required</span>
             </label>
             <textarea value={aiNotes} onChange={(e) => setAiNotes(e.target.value)} rows={2}
               placeholder="Special notes (e.g. legs ship separately, white glove only)…"
-              className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none resize-none" />
+              className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] outline-none resize-none" />
           </div>
 
           {/* Photo */}
@@ -910,7 +910,7 @@ export default function PartnerB2BProjectsTab({
                 <button type="button" onClick={() => setAiPhoto(null)} className="text-[11px] text-red-500 hover:underline shrink-0">Remove</button>
               </div>
             ) : (
-              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[#E8E4DF] text-[12px] text-[#5C5853] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors">
+              <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[#E8E4DF] text-[12px] text-[#5C5853] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors">
                 <Camera className="w-3.5 h-3.5" />
                 Upload photo
                 <input type="file" accept="image/*" className="hidden"
@@ -924,7 +924,7 @@ export default function PartnerB2BProjectsTab({
             <button type="button" onClick={() => { setShowAddItem(false); resetAddItem(); }}
               className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#454545] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={addItem} disabled={aiSaving}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
               {aiSaving ? "Adding…" : "Add Item"}
             </button>
           </div>
@@ -956,7 +956,7 @@ export default function PartnerB2BProjectsTab({
                   <button key={s} type="button" onClick={() => setNewStatus(s)}
                     className={`px-2.5 py-2 rounded-lg text-[11px] font-semibold border transition-colors text-left ${
                       newStatus === s
-                        ? `border-[#C9A962] bg-[#C9A962]/10 ${cfg.color}`
+                        ? `border-[#2C3E2D] bg-[#2C3E2D]/10 ${cfg.color}`
                         : `border-[#E8E4DF] ${cfg.color} opacity-60 hover:opacity-100`
                     }`}>
                     {cfg.label}
@@ -969,13 +969,13 @@ export default function PartnerB2BProjectsTab({
             <label className="block text-[12px] font-bold tracking-wider uppercase text-[#1A1A1A] mb-1">Notes (optional)</label>
             <textarea value={statusNotes} onChange={(e) => setStatusNotes(e.target.value)} rows={2}
               placeholder="e.g. Received in perfect condition"
-              className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#C9A962] outline-none resize-none" />
+              className="w-full text-[13px] bg-white border border-[#E8E4DF] rounded-lg px-3 py-2.5 text-[#1A1A1A] placeholder:text-[#6B6B6B] focus:border-[#2C3E2D] outline-none resize-none" />
           </div>
           <div className="flex gap-2 pb-1">
             <button type="button" onClick={() => setStatusItem(null)}
               className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#E8E4DF] text-[#454545] hover:bg-[#F5F3F0] transition-colors">Cancel</button>
             <button type="button" onClick={submitStatusUpdate} disabled={statusSaving || !newStatus}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] disabled:opacity-60 transition-colors">
               {statusSaving ? "Updating…" : "Update"}
             </button>
           </div>
@@ -1015,7 +1015,7 @@ export default function PartnerB2BProjectsTab({
               }
               setScheduleItem(null);
             }}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89952] transition-colors">
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89952] transition-colors">
             Schedule →
           </button>
         </div>
@@ -1380,7 +1380,7 @@ export default function PartnerB2BProjectsTab({
               .map((item) => {
                 const st = getItemStatus(item);
                 const cfg = statusCfg(st);
-                const color = vendorColor[getVendorLabel(item)] || "#C9A962";
+                const color = vendorColor[getVendorLabel(item)] || "#2C3E2D";
                 const startPct = pct(getItemStart(item));
                 const endPct = pct(getItemEnd(item));
                 const barWidth = Math.max(endPct - startPct, 1.5);
@@ -1600,7 +1600,7 @@ export default function PartnerB2BProjectsTab({
                     <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{
                       backgroundColor: e.event_type === "issue_flagged" ? "#D14343"
                         : e.event_type.includes("completed") || e.event_type.includes("delivered") || e.event_type.includes("received") ? "#2D9F5A"
-                        : "#C9A962"
+                        : "#2C3E2D"
                     }} />
                     <div>
                       <div className="text-[12px] text-[var(--tx)]">{e.event_description}</div>

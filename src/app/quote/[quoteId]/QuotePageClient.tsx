@@ -96,6 +96,18 @@ import {
   ESTATE_PAGE_BG,
   ESTATE_ROSE,
 } from "./estate-quote-ui";
+import {
+  SIGNATURE_PAGE_BG,
+  SIGNATURE_CTA,
+  signatureCtaButtonClassCompact,
+} from "./signature-quote-ui";
+import {
+  premiumShellKind,
+  premiumShellInk,
+  premiumShellSectionBorderClass,
+  premiumShellRuleRgba,
+  type PremiumShellKind,
+} from "./quote-premium-shell";
 import LongDistanceLayout from "./layouts/LongDistanceLayout";
 import OfficeLayout from "./layouts/OfficeLayout";
 import SingleItemLayout from "./layouts/SingleItemLayout";
@@ -356,29 +368,51 @@ export default function QuotePageClient({
   );
 
   const isEstateFlow = isResidential && selectedTier === "estate";
-  /** Estate tier only: wine page shell, progress bar, and cream-on-wine sections below the light island. */
-  const wineQuoteChrome = isEstateFlow;
-  const shellInk = wineQuoteChrome
-    ? ESTATE_ON_WINE
-    : {
-        primary: FOREST,
-        body: FOREST_BODY,
-        muted: FOREST_MUTED,
-        secondary: FOREST_BODY,
-        kicker: FOREST,
-      };
-  const shellBorderTopClass = wineQuoteChrome
-    ? "border-[#66143D]/30"
-    : "border-[#2C3E2D]/15";
-  /** Trust bar: 2+1 grid below sm; dividers only in that layout */
-  const trustBarTopLeftClass = wineQuoteChrome
-    ? "min-w-0 border-b border-r border-[#66143D]/25 pb-4 pr-2 sm:border-0 sm:pb-0 sm:pr-0"
-    : "min-w-0 border-b border-r border-[#2C3E2D]/12 pb-4 pr-2 sm:border-0 sm:pb-0 sm:pr-0";
-  const trustBarTopRightClass = wineQuoteChrome
-    ? "min-w-0 border-b border-[#66143D]/25 pb-4 pl-2 sm:border-0 sm:pb-0 sm:pl-0"
-    : "min-w-0 border-b border-[#2C3E2D]/12 pb-4 pl-2 sm:border-0 sm:pb-0 sm:pl-0";
+  const isSignatureFlow = isResidential && selectedTier === "signature";
   const residentialSolidCtaClass =
     "w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90";
+  /** Estate (wine) or Signature (green) — colour shell only; Estate-only copy uses `isEstateFlow`. */
+  const shellKind: PremiumShellKind = premiumShellKind(
+    isResidential,
+    selectedTier,
+  );
+  const premiumShell = shellKind !== "none";
+  const darkInk = premiumShellInk(shellKind);
+  const shellInk =
+    darkInk ??
+    ({
+      primary: FOREST,
+      body: FOREST_BODY,
+      muted: FOREST_MUTED,
+      secondary: FOREST_BODY,
+      kicker: FOREST,
+    } as const);
+  const shellBorderTopClass = premiumShellSectionBorderClass(shellKind);
+  const premiumCtaFill =
+    shellKind === "wine"
+      ? ESTATE_ROSE
+      : shellKind === "signature"
+        ? SIGNATURE_CTA
+        : FOREST;
+  const compactPremiumCtaClass =
+    shellKind === "wine"
+      ? estateCtaButtonClassCompact
+      : shellKind === "signature"
+        ? signatureCtaButtonClassCompact
+        : residentialSolidCtaClass;
+  /** Trust bar: 2+1 grid below sm; dividers tuned per shell */
+  const trustBarTopLeftClass =
+    shellKind === "wine"
+      ? "min-w-0 border-b border-r border-[#66143D]/25 pb-4 pr-2 sm:border-0 sm:pb-0 sm:pr-0"
+      : shellKind === "signature"
+        ? "min-w-0 border-b border-r border-[#4A6B52]/30 pb-4 pr-2 sm:border-0 sm:pb-0 sm:pr-0"
+        : "min-w-0 border-b border-r border-[#2C3E2D]/12 pb-4 pr-2 sm:border-0 sm:pb-0 sm:pr-0";
+  const trustBarTopRightClass =
+    shellKind === "wine"
+      ? "min-w-0 border-b border-[#66143D]/25 pb-4 pl-2 sm:border-0 sm:pb-0 sm:pl-0"
+      : shellKind === "signature"
+        ? "min-w-0 border-b border-[#4A6B52]/30 pb-4 pl-2 sm:border-0 sm:pb-0 sm:pl-0"
+        : "min-w-0 border-b border-[#2C3E2D]/12 pb-4 pl-2 sm:border-0 sm:pb-0 sm:pl-0";
 
   const verifyReferral = useCallback(async () => {
     if (!referralCode.trim()) return;
@@ -1178,8 +1212,14 @@ export default function QuotePageClient({
      ══════════════════════════════════════════════ */
   return (
     <div
-      className={`min-h-screen transition-all duration-700 ${isEstateFlow ? "bg-[#2B0416] text-[#F9EDE4]" : ""}`}
-      style={{ backgroundColor: isEstateFlow ? undefined : CREAM }}
+      className={`min-h-screen transition-all duration-700 ${
+        premiumShell
+          ? shellKind === "wine"
+            ? "bg-[#2B0416] text-[#F9EDE4]"
+            : "bg-[#15261A] text-[#F4FAF5]"
+          : ""
+      }`}
+      style={{ backgroundColor: premiumShell ? undefined : CREAM }}
       data-theme="light"
     >
       {expiringSoon && (
@@ -1198,7 +1238,10 @@ export default function QuotePageClient({
       {/* ═══ HERO — deep wine (#2B0416) for all flows; headline + meta live in this block ═══ */}
       <header
         className="relative overflow-hidden text-[#F9EDE4]"
-        style={{ backgroundColor: ESTATE_PAGE_BG }}
+        style={{
+          backgroundColor:
+            shellKind === "signature" ? SIGNATURE_PAGE_BG : ESTATE_PAGE_BG,
+        }}
       >
         <div
           className="absolute inset-0 opacity-10 pointer-events-none"
@@ -1298,7 +1341,7 @@ export default function QuotePageClient({
         <ProgressBar
           currentStep={currentStep}
           onStepClick={handleStepClick}
-          estateMode={wineQuoteChrome}
+          premiumShellKind={shellKind}
         />
       )}
 
@@ -1306,8 +1349,10 @@ export default function QuotePageClient({
         {/* ═══ GUARANTEED PRICE + seasonal + tier or service layouts (cream island, or full wine when Estate tier selected) ═══ */}
         <div
           className={
-            isEstateFlow
-              ? "bg-[#2B0416] text-[#F9EDE4] -mx-5 md:-mx-6 px-5 md:px-6 pt-3 pb-10 mb-2 rounded-b-md"
+            premiumShell
+              ? shellKind === "wine"
+                ? "bg-[#2B0416] text-[#F9EDE4] -mx-5 md:-mx-6 px-5 md:px-6 pt-3 pb-10 mb-2 rounded-b-md"
+                : "bg-[#15261A] text-[#F4FAF5] -mx-5 md:-mx-6 px-5 md:px-6 pt-3 pb-10 mb-2 rounded-b-md"
               : "bg-[#FFFBF7] text-gray-900 -mx-5 md:-mx-6 px-5 md:px-6 pt-3 pb-10 mb-2 rounded-b-md"
           }
         >
@@ -1319,10 +1364,10 @@ export default function QuotePageClient({
               <div
                 className="box-border w-full min-w-0 max-w-full sm:w-fit sm:max-w-2xl sm:mx-auto rounded-none px-4 py-3.5 text-center sm:px-5 border-t-2"
                 style={
-                  isEstateFlow
+                  premiumShell
                     ? {
                         backgroundColor: "rgba(249, 237, 228, 0.08)",
-                        borderTopColor: ESTATE_ON_WINE.kicker,
+                        borderTopColor: shellInk.kicker,
                       }
                     : {
                         backgroundColor: `${FOREST}05`,
@@ -1333,14 +1378,14 @@ export default function QuotePageClient({
                 <p
                   className="text-[12px] font-bold tracking-wider uppercase sm:text-[13px]"
                   style={{
-                    color: isEstateFlow ? ESTATE_ON_WINE.primary : FOREST,
+                    color: premiumShell ? shellInk.primary : FOREST,
                   }}
                 >
                   Guaranteed Price
                 </p>
                 <p
                   className="text-[11px] leading-snug sm:text-[12px]"
-                  style={{ color: isEstateFlow ? ESTATE_ON_WINE.body : FOREST }}
+                  style={{ color: premiumShell ? shellInk.body : FOREST }}
                 >
                   The price you see is the price you pay. No hourly surprises.
                   No hidden fees.
@@ -1369,7 +1414,7 @@ export default function QuotePageClient({
                   basePrice={Math.round(grandTotal / peakMod)}
                   selectedMonth={moveMonth}
                   compact
-                  onDarkBackground={isEstateFlow}
+                  onDarkBackground={premiumShell}
                 />
               </div>
             );
@@ -1385,7 +1430,7 @@ export default function QuotePageClient({
                 onSelectTier={handleSelectTier}
                 recommendedTier={recommendedTierNorm}
                 hasSelection={false}
-                onWineSurface={isEstateFlow}
+                darkShellInk={darkInk}
                 tierFeaturesConfig={residentialTierFeatures}
                 tierCardAdditions={residentialTierCardAdditions}
                 useAdditiveTierCards={residentialTierUseAdditiveCards}
@@ -1612,6 +1657,7 @@ export default function QuotePageClient({
                   truckSecondary={quote.truck_secondary}
                   crewSize={quote.est_crew_size}
                   truckPricingNote={truckBreakdownClientNote}
+                  premiumShellKind={shellKind}
                 />
               </section>
             )}
@@ -1658,7 +1704,8 @@ export default function QuotePageClient({
                 isProgressive={isResidential}
                 onContinue={handleAddonsComplete}
                 showContinueButton={isResidential && currentStep === 2}
-                estateChrome={wineQuoteChrome}
+                premiumShellKind={shellKind}
+                estateVoiceChrome={isEstateFlow}
               />
             </section>
           )}
@@ -1694,7 +1741,7 @@ export default function QuotePageClient({
                   setDeclarations((prev) => prev.filter((_, i) => i !== idx))
                 }
                 journeyCopy={valuationJourneyCopy}
-                estateChrome={wineQuoteChrome}
+                premiumShellKind={shellKind}
               />
               {isResidential && currentStep === 3 && (
                 <div className="mt-6 pb-10 flex flex-col items-center gap-3">
@@ -1702,12 +1749,12 @@ export default function QuotePageClient({
                     type="button"
                     onClick={handleProtectionComplete}
                     className={
-                      wineQuoteChrome
-                        ? estateCtaButtonClassCompact
+                      premiumShell
+                        ? compactPremiumCtaClass
                         : residentialSolidCtaClass
                     }
                     style={
-                      wineQuoteChrome ? undefined : { backgroundColor: FOREST }
+                      premiumShell ? undefined : { backgroundColor: FOREST }
                     }
                   >
                     Continue
@@ -1744,7 +1791,7 @@ export default function QuotePageClient({
                   selectedAddons={selectedAddons}
                   pickupRows={clientPickupRows}
                   dropoffRows={clientDropoffRows}
-                  estateChrome={wineQuoteChrome}
+                  premiumShellKind={shellKind}
                   tax={tax}
                   grandTotal={grandTotal}
                   deposit={deposit}
@@ -1759,8 +1806,10 @@ export default function QuotePageClient({
                 <div
                   className={`mb-6 px-4 py-3.5 rounded-lg border ${shellBorderTopClass}`}
                   style={{
-                    backgroundColor: wineQuoteChrome
-                      ? "rgba(102,20,61,0.12)"
+                    backgroundColor: premiumShell
+                      ? shellKind === "wine"
+                        ? "rgba(102,20,61,0.12)"
+                        : "rgba(74,107,82,0.16)"
                       : `${FOREST}08`,
                   }}
                 >
@@ -1816,12 +1865,12 @@ export default function QuotePageClient({
                     type="button"
                     onClick={handleConfirmComplete}
                     className={
-                      wineQuoteChrome
-                        ? estateCtaButtonClassCompact
+                      premiumShell
+                        ? compactPremiumCtaClass
                         : residentialSolidCtaClass
                     }
                     style={
-                      wineQuoteChrome ? undefined : { backgroundColor: FOREST }
+                      premiumShell ? undefined : { backgroundColor: FOREST }
                     }
                   >
                     {isResidential ? "Review & reserve" : "Proceed to payment"}
@@ -1882,7 +1931,7 @@ export default function QuotePageClient({
               <div
                 className="flex-1 min-w-[1.5rem] h-px max-w-[4.5rem] sm:max-w-none"
                 style={{
-                  backgroundColor: wineQuoteChrome
+                  backgroundColor: premiumShell
                     ? "rgba(249, 237, 228, 0.28)"
                     : "rgba(44, 62, 45, 0.18)",
                 }}
@@ -1898,7 +1947,7 @@ export default function QuotePageClient({
               <div
                 className="flex-1 min-w-[1.5rem] h-px max-w-[4.5rem] sm:max-w-none"
                 style={{
-                  backgroundColor: wineQuoteChrome
+                  backgroundColor: premiumShell
                     ? "rgba(249, 237, 228, 0.28)"
                     : "rgba(44, 62, 45, 0.18)",
                 }}
@@ -1962,7 +2011,13 @@ export default function QuotePageClient({
                   quoteData={contractData}
                   companyLegalName={branding.companyLegal}
                   companyDisplayName={branding.brand}
-                  estateAgreementChrome={wineQuoteChrome}
+                  agreementPremiumShell={
+                    isEstateFlow
+                      ? "wine"
+                      : isSignatureFlow
+                        ? "signature"
+                        : undefined
+                  }
                   onSigned={(data) => {
                     setSignedName(data.typed_name);
                     setContractSigned(true);
@@ -2068,7 +2123,7 @@ export default function QuotePageClient({
                       onClick={() => void handleB2bInvoiceConfirm()}
                       className="w-full py-3.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-opacity disabled:opacity-50"
                       style={{
-                        backgroundColor: wineQuoteChrome ? ESTATE_ROSE : FOREST,
+                        backgroundColor: premiumCtaFill,
                       }}
                     >
                       {invoiceConfirmLoading
@@ -2182,11 +2237,20 @@ export default function QuotePageClient({
               )}
             </p>
             <div
-              className={`mt-6 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border ${wineQuoteChrome ? "border-[#66143D]/35" : "border-[#2C3E2D]/20"}`}
+              className={`mt-6 inline-flex items-center gap-3 px-5 py-2.5 rounded-full border ${
+                shellKind === "wine"
+                  ? "border-[#66143D]/35"
+                  : shellKind === "signature"
+                    ? "border-[#4A6B52]/40"
+                    : "border-[#2C3E2D]/20"
+              }`}
               style={{
-                backgroundColor: wineQuoteChrome
-                  ? "rgba(102,20,61,0.2)"
-                  : `${FOREST}0D`,
+                backgroundColor:
+                  shellKind === "wine"
+                    ? "rgba(102,20,61,0.2)"
+                    : shellKind === "signature"
+                      ? "rgba(74,107,82,0.22)"
+                      : `${FOREST}0D`,
               }}
             >
               <span
@@ -2227,7 +2291,7 @@ export default function QuotePageClient({
                   href={deliveryTrackingUrl}
                   className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 min-h-[48px]"
                   style={{
-                    backgroundColor: wineQuoteChrome ? ESTATE_ROSE : FOREST,
+                    backgroundColor: premiumCtaFill,
                   }}
                 >
                   Open live delivery tracking
@@ -2248,8 +2312,8 @@ export default function QuotePageClient({
           <div className="flex justify-center mb-1">
             <YugoLogo
               size={14}
-              variant={wineQuoteChrome ? "cream" : "black"}
-              onLightBackground={!wineQuoteChrome}
+              variant={premiumShell ? "cream" : "black"}
+              onLightBackground={!premiumShell}
             />
           </div>
           <p
@@ -2295,6 +2359,8 @@ const InclusionsShowcase = React.forwardRef<
     showEventSetupFeature?: boolean;
     /** e.g. Truck: 20ft (+$150) from factors_applied */
     truckPricingNote?: string | null;
+    /** Estate wine / Signature green shell — use cream ink, not WINE/forest on dark */
+    premiumShellKind?: PremiumShellKind;
   }
 >(function InclusionsShowcase(
   {
@@ -2310,6 +2376,7 @@ const InclusionsShowcase = React.forwardRef<
     eventFeatures = null,
     showEventSetupFeature = false,
     truckPricingNote = null,
+    premiumShellKind = "none",
   },
   ref,
 ) {
@@ -2436,15 +2503,35 @@ const InclusionsShowcase = React.forwardRef<
         ? "Commercial logistics, handled end to end."
         : "Every detail, handled.";
 
+  const premiumInclusions = premiumShellKind !== "none";
+  const inclusionInk = premiumShellInk(premiumShellKind);
+  const inclusionBorder = premiumShellSectionBorderClass(premiumShellKind);
+  const inclusionRule = premiumShellRuleRgba(premiumShellKind);
+
   return (
     <section
       ref={ref}
-      className="scroll-mt-24 mb-10 pt-6 border-t border-[var(--brd)]/30"
+      className={`scroll-mt-24 mb-10 pt-6 border-t ${
+        premiumInclusions ? inclusionBorder : "border-[var(--brd)]/30"
+      } ${premiumInclusions ? "w-full min-w-0" : ""}`}
     >
+      {/* Match tier row width on premium shell so the block is centered in the same column as cards */}
+      <div
+        className={
+          premiumInclusions
+            ? "mx-auto w-full max-w-6xl xl:max-w-[84rem] px-4 sm:px-6 md:px-8 box-border min-w-0"
+            : "contents"
+        }
+      >
       <div className="text-center mb-6 max-w-xl mx-auto">
         <p
           className={`${QUOTE_EYEBROW_CLASS} mb-2`}
-          style={{ color: FOREST_MUTED }}
+          style={{
+            color:
+              premiumInclusions && inclusionInk
+                ? inclusionInk.kicker
+                : FOREST_MUTED,
+          }}
         >
           {variant === "logistics"
             ? "Delivery"
@@ -2455,13 +2542,23 @@ const InclusionsShowcase = React.forwardRef<
         </p>
         <h2
           className={`${QUOTE_SECTION_H2_CLASS} mb-2`}
-          style={{ color: WINE }}
+          style={{
+            color:
+              premiumInclusions && inclusionInk
+                ? inclusionInk.primary
+                : WINE,
+          }}
         >
           {sectionTitle}
         </h2>
         <p
           className="text-[12px] leading-relaxed"
-          style={{ color: FOREST_BODY }}
+          style={{
+            color:
+              premiumInclusions && inclusionInk
+                ? inclusionInk.body
+                : FOREST_BODY,
+          }}
         >
           {sectionSub}
         </p>
@@ -2469,31 +2566,61 @@ const InclusionsShowcase = React.forwardRef<
 
       <hr
         className="border-0 h-px max-w-xs mx-auto mb-8"
-        style={{ backgroundColor: `${FOREST}12` }}
+        style={{
+          backgroundColor: premiumInclusions ? inclusionRule : `${FOREST}12`,
+        }}
       />
 
       {truckPricingNote ? (
         <p
           className="text-center text-[11px] font-semibold max-w-lg mx-auto mb-6 px-2"
-          style={{ color: FOREST }}
+          style={{
+            color:
+              premiumInclusions && inclusionInk
+                ? inclusionInk.primary
+                : FOREST,
+          }}
         >
           {truckPricingNote}
         </p>
       ) : null}
 
-      <div className="grid md:grid-cols-2 gap-x-5 gap-y-4 max-w-4xl mx-auto min-w-0 px-2">
+      <div
+        className={`grid md:grid-cols-2 gap-x-6 md:gap-x-10 gap-y-4 min-w-0 ${
+          premiumInclusions
+            ? "w-full"
+            : "max-w-4xl mx-auto px-2"
+        }`}
+      >
         {visibleItems.map((item, i) => (
-          <div key={i} className="py-3 px-6 md:px-0.5">
+          <div
+            key={i}
+            className={
+              premiumInclusions
+                ? "py-3 px-1 sm:px-2 md:px-3"
+                : "py-3 px-6 md:px-0.5"
+            }
+          >
             <div className="min-w-0">
               <p
                 className="text-[13px] font-semibold leading-snug"
-                style={{ color: FOREST }}
+                style={{
+                  color:
+                    premiumInclusions && inclusionInk
+                      ? inclusionInk.primary
+                      : FOREST,
+                }}
               >
                 {item.title}
               </p>
               <p
                 className="text-[11px] mt-0.5 leading-snug"
-                style={{ color: FOREST_BODY }}
+                style={{
+                  color:
+                    premiumInclusions && inclusionInk
+                      ? inclusionInk.secondary
+                      : FOREST_BODY,
+                }}
               >
                 {item.desc}
               </p>
@@ -2507,7 +2634,12 @@ const InclusionsShowcase = React.forwardRef<
           type="button"
           onClick={() => setExpanded((v) => !v)}
           className={`flex w-fit mx-auto mt-6 items-center gap-2 ${QUOTE_EYEBROW_CLASS} py-1 transition-opacity hover:opacity-70`}
-          style={{ color: FOREST }}
+          style={{
+            color:
+              premiumInclusions && inclusionInk
+                ? inclusionInk.kicker
+                : FOREST,
+          }}
         >
           {expanded ? (
             <>
@@ -2522,6 +2654,7 @@ const InclusionsShowcase = React.forwardRef<
           )}
         </button>
       )}
+      </div>
     </section>
   );
 });
@@ -2576,15 +2709,16 @@ function getRoomLabel(room: string): string {
   );
 }
 
-/** Inventory / walkthrough copy on wine (Estate) — aligned with ESTATE_ON_WINE */
-function inventoryPalette(estateChrome: boolean) {
-  if (estateChrome) {
+/** Inventory / walkthrough copy on Estate (wine) or Signature (green) shell */
+function inventoryPalette(kind: PremiumShellKind) {
+  const ink = premiumShellInk(kind);
+  if (ink) {
     return {
-      strong: ESTATE_ON_WINE.primary,
-      body: ESTATE_ON_WINE.body,
-      muted: ESTATE_ON_WINE.muted,
-      borderSubtle: ESTATE_ON_WINE.borderSubtle,
-      borderDash: ESTATE_ON_WINE.borderDash,
+      strong: ink.primary,
+      body: ink.body,
+      muted: ink.muted,
+      borderSubtle: ink.borderSubtle,
+      borderDash: ink.borderDash,
     };
   }
   return {
@@ -2610,13 +2744,13 @@ interface InvRoom {
 function RoomSection({
   room,
   defaultOpen,
-  estateChrome = false,
+  premiumShellKind = "none",
 }: {
   room: InvRoom;
   defaultOpen: boolean;
-  estateChrome?: boolean;
+  premiumShellKind?: PremiumShellKind;
 }) {
-  const p = inventoryPalette(estateChrome);
+  const p = inventoryPalette(premiumShellKind);
   const [open, setOpen] = useState(defaultOpen);
   const [showAll, setShowAll] = useState(false);
   const visible = open
@@ -2700,14 +2834,14 @@ function RoomSection({
 function WalkthroughDetails({
   quote,
   embedded = false,
-  estateChrome = false,
+  premiumShellKind = "none",
 }: {
   quote: Quote;
   /** Used under a parent “Your inventory” heading — no duplicate title or top rule */
   embedded?: boolean;
-  estateChrome?: boolean;
+  premiumShellKind?: PremiumShellKind;
 }) {
-  const p = inventoryPalette(estateChrome);
+  const p = inventoryPalette(premiumShellKind);
   const fmtDate = quote.walkthrough_date
     ? new Date(quote.walkthrough_date + "T12:00:00").toLocaleDateString(
         "en-CA",
@@ -2780,17 +2914,17 @@ function InventoryCollapsible({
   quote,
   selectedAddons,
   omitOuterChrome = false,
-  estateChrome = false,
+  premiumShellKind = "none",
 }: {
   quote: Quote;
   selectedAddons?: Map<string, AddonSelection>;
   /** Parent supplies section border + “Your inventory” label */
   omitOuterChrome?: boolean;
-  estateChrome?: boolean;
+  premiumShellKind?: PremiumShellKind;
 }) {
   if (!INV_SERVICE_TYPES.has(quote.service_type)) return null;
 
-  const p = inventoryPalette(estateChrome);
+  const p = inventoryPalette(premiumShellKind);
 
   // Walkthrough-based quote: show walkthrough details instead
   if (quote.walkthrough_based) {
@@ -2798,7 +2932,7 @@ function InventoryCollapsible({
       <WalkthroughDetails
         quote={quote}
         embedded={omitOuterChrome}
-        estateChrome={estateChrome}
+        premiumShellKind={premiumShellKind}
       />
     );
   }
@@ -2935,7 +3069,7 @@ function InventoryCollapsible({
             key={room.room}
             room={room}
             defaultOpen={!isLargeMove || i < 2}
-            estateChrome={estateChrome}
+            premiumShellKind={premiumShellKind}
           />
         ))}
       </div>
@@ -2982,7 +3116,7 @@ function ConfirmDetailsSection({
   selectedAddons,
   pickupRows,
   dropoffRows,
-  estateChrome = false,
+  premiumShellKind = "none",
   tax = 0,
   grandTotal = 0,
   deposit = 0,
@@ -3001,7 +3135,7 @@ function ConfirmDetailsSection({
   selectedAddons: Map<string, AddonSelection>;
   pickupRows: { address: string; access: string | null }[];
   dropoffRows: { address: string; access: string | null }[];
-  estateChrome?: boolean;
+  premiumShellKind?: PremiumShellKind;
   tax?: number;
   grandTotal?: number;
   deposit?: number;
@@ -3010,6 +3144,21 @@ function ConfirmDetailsSection({
   basePrice?: number;
   valuationCost?: number;
 }) {
+  const premiumChrome = premiumShellKind !== "none";
+  const shellText = premiumShellInk(premiumShellKind);
+  const premiumBorder = premiumShellSectionBorderClass(premiumShellKind);
+  const confirmHairlineBorder =
+    premiumShellKind === "wine"
+      ? "border-[#66143D]/30"
+      : premiumShellKind === "signature"
+        ? "border-[#4A6B52]/35"
+        : "border-[#2C3E2D]/15";
+  const confirmSubtleDivider =
+    premiumShellKind === "wine"
+      ? "border-[#66143D]/20"
+      : premiumShellKind === "signature"
+        ? "border-[#4A6B52]/28"
+        : "border-[#2C3E2D]/12";
   const protectionKey = valuationUpgradeSelected
     ? selectedTier === "essential"
       ? "enhanced"
@@ -3057,7 +3206,7 @@ function ConfirmDetailsSection({
       node: (
         <span
           className="text-[12px]"
-          style={{ color: estateChrome ? ESTATE_ON_WINE.body : FOREST_BODY }}
+          style={{ color: premiumChrome ? shellText!.body : FOREST_BODY }}
         >
           <strong>Pricing:</strong> {truckPricingLine}
         </span>
@@ -3073,11 +3222,13 @@ function ConfirmDetailsSection({
     ),
   });
 
-  const ink = estateChrome ? ESTATE_ON_WINE.primary : FOREST;
-  const inkBody = estateChrome ? ESTATE_ON_WINE.body : FOREST_BODY;
-  const inkMuted = estateChrome ? ESTATE_ON_WINE.muted : FOREST_MUTED;
-  const inkRule = estateChrome ? "rgba(102,20,61,0.35)" : `${FOREST}18`;
-  const inkHair = estateChrome ? ESTATE_ON_WINE.hairline : `${FOREST}22`;
+  const ink = premiumChrome ? shellText!.primary : FOREST;
+  const inkBody = premiumChrome ? shellText!.body : FOREST_BODY;
+  const inkMuted = premiumChrome ? shellText!.muted : FOREST_MUTED;
+  const inkRule = premiumChrome
+    ? premiumShellRuleRgba(premiumShellKind)
+    : `${FOREST}18`;
+  const inkHair = premiumChrome ? shellText!.hairline : `${FOREST}22`;
   const taxableSubtotal = Math.max(0, totalBeforeTax - referralDiscountAmt);
   const balanceDue = Math.max(0, grandTotal - deposit);
 
@@ -3101,19 +3252,19 @@ function ConfirmDetailsSection({
 
   return (
     <div
-      className={`mb-6 ${estateChrome ? "max-w-3xl mx-auto px-6 md:px-12" : ""}`}
+      className={`mb-6 ${premiumChrome ? "max-w-3xl mx-auto px-6 md:px-12" : ""}`}
     >
-      {estateChrome ? (
+      {premiumChrome ? (
         <>
           <p
             className="text-sm uppercase tracking-[0.2em] mb-2 font-semibold"
-            style={{ color: ESTATE_ON_WINE.kicker }}
+            style={{ color: shellText!.kicker }}
           >
             Reserve
           </p>
           <h2
             className="text-3xl font-serif mb-8"
-            style={{ color: ESTATE_ON_WINE.primary }}
+            style={{ color: shellText!.primary }}
           >
             Review Your Move
           </h2>
@@ -3122,19 +3273,19 @@ function ConfirmDetailsSection({
               <div>
                 <p
                   className="text-xs uppercase tracking-wider mb-1 font-semibold"
-                  style={{ color: ESTATE_ON_WINE.muted }}
+                  style={{ color: shellText!.muted }}
                 >
                   Date
                 </p>
                 <p
                   className="text-lg font-serif"
-                  style={{ color: ESTATE_ON_WINE.primary }}
+                  style={{ color: shellText!.primary }}
                 >
                   {fmtDate(quote.move_date)}
                 </p>
                 <p
                   className="text-sm mt-2"
-                  style={{ color: ESTATE_ON_WINE.secondary }}
+                  style={{ color: shellText!.secondary }}
                 >
                   Arrival:{" "}
                   {quoteArrivalTimeWindowLabel(quote) ??
@@ -3143,7 +3294,7 @@ function ConfirmDetailsSection({
                 {moveSizeAndRouteSummary ? (
                   <p
                     className="text-sm mt-2"
-                    style={{ color: ESTATE_ON_WINE.secondary }}
+                    style={{ color: shellText!.secondary }}
                   >
                     {moveSizeAndRouteSummary}
                   </p>
@@ -3152,36 +3303,36 @@ function ConfirmDetailsSection({
               <div>
                 <p
                   className="text-xs uppercase tracking-wider mb-1 font-semibold"
-                  style={{ color: ESTATE_ON_WINE.muted }}
+                  style={{ color: shellText!.muted }}
                 >
                   Your Plan
                 </p>
                 <p
                   className="text-lg font-serif"
-                  style={{ color: ESTATE_ON_WINE.primary }}
+                  style={{ color: shellText!.primary }}
                 >
                   {packageLabel}
                 </p>
               </div>
             </div>
             {fromRow ? (
-              <div className="border-t border-[#66143D]/30 pt-6">
+              <div className={`border-t pt-6 ${confirmHairlineBorder}`}>
                 <p
                   className="text-xs uppercase tracking-wider mb-3 font-semibold"
-                  style={{ color: ESTATE_ON_WINE.muted }}
+                  style={{ color: shellText!.muted }}
                 >
                   From
                 </p>
                 <p
                   className="text-lg"
-                  style={{ color: ESTATE_ON_WINE.primary }}
+                  style={{ color: shellText!.primary }}
                 >
                   {formatAddressForDisplay(fromRow.address)}
                 </p>
                 {accessLabel(fromRow.access) ? (
                   <p
                     className="text-sm mt-1"
-                    style={{ color: ESTATE_ON_WINE.secondary }}
+                    style={{ color: shellText!.secondary }}
                   >
                     Access: {accessLabel(fromRow.access)}
                   </p>
@@ -3189,7 +3340,7 @@ function ConfirmDetailsSection({
                 {pickupRows.length > 1 ? (
                   <p
                     className="text-[11px] mt-2"
-                    style={{ color: ESTATE_ON_WINE.muted }}
+                    style={{ color: shellText!.muted }}
                   >
                     +{pickupRows.length - 1} additional pickup location
                     {pickupRows.length > 2 ? "s" : ""}
@@ -3198,63 +3349,63 @@ function ConfirmDetailsSection({
               </div>
             ) : null}
             {toRow ? (
-              <div className="border-t border-[#66143D]/30 pt-6">
+              <div className={`border-t pt-6 ${confirmHairlineBorder}`}>
                 <p
                   className="text-xs uppercase tracking-wider mb-3 font-semibold"
-                  style={{ color: ESTATE_ON_WINE.muted }}
+                  style={{ color: shellText!.muted }}
                 >
                   To
                 </p>
                 <p
                   className="text-lg"
-                  style={{ color: ESTATE_ON_WINE.primary }}
+                  style={{ color: shellText!.primary }}
                 >
                   {formatAddressForDisplay(toRow.address)}
                 </p>
                 {accessLabel(toRow.access) ? (
                   <p
                     className="text-sm mt-1"
-                    style={{ color: ESTATE_ON_WINE.secondary }}
+                    style={{ color: shellText!.secondary }}
                   >
                     Access: {accessLabel(toRow.access)}
                   </p>
                 ) : null}
               </div>
             ) : null}
-            <div className="border-t border-[#66143D]/30 pt-6">
+            <div className={`border-t pt-6 ${confirmHairlineBorder}`}>
               <p
                 className="text-xs uppercase tracking-wider mb-3 font-semibold"
-                style={{ color: ESTATE_ON_WINE.muted }}
+                style={{ color: shellText!.muted }}
               >
                 Your Team
               </p>
-              <p style={{ color: ESTATE_ON_WINE.primary }}>
+              <p style={{ color: shellText!.primary }}>
                 {quote.est_crew_size ?? 3} professional movers
               </p>
               <p
                 className="text-sm"
-                style={{ color: ESTATE_ON_WINE.secondary }}
+                style={{ color: shellText!.secondary }}
               >
                 {truckLine}
               </p>
               <p
                 className="text-sm"
-                style={{ color: ESTATE_ON_WINE.secondary }}
+                style={{ color: shellText!.secondary }}
               >
                 Full replacement protection
               </p>
             </div>
-            <div className="border-t border-[#66143D]/30 pt-6">
+            <div className={`border-t pt-6 ${confirmHairlineBorder}`}>
               <p
                 className="text-xs uppercase tracking-wider mb-3 font-semibold"
-                style={{ color: ESTATE_ON_WINE.muted }}
+                style={{ color: shellText!.muted }}
               >
                 Investment
               </p>
               <div className="space-y-2">
                 <div
                   className="flex justify-between"
-                  style={{ color: ESTATE_ON_WINE.primary }}
+                  style={{ color: shellText!.primary }}
                 >
                   <span>{packageLabel}</span>
                   <span className="tabular-nums text-[14px] [font-family:var(--font-body)]">
@@ -3264,7 +3415,7 @@ function ConfirmDetailsSection({
                 {addonTotal > 0 ? (
                   <div
                     className="flex justify-between text-sm"
-                    style={{ color: ESTATE_ON_WINE.secondary }}
+                    style={{ color: shellText!.secondary }}
                   >
                     <span>Add-ons</span>
                     <span className="tabular-nums">{fmtPrice(addonTotal)}</span>
@@ -3273,7 +3424,7 @@ function ConfirmDetailsSection({
                 {valuationCost > 0 ? (
                   <div
                     className="flex justify-between text-sm"
-                    style={{ color: ESTATE_ON_WINE.secondary }}
+                    style={{ color: shellText!.secondary }}
                   >
                     <span>Protection & declarations</span>
                     <span className="tabular-nums">
@@ -3284,7 +3435,7 @@ function ConfirmDetailsSection({
                 {referralDiscountAmt > 0 ? (
                   <div
                     className="flex justify-between text-sm"
-                    style={{ color: ESTATE_ON_WINE.secondary }}
+                    style={{ color: shellText!.secondary }}
                   >
                     <span>Referral discount</span>
                     <span className="tabular-nums">
@@ -3294,7 +3445,7 @@ function ConfirmDetailsSection({
                 ) : null}
                 <div
                   className="flex justify-between text-sm"
-                  style={{ color: ESTATE_ON_WINE.body }}
+                  style={{ color: shellText!.body }}
                 >
                   <span>Subtotal (before HST)</span>
                   <span className="tabular-nums">
@@ -3303,23 +3454,29 @@ function ConfirmDetailsSection({
                 </div>
                 <div
                   className="flex justify-between text-sm"
-                  style={{ color: ESTATE_ON_WINE.body }}
+                  style={{ color: shellText!.body }}
                 >
                   <span>HST (13%)</span>
                   <span className="tabular-nums">{fmtPrice(tax)}</span>
                 </div>
                 <div
-                  className="flex justify-between text-lg font-serif pt-2 border-t border-[#66143D]/20"
-                  style={{ color: ESTATE_ON_WINE.primary }}
+                  className={`flex justify-between text-lg font-serif pt-2 border-t ${confirmSubtleDivider}`}
+                  style={{ color: shellText!.primary }}
                 >
                   <span>Total</span>
                   <span className="tabular-nums">{fmtPrice(grandTotal)}</span>
                 </div>
               </div>
-              <div className="mt-4 p-3 rounded-lg border border-[#F0D8E2]/35 bg-[#66143D]/35">
+              <div
+                className={`mt-4 p-3 rounded-lg border ${
+                  premiumShellKind === "signature"
+                    ? "border-[#B8D4BE]/35 bg-[#3A5C40]/28"
+                    : "border-[#F0D8E2]/35 bg-[#66143D]/35"
+                }`}
+              >
                 <p
                   className="text-sm"
-                  style={{ color: ESTATE_ON_WINE.primary }}
+                  style={{ color: shellText!.primary }}
                 >
                   Deposit to reserve:{" "}
                   <span className="text-[14px] [font-family:var(--font-body)]">
@@ -3328,7 +3485,7 @@ function ConfirmDetailsSection({
                 </p>
                 <p
                   className="text-xs mt-1"
-                  style={{ color: ESTATE_ON_WINE.secondary }}
+                  style={{ color: shellText!.secondary }}
                 >
                   Balance of {fmtPrice(balanceDue)} due 48 hours before your
                   move
@@ -3346,7 +3503,7 @@ function ConfirmDetailsSection({
         </h2>
       )}
       <div className="space-y-6">
-        {!estateChrome ? (
+        {!premiumChrome ? (
           <>
             <p
               className={`${QUOTE_EYEBROW_CLASS} mb-2`}
@@ -3482,7 +3639,7 @@ function ConfirmDetailsSection({
                               key={i}
                               className="text-[12px] leading-relaxed pl-3 border-l-2"
                               style={{
-                                borderColor: estateChrome
+                                borderColor: premiumChrome
                                   ? "rgba(102,20,61,0.55)"
                                   : `${FOREST}45`,
                                 color: ink,
@@ -3533,7 +3690,7 @@ function ConfirmDetailsSection({
           </>
         ) : null}
 
-        {estateChrome &&
+        {premiumChrome &&
           selectedTier === "estate" &&
           (() => {
             const plan = faConfirm?.estate_day_plan as
@@ -3553,23 +3710,32 @@ function ConfirmDetailsSection({
             )
               return null;
             return (
-              <div className="mt-10 pt-8 border-t border-[#66143D]/30 text-center max-w-xl mx-auto">
+              <div
+                className="mt-10 pt-8 border-t text-center max-w-xl mx-auto"
+                style={{
+                  borderTopColor: premiumChrome
+                    ? premiumShellKind === "signature"
+                      ? "rgba(74, 107, 82, 0.45)"
+                      : "rgba(102, 20, 61, 0.45)"
+                    : undefined,
+                }}
+              >
                 <Calendar
                   className="w-4 h-4 shrink-0 mx-auto mb-2"
-                  style={{ color: ESTATE_ON_WINE.kicker }}
+                  style={{ color: shellText!.kicker }}
                   weight="duotone"
                   aria-hidden
                 />
                 <div className="min-w-0 space-y-2.5">
                   <p
                     className={`${QUOTE_EYEBROW_CLASS} font-semibold`}
-                    style={{ color: ESTATE_ON_WINE.muted }}
+                    style={{ color: shellText!.muted }}
                   >
                     Schedule overview
                   </p>
                   <p
                     className="text-[13px] font-semibold leading-snug tracking-tight"
-                    style={{ color: ESTATE_ON_WINE.primary }}
+                    style={{ color: shellText!.primary }}
                   >
                     {head.trim()}
                   </p>
@@ -3577,8 +3743,12 @@ function ConfirmDetailsSection({
                     {lines.map((ln, i) => (
                       <p
                         key={i}
-                        className="text-[12px] leading-relaxed pl-3 border-l-2 border-[#66143D]/50"
-                        style={{ color: ESTATE_ON_WINE.body }}
+                        className={`text-[12px] leading-relaxed pl-3 border-l-2 ${
+                          premiumShellKind === "signature"
+                            ? "border-[#4A6B52]/55"
+                            : "border-[#66143D]/50"
+                        }`}
+                        style={{ color: shellText!.body }}
                       >
                         {ln}
                       </p>
@@ -3586,7 +3756,7 @@ function ConfirmDetailsSection({
                   </div>
                   <p
                     className="text-[12px] leading-snug pt-0.5"
-                    style={{ color: ESTATE_ON_WINE.secondary }}
+                    style={{ color: shellText!.secondary }}
                   >
                     Pack day is usually the day before your move unless your
                     coordinator sets a different plan.
@@ -3602,8 +3772,8 @@ function ConfirmDetailsSection({
             <div
               className="border-t pt-5 mt-6"
               style={{
-                borderColor: estateChrome
-                  ? "rgba(102,20,61,0.35)"
+                borderColor: premiumChrome
+                  ? premiumShellRuleRgba(premiumShellKind)
                   : `${FOREST}12`,
               }}
             >
@@ -3617,7 +3787,7 @@ function ConfirmDetailsSection({
                 quote={quote}
                 selectedAddons={selectedAddons}
                 omitOuterChrome
-                estateChrome={estateChrome}
+                premiumShellKind={premiumShellKind}
               />
             </div>
           )}
@@ -3626,8 +3796,8 @@ function ConfirmDetailsSection({
           <div
             className="border-t pt-4"
             style={{
-              borderColor: estateChrome
-                ? "rgba(102,20,61,0.35)"
+              borderColor: premiumChrome
+                ? premiumShellRuleRgba(premiumShellKind)
                 : `${FOREST}10`,
             }}
           >
@@ -3694,7 +3864,7 @@ function ValuationProtectionCard({
   onAddDeclaration,
   onRemoveDeclaration,
   journeyCopy = "move",
-  estateChrome = false,
+  premiumShellKind = "none",
 }: {
   includedValuation: string;
   currentPackage: string;
@@ -3707,8 +3877,25 @@ function ValuationProtectionCard({
   onRemoveDeclaration: (idx: number) => void;
   /** Delivery / logistics quotes use shipment wording instead of "move". */
   journeyCopy?: "move" | "delivery";
-  estateChrome?: boolean;
+  premiumShellKind?: PremiumShellKind;
 }) {
+  const premiumChrome = premiumShellKind !== "none";
+  const shellText = premiumShellInk(premiumShellKind);
+  const premiumBorder = premiumShellSectionBorderClass(premiumShellKind);
+  const valAccent =
+    premiumShellKind === "signature" ? SIGNATURE_CTA : "#66143D";
+  const valAccentSoft =
+    premiumShellKind === "signature"
+      ? "rgba(58, 92, 64, 0.55)"
+      : "rgba(102,20,61,0.45)";
+  const valAccentBorderSelected =
+    premiumShellKind === "signature"
+      ? "1px solid rgba(74,107,82,0.55)"
+      : "1px solid rgba(102,20,61,0.5)";
+  const valInputBg =
+    premiumShellKind === "signature"
+      ? "rgba(21,38,26,0.45)"
+      : "rgba(43,4,22,0.35)";
   const [coversOpen, setCoversOpen] = useState(false);
   const [excludesOpen, setExcludesOpen] = useState(false);
   const [declFormOpen, setDeclFormOpen] = useState(false);
@@ -3751,10 +3938,12 @@ function ValuationProtectionCard({
 
   if (!tierData) return null;
 
-  const ink = estateChrome ? ESTATE_ON_WINE.primary : FOREST;
-  const inkBody = estateChrome ? ESTATE_ON_WINE.body : FOREST_BODY;
-  const inkMuted = estateChrome ? ESTATE_ON_WINE.muted : FOREST_MUTED;
-  const rule = estateChrome ? "rgba(102,20,61,0.35)" : `${FOREST}10`;
+  const ink = premiumChrome ? shellText!.primary : FOREST;
+  const inkBody = premiumChrome ? shellText!.body : FOREST_BODY;
+  const inkMuted = premiumChrome ? shellText!.muted : FOREST_MUTED;
+  const rule = premiumChrome
+    ? premiumShellRuleRgba(premiumShellKind)
+    : `${FOREST}10`;
 
   const dispActive = VALUATION_DISPLAY[activeTierSlug] ?? {
     label: activeTierSlug,
@@ -3773,12 +3962,10 @@ function ValuationProtectionCard({
       : Number(tierData.rate_per_pound ?? 0);
 
   return (
-    <section
-      className={`mb-10 pt-6 border-t ${estateChrome ? "border-[#66143D]/30" : "border-[var(--brd)]/30"}`}
-    >
+    <section className={`mb-10 pt-6 border-t ${premiumBorder}`}>
       <h2
-        className={`${estateChrome ? "text-2xl md:text-3xl font-serif" : QUOTE_SECTION_H2_CLASS} mb-6 text-center`}
-        style={{ color: estateChrome ? "#F9EDE4" : WINE }}
+        className={`${premiumChrome ? "text-2xl md:text-3xl font-serif" : QUOTE_SECTION_H2_CLASS} mb-6 text-center`}
+        style={{ color: premiumChrome ? shellText!.primary : WINE }}
       >
         Your Protection
       </h2>
@@ -3979,8 +4166,10 @@ function ValuationProtectionCard({
           <hr
             className="border-0 h-px w-full"
             style={{
-              backgroundColor: estateChrome
-                ? "rgba(102,20,61,0.25)"
+              backgroundColor: premiumChrome
+                ? premiumShellKind === "signature"
+                  ? "rgba(74,107,82,0.3)"
+                  : "rgba(102,20,61,0.25)"
                 : `${FOREST}08`,
             }}
           />
@@ -4016,7 +4205,7 @@ function ValuationProtectionCard({
 
       {!isHighest && upgradeData && upgradeTierData && dispUpgrade && (
         <div
-          className={`mt-10 pt-6 border-t ${estateChrome ? "border-[#66143D]/30" : "border-[var(--brd)]/25"}`}
+          className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}
         >
           <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: ink }}>
             {upgradeSelected ? "Upgrade added" : "Upgrade available"}
@@ -4057,14 +4246,12 @@ function ValuationProtectionCard({
               onClick={onToggleUpgrade}
               className="w-full sm:w-auto px-6 py-3 rounded-none text-[11px] font-bold uppercase tracking-[0.14em] transition-opacity hover:opacity-90"
               style={
-                estateChrome
+                premiumChrome
                   ? {
-                      backgroundColor: upgradeSelected
-                        ? "transparent"
-                        : "#66143D",
-                      color: upgradeSelected ? "#F9EDE4" : "#F9EDE4",
+                      backgroundColor: upgradeSelected ? "transparent" : valAccent,
+                      color: shellText!.primary,
                       border: upgradeSelected
-                        ? "1px solid rgba(102,20,61,0.5)"
+                        ? valAccentBorderSelected
                         : "1px solid transparent",
                     }
                   : {
@@ -4087,7 +4274,7 @@ function ValuationProtectionCard({
       )}
 
       <div
-        className={`mt-10 pt-6 border-t ${estateChrome ? "border-[#66143D]/30" : "border-[var(--brd)]/25"}`}
+        className={`mt-10 pt-6 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/25"}`}
       >
         <div
           className="text-[12px] font-semibold tracking-tight mb-1"
@@ -4165,7 +4352,7 @@ function ValuationProtectionCard({
             type="button"
             onClick={() => setDeclFormOpen(true)}
             className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] transition-opacity hover:opacity-70"
-            style={{ color: estateChrome ? ESTATE_ON_WINE.kicker : FOREST }}
+            style={{ color: premiumChrome ? shellText!.kicker : FOREST }}
           >
             <Plus className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
             Declare an item
@@ -4185,22 +4372,16 @@ function ValuationProtectionCard({
                 placeholder="e.g. Steinway Piano"
                 className="w-full px-3 py-2.5 rounded-none border text-[13px] outline-none transition-colors"
                 style={{
-                  borderColor: estateChrome
-                    ? "rgba(102,20,61,0.45)"
-                    : `${FOREST}18`,
+                  borderColor: premiumChrome ? valAccentSoft : `${FOREST}18`,
                   color: ink,
-                  backgroundColor: estateChrome
-                    ? "rgba(43,4,22,0.35)"
-                    : undefined,
+                  backgroundColor: premiumChrome ? valInputBg : undefined,
                 }}
                 onFocus={(e) =>
-                  (e.target.style.borderColor = estateChrome
-                    ? "#66143D"
-                    : FOREST)
+                  (e.target.style.borderColor = premiumChrome ? valAccent : FOREST)
                 }
                 onBlur={(e) =>
-                  (e.target.style.borderColor = estateChrome
-                    ? "rgba(102,20,61,0.45)"
+                  (e.target.style.borderColor = premiumChrome
+                    ? valAccentSoft
                     : `${FOREST}18`)
                 }
               />
@@ -4220,22 +4401,16 @@ function ValuationProtectionCard({
                 placeholder="15,000"
                 className="w-full px-3 py-2.5 rounded-none border text-[13px] outline-none transition-colors"
                 style={{
-                  borderColor: estateChrome
-                    ? "rgba(102,20,61,0.45)"
-                    : `${FOREST}18`,
+                  borderColor: premiumChrome ? valAccentSoft : `${FOREST}18`,
                   color: ink,
-                  backgroundColor: estateChrome
-                    ? "rgba(43,4,22,0.35)"
-                    : undefined,
+                  backgroundColor: premiumChrome ? valInputBg : undefined,
                 }}
                 onFocus={(e) =>
-                  (e.target.style.borderColor = estateChrome
-                    ? "#66143D"
-                    : FOREST)
+                  (e.target.style.borderColor = premiumChrome ? valAccent : FOREST)
                 }
                 onBlur={(e) =>
-                  (e.target.style.borderColor = estateChrome
-                    ? "rgba(102,20,61,0.45)"
+                  (e.target.style.borderColor = premiumChrome
+                    ? valAccentSoft
                     : `${FOREST}18`)
                 }
               />
@@ -4252,7 +4427,7 @@ function ValuationProtectionCard({
               {declValue && parseFloat(declValue) >= 50000 && (
                 <p
                   className="text-[11px] mt-1.5 font-medium"
-                  style={{ color: estateChrome ? "#F9EDE4" : WINE }}
+                  style={{ color: premiumChrome ? shellText!.primary : WINE }}
                 >
                   For items over $50,000, contact Yugo directly for custom
                   coverage.
@@ -4269,9 +4444,7 @@ function ValuationProtectionCard({
                 }}
                 className="px-5 py-2.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] border transition-colors"
                 style={{
-                  borderColor: estateChrome
-                    ? "rgba(102,20,61,0.45)"
-                    : `${FOREST}25`,
+                  borderColor: premiumChrome ? valAccentSoft : `${FOREST}25`,
                   color: inkBody,
                 }}
               >
@@ -4286,8 +4459,11 @@ function ValuationProtectionCard({
                   parseFloat(declValue) <= 0 ||
                   parseFloat(declValue) >= 50000
                 }
-                className="px-6 py-2.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] text-[#F9EDE4] disabled:opacity-30 transition-opacity"
-                style={{ backgroundColor: estateChrome ? "#66143D" : FOREST }}
+                className="px-6 py-2.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] disabled:opacity-30 transition-opacity"
+                style={{
+                  backgroundColor: premiumChrome ? valAccent : FOREST,
+                  color: premiumChrome ? shellText!.primary : "white",
+                }}
               >
                 Add
               </button>
@@ -4357,7 +4533,8 @@ function AddOnsSection({
   onContinue,
   showContinueButton = false,
   moveSize,
-  estateChrome = false,
+  premiumShellKind = "none",
+  estateVoiceChrome = false,
 }: {
   addons: Addon[];
   allAddons: Addon[];
@@ -4376,8 +4553,31 @@ function AddOnsSection({
   isProgressive?: boolean;
   onContinue?: () => void;
   showContinueButton?: boolean;
-  estateChrome?: boolean;
+  premiumShellKind?: PremiumShellKind;
+  /** Estate-only “Personalize” headings; Signature uses standard add-on copy on green shell */
+  estateVoiceChrome?: boolean;
 }) {
+  const premiumChrome = premiumShellKind !== "none";
+  const shellText = premiumShellInk(premiumShellKind);
+  const premiumBorder = premiumShellSectionBorderClass(premiumShellKind);
+  const addonRowBorderClass =
+    premiumShellKind === "wine"
+      ? "border-[#66143D]/30"
+      : premiumShellKind === "signature"
+        ? "border-[#4A6B52]/35"
+        : "";
+  const addonRowOnBgClass =
+    premiumShellKind === "wine"
+      ? "bg-[#66143D]/10"
+      : premiumShellKind === "signature"
+        ? "bg-[#3A5C40]/18"
+        : "";
+  const toggleOnColor =
+    premiumShellKind === "wine"
+      ? "#66143D"
+      : premiumShellKind === "signature"
+        ? SIGNATURE_CTA
+        : FOREST;
   const [showAll, setShowAll] = useState(false);
   const [expandedContents, setExpandedContents] = useState<Set<string>>(
     new Set(),
@@ -4408,31 +4608,56 @@ function AddOnsSection({
   const visibleAddons = showAll ? addons : keyAddons;
 
   return (
-    <section
-      className={`mb-10 pt-6 border-t ${estateChrome ? "border-[#66143D]/30" : "border-[var(--brd)]/30"}`}
-    >
+    <section className={`mb-10 pt-6 border-t ${premiumBorder}`}>
       <div
-        className={`mb-6 max-w-3xl mx-auto ${estateChrome ? "px-1 text-left md:text-left" : "text-center max-w-xl"}`}
+        className={`mb-6 mx-auto ${
+          premiumChrome && estateVoiceChrome
+            ? "max-w-3xl px-1 text-left md:text-left"
+            : premiumChrome
+              ? "max-w-xl px-1 text-center"
+              : "max-w-xl text-center"
+        }`}
       >
-        {estateChrome ? (
+        {premiumChrome && estateVoiceChrome && shellText ? (
           <>
             <p
               className="text-sm uppercase tracking-[0.2em] mb-2 font-semibold"
-              style={{ color: ESTATE_ON_WINE.kicker }}
+              style={{ color: shellText.kicker }}
             >
               Personalize
             </p>
             <h2
               className="text-3xl font-serif mb-2"
-              style={{ color: ESTATE_ON_WINE.primary }}
+              style={{ color: shellText.primary }}
             >
               Personalize Your Experience
             </h2>
             <p
               className="text-lg mb-8"
-              style={{ color: ESTATE_ON_WINE.secondary }}
+              style={{ color: shellText.secondary }}
             >
               {ESTATE_ADDON_SECTION_PREAMBLE.body}
+            </p>
+          </>
+        ) : premiumChrome && shellText ? (
+          <>
+            <p
+              className={`${QUOTE_EYEBROW_CLASS} mb-2`}
+              style={{ color: shellText.kicker }}
+            >
+              Add-ons
+            </p>
+            <h2
+              className={`${QUOTE_SECTION_H2_CLASS} mb-2`}
+              style={{ color: shellText.primary }}
+            >
+              Customize your move
+            </h2>
+            <p
+              className="text-[12px] leading-relaxed"
+              style={{ color: shellText.body }}
+            >
+              Optional extras—toggle only what you need.
             </p>
           </>
         ) : (
@@ -4460,7 +4685,7 @@ function AddOnsSection({
       </div>
 
       <div
-        className={estateChrome ? "space-y-4" : "divide-y divide-[#2C3E2D]/10"}
+        className={premiumChrome ? "space-y-4" : "divide-y divide-[#2C3E2D]/10"}
       >
         {visibleAddons.map((addon) => {
           const sel = selectedAddons.get(addon.id);
@@ -4506,8 +4731,8 @@ function AddOnsSection({
             <div
               key={addon.id}
               className={`py-4 transition-colors ${
-                estateChrome
-                  ? `px-4 rounded-lg border border-[#66143D]/30 ${isOn ? "bg-[#66143D]/10" : ""}`
+                premiumChrome
+                  ? `px-4 rounded-lg border ${addonRowBorderClass} ${isOn ? addonRowOnBgClass : ""}`
                   : `first:pt-0 ${isOn ? "bg-[#FFFCF6]/80" : ""}`
               }`}
             >
@@ -4522,8 +4747,8 @@ function AddOnsSection({
                     className="relative w-11 h-6 rounded-full transition-colors shrink-0 mt-0.5 flex-shrink-0"
                     style={{
                       backgroundColor: isOn
-                        ? estateChrome
-                          ? "#66143D"
+                        ? premiumChrome
+                          ? toggleOnColor
                           : FOREST
                         : "#D5D0C8",
                     }}
@@ -4541,15 +4766,15 @@ function AddOnsSection({
                         className="text-[13px] font-semibold"
                         style={{
                           color: isOn
-                            ? estateChrome
-                              ? ESTATE_ON_WINE.primary
+                            ? premiumChrome
+                              ? shellText!.primary
                               : WINE
-                            : estateChrome
-                              ? ESTATE_ON_WINE.primary
+                            : premiumChrome
+                              ? shellText!.primary
                               : FOREST,
                         }}
                       >
-                        {estateChrome
+                        {premiumChrome
                           ? estateAddonDisplayName(addon.slug, addon.name)
                           : addon.name}
                       </span>
@@ -4557,11 +4782,11 @@ function AddOnsSection({
                         <span
                           className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
                           style={
-                            estateChrome
+                            premiumChrome
                               ? {
-                                  color: ESTATE_ON_WINE.primary,
+                                  color: shellText!.primary,
                                   backgroundColor: "rgba(249, 237, 228, 0.12)",
-                                  borderColor: ESTATE_ON_WINE.borderSubtle,
+                                  borderColor: shellText!.borderSubtle,
                                 }
                               : {
                                   color: FOREST,
@@ -4577,7 +4802,7 @@ function AddOnsSection({
                         <span
                           className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
                           style={
-                            estateChrome
+                            premiumChrome
                               ? {
                                   color: "#C8F0D8",
                                   backgroundColor: "rgba(74, 222, 128, 0.14)",
@@ -4598,8 +4823,8 @@ function AddOnsSection({
                       <p
                         className="text-[11px] mt-0.5 leading-snug"
                         style={{
-                          color: estateChrome
-                            ? ESTATE_ON_WINE.body
+                          color: premiumChrome
+                            ? shellText!.body
                             : FOREST_BODY,
                         }}
                       >
@@ -4620,8 +4845,8 @@ function AddOnsSection({
                             onClick={() => toggleContents(addon.id)}
                             className={`${QUOTE_EYEBROW_CLASS} transition-opacity hover:opacity-70 inline-flex items-center gap-1.5`}
                             style={{
-                              color: estateChrome
-                                ? ESTATE_ON_WINE.kicker
+                              color: premiumChrome
+                                ? shellText!.kicker
                                 : FOREST,
                             }}
                           >
@@ -4647,12 +4872,18 @@ function AddOnsSection({
                             <p
                               className="mt-2 text-[11px] leading-relaxed px-3 py-2.5 rounded-none border break-words"
                               style={
-                                estateChrome
-                                  ? {
-                                      color: ESTATE_ON_WINE.body,
-                                      backgroundColor: "rgba(43, 4, 22, 0.45)",
-                                      borderColor: "rgba(102, 20, 61, 0.45)",
-                                    }
+                                premiumChrome
+                                  ? premiumShellKind === "signature"
+                                    ? {
+                                        color: shellText!.body,
+                                        backgroundColor: "rgba(21, 38, 26, 0.55)",
+                                        borderColor: "rgba(74, 107, 82, 0.5)",
+                                      }
+                                    : {
+                                        color: shellText!.body,
+                                        backgroundColor: "rgba(43, 4, 22, 0.45)",
+                                        borderColor: "rgba(102, 20, 61, 0.45)",
+                                      }
                                   : {
                                       color: FOREST_BODY,
                                       backgroundColor: "#FAFAF8",
@@ -4676,11 +4907,11 @@ function AddOnsSection({
                           }
                           className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
                           style={{
-                            borderColor: estateChrome
+                            borderColor: premiumChrome
                               ? "rgba(249,237,228,0.35)"
                               : "#D5D0C8",
-                            color: estateChrome
-                              ? ESTATE_ON_WINE.primary
+                            color: premiumChrome
+                              ? shellText!.primary
                               : FOREST,
                           }}
                         >
@@ -4689,8 +4920,8 @@ function AddOnsSection({
                         <span
                           className="text-[13px] font-semibold w-6 text-center"
                           style={{
-                            color: estateChrome
-                              ? ESTATE_ON_WINE.primary
+                            color: premiumChrome
+                              ? shellText!.primary
                               : FOREST,
                           }}
                         >
@@ -4703,11 +4934,11 @@ function AddOnsSection({
                           }
                           className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
                           style={{
-                            borderColor: estateChrome
+                            borderColor: premiumChrome
                               ? "rgba(249,237,228,0.35)"
                               : "#D5D0C8",
-                            color: estateChrome
-                              ? ESTATE_ON_WINE.primary
+                            color: premiumChrome
+                              ? shellText!.primary
                               : FOREST,
                           }}
                         >
@@ -4716,8 +4947,8 @@ function AddOnsSection({
                         <span
                           className="text-[11px] ml-1"
                           style={{
-                            color: estateChrome
-                              ? ESTATE_ON_WINE.secondary
+                            color: premiumChrome
+                              ? shellText!.secondary
                               : FOREST_BODY,
                           }}
                         >
@@ -4735,12 +4966,18 @@ function AddOnsSection({
                           }
                           className="text-[12px] rounded-none border px-3 py-2.5 w-full min-w-0 min-[420px]:w-auto min-[420px]:min-w-[12rem] min-[420px]:max-w-md"
                           style={
-                            estateChrome
-                              ? {
-                                  borderColor: "rgba(249,237,228,0.35)",
-                                  color: ESTATE_ON_WINE.primary,
-                                  backgroundColor: "rgba(43, 4, 22, 0.5)",
-                                }
+                            premiumChrome
+                              ? premiumShellKind === "signature"
+                                ? {
+                                    borderColor: "rgba(244,250,245,0.35)",
+                                    color: shellText!.primary,
+                                    backgroundColor: "rgba(21, 38, 26, 0.6)",
+                                  }
+                                : {
+                                    borderColor: "rgba(249,237,228,0.35)",
+                                    color: shellText!.primary,
+                                    backgroundColor: "rgba(43, 4, 22, 0.5)",
+                                  }
                               : {
                                   borderColor: "#D5D0C8",
                                   color: FOREST,
@@ -4761,14 +4998,14 @@ function AddOnsSection({
 
                 <div className="text-left min-[420px]:text-right shrink-0 min-[420px]:pt-0.5 w-full min-[420px]:w-auto pl-14 min-[420px]:pl-0">
                   <span
-                    className={`text-[13px] font-bold ${estateChrome ? "font-serif" : ""}`}
+                    className={`text-[13px] font-bold ${premiumChrome ? "font-serif" : ""}`}
                     style={{
                       color: isOn
-                        ? estateChrome
-                          ? ESTATE_ON_WINE.primary
+                        ? premiumChrome
+                          ? shellText!.primary
                           : WINE
-                        : estateChrome
-                          ? ESTATE_ON_WINE.muted
+                        : premiumChrome
+                          ? shellText!.muted
                           : FOREST_MUTED,
                     }}
                   >
@@ -4786,9 +5023,13 @@ function AddOnsSection({
           type="button"
           onClick={() => setShowAll((p) => !p)}
           className={`w-full mt-4 py-3 ${QUOTE_EYEBROW_CLASS} transition-opacity rounded-none hover:opacity-70 border-t ${
-            estateChrome ? "border-[#66143D]/25" : "border-[#2C3E2D]/10"
+            premiumChrome
+              ? premiumShellKind === "signature"
+                ? "border-[#4A6B52]/28"
+                : "border-[#66143D]/25"
+              : "border-[#2C3E2D]/10"
           }`}
-          style={{ color: estateChrome ? ESTATE_ON_WINE.kicker : FOREST }}
+          style={{ color: premiumChrome ? shellText!.kicker : FOREST }}
         >
           {showAll ? "Show less" : `View all ${addons.length} add-ons`}
           <ChevronDown
@@ -4804,12 +5045,12 @@ function AddOnsSection({
       {(addonTotal > 0 || valuationCost > 0) &&
         (selectedTierData || basePrice > 0) && (
           <div
-            className={`mt-6 pt-5 border-t ${estateChrome ? "border-[#66143D]/30" : "border-[var(--brd)]/30"}`}
+            className={`mt-6 pt-5 border-t ${premiumChrome ? premiumBorder : "border-[var(--brd)]/30"}`}
           >
             <p
               className={`${QUOTE_EYEBROW_CLASS} mb-3`}
               style={{
-                color: estateChrome ? ESTATE_ON_WINE.muted : FOREST_MUTED,
+                color: premiumChrome ? shellText!.kicker : FOREST_MUTED,
               }}
             >
               Summary
@@ -4818,7 +5059,7 @@ function AddOnsSection({
               <div
                 className="flex items-baseline justify-between gap-4 text-[12px]"
                 style={{
-                  color: estateChrome ? ESTATE_ON_WINE.primary : FOREST,
+                  color: premiumChrome ? shellText!.primary : FOREST,
                 }}
               >
                 <span>Base price</span>
@@ -4830,14 +5071,14 @@ function AddOnsSection({
                 <div
                   className="flex items-baseline justify-between gap-4 text-[12px]"
                   style={{
-                    color: estateChrome ? ESTATE_ON_WINE.primary : FOREST,
+                    color: premiumChrome ? shellText!.primary : FOREST,
                   }}
                 >
                   <span>Add-ons</span>
                   <span
                     className="font-bold tabular-nums"
                     style={{
-                      color: estateChrome ? ESTATE_ON_WINE.primary : FOREST,
+                      color: premiumChrome ? shellText!.primary : FOREST,
                     }}
                   >
                     {fmtPrice(addonTotal)}
@@ -4848,14 +5089,14 @@ function AddOnsSection({
                 <div
                   className="flex items-baseline justify-between gap-4 text-[12px]"
                   style={{
-                    color: estateChrome ? ESTATE_ON_WINE.primary : FOREST,
+                    color: premiumChrome ? shellText!.primary : FOREST,
                   }}
                 >
                   <span>Protection upgrade</span>
                   <span
                     className="font-bold tabular-nums"
                     style={{
-                      color: estateChrome ? ESTATE_ON_WINE.primary : WINE,
+                      color: premiumChrome ? shellText!.primary : WINE,
                     }}
                   >
                     {fmtPrice(valuationCost)}
@@ -4865,7 +5106,7 @@ function AddOnsSection({
               <div
                 className="flex items-baseline justify-between gap-4 text-[12px]"
                 style={{
-                  color: estateChrome ? ESTATE_ON_WINE.body : FOREST_BODY,
+                  color: premiumChrome ? shellText!.body : FOREST_BODY,
                 }}
               >
                 <span>HST (13%)</span>
@@ -4874,18 +5115,18 @@ function AddOnsSection({
               <hr
                 className="border-0 h-px w-full my-2"
                 style={{
-                  backgroundColor: estateChrome
-                    ? "rgba(102,20,61,0.35)"
+                  backgroundColor: premiumChrome
+                    ? premiumShellRuleRgba(premiumShellKind)
                     : `${FOREST}10`,
                 }}
               />
               <div
                 className="flex items-baseline justify-between gap-4 text-[13px] font-bold"
-                style={{ color: estateChrome ? ESTATE_ON_WINE.primary : WINE }}
+                style={{ color: premiumChrome ? shellText!.primary : WINE }}
               >
                 <span>Total</span>
                 <span
-                  className={`tabular-nums text-[15px] ${estateChrome ? "font-serif" : ""}`}
+                  className={`tabular-nums text-[15px] ${premiumChrome ? "font-serif" : ""}`}
                 >
                   {fmtPrice(grandTotal)}
                 </span>
@@ -4894,18 +5135,18 @@ function AddOnsSection({
             <p
               className="text-[11px] leading-snug"
               style={{
-                color: estateChrome ? ESTATE_ON_WINE.secondary : FOREST_BODY,
+                color: premiumChrome ? shellText!.secondary : FOREST_BODY,
               }}
             >
               <span
                 className="font-semibold"
                 style={{
-                  color: estateChrome ? ESTATE_ON_WINE.primary : FOREST,
+                  color: premiumChrome ? shellText!.primary : FOREST,
                 }}
               >
                 {fmtPrice(deposit)}
               </span>
-              {estateChrome
+              {premiumChrome
                 ? " deposit to reserve · Balance due before your move"
                 : " deposit to confirm · Balance due on move day"}
             </p>
@@ -4918,11 +5159,13 @@ function AddOnsSection({
             type="button"
             onClick={onContinue}
             className={
-              estateChrome
-                ? estateCtaButtonClassCompact
+              premiumChrome
+                ? premiumShellKind === "wine"
+                  ? estateCtaButtonClassCompact
+                  : signatureCtaButtonClassCompact
                 : "w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90"
             }
-            style={estateChrome ? undefined : { backgroundColor: FOREST }}
+            style={premiumChrome ? undefined : { backgroundColor: FOREST }}
           >
             Continue
           </button>
@@ -4930,7 +5173,7 @@ function AddOnsSection({
             type="button"
             onClick={onContinue}
             className="text-[12px] font-medium transition-opacity hover:opacity-70"
-            style={{ color: estateChrome ? ESTATE_ON_WINE.kicker : "#4F4B47" }}
+            style={{ color: premiumChrome ? shellText!.kicker : "#4F4B47" }}
           >
             Skip, no add-ons needed
           </button>

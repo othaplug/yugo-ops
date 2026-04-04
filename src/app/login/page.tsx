@@ -111,14 +111,14 @@ export default function AdminLoginPage() {
         .adm-input:focus { border-bottom-color: rgba(201,169,98,0.65); box-shadow: none; }
         .adm-input::placeholder { color: #3A3A3E; }
         .adm-btn {
-          width: 100%; padding: 13px; background: linear-gradient(135deg, #C9A962 0%, #B89A52 100%);
+          width: 100%; padding: 13px; background: linear-gradient(135deg, #2C3E2D 0%, #B89A52 100%);
           color: #08080A; border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
           font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
           text-transform: uppercase; letter-spacing: 1px; min-height: 48px;
         }
         .adm-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,169,98,0.35); }
         .adm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .adm-link { background: none; border: none; color: #C9A962; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; }
+        .adm-link { background: none; border: none; color: #2C3E2D; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; }
         .adm-link:hover { color: #D4B56C; text-decoration: underline; }
         .adm-back { background: none; border: none; color: #4A4A4E; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; width: 100%; text-align: center; min-height: 40px; display: flex; align-items: center; justify-content: center; }
         .adm-back:hover { color: #E8E5E0; }
@@ -184,12 +184,12 @@ export default function AdminLoginPage() {
                         type="checkbox"
                         checked={consentChecked}
                         onChange={(e) => setConsentChecked(e.target.checked)}
-                        style={{ marginTop: 2, width: 13, height: 13, accentColor: "#C9A962", flexShrink: 0, cursor: "pointer" }}
+                        style={{ marginTop: 2, width: 13, height: 13, accentColor: "#2C3E2D", flexShrink: 0, cursor: "pointer" }}
                       />
                       <span style={{ fontSize: 10, color: "#4A4A4E", lineHeight: 1.7 }}>
                         I agree to Yugo&apos;s{" "}
-                        <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                        <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>
+                        <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                        <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
                       </span>
                     </label>
                   </div>

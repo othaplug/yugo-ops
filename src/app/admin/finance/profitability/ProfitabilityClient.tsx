@@ -118,7 +118,7 @@ const marginBg = (m: number, t: number) =>
 
 const TIER_COLORS: Record<string, string> = {
   essential: "#6B7280", curated: "#6B7280", essentials: "#6B7280",
-  signature: "#C9A962", premier: "#C9A962",
+  signature: "#2C3E2D", premier: "#2C3E2D",
   estate: "#2D6A4F",
 };
 
@@ -927,7 +927,7 @@ export default function ProfitabilityClient() {
                       <YAxis tick={{ fontSize: 10, fill: "var(--tx3)" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
                       <Tooltip content={<ChartTooltip />} cursor={false} />
                       <Bar dataKey="avgGP" radius={[4, 4, 0, 0]} activeBar={false}>
-                        {tierBreakdown.map((e) => <Cell key={e.tier} fill={TIER_COLORS[e.tier] || "#C9A962"} />)}
+                        {tierBreakdown.map((e) => <Cell key={e.tier} fill={TIER_COLORS[e.tier] || "#2C3E2D"} />)}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
@@ -971,9 +971,9 @@ export default function ProfitabilityClient() {
                   </button>
                 ))}
               </div>
-              {(breakdownTab === "moves" ? [moveTypeBreakdown, "#C9A962"] : [deliveryTypeBreakdown, "#2D6A4F"] as const).length > 0 && (() => {
+              {(breakdownTab === "moves" ? [moveTypeBreakdown, "#2C3E2D"] : [deliveryTypeBreakdown, "#2D6A4F"] as const).length > 0 && (() => {
                 const data = breakdownTab === "moves" ? moveTypeBreakdown : deliveryTypeBreakdown;
-                const color = breakdownTab === "moves" ? "#C9A962" : "#2D6A4F";
+                const color = breakdownTab === "moves" ? "#2C3E2D" : "#2D6A4F";
                 return (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="h-52">
@@ -1030,13 +1030,13 @@ export default function ProfitabilityClient() {
                     <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--tx3)" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 10, fill: "var(--tx3)" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}%`} />
                     <Tooltip content={<ChartTooltip />} cursor={{ stroke: "var(--brd)", strokeWidth: 1, strokeDasharray: "4 2" }} />
-                    <Line type="monotone" dataKey="grossMargin" stroke="#C9A962" strokeWidth={2} dot={{ r: 3, fill: "#C9A962" }} activeDot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="grossMargin" stroke="#2C3E2D" strokeWidth={2} dot={{ r: 3, fill: "#2C3E2D" }} activeDot={{ r: 4 }} />
                     <Line type="monotone" dataKey="netMargin"   stroke="#2D6A4F" strokeWidth={2} dot={{ r: 3, fill: "#2D6A4F" }} activeDot={{ r: 4 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
               <div className="flex items-center gap-4 mt-2 text-[10px] text-[var(--tx3)]">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#C9A962] rounded-full inline-block" />Gross Margin</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#2C3E2D] rounded-full inline-block" />Gross Margin</span>
                 <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#2D6A4F] rounded-full inline-block" />Net Margin</span>
               </div>
             </Section>
@@ -1104,7 +1104,7 @@ export default function ProfitabilityClient() {
                           {r.tier && (
                             <span
                               className="ml-1.5 inline-flex items-center px-1 py-px rounded text-[10px] font-bold leading-none uppercase"
-                              style={{ color: TIER_COLORS[r.tier] ?? "#C9A962", backgroundColor: `${TIER_COLORS[r.tier] ?? "#C9A962"}22` }}
+                              style={{ color: TIER_COLORS[r.tier] ?? "#2C3E2D", backgroundColor: `${TIER_COLORS[r.tier] ?? "#2C3E2D"}22` }}
                             >
                               {r.tier}
                             </span>

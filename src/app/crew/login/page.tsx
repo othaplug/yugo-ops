@@ -308,19 +308,19 @@ export default function CrewLoginPage() {
                       type="checkbox"
                       checked={consentChecked}
                       onChange={(e) => handleConsentChange(e.target.checked)}
-                      style={{ marginTop: 2, width: 15, height: 15, accentColor: "#C9A962", flexShrink: 0, cursor: "pointer" }}
+                      style={{ marginTop: 2, width: 15, height: 15, accentColor: "#2C3E2D", flexShrink: 0, cursor: "pointer" }}
                     />
                     <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
                       I agree to Yugo&apos;s{" "}
-                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>
+                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
                     </span>
                   </label>
                 </div>
               )}
               <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
                 Dispatch:{" "}
-                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: "#C9A962", fontWeight: 600, textDecoration: "none" }}>
+                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: "#2C3E2D", fontWeight: 600, textDecoration: "none" }}>
                   {formatPhone(DISPATCH_PHONE)}
                 </a>
               </div>
@@ -338,7 +338,7 @@ export default function CrewLoginPage() {
                 style={{
                   display: "inline-block",
                   padding: "12px 24px",
-                  background: "#C9A962",
+                  background: "#2C3E2D",
                   color: "#0D0D0D",
                   borderRadius: 10,
                   fontSize: 14,
@@ -357,7 +357,7 @@ export default function CrewLoginPage() {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#C9A962",
+                    color: "#2C3E2D",
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -445,19 +445,19 @@ export default function CrewLoginPage() {
                       type="checkbox"
                       checked={consentChecked}
                       onChange={(e) => handleConsentChange(e.target.checked)}
-                      style={{ marginTop: 2, width: 15, height: 15, accentColor: "#C9A962", flexShrink: 0, cursor: "pointer" }}
+                      style={{ marginTop: 2, width: 15, height: 15, accentColor: "#2C3E2D", flexShrink: 0, cursor: "pointer" }}
                     />
                     <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
                       I agree to Yugo&apos;s{" "}
-                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>
+                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
                     </span>
                   </label>
                 </div>
               )}
               <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
                 Dispatch:{" "}
-                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: "#C9A962", fontWeight: 600, textDecoration: "none" }}>
+                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: "#2C3E2D", fontWeight: 600, textDecoration: "none" }}>
                   {formatPhone(DISPATCH_PHONE)}
                 </a>
               </div>
@@ -475,7 +475,7 @@ export default function CrewLoginPage() {
                 style={{
                   display: "inline-block",
                   padding: "12px 24px",
-                  background: "#C9A962",
+                  background: "#2C3E2D",
                   color: "#0D0D0D",
                   borderRadius: 10,
                   fontSize: 14,
@@ -494,7 +494,7 @@ export default function CrewLoginPage() {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#C9A962",
+                    color: "#2C3E2D",
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -582,19 +582,19 @@ export default function CrewLoginPage() {
                       type="checkbox"
                       checked={consentChecked}
                       onChange={(e) => handleConsentChange(e.target.checked)}
-                      style={{ marginTop: 2, width: 15, height: 15, accentColor: "#C9A962", flexShrink: 0, cursor: "pointer" }}
+                      style={{ marginTop: 2, width: 15, height: 15, accentColor: "#2C3E2D", flexShrink: 0, cursor: "pointer" }}
                     />
                     <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
                       I agree to Yugo&apos;s{" "}
-                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>
+                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
                     </span>
                   </label>
                 </div>
               )}
               <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
                 Dispatch:{" "}
-                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: "#C9A962", fontWeight: 600, textDecoration: "none" }}>
+                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: "#2C3E2D", fontWeight: 600, textDecoration: "none" }}>
                   {formatPhone(DISPATCH_PHONE)}
                 </a>
               </div>
@@ -611,7 +611,7 @@ export default function CrewLoginPage() {
               </div>
               <div style={{ fontSize: 12, color: "#555", marginBottom: 24 }}>
                 Dispatch:{" "}
-                <a href={`tel:${normalizePhone(DISPATCH_PHONE)}`} className="crew-login-link" style={{ color: "#C9A962", textDecoration: "none" }}>
+                <a href={`tel:${normalizePhone(DISPATCH_PHONE)}`} className="crew-login-link" style={{ color: "#2C3E2D", textDecoration: "none" }}>
                   {formatPhone(DISPATCH_PHONE)}
                 </a>
               </div>
@@ -622,7 +622,7 @@ export default function CrewLoginPage() {
                 style={{
                   background: "none",
                   border: "none",
-                  color: "#C9A962",
+                  color: "#2C3E2D",
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -695,7 +695,7 @@ export default function CrewLoginPage() {
             style={{
               width: 48,
               height: 1,
-              background: "linear-gradient(90deg, transparent, #C9A962, transparent)",
+              background: "linear-gradient(90deg, transparent, #2C3E2D, transparent)",
               margin: "0 auto 28px",
             }}
           />
@@ -735,7 +735,7 @@ export default function CrewLoginPage() {
                       margin: "0 auto 12px",
                       fontSize: 24,
                       fontWeight: 600,
-                      color: "#C9A962",
+                      color: "#2C3E2D",
                       fontFamily: "'DM Sans', sans-serif",
                     }}
                   >
@@ -787,13 +787,13 @@ export default function CrewLoginPage() {
                           height: 56,
                           borderRadius: "50%",
                           background: selectedMember?.id === m.id ? "rgba(201,169,98,0.2)" : "rgba(255,255,255,0.05)",
-                          border: selectedMember?.id === m.id ? "2px solid #C9A962" : "1px solid #333",
+                          border: selectedMember?.id === m.id ? "2px solid #2C3E2D" : "1px solid #333",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           fontSize: 14,
                           fontWeight: 600,
-                          color: selectedMember?.id === m.id ? "#C9A962" : "#999",
+                          color: selectedMember?.id === m.id ? "#2C3E2D" : "#999",
                           fontFamily: "'DM Sans', sans-serif",
                           cursor: "pointer",
                           transition: "all 0.2s",
@@ -846,7 +846,7 @@ export default function CrewLoginPage() {
                       style={{
                         background: "none",
                         border: "none",
-                        color: "#C9A962",
+                        color: "#2C3E2D",
                         fontSize: 13,
                         fontWeight: 600,
                         cursor: "pointer",
@@ -895,7 +895,7 @@ export default function CrewLoginPage() {
                         height: 56,
                         borderRadius: 10,
                         background: "#0D0D0D",
-                        border: `2px solid ${pin.length > i ? "#C9A962" : "#2A2A2A"}`,
+                        border: `2px solid ${pin.length > i ? "#2C3E2D" : "#2A2A2A"}`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -955,12 +955,12 @@ export default function CrewLoginPage() {
                   type="checkbox"
                   checked={consentChecked}
                   onChange={(e) => handleConsentChange(e.target.checked)}
-                  style={{ marginTop: 2, width: 15, height: 15, accentColor: "#C9A962", flexShrink: 0, cursor: "pointer" }}
+                  style={{ marginTop: 2, width: 15, height: 15, accentColor: "#2C3E2D", flexShrink: 0, cursor: "pointer" }}
                 />
                 <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
                   I agree to Yugo&apos;s{" "}
-                  <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                  <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>
+                  <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                  <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
                 </span>
               </label>
             </div>
@@ -971,7 +971,7 @@ export default function CrewLoginPage() {
             <a
               className="crew-login-link"
               href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-              style={{ color: "#C9A962", fontWeight: 600, textDecoration: "none" }}
+              style={{ color: "#2C3E2D", fontWeight: 600, textDecoration: "none" }}
             >
               {formatPhone(DISPATCH_PHONE)}
             </a>
@@ -1092,7 +1092,7 @@ function CrewPhoneLoginFields({
                 height: 56,
                 borderRadius: 10,
                 background: "#0D0D0D",
-                border: `2px solid ${phonePin.length > i ? "#C9A962" : "#2A2A2A"}`,
+                border: `2px solid ${phonePin.length > i ? "#2C3E2D" : "#2A2A2A"}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

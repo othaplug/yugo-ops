@@ -245,7 +245,7 @@ export default function PartnerBillingTab({
         <div>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Invoice size={16} color="#B8962E" />
+              <Invoice size={16} color="#2C3E2D" />
               <h3 className="text-[20px] font-bold text-[var(--tx)] font-hero">
                 Statements
               </h3>
@@ -312,7 +312,7 @@ export default function PartnerBillingTab({
                           <Link
                             href={`/partner/statements/${s.id}/pay`}
                             className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg text-white"
-                            style={{ background: "#5C1A33" }}
+                            style={{ background: "#2C3E2D" }}
                           >
                             Pay {formatCurrency(balance)}
                           </Link>
@@ -355,7 +355,7 @@ export default function PartnerBillingTab({
           <h3 className="text-[20px] font-bold text-[var(--tx)] font-hero">Service Level Performance</h3>
           <button
             onClick={exportReport}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#C9A962] hover:text-[#8B6914] transition-colors"
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#2C3E2D] hover:text-[#8B6914] transition-colors"
           >
             <DownloadSimple size={14} />
             Export Report ({periodLabel})
@@ -431,7 +431,7 @@ export default function PartnerBillingTab({
             <button
               type="button"
               onClick={onViewInvoices}
-              className="text-[12px] font-semibold text-[#C9A962] hover:text-[#8B6914] transition-colors"
+              className="text-[12px] font-semibold text-[#2C3E2D] hover:text-[#8B6914] transition-colors"
             >
               View all invoices →
             </button>

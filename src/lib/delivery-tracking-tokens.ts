@@ -96,11 +96,11 @@ export async function sendB2BTrackingNotifications(
   if (audiences.includes("business")) {
     const subj = "Your Yugo delivery is confirmed";
     const inner = `
-<div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#FAF7F2;max-width:560px;margin:0 auto">
+<div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#F9EDE4;max-width:560px;margin:0 auto">
   <p style="font-size:11px;letter-spacing:0.04em;text-transform:none;opacity:0.7;margin:0 0 12px">Yugo</p>
   <h1 style="font-size:22px;margin:0 0 16px">Delivery confirmed</h1>
   <p style="font-size:15px;line-height:1.5;margin:0 0 20px">Your Yugo delivery is confirmed. Track progress anytime.</p>
-  <a href="${bizUrl}" style="display:inline-block;background:#5C1A33;color:#FAF7F2;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>
+  <a href="${bizUrl}" style="display:inline-block;background:#2C3E2D;color:#F9EDE4;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>
   <p style="font-size:13px;margin:28px 0 0;opacity:0.75">Questions? (647) 370-4525</p>
 </div>`;
     if (d.contact_email) {
@@ -126,11 +126,11 @@ export async function sendB2BTrackingNotifications(
     const recUrl = `${base}/delivery/track/${encodeURIComponent(d.recipient_tracking_token)}`;
     const subj = `Your ${brand} delivery by Yugo`;
     const inner = `
-<div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#FAF7F2;max-width:560px;margin:0 auto">
+<div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#F9EDE4;max-width:560px;margin:0 auto">
   <p style="font-size:11px;letter-spacing:0.04em;text-transform:none;opacity:0.7;margin:0 0 12px">${brand} · Yugo</p>
   <h1 style="font-size:22px;margin:0 0 16px">Track your delivery</h1>
   <p style="font-size:15px;line-height:1.5;margin:0 0 20px">Your order from <strong>${brand}</strong> is on the way with Yugo.</p>
-  <a href="${recUrl}" style="display:inline-block;background:#5C1A33;color:#FAF7F2;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>
+  <a href="${recUrl}" style="display:inline-block;background:#2C3E2D;color:#F9EDE4;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>
   <p style="font-size:13px;margin:28px 0 0;opacity:0.75">Questions? (647) 370-4525</p>
 </div>`;
     if (d.customer_email) {

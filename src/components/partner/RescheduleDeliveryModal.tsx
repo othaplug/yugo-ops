@@ -196,7 +196,7 @@ export default function RescheduleDeliveryModal({
                 onClick={() => handleReschedule()}
                 disabled={loading || !newDate || !newWindow}
                 className="w-full py-3 rounded-xl font-bold text-[13px] text-white transition-all disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
               >
                 {loading ? "Checking availability…" : "Confirm Reschedule"}
               </button>

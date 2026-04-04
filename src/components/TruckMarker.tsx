@@ -14,7 +14,7 @@ export function TruckMarker({ className = "", size = 40 }: { className?: string;
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #C9A962, #8B7332)",
+        background: "linear-gradient(135deg, #2C3E2D, #8B7332)",
         border: "2px solid white",
         borderRadius: "50%",
         boxShadow: "0 2px 10px rgba(0,0,0,0.35)",

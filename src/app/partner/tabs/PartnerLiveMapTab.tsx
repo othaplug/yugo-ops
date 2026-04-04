@@ -132,7 +132,7 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
             {selected.crew_name && (
               <div className="text-[11px] text-[#4F4B47] dark:text-[var(--tx3)] mt-1">Crew: {selected.crew_name}</div>
             )}
-            <button onClick={() => setSelected(null)} className="mt-2 text-[10px] text-[#C9A962] dark:text-[var(--gold)] font-semibold hover:underline">
+            <button onClick={() => setSelected(null)} className="mt-2 text-[10px] text-[#2C3E2D] dark:text-[var(--gold)] font-semibold hover:underline">
               Close
             </button>
           </div>
@@ -204,9 +204,9 @@ export default function PartnerLiveMapTab({ orgId }: { orgId: string }) {
                 onClick={() => isActive ? setSelected(d) : undefined}
                 className={`bg-white dark:bg-[var(--card)] border rounded-xl p-4 flex items-center justify-between transition-colors ${
                   isActiveDelivery
-                    ? "border-[#C9A962] dark:border-[var(--gold)] ring-1 ring-[#C9A962]/30 dark:ring-[var(--gold)]/30"
+                    ? "border-[#2C3E2D] dark:border-[var(--gold)] ring-1 ring-[#2C3E2D]/30 dark:ring-[var(--gold)]/30"
                     : "border-[#E8E4DF] dark:border-[var(--brd)]"
-                } ${isActive ? "cursor-pointer hover:border-[#C9A962]/40 dark:hover:border-[var(--gold)]/40" : ""}`}
+                } ${isActive ? "cursor-pointer hover:border-[#2C3E2D]/40 dark:hover:border-[var(--gold)]/40" : ""}`}
               >
                 <div className="flex items-start gap-3">
                   <span

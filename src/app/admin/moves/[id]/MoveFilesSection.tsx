@@ -55,7 +55,7 @@ function isPdf(url: string, type?: string) {
 }
 
 const BADGE_STYLES: Record<string, string> = {
-  pod:    "bg-[#C9A962]/15 text-[#7A5C00] border border-[#C9A962]/30",
+  pod:    "bg-[#2C3E2D]/15 text-[#7A5C00] border border-[#2C3E2D]/30",
   photo:  "bg-[#2D6A4F]/10 text-[#1B4332] border border-[#2D6A4F]/25",
   doc:    "bg-blue-50 text-blue-700 border border-blue-200",
   upload: "bg-[var(--gdim)] text-[var(--tx2)] border border-[var(--brd)]",
@@ -401,7 +401,7 @@ export default function MoveFilesSection({ moveId, moveStatus }: { moveId: strin
           {/* PoD */}
           <FileGroup
             label="Proof of Delivery"
-            borderColor="border-[#C9A962]"
+            borderColor="border-[#2C3E2D]"
             files={podFiles}
             defaultOpen
             extra={

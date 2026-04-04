@@ -203,7 +203,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <div className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3,#524D47)] mb-3">Account</div>
                 <div className="rounded-xl border border-[var(--brd,#E8E4DF)] overflow-hidden">
                   <div className="px-4 py-3.5 flex items-center gap-3 bg-[var(--card,#fff)]">
-                    <div className="w-10 h-10 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[13px] font-bold flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#2C3E2D] flex items-center justify-center text-white text-[13px] font-bold flex-shrink-0">
                       {contactName.charAt(0).toUpperCase()}{(contactName.split(" ")[1] || "").charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -213,7 +213,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   </div>
                   <div className="border-t border-[var(--brd,#E8E4DF)] px-4 py-2.5 flex items-center justify-between">
                     <span className="text-[12px] text-[var(--tx3,#524D47)]">{orgName}</span>
-                    <span className="text-[11px] font-semibold text-[#C9A962] uppercase tracking-wide">
+                    <span className="text-[11px] font-semibold text-[#2C3E2D] uppercase tracking-wide">
                       {organizationTypeLabel(orgType)}
                     </span>
                   </div>
@@ -234,12 +234,12 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                       onClick={() => handleTheme(t.key)}
                       className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
                         theme === t.key
-                          ? "border-[#C9A962] bg-[#C9A962]/5"
+                          ? "border-[#2C3E2D] bg-[#2C3E2D]/5"
                           : "border-[var(--brd,#E8E4DF)] bg-[var(--card,#fff)] hover:border-[var(--tx3,#524D47)]/30"
                       }`}
                     >
-                      <t.PhIcon size={20} color={theme === t.key ? "#C9A962" : "currentColor"} />
-                      <span className={`text-[11px] font-semibold ${theme === t.key ? "text-[#C9A962]" : "text-[var(--tx3,#524D47)]"}`}>{t.label}</span>
+                      <t.PhIcon size={20} color={theme === t.key ? "#2C3E2D" : "currentColor"} />
+                      <span className={`text-[11px] font-semibold ${theme === t.key ? "text-[#2C3E2D]" : "text-[var(--tx3,#524D47)]"}`}>{t.label}</span>
                     </button>
                   ))}
                 </div>
@@ -329,7 +329,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <input
                   value={profile.contact_name}
                   onChange={(e) => setProfile((p) => ({ ...p, contact_name: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#2C3E2D] focus:outline-none transition-colors"
                 />
               </div>
               <div>
@@ -338,7 +338,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   value={profile.email}
                   onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
                   type="email"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#2C3E2D] focus:outline-none transition-colors"
                 />
               </div>
               <div>
@@ -347,7 +347,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   value={profile.phone}
                   onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
                   type="tel"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#2C3E2D] focus:outline-none transition-colors"
                 />
               </div>
               <div className="pt-2">
@@ -362,7 +362,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               <button
                 onClick={saveProfile}
                 disabled={profileLoading}
-                className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] disabled:opacity-50 transition-colors"
+                className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#2C3E2D] text-white hover:bg-[#B89A52] disabled:opacity-50 transition-colors"
               >
                 {profileLoading ? "Saving…" : profileSaved ? "Saved!" : "Save changes"}
               </button>
@@ -388,7 +388,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                     role="switch"
                     aria-checked={notifPrefs[pref.key]}
                     onClick={() => setNotifPrefs((p) => ({ ...p, [pref.key]: !p[pref.key] }))}
-                    className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${notifPrefs[pref.key] ? "bg-[#C9A962]" : "bg-[var(--brd,#D1D5DB)]"}`}
+                    className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${notifPrefs[pref.key] ? "bg-[#2C3E2D]" : "bg-[var(--brd,#D1D5DB)]"}`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${notifPrefs[pref.key] ? "translate-x-5" : "translate-x-0"}`} />
                   </button>
@@ -396,7 +396,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
               ))}
               <button
                 onClick={saveNotifPrefs}
-                className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors"
+                className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#2C3E2D] text-white hover:bg-[#B89A52] transition-colors"
               >
                 {prefsSaved ? "Saved!" : "Save preferences"}
               </button>
@@ -427,7 +427,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                         ? "bg-green-500/10 text-green-600"
                         : summaryTestResult === "error"
                         ? "bg-red-500/10 text-red-500"
-                        : "bg-[#C9A962]/10 text-[#C9A962] hover:bg-[#C9A962]/20"
+                        : "bg-[#2C3E2D]/10 text-[#2C3E2D] hover:bg-[#2C3E2D]/20"
                     }`}
                   >
                     {summaryTestSending ? "Sending…" : summaryTestResult === "sent" ? "Sent" : summaryTestResult === "error" ? "Failed" : "Send test"}
@@ -446,7 +446,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                 <select
                   value={deliveryPrefs.default_time_slot}
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_time_slot: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] focus:border-[#2C3E2D] focus:outline-none transition-colors"
                 >
                   <option value="morning">Morning (8 AM – 12 PM)</option>
                   <option value="afternoon">Afternoon (12 PM – 5 PM)</option>
@@ -464,7 +464,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   role="switch"
                   aria-checked={deliveryPrefs.auto_share_tracking}
                   onClick={() => setDeliveryPrefs((p) => ({ ...p, auto_share_tracking: !p.auto_share_tracking }))}
-                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${deliveryPrefs.auto_share_tracking ? "bg-[#C9A962]" : "bg-[var(--brd,#D1D5DB)]"}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${deliveryPrefs.auto_share_tracking ? "bg-[#2C3E2D]" : "bg-[var(--brd,#D1D5DB)]"}`}
                 >
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${deliveryPrefs.auto_share_tracking ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
@@ -479,7 +479,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   role="switch"
                   aria-checked={deliveryPrefs.customer_notifications}
                   onClick={() => setDeliveryPrefs((p) => ({ ...p, customer_notifications: !p.customer_notifications }))}
-                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${deliveryPrefs.customer_notifications ? "bg-[#C9A962]" : "bg-[var(--brd,#D1D5DB)]"}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${deliveryPrefs.customer_notifications ? "bg-[#2C3E2D]" : "bg-[var(--brd,#D1D5DB)]"}`}
                 >
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${deliveryPrefs.customer_notifications ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
@@ -492,7 +492,7 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                     value={deliveryPrefs.notification_message || ""}
                     onChange={(e) => setDeliveryPrefs((p) => ({ ...p, notification_message: e.target.value }))}
                     placeholder="Add a custom note to delivery notifications"
-                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#C9A962] focus:outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#2C3E2D] focus:outline-none transition-colors"
                   />
                 </div>
               )}
@@ -503,12 +503,12 @@ export default function PartnerSettingsPanel({ open, onClose, orgName, contactNa
                   onChange={(e) => setDeliveryPrefs((p) => ({ ...p, default_special_handling: e.target.value }))}
                   placeholder="e.g. White glove service, assemble furniture"
                   rows={3}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#C9A962] focus:outline-none transition-colors resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--brd,#E8E4DF)] text-[var(--text-base)] text-[var(--tx,#1A1A1A)] bg-[var(--card,#fff)] placeholder-[var(--tx3,#aaa)] focus:border-[#2C3E2D] focus:outline-none transition-colors resize-none"
                 />
               </div>
               <button
                 onClick={saveDeliveryPrefs}
-                className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors"
+                className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#2C3E2D] text-white hover:bg-[#B89A52] transition-colors"
               >
                 {prefsSaved ? "Saved!" : "Save preferences"}
               </button>

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
 
-const GOLD = "#C9A962";
+const GOLD = "#2C3E2D";
 const FOREST = "#2A3D2E";
 const INK = "#1A1A1A";
 const MUTED = "#6B7A6E";
@@ -230,13 +230,13 @@ function ToggleCard({
       onClick={() => onChange(!checked)}
       className={`w-full flex items-start gap-3.5 p-4 rounded-2xl text-left transition-all duration-200 ${
         checked
-          ? "bg-[#C9A962]/5 shadow-[0_1px_8px_rgba(201,169,98,0.10)]"
+          ? "bg-[#2C3E2D]/5 shadow-[0_1px_8px_rgba(201,169,98,0.10)]"
           : "bg-white hover:bg-[#FAF8F4]"
       }`}
     >
         <div
           className={`mt-0.5 w-5 h-5 rounded-full shrink-0 flex items-center justify-center transition-all duration-200 ${
-            checked ? "bg-[#C9A962] text-[#1A1A1A]" : "bg-[#F0EDE8] text-transparent"
+            checked ? "bg-[#2C3E2D] text-[#1A1A1A]" : "bg-[#F0EDE8] text-transparent"
           }`}
         >
         <CheckMark size={9} />
@@ -529,7 +529,7 @@ export default function ClientSignOffPage({
     return (
       <main className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-[#C9A962]/30 border-t-[#C9A962] animate-spin" />
+          <div className="w-8 h-8 rounded-full border-2 border-[#2C3E2D]/30 border-t-[#2C3E2D] animate-spin" />
           <p className="text-[13px]" style={{ color: MUTED }}>Loading…</p>
         </div>
       </main>
@@ -644,7 +644,7 @@ export default function ClientSignOffPage({
                     <div
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
                         done
-                          ? "bg-[#C9A962] text-[#1A1A1A]"
+                          ? "bg-[#2C3E2D] text-[#1A1A1A]"
                           : active
                           ? "bg-[#1A1A1A] text-white shadow-sm"
                           : "bg-[#E8E4DC] text-[#AAA]"
@@ -973,7 +973,7 @@ export default function ClientSignOffPage({
                             onChange={() => setFurnitureReassembled(value)}
                             className="w-5 h-5 rounded-full appearance-none border-0 outline-none cursor-pointer"
                             style={{
-                              backgroundColor: isSelected ? "#C9A962" : "#E8E4DC",
+                              backgroundColor: isSelected ? "#2C3E2D" : "#E8E4DC",
                               boxShadow: isSelected ? "inset 0 0 0 3px white" : "none",
                             }}
                           />
@@ -1273,7 +1273,7 @@ export default function ClientSignOffPage({
             <button
               type="button"
               onClick={() => setPhase(6)}
-              className="text-[11px] transition-colors hover:text-[#C9A962] underline underline-offset-2"
+              className="text-[11px] transition-colors hover:text-[#2C3E2D] underline underline-offset-2"
               style={{ color: MUTED }}
             >
               Client not around? Skip and do another route

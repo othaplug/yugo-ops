@@ -190,7 +190,7 @@ export default function PreMoveChecklist({
             width: `${(completedCount / totalCount) * 100}%`,
             background: allDone
               ? "linear-gradient(90deg, #22C55E, #16A34A)"
-              : "linear-gradient(90deg, #C9A962, #D4B56C)",
+              : "linear-gradient(90deg, #2C3E2D, #D4B56C)",
           }}
         />
       </div>

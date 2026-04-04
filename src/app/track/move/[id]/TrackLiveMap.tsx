@@ -437,7 +437,7 @@ export default function TrackLiveMap({
                 <div className="flex items-center gap-2.5 px-3 pb-2.5">
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold text-white shrink-0"
-                    style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                    style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
                   >
                     {(crew?.name || "Y").replace("Team ", "").slice(0, 1).toUpperCase()}
                   </div>
@@ -453,7 +453,7 @@ export default function TrackLiveMap({
                   </div>
                   <a
                     href={`tel:${(crewPhone || dispatchPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
-                    className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-[11px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                    className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-[11px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
                   >
                     <Phone size={13} className="text-current shrink-0" aria-hidden />
                     {crewPhone ? "Call crew" : "Call dispatch"}
@@ -467,8 +467,8 @@ export default function TrackLiveMap({
                     <div className="flex items-center gap-4 pt-3 text-[11px] text-[#454545]">
                       {displayEta != null && (
                         <div className="flex items-center gap-1.5">
-                          <Clock size={12} color="#C9A962" aria-hidden />
-                          <span className="font-semibold text-[#C9A962]">~{displayEta} min ETA</span>
+                          <Clock size={12} color="#2C3E2D" aria-hidden />
+                          <span className="font-semibold text-[#2C3E2D]">~{displayEta} min ETA</span>
                         </div>
                       )}
                       {lastLocationAt && <span>Updated {formatRelativeTime(lastLocationAt)}</span>}
@@ -497,14 +497,14 @@ export default function TrackLiveMap({
                   <div className="flex gap-2 pt-1">
                     <a
                       href={`tel:${(crewPhone || dispatchPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
                     >
                       <Phone size={14} className="text-current shrink-0" />
                       {crewPhone ? "Call crew" : "Call dispatch"}
                     </a>
                     <a
                       href={`sms:${(dispatchPhone || crewPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#C9A962] transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
                     >
                       <ChatCircle size={14} className="text-current shrink-0" aria-hidden />
                       Text

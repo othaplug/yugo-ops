@@ -100,7 +100,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
                 <button
                   onClick={() => setMethod("email")}
                   className={`flex-1 px-3 py-2 rounded-lg text-[12px] font-semibold border transition-colors ${
-                    method === "email" ? "border-[#C9A962] bg-[#C9A962]/5 text-[#C9A962]" : "border-[var(--brd)] text-[var(--tx3)]"
+                    method === "email" ? "border-[#2C3E2D] bg-[#2C3E2D]/5 text-[#2C3E2D]" : "border-[var(--brd)] text-[var(--tx3)]"
                   }`}
                 >
                   <Envelope size={14} className="inline mr-1.5" />
@@ -109,7 +109,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
                 <button
                   onClick={() => setMethod("sms")}
                   className={`flex-1 px-3 py-2 rounded-lg text-[12px] font-semibold border transition-colors ${
-                    method === "sms" ? "border-[#C9A962] bg-[#C9A962]/5 text-[#C9A962]" : "border-[var(--brd)] text-[var(--tx3)]"
+                    method === "sms" ? "border-[#2C3E2D] bg-[#2C3E2D]/5 text-[#2C3E2D]" : "border-[var(--brd)] text-[var(--tx3)]"
                   }`}
                 >
                   <Chat size={14} className="inline mr-1.5" />
@@ -123,13 +123,13 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
                 onChange={method === "sms" ? phoneInput.onChange : (e) => setRecipient(e.target.value)}
                 placeholder={method === "email" ? "Email address" : PHONE_PLACEHOLDER}
                 type={method === "email" ? "email" : "tel"}
-                className="w-full px-3 py-2.5 rounded-lg border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:outline-none transition-colors mb-4 bg-[var(--card)]"
+                className="w-full px-3 py-2.5 rounded-lg border border-[var(--brd)] text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#2C3E2D] focus:outline-none transition-colors mb-4 bg-[var(--card)]"
               />
 
               <button
                 onClick={handleSend}
                 disabled={sending}
-                className="w-full px-4 py-2.5 rounded-lg text-[13px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors disabled:opacity-50"
+                className="w-full px-4 py-2.5 rounded-lg text-[13px] font-bold bg-[#2C3E2D] text-white hover:bg-[#B89A52] transition-colors disabled:opacity-50"
               >
                 {sending ? "Sending..." : "Send tracking link"}
               </button>

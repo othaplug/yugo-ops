@@ -4,9 +4,16 @@
  * Typography: forest kickers 12px uppercase; primary buttons match transactional forest CTA.
  */
 import { getEmailFooterStandaloneFragment } from "@/lib/email/client-email-footer";
-import { EMAIL_FOREST, emailPrimaryCtaStyle } from "@/lib/email/email-brand-tokens";
+import {
+  EMAIL_FOREST,
+  emailPrimaryCtaStyle,
+} from "@/lib/email/email-brand-tokens";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
-import { EMAIL_LOGO_BLACK_H, EMAIL_LOGO_BLACK_W, getEmailLogoWineUrl } from "@/lib/email-templates";
+import {
+  EMAIL_LOGO_BLACK_H,
+  EMAIL_LOGO_BLACK_W,
+  getEmailLogoWineUrl,
+} from "@/lib/email-templates";
 
 const ACCENT_ROSE = "#9E4A5C";
 const CARD_BG = "#ffffff";
@@ -14,10 +21,14 @@ const PAGE_BG = "#FAF7F2";
 const TEXT = "#1a1a1a";
 const TEXT_MUTED = "#555";
 const BORDER = "rgba(0,0,0,0.08)";
-const BTN_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+const BTN_FONT =
+  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
 
 /** Full document wrapper for admin notifications: light bg, white card with logo inside card. */
-export function adminNotificationLayout(innerHtml: string, title?: string): string {
+export function adminNotificationLayout(
+  innerHtml: string,
+  title?: string,
+): string {
   const heading = title
     ? `<h1 style="font-size:18px;font-weight:700;color:${TEXT};margin:0 0 16px;">${escapeHtml(title)}</h1>`
     : "";
@@ -64,7 +75,9 @@ export function newClaimAdminEmailHtml(params: {
 }): string {
   const baseUrl = getEmailBaseUrl();
   const viewUrl = `${baseUrl}/admin/claims/${params.claimId}`;
-  const source = params.adminCreated ? "created by your team" : "submitted by the client";
+  const source = params.adminCreated
+    ? "created by your team"
+    : "submitted by the client";
   const inner = `
     <div style="font-size:12px;font-weight:700;color:${ACCENT_ROSE};letter-spacing:0px;text-transform:uppercase;margin-bottom:8px;">New damage claim</div>
     <h1 style="font-size:22px;font-weight:700;color:${TEXT};margin:0 0 8px;">${escapeHtml(params.claimNumber)}</h1>

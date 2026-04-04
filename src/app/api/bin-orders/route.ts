@@ -301,24 +301,24 @@ function buildConfirmationEmail(d: {
   };
   return `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#0a0a0a;color:#e5e0d8">
-      <h1 style="color:#C9A962;font-size:24px;margin:0 0 8px">Your bins are on the way, ${firstName}.</h1>
+      <h1 style="color:#2C3E2D;font-size:24px;margin:0 0 8px">Your bins are on the way, ${firstName}.</h1>
       <p style="color:#9ca3af;margin:0 0 24px">Order <strong style="color:#e5e0d8">${d.orderNumber}</strong> - everything is confirmed and scheduled.</p>
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
         <tr><td style="padding:8px 0;border-bottom:1px solid #2a2a2a;color:#9ca3af">Bundle</td><td style="padding:8px 0;border-bottom:1px solid #2a2a2a;text-align:right">${bundleLabel[d.bundleType] || d.bundleType} (${d.binCount} bins)</td></tr>
         <tr><td style="padding:8px 0;border-bottom:1px solid #2a2a2a;color:#9ca3af">Bin delivery</td><td style="padding:8px 0;border-bottom:1px solid #2a2a2a;text-align:right">${d.dropOffDate}</td></tr>
         <tr><td style="padding:8px 0;border-bottom:1px solid #2a2a2a;color:#9ca3af">Move date</td><td style="padding:8px 0;border-bottom:1px solid #2a2a2a;text-align:right">${d.moveDate}</td></tr>
         <tr><td style="padding:8px 0;border-bottom:1px solid #2a2a2a;color:#9ca3af">Bin collection</td><td style="padding:8px 0;border-bottom:1px solid #2a2a2a;text-align:right">${d.pickupDate}</td></tr>
-        <tr><td style="padding:8px 0;color:#C9A962;font-weight:bold">Total</td><td style="padding:8px 0;text-align:right;color:#C9A962;font-weight:bold">$${d.total.toFixed(2)} CAD</td></tr>
+        <tr><td style="padding:8px 0;color:#2C3E2D;font-weight:bold">Total</td><td style="padding:8px 0;text-align:right;color:#2C3E2D;font-weight:bold">$${d.total.toFixed(2)} CAD</td></tr>
       </table>
       <div style="background:#1a1a1a;border-radius:8px;padding:16px;margin-bottom:24px">
-        <h3 style="color:#C9A962;margin:0 0 12px;font-size:14px">Here is what to expect</h3>
-        <p style="margin:0 0 8px;font-size:14px"><span style="color:#C9A962;font-weight:bold">&#9655;</span> <strong>Your bins arrive ${d.dropOffDate}</strong> between 9 AM and 5 PM. Take your time packing.</p>
-        <p style="margin:0 0 8px;font-size:14px"><span style="color:#C9A962;font-weight:bold">&#9655;</span> <strong>On your move date, ${d.moveDate},</strong> leave the bins stacked near your door and we will handle the rest.</p>
-        <p style="margin:0;font-size:14px"><span style="color:#C9A962;font-weight:bold">&#9655;</span> <strong>We collect the bins on ${d.pickupDate}</strong> between 9 AM and 5 PM.</p>
+        <h3 style="color:#2C3E2D;margin:0 0 12px;font-size:14px">Here is what to expect</h3>
+        <p style="margin:0 0 8px;font-size:14px"><span style="color:#2C3E2D;font-weight:bold">&#9655;</span> <strong>Your bins arrive ${d.dropOffDate}</strong> between 9 AM and 5 PM. Take your time packing.</p>
+        <p style="margin:0 0 8px;font-size:14px"><span style="color:#2C3E2D;font-weight:bold">&#9655;</span> <strong>On your move date, ${d.moveDate},</strong> leave the bins stacked near your door and we will handle the rest.</p>
+        <p style="margin:0;font-size:14px"><span style="color:#2C3E2D;font-weight:bold">&#9655;</span> <strong>We collect the bins on ${d.pickupDate}</strong> between 9 AM and 5 PM.</p>
       </div>
       <p style="font-size:13px;color:#6b7280">You will receive a reminder the day before each delivery and collection with a 2-hour window. We are always available at <strong>(647) 370-4525</strong>.</p>
       <hr style="border:none;border-top:1px solid #2a2a2a;margin:24px 0"/>
-      <p style="font-size:13px;color:#6b7280">Planning the move itself too? <a href="https://liveyugo.com" style="color:#C9A962">Get your Yugo moving quote here.</a></p>
+      <p style="font-size:13px;color:#6b7280">Planning the move itself too? <a href="https://liveyugo.com" style="color:#2C3E2D">Get your Yugo moving quote here.</a></p>
     </div>
   `;
 }

@@ -5,7 +5,7 @@ import { useToast } from "@/app/admin/components/Toast";
 import { expandItemRow } from "@/lib/inventory-parse";
 import { CaretDown, X, Plus, DownloadSimple } from "@phosphor-icons/react";
 
-const GOLD = "#C9A962";
+const GOLD = "#2C3E2D";
 const FOREST = "#2C3B2D";
 
 type InventoryItem = {
@@ -211,7 +211,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               value={extraDesc}
               onChange={(e) => setExtraDesc(e.target.value)}
               placeholder="e.g. Extra boxes from garage"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] placeholder:text-[#BBB] focus:outline-none focus:border-[#C9A962] focus:bg-white transition-colors"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] placeholder:text-[#BBB] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
               required
             />
           </div>
@@ -223,7 +223,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                 min={1}
                 value={extraQty}
                 onChange={(e) => setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] focus:outline-none focus:border-[#C9A962] focus:bg-white transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
               />
             </div>
             <div>
@@ -232,7 +232,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                 value={extraRoom}
                 onChange={(e) => setExtraRoom(e.target.value)}
                 placeholder="e.g. Garage"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] placeholder:text-[#BBB] focus:outline-none focus:border-[#C9A962] focus:bg-white transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] placeholder:text-[#BBB] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
               />
             </div>
           </div>
@@ -248,7 +248,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               type="submit"
               disabled={submitting || !extraDesc.trim()}
               className="flex-1 py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-40 transition-all active:scale-[0.98]"
-              style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+              style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
             >
               {submitting ? "Submitting…" : "Submit Request"}
             </button>
@@ -292,7 +292,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
             <button
               type="button"
               onClick={() => setAddExtraOpen(true)}
-              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-[#D4D4D4] text-[12px] font-semibold text-[#4F4B47] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-[#D4D4D4] text-[12px] font-semibold text-[#4F4B47] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
             >
               <Plus size={11} weight="regular" className="text-current" />
               Request extra item
@@ -317,7 +317,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
         <button
           type="button"
           onClick={handleExport}
-          className="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#555] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#555] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
         >
           <DownloadSimple size={11} className="text-current" />
           Export
@@ -352,7 +352,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                       <Plus size={8} color={GOLD} />
                     </span>
                   )}
-                  <h4 className="text-[12px] font-bold truncate" style={{ color: isOnSite ? GOLD : "#C9A962" }}>{room}</h4>
+                  <h4 className="text-[12px] font-bold truncate" style={{ color: isOnSite ? GOLD : "#2C3E2D" }}>{room}</h4>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ backgroundColor: `${GOLD}14`, color: GOLD }}>

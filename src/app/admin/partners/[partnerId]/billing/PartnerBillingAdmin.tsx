@@ -238,7 +238,7 @@ export default function PartnerBillingAdmin({
               onClick={generateStatement}
               disabled={generating}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold text-white transition-all disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+              style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
             >
               {generating ? <CircleNotch size={14} className="animate-spin" /> : <Invoice size={14} />}
               {generating ? "Generating…" : "Generate"}

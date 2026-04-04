@@ -29,7 +29,7 @@ const SOURCE_FILTERS = [
 ];
 
 const SOURCE_COLORS: Record<string, { color: string; bg: string }> = {
-  delivery: { color: "#C9A962", bg: "rgba(201,169,98,0.12)" },
+  delivery: { color: "#2C3E2D", bg: "rgba(201,169,98,0.12)" },
   quote: { color: "#6B8CFF", bg: "rgba(107,140,255,0.12)" },
   move: { color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
   payment: { color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },

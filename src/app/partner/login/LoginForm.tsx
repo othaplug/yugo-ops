@@ -137,7 +137,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
           border-radius: 12px; color: #1A1714; font-size: 14px; font-family: 'DM Sans', sans-serif;
           outline: none; transition: all 0.2s;
         }
-        .ptr-input:focus { border-color: #C9A962; box-shadow: 0 0 0 3px rgba(201,169,98,0.08); }
+        .ptr-input:focus { border-color: #2C3E2D; box-shadow: 0 0 0 3px rgba(201,169,98,0.08); }
         .ptr-input::placeholder { color: #B5B0A8; }
         .ptr-btn {
           width: 100%; padding: 14px; background: #2D6A4F; color: #FFF;
@@ -146,7 +146,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
         }
         .ptr-btn:hover:not(:disabled) { background: #245840; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(45,106,79,0.25); }
         .ptr-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .ptr-link { background: none; border: none; color: #C9A962; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; }
+        .ptr-link { background: none; border: none; color: #2C3E2D; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; transition: color 0.2s; }
         .ptr-link:hover { color: #B89A52; text-decoration: underline; }
         .ptr-back { background: none; border: none; color: #6B6B6B; font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; width: 100%; text-align: center; transition: color 0.2s; }
         .ptr-back:hover { color: #1A1714; }
@@ -162,7 +162,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
               <YugoLogo size={20} variant="gold" />
               <div style={{ height: 16, width: 1, background: "rgba(201,169,98,0.3)" }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#C9A962", letterSpacing: 0.5 }}>Partner Portal</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#2C3E2D", letterSpacing: 0.5 }}>Partner Portal</span>
             </div>
           </div>
 
@@ -223,8 +223,8 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
                       />
                       <span style={{ fontSize: 12, color: "#777", lineHeight: 1.6 }}>
                         I agree to Yugo&apos;s{" "}
-                        <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                        <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A962", textDecoration: "underline" }}>Terms of Use</a>
+                        <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                        <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
                       </span>
                     </label>
                   </div>
@@ -312,7 +312,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(201,169,98,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <MapPin size={18} color="#C9A962" />
+                  <MapPin size={18} color="#2C3E2D" />
                 </div>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#E8E5E0" }}>Live GPS Tracking</div>

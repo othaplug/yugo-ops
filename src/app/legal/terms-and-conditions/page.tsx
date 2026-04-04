@@ -32,7 +32,7 @@ export default async function TermsAndConditionsPage() {
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "48px 24px 80px" }}>
         <div style={{ marginBottom: 40 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#C9A962", marginBottom: 8 }}>Legal</p>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#2C3E2D", marginBottom: 8 }}>Legal</p>
           <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 40, fontWeight: 500, color: "#1A1714", marginBottom: 12, lineHeight: 1.2 }}>Terms & Conditions</h1>
           <p style={{ fontSize: 14, color: "#4F4B47" }}>Effective date: {EFFECTIVE} · {brand}</p>
         </div>
@@ -131,7 +131,7 @@ export default async function TermsAndConditionsPage() {
           <p>All damage or loss claims must be:</p>
           <ul>
             <li>Noted on the Client Sign-Off form at the time of delivery, or</li>
-            <li>Submitted in writing to <a href={`mailto:${email}`} style={{ color: "#C9A962" }}>{email}</a> within <strong>24 hours</strong> of delivery completion.</li>
+            <li>Submitted in writing to <a href={`mailto:${email}`} style={{ color: "#2C3E2D" }}>{email}</a> within <strong>24 hours</strong> of delivery completion.</li>
           </ul>
           <p>Claims submitted after 24 hours will not be accepted. Providing false or exaggerated claims constitutes fraud.</p>
         </LegalSection>
@@ -168,7 +168,7 @@ export default async function TermsAndConditionsPage() {
         </LegalSection>
 
         <LegalSection title="12. Dispute Resolution">
-          <p>In the event of a dispute, we request that you first contact our customer service team at <a href={`mailto:${email}`} style={{ color: "#C9A962" }}>{email}</a> to attempt informal resolution. If a dispute is not resolved within 30 days, either party may pursue formal resolution. Any unresolved disputes shall be subject to binding arbitration in Toronto, Ontario under the Arbitration Act (Ontario), except that either party may seek injunctive relief in a court of competent jurisdiction.</p>
+          <p>In the event of a dispute, we request that you first contact our customer service team at <a href={`mailto:${email}`} style={{ color: "#2C3E2D" }}>{email}</a> to attempt informal resolution. If a dispute is not resolved within 30 days, either party may pursue formal resolution. Any unresolved disputes shall be subject to binding arbitration in Toronto, Ontario under the Arbitration Act (Ontario), except that either party may seek injunctive relief in a court of competent jurisdiction.</p>
         </LegalSection>
 
         <LegalSection title="13. Governing Law">
@@ -184,12 +184,12 @@ export default async function TermsAndConditionsPage() {
         </LegalSection>
 
         <LegalSection title="16. Contact">
-          <p>For any questions regarding these Terms and Conditions, contact us at <a href={`mailto:${email}`} style={{ color: "#C9A962" }}>{email}</a>.</p>
+          <p>For any questions regarding these Terms and Conditions, contact us at <a href={`mailto:${email}`} style={{ color: "#2C3E2D" }}>{email}</a>.</p>
         </LegalSection>
 
         <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid #E8E4DC", display: "flex", gap: 20, flexWrap: "wrap" }}>
-          <Link href="/legal/privacy-policy" style={{ fontSize: 13, color: "#C9A962", textDecoration: "none" }}>Privacy Policy →</Link>
-          <Link href="/legal/terms-of-use" style={{ fontSize: 13, color: "#C9A962", textDecoration: "none" }}>Terms of Use →</Link>
+          <Link href="/legal/privacy-policy" style={{ fontSize: 13, color: "#2C3E2D", textDecoration: "none" }}>Privacy Policy →</Link>
+          <Link href="/legal/terms-of-use" style={{ fontSize: 13, color: "#2C3E2D", textDecoration: "none" }}>Terms of Use →</Link>
         </div>
       </div>
     </main>

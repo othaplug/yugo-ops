@@ -6,7 +6,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-
 import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
 
-const YUGO_GOLD = "#C9A962";
+const YUGO_GOLD = "#2C3E2D";
 
 function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
   const toRad = (d: number) => (d * Math.PI) / 180;

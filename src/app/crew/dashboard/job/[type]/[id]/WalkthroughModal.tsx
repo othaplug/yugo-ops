@@ -469,7 +469,7 @@ export default function WalkthroughModal({
                 <button
                   onClick={() => setStep("checklist")}
                   className="w-full py-2 font-bold text-[var(--text-base)] text-white"
-                  style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                  style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
                 >
                   Start Inventory Check
                 </button>
@@ -875,7 +875,7 @@ export default function WalkthroughModal({
               <button
                 onClick={() => onSkip(skipReason)}
                 className="w-full py-2 font-bold text-[var(--text-base)] text-white"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
               >
                 Skip Walkthrough
               </button>
@@ -893,7 +893,7 @@ export default function WalkthroughModal({
               <button
                 onClick={() => setStep("extras")}
                 className="w-full py-2 font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
               >
                 Continue <CaretRight size={14} />
               </button>
@@ -908,7 +908,7 @@ export default function WalkthroughModal({
               <button
                 onClick={() => setStep("summary")}
                 className="w-full py-2 font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
               >
                 Review Summary <CaretRight size={14} />
               </button>
@@ -929,7 +929,7 @@ export default function WalkthroughModal({
                     onClick={submitChangeRequest}
                     disabled={submitting}
                     className="w-full py-2 font-bold text-[var(--text-base)] text-white disabled:opacity-60 flex items-center justify-center gap-2"
-                    style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                    style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
                   >
                     {submitting ? (
                       <>
@@ -955,7 +955,7 @@ export default function WalkthroughModal({
                   onClick={() => void submitNoChanges()}
                   disabled={submitting}
                   className="w-full py-2 font-bold text-[var(--text-base)] text-white disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                  style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
                 >
                   {submitting ? "Saving…" : "No Changes, Inventory Matches"}
                 </button>

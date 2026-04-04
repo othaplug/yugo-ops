@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const CREW_GOLD = "#C9A962";
+const CREW_GOLD = "#2C3E2D";
 
 /** Directional arrow for crew position — same geometry as client tracking maps. */
 function makeCrewArrowIcon(bearingDeg: number | null) {
@@ -34,7 +34,7 @@ function makePickupIcon() {
 function makeDropoffIcon() {
   return L.divIcon({
     className: "dropoff-marker",
-    html: `<div style="width:16px;height:16px;border-radius:50%;background:#C9A962;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
+    html: `<div style="width:16px;height:16px;border-radius:50%;background:#2C3E2D;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   });

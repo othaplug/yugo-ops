@@ -31,11 +31,11 @@ interface OfficeConfig {
 /* Status → ring color mapping */
 const STATUS_RING: Record<string, string> = {
   en_route_pickup: "#22C55E",
-  at_pickup: "#C9A962",
-  loading: "#C9A962",
+  at_pickup: "#2C3E2D",
+  loading: "#2C3E2D",
   en_route_delivery: "#3B82F6",
-  at_delivery: "#C9A962",
-  unloading: "#C9A962",
+  at_delivery: "#2C3E2D",
+  unloading: "#2C3E2D",
   returning: "#6B7280",
   idle: "#6B7280",
   offline: "#EF4444",
@@ -281,7 +281,7 @@ const GodEyeMap = dynamic(
                     id={`route-line-${crewId}`}
                     type="line"
                     paint={{
-                      "line-color": "#C9A962",
+                      "line-color": "#2C3E2D",
                       "line-width": 3,
                       "line-opacity": 0.7,
                       "line-dasharray": [2, 2],
@@ -299,7 +299,7 @@ const GodEyeMap = dynamic(
                   className="mb-1 px-2.5 py-1 rounded-md text-[9px] font-semibold tracking-[0.08em] uppercase whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity"
                   style={{
                     background: "linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%)",
-                    color: "#C9A962",
+                    color: "#2C3E2D",
                     border: "1px solid rgba(201,169,98,0.25)",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
                   }}
@@ -317,7 +317,7 @@ const GodEyeMap = dynamic(
                   />
                   <div
                     className="w-px h-2"
-                    style={{ background: "linear-gradient(to bottom, #C9A962, transparent)" }}
+                    style={{ background: "linear-gradient(to bottom, #2C3E2D, transparent)" }}
                   />
                 </div>
               </div>
@@ -493,7 +493,7 @@ function CrewPopup({
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-bold text-white shadow"
-            style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+            style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
           >
             {(crew.name || "?").replace("Team ", "").slice(0, 2).toUpperCase()}
           </div>
@@ -1069,7 +1069,7 @@ export default function UnifiedTrackingView({
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                         style={{
-                          background: "linear-gradient(135deg, #C9A962, #8B7332)",
+                          background: "linear-gradient(135deg, #2C3E2D, #8B7332)",
                           boxShadow: `0 0 0 2px ${teamColor(c.id)}`,
                         }}
                       >

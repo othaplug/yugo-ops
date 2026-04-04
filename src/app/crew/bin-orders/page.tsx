@@ -162,7 +162,7 @@ export default function CrewBinOrdersPage() {
       <div className="px-4 pb-8">
         {loading && (
           <div className="flex items-center justify-center py-16 gap-2">
-            <div className="w-5 h-5 border-2 border-[#C9A962]/30 border-t-[#C9A962] rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#2C3E2D]/30 border-t-[#2C3E2D] rounded-full animate-spin" />
             <span className="text-gray-400 text-[13px]">Loading tasks…</span>
           </div>
         )}
@@ -181,7 +181,7 @@ export default function CrewBinOrdersPage() {
                 <button
                   key={`${task.id}-${task.taskType}`}
                   onClick={() => openTask(task)}
-                  className="w-full text-left bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-4 hover:border-[#C9A962]/40 active:scale-[0.99] transition-all"
+                  className="w-full text-left bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-4 hover:border-[#2C3E2D]/40 active:scale-[0.99] transition-all"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5">
@@ -205,7 +205,7 @@ export default function CrewBinOrdersPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[11px] font-semibold text-[#C9A962]">{isToday ? "Today" : "Tomorrow"}</p>
+                      <p className="text-[11px] font-semibold text-[#2C3E2D]">{isToday ? "Today" : "Tomorrow"}</p>
                       <p className="text-[11px] text-gray-500">{BUNDLE_SHORT[task.bundle_type]} · {task.bin_count} bins</p>
                     </div>
                   </div>
@@ -277,7 +277,7 @@ export default function CrewBinOrdersPage() {
                       type="number" min={0} max={activeTask.bin_count}
                       value={binsReturned}
                       onChange={(e) => setBinsReturned(Math.min(activeTask.bin_count, Math.max(0, parseInt(e.target.value) || 0)))}
-                      className="w-full bg-[#0F1117] border border-[#3a3d4a] rounded-lg px-3 py-3 text-white text-center text-[20px] font-bold focus:outline-none focus:border-[#C9A962]"
+                      className="w-full bg-[#0F1117] border border-[#3a3d4a] rounded-lg px-3 py-3 text-white text-center text-[20px] font-bold focus:outline-none focus:border-[#2C3E2D]"
                     />
                     {binsReturned < activeTask.bin_count && (
                       <p className="text-[12px] text-red-400 mt-1.5">
@@ -293,7 +293,7 @@ export default function CrewBinOrdersPage() {
                   <input
                     type="text" value={crewName} onChange={(e) => setCrewName(e.target.value)}
                     placeholder="e.g. Marcus"
-                    className="w-full bg-[#0F1117] border border-[#3a3d4a] rounded-lg px-3 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#C9A962]"
+                    className="w-full bg-[#0F1117] border border-[#3a3d4a] rounded-lg px-3 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#2C3E2D]"
                   />
                 </div>
 
@@ -337,7 +337,7 @@ export default function CrewBinOrdersPage() {
             </div>
             <button
               onClick={() => { setActiveTask(null); setDone(null); }}
-              className="px-4 py-2 bg-[#1a1d27] border border-[#2a2d3a] text-[14px] font-medium hover:border-[#C9A962]/40 transition-colors"
+              className="px-4 py-2 bg-[#1a1d27] border border-[#2a2d3a] text-[14px] font-medium hover:border-[#2C3E2D]/40 transition-colors"
             >
               Back to tasks
             </button>
@@ -356,7 +356,7 @@ function DetailRow({
       <span className="text-gray-500 mt-0.5 shrink-0">{icon}</span>
       <div>
         {isPhone ? (
-          <a href={`tel:${sub}`} className="text-[#C9A962] hover:underline">
+          <a href={`tel:${sub}`} className="text-[#2C3E2D] hover:underline">
             {label}, {sub}
           </a>
         ) : (

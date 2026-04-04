@@ -616,13 +616,13 @@ export default function PartnerScheduleModal({
                 onClick={() => switchTab(tab)}
                 className={`relative pb-3 pt-1 mr-6 text-[13px] font-semibold transition-colors duration-150 ${
                   bookingType === tab
-                    ? "text-[#B8962E]"
+                    ? "text-[#2C3E2D]"
                     : "text-[var(--tx3)] hover:text-[var(--tx)]"
                 }`}
               >
                 {tab === "day_rate" ? "Day Rate" : "Per Delivery"}
                 {bookingType === tab && (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#B8962E] rounded-t-full" />
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2C3E2D] rounded-t-full" />
                 )}
               </button>
             ))}
@@ -645,7 +645,7 @@ export default function PartnerScheduleModal({
                       <div
                         className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-200 ${
                           step === s.id
-                            ? "bg-[#B8962E] text-white shadow-sm shadow-[#B8962E]/30 scale-110"
+                            ? "bg-[#2C3E2D] text-white shadow-sm shadow-[#2C3E2D]/30 scale-110"
                             : step > s.id
                             ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
                             : "bg-[var(--brd)]/60 text-[var(--tx3)] border border-[var(--brd)]"
@@ -710,7 +710,7 @@ export default function PartnerScheduleModal({
                         onClick={() => setDayTimeWindow(value)}
                         className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[12px] font-semibold transition-all duration-200 ${
                           active
-                            ? "bg-gradient-to-br from-[#B8962E] to-[#8B7332] text-white shadow-sm shadow-[#B8962E]/20"
+                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] text-white shadow-sm shadow-[#2C3E2D]/20"
                             : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]"
                         }`}
                       >
@@ -851,8 +851,8 @@ export default function PartnerScheduleModal({
                         onClick={() => setVehicleType(v.value as VehicleType)}
                         className={`relative text-left px-3 py-3 rounded-lg border transition-all duration-200 ${
                           sel
-                            ? "bg-gradient-to-br from-[#B8962E] to-[#8B7332] border-[#B8962E] shadow-md shadow-[#B8962E]/15"
-                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[#C9A962]/50 hover:bg-[var(--bg)]"
+                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
+                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/50 hover:bg-[var(--bg)]"
                         }`}
                       >
                         <div className={`text-[13px] font-semibold leading-tight ${sel ? "text-white" : "text-[var(--tx)]"}`}>{v.label}</div>
@@ -876,8 +876,8 @@ export default function PartnerScheduleModal({
                         onClick={() => { setDayType(val); setNumStops(INCLUDED_STOPS[val]); }}
                         className={`relative text-left px-3 py-3 rounded-lg border transition-all duration-200 ${
                           sel
-                            ? "bg-gradient-to-br from-[#B8962E] to-[#8B7332] border-[#B8962E] shadow-md shadow-[#B8962E]/15"
-                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[#C9A962]/50 hover:bg-[var(--bg)]"
+                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
+                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/50 hover:bg-[var(--bg)]"
                         }`}
                       >
                         <div className={`text-[13px] font-semibold leading-tight ${sel ? "text-white" : "text-[var(--tx)]"}`}>{label}</div>
@@ -1034,7 +1034,7 @@ export default function PartnerScheduleModal({
                           { id: `bi${Date.now()}`, description: "", quantity: 1, handling: "threshold" },
                         ])
                       }
-                      className="flex items-center gap-1.5 text-[12px] font-semibold text-[#C9A962]"
+                      className="flex items-center gap-1.5 text-[12px] font-semibold text-[#2C3E2D]"
                     >
                       <Plus className="w-4 h-4" /> Add item
                     </button>
@@ -1062,7 +1062,7 @@ export default function PartnerScheduleModal({
                         type="checkbox"
                         checked={b2bAssembly}
                         onChange={(e) => setB2bAssembly(e.target.checked)}
-                        className="rounded border-[var(--brd)] text-[#C9A962]"
+                        className="rounded border-[var(--brd)] text-[#2C3E2D]"
                       />
                       <span className="text-[13px] text-[var(--tx)]">Assembly required (priced per vertical)</span>
                     </label>
@@ -1071,7 +1071,7 @@ export default function PartnerScheduleModal({
                         type="checkbox"
                         checked={b2bDebris}
                         onChange={(e) => setB2bDebris(e.target.checked)}
-                        className="rounded border-[var(--brd)] text-[#C9A962]"
+                        className="rounded border-[var(--brd)] text-[#2C3E2D]"
                       />
                       <span className="text-[13px] text-[var(--tx)]">Debris / packaging removal</span>
                     </label>
@@ -1095,8 +1095,8 @@ export default function PartnerScheduleModal({
                         onClick={() => setDeliveryType(dt.value)}
                         className={`relative text-left px-4 py-3 rounded-lg border transition-all duration-200 ${
                           sel
-                            ? "bg-gradient-to-br from-[#B8962E] to-[#8B7332] border-[#B8962E] shadow-md shadow-[#B8962E]/15"
-                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[#C9A962]/50 hover:bg-[var(--bg)]"
+                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
+                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/50 hover:bg-[var(--bg)]"
                         }`}
                       >
                         <div className={`text-[13px] font-semibold leading-tight ${sel ? "text-white" : "text-[var(--tx)]"}`}>{dt.label}</div>
@@ -1200,7 +1200,7 @@ export default function PartnerScheduleModal({
                           type="checkbox"
                           checked={useDefaultPickup}
                           onChange={(e) => setUseDefaultPickup(e.target.checked)}
-                          className="rounded border-[var(--brd)] text-[#C9A962] mt-0.5 shrink-0"
+                          className="rounded border-[var(--brd)] text-[#2C3E2D] mt-0.5 shrink-0"
                         />
                         <span>
                           Use default warehouse address
@@ -1263,8 +1263,8 @@ export default function PartnerScheduleModal({
                   </ul>
                 )}
                 <div className="flex items-center gap-2 mb-2">
-                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}>Single add</button>
-                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${inventoryBulkMode ? "bg-[#C9A962] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}>Bulk add</button>
+                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!inventoryBulkMode ? "bg-[#2C3E2D] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}>Single add</button>
+                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${inventoryBulkMode ? "bg-[#2C3E2D] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}>Bulk add</button>
                 </div>
                 {inventoryBulkMode ? (
                   <div className="space-y-2">
@@ -1288,7 +1288,7 @@ export default function PartnerScheduleModal({
                 <SectionLabel>Complexity</SectionLabel>
                 <div className="flex flex-wrap gap-2">
                   {COMPLEXITY_PRESETS.map((preset) => (
-                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${form.complexityIndicators.includes(preset) ? "bg-[#C9A962]/20 text-[#8B6914] border-[#C9A962]" : "bg-[var(--card)] text-[var(--tx3)] border-[var(--brd)] hover:border-[#C9A962]/50"}`}>
+                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${form.complexityIndicators.includes(preset) ? "bg-[#2C3E2D]/20 text-[#8B6914] border-[#2C3E2D]" : "bg-[var(--card)] text-[var(--tx3)] border-[var(--brd)] hover:border-[#2C3E2D]/50"}`}>
                       {preset}
                     </button>
                   ))}
@@ -1303,7 +1303,7 @@ export default function PartnerScheduleModal({
                   <textarea value={form.instructions} onChange={(e) => set("instructions", e.target.value)} rows={2} placeholder="Building access, codes, parking…" className={`${fieldInput} resize-y text-[13px]`} />
                 </FormField>
                 <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input type="checkbox" checked={form.special_handling} onChange={(e) => set("special_handling", e.target.checked)} className="rounded border-[var(--brd)] text-[#C9A962] focus:ring-[#C9A962]" />
+                  <input type="checkbox" checked={form.special_handling} onChange={(e) => set("special_handling", e.target.checked)} className="rounded border-[var(--brd)] text-[#2C3E2D] focus:ring-[#2C3E2D]" />
                   <span className="text-[13px] text-[var(--tx)]">Requires special handling (fragile, high-value)</span>
                 </label>
               </section>
@@ -1454,7 +1454,7 @@ export default function PartnerScheduleModal({
             <button
               type="button"
               onClick={handleContinue}
-              className="px-5 py-2 rounded-lg text-[12px] font-bold bg-[#C9A962] text-white hover:bg-[#B8862E] transition-colors"
+              className="px-5 py-2 rounded-lg text-[12px] font-bold bg-[#2C3E2D] text-white hover:bg-[#B8862E] transition-colors"
             >
               Continue →
             </button>
@@ -1474,11 +1474,11 @@ export default function PartnerScheduleModal({
         <SectionLabel>Surcharges</SectionLabel>
         <div className="flex gap-4">
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={isAfterHours} onChange={(e) => setIsAfterHours(e.target.checked)} className="rounded border-[var(--brd)] text-[#C9A962] focus:ring-[#C9A962]" />
+            <input type="checkbox" checked={isAfterHours} onChange={(e) => setIsAfterHours(e.target.checked)} className="rounded border-[var(--brd)] text-[#2C3E2D] focus:ring-[#2C3E2D]" />
             <span className="text-[13px] text-[var(--tx)]">After Hours (+20%)</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={isWeekend} onChange={(e) => setIsWeekend(e.target.checked)} className="rounded border-[var(--brd)] text-[#C9A962] focus:ring-[#C9A962]" />
+            <input type="checkbox" checked={isWeekend} onChange={(e) => setIsWeekend(e.target.checked)} className="rounded border-[var(--brd)] text-[#2C3E2D] focus:ring-[#2C3E2D]" />
             <span className="text-[13px] text-[var(--tx)]">Weekend (+10%)</span>
           </label>
         </div>
@@ -1494,9 +1494,9 @@ export default function PartnerScheduleModal({
         <SectionLabel>Add-on Services</SectionLabel>
         <div className="space-y-1.5">
           {displayServices.map((svc) => (
-            <label key={svc.slug} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-[var(--brd)] hover:border-[#C9A962]/40 transition-colors cursor-pointer">
+            <label key={svc.slug} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-[var(--brd)] hover:border-[#2C3E2D]/40 transition-colors cursor-pointer">
               <div className="flex items-center gap-2.5">
-                <input type="checkbox" checked={!!selectedServices[svc.slug]?.enabled} onChange={() => toggleService(svc.slug)} className="rounded border-[var(--brd)] text-[#C9A962] focus:ring-[#C9A962]" />
+                <input type="checkbox" checked={!!selectedServices[svc.slug]?.enabled} onChange={() => toggleService(svc.slug)} className="rounded border-[var(--brd)] text-[#2C3E2D] focus:ring-[#2C3E2D]" />
                 <div>
                   <div className="text-[13px] text-[var(--tx)]">{svc.service_name}</div>
                   {svc.slug === "stair_carry" && selectedServices[svc.slug]?.enabled && (
@@ -1507,7 +1507,7 @@ export default function PartnerScheduleModal({
                   )}
                 </div>
               </div>
-              <span className="text-[12px] font-semibold text-[#C9A962] shrink-0">
+              <span className="text-[12px] font-semibold text-[#2C3E2D] shrink-0">
                 {fmtCurrency(svc.price_min)}{svc.price_max ? ` – ${fmtCurrency(svc.price_max)}` : ""}
                 {svc.price_unit === "per_flight" ? "/flight" : svc.price_unit === "per_stop" ? "/stop" : ""}
               </span>
@@ -1525,7 +1525,7 @@ export default function PartnerScheduleModal({
     const std = b2bPreview?.standard_subtotal;
     const vname = b2bPreview?.vertical_name || "";
     return (
-      <div className="rounded-xl border border-[#C9A962]/30 bg-[var(--gdim)] p-4 space-y-2">
+      <div className="rounded-xl border border-[#2C3E2D]/30 bg-[var(--gdim)] p-4 space-y-2">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--gold)]">Your rate</h3>
           {b2bPreviewLoading && <span className="text-[10px] text-[var(--tx3)]">Calculating…</span>}
@@ -1553,7 +1553,7 @@ export default function PartnerScheduleModal({
         )}
         {b2bPreview ? (
           <>
-            <div className="border-t border-[#C9A962]/20 pt-2 mt-1 space-y-1">
+            <div className="border-t border-[#2C3E2D]/20 pt-2 mt-1 space-y-1">
               <div className="flex justify-between text-[13px]">
                 <span className="text-[var(--tx3)]">Subtotal</span>
                 <span className="font-semibold text-[var(--tx)]">{fmtCurrency(sub)}</span>
@@ -1564,7 +1564,7 @@ export default function PartnerScheduleModal({
               </div>
               <div className="flex justify-between pt-1">
                 <span className="text-[var(--text-base)] font-bold text-[var(--tx)]">Total incl. HST</span>
-                <span className="text-[16px] font-bold text-[#C9A962]">{fmtCurrency(totalWithHst)}</span>
+                <span className="text-[16px] font-bold text-[#2C3E2D]">{fmtCurrency(totalWithHst)}</span>
               </div>
             </div>
             {std != null && std > sub ? (
@@ -1582,7 +1582,7 @@ export default function PartnerScheduleModal({
     const hst = pricing ? calcHST(pricing.totalPrice) : 0;
     const totalWithHst = pricing ? pricing.totalPrice + hst : 0;
     return (
-      <div className="rounded-xl border border-[#C9A962]/30 bg-[var(--gdim)] p-4 space-y-2">
+      <div className="rounded-xl border border-[#2C3E2D]/30 bg-[var(--gdim)] p-4 space-y-2">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--gold)]">Price Preview</h3>
           {pricingLoading && <span className="text-[10px] text-[var(--tx3)]">Calculating…</span>}
@@ -1605,15 +1605,15 @@ export default function PartnerScheduleModal({
               <span className="text-[var(--tx3)]">HST (13%)</span>
               <span className="font-semibold text-[var(--tx)]">{fmtCurrency(hst)}</span>
             </div>
-            <div className="border-t border-[#C9A962]/20 pt-2 mt-1 flex justify-between">
+            <div className="border-t border-[#2C3E2D]/20 pt-2 mt-1 flex justify-between">
               <span className="text-[var(--text-base)] font-bold text-[var(--tx)]">Total incl. HST</span>
-              <span className="text-[16px] font-bold text-[#C9A962]">{fmtCurrency(totalWithHst)}</span>
+              <span className="text-[16px] font-bold text-[#2C3E2D]">{fmtCurrency(totalWithHst)}</span>
             </div>
             {pricing.effectivePerStop && bookingType === "day_rate" && (
               <div className="text-[11px] text-[var(--tx3)] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>
             )}
             {bookingType === "per_delivery" && (
-              <p className="text-[10px] text-[var(--tx3)] mt-2 pt-2 border-t border-[#C9A962]/20">
+              <p className="text-[10px] text-[var(--tx3)] mt-2 pt-2 border-t border-[#2C3E2D]/20">
                 Rates shown are base prices for standard access. Walk-up, long carry, and heavy item surcharges may apply.
               </p>
             )}

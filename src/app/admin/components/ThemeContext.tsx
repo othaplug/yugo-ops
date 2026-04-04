@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 
 type Theme = "light" | "dark";
 
@@ -10,7 +16,9 @@ type ThemeContextType = {
   setTheme: (theme: Theme) => void;
 };
 
-export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+export const ThemeContext = createContext<ThemeContextType | undefined>(
+  undefined,
+);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
@@ -49,7 +57,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("yugo-theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => setThemeState(prev => prev === "dark" ? "light" : "dark");
+  const toggleTheme = () =>
+    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
   const setTheme = (newTheme: Theme) => setThemeState(newTheme);
 
   return (

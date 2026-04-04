@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from "react-l
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const GOLD = "#C9A962";
+const GOLD = "#2C3E2D";
 
 function makeCrewArrowIcon() {
   return L.divIcon({

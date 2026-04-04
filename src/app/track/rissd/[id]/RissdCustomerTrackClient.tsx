@@ -53,7 +53,7 @@ export default function RissdCustomerTrackClient({ shipment }: { shipment: Shipm
     <div className="min-h-screen bg-[#FAF8F5] text-[var(--tx)] px-4 py-10">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-2 mb-1">
-          <ShippingContainer className="text-[#C9A962]" size={26} weight="duotone" aria-hidden />
+          <ShippingContainer className="text-[#2C3E2D]" size={26} weight="duotone" aria-hidden />
           <p className="text-xs font-bold uppercase tracking-wider text-[var(--tx3)]">Handled by Yugo</p>
         </div>
         <h1 className="text-2xl font-semibold leading-tight">

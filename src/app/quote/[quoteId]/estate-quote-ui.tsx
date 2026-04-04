@@ -34,13 +34,25 @@ export const estateCtaButtonClass =
 export const estateCtaButtonClassCompact =
   "w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] transition-all bg-[#66143D] text-[#F9EDE4] hover:bg-[#7A1847]";
 
-export function EstateFeatureCard({ title, description }: { title: string; description: string }) {
+export function EstateFeatureCard({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
     <div className="group">
-      <h4 className="text-lg font-serif mb-1" style={{ color: ESTATE_ON_WINE.primary }}>
+      <h4
+        className="text-lg font-serif mb-1"
+        style={{ color: ESTATE_ON_WINE.primary }}
+      >
         {title}
       </h4>
-      <p className="text-sm leading-relaxed" style={{ color: ESTATE_ON_WINE.secondary }}>
+      <p
+        className="text-sm leading-relaxed"
+        style={{ color: ESTATE_ON_WINE.secondary }}
+      >
         {description}
       </p>
     </div>
@@ -62,13 +74,22 @@ export const EstateExperienceSection = React.forwardRef<
       className="scroll-mt-24 py-16 px-6 md:px-12 mb-10 border-t border-[#66143D]/25"
     >
       <div className="max-w-4xl mx-auto">
-        <p className="text-sm uppercase tracking-[0.2em] mb-2 font-semibold" style={{ color: ESTATE_ON_WINE.kicker }}>
+        <p
+          className="text-sm uppercase tracking-[0.2em] mb-2 font-semibold"
+          style={{ color: ESTATE_ON_WINE.kicker }}
+        >
           Estate
         </p>
-        <h2 className="text-3xl md:text-4xl font-serif mb-2" style={{ color: ESTATE_ON_WINE.primary }}>
+        <h2
+          className="text-3xl md:text-4xl font-serif mb-2"
+          style={{ color: ESTATE_ON_WINE.primary }}
+        >
           Your Estate Experience
         </h2>
-        <p className="text-lg mb-12" style={{ color: ESTATE_ON_WINE.secondary }}>
+        <p
+          className="text-lg mb-12"
+          style={{ color: ESTATE_ON_WINE.secondary }}
+        >
           Every detail, handled with intention.
         </p>
 
@@ -108,7 +129,10 @@ export const EstateExperienceSection = React.forwardRef<
               Move Day
             </h3>
             <div className="grid md:grid-cols-2 gap-6">
-              <EstateFeatureCard title={truckLabel} description="Climate-protected and equipped exclusively for your move." />
+              <EstateFeatureCard
+                title={truckLabel}
+                description="Climate-protected and equipped exclusively for your move."
+              />
               <EstateFeatureCard
                 title={`Professional Crew of ${crewN}`}
                 description="Licensed, insured, background-checked. The same team from start to finish."
@@ -133,7 +157,10 @@ export const EstateExperienceSection = React.forwardRef<
                 title="Premium Art & Antique Handling"
                 description="Museum-grade care for fine art, antiques, and specialty pieces."
               />
-              <EstateFeatureCard title="Real-Time GPS Tracking" description="Follow your move live from any device." />
+              <EstateFeatureCard
+                title="Real-Time GPS Tracking"
+                description="Follow your move live from any device."
+              />
             </div>
           </div>
 
@@ -190,7 +217,10 @@ export const EstateExperienceSection = React.forwardRef<
 
         <div className="mt-16 pt-8 border-t border-[#66143D]/30 flex flex-wrap gap-8 justify-center">
           <div className="text-center">
-            <p className="text-lg font-serif" style={{ color: ESTATE_ON_WINE.primary }}>
+            <p
+              className="text-lg font-serif"
+              style={{ color: ESTATE_ON_WINE.primary }}
+            >
               Guaranteed Flat Price
             </p>
             <p className="text-sm" style={{ color: ESTATE_ON_WINE.muted }}>
@@ -198,7 +228,10 @@ export const EstateExperienceSection = React.forwardRef<
             </p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-serif" style={{ color: ESTATE_ON_WINE.primary }}>
+            <p
+              className="text-lg font-serif"
+              style={{ color: ESTATE_ON_WINE.primary }}
+            >
               Zero-Damage Commitment
             </p>
             <p className="text-sm" style={{ color: ESTATE_ON_WINE.muted }}>

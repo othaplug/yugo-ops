@@ -12,7 +12,7 @@ import {
   isEquipmentRelationUnavailable,
 } from "@/lib/supabase-equipment-errors";
 
-const GOLD = "#C9A962";
+const GOLD = "#2C3E2D";
 const INK = "#1A1A1A";
 const MUTED = "#6B7A6E";
 const BG = "#FAF8F4";
@@ -403,7 +403,7 @@ export default function CrewEquipmentCheckPage({
                     name="eq-batch"
                     checked={eqBatchReason === o.v}
                     onChange={() => setEqBatchReason(o.v)}
-                    className="accent-[#C9A962]"
+                    className="accent-[#2C3E2D]"
                   />
                   <span style={{ color: INK }}>{o.label}</span>
                 </label>
@@ -414,7 +414,7 @@ export default function CrewEquipmentCheckPage({
                     Go back now to retrieve?
                   </p>
                   <label className="flex items-center gap-2 text-[11px] cursor-pointer" style={{ color: INK }}>
-                    <input type="checkbox" checked={eqLeftRetrieve} onChange={(e) => setEqLeftRetrieve(e.target.checked)} className="accent-[#C9A962]" />
+                    <input type="checkbox" checked={eqLeftRetrieve} onChange={(e) => setEqLeftRetrieve(e.target.checked)} className="accent-[#2C3E2D]" />
                     <span style={{ color: INK }}>Yes — returning to the client now</span>
                   </label>
                   <p className="text-[10px]" style={{ color: MUTED }}>
@@ -463,7 +463,7 @@ export default function CrewEquipmentCheckPage({
                 name="eqskip"
                 checked={eqSkipChoice === "labour_only"}
                 onChange={() => setEqSkipChoice("labour_only")}
-                className="accent-[#C9A962]"
+                className="accent-[#2C3E2D]"
               />
               <span style={{ color: INK }}>No equipment used (labour-only job)</span>
             </label>
@@ -473,7 +473,7 @@ export default function CrewEquipmentCheckPage({
                 name="eqskip"
                 checked={eqSkipChoice === "emergency_later"}
                 onChange={() => setEqSkipChoice("emergency_later")}
-                className="accent-[#C9A962]"
+                className="accent-[#2C3E2D]"
               />
               <span style={{ color: INK }}>Emergency — will complete later</span>
             </label>

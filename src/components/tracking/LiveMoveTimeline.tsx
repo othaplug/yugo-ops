@@ -102,7 +102,7 @@ export default function LiveMoveTimeline({
   const currentEntry = entries.find((e) => e.status === "current");
 
   // Colors matching the client portal light theme
-  const GOLD = "#C9A962";
+  const GOLD = "#2C3E2D";
   const GREEN = "#22C55E";
   const FOREST = "#1C3A2B";
 
@@ -133,7 +133,7 @@ export default function LiveMoveTimeline({
       </div>
 
       {/* Timeline */}
-      <div className="px-4 py-5 space-y-0" style={{ backgroundColor: "#FAF7F2" }}>
+      <div className="px-4 py-5 space-y-0" style={{ backgroundColor: "#F9EDE4" }}>
         {entries.map((entry, index) => {
           const isLast = index === entries.length - 1;
           const isCurrent = entry.status === "current";

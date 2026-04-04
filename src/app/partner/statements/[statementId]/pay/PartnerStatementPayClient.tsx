@@ -5,9 +5,9 @@ import Script from "next/script";
 import Link from "next/link";
 import { Invoice, CheckCircle, ArrowLeft } from "@phosphor-icons/react";
 
-const FOREST = "#2C3E2D";
-const GOLD = "#B8962E";
-const WINE = "#5C1A33";
+const FOREST = "#2B3927";
+const GOLD = "#2C3E2D";
+const WINE = "#2C3E2D";
 
 const SQUARE_SDK_SANDBOX = "https://sandbox.web.squarecdn.com/v1/square.js";
 const SQUARE_SDK_PRODUCTION = "https://web.squarecdn.com/v1/square.js";

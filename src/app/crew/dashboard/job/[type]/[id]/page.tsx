@@ -789,7 +789,7 @@ export default function CrewJobPage({
                 onClick={() => void startJob()}
                 disabled={advancing || blockedByLocation}
                 className="w-full py-2 font-bold text-[14px] text-white disabled:opacity-50 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
               >
                 {advancing ? "Starting…" : "Start job"}
               </button>
@@ -866,7 +866,7 @@ export default function CrewJobPage({
                 type="button"
                 onClick={() => setWalkthroughModalOpen(true)}
                 className="inline-flex items-center justify-center px-3 py-1.5 font-bold text-[12px] text-white"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
               >
                 Start Inventory Check
               </button>
@@ -902,7 +902,7 @@ export default function CrewJobPage({
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
                 className="w-full flex items-center justify-center gap-2 py-2 font-semibold text-[13px] text-white transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
               >
                 <CheckCircle size={14} />
                 Client Sign-Off
@@ -913,7 +913,7 @@ export default function CrewJobPage({
                 onClick={advanceStatus}
                 disabled={advancing}
                 className="w-full py-2 font-semibold text-[13px] text-white disabled:opacity-60 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
               >
                 {advancing ? "Updating…" : getStatusLabel(nextStatus!)}
               </button>
@@ -1298,7 +1298,7 @@ export default function CrewJobPage({
                 }}
                 disabled={pickupPhotosCount < 1 && totalItems > 0}
                 className="w-full py-2.5 font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
-                style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
               >
                 {pickupPhotosCount < 1 && totalItems > 0
                   ? "Take at least 1 photo to continue"
@@ -1342,7 +1342,7 @@ export default function CrewJobPage({
                 <button
                   onClick={() => { setReportModalOpen(false); setReportSubmitted(false); setReportDesc(""); }}
                   className="w-full py-2 text-white font-semibold"
-                  style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                  style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
                 >
                   Done
                 </button>

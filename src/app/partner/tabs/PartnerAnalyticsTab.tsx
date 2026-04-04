@@ -37,8 +37,8 @@ const PERIOD_OPTIONS = [
   { value: 365, label: "Last 12 months" },
 ];
 
-const GOLD = "#C9A962";
-const CHART_COLORS = ["#C9A962", "#2D6A4F", "#5C1A33", "#4A7CE5", "#D48A29"];
+const GOLD = "#2C3E2D";
+const CHART_COLORS = ["#2C3E2D", "#2D6A4F", "#2C3E2D", "#4A7CE5", "#D48A29"];
 
 function KPICard({ label, value, sublabel, accent }: { label: string; value: string; sublabel?: string; accent?: string }) {
   return (
@@ -69,7 +69,7 @@ export default function PartnerAnalyticsTab({ orgId, orgName }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="w-7 h-7 rounded-full border-2 border-[#C9A962]/30 border-t-[#C9A962] animate-spin" />
+        <div className="w-7 h-7 rounded-full border-2 border-[#2C3E2D]/30 border-t-[#2C3E2D] animate-spin" />
       </div>
     );
   }

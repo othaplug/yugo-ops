@@ -287,7 +287,7 @@ export default function ForecastClient() {
                     }}
                     cursor={{ fill: "rgba(201,169,98,0.06)" }}
                   />
-                  <Bar dataKey="residential" stackId="a" fill="#C9A962" name="residential" />
+                  <Bar dataKey="residential" stackId="a" fill="#2C3E2D" name="residential" />
                   <Bar dataKey="b2b" stackId="a" fill="#2D6A4F" name="b2b" />
                   <Bar
                     dataKey="projected"
@@ -301,7 +301,7 @@ export default function ForecastClient() {
             </div>
             <div className="flex items-center gap-4 mt-2 text-[10px] text-[var(--tx3)]">
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-2 rounded-sm bg-[#C9A962]" />
+                <span className="w-3 h-2 rounded-sm bg-[#2C3E2D]" />
                 Residential
               </span>
               <span className="flex items-center gap-1.5">
@@ -309,7 +309,7 @@ export default function ForecastClient() {
                 B2B Delivery
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-2 rounded-sm bg-[#C9A962]/30 border border-[#C9A962]/40" />
+                <span className="w-3 h-2 rounded-sm bg-[#2C3E2D]/30 border border-[#2C3E2D]/40" />
                 Projected
               </span>
             </div>

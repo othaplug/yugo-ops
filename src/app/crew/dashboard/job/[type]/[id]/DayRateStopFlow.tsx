@@ -95,7 +95,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
             className="h-full rounded-full transition-all duration-700"
             style={{
               width: `${totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%`,
-              background: completedCount === totalCount ? "linear-gradient(90deg,#22C55E,#16A34A)" : "linear-gradient(90deg,#C9A962,#D4B56C)",
+              background: completedCount === totalCount ? "linear-gradient(90deg,#22C55E,#16A34A)" : "linear-gradient(90deg,#2C3E2D,#D4B56C)",
             }}
           />
         </div>

@@ -8,7 +8,7 @@ const PlusIcon = () => <Plus size={16} weight="regular" className="text-current"
 /** Shared gold FAB: subtle lift + soft top highlight (tuned globally with .sidebar-nav-lift / .btn-*). */
 export const createButtonBaseClass =
   "inline-flex items-center justify-center w-10 h-10 rounded-full text-[var(--btn-text-on-accent)] transition-all duration-300 ease-[var(--ease-out-expo)] " +
-  "bg-gradient-to-b from-[#E8D98A] via-[#C9A962] to-[#9A7B38] " +
+  "bg-gradient-to-b from-[#E8D98A] via-[#2C3E2D] to-[#9A7B38] " +
   "shadow-[0_1px_5px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.16)] " +
   "hover:shadow-[0_2px_10px_rgba(201,169,98,0.22),0_1px_3px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.2)] " +
   "hover:scale-[1.03] active:scale-[0.97] " +

@@ -218,7 +218,7 @@ export default function InventoryChangeRequestModal({
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search items…"
                 className="w-full rounded-xl border px-3 py-2.5 text-[13px] outline-none"
-                style={{ borderColor: `${FOREST}20`, backgroundColor: "#FAF7F2", color: FOREST }}
+                style={{ borderColor: `${FOREST}20`, backgroundColor: "#F9EDE4", color: FOREST }}
               />
               {searchHits.length > 0 && (
                 <ul className="rounded-xl border max-h-[180px] overflow-y-auto divide-y" style={{ borderColor: `${FOREST}12` }}>
@@ -264,7 +264,7 @@ export default function InventoryChangeRequestModal({
                   onClick={addCustomItem}
                   disabled={!customName.trim()}
                   className="w-full py-2 rounded-lg text-[11px] font-bold disabled:opacity-40"
-                  style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+                  style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
                 >
                   Add custom item
                 </button>
@@ -425,7 +425,7 @@ export default function InventoryChangeRequestModal({
               type="button"
               onClick={() => setStep((s) => (s === 1 ? 2 : 3))}
               className="flex-1 py-2.5 rounded-xl text-[12px] font-bold"
-              style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+              style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
             >
               Continue
             </button>
@@ -435,7 +435,7 @@ export default function InventoryChangeRequestModal({
               onClick={submit}
               disabled={submitting}
               className="flex-1 py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-50"
-              style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+              style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
             >
               {submitting ? "Submitting…" : "Submit request"}
             </button>

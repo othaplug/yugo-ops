@@ -52,7 +52,7 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="w-7 h-7 border-2 border-[#C9A962] border-t-transparent rounded-full animate-spin" />
+        <div className="w-7 h-7 border-2 border-[#2C3E2D] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -93,7 +93,7 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
                     placeholder="Min 8 characters"
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--brd)] rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none pr-10"
+                    className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--brd)] rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none pr-10"
                   />
                   <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] p-1" tabIndex={-1}>
                     {showPw ? <Eye size={16} weight="regular" /> : <EyeSlash size={16} weight="regular" />}
@@ -108,7 +108,7 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="Re-enter password"
                   required
-                  className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--brd)] rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:ring-1 focus:ring-[#C9A962]/30 outline-none"
+                  className="w-full px-4 py-3 bg-[var(--card)] border border-[var(--brd)] rounded-xl text-[var(--text-base)] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[#2C3E2D] focus:ring-1 focus:ring-[#2C3E2D]/30 outline-none"
                 />
               </div>
               <button

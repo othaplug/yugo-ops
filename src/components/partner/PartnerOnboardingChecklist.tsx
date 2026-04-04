@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle, Circle, Sparkle } from "@phosphor-icons/react";
 
 const BG = "#FAF8F5";
-const GOLD = "#B8962E";
-const TEXT = "#2C3E2D";
+const GOLD = "#2C3E2D";
+const TEXT = "#2B3927";
 
 type ProfileResponse = {
   email?: string | null;

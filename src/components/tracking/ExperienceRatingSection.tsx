@@ -312,7 +312,7 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
                     onClick={handleSubmitFeedback}
                     disabled={submitting}
                     className="w-full rounded-lg font-semibold text-[12px] py-2.5 px-4 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-                    style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+                    style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
                   >
                     {submitting ? "Submitting…" : "Submit Feedback"}
                   </button>

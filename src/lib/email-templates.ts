@@ -24,7 +24,7 @@ export const EQ_SANS = "Helvetica Neue,Helvetica,Arial,sans-serif";
 const EMAIL_BG = "#000000";
 /** Hairline under wordmark on black (replaces gold). */
 const EMAIL_DARK_HAIRLINE = "#EDE6DC";
-const EMAIL_WINE = "#5C1A33";
+const EMAIL_WINE = "#2B0416";
 const EMAIL_BRD = "#222222";
 const EMAIL_TX = "#FFFFFF";
 const EMAIL_TX2 = "#B0ADA8";
@@ -32,7 +32,7 @@ const EMAIL_TX3 = "#666";
 
 /**
  * Wine wordmark on light backgrounds (#FCF9F4, white cards, etc.).
- * Asset: `public/images/yugo-logo-wine.png` (brand wine #5C1A33 on transparent).
+ * Asset: `public/images/yugo-logo-wine.png` (brand wine #2B0416 on transparent).
  */
 export function getEmailLogoWineUrl(): string {
   const base = getEmailBaseUrl();
@@ -300,7 +300,7 @@ export function equinoxPromoFinePrint(text: string): string {
    ══════════════════════════════════════════════════════════════════ */
 const ESTATE_CREAM_PAGE = "#F3EDE4";
 const ESTATE_CREAM_CARD = "#FFFCF9";
-const ESTATE_WINE = "#5C1A33";
+const ESTATE_WINE = "#2B0416";
 const ESTATE_BODY = "#3A3532";
 const ESTATE_BODY_MUTED = "#6B635C";
 const ESTATE_DM_SANS = "'DM Sans',Helvetica Neue,Helvetica,Arial,sans-serif";
@@ -326,8 +326,8 @@ const ESTATE_EMAIL_DARK_MODE_CSS = `
   .estate-email-logo-light { display: none !important; }
   .estate-email-logo-dark { display: block !important; }
   .estate-email-logo-rule {
-    background: #2C3E2D !important;
-    background-image: linear-gradient(90deg, #2C3E2D, #EDE6DC, #2C3E2D) !important;
+    background: #2B3927 !important;
+    background-image: linear-gradient(90deg, #2B3927, #EDE6DC, #2B3927) !important;
   }
 }
 @media only screen and (max-width: 600px) {
@@ -472,8 +472,8 @@ const STATUS_COLORS: Record<string, string> = {
   pending: "#D48A29",
   confirmed: "#2D9F5A",
   scheduled: "#4A7CE5",
-  "in-transit": "#5C1A33",
-  dispatched: "#5C1A33",
+  "in-transit": "#2B0416",
+  dispatched: "#2B0416",
   delivered: "#2D9F5A",
   cancelled: "#D14343",
 };

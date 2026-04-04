@@ -162,7 +162,7 @@ export default function StageProgressBar({
                       transitionDelay: `${i * 80}ms`,
                       background: isComplete
                         ? "linear-gradient(90deg, #22C55E, #16A34A)"
-                        : "linear-gradient(90deg, var(--gold), #C9A962)",
+                        : "linear-gradient(90deg, var(--gold), #2C3E2D)",
                     }}
                   />
                 </div>

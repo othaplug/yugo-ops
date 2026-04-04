@@ -137,7 +137,7 @@ export default function UpdatePasswordPage() {
                   Signed in as <strong style={{ color: text }}>{userEmail}</strong>
                 </div>
               )}
-              <div style={{ width: 48, height: 1, background: "linear-gradient(90deg, transparent, #C9A962, transparent)", margin: "0 auto 28px" }} />
+              <div style={{ width: 48, height: 1, background: "linear-gradient(90deg, transparent, #2C3E2D, transparent)", margin: "0 auto 28px" }} />
 
               {error && (
                 <div style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)", color: "#F87171", fontSize: 12, padding: "10px 14px", borderRadius: 8, marginBottom: 18 }}>
@@ -220,7 +220,7 @@ export default function UpdatePasswordPage() {
                         : password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) ? 3
                         : password.length >= 8 ? 2 : password.length > 0 ? 1 : 0;
                       const active = i <= strength;
-                      const color = strength <= 1 ? "#F87171" : strength === 2 ? "#FBBF24" : strength === 3 ? "#C9A962" : "#4ADE80";
+                      const color = strength <= 1 ? "#F87171" : strength === 2 ? "#FBBF24" : strength === 3 ? "#2C3E2D" : "#4ADE80";
                       return (
                         <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: active ? color : (isLight ? "#E0DDD8" : "#2A2A2A"), transition: "background 0.2s" }} />
                       );
@@ -232,7 +232,7 @@ export default function UpdatePasswordPage() {
                 </div>
 
                 <button type="submit" className="lb" disabled={loading}
-                  style={{ width: "100%", padding: 13, background: "#C9A962", color: "#0D0D0D", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: loading ? 0.5 : 1 }}>
+                  style={{ width: "100%", padding: 13, background: "#2C3E2D", color: "#0D0D0D", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: loading ? 0.5 : 1 }}>
                   {loading ? "Updating..." : "Update Password"}
                 </button>
               </form>

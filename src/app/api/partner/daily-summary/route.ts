@@ -155,7 +155,7 @@ export async function POST() {
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td>
-              <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px;">Yugo<span style="color:#C9A962;">+</span></span>
+              <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px;">Yugo<span style="color:#2C3E2D;">+</span></span>
             </td>
             <td align="right">
               <span style="font-size:11px;color:#666;letter-spacing:0.06em;text-transform:none;">Daily Summary</span>
@@ -166,7 +166,7 @@ export async function POST() {
 
       <!-- Hero -->
       <tr><td style="background:#141414;border:1px solid #222;border-radius:16px;padding:32px 32px 28px;">
-        <p style="margin:0 0 4px;font-size:12px;color:#C9A962;font-weight:600;text-transform:none;letter-spacing:0.1em;">${todayFormatted}</p>
+        <p style="margin:0 0 4px;font-size:12px;color:#2C3E2D;font-weight:600;text-transform:none;letter-spacing:0.1em;">${todayFormatted}</p>
         <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Good morning, ${contactName}</h1>
         <p style="margin:0;font-size:14px;color:#888;">
           Here's your delivery summary for today from <strong style="color:#ddd;">${orgName}</strong>.
@@ -189,7 +189,7 @@ export async function POST() {
             </td>
             <td width="33%">
               <div style="background:#1A1A1A;border:1px solid #2A2A2A;border-radius:10px;padding:16px;text-align:center;">
-                <div style="font-size:24px;font-weight:700;color:#C9A962;">${upcoming.length}</div>
+                <div style="font-size:24px;font-weight:700;color:#2C3E2D;">${upcoming.length}</div>
                 <div style="font-size:11px;color:#666;margin-top:2px;text-transform:none;letter-spacing:0.08em;">Upcoming</div>
               </div>
             </td>

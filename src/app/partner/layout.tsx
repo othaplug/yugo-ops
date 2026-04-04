@@ -6,7 +6,11 @@ import { PartnerOrgProvider } from "./PartnerOrgContext";
 
 export const dynamic = "force-dynamic";
 
-export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
+export default async function PartnerLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const toggles = await getPlatformToggles();
 
   const supabase = await createClient();
@@ -29,8 +33,16 @@ export default async function PartnerLayout({ children }: { children: React.Reac
 
   if (!toggles.partner_portal) redirect("/portal-disabled");
 
-  const { data: platformUser } = await supabase.from("platform_users").select("user_id").eq("user_id", user.id).maybeSingle();
-  const { data: partnerRows } = await supabase.from("partner_users").select("org_id").eq("user_id", user.id).order("created_at", { ascending: true });
+  const { data: platformUser } = await supabase
+    .from("platform_users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const { data: partnerRows } = await supabase
+    .from("partner_users")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
   const hasPartnerAccess = partnerRows != null && partnerRows.length > 0;
 
   if (platformUser && !hasPartnerAccess) redirect("/admin");
@@ -49,10 +61,16 @@ export default async function PartnerLayout({ children }: { children: React.Reac
       const fromEmail =
         org?.email?.trim() &&
         (() => {
-          const part = org.email!.includes("@") ? org.email!.split("@")[1]?.replace(/\.[^.]*$/, "") : org.email!;
-          return part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : "";
+          const part = org.email!.includes("@")
+            ? org.email!.split("@")[1]?.replace(/\.[^.]*$/, "")
+            : org.email!;
+          return part
+            ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+            : "";
         })();
-      orgDisplayName = (org?.name || org?.contact_name || fromEmail || "Partner").trim() || "Partner";
+      orgDisplayName =
+        (org?.name || org?.contact_name || fromEmail || "Partner").trim() ||
+        "Partner";
     } catch (_e) {
       // keep "Partner" if fetch fails
     }

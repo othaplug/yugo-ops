@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { MapPin } from "@phosphor-icons/react";
 import Map, { Marker, Source, Layer, NavigationControl, useMap } from "react-map-gl/mapbox";
 
-const YUGO_GOLD = "#C9A962";
+const YUGO_GOLD = "#2C3E2D";
 
 function calcBearing(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
   const toRad = (d: number) => (d * Math.PI) / 180;

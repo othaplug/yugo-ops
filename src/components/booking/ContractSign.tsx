@@ -26,6 +26,11 @@ import {
   ESTATE_ON_WINE,
   ESTATE_ROSE,
 } from "@/app/quote/[quoteId]/estate-quote-ui";
+import {
+  SIGNATURE_ON_SHELL,
+  SIGNATURE_CTA,
+} from "@/app/quote/[quoteId]/signature-quote-ui";
+import type { PremiumShellKind } from "@/app/quote/[quoteId]/quote-premium-shell";
 
 /** Nested under the quote step h2 (e.g. “Review & book”) — not a second section heading */
 const AGREEMENT_DOC_TITLE_CLASS =
@@ -98,10 +103,12 @@ interface Props {
   }) => void;
   onContractStarted?: () => void;
   /**
+   * @deprecated use `agreementPremiumShell`
    * Residential Estate flow only: page shell is wine; use ESTATE_ON_WINE + rose CTA.
-   * All other quote types / tiers sit on cream — omit or false for forest/wine-on-cream contrast.
    */
   estateAgreementChrome?: boolean;
+  /** Residential Estate (wine) or Signature (green) — colours on dark shell only */
+  agreementPremiumShell?: Extract<PremiumShellKind, "wine" | "signature">;
 }
 
 /* ── Cancellation policies by service type ── */
@@ -217,6 +224,7 @@ export default function ContractSign({
   onSigned,
   onContractStarted,
   estateAgreementChrome = false,
+  agreementPremiumShell,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [typedName, setTypedName] = useState("");
@@ -365,14 +373,24 @@ export default function ContractSign({
     }
   };
 
-  const onWineShell = estateAgreementChrome;
+  const premiumShellKindResolved: PremiumShellKind =
+    agreementPremiumShell ?? (estateAgreementChrome ? "wine" : "none");
+  const onPremiumShell = premiumShellKindResolved !== "none";
+  const premiumInk =
+    premiumShellKindResolved === "signature"
+      ? SIGNATURE_ON_SHELL
+      : premiumShellKindResolved === "wine"
+        ? ESTATE_ON_WINE
+        : null;
+  const premiumAccent =
+    premiumShellKindResolved === "signature" ? SIGNATURE_CTA : ESTATE_ROSE;
 
   /* ── Signed confirmation state ── */
   if (signed) {
-    const sInk = onWineShell ? ESTATE_ON_WINE.primary : WINE;
-    const sBody = onWineShell ? ESTATE_ON_WINE.body : FOREST_BODY;
-    const sCheck = onWineShell ? ESTATE_ON_WINE.kicker : FOREST;
-    const sRule = onWineShell ? ESTATE_ON_WINE.hairline : `${FOREST}10`;
+    const sInk = premiumInk ? premiumInk.primary : WINE;
+    const sBody = premiumInk ? premiumInk.body : FOREST_BODY;
+    const sCheck = premiumInk ? premiumInk.kicker : FOREST;
+    const sRule = premiumInk ? premiumInk.hairline : `${FOREST}10`;
     return (
       <div className="pt-1">
         <div className="flex items-start gap-3 pb-5">
@@ -421,29 +439,35 @@ export default function ContractSign({
   /** Section heading on the quote page (“Reserve Your Date”) replaces the inner agreement title. */
   const hideAgreementTitleBlock = true;
 
-  const agreementTheme = onWineShell
+  const agreementTheme = premiumInk
     ? {
         receiptClass:
           "rounded-none border-0 bg-transparent py-5 px-4 sm:px-6 shadow-none text-[12px]",
         signatureClass:
           "rounded-none border-0 bg-transparent px-4 py-6 sm:px-6 shadow-none space-y-4 text-[12px]",
-        accentBar: ESTATE_ROSE,
-        sectionEyebrow: ESTATE_ON_WINE.kicker,
-        ink: ESTATE_ON_WINE.primary,
-        inkBody: ESTATE_ON_WINE.body,
-        inkMuted: ESTATE_ON_WINE.muted,
-        borderHair: ESTATE_ON_WINE.hairline,
-        addonRail: ESTATE_ON_WINE.borderSubtle,
-        totalMoney: ESTATE_ON_WINE.primary,
-        toggle: ESTATE_ON_WINE.kicker,
-        signEyebrow: ESTATE_ON_WINE.kicker,
-        signBody: ESTATE_ON_WINE.body,
-        signLabel: ESTATE_ON_WINE.muted,
-        signDate: ESTATE_ON_WINE.muted,
-        signCta: ESTATE_ROSE,
-        signCtaDisabled: "rgba(102,20,61,0.42)",
-        focusRingOffsetClass: "peer-focus-visible:ring-offset-[#2B0416]",
-        legalFooter: ESTATE_ON_WINE.muted,
+        accentBar: premiumAccent,
+        sectionEyebrow: premiumInk.kicker,
+        ink: premiumInk.primary,
+        inkBody: premiumInk.body,
+        inkMuted: premiumInk.muted,
+        borderHair: premiumInk.hairline,
+        addonRail: premiumInk.borderSubtle,
+        totalMoney: premiumInk.primary,
+        toggle: premiumInk.kicker,
+        signEyebrow: premiumInk.kicker,
+        signBody: premiumInk.body,
+        signLabel: premiumInk.muted,
+        signDate: premiumInk.muted,
+        signCta: premiumAccent,
+        signCtaDisabled:
+          premiumShellKindResolved === "signature"
+            ? "rgba(58,92,64,0.45)"
+            : "rgba(102,20,61,0.42)",
+        focusRingOffsetClass:
+          premiumShellKindResolved === "signature"
+            ? "peer-focus-visible:ring-offset-[#15261A]"
+            : "peer-focus-visible:ring-offset-[#2C3E2D]",
+        legalFooter: premiumInk.muted,
       }
     : {
         receiptClass:
@@ -541,7 +565,7 @@ export default function ContractSign({
       type="button"
       onClick={() => setExpanded(!expanded)}
       className={
-        onWineShell
+        onPremiumShell
           ? "flex w-full items-center gap-2 text-left text-[11px] font-bold uppercase tracking-[0.1em] transition-opacity hover:opacity-85"
           : "flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] transition-opacity hover:opacity-70"
       }
@@ -561,7 +585,7 @@ export default function ContractSign({
 
   /* ── Main contract + signature layout ── */
   return (
-    <div className={onWineShell ? "space-y-5" : "space-y-6"}>
+    <div className={onPremiumShell ? "space-y-5" : "space-y-6"}>
       {!hideAgreementTitleBlock ? (
         <>
           <div className="text-center max-w-2xl mx-auto">
@@ -700,7 +724,7 @@ export default function ContractSign({
             Total
           </span>
           <span
-            className={`${QUOTE_SECTION_H2_CLASS} font-bold tabular-nums${onWineShell ? " font-serif" : ""}`}
+            className={`${QUOTE_SECTION_H2_CLASS} font-bold tabular-nums${onPremiumShell ? " font-serif" : ""}`}
             style={{ color: agreementTheme.totalMoney }}
           >
             {fmtPrice(q.grandTotal)}
@@ -782,7 +806,7 @@ export default function ContractSign({
       </div>
 
       {/* ── Expand / collapse full agreement (+ full terms on cream when open) ── */}
-      {onWineShell ? (
+      {onPremiumShell ? (
         <div
           className="px-4 sm:px-6 pt-2 border-t space-y-3"
           style={{ borderColor: agreementTheme.borderHair }}
@@ -801,7 +825,7 @@ export default function ContractSign({
       <div
         className={agreementTheme.signatureClass}
         style={
-          onWineShell
+          onPremiumShell
             ? { borderTop: `1px solid ${agreementTheme.borderHair}` }
             : undefined
         }
@@ -856,11 +880,11 @@ export default function ContractSign({
             style={{
               borderColor:
                 typedName.trim().length >= 2
-                  ? onWineShell
-                    ? ESTATE_ROSE
+                  ? onPremiumShell
+                    ? premiumAccent
                     : FOREST
                   : "#D5D0C8",
-              color: onWineShell ? ESTATE_ROSE : FOREST,
+              color: onPremiumShell ? premiumAccent : FOREST,
               backgroundColor: "#FFFFFF",
             }}
           />
@@ -881,13 +905,13 @@ export default function ContractSign({
               className={`inline-flex size-5 items-center justify-center rounded-full border-2 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#2C3E2D] peer-focus-visible:ring-offset-2 ${agreementTheme.focusRingOffsetClass}`}
               style={{
                 borderColor: agreed
-                  ? onWineShell
-                    ? ESTATE_ROSE
+                  ? onPremiumShell
+                    ? premiumAccent
                     : FOREST
                   : "#D5D0C8",
                 backgroundColor: agreed
-                  ? onWineShell
-                    ? ESTATE_ROSE
+                  ? onPremiumShell
+                    ? premiumAccent
                     : FOREST
                   : "transparent",
               }}

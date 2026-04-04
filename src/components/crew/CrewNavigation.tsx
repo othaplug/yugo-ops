@@ -44,7 +44,7 @@ const POLYLINE_HINT_LOOKBACK_SEGS = 6;
 /** If the window snap is farther than this from the polyline, run a full-polyline search once to re-acquire after reroute / GPS jump. */
 const POLYLINE_REACQUIRE_PERP_M = 110;
 
-const GOLD = "#B8962E";
+const GOLD = "#2C3E2D";
 /** Clear / low traffic — high-contrast on dark map (Mapbox dark-v11). */
 const ROUTE_CLEAR = "#5EEAD4";
 const TRAFFIC_MODERATE = "#FCD34D";

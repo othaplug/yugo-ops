@@ -27,9 +27,11 @@ export type EmailFooterWhy = "booking" | "partner" | "generic" | "quote";
 
 const FOOTER_WHY_COPY: Record<EmailFooterWhy, string> = {
   booking: "You're receiving this because you booked with Yugo.",
-  partner: "You're receiving this because your organization was invited as a Yugo partner.",
+  partner:
+    "You're receiving this because your organization was invited as a Yugo partner.",
   generic: "You're receiving this because you have a relationship with Yugo.",
-  quote: "You're receiving this because you requested a moving quote from Yugo.",
+  quote:
+    "You're receiving this because you requested a moving quote from Yugo.",
 };
 
 /** {@link getClientEmailFooterTrs} options */
@@ -52,14 +54,16 @@ const FOOTER_NAV_FONT = "Helvetica Neue,Helvetica,Arial,sans-serif";
 const FOOTER_LEGAL_FONT = "Helvetica Neue,Helvetica,Arial,sans-serif";
 
 /** Black icons (self-hosted SVGs) — served from the app domain so they are never blocked. */
-function getSocialIconUrls(base: string): Record<"instagram" | "facebook" | "x" | "youtube" | "tiktok", string> {
+function getSocialIconUrls(
+  base: string,
+): Record<"instagram" | "facebook" | "x" | "youtube" | "tiktok", string> {
   const r = `${base}/email-icons`;
   return {
     instagram: `${r}/instagram.svg`,
-    facebook:  `${r}/facebook.svg`,
-    x:         `${r}/x.svg`,
-    youtube:   `${r}/youtube.svg`,
-    tiktok:    `${r}/tiktok.svg`,
+    facebook: `${r}/facebook.svg`,
+    x: `${r}/x.svg`,
+    youtube: `${r}/youtube.svg`,
+    tiktok: `${r}/tiktok.svg`,
   };
 }
 
@@ -70,7 +74,9 @@ function getSocialIconUrls(base: string): Record<"instagram" | "facebook" | "x" 
  */
 export const TEMPLATE_NAMES_WITH_REFER_FRIEND = new Set<string>([]);
 
-export function shouldIncludeReferFriendInFooter(template: string | undefined): boolean {
+export function shouldIncludeReferFriendInFooter(
+  template: string | undefined,
+): boolean {
   if (!template) return false;
   return TEMPLATE_NAMES_WITH_REFER_FRIEND.has(template);
 }
@@ -88,7 +94,8 @@ function getContactPhone(): string {
 
 export function getReferFriendFooterUrl(): string {
   const env =
-    (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_EMAIL_REFER_FRIEND_URL?.trim()) ||
+    (typeof process !== "undefined" &&
+      process.env?.NEXT_PUBLIC_EMAIL_REFER_FRIEND_URL?.trim()) ||
     "";
   if (env) return env;
   return `${getEmailBaseUrl()}/client`;
@@ -177,7 +184,9 @@ function socialIconCell(url: string, iconUrl: string, alt: string): string {
  * Direct children of the outer client email `<table>`.
  * Starts with optional top promo rows, then nav + optional social row + white legal block.
  */
-export function getClientEmailFooterTrs(options?: ClientEmailFooterOptions): string {
+export function getClientEmailFooterTrs(
+  options?: ClientEmailFooterOptions,
+): string {
   const variant = options?.variant ?? "transactional";
   const whyKey = options?.whyReceiving ?? "booking";
   const whyLine = FOOTER_WHY_COPY[whyKey];
@@ -243,7 +252,8 @@ export function getClientEmailFooterTrs(options?: ClientEmailFooterOptions): str
               </p>`;
 
   const navRow = variant === "transactional" ? navTransactional : navFull;
-  const socialBlock = variant === "transactional" ? "" : `${socialRowInner}${hrRow()}`;
+  const socialBlock =
+    variant === "transactional" ? "" : `${socialRowInner}${hrRow()}`;
 
   return `
 __YUGO_FOOTER_TOP_PROMO__
@@ -302,8 +312,14 @@ export interface EmailFooterTokenContext {
   showMarketingTopRow: boolean;
 }
 
-export function applyEmailFooterTokens(html: string, ctx: EmailFooterTokenContext): string {
-  if (!html.includes("__YUGO_FOOTER_RECIPIENT__") && !html.includes("__YUGO_FOOTER_RECIPIENT_MAILTO__")) {
+export function applyEmailFooterTokens(
+  html: string,
+  ctx: EmailFooterTokenContext,
+): string {
+  if (
+    !html.includes("__YUGO_FOOTER_RECIPIENT__") &&
+    !html.includes("__YUGO_FOOTER_RECIPIENT_MAILTO__")
+  ) {
     return html;
   }
 

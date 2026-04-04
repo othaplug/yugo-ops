@@ -548,7 +548,7 @@ export default function ClientSettingsMenu({
 
               <div
                 className="rounded-xl p-4"
-                style={{ backgroundColor: theme === "dark" ? "#222" : "#FAF7F2" }}
+                style={{ backgroundColor: theme === "dark" ? "#222" : "#F9EDE4" }}
               >
                 <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: GOLD }}>
                   What happens next

@@ -23,7 +23,7 @@ export default function CookiesPage() {
         </p>
         <p className="text-[var(--text-base)] text-[#454545] leading-relaxed mb-6">
           This Cookie Policy explains how Yugo (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) uses cookies and similar technologies when you use our websites, applications, and the Yugo platform. This policy should be read together with our{" "}
-          <Link href="/privacy" className="text-[#C9A962] hover:underline">
+          <Link href="/privacy" className="text-[#2C3E2D] hover:underline">
             Privacy Policy
           </Link>
           .
@@ -129,7 +129,7 @@ export default function CookiesPage() {
           </p>
           <p className="text-[var(--text-base)] text-[#454545] leading-relaxed">
             Email:{" "}
-            <a href="mailto:hello@yugo.com" className="text-[#C9A962] hover:underline">
+            <a href="mailto:hello@yugo.com" className="text-[#2C3E2D] hover:underline">
               hello@yugo.com
             </a>
           </p>
@@ -138,7 +138,7 @@ export default function CookiesPage() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-block mt-8 text-[var(--text-base)] font-semibold text-[#C9A962] hover:underline cursor-pointer"
+          className="inline-block mt-8 text-[var(--text-base)] font-semibold text-[#2C3E2D] hover:underline cursor-pointer"
         >
           ← Back
         </button>

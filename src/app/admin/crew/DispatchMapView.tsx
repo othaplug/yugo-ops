@@ -13,7 +13,7 @@ const MAPBOX_TOKEN =
   "";
 const HAS_MAPBOX = MAPBOX_TOKEN && !MAPBOX_TOKEN.startsWith("pk.your-") && MAPBOX_TOKEN !== "pk.your-mapbox-token";
 
-const ROUTE_GOLD = "#B8962E";
+const ROUTE_GOLD = "#2C3E2D";
 
 const MapboxMap = dynamic(
   () =>
@@ -73,7 +73,7 @@ const MapboxMap = dynamic(
                       boxShadow: "0 2px 14px rgba(0,0,0,0.55)",
                     }}
                   >
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: "#C9A962", boxShadow: "0 0 6px #C9A962" }} />
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: "#2C3E2D", boxShadow: "0 0 6px #2C3E2D" }} />
                     <span className="text-[11px] font-bold tracking-[0.04em] text-white">
                       {m.name.replace("Team ", "")}
                     </span>
@@ -87,7 +87,7 @@ const MapboxMap = dynamic(
                     style={{ filter: "drop-shadow(0 0 8px rgba(201,169,98,0.75)) drop-shadow(0 2px 6px rgba(0,0,0,0.75))" }}
                   >
                     <rect x="1.5" y="4" width="19" height="32" rx="4" fill="white" fillOpacity="0.96" />
-                    <rect x="3" y="5" width="16" height="8" rx="2.5" fill="#C9A962" fillOpacity="0.88" />
+                    <rect x="3" y="5" width="16" height="8" rx="2.5" fill="#2C3E2D" fillOpacity="0.88" />
                     <rect x="10" y="14" width="2" height="19" rx="1" fill="black" fillOpacity="0.07" />
                     <ellipse cx="1.5" cy="12" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />
                     <ellipse cx="1.5" cy="28" rx="2.5" ry="4.5" fill="black" fillOpacity="0.38" />

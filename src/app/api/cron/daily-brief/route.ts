@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
     .map(
       (j) =>
         `<tr>
-          <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#C9A962;font-weight:600;">${j.move_code || j.id}</td>
+          <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#2C3E2D;font-weight:600;">${j.move_code || j.id}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#e8e0d0;">${j.client_name || "-"}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#9c9489;">${j.tier || j.service_type || "-"}</td>
           <td style="padding:6px 12px;border-bottom:1px solid #2a2318;font-size:12px;color:#9c9489;">${j.arrival_window || "-"}</td>
@@ -182,7 +182,7 @@ export async function GET(req: NextRequest) {
       : "No new leads yesterday.";
 
   /** Inline SVG (mail) — email clients; replaces emoji */
-  const leadBriefMailSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A962" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:8px;display:inline-block" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
+  const leadBriefMailSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C3E2D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:8px;display:inline-block" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
 
   const staleRows =
     staleList && staleList.length > 0
@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
 <body style="background:#0d0b08;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:24px 16px;">
     <div style="border-bottom:1px solid #2a2318;padding-bottom:16px;margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:2px;text-transform:none;color:#C9A962;margin:0 0 4px;">Yugo</p>
+      <p style="font-size:10px;letter-spacing:2px;text-transform:none;color:#2C3E2D;margin:0 0 4px;">Yugo</p>
       <h1 style="font-size:22px;font-weight:700;color:#e8e0d0;margin:0;">Daily Brief</h1>
       <p style="font-size:12px;color:#9c9489;margin:4px 0 0;">${dateLabel}</p>
     </div>
@@ -212,11 +212,11 @@ export async function GET(req: NextRequest) {
     <!-- KPI row -->
     <div style="display:flex;gap:12px;margin-bottom:20px;">
       <div style="flex:1;background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:24px;font-weight:700;color:#C9A962;">${jobs.length}</div>
+        <div style="font-size:24px;font-weight:700;color:#2C3E2D;">${jobs.length}</div>
         <div style="font-size:10px;color:#9c9489;text-transform:none;letter-spacing:1px;">Jobs</div>
       </div>
       <div style="flex:1;background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:24px;font-weight:700;color:#C9A962;">$${revenue.toLocaleString()}</div>
+        <div style="font-size:24px;font-weight:700;color:#2C3E2D;">$${revenue.toLocaleString()}</div>
         <div style="font-size:10px;color:#9c9489;text-transform:none;letter-spacing:1px;">Revenue</div>
       </div>
       <div style="flex:1;background:#1a1510;border:1px solid #2a2318;border-radius:10px;padding:14px;text-align:center;">

@@ -103,16 +103,16 @@ const STATUS_COLORS: Record<
   string,
   { bg: string; text: string; border: string }
 > = {
-  scheduled: { bg: "#2C3E2D10", text: "#2C3E2D", border: "#2C3E2D" },
-  confirmed: { bg: "#2C3E2D10", text: "#2C3E2D", border: "#2C3E2D" },
-  in_progress: { bg: "#B8962E10", text: "#B8962E", border: "#B8962E" },
-  dispatched: { bg: "#B8962E10", text: "#B8962E", border: "#B8962E" },
-  "in-transit": { bg: "#B8962E10", text: "#B8962E", border: "#B8962E" },
-  in_transit: { bg: "#B8962E10", text: "#B8962E", border: "#B8962E" },
+  scheduled: { bg: "#2B392710", text: "#2B3927", border: "#2B3927" },
+  confirmed: { bg: "#2B392710", text: "#2B3927", border: "#2B3927" },
+  in_progress: { bg: "#2C3E2D10", text: "#2C3E2D", border: "#2C3E2D" },
+  dispatched: { bg: "#2C3E2D10", text: "#2C3E2D", border: "#2C3E2D" },
+  "in-transit": { bg: "#2C3E2D10", text: "#2C3E2D", border: "#2C3E2D" },
+  in_transit: { bg: "#2C3E2D10", text: "#2C3E2D", border: "#2C3E2D" },
   delivered: { bg: "#22C55E10", text: "#22C55E", border: "#22C55E" },
   completed: { bg: "#22C55E10", text: "#22C55E", border: "#22C55E" },
   cancelled: { bg: "#D1434310", text: "#D14343", border: "#D14343" },
-  pending: { bg: "#C9A96210", text: "#C9A962", border: "#C9A962" },
+  pending: { bg: "#2C3E2D10", text: "#2C3E2D", border: "#2C3E2D" },
   pending_approval: { bg: "#F59E0B10", text: "#F59E0B", border: "#F59E0B" },
 };
 
@@ -489,7 +489,7 @@ export default function PartnerCalendarTab({
             </button>
             <button
               onClick={goToday}
-              className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] dark:border-[var(--brd)] text-[#454545] dark:text-[var(--tx3)] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+              className="ml-2 px-3 py-1 rounded-lg text-[10px] font-semibold border border-[#E8E4DF] dark:border-[var(--brd)] text-[#454545] dark:text-[var(--tx3)] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
             >
               Today
             </button>
@@ -503,7 +503,7 @@ export default function PartnerCalendarTab({
                 onClick={() => setView(m)}
                 className={`px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase transition-colors ${
                   view === m
-                    ? "bg-white dark:bg-[var(--card)] text-[#2C3E2D] dark:text-[var(--gold)] shadow-sm"
+                    ? "bg-white dark:bg-[var(--card)] text-[#2B3927] dark:text-[var(--gold)] shadow-sm"
                     : "text-[#4F4B47] dark:text-[var(--tx3)] hover:text-[#1A1A1A] dark:hover:text-[var(--tx)]"
                 }`}
               >
@@ -514,7 +514,7 @@ export default function PartnerCalendarTab({
           <button
             onClick={() => onSelectDate?.(selectedDate || todayKey)}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold text-white transition-colors hover:opacity-90"
-            style={{ backgroundColor: "#2C3E2D" }}
+            style={{ backgroundColor: "#2B3927" }}
           >
             <Calendar size={13} />
             Schedule a delivery
@@ -526,7 +526,7 @@ export default function PartnerCalendarTab({
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-[10px] bg-[#F5F3F0] dark:bg-[var(--bg)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[#454545] dark:text-[var(--tx2)] focus:border-[#C9A962] outline-none"
+          className="text-[10px] bg-[#F5F3F0] dark:bg-[var(--bg)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[#454545] dark:text-[var(--tx2)] focus:border-[#2C3E2D] outline-none"
         >
           <option value="">All Statuses</option>
           <option value="scheduled">Scheduled</option>
@@ -538,7 +538,7 @@ export default function PartnerCalendarTab({
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="text-[10px] bg-[#F5F3F0] dark:bg-[var(--bg)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[#454545] dark:text-[var(--tx2)] focus:border-[#C9A962] outline-none"
+          className="text-[10px] bg-[#F5F3F0] dark:bg-[var(--bg)] border border-[#E8E4DF] dark:border-[var(--brd)] rounded-lg px-2.5 py-1.5 text-[#454545] dark:text-[var(--tx2)] focus:border-[#2C3E2D] outline-none"
         >
           <option value="">All Types</option>
           <option value="per_delivery">Per Delivery</option>
@@ -577,12 +577,12 @@ export default function PartnerCalendarTab({
           return (
             <div
               key={dk}
-              className={`bg-white dark:bg-[var(--card)] min-h-[90px] p-1.5 transition-colors hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 ${isToday ? "ring-2 ring-inset ring-[#C9A962]/50" : ""}`}
+              className={`bg-white dark:bg-[var(--card)] min-h-[90px] p-1.5 transition-colors hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 ${isToday ? "ring-2 ring-inset ring-[#2C3E2D]/50" : ""}`}
             >
               <button
                 type="button"
                 onClick={() => switchToDay(dk)}
-                className={`text-[12px] font-medium mb-1 block hover:text-[#C9A962] transition-colors ${isToday ? "text-[#C9A962] font-bold" : "text-[#1A1A1A] dark:text-[var(--tx)]"}`}
+                className={`text-[12px] font-medium mb-1 block hover:text-[#2C3E2D] transition-colors ${isToday ? "text-[#2C3E2D] font-bold" : "text-[#1A1A1A] dark:text-[var(--tx)]"}`}
               >
                 {day}
               </button>
@@ -612,7 +612,7 @@ export default function PartnerCalendarTab({
                   <button
                     type="button"
                     onClick={() => switchToDay(dk)}
-                    className="text-[8px] text-[#C9A962] font-semibold pl-1 hover:underline"
+                    className="text-[8px] text-[#2C3E2D] font-semibold pl-1 hover:underline"
                   >
                     +{dayDels.length + dayProjects.length - 3} more
                   </button>
@@ -621,7 +621,7 @@ export default function PartnerCalendarTab({
                   <button
                     type="button"
                     onClick={() => onSelectDate?.(dk)}
-                    className="text-[9px] text-[#CCC] dark:text-[var(--tx3)]/30 hover:text-[#2C3E2D] dark:hover:text-[var(--gold)] transition-colors"
+                    className="text-[9px] text-[#CCC] dark:text-[var(--tx3)]/30 hover:text-[#2B3927] dark:hover:text-[var(--gold)] transition-colors"
                   >
                     + Schedule
                   </button>
@@ -753,7 +753,7 @@ export default function PartnerCalendarTab({
             <button
               onClick={() => onSelectDate?.(selectedDate)}
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[12px] font-semibold text-white transition-colors hover:opacity-90"
-              style={{ backgroundColor: "#2C3E2D" }}
+              style={{ backgroundColor: "#2B3927" }}
             >
               Schedule a delivery
             </button>
@@ -904,10 +904,10 @@ export default function PartnerCalendarTab({
             <div
               className="px-2.5 py-1.5 rounded-md shadow-2xl text-[11px] font-bold max-w-[180px] truncate border"
               style={{
-                borderLeft: "4px solid #2C3E2D",
-                background: "#2C3E2Dcc",
+                borderLeft: "4px solid #2B3927",
+                background: "#2B3927cc",
                 color: "#fff",
-                borderColor: "#2C3E2D",
+                borderColor: "#2B3927",
               }}
             >
               {draggingDelivery.customer_name ||
@@ -933,7 +933,7 @@ export default function PartnerCalendarTab({
         {rescheduling && (
           <div className="fixed inset-0 z-[9998] pointer-events-none flex items-center justify-center">
             <div className="bg-white dark:bg-[var(--card)] border border-[#E8E4DF] dark:border-[var(--brd)] px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 text-[13px] font-semibold text-[#1A1A1A] dark:text-[var(--tx)]">
-              <div className="w-4 h-4 border-2 border-[#2C3E2D] border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-[#2B3927] border-t-transparent rounded-full animate-spin" />
               Saving…
             </div>
           </div>
@@ -967,15 +967,15 @@ export default function PartnerCalendarTab({
                 key={key}
                 type="button"
                 onClick={() => switchToDay(key)}
-                className={`flex-1 py-2 text-center border-l border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 transition-colors ${isToday ? "bg-[#C9A962]/5" : ""}`}
+                className={`flex-1 py-2 text-center border-l border-[#E8E4DF] dark:border-[var(--brd)] hover:bg-[#FAF8F5] dark:hover:bg-[var(--bg)]/50 transition-colors ${isToday ? "bg-[#2C3E2D]/5" : ""}`}
               >
                 <div
-                  className={`text-[9px] font-bold uppercase ${isToday ? "text-[#C9A962]" : "text-[#5C5853] dark:text-[var(--tx3)]/50"}`}
+                  className={`text-[9px] font-bold uppercase ${isToday ? "text-[#2C3E2D]" : "text-[#5C5853] dark:text-[var(--tx3)]/50"}`}
                 >
                   {DAY_NAMES[i]} {date.getDate()}
                 </div>
                 {count > 0 && (
-                  <div className="text-[7px] text-[#2C3E2D] dark:text-[var(--gold)] font-semibold">
+                  <div className="text-[7px] text-[#2B3927] dark:text-[var(--gold)] font-semibold">
                     {delCount > 0 &&
                       `${delCount} del${delCount > 1 ? "s" : ""}`}
                     {delCount > 0 && projCount > 0 ? " · " : ""}
@@ -1009,7 +1009,7 @@ export default function PartnerCalendarTab({
               return (
                 <div
                   key={key}
-                  className={`flex-1 relative border-l border-[#E8E4DF] dark:border-[var(--brd)] ${isToday ? "bg-[#C9A962]/3" : ""}`}
+                  className={`flex-1 relative border-l border-[#E8E4DF] dark:border-[var(--brd)] ${isToday ? "bg-[#2C3E2D]/3" : ""}`}
                   onClick={() => switchToDay(key)}
                 >
                   {HOURS.map((h) => (
@@ -1133,7 +1133,7 @@ export default function PartnerCalendarTab({
                     setMonthYear({ year: yearView, month: mIdx });
                     setView("month");
                   }}
-                  className="text-[11px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] mb-1.5 hover:text-[#2C3E2D] dark:hover:text-[var(--gold)] transition-colors"
+                  className="text-[11px] font-bold text-[#1A1A1A] dark:text-[var(--tx)] mb-1.5 hover:text-[#2B3927] dark:hover:text-[var(--gold)] transition-colors"
                 >
                   {name}
                 </button>
@@ -1162,7 +1162,7 @@ export default function PartnerCalendarTab({
                         key={dk}
                         type="button"
                         onClick={() => switchToDay(dk)}
-                        className={`w-full min-h-[10px] aspect-square max-w-[20px] mx-auto rounded-[3px] transition-colors hover:ring-2 hover:ring-[#2C3E2D]/50 dark:hover:ring-[var(--gold)]/50 ${count === 0 ? emptyCellBg : ""} ${isToday ? "ring-2 ring-[#C9A962] dark:ring-[var(--gold)]" : ""}`}
+                        className={`w-full min-h-[10px] aspect-square max-w-[20px] mx-auto rounded-[3px] transition-colors hover:ring-2 hover:ring-[#2B3927]/50 dark:hover:ring-[var(--gold)]/50 ${count === 0 ? emptyCellBg : ""} ${isToday ? "ring-2 ring-[#2C3E2D] dark:ring-[var(--gold)]" : ""}`}
                         style={
                           count > 0
                             ? { backgroundColor: getColor(count) }
@@ -1201,7 +1201,7 @@ export default function PartnerCalendarTab({
           </div>
           <div className="text-[12px] text-[#454545] dark:text-[var(--tx3)] font-medium">
             {yearView} Total:{" "}
-            <span className="text-[#2C3E2D] dark:text-[var(--gold)] font-bold">
+            <span className="text-[#2B3927] dark:text-[var(--gold)] font-bold">
               {totalDeliveries} deliveries
             </span>
           </div>

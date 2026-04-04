@@ -20,10 +20,10 @@ import {
 } from "@phosphor-icons/react";
 
 /* ── Palette ── */
-const WINE = "#5C1A33";
-const FOREST = "#2C3E2D";
-const GOLD = "#B8962E";
-const CREAM = "#FAF7F2";
+const WINE = "#2C3E2D";
+const FOREST = "#2B3927";
+const GOLD = "#2C3E2D";
+const CREAM = "#F9EDE4";
 
 /* ── Move types ── */
 const MOVE_TYPES = [
@@ -1001,7 +1001,7 @@ export default function QuoteWidgetClient() {
                       >
                         <button
                           onClick={() => toggleRoom(room)}
-                          className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#FAF7F2]"
+                          className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#F9EDE4]"
                         >
                           <span
                             className="text-[13px] font-semibold"
@@ -1131,7 +1131,7 @@ export default function QuoteWidgetClient() {
                         "Other items": !prev["Other items"],
                       }))
                     }
-                    className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#FAF7F2]"
+                    className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#F9EDE4]"
                   >
                     <span
                       className="text-[13px] font-semibold"
@@ -1265,7 +1265,7 @@ export default function QuoteWidgetClient() {
                         "Special handling": !prev["Special handling"],
                       }))
                     }
-                    className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#FAF7F2]"
+                    className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[#F9EDE4]"
                   >
                     <span
                       className="text-[13px] font-semibold"
@@ -1915,7 +1915,7 @@ function SelectWrapper({ children }: { children: React.ReactNode }) {
       {children}
       <CaretDown
         size={14}
-        color="#2C3E2D80"
+        color="#2B392780"
         className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
         aria-hidden
       />

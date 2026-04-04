@@ -79,7 +79,7 @@ const MapboxMap = dynamic(
                 id="route-tracking-layer"
                 type="line"
                 paint={{
-                  "line-color": routeLineColor ?? "#C9A962",
+                  "line-color": routeLineColor ?? "#2C3E2D",
                   "line-width": 5,
                   "line-opacity": 1,
                 }}
@@ -93,7 +93,7 @@ const MapboxMap = dynamic(
           )}
           {dropoff && (
             <Marker longitude={dropoff.lng} latitude={dropoff.lat} anchor="center">
-              <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#C9A962]" title="Drop-off" />
+              <div className="w-4 h-4 rounded-full border-2 border-white shadow-md bg-[#2C3E2D]" title="Drop-off" />
             </Marker>
           )}
           {hasPosition && crew && (
@@ -116,7 +116,7 @@ const MapboxMap = dynamic(
                 >
                   <polygon
                     points="22,5 34,36 22,29 10,36"
-                    fill={routeLineColor ?? "#C9A962"}
+                    fill={routeLineColor ?? "#2C3E2D"}
                     stroke="white"
                     strokeWidth="2.5"
                     strokeLinejoin="round"
@@ -201,7 +201,7 @@ export default function LiveTrackingMap({
   const mapStyle = theme === "light"
     ? "mapbox://styles/mapbox/light-v11"
     : "mapbox://styles/mapbox/dark-v11";
-  const routeLineColor = "#C9A962";
+  const routeLineColor = "#2C3E2D";
 
   // When deliveryId is set and parent didn't pass coords, fetch delivery and geocode so we can draw the route
   useEffect(() => {

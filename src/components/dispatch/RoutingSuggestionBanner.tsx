@@ -59,7 +59,7 @@ export default function RoutingSuggestionBanner({ date }: { date: string }) {
             onClick={() => handleAction("apply")}
             disabled={applying}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white transition-all"
-            style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+            style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
           >
             <Check size={12} weight="bold" />
             {applying ? "Applying…" : "Apply Swap"}

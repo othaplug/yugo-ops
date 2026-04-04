@@ -59,14 +59,14 @@ export default function PublicInboundTrackClient({ id, token }: { id: string; to
     <div className="min-h-screen bg-[#FAF8F5] text-[var(--tx)] px-4 py-10">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-2 mb-2">
-          <ShippingContainer className="text-[#C9A962]" size={28} weight="regular" aria-hidden />
+          <ShippingContainer className="text-[#2C3E2D]" size={28} weight="regular" aria-hidden />
           <h1 className="text-xl font-semibold tracking-tight">Inbound shipment</h1>
         </div>
         <p className="text-sm text-[var(--tx3)] mb-6">Reference {num}</p>
 
         <div className="rounded-2xl border border-[var(--brd)] bg-white p-5 shadow-sm mb-6">
           <div className="flex items-center gap-2 text-sm font-semibold mb-1">
-            <Clock size={18} className="text-[#C9A962]" aria-hidden />
+            <Clock size={18} className="text-[#2C3E2D]" aria-hidden />
             Status
           </div>
           <p className="text-lg font-semibold">{(s.status_label as string) || String(s.status)}</p>
@@ -80,7 +80,7 @@ export default function PublicInboundTrackClient({ id, token }: { id: string; to
         {photos.length > 0 && (
           <div className="rounded-2xl border border-[var(--brd)] bg-white p-5 shadow-sm mb-6">
             <div className="flex items-center gap-2 text-sm font-semibold mb-3">
-              <ClipboardText size={18} className="text-[#C9A962]" aria-hidden />
+              <ClipboardText size={18} className="text-[#2C3E2D]" aria-hidden />
               Inspection photos
             </div>
             <div className="grid grid-cols-2 gap-2">

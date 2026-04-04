@@ -51,7 +51,7 @@ const DARK_CARD_EYEBROW = `font-family:'DM Sans',-apple-system,BlinkMacSystemFon
 /* ─── Tier card backgrounds (user-specified) ─── */
 const CURATED_BG = "#492A1D"; /* dark rust / brown  */
 const SIG_BG = "#2B3929"; /* dark forest green  */
-const ESTATE_BG = "#2B0416"; /* deep wine          */
+const ESTATE_BG = "#2C3E2D"; /* deep wine          */
 
 /* ─── Tier accent colors (label, check marks) — cream/rose tones, no gold ─── */
 const CURATED_ACCENT = "#E8C4A8"; /* warm peach on rust            */

@@ -230,7 +230,7 @@ export default function CrewDashboardPage() {
                       width: `${progressPercent}%`,
                       background: progressPercent === 100
                         ? "linear-gradient(90deg, #22C55E, #16A34A)"
-                        : "linear-gradient(90deg, #C9A962, #D4B56C)",
+                        : "linear-gradient(90deg, #2C3E2D, #D4B56C)",
                     }}
                   />
                 </div>
@@ -377,7 +377,7 @@ export default function CrewDashboardPage() {
                           style={{
                             background: inProgress
                               ? "linear-gradient(135deg, #F59E0B, #D97706)"
-                              : "linear-gradient(135deg, #C9A962, #8B7332)",
+                              : "linear-gradient(135deg, #2C3E2D, #8B7332)",
                           }}
                         >
                           {inProgress ? (

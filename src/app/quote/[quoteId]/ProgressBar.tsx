@@ -4,6 +4,8 @@ import React from "react";
 import { Check } from "@phosphor-icons/react";
 import { FOREST } from "./quote-shared";
 import { ESTATE_ON_WINE } from "./estate-quote-ui";
+import { SIGNATURE_ON_SHELL, SIGNATURE_CTA } from "./signature-quote-ui";
+import type { PremiumShellKind } from "./quote-premium-shell";
 
 const STEPS = [
   { key: "plan", label: "Plan" },
@@ -16,8 +18,10 @@ const STEPS = [
 interface Props {
   currentStep: number;
   onStepClick?: (stepNum: number) => void;
-  /** Residential Estate — wine bar, rose accents, cream labels */
+  /** @deprecated use premiumShellKind */
   estateMode?: boolean;
+  /** Residential Estate (wine) or Signature (green): dark bar, cream labels */
+  premiumShellKind?: PremiumShellKind;
 }
 
 const ESTATE_ROSE = "#66143D";
@@ -26,14 +30,35 @@ export default function ProgressBar({
   currentStep,
   onStepClick,
   estateMode = false,
+  premiumShellKind: premiumShellKindProp,
 }: Props) {
+  const kind: PremiumShellKind =
+    premiumShellKindProp ??
+    (estateMode ? "wine" : "none");
+  const premium = kind !== "none";
+  const shellInk = kind === "signature" ? SIGNATURE_ON_SHELL : ESTATE_ON_WINE;
+  const barBg =
+    kind === "signature" ? "#15261A" : kind === "wine" ? "#2B0416" : undefined;
+  const barBorder =
+    kind === "signature"
+      ? "border-[#4A6B52]/40"
+      : kind === "wine"
+        ? "border-[#66143D]/40"
+        : "border-[#2C3E2D]/10";
+  const checkAccent = kind === "signature" ? SIGNATURE_CTA : ESTATE_ROSE;
+  const connectorClass =
+    kind === "signature"
+      ? "w-4 h-px shrink-0 bg-[#4A6B52]"
+      : kind === "wine"
+        ? "w-4 h-px shrink-0 bg-[#66143D]"
+        : null;
+
   return (
     <div
       className={`sticky top-0 z-10 px-4 py-3 overflow-x-auto border-b ${
-        estateMode
-          ? "border-[#66143D]/40 bg-[#2B0416]"
-          : "border-[#2C3E2D]/10 bg-white"
+        premium ? `${barBorder}` : "border-[#2C3E2D]/10 bg-white"
       }`}
+      style={premium ? { backgroundColor: barBg } : undefined}
     >
       <ol
         role="list"
@@ -45,21 +70,20 @@ export default function ProgressBar({
           const isComplete = currentStep > stepNum;
           const isCurrent = currentStep === stepNum;
 
-          const labelColor = estateMode
+          const labelColor = premium
             ? isComplete || isCurrent
-              ? ESTATE_ON_WINE.primary
-              : ESTATE_ON_WINE.faded
+              ? shellInk.primary
+              : kind === "signature"
+                ? shellInk.muted
+                : shellInk.faded
             : isComplete
               ? FOREST
               : isCurrent
                 ? FOREST
                 : "#AAA";
 
-          const connector = estateMode ? (
-            <span
-              className="w-4 h-px shrink-0 bg-[#66143D]"
-              aria-hidden="true"
-            />
+          const connector = premium ? (
+            <span className={connectorClass ?? ""} aria-hidden="true" />
           ) : (
             <span
               className="text-[10px] md:text-[11px] shrink-0"
@@ -80,7 +104,7 @@ export default function ProgressBar({
                   aria-current={isCurrent ? "step" : undefined}
                   aria-label={`Step ${stepNum}: ${step.label}${isComplete ? " (completed)" : isCurrent ? " (current)" : ""}`}
                   className={`flex shrink-0 items-center gap-1 md:gap-1.5 text-[11px] md:text-[12px] font-medium transition-colors hover:opacity-80 whitespace-nowrap ${
-                    estateMode ? "uppercase tracking-wider" : ""
+                    premium ? "uppercase tracking-wider" : ""
                   }`}
                   style={{
                     color: labelColor,
@@ -90,7 +114,7 @@ export default function ProgressBar({
                   {isComplete ? (
                     <Check
                       className="w-3.5 h-3.5 shrink-0"
-                      style={{ color: estateMode ? ESTATE_ROSE : FOREST }}
+                      style={{ color: checkAccent }}
                       aria-hidden="true"
                     />
                   ) : null}

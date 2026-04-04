@@ -42,7 +42,7 @@ const MapboxMap = dynamic(
                   <svg width="36" height="36" viewBox="0 0 44 44" className="drop-shadow-md" aria-hidden>
                     <polygon
                       points="22,5 34,36 22,29 10,36"
-                      fill="#C9A962"
+                      fill="#2C3E2D"
                       stroke="white"
                       strokeWidth="2.5"
                       strokeLinejoin="round"

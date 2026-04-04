@@ -28,10 +28,10 @@ const MONTHS = [
   "December",
 ];
 
-const GOLD = "#B8962E";
-const WINE = "#5C1A33";
-const FOREST = "#2C3E2D";
-const CREAM = "#FAF7F2";
+const GOLD = "#66143D";
+const WINE = "#2B0416";
+const FOREST = "#2B3927";
+const CREAM = "#F9EDE4";
 
 function getMonthNumber(): number {
   return new Date().getMonth() + 1;
@@ -373,7 +373,7 @@ export default function EmbedQuoteCalculator({
               borderRadius: 12,
               border: "none",
               background: estimate ? "#F5F2EE" : GOLD,
-              color: estimate ? FOREST : "#FAF7F2",
+              color: estimate ? FOREST : "#F9EDE4",
               fontSize: 13,
               fontWeight: 700,
               cursor: loading ? "wait" : "pointer",

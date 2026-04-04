@@ -5,8 +5,8 @@ import { ChartBar, SpinnerGap } from "@phosphor-icons/react";
 import { formatCurrency } from "@/lib/format-currency";
 
 const BG = "#FAF8F5";
-const GOLD = "#B8962E";
-const TEXT = "#2C3E2D";
+const GOLD = "#2C3E2D";
+const TEXT = "#2B3927";
 
 type SpendSummary = {
   monthlySpend: { month: string; total: number }[];

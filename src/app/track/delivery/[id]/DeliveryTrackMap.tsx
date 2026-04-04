@@ -243,7 +243,7 @@ export default function DeliveryTrackMap({
         <TileLayer attribution="" url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
       )}
       {purpleLinePositions.length >= 2 && (
-        <Polyline positions={purpleLinePositions} color="#B8962E" weight={4} opacity={0.9} lineCap="round" lineJoin="round" />
+        <Polyline positions={purpleLinePositions} color="#2C3E2D" weight={4} opacity={0.9} lineCap="round" lineJoin="round" />
       )}
       {pickup && (
         <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}>

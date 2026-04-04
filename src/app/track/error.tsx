@@ -19,7 +19,7 @@ export default function TrackError({ error, reset }: { error: Error & { digest?:
             {error.message || "We couldn't load tracking information. Please try again."}
           </SafeText>
         </p>
-        <button onClick={reset} className="px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[#C9A962] text-white">Try again</button>
+        <button onClick={reset} className="px-5 py-2.5 rounded-lg text-[12px] font-semibold bg-[#2C3E2D] text-white">Try again</button>
       </div>
     </div>
   );

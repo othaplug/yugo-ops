@@ -177,13 +177,13 @@ export default function ClaimSubmissionClient() {
     return (
       <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
         <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "rgba(201,169,98,0.12)" }}>
-          <Check weight="bold" size={32} color="#C9A962" aria-hidden />
+          <Check weight="bold" size={32} color="#2C3E2D" aria-hidden />
         </div>
         <h2 className="text-[22px] font-bold text-[#1a1a1a] mb-2">Claim Submitted</h2>
         <p className="text-[var(--text-base)] text-[#555] leading-relaxed mb-4">
           Your claim <strong>{claimNumber}</strong> has been submitted. We&rsquo;ll review it within 3 business days and contact you with next steps.
         </p>
-        <div className="rounded-xl p-4 inline-block" style={{ backgroundColor: "#FAF7F2" }}>
+        <div className="rounded-xl p-4 inline-block" style={{ backgroundColor: "#F9EDE4" }}>
           <p className="text-[13px] text-[#4F4B47]">Reference: <strong>{claimNumber}</strong></p>
         </div>
       </div>
@@ -469,7 +469,7 @@ export default function ClaimSubmissionClient() {
         <div className="space-y-4">
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-[18px] font-bold text-[#1a1a1a] mb-4">Review Your Claim</h2>
-            <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: "#FAF7F2" }}>
+            <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: "#F9EDE4" }}>
               <p className="text-[13px] text-[#4F4B47]">Move: <strong>{moveInfo.move_code}</strong></p>
               <p className="text-[13px] text-[#4F4B47]">Claimant: <strong>{clientName}</strong> ({clientEmail})</p>
               <p className="text-[13px] text-[#4F4B47]">Valuation: <strong>{VALUATION_INFO[moveInfo.valuation_tier]?.label || moveInfo.valuation_tier}</strong></p>

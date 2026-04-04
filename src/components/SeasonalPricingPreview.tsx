@@ -2,9 +2,9 @@
 
 import { useMemo } from "react";
 
-const WINE = "#5C1A33";
-const FOREST = "#2C3E2D";
-const CREAM = "#FAF7F2";
+const WINE = "#2B0416";
+const FOREST = "#2B3927";
+const CREAM = "#F9EDE4";
 
 /**
  * Monthly multipliers relative to base rate (mid-week, mid-month, non-peak).

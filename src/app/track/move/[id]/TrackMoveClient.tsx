@@ -796,7 +796,7 @@ export default function TrackMoveClient({
   // B2B one-off: no client tracking page — managed through partner portal
   if (isB2BOneOff) {
     return (
-      <div className="min-h-screen font-sans flex items-center justify-center px-4" data-theme="light" style={{ backgroundColor: "#FAF7F2", color: FOREST }}>
+      <div className="min-h-screen font-sans flex items-center justify-center px-4" data-theme="light" style={{ backgroundColor: "#F9EDE4", color: FOREST }}>
         <div className="max-w-md w-full text-center">
           <h1 className="font-hero text-[26px] sm:text-[30px] font-semibold mb-2" style={{ color: WINE }}>Partner-Managed Delivery</h1>
           <p className="text-[13px] mb-6 opacity-80" style={{ color: FOREST }}>
@@ -805,7 +805,7 @@ export default function TrackMoveClient({
           <Link
             href="/partner"
             className="inline-block rounded-lg font-semibold text-[12px] py-2.5 px-4 transition-colors hover:opacity-90"
-            style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+            style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
           >
             Go to Partner Portal
           </Link>
@@ -816,7 +816,7 @@ export default function TrackMoveClient({
 
   if (linkExpired) {
     return (
-      <div className="min-h-screen font-sans flex items-center justify-center px-4" data-theme="light" style={{ backgroundColor: "#FAF7F2", color: FOREST }}>
+      <div className="min-h-screen font-sans flex items-center justify-center px-4" data-theme="light" style={{ backgroundColor: "#F9EDE4", color: FOREST }}>
         <div className="max-w-md w-full text-center">
           <h1 className="font-hero text-[26px] sm:text-[30px] font-semibold mb-2" style={{ color: WINE }}>Your move is complete</h1>
           <p className="text-[13px] mb-6 opacity-80" style={{ color: FOREST }}>
@@ -825,7 +825,7 @@ export default function TrackMoveClient({
           <a
             href={`tel:${normalizePhone(YUGO_PHONE)}`}
             className="inline-block rounded-lg font-semibold text-[12px] py-2.5 px-4 transition-colors hover:opacity-90"
-            style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+            style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
           >
             Contact us
           </a>
@@ -838,7 +838,7 @@ export default function TrackMoveClient({
     <div
       className="h-screen flex flex-col overflow-x-hidden overflow-y-hidden font-sans min-w-0 max-w-[100vw]"
       data-theme="light"
-      style={{ backgroundColor: "#FAF7F2", color: FOREST }}
+      style={{ backgroundColor: "#F9EDE4", color: FOREST }}
     >
       <TrackingAgreementModal />
       {/* Header, outside scroll container; always visible on mobile */}
@@ -897,7 +897,7 @@ export default function TrackMoveClient({
               type="button"
               onClick={handleBackToDashboard}
               className="mt-4 rounded-md font-semibold text-[11px] py-2 px-4 transition-colors hover:opacity-90"
-              style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+              style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
             >
               Continue
             </button>
@@ -1243,7 +1243,7 @@ export default function TrackMoveClient({
                                 onClick={() => void handlePayWithSavedCard()}
                                 disabled={chargingSavedCard}
                                 className="rounded-full font-semibold text-[11px] py-1.5 px-4 transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
-                                style={{ backgroundColor: GOLD, color: "#FAF7F2", boxShadow: `0 2px 8px ${GOLD}40` }}
+                                style={{ backgroundColor: GOLD, color: "#F9EDE4", boxShadow: `0 2px 8px ${GOLD}40` }}
                               >
                                 {chargingSavedCard ? "Processing…" : "Pay Now"}
                               </button>
@@ -1875,7 +1875,7 @@ export default function TrackMoveClient({
                 onClick={() => setActiveTab(t.key)}
                 className={`shrink-0 px-3.5 py-2.5 text-[11px] font-semibold whitespace-nowrap border-b-[1.5px] transition-colors ${
                   activeTab === t.key
-                    ? "border-[#B8962E] opacity-100"
+                    ? "border-[#2C3E2D] opacity-100"
                     : "border-transparent opacity-40 hover:opacity-60"
                 }`}
                 style={{ color: activeTab === t.key ? GOLD : FOREST }}
@@ -2096,7 +2096,7 @@ export default function TrackMoveClient({
                         onClick={() => void handlePayWithSavedCard()}
                         disabled={chargingSavedCard}
                         className="rounded-full font-semibold text-[11px] py-2 px-5 transition-all hover:opacity-90 active:scale-95 shrink-0 tracking-wide shadow-sm disabled:opacity-50"
-                        style={{ backgroundColor: GOLD, color: "#FAF7F2", boxShadow: `0 2px 12px ${GOLD}40` }}
+                        style={{ backgroundColor: GOLD, color: "#F9EDE4", boxShadow: `0 2px 12px ${GOLD}40` }}
                       >
                         {chargingSavedCard ? "Processing…" : "Pay Now"}
                       </button>
@@ -2113,7 +2113,7 @@ export default function TrackMoveClient({
                       style={
                         hasCardOnFile
                           ? { borderColor: `${FOREST}25`, color: FOREST, backgroundColor: "transparent" }
-                          : { backgroundColor: GOLD, color: "#FAF7F2", borderColor: "transparent", boxShadow: `0 2px 12px ${GOLD}40` }
+                          : { backgroundColor: GOLD, color: "#F9EDE4", borderColor: "transparent", boxShadow: `0 2px 12px ${GOLD}40` }
                       }
                     >
                       {hasCardOnFile ? "Use a different card" : "Add Card"}
@@ -2132,7 +2132,7 @@ export default function TrackMoveClient({
                     <div key={i} className="flex items-center gap-2.5">
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-semibold text-white shrink-0"
-                        style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+                        style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
                       >
                         {(name || "?").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                       </div>
@@ -2238,7 +2238,7 @@ export default function TrackMoveClient({
                             disabled={!inventoryChangeEligible}
                             onClick={() => inventoryChangeEligible && setInventoryChangeModalOpen(true)}
                             className="w-full sm:w-auto rounded-full font-semibold text-[11px] py-2.5 px-5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+                            style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
                           >
                             Request inventory change
                           </button>
@@ -2454,7 +2454,7 @@ export default function TrackMoveClient({
                             }
                           }}
                           className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
-                          style={{ backgroundColor: WINE, color: "#FAF7F2" }}
+                          style={{ backgroundColor: WINE, color: "#F9EDE4" }}
                         >
                           <ShareNetwork size={11} className="text-current" />
                           Share with a friend
@@ -2500,7 +2500,7 @@ export default function TrackMoveClient({
 
       </main>
 
-      <footer className="py-3 px-4 text-center border-t" style={{ backgroundColor: "#FAF7F2", borderColor: `${FOREST}10` }}>
+      <footer className="py-3 px-4 text-center border-t" style={{ backgroundColor: "#F9EDE4", borderColor: `${FOREST}10` }}>
         <div className="flex items-center justify-center gap-1 mb-0.5">
           <YugoLogo size={10} variant="gold" onLightBackground />
         </div>
@@ -2527,7 +2527,7 @@ export default function TrackMoveClient({
                   value={changeType}
                   onChange={(e) => setChangeType(e.target.value)}
                   className="w-full rounded-lg border px-3 py-2 text-[12px] outline-none focus:ring-2"
-                  style={{ borderColor: `${FOREST}25`, backgroundColor: "#FAF7F2", color: FOREST }}
+                  style={{ borderColor: `${FOREST}25`, backgroundColor: "#F9EDE4", color: FOREST }}
                 >
                   {CHANGE_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -2535,7 +2535,7 @@ export default function TrackMoveClient({
                 </select>
               </div>
               {changeType === "Change destination address" && (
-                <div style={{ borderColor: `${FOREST}25`, backgroundColor: "#FAF7F2", color: FOREST }}>
+                <div style={{ borderColor: `${FOREST}25`, backgroundColor: "#F9EDE4", color: FOREST }}>
                   <AddressAutocomplete
                     value={changeAddress}
                     onRawChange={setChangeAddress}
@@ -2556,18 +2556,18 @@ export default function TrackMoveClient({
                   placeholder={changeType === "Change destination address" ? "e.g. Access code, special instructions..." : "Describe what you need changed..."}
                   rows={changeType === "Change destination address" ? 2 : 4}
                   className="w-full resize-y rounded-lg border px-3 py-2 text-[12px] placeholder:opacity-60 outline-none focus:ring-2"
-                  style={{ borderColor: `${FOREST}25`, backgroundColor: "#FAF7F2", color: FOREST }}
+                  style={{ borderColor: `${FOREST}25`, backgroundColor: "#F9EDE4", color: FOREST }}
                 />
               </div>
               <div>
                 <label className="mb-2 block text-[10px] font-bold uppercase opacity-80" style={{ color: FOREST }}>Urgency</label>
                 <div className="flex gap-4">
                   <label className="flex cursor-pointer items-center gap-2 text-[12px] opacity-80" style={{ color: FOREST }}>
-                    <input type="radio" name="urgency" checked={!changeUrgent} onChange={() => setChangeUrgent(false)} className="accent-[#B8962E]" />
+                    <input type="radio" name="urgency" checked={!changeUrgent} onChange={() => setChangeUrgent(false)} className="accent-[#2C3E2D]" />
                     Normal
                   </label>
                   <label className="flex cursor-pointer items-center gap-2 text-[12px] opacity-80" style={{ color: FOREST }}>
-                    <input type="radio" name="urgency" checked={changeUrgent} onChange={() => setChangeUrgent(true)} className="accent-[#B8962E]" />
+                    <input type="radio" name="urgency" checked={changeUrgent} onChange={() => setChangeUrgent(true)} className="accent-[#2C3E2D]" />
                     Urgent
                   </label>
                 </div>
@@ -2589,7 +2589,7 @@ export default function TrackMoveClient({
                     (changeType === "Change destination address" ? !changeAddress.trim() : !changeDesc.trim())
                   }
                   className="flex-1 rounded-lg py-2.5 text-[12px] font-bold disabled:opacity-50 transition-colors hover:opacity-90"
-                  style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+                  style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
                 >
                   {changeSubmitting ? "Submitting…" : "Submit"}
                 </button>
@@ -2613,7 +2613,7 @@ export default function TrackMoveClient({
                   </button>
                 </div>
 
-                <div className="rounded-xl border p-4 mb-4" style={{ borderColor: `${FOREST}15`, backgroundColor: `${"#FAF7F2"}` }}>
+                <div className="rounded-xl border p-4 mb-4" style={{ borderColor: `${FOREST}15`, backgroundColor: `${"#F9EDE4"}` }}>
                   <div className="flex justify-between text-[13px] mb-1.5" style={{ color: FOREST }}>
                     <span className="opacity-70">{isLogisticsDeliveryTrack ? "Balance due" : "Move balance"}</span>
                     <span className="font-semibold">{formatCurrency(totalBalance)}</span>
@@ -2630,7 +2630,7 @@ export default function TrackMoveClient({
 
                 <div className="mb-1.5">
                   <div className="text-[9px] font-bold tracking-widest uppercase mb-2" style={{ color: GOLD }}>Card Details</div>
-                  <div className="rounded-xl border-2 p-3.5 transition-colors" style={{ borderColor: sqCardReady ? GOLD : `${FOREST}15`, backgroundColor: "#FAF7F2" }}>
+                  <div className="rounded-xl border-2 p-3.5 transition-colors" style={{ borderColor: sqCardReady ? GOLD : `${FOREST}15`, backgroundColor: "#F9EDE4" }}>
                     <div id="sq-track-card" style={{ minHeight: 80 }} />
                     {!sqSdkReady && !sqError && (
                       <div className="flex items-center justify-center py-4">
@@ -2652,7 +2652,7 @@ export default function TrackMoveClient({
                   onClick={handleInlinePayment}
                   disabled={!sqCardReady || sqProcessing}
                   className="w-full py-3 rounded-xl text-[13px] font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed mt-2"
-                  style={{ backgroundColor: sqCardReady && !sqProcessing ? GOLD : `${GOLD}60`, color: "#FAF7F2" }}
+                  style={{ backgroundColor: sqCardReady && !sqProcessing ? GOLD : `${GOLD}60`, color: "#F9EDE4" }}
                 >
                   {sqProcessing ? (
                     <span className="flex items-center justify-center gap-2">
@@ -2824,7 +2824,7 @@ function CrewChangeRequestBanner({
           onClick={handleApprove}
           disabled={approving || declining}
           className="py-3 text-[12px] font-bold text-white disabled:opacity-50 transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg, #C9A962, #8B7332)" }}
+          style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
         >
           {approving
             ? "Processing…"

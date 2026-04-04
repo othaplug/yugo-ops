@@ -557,7 +557,7 @@ export async function runPostPaymentActions(
               <div style="font-size:32px;font-weight:700;color:#3A3532;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;letter-spacing:-0.02em;">$${ref.referrer_credit}</div>
               <div style="font-size:12px;color:#6B635C;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;margin-top:6px;">Referral credit &middot; applied on next booking</div>
             </div>
-            ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#5C1A33;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
+            ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#2C3E2D;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
           `,
             "generic",
           );

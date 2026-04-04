@@ -75,17 +75,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           const budget = (project?.estimated_budget || 0) + (project?.project_mgmt_fee || 0);
           const html = emailLayout(
             `
-            <div style="font-size:9px;font-weight:700;color:#5C1A33;letter-spacing:1.5px;text-transform:none;margin-bottom:8px">New Project Proposal</div>
+            <div style="font-size:9px;font-weight:700;color:#2C3E2D;letter-spacing:1.5px;text-transform:none;margin-bottom:8px">New Project Proposal</div>
             <h1 style="font-size:20px;font-weight:700;margin:0 0 20px;color:#3A3532">${project?.project_name}</h1>
             <p style="font-size:13px;color:#6B635C;line-height:1.6;margin:0 0 20px">
               Hi${org.contact_name ? ` ${org.contact_name}` : ""},<br/><br/>
-              A new project proposal has been created for <strong style="color:#5C1A33">${org.name}</strong>.
+              A new project proposal has been created for <strong style="color:#2C3E2D">${org.name}</strong>.
               ${budget > 0 ? `The estimated budget is <strong style="color:#3A3532">$${budget.toLocaleString()}</strong>.` : ""}
             </p>
             <p style="font-size:13px;color:#6B635C;line-height:1.6;margin:0 0 20px">
               Log in to your partner portal to review the details.
             </p>
-            <a href="${baseUrl}/partner" style="display:inline-block;background:#5C1A33;color:#FFFFFF;padding:14px 28px;border-radius:0;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
+            <a href="${baseUrl}/partner" style="display:inline-block;background:#2C3E2D;color:#FFFFFF;padding:14px 28px;border-radius:0;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:24px">
               View Project
             </a>
           `,

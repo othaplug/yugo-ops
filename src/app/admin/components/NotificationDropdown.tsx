@@ -7,7 +7,7 @@ import type { Notification } from "./NotificationContext";
 import { Icon } from "@/components/AppIcons";
 
 const SOURCE_TAGS: Record<string, { label: string; color: string; bg: string }> = {
-  delivery: { label: "Delivery", color: "#C9A962", bg: "rgba(201,169,98,0.12)" },
+  delivery: { label: "Delivery", color: "#2C3E2D", bg: "rgba(201,169,98,0.12)" },
   quote: { label: "Quote", color: "#6B8CFF", bg: "rgba(107,140,255,0.12)" },
   move: { label: "Move", color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },
   payment: { label: "Payment", color: "#2D9F5A", bg: "rgba(45,159,90,0.12)" },

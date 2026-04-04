@@ -6,24 +6,24 @@
 import type { jsPDF } from "jspdf";
 
 // ─── Hex (for reference / non-PDF) ─────────────────────────────────────────
-export const WINE_HEX = "#5C1A33";
-export const GOLD_HEX = "#C9A962";
+export const WINE_HEX = "#2B0416";
+export const GOLD_HEX = "#66143D";
 export const GOLD_DARK_HEX = "#B89A52";
-export const CREAM_BG_HEX = "#FAF7F2";
+export const CREAM_BG_HEX = "#F9EDE4";
 export const CREAM_TEXT_HEX = "#E8E5E0";
 export const DARK_HEX = "#0D0D0D";
 export const GRAY_HEX = "#666666";
 
 // ─── RGB tuples for jsPDF (0–255) ──────────────────────────────────────────
-export const WINE: [number, number, number] = [92, 26, 51];       // #5C1A33
-export const GOLD: [number, number, number] = [201, 169, 98];     // #C9A962
+export const WINE: [number, number, number] = [92, 26, 51]; // #2B0416
+export const GOLD: [number, number, number] = [201, 169, 98]; // #66143D
 export const GOLD_DARK: [number, number, number] = [184, 154, 82]; // #B89A52
-export const CREAM_BG: [number, number, number] = [250, 247, 242]; // #FAF7F2
+export const CREAM_BG: [number, number, number] = [250, 247, 242]; // #F9EDE4
 export const CREAM_TEXT: [number, number, number] = [232, 229, 224]; // #E8E5E0
-export const DARK: [number, number, number] = [13, 13, 13];       // #0D0D0D
-export const GRAY: [number, number, number] = [115, 115, 115];    // muted
+export const DARK: [number, number, number] = [13, 13, 13]; // #0D0D0D
+export const GRAY: [number, number, number] = [115, 115, 115]; // muted
 export const GRAY_LIGHT: [number, number, number] = [200, 200, 200];
-export const GREEN: [number, number, number] = [45, 159, 90];     // #2D9F5A
+export const GREEN: [number, number, number] = [45, 159, 90]; // #2D9F5A
 
 // Hero = serif (Times approximates Instrument Serif in PDF)
 const FONT_HERO = "times";
@@ -36,7 +36,7 @@ const FONT_BODY = "helvetica";
 export function drawYugoLogo(
   doc: jsPDF,
   logoBase64: string,
-  options: { x?: number; y?: number; width?: number; margin?: number } = {}
+  options: { x?: number; y?: number; width?: number; margin?: number } = {},
 ): number {
   const margin = options.margin ?? 50;
   const x = options.x ?? margin;
@@ -64,7 +64,7 @@ export function drawYugoHeader(
     width?: number;
     margin?: number;
     logoBase64?: string;
-  } = {}
+  } = {},
 ): number {
   const yStart = options.yStart ?? 36;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -82,18 +82,24 @@ export function drawYugoHeader(
   }
 
   const centerX = options.centerX ?? pageWidth / 2;
-  const lineEnd = options.width != null ? centerX + options.width / 2 : pageWidth - margin;
-  const lineStart = options.width != null ? centerX - options.width / 2 : margin;
+  const lineEnd =
+    options.width != null ? centerX + options.width / 2 : pageWidth - margin;
+  const lineStart =
+    options.width != null ? centerX - options.width / 2 : margin;
 
   doc.setFont(FONT_HERO, "bold");
   doc.setFontSize(24);
   doc.setTextColor(...WINE);
-  doc.text("Yugo", centerX, yStart + (logoBase64 ? 10 : 0), { align: "center" });
+  doc.text("Yugo", centerX, yStart + (logoBase64 ? 10 : 0), {
+    align: "center",
+  });
 
   doc.setFont(FONT_HERO, "italic");
   doc.setFontSize(9);
   doc.setTextColor(...GOLD);
-  doc.text("The Art of Moving", centerX, yStart + (logoBase64 ? 16 : 6), { align: "center" });
+  doc.text("The Art of Moving", centerX, yStart + (logoBase64 ? 16 : 6), {
+    align: "center",
+  });
 
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.5);
@@ -144,7 +150,12 @@ export function drawYugoFooter(
 /**
  * Table header style for premium docs: cream background, wine or dark text.
  */
-export function getTableHeadStyles(wineHeadings = false): { fillColor: number[]; textColor: number[]; fontStyle: "bold"; fontSize: number } {
+export function getTableHeadStyles(wineHeadings = false): {
+  fillColor: number[];
+  textColor: number[];
+  fontStyle: "bold";
+  fontSize: number;
+} {
   return {
     fillColor: CREAM_BG,
     textColor: wineHeadings ? WINE : DARK,
@@ -188,7 +199,10 @@ export function setHeroTitle(doc: jsPDF, size = 18): void {
 /**
  * Draw a subtle box for a key info block (Yugo style: cream border, wine/gold accents).
  */
-export function drawInfoBox(doc: jsPDF, options: { x: number; y: number; width: number; height: number }): void {
+export function drawInfoBox(
+  doc: jsPDF,
+  options: { x: number; y: number; width: number; height: number },
+): void {
   doc.setDrawColor(...GOLD_DARK);
   doc.setLineWidth(0.3);
   doc.setFillColor(...CREAM_BG);

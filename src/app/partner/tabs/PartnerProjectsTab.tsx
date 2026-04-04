@@ -76,7 +76,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
         const hasDelay = project.delayedCount > 0;
 
         return (
-          <div key={project.id} className="bg-white border border-[#E8E4DF] rounded-xl overflow-hidden hover:border-[#C9A962]/40 transition-colors">
+          <div key={project.id} className="bg-white border border-[#E8E4DF] rounded-xl overflow-hidden hover:border-[#2C3E2D]/40 transition-colors">
             {/* Project Header */}
             <div
               className="p-5 cursor-pointer"
@@ -99,7 +99,7 @@ export default function PartnerProjectsTab({ projects, onShareProject }: {
                   {onShareProject && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onShareProject(project.id); }}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#E8E4DF] text-[#4F4B47] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-[#E8E4DF] text-[#4F4B47] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
                     >
                       <ShareNetwork size={12} className="inline mr-1" />
                       Share

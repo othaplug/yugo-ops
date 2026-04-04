@@ -99,7 +99,7 @@ export default function TrackDocuments({
       </div>
       <div className="p-5 space-y-2">
         {squareReceiptUrl && (
-          <div className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#C9A962]/50 transition-colors">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#2C3E2D]/50 transition-colors">
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-medium text-[#1A1A1A]">Payment Receipt (Square)</div>
               <div className="text-[11px] text-[#454545] flex items-center gap-2 mt-0.5">
@@ -111,7 +111,7 @@ export default function TrackDocuments({
               href={squareReceiptUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold bg-[#C9A962] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] transition-colors"
+              className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold bg-[#2C3E2D] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] transition-colors"
             >
               View Receipt
             </a>
@@ -125,7 +125,7 @@ export default function TrackDocuments({
           return (
             <div
               key={doc.id}
-              className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#C9A962]/50 transition-colors"
+              className="flex items-center justify-between gap-4 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] px-4 py-3 hover:border-[#2C3E2D]/50 transition-colors"
             >
               <div className="min-w-0 flex-1">
                 <div className="text-[13px] font-medium text-[#1A1A1A] truncate">
@@ -151,7 +151,7 @@ export default function TrackDocuments({
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold bg-[#C9A962] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] transition-colors"
+                  className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold bg-[#2C3E2D] text-[var(--btn-text-on-accent)] hover:bg-[#B89A52] transition-colors"
                 >
                   Download
                 </a>

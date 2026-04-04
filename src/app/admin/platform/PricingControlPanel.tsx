@@ -37,7 +37,7 @@ function currency(n: number | string) {
 }
 
 const TIER_BADGE: Record<string, string> = {
-  A: "bg-[#C9A962]/15 text-[#C9A962] border-[#C9A962]/30",
+  A: "bg-[#2C3E2D]/15 text-[#2C3E2D] border-[#2C3E2D]/30",
   B: "bg-[#2D6A4F]/15 text-[#2D6A4F] border-[#2D6A4F]/30",
   C: "bg-[var(--tx3)]/10 text-[var(--tx3)] border-[var(--tx3)]/20",
   D: "bg-[var(--tx3)]/5 text-[var(--tx3)]/60 border-[var(--tx3)]/10",

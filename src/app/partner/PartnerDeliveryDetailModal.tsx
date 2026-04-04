@@ -282,7 +282,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                 <PencilSimple size={16} color="#6B6B6B" />
               </button>
             )}
-            <button onClick={onShare} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors">
+            <button onClick={onShare} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#B89A52] transition-colors">
               Share
             </button>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg)]" aria-label="Close">
@@ -311,7 +311,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
               onClick={() => setActiveSection(t.key)}
               className={`px-3 py-2.5 text-[12px] font-semibold border-b-2 transition-colors -mb-px ${
                 activeSection === t.key
-                  ? "border-[#C9A962] text-[#C9A962]"
+                  ? "border-[#2C3E2D] text-[#2C3E2D]"
                   : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
               }`}
             >
@@ -358,7 +358,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                               : null;
                             return (
                               <li key={stop.id} className="flex gap-2">
-                                <span className="text-[10px] font-bold text-[#C9A962] shrink-0 pt-0.5">{stop.stop_number}.</span>
+                                <span className="text-[10px] font-bold text-[#2C3E2D] shrink-0 pt-0.5">{stop.stop_number}.</span>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-[9px] font-semibold text-[var(--tx3)] flex items-center">
@@ -424,7 +424,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                           <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-0.5">
                             {isPending ? "Quoted Price" : "Confirmed Price"}
                           </div>
-                          <div className="text-[18px] font-bold text-[#C9A962]">
+                          <div className="text-[18px] font-bold text-[#2C3E2D]">
                             ${Number(displayPrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                           </div>
                           <div className="text-[10px] text-[var(--tx3)] mt-0.5">
@@ -439,7 +439,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                           </span>
                         )}
                         {!isPending && (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-[#C9A962]/10 text-[#C9A962]">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-[#2C3E2D]/10 text-[#2C3E2D]">
                             Confirmed
                           </span>
                         )}
@@ -458,7 +458,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
                   <ul className="text-[13px] text-[var(--tx)] space-y-0.5">
                     {itemsDisplay.map((item, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#C9A962] flex-shrink-0" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#2C3E2D] flex-shrink-0" />
                         {item}
                       </li>
                     ))}
@@ -472,8 +472,8 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
             <div className="space-y-4">
               <>
                   <div className="flex items-center gap-3 pb-4 border-b border-[var(--brd)]/30">
-                    <div className="w-10 h-10 rounded-xl bg-[#C9A962]/15 flex items-center justify-center flex-shrink-0">
-                      <NavigationArrow size={20} color="#C9A962" />
+                    <div className="w-10 h-10 rounded-xl bg-[#2C3E2D]/15 flex items-center justify-center flex-shrink-0">
+                      <NavigationArrow size={20} color="#2C3E2D" />
                     </div>
                     <div>
                       <div className="text-[13px] font-semibold text-[var(--tx)]">

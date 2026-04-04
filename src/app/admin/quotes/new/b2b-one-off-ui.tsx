@@ -20,9 +20,9 @@ import {
 
 /** Brand tokens: map to theme vars so admin dark mode stays readable (no wine-on-wine text). */
 export const B2B_ONEOFF_CSS = {
-  "--yugo-wine": "var(--yugo-primary-text, #2B0416)",
+  "--yugo-wine": "var(--yugo-primary-text, #2C3E2D)",
   "--yugo-off-white": "var(--tx)",
-  "--yugo-rose": "var(--yugo-rose-accent, #66143D)",
+  "--yugo-rose": "var(--yugo-rose-accent, #2C3E2D)",
   "--yugo-green": "#2B3927",
   "--yugo-leather": "var(--tx2, #492A1D)",
   "--yugo-border": "color-mix(in srgb, var(--brd) 85%, transparent)",
@@ -219,7 +219,13 @@ export function defaultWeightForCatalogItem(itemLabel: string): string {
   if (d.includes("countertop")) return "super_heavy";
   if (d.includes("island")) return "very_heavy";
   if (d.includes("closet system") || d.includes("panel")) return "standard";
-  if (d.includes("door") || d.includes("drawer front") || d.includes("hardware") || d.includes("filler") || d.includes("trim"))
+  if (
+    d.includes("door") ||
+    d.includes("drawer front") ||
+    d.includes("hardware") ||
+    d.includes("filler") ||
+    d.includes("trim")
+  )
     return "light";
   // Furniture retail
   if (d.includes("sofa") || d.includes("sectional")) return "heavy";
@@ -234,16 +240,29 @@ export function defaultWeightForCatalogItem(itemLabel: string): string {
   if (d.includes("exam table")) return "very_heavy";
   if (d.includes("dental chair")) return "very_heavy";
   if (d.includes("x-ray")) return "heavy";
-  if (d.includes("lab instrument") || d.includes("monitor") || d.includes("display") || d.includes("cart"))
+  if (
+    d.includes("lab instrument") ||
+    d.includes("monitor") ||
+    d.includes("display") ||
+    d.includes("cart")
+  )
     return "standard";
   if (d.includes("sterilization")) return "heavy";
   // Appliance
-  if (d.includes("refrigerator") || d.includes("washer") || d.includes("dryer") || d.includes("stove") || d.includes("range") || d.includes("freezer"))
+  if (
+    d.includes("refrigerator") ||
+    d.includes("washer") ||
+    d.includes("dryer") ||
+    d.includes("stove") ||
+    d.includes("range") ||
+    d.includes("freezer")
+  )
     return "very_heavy";
   if (d.includes("dishwasher") || d.includes("wine cooler")) return "heavy";
   if (d.includes("microwave")) return "standard";
   // Restaurant
-  if (d.includes("booth") || d.includes("kitchen equipment")) return "very_heavy";
+  if (d.includes("booth") || d.includes("kitchen equipment"))
+    return "very_heavy";
   if (d.includes("table") && !d.includes("exam")) return "heavy";
   if (d.includes("bar stool") || d.includes("chair stack")) return "light";
   if (d.includes("pos") || d.includes("signage")) return "standard";
@@ -255,12 +274,23 @@ export function defaultWeightForCatalogItem(itemLabel: string): string {
   if (d.includes("oversized") || d.includes("pallet")) return "very_heavy";
   // Office
   if (d.includes("conference table")) return "very_heavy";
-  if (d.includes("desk") || d.includes("filing") || d.includes("bookcase") || d.includes("credenza"))
+  if (
+    d.includes("desk") ||
+    d.includes("filing") ||
+    d.includes("bookcase") ||
+    d.includes("credenza")
+  )
     return "heavy";
-  if (d.includes("office chair") || d.includes("cubicle") || d.includes("whiteboard")) return "standard";
+  if (
+    d.includes("office chair") ||
+    d.includes("cubicle") ||
+    d.includes("whiteboard")
+  )
+    return "standard";
   // Flooring / generic
   if (d.includes("pallet") || d.includes("skid")) return "very_heavy";
-  if (d.includes("flooring box") || d.includes("underlayment")) return "standard";
+  if (d.includes("flooring box") || d.includes("underlayment"))
+    return "standard";
   if (d.includes("parcel")) return "standard";
   return "standard";
 }
@@ -402,7 +432,9 @@ export function B2bItemRowView(props: {
   ];
 
   const ht = row.handling_type || "threshold";
-  const tierCode = normalizeB2bWeightCategory(row.weight_category || "standard");
+  const tierCode = normalizeB2bWeightCategory(
+    row.weight_category || "standard",
+  );
   const tier = getWeightTier(tierCode);
   const needsActual = tierRequiresActualWeight(tierCode);
 
@@ -512,8 +544,9 @@ export function B2bItemRowView(props: {
           value={tierCode}
           onChange={(e) => {
             const next = e.target.value;
-            const clearActual =
-              !tierRequiresActualWeight(next) ? { actual_weight_lbs: undefined } : {};
+            const clearActual = !tierRequiresActualWeight(next)
+              ? { actual_weight_lbs: undefined }
+              : {};
             onChange(idx, { weight_category: next, ...clearActual });
           }}
           aria-label="Weight range"
@@ -529,7 +562,9 @@ export function B2bItemRowView(props: {
         {tier && tier.priceFactor > 1 && (
           <p className="text-[10px] leading-snug" style={{ color: leather }}>
             {tier.range}
-            {tier.requiresEquipment?.length ? ` · Equipment: ${tier.requiresEquipment.join(", ")}` : ""}
+            {tier.requiresEquipment?.length
+              ? ` · Equipment: ${tier.requiresEquipment.join(", ")}`
+              : ""}
           </p>
         )}
         {needsActual && (
@@ -563,13 +598,14 @@ export function B2bItemRowView(props: {
             />
             {tierCode === "super_heavy" && (
               <p className="text-[10px] text-amber-800/90 dark:text-amber-200/90">
-                This item typically needs 4+ crew and lift equipment. Crew and truck recommendations
-                update from weight.
+                This item typically needs 4+ crew and lift equipment. Crew and
+                truck recommendations update from weight.
               </p>
             )}
             {tierCode === "extreme" && (
               <p className="text-[10px] text-amber-800/90 dark:text-amber-200/90">
-                Admin review recommended. Pricing includes a per-pound surcharge over 800 lbs ($0.50/lb).
+                Admin review recommended. Pricing includes a per-pound surcharge
+                over 800 lbs ($0.50/lb).
               </p>
             )}
           </div>
@@ -648,8 +684,8 @@ export function B2bItemRowView(props: {
             Bundled
           </span>
         ) : null}
-        {((row.actual_weight_lbs ?? row.weight_lbs ?? 0) > 300 ||
-          (tier?.crewImpact ?? 0) >= 1) ? (
+        {(row.actual_weight_lbs ?? row.weight_lbs ?? 0) > 300 ||
+        (tier?.crewImpact ?? 0) >= 1 ? (
           <span
             className="text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white"
             style={{ backgroundColor: rose }}

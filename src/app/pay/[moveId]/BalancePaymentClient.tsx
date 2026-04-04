@@ -170,21 +170,21 @@ export default function BalancePaymentClient({
       <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="font-hero text-[28px] font-bold tracking-wider text-[#C9A962]">Yugo</div>
+            <div className="font-hero text-[28px] font-bold tracking-wider text-[#2C3E2D]">Yugo</div>
           </div>
           <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#C9A962]/15 flex items-center justify-center">
-              <Check size={32} color="#C9A962" weight="bold" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#2C3E2D]/15 flex items-center justify-center">
+              <Check size={32} color="#2C3E2D" weight="bold" />
             </div>
             <h1 className="text-[22px] font-bold text-[#F5F5F3] mb-2">Payment Received</h1>
             <p className="text-[var(--text-base)] text-[#B8B5B0] leading-relaxed mb-4">
               Your balance has been paid in full. A receipt has been sent to your email.
             </p>
             <div className="bg-[#0F0F0F] rounded-xl p-4 border border-[#2A2A2A]">
-              <div className="text-[11px] text-[#C9A962] font-bold uppercase tracking-wider mb-2">
+              <div className="text-[11px] text-[#2C3E2D] font-bold uppercase tracking-wider mb-2">
                 {move.move_code || "Move Details"}
               </div>
-              <div className="text-[24px] font-bold text-[#C9A962]">{fmtPrice(ccTotal)}</div>
+              <div className="text-[24px] font-bold text-[#2C3E2D]">{fmtPrice(ccTotal)}</div>
               <div className="text-[11px] text-[#454545] mt-1">Charged to your card</div>
             </div>
           </div>
@@ -205,18 +205,18 @@ export default function BalancePaymentClient({
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="font-hero text-[28px] font-bold tracking-wider text-[#C9A962]">Yugo</div>
+          <div className="font-hero text-[28px] font-bold tracking-wider text-[#2C3E2D]">Yugo</div>
           <div className="text-[11px] text-[#454545] mt-1 uppercase tracking-widest">Balance Payment</div>
         </div>
 
         {/* Move Summary */}
         <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-5 mb-4">
-          <div className="text-[9px] font-bold text-[#C9A962] uppercase tracking-widest mb-3">Move Summary</div>
+          <div className="text-[9px] font-bold text-[#2C3E2D] uppercase tracking-widest mb-3">Move Summary</div>
           <div className="space-y-2 text-[12px]">
             {move.move_code && (
               <div className="flex justify-between">
                 <span className="text-[#454545]">Reference</span>
-                <span className="text-[#C9A962] font-semibold">{move.move_code}</span>
+                <span className="text-[#2C3E2D] font-semibold">{move.move_code}</span>
               </div>
             )}
             <div className="flex justify-between">
@@ -240,7 +240,7 @@ export default function BalancePaymentClient({
 
         {/* Balance Breakdown */}
         <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-5 mb-4">
-          <div className="text-[9px] font-bold text-[#C9A962] uppercase tracking-widest mb-3">Payment Breakdown</div>
+          <div className="text-[9px] font-bold text-[#2C3E2D] uppercase tracking-widest mb-3">Payment Breakdown</div>
           <div className="space-y-2 text-[12px]">
             <div className="flex justify-between">
               <span className="text-[#454545]">Move balance (incl. HST)</span>
@@ -255,26 +255,26 @@ export default function BalancePaymentClient({
               <span className="text-[#E8E5E0]">{fmtPrice(transactionFee)}</span>
             </div>
             <div className="border-t border-[#2A2A2A] pt-2 mt-2 flex justify-between">
-              <span className="text-[#C9A962] font-bold">Total to charge</span>
-              <span className="text-[#C9A962] font-bold text-[15px]">{fmtPrice(ccTotal)}</span>
+              <span className="text-[#2C3E2D] font-bold">Total to charge</span>
+              <span className="text-[#2C3E2D] font-bold text-[15px]">{fmtPrice(ccTotal)}</span>
             </div>
           </div>
         </div>
 
         {/* Card Form */}
         <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-5 mb-4">
-          <div className="text-[9px] font-bold text-[#C9A962] uppercase tracking-widest mb-3">Card Details</div>
+          <div className="text-[9px] font-bold text-[#2C3E2D] uppercase tracking-widest mb-3">Card Details</div>
           <div
             className="rounded-xl border-2 p-4 transition-colors"
             style={{
-              borderColor: cardReady ? "#C9A962" : "#2A2A2A",
+              borderColor: cardReady ? "#2C3E2D" : "#2A2A2A",
               backgroundColor: "#0F0F0F",
             }}
           >
             <div id="sq-balance-card" style={{ minHeight: 90 }} />
             {!sdkReady && !error && (
               <div className="flex items-center justify-center py-6">
-                <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "#C9A96230", borderTopColor: "#C9A962" }} />
+                <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "#2C3E2D30", borderTopColor: "#2C3E2D" }} />
                 <span className="ml-2 text-[12px] text-[#454545]">Loading payment form…</span>
               </div>
             )}
@@ -294,7 +294,7 @@ export default function BalancePaymentClient({
           onClick={handlePay}
           disabled={!cardReady || processing}
           className="w-full py-4 rounded-xl text-[var(--text-base)] font-bold tracking-wide text-[#0D0D0D] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ backgroundColor: cardReady && !processing ? "#C9A962" : "#C9A96260" }}
+          style={{ backgroundColor: cardReady && !processing ? "#2C3E2D" : "#2C3E2D60" }}
         >
           {processing ? (
             <span className="flex items-center justify-center gap-2">

@@ -112,7 +112,7 @@ export default function CrewSetupPage() {
                 style={{
                   width: "100%",
                   padding: "10px 14px",
-                  background: "#C9A962",
+                  background: "#2C3E2D",
                   color: "#0D0D0D",
                   border: "none",
                   borderRadius: 0,
@@ -154,7 +154,7 @@ export default function CrewSetupPage() {
             style={{
               width: 48,
               height: 1,
-              background: "linear-gradient(90deg, transparent, #C9A962, transparent)",
+              background: "linear-gradient(90deg, transparent, #2C3E2D, transparent)",
               margin: "0 auto 32px",
             }}
           />
@@ -258,7 +258,7 @@ export default function CrewSetupPage() {
               style={{
                 width: "100%",
                 padding: "10px 14px",
-                background: "#C9A962",
+                background: "#2C3E2D",
                 color: "#0D0D0D",
                 border: "none",
                 borderRadius: 0,

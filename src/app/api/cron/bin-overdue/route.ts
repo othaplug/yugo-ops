@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
               <h2 style="color:#ef4444">Your bins are overdue</h2>
               <p>Hi ${firstName}, your bin pickup for order <strong>${order.order_number}</strong> was scheduled for ${scheduledDateStr}.</p>
               <p>Late fees of <strong>$${lateFeePerDay}/day</strong> are now accruing.</p>
-              <p>Please stack your bins by the door and call us at <a href="tel:6473704525" style="color:#C9A962">(647) 370-4525</a> to arrange pickup.</p>
+              <p>Please stack your bins by the door and call us at <a href="tel:6473704525" style="color:#2C3E2D">(647) 370-4525</a> to arrange pickup.</p>
             </div>`,
           }).catch(() => {});
         }

@@ -628,7 +628,8 @@ export interface QuoteFollowup1Data {
 
 export function quoteFollowup1Email(d: QuoteFollowup1Data): string {
   const name = firstName(d.clientName);
-  return equinoxPromoLayout(`
+  return equinoxPromoLayout(
+    `
     <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${name ? `${name}, your` : "Your"} Yugo quote is ready.</div>
     <p style="${PROMO_CREAM_P}">We have prepared a guaranteed flat-rate ${d.serviceLabel.toLowerCase()} quote for you. One transparent price, nothing added on the day.</p>
     ${equinoxPromoCta(d.quoteUrl, "View Your Quote")}
@@ -689,7 +690,8 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
     ctaLabel = "Secure My Date";
   }
 
-  return equinoxPromoLayout(`
+  return equinoxPromoLayout(
+    `
     <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${heading}</div>
     <p style="${PROMO_CREAM_P}">${body}${expiryText ? `<br/><br/><span style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};font-weight:600;">${expiryText}</span>` : ""}</p>
     ${equinoxPromoCta(d.quoteUrl, ctaLabel)}
@@ -783,7 +785,8 @@ export interface QuoteUpdatedData {
 
 export function quoteUpdatedEmail(d: QuoteUpdatedData): string {
   const name = firstName(d.clientName);
-  return equinoxPromoLayout(`
+  return equinoxPromoLayout(
+    `
     <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${name ? `${name}, your` : "Your"} quote has been updated.</div>
     <p style="${PROMO_CREAM_P};margin:0 0 18px;">We have revised your ${d.serviceLabel.toLowerCase()} quote. A summary of the changes is below.</p>
     <div style="background:${PROMO_CREAM_FILL};padding:${PROMO_CREAM_CALLOUT_PAD};margin:0;border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;">
@@ -1186,7 +1189,8 @@ export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
     ? "Your quote is still active. Complete your booking whenever you are ready and your date will be secured."
     : `Your ${d.serviceLabel.toLowerCase()} quote ${expiryDisplay ? `expires <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${expiryDisplay}</strong>` : "is expiring soon"}. After that, we will need to refresh your rate based on availability.`;
 
-  return equinoxPromoLayout(`
+  return equinoxPromoLayout(
+    `
     <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${heading}</div>
     <p style="${PROMO_CREAM_P}">${body}</p>
     ${equinoxPromoCta(d.quoteUrl, isHot ? "Complete Booking" : "View Your Quote")}
@@ -1254,7 +1258,8 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
     `
     : "";
 
-  return equinoxPromoLayout(`
+  return equinoxPromoLayout(
+    `
     <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">${name ? `${name}, your` : "Your"} move is complete.</div>
     <p style="${PROMO_CREAM_P}">Thank you for trusting Yugo with your home. Your exclusive post-move perks are waiting below.</p>
     ${perksHtml ? `<div style="margin-top:8px;">${perksHtml}</div>` : ""}
@@ -1291,7 +1296,8 @@ export function moveAnniversaryEmail(d: MoveAnniversaryEmailData): string {
       ? ` from ${d.fromAddress.split(",")[0]} to ${d.toAddress.split(",")[0]}`
       : "";
 
-  return equinoxPromoLayout(`
+  return equinoxPromoLayout(
+    `
     <div role="heading" aria-level="1" style="${PROMO_CREAM_H1}">One year${name ? `, ${name}` : ""}.</div>
     <p style="${PROMO_CREAM_P}">We had the pleasure of moving you${route} on <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${moveDateStr}</strong>. We hope you have settled in beautifully.</p>
     ${

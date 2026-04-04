@@ -626,7 +626,7 @@ export default function CreateMoveForm({
                     onClick={() => setMoveType(val)}
                     className={`relative text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
                       sel
-                        ? "bg-gradient-to-br from-[#B8962E] to-[#8B7332] border-[#B8962E] shadow-md shadow-[#B8962E]/15"
+                        ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
                         : "bg-[var(--card)] border-[var(--brd)] hover:border-[var(--gold)]/40 hover:bg-[var(--bg)]"
                     }`}
                   >

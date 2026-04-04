@@ -8,7 +8,7 @@ interface TipConfirmationProps {
   amount: number;
 }
 
-const FOREST_GREEN = "#2C3E2D";
+const FOREST_GREEN = "#2B3927";
 
 export default function TipConfirmation({ amount }: TipConfirmationProps) {
   return (

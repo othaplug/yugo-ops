@@ -139,7 +139,7 @@ function buildReengagementEmail(opts: {
       ${moveDateLabel ? `<div style="font-size:12px;color:#6B635C;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;">Move date &middot; ${moveDateLabel}</div>` : ""}
     </div>
     ${equinoxPromoCta(opts.quoteUrl, "Book at Original Price")}
-    ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#5C1A33;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
+    ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:#2C3E2D;text-decoration:underline;">${getClientSupportEmail()}</a>`)}
   `,
     "generic",
   );

@@ -284,7 +284,7 @@ export default function ReviewPageClient() {
                       onClick={handleSubmitFeedback}
                       disabled={submitting}
                       className="w-full rounded-xl font-semibold text-[13px] py-3 px-4 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-                      style={{ backgroundColor: GOLD, color: "#FAF7F2" }}
+                      style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
                     >
                       {submitting ? "Submitting…" : "Submit feedback"}
                     </button>

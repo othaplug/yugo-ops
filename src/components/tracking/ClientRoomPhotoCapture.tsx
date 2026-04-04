@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { Camera, Image as ImageIcon, X, Check, Plus, Warning } from "@phosphor-icons/react";
 import { WINE, FOREST, GOLD } from "@/lib/client-theme";
 
-const CREAM = "#FAF7F2";
+const CREAM = "#F9EDE4";
 
 const ROOM_LABELS = [
   { key: "living_room", label: "Living Room" },

@@ -20,7 +20,7 @@ export default function ClientPage() {
         </p>
         <Link
           href="/login"
-          className="inline-block px-4 py-2 rounded-lg text-[12px] font-semibold border-2 transition-colors hover:bg-[#B8962E] hover:text-[#FAF7F2]"
+          className="inline-block px-4 py-2 rounded-lg text-[12px] font-semibold border-2 transition-colors hover:bg-[#2C3E2D] hover:text-[#F9EDE4]"
           style={{ borderColor: GOLD, color: GOLD }}
         >
           Back to sign in

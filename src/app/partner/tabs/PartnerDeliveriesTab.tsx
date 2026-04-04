@@ -131,13 +131,13 @@ export default function PartnerDeliveriesTab({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, address, or delivery #..."
-              className="w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] py-2 pl-10 pr-3 text-[13px] text-[var(--tx)] transition-colors placeholder:text-[var(--tx3)] focus:border-[#C9A962] focus:outline-none"
+              className="w-full rounded-lg border border-[var(--brd)] bg-[var(--bg)] py-2 pl-10 pr-3 text-[13px] text-[var(--tx)] transition-colors placeholder:text-[var(--tx3)] focus:border-[#2C3E2D] focus:outline-none"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] bg-[var(--bg)] focus:border-[#C9A962] focus:outline-none transition-colors min-w-[130px]"
+            className="px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] bg-[var(--bg)] focus:border-[#2C3E2D] focus:outline-none transition-colors min-w-[130px]"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -163,7 +163,7 @@ export default function PartnerDeliveriesTab({
               <button
                 type="button"
                 onClick={onScheduleDelivery}
-                className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-[#C9A962]/40 text-[#B8962E] hover:bg-[#C9A962]/10 transition-colors"
+                className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-[#2C3E2D]/40 text-[#2C3E2D] hover:bg-[#2C3E2D]/10 transition-colors"
               >
                 Schedule delivery
               </button>
@@ -394,7 +394,7 @@ function DeliveryCard({ delivery: d, onShare, onDetailClick, onEditClick }: { de
         {d.total_price != null && d.total_price > 0 && (
           <div>
             <div className="text-[11px] font-semibold tracking-wide uppercase text-[var(--tx3)]">Price</div>
-            <div className="text-[#C9A962] font-bold mt-0.5">${Number(d.total_price).toLocaleString()}</div>
+            <div className="text-[#2C3E2D] font-bold mt-0.5">${Number(d.total_price).toLocaleString()}</div>
           </div>
         )}
         {itemsDisplay && (
@@ -435,7 +435,7 @@ function DeliveryTimeline({ currentIndex }: { currentIndex: number }) {
                   isDone
                     ? "bg-[#2D9F5A] border-[#2D9F5A]"
                     : isCurrent
-                      ? "bg-[#C9A962] border-[#C9A962]"
+                      ? "bg-[#2C3E2D] border-[#2C3E2D]"
                       : "bg-[var(--bg)] border-[var(--brd)]"
                 }`}
               />

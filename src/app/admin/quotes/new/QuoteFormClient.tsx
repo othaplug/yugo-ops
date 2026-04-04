@@ -3217,7 +3217,7 @@ export default function QuoteFormClient({
                         onClick={() => setServiceType(card.value)}
                         className={`relative text-left px-3 py-2 rounded-lg border transition-all duration-200 ${
                           sel
-                            ? "bg-gradient-to-br from-[#B8962E] to-[#8B7332] border-[#B8962E] shadow-md shadow-[#B8962E]/15"
+                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
                             : "bg-[var(--card)] border-[var(--brd)] hover:border-[var(--gold)]/40 hover:bg-[var(--bg)]"
                         }`}
                       >
@@ -6334,9 +6334,9 @@ function TiersDisplay({
       list: "text-[var(--tx2)]",
     },
     signature: {
-      bg: "bg-[#FAF7F2] dark:bg-[#2A2520]",
-      border: "border-2 border-[#B8962E]/40 border-l-4 border-l-[var(--gold)]",
-      accent: "text-[#B8962E]",
+      bg: "bg-[#F9EDE4] dark:bg-[#2A2520]",
+      border: "border-2 border-[#2C3E2D]/40 border-l-4 border-l-[var(--gold)]",
+      accent: "text-[#2C3E2D]",
       muted: PRICE_CARD.muted,
       body: PRICE_CARD.body,
       list: PRICE_CARD.list,
@@ -6413,10 +6413,10 @@ function TiersDisplay({
 
 function SinglePriceDisplay({ price: t, label }: { price: TierResult; label: string }) {
   return (
-    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-2">
+    <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#B8962E] uppercase">{label}</span>
-        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
+        <span className="text-[13px] font-bold text-[#2C3E2D] uppercase">{label}</span>
+        <span className="text-3xl font-black tabular-nums text-[#2C3E2D]">{fmtPrice(t.price)}</span>
       </div>
       <div className={`flex items-center justify-between text-[11px] ${PRICE_CARD.muted}`}>
         <span>HST ({(TAX_RATE * 100).toFixed(0)}%): {fmtPrice(t.tax)}</span>
@@ -6526,22 +6526,22 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
 
   if (isMulti && eventLegs.length > 0) {
     return (
-      <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+      <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <span className="text-[13px] font-bold text-[#B8962E]">Event quote</span>
+            <span className="text-[13px] font-bold text-[#2C3E2D]">Event quote</span>
             <p className={`text-[9px] mt-0.5 font-medium uppercase tracking-wide ${PRICE_CARD.muted}`}>
               Multi-event bundle, {eventLegs.length} round trip{eventLegs.length === 1 ? "" : "s"}
             </p>
           </div>
-          <span className="text-2xl sm:text-3xl font-black tabular-nums text-[#B8962E] shrink-0">
+          <span className="text-2xl sm:text-3xl font-black tabular-nums text-[#2C3E2D] shrink-0">
             {fmtPrice(t.price)}
           </span>
         </div>
         <div className="space-y-3 text-[11px]">
           {eventLegs.map((leg, idx) => (
             <div key={idx} className={`p-3 space-y-2 ${PRICE_CARD.legPanel}`}>
-              <p className="text-[9px] font-bold tracking-wider uppercase text-[#B8962E]">
+              <p className="text-[9px] font-bold tracking-wider uppercase text-[#2C3E2D]">
                 {leg.label?.trim() || `Event ${idx + 1}`}
               </p>
               {(leg.from_address || leg.to_address) && (
@@ -6600,10 +6600,10 @@ function EventPriceDisplay({ price: t, factors }: { price: TierResult; factors: 
   }
 
   return (
-    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+    <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#B8962E]">Event Quote</span>
-        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
+        <span className="text-[13px] font-bold text-[#2C3E2D]">Event Quote</span>
+        <span className="text-3xl font-black tabular-nums text-[#2C3E2D]">{fmtPrice(t.price)}</span>
       </div>
       {/* Breakdown, single round trip */}
       <div className="space-y-1.5 text-[11px]">
@@ -6679,7 +6679,7 @@ function B2BPriceDisplay({ price: t, factors }: { price: TierResult; factors: Re
       ) : null}
       <div className="space-y-1.5 text-[11px]">
         {usingPartnerRates && dimensional && verticalName ? (
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#66143D] pb-1">Partner Rate</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#2C3E2D] pb-1">Partner Rate</p>
         ) : null}
         {dimensional && breakdown.length > 0 ? (
           breakdown.map((line, i) => (
@@ -6788,10 +6788,10 @@ function BinRentalPriceDisplay({ price: t, factors }: { price: TierResult; facto
       ? new Date(d + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" })
       : "—";
   return (
-    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+    <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#B8962E]">Bin Rental</span>
-        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.total)}</span>
+        <span className="text-[13px] font-bold text-[#2C3E2D]">Bin Rental</span>
+        <span className="text-3xl font-black tabular-nums text-[#2C3E2D]">{fmtPrice(t.total)}</span>
       </div>
       <div className="space-y-1.5 text-[11px]">
         {lines.map((l, i) => (
@@ -6854,10 +6854,10 @@ function LabourOnlyPriceDisplay({ price: t, factors }: { price: TierResult; fact
   const storageWeeklyRate = typeof factors.storage_weekly_rate === "number" ? factors.storage_weekly_rate : null;
 
   return (
-    <div className="rounded-xl border-2 border-[#B8962E]/40 bg-[#FAF7F2] dark:bg-[#2A2520] p-5 space-y-3">
+    <div className="rounded-xl border-2 border-[#2C3E2D]/40 bg-[#F9EDE4] dark:bg-[#2A2520] p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold text-[#B8962E]">Labour Only</span>
-        <span className="text-3xl font-black tabular-nums text-[#B8962E]">{fmtPrice(t.price)}</span>
+        <span className="text-[13px] font-bold text-[#2C3E2D]">Labour Only</span>
+        <span className="text-3xl font-black tabular-nums text-[#2C3E2D]">{fmtPrice(t.price)}</span>
       </div>
       <div className="space-y-1.5 text-[11px]">
         {crewSize && hours && labourRate && (

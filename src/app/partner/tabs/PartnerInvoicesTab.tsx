@@ -121,7 +121,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
         </select>
         <button
           onClick={downloadCSV}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] hover:border-[#C9A962] transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] hover:border-[#2C3E2D] transition-colors"
         >
           <DownloadSimple size={14} />
           Download CSV
@@ -177,7 +177,7 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
                             href={inv.square_invoice_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#C9A962]/10 text-[#C9A962] hover:bg-[#C9A962]/20 transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#2C3E2D]/10 text-[#2C3E2D] hover:bg-[#2C3E2D]/20 transition-colors"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <ArrowSquareOut size={10} />

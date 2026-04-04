@@ -270,7 +270,7 @@ function buildStatementEmail(opts: {
 <body style="background:#f5f4f2;margin:0;padding:0;font-family:'Inter',sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
     <div style="background:#0d0b08;border-radius:12px;padding:28px;margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:0.04em;text-transform:none;color:#C9A962;margin:0 0 4px;">Yugo</p>
+      <p style="font-size:10px;letter-spacing:0.04em;text-transform:none;color:#2C3E2D;margin:0 0 4px;">Yugo</p>
       <h1 style="font-size:20px;font-weight:700;color:#e8e0d0;margin:0 0 2px;">Statement Ready</h1>
       <p style="font-size:12px;color:#9c9489;margin:0;">${opts.statementNumber}</p>
     </div>
@@ -281,13 +281,13 @@ function buildStatementEmail(opts: {
         <tr><td style="padding:8px 0;border-bottom:1px solid #eee;font-size:12px;color:#6b6560;">Deliveries</td><td style="padding:8px 0;border-bottom:1px solid #eee;font-size:13px;color:#1a1714;text-align:right;font-weight:600;">${opts.deliveryCount}</td></tr>
         <tr><td style="padding:8px 0;border-bottom:1px solid #eee;font-size:12px;color:#6b6560;">Subtotal</td><td style="padding:8px 0;border-bottom:1px solid #eee;font-size:13px;color:#1a1714;text-align:right;">$${opts.subtotal.toFixed(2)}</td></tr>
         <tr><td style="padding:8px 0;border-bottom:1px solid #eee;font-size:12px;color:#6b6560;">HST (13%)</td><td style="padding:8px 0;border-bottom:1px solid #eee;font-size:13px;color:#1a1714;text-align:right;">$${opts.hst.toFixed(2)}</td></tr>
-        <tr><td style="padding:10px 0 0;font-size:14px;color:#1a1714;font-weight:700;">Total Due</td><td style="padding:10px 0 0;font-size:16px;color:#B8962E;text-align:right;font-weight:700;">$${opts.total.toFixed(2)}</td></tr>
+        <tr><td style="padding:10px 0 0;font-size:14px;color:#1a1714;font-weight:700;">Total Due</td><td style="padding:10px 0 0;font-size:16px;color:#2C3E2D;text-align:right;font-weight:700;">$${opts.total.toFixed(2)}</td></tr>
       </table>
       <div style="margin-top:16px;padding:12px 16px;background:#fef3cd;border-radius:8px;font-size:12px;color:#856404;border:1px solid #fde68a;">
         <strong>Payment due: ${dueDateLabel}</strong> - ${cycleLabel}
       </div>
       <div style="margin-top:20px;text-align:center;">
-        <a href="${opts.statementUrl}" style="display:inline-block;background:#B8962E;color:#0d0b08;padding:12px 28px;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:0.02em;text-transform:none;border-radius:8px;">View statement</a>
+        <a href="${opts.statementUrl}" style="display:inline-block;background:#2C3E2D;color:#0d0b08;padding:12px 28px;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:0.02em;text-transform:none;border-radius:8px;">View statement</a>
       </div>
     </div>
     <p style="font-size:11px;color:#9c9489;text-align:center;">Questions? Email ${getClientSupportEmail()} or contact your Yugo coordinator.</p>

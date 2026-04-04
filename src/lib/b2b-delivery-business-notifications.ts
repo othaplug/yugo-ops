@@ -38,11 +38,11 @@ export async function maybeNotifyB2BOneOffOutForDelivery(
   const cust = (d.customer_name || "your customer").trim();
   const subj = `Your delivery to ${cust} is out for delivery`;
   const inner = `
-<div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#FAF7F2;max-width:560px;margin:0 auto">
+<div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#F9EDE4;max-width:560px;margin:0 auto">
   <p style="font-size:11px;letter-spacing:0.04em;text-transform:none;opacity:0.7;margin:0 0 12px">Yugo</p>
   <h1 style="font-size:22px;margin:0 0 16px">Out for delivery</h1>
   <p style="font-size:15px;line-height:1.5;margin:0 0 20px">Your delivery to <strong>${cust}</strong> is on the way${d.delivery_address ? ` (${String(d.delivery_address).slice(0, 80)}${String(d.delivery_address).length > 80 ? "…" : ""})` : ""}.</p>
-  <a href="${trackUrl}" style="display:inline-block;background:#5C1A33;color:#FAF7F2;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>
+  <a href="${trackUrl}" style="display:inline-block;background:#2C3E2D;color:#F9EDE4;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">Track delivery</a>
   <p style="font-size:13px;margin:28px 0 0;opacity:0.75">Questions? (647) 370-4525</p>
 </div>`;
 
@@ -81,11 +81,11 @@ export async function maybeNotifyB2BOneOffDelivered(deliveryId: string): Promise
   const cust = (d.customer_name || "your customer").trim();
   const subj = `Delivered: ${cust} — POD available`;
   const inner = `
-<div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#FAF7F2;max-width:560px;margin:0 auto">
+<div style="padding:40px 24px;font-family:system-ui,sans-serif;color:#F9EDE4;max-width:560px;margin:0 auto">
   <p style="font-size:11px;letter-spacing:0.04em;text-transform:none;opacity:0.7;margin:0 0 12px">Yugo</p>
   <h1 style="font-size:22px;margin:0 0 16px">Delivered</h1>
   <p style="font-size:15px;line-height:1.5;margin:0 0 20px">The delivery to <strong>${cust}</strong> is complete. Proof of delivery and photos are available on the tracking page.</p>
-  <a href="${trackUrl}" style="display:inline-block;background:#5C1A33;color:#FAF7F2;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">View details</a>
+  <a href="${trackUrl}" style="display:inline-block;background:#2C3E2D;color:#F9EDE4;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:14px">View details</a>
   <p style="font-size:13px;margin:28px 0 0;opacity:0.75">Questions? (647) 370-4525</p>
 </div>`;
 

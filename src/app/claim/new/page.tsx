@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function ClaimNewPage() {
   return (
-    <div className="min-h-screen" style={{ background: "#FAF7F2" }}>
+    <div className="min-h-screen" style={{ background: "#F9EDE4" }}>
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
         <div className="text-center mb-8">
           <span className="text-[20px] font-bold tracking-wide" style={{ color: "#722F37" }}>Yugo</span>

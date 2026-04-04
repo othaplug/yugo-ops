@@ -52,8 +52,8 @@ function useAnimatedPosition(target: { lat: number; lng: number } | null, durati
   return pos;
 }
 
-const YUGO_GOLD = "#C9A962";
-const ROUTE_GOLD = "#B8962E";
+const YUGO_GOLD = "#2C3E2D";
+const ROUTE_GOLD = "#2C3E2D";
 const CREW_RED = "#DC2626";
 
 /** Bearing in degrees (0 = north, 90 = east) from point A → point B. */
@@ -364,11 +364,11 @@ export function TrackLiveMapMapbox({
         <Marker longitude={pickup.lng} latitude={pickup.lat} anchor={isPickupPhase ? "bottom" : "center"}>
           {isPickupPhase ? (
             <div className="flex flex-col items-center">
-              <div className="w-9 h-9 rounded-full bg-[#C9A962] border-2 border-white shadow-lg flex items-center justify-center relative">
-                <div className="absolute -inset-1.5 rounded-full bg-[#C9A962] opacity-25 animate-ping" style={{ animationDuration: "2s" }} />
+              <div className="w-9 h-9 rounded-full bg-[#2C3E2D] border-2 border-white shadow-lg flex items-center justify-center relative">
+                <div className="absolute -inset-1.5 rounded-full bg-[#2C3E2D] opacity-25 animate-ping" style={{ animationDuration: "2s" }} />
                 <Sun size={16} color="#FFFFFF" aria-hidden />
               </div>
-              <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#C9A962] -mt-0.5" />
+              <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#2C3E2D] -mt-0.5" />
             </div>
           ) : (
             <div className="w-3.5 h-3.5 rounded-full bg-[#22C55E] border-2 border-white shadow-md" />
@@ -443,7 +443,7 @@ export function TrackLiveMapMapbox({
             )}
             {/* Stale label */}
             {isLocationStale && lastSeenLabel && (
-              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/75 text-[#C9A962] text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
+              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/75 text-[#2C3E2D] text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
                 {lastSeenLabel}
               </div>
             )}

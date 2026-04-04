@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { ImageSquare } from "@phosphor-icons/react";
 
-const GOLD = "#C9A962";
+const GOLD = "#2C3E2D";
 const MAX_PHOTOS = 10;
 
 type Photo = {
@@ -113,14 +113,14 @@ export default function TrackPhotos({
               <button
                 type="button"
                 onClick={handleDownloadAll}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#454545] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#454545] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
               >
                 Download All
               </button>
               <button
                 type="button"
                 onClick={handleShare}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#454545] hover:border-[#C9A962] hover:text-[#C9A962] transition-colors"
+                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#454545] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
               >
                 Share
               </button>
@@ -143,7 +143,7 @@ export default function TrackPhotos({
           />
           <label
             htmlFor="client-photo-upload"
-            className="flex items-center justify-center gap-2.5 w-full py-4 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-[#C9A962] hover:bg-[#C9A96208] active:scale-[0.99]"
+            className="flex items-center justify-center gap-2.5 w-full py-4 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-[#2C3E2D] hover:bg-[#2C3E2D08] active:scale-[0.99]"
             style={{ borderColor: uploading ? GOLD : "#D4D0C8" }}
           >
             {uploading ? (
@@ -192,7 +192,7 @@ export default function TrackPhotos({
                 href={p.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-lg overflow-hidden border border-[#E7E5E4] bg-[#FAFAF8] aspect-[4/3] hover:border-[#C9A962] transition-colors relative group"
+                className="block rounded-lg overflow-hidden border border-[#E7E5E4] bg-[#FAFAF8] aspect-[4/3] hover:border-[#2C3E2D] transition-colors relative group"
               >
                 <img src={p.url} alt={label} className="w-full h-full object-cover" />
                 <div className="absolute bottom-0 left-0 right-0 bg-white/95 px-3 py-2 flex items-center justify-between">
