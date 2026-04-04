@@ -633,7 +633,9 @@ export function quoteFollowup1Email(d: QuoteFollowup1Data): string {
     <p style="${PROMO_CREAM_P}">We have prepared a guaranteed flat-rate ${d.serviceLabel.toLowerCase()} quote for you. One transparent price, nothing added on the day.</p>
     ${equinoxPromoCta(d.quoteUrl, "View Your Quote")}
     ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a>`)}
-  `);
+  `,
+    "quote",
+  );
 }
 
 export interface QuoteFollowup2Data {
@@ -692,7 +694,9 @@ export function quoteFollowup2Email(d: QuoteFollowup2Data): string {
     <p style="${PROMO_CREAM_P}">${body}${expiryText ? `<br/><br/><span style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};font-weight:600;">${expiryText}</span>` : ""}</p>
     ${equinoxPromoCta(d.quoteUrl, ctaLabel)}
     ${equinoxPromoFinePrint(`Need to adjust anything? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a>`)}
-  `);
+  `,
+    "quote",
+  );
 }
 
 export interface QuoteFollowup3Data {
@@ -787,7 +791,9 @@ export function quoteUpdatedEmail(d: QuoteUpdatedData): string {
     </div>
     ${equinoxPromoCta(d.quoteUrl, "Review Updated Quote")}
     ${equinoxPromoFinePrint(`Questions? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a>`)}
-  `);
+  `,
+    "quote",
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1185,7 +1191,9 @@ export function quoteFollowup3Email(d: QuoteFollowup3Data): string {
     <p style="${PROMO_CREAM_P}">${body}</p>
     ${equinoxPromoCta(d.quoteUrl, isHot ? "Complete Booking" : "View Your Quote")}
     ${equinoxPromoFinePrint(`Need more time? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a> and we will be happy to help.`)}
-  `);
+  `,
+    "quote",
+  );
 }
 
 /* ── Post-move: 72hr Perks & Referral Email ── */
@@ -1252,7 +1260,9 @@ export function postMovePerksEmail(d: PostMovePerksEmailData): string {
     ${perksHtml ? `<div style="margin-top:8px;">${perksHtml}</div>` : ""}
     ${referralBlock}
     ${equinoxPromoCta(d.trackingUrl, "View Move Summary")}
-  `);
+  `,
+    "booking",
+  );
 }
 
 /* ── Post-move: 365-day Anniversary Email ── */
@@ -1296,5 +1306,7 @@ export function moveAnniversaryEmail(d: MoveAnniversaryEmailData): string {
         : ""
     }
     ${equinoxPromoFinePrint(`Planning your next move? Email <a href="mailto:${getClientSupportEmail()}" style="color:${EMAIL_FOREST} !important;-webkit-text-fill-color:${EMAIL_FOREST};text-decoration:underline;">${getClientSupportEmail()}</a> and we would be glad to help.`)}
-  `);
+  `,
+    "booking",
+  );
 }

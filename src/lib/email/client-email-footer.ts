@@ -1,7 +1,8 @@
 /**
- * Equinox-style transactional email footer (black nav + social, white legal block).
+ * Client email footer: slim transactional layout by default (nav + legal; no social row).
  *
- * Social icons always render (white glyphs via CDN). Set profile URLs in env; if unset,
+ * Opt into {@link ClientEmailFooterOptions.variant} `"full"` for the legacy nav (email
+ * preferences / unsubscribe) plus social icons. Set social profile URLs in env; if unset,
  * links fall back to your app origin ({@link getEmailBaseUrl}) home page.
  *
  * Env (optional URLs):
@@ -35,8 +36,8 @@ const FOOTER_WHY_COPY: Record<EmailFooterWhy, string> = {
 export type ClientEmailFooterOptions = {
   whyReceiving?: EmailFooterWhy;
   /**
-   * `transactional` omits the social icon row and marketing-style nav (preferences / unsubscribe),
-   * and uses quote-focused copy — reduces Gmail “Promotions” signals vs. newsletter-style footers.
+   * `transactional` (default) omits the social icon row and marketing-style nav (preferences /
+   * unsubscribe) — reduces Gmail “Promotions” signals vs. newsletter-style footers.
    */
   variant?: "full" | "transactional";
 };
@@ -62,20 +63,12 @@ function getSocialIconUrls(base: string): Record<"instagram" | "facebook" | "x" 
   };
 }
 
-/** Templates (Resend tag `template`) that show the refer-a-friend link in the footer. */
-export const TEMPLATE_NAMES_WITH_REFER_FRIEND = new Set<string>([
-  "move-complete",
-  "referral-offer",
-  "review-request",
-  "review-request-essentials",
-  "review-request-premier",
-  "review-request-estate",
-  "review-request-essential",
-  "review-request-curated",
-  "review-request-signature",
-  "review-request-reminder",
-  "balance-receipt",
-]);
+/**
+ * Resend tag `template` names that may show the refer-a-friend band above the footer.
+ * Kept empty so operational mail stays transactional and avoids Promotions heuristics;
+ * add names here to restore per-template.
+ */
+export const TEMPLATE_NAMES_WITH_REFER_FRIEND = new Set<string>([]);
 
 export function shouldIncludeReferFriendInFooter(template: string | undefined): boolean {
   if (!template) return false;
@@ -185,7 +178,7 @@ function socialIconCell(url: string, iconUrl: string, alt: string): string {
  * Starts with optional top promo rows, then nav + optional social row + white legal block.
  */
 export function getClientEmailFooterTrs(options?: ClientEmailFooterOptions): string {
-  const variant = options?.variant ?? "full";
+  const variant = options?.variant ?? "transactional";
   const whyKey = options?.whyReceiving ?? "booking";
   const whyLine = FOOTER_WHY_COPY[whyKey];
   const base = getEmailBaseUrl();
@@ -243,7 +236,7 @@ export function getClientEmailFooterTrs(options?: ClientEmailFooterOptions): str
   const addressBookParagraph =
     variant === "transactional"
       ? `<p style="margin:0 0 14px;">
-                Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book so messages about your quote and booking reach your inbox.
+                Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book so important messages from Yugo reach your primary inbox.
               </p>`
       : `<p style="margin:0 0 14px;">
                 Please add <a href="mailto:__YUGO_FOOTER_SENDER_MAILTO__" style="color:${FOOTER_LINK_WINE};text-decoration:underline;">__YUGO_FOOTER_SENDER_EMAIL__</a> to your address book to ensure you receive updates about your move, offers, and exclusive perks.

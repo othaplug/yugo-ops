@@ -180,9 +180,15 @@ interface SendWithTemplate extends SendEmailBaseOptions {
 
 export type SendEmailOptions = SendWithHtml | SendWithTemplate;
 
-/** Quote / quote-reminder templates — used for inbox placement + reply-to. */
-function isQuoteRelatedTemplate(template: string | undefined): boolean {
-  return Boolean(template?.startsWith("quote"));
+/** Staff-only templates: no default client support reply-to. */
+const ADMIN_INTERNAL_EMAIL_TEMPLATES = new Set<string>([
+  "balance-charge-failed-admin",
+  "admin-card-expiring-notice",
+]);
+
+function defaultReplyToForTemplate(template: string | undefined): string | undefined {
+  if (!template || ADMIN_INTERNAL_EMAIL_TEMPLATES.has(template)) return undefined;
+  return getClientSupportEmail();
 }
 
 /** Minimal HTML → text for multipart/alternative (improves deliverability vs. HTML-only). */
@@ -338,9 +344,8 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
     tags.push({ name: "template", value: opts.template });
   }
 
-  const quoteRelated = isQuoteRelatedTemplate(opts.template);
   const plainText =
-    quoteRelated && html.length > 0 ? roughPlainTextFromHtml(html) : undefined;
+    opts.template && html.length > 0 ? roughPlainTextFromHtml(html) : undefined;
 
   const { data: result, error } = await resend.emails.send({
     from: fromAddr,
@@ -352,7 +357,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<SendEmailResult
       filename: a.filename,
       content: typeof a.content === "string" ? a.content : a.content.toString("base64"),
     })),
-    replyTo: opts.replyTo ?? (quoteRelated ? getClientSupportEmail() : undefined),
+    replyTo: opts.replyTo ?? defaultReplyToForTemplate(opts.template),
     tags: tags.length > 0 ? tags : undefined,
     headers: {
       /* Omit non-standard Precedence — can contribute to bulk/promotions heuristics in some clients */

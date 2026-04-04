@@ -159,7 +159,7 @@ function quoteEmailLayout(innerHtml: string): string {
       </table>
     </td>
   </tr>
-  ${getClientEmailFooterTrs({ whyReceiving: "quote", variant: "transactional" })}
+  ${getClientEmailFooterTrs({ whyReceiving: "quote" })}
 </table>
 </body>
 </html>`;
