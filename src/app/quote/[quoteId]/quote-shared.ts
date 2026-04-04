@@ -46,6 +46,20 @@ export function quoteArrivalTimeWindowLabel(quote: {
   return t || null;
 }
 
+/**
+ * Quote confirm step: room-by-room inventory (or walkthrough summary) is offered for smaller homes only.
+ * Studio through 2 BR: show the section. 3 BR and above: omit (standard rule for Estate and residential).
+ * Unknown / empty move_size: show (do not hide without a classified size).
+ * Walkthrough-based quotes should still render inventory UI — combine with `quote.walkthrough_based` at the call site.
+ */
+const MOVE_SIZES_HIDE_QUOTE_INVENTORY_SECTION = new Set(["3br", "4br", "4br_plus", "5br_plus"]);
+
+export function shouldShowQuoteInventorySectionByMoveSize(moveSize: string | null | undefined): boolean {
+  const raw = (moveSize ?? "").trim().toLowerCase();
+  if (!raw) return true;
+  return !MOVE_SIZES_HIDE_QUOTE_INVENTORY_SECTION.has(raw);
+}
+
 /* ─── Types ──────────────────────────────────── */
 
 /** Single feature entry used by both tier card bullets and the 'Your Move Includes' section. */

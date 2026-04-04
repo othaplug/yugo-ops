@@ -25,9 +25,17 @@ interface Props {
   selectedMonth?: number;
   onSelectMonth?: (month: number) => void;
   compact?: boolean;
+  /** When compact + true (e.g. Estate quote on wine), use cream/wine-tinted chart on dark shell. */
+  onDarkBackground?: boolean;
 }
 
-export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth, onSelectMonth, compact = false }: Props) {
+export default function SeasonalPricingPreview({
+  basePrice = 1200,
+  selectedMonth,
+  onSelectMonth,
+  compact = false,
+  onDarkBackground = false,
+}: Props) {
   const currentMonth = new Date().getMonth() + 1;
 
   const months = useMemo(() => {
@@ -48,25 +56,60 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
   const selectedMonthData = months.find((m) => m.month === selectedMonth);
 
   if (compact) {
+    const dark = onDarkBackground;
+    const labelMuted = dark ? "rgba(249,237,228,0.55)" : FOREST;
+    const labelMuted2 = dark ? "rgba(249,237,228,0.45)" : FOREST;
     return (
       <div
         style={{
           borderRadius: 0,
           padding: "14px 16px",
-          background: `${FOREST}04`,
-          borderLeft: `3px solid ${FOREST}`,
-          borderTop: `1px solid ${FOREST}10`,
-          borderRight: `1px solid ${FOREST}10`,
-          borderBottom: `1px solid ${FOREST}10`,
+          background: dark ? "rgba(249, 237, 228, 0.08)" : `${FOREST}04`,
+          borderLeft: dark ? "3px solid rgba(249,237,228,0.4)" : `3px solid ${FOREST}`,
+          borderTop: dark ? "1px solid rgba(249,237,228,0.15)" : `1px solid ${FOREST}10`,
+          borderRight: dark ? "1px solid rgba(249,237,228,0.15)" : `1px solid ${FOREST}10`,
+          borderBottom: dark ? "1px solid rgba(249,237,228,0.15)" : `1px solid ${FOREST}10`,
         }}
       >
-        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: FOREST, opacity: 0.5, margin: "0 0 8px" }}>
+        <p
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "1.5px",
+            textTransform: "uppercase",
+            color: labelMuted,
+            opacity: dark ? 1 : 0.5,
+            margin: "0 0 8px",
+          }}
+        >
           Price by Month
         </p>
         <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 40 }}>
           {months.map(({ month, price, isPeak, isPast }) => {
             const height = Math.round(((price - minPrice) / (maxPrice - minPrice + 1)) * 28) + 8;
             const isSelected = month === selectedMonth;
+            const bg = dark
+              ? isSelected
+                ? "#66143D"
+                : isPeak
+                  ? "rgba(249,237,228,0.35)"
+                  : isPast
+                    ? "rgba(249,237,228,0.12)"
+                    : "rgba(249,237,228,0.22)"
+              : isSelected
+                ? FOREST
+                : isPeak
+                  ? `${WINE}30`
+                  : isPast
+                    ? "#e0dcd6"
+                    : `${FOREST}20`;
+            const outline = dark
+              ? isSelected
+                ? "2px solid rgba(249,237,228,0.85)"
+                : "none"
+              : isSelected
+                ? `2px solid ${FOREST}`
+                : "none";
             return (
               <button
                 key={month}
@@ -78,34 +121,48 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
                   height,
                   borderRadius: 3,
                   border: "none",
-                  background: isSelected
-                    ? FOREST
-                    : isPeak
-                    ? `${WINE}30`
-                    : isPast
-                    ? "#e0dcd6"
-                    : `${FOREST}20`,
+                  background: bg,
                   cursor: onSelectMonth ? "pointer" : "default",
                   opacity: isPast ? 0.4 : 1,
                   transition: "all 0.15s",
-                  outline: isSelected ? `2px solid ${FOREST}` : "none",
+                  outline,
                 }}
               />
             );
           })}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-          <span style={{ fontSize: 9, color: FOREST, opacity: 0.4 }}>Jan</span>
-          <span style={{ fontSize: 9, color: FOREST, opacity: 0.4 }}>Dec</span>
+          <span style={{ fontSize: 9, color: labelMuted2, opacity: dark ? 1 : 0.4 }}>Jan</span>
+          <span style={{ fontSize: 9, color: labelMuted2, opacity: dark ? 1 : 0.4 }}>Dec</span>
         </div>
         {cheapestMonth && !selectedMonthData?.isPeak && (
-          <p style={{ fontSize: 11, color: FOREST, opacity: 0.6, margin: "8px 0 0", lineHeight: 1.4 }}>
-            Cheapest: <strong style={{ color: FOREST, opacity: 1 }}>{MONTH_NAMES[cheapestMonth.month - 1]}</strong> saves ~${(maxPrice - cheapestMonth.price).toLocaleString()}
+          <p
+            style={{
+              fontSize: 11,
+              color: dark ? "rgba(249,237,228,0.85)" : FOREST,
+              opacity: dark ? 1 : 0.6,
+              margin: "8px 0 0",
+              lineHeight: 1.4,
+            }}
+          >
+            Cheapest:{" "}
+            <strong style={{ color: dark ? "#F9EDE4" : FOREST, opacity: 1 }}>
+              {MONTH_NAMES[cheapestMonth.month - 1]}
+            </strong>{" "}
+            saves ~${(maxPrice - cheapestMonth.price).toLocaleString()}
           </p>
         )}
         {selectedMonthData?.isPeak && (
-          <p style={{ fontSize: 11, color: WINE, margin: "8px 0 0", lineHeight: 1.4 }}>
-            Peak season pricing applies. Moving in May or Sep saves ~${(selectedMonthData.price - (months.find(m => m.month === 5)?.price ?? 0)).toLocaleString()}.
+          <p
+            style={{
+              fontSize: 11,
+              color: dark ? "rgba(249,237,228,0.92)" : WINE,
+              margin: "8px 0 0",
+              lineHeight: 1.4,
+            }}
+          >
+            Peak season pricing applies. Moving in May or Sep saves ~$
+            {(selectedMonthData.price - (months.find((m) => m.month === 5)?.price ?? 0)).toLocaleString()}.
           </p>
         )}
       </div>

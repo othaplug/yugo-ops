@@ -1,4 +1,5 @@
 import { getClientEmailFooterTrs } from "@/lib/email/client-email-footer";
+import { EMAIL_FOREST, emailPrimaryCtaStyle } from "@/lib/email/email-brand-tokens";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import { EMAIL_LOGO_GOLD_H, EMAIL_LOGO_GOLD_W, getEmailLogoOnDarkUrl } from "@/lib/email-templates";
 import { getEmailBaseUrl } from "@/lib/email-base-url";
@@ -17,8 +18,6 @@ const ACCENT_CREAM = "#EDE6DC";
 const ACCENT_OFF_WHITE = "#F5F0E8";
 const ACCENT_ROSE = "#D4AAB5";
 const ACCENT_ROSE_MUTED = "#B88998";
-const CTA_BG = ACCENT_OFF_WHITE;
-const CTA_TX = "#0D0B0A";
 const TX = "#F0EDE8";
 const TX2 = "#A8A29C";
 const TX3 = "#5E5A56";
@@ -108,7 +107,7 @@ function quoteEmailLayout(innerHtml: string): string {
           <td class="eq-inner" bgcolor="${BG}" style="padding:32px 36px 40px;background-color:${BG};color:${TX};font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color-scheme:dark;">
             <div class="eq-hdr" align="center" style="margin:0 0 16px;">
               <img src="${logoUrl}" alt="Yugo" width="${EMAIL_LOGO_GOLD_W}" height="${EMAIL_LOGO_GOLD_H}" style="display:block;max-width:${EMAIL_LOGO_GOLD_W}px;height:auto;border:0;margin:0 auto;" />
-              <div style="width:40px;height:1px;background-color:${ACCENT_ROSE_MUTED};margin:8px auto 0;line-height:0;font-size:0;">&nbsp;</div>
+              <div style="width:40px;height:1px;background-color:${EMAIL_FOREST};opacity:0.35;margin:8px auto 0;line-height:0;font-size:0;">&nbsp;</div>
             </div>
             ${innerHtml}
           </td>
@@ -221,10 +220,10 @@ function dateDisplay(dateStr: string | null | undefined): string {
 
 function flatRateBadge(): string {
   return `
-    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 22px;">
       <tr>
-        <td style="background-color:${ACCENT_ROSE}18;border:1px solid ${ACCENT_ROSE_MUTED}66;padding:6px 14px;">
-          <span style="${QUOTE_EYEBROW}">Guaranteed flat rate</span>
+        <td align="center" style="border-top:2px solid ${EMAIL_FOREST};background-color:rgba(44,62,45,0.06);padding:10px 14px 12px;">
+          <span style="font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:700;color:${EMAIL_FOREST};letter-spacing:0px;text-transform:uppercase;">Guaranteed flat rate</span>
         </td>
       </tr>
     </table>
@@ -238,7 +237,7 @@ function expiryNote(expiresAt: string | null | undefined): string {
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 28px;">
       <tr>
-        <td style="background-color:#DC262618;border-left:3px solid #DC2626;padding:12px 16px;">
+        <td style="background-color:#DC262618;border-top:2px solid #DC2626;padding:12px 16px;">
           <span style="font-size:12px;color:#FCA5A5;font-weight:600;line-height:1.5;">Your rate is guaranteed until ${formatted}. Book before then to secure your date and price.</span>
         </td>
       </tr>
@@ -247,17 +246,16 @@ function expiryNote(expiresAt: string | null | undefined): string {
 }
 
 function ctaButton(url: string, label: string, sub?: string): string {
+  const font = "'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 8px;">
       <tr>
         <td align="center">
-          <a href="${url}" style="display:block;background-color:${CTA_BG};color:${CTA_TX};padding:10px 28px;font-size:12px;font-weight:700;text-decoration:none;text-align:center;letter-spacing:0px;text-transform:uppercase;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-            ${label}
-          </a>
+          <a href="${url}" style="${emailPrimaryCtaStyle(font, "block")}">${label.toUpperCase()}</a>
         </td>
       </tr>
     </table>
-    <p style="font-size:10px;color:${TX3};text-align:center;margin:0 0 24px;letter-spacing:0;">${sub ?? "Booking takes less than two minutes"}</p>
+    <p style="font-size:10px;color:${TX3};text-align:center;margin:0 0 24px;letter-spacing:0.02em;">${sub ?? "Booking takes less than two minutes"}</p>
   `;
 }
 
@@ -405,7 +403,7 @@ function estateRecommendationNote(recommendedTier: string | null | undefined): s
   return `
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 20px;">
       <tr>
-        <td style="background-color:${ESTATE_BG};border-left:3px solid ${ESTATE_ACCENT};padding:12px 16px;">
+        <td style="background-color:${ESTATE_BG};border-top:2px solid ${ESTATE_ACCENT};padding:12px 16px;">
           <span style="font-size:12px;color:${TIER_TX}CC;line-height:1.6;">Based on your home and belongings, we recommend our <strong style="color:${TIER_TX};">Estate</strong> package for complete peace of mind.</span>
         </td>
       </tr>
@@ -806,7 +804,7 @@ function labourOnlyTemplate(d: QuoteTemplateData): string {
     ${bodyText("Your labour service quote is ready. A professional crew arrives fully equipped and ready to work. No truck required.")}
     ${expiryNote(d.expiresAt)}
     ${detailsPlain(rows)}
-    <div style="background:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}44;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+    <div style="background:${CARD};border:1px solid ${ACCENT_ROSE_MUTED}44;border-radius:0;padding:24px;text-align:center;margin-bottom:24px">
       <div style="${QUOTE_EYEBROW}margin-bottom:8px;">Labour service</div>
       ${labourNote ? `<div style="font-size:12px;color:${TX2};margin-bottom:10px">${labourNote}</div>` : ""}
       <div style="font-family:${HERO_FONT};font-size:32px;font-weight:700;color:${ACCENT_OFF_WHITE};letter-spacing:0;">${formatCurrency(total)}</div>

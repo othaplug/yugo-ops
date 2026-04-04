@@ -13,6 +13,7 @@ import {
   QUOTE_EYEBROW_CLASS,
   QUOTE_SECTION_H2_CLASS,
 } from "../quote-shared";
+import { ESTATE_ON_WINE } from "../estate-quote-ui";
 
 const TIER_ICONS: Record<string, LucideIcon> = {
   essential: Target,
@@ -68,6 +69,8 @@ interface Props {
   useAdditiveTierCards?: { signature: boolean; estate: boolean };
   /** Merged tier labels, taglines, “Best for”, and optional inclusions intro lines. */
   tierMetaMap: ResidentialQuoteTierMetaMap;
+  /** Residential Estate tier selected — page shell is wine; headings and rails use cream-on-wine. */
+  onWineSurface?: boolean;
 }
 
 export default function ResidentialLayout({
@@ -77,6 +80,7 @@ export default function ResidentialLayout({
   onSelectTier,
   recommendedTier = "signature",
   hasSelection = false,
+  onWineSurface = false,
   tierFeaturesConfig,
   tierCardAdditions = { signature: [], estate: [] },
   useAdditiveTierCards = { signature: false, estate: false },
@@ -87,17 +91,29 @@ export default function ResidentialLayout({
   return (
     <section className="mb-10 min-w-0 w-full max-w-full">
       <div className="text-center mb-8 max-w-xl mx-auto">
-        <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: FOREST_MUTED }}>
+        <p
+          className={`${QUOTE_EYEBROW_CLASS} mb-2`}
+          style={{ color: onWineSurface ? ESTATE_ON_WINE.muted : FOREST_MUTED }}
+        >
           Your plan
         </p>
-        <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-2`} style={{ color: WINE }}>
+        <h2
+          className={`${QUOTE_SECTION_H2_CLASS} mb-2`}
+          style={{ color: onWineSurface ? ESTATE_ON_WINE.primary : WINE }}
+        >
           Choose your package
         </h2>
-        <p className="text-[13px] leading-relaxed max-w-md mx-auto" style={{ color: FOREST_BODY }}>
+        <p
+          className="text-[13px] leading-relaxed max-w-md mx-auto"
+          style={{ color: onWineSurface ? ESTATE_ON_WINE.body : FOREST_BODY }}
+        >
           Every package includes a professional crew, truck, and blanket wrapping.
         </p>
         {quote.expires_at && (
-          <p className="text-[12px] mt-2" style={{ color: FOREST_MUTED }}>
+          <p
+            className="text-[12px] mt-2"
+            style={{ color: onWineSurface ? ESTATE_ON_WINE.muted : FOREST_MUTED }}
+          >
             Quote valid until{" "}
             {new Date(quote.expires_at).toLocaleDateString("en-CA", { month: "long", day: "numeric" })}
           </p>
@@ -105,27 +121,57 @@ export default function ResidentialLayout({
       </div>
 
       {recTier === "estate" && (
-        <div className="mb-6 w-full min-w-0 px-1 sm:px-0">
+        <div className="mb-6 flex justify-center w-full min-w-0 px-1 sm:px-0">
           <div
-            className="box-border flex w-full min-w-0 max-w-full flex-wrap items-center justify-center gap-2.5 rounded-none px-4 py-3 text-center text-[12px] sm:px-5 sm:text-[13px] border-t-2"
-            style={{ backgroundColor: `${FOREST}04`, color: FOREST, borderTopColor: WINE }}
+            className="box-border flex w-full min-w-0 max-w-full sm:w-fit sm:max-w-2xl sm:mx-auto flex-wrap items-center justify-center gap-2.5 rounded-none px-4 py-3 text-center text-[12px] sm:px-5 sm:text-[13px] border-t-2"
+            style={
+              onWineSurface
+                ? {
+                    backgroundColor: "rgba(249, 237, 228, 0.1)",
+                    color: ESTATE_ON_WINE.body,
+                    borderTopColor: ESTATE_ON_WINE.kicker,
+                  }
+                : { backgroundColor: `${FOREST}04`, color: FOREST, borderTopColor: WINE }
+            }
           >
-            <Star className="w-4 h-4 shrink-0" style={{ color: WINE }} weight="fill" aria-hidden />
-            <span className="min-w-0 max-w-2xl leading-snug">
-              Your move coordinator recommended <strong style={{ color: WINE }}>Estate</strong> based on your requirements.
+            <Star
+              className="w-4 h-4 shrink-0"
+              style={{ color: onWineSurface ? ESTATE_ON_WINE.kicker : WINE }}
+              weight="fill"
+              aria-hidden
+            />
+            <span className="min-w-0 leading-snug">
+              Your move coordinator recommended{" "}
+              <strong style={{ color: onWineSurface ? ESTATE_ON_WINE.primary : WINE }}>Estate</strong> based on your
+              requirements.
             </span>
           </div>
         </div>
       )}
       {recTier === "signature" && (
-        <div className="mb-6 w-full min-w-0 px-1 sm:px-0">
+        <div className="mb-6 flex justify-center w-full min-w-0 px-1 sm:px-0">
           <div
-            className="box-border flex w-full min-w-0 max-w-full flex-wrap items-center justify-center gap-2.5 rounded-none px-4 py-3 text-center text-[12px] sm:px-5 sm:text-[13px] border-t-2"
-            style={{ backgroundColor: `${FOREST}04`, color: FOREST, borderTopColor: WINE }}
+            className="box-border flex w-full min-w-0 max-w-full sm:w-fit sm:max-w-2xl sm:mx-auto flex-wrap items-center justify-center gap-2.5 rounded-none px-4 py-3 text-center text-[12px] sm:px-5 sm:text-[13px] border-t-2"
+            style={
+              onWineSurface
+                ? {
+                    backgroundColor: "rgba(249, 237, 228, 0.1)",
+                    color: ESTATE_ON_WINE.body,
+                    borderTopColor: ESTATE_ON_WINE.kicker,
+                  }
+                : { backgroundColor: `${FOREST}04`, color: FOREST, borderTopColor: WINE }
+            }
           >
-            <Star className="w-4 h-4 shrink-0" style={{ color: WINE }} weight="fill" aria-hidden />
-            <span className="min-w-0 max-w-2xl leading-snug">
-              Your move coordinator recommended <strong style={{ color: WINE }}>Signature</strong> for full-service protection.
+            <Star
+              className="w-4 h-4 shrink-0"
+              style={{ color: onWineSurface ? ESTATE_ON_WINE.kicker : WINE }}
+              weight="fill"
+              aria-hidden
+            />
+            <span className="min-w-0 leading-snug">
+              Your move coordinator recommended{" "}
+              <strong style={{ color: onWineSurface ? ESTATE_ON_WINE.primary : WINE }}>Signature</strong> for
+              full-service protection.
             </span>
           </div>
         </div>
@@ -151,6 +197,18 @@ export default function ResidentialLayout({
           const taxLineColor = isEstate ? ESTATE_TAX_LINE : LIGHT_TAX_LINE;
           const footerColor = isEstate ? ESTATE_FOOTER : LIGHT_FOOTER;
 
+          const cardBorderColor = onWineSurface
+            ? isSelected
+              ? "#66143D"
+              : isRecommended
+                ? "rgba(249,237,228,0.38)"
+                : "rgba(249,237,228,0.2)"
+            : isSelected
+              ? FOREST
+              : isRecommended
+                ? `${FOREST}40`
+                : `${FOREST}12`;
+
           return (
             <div
               key={tierKey}
@@ -158,7 +216,7 @@ export default function ResidentialLayout({
                 isSelected ? "border-2" : "border"
               } ${isCollapsed ? "opacity-60" : ""}`}
               style={{
-                borderColor: isSelected ? FOREST : isRecommended ? `${FOREST}40` : `${FOREST}12`,
+                borderColor: cardBorderColor,
                 boxShadow: "none",
               }}
             >
