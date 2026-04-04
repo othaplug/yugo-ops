@@ -75,6 +75,13 @@ const PACKING_KIT_CONTENTS: Record<number, string> = {
   4: "35 small, 55 medium, 20 large boxes · 8 wardrobe boxes (rental) · 8 tape rolls · 25 lbs packing paper",
   5: "45 small, 70 medium, 25 large boxes · 10 wardrobe boxes (rental) · 10 tape rolls · 25 lbs packing paper",
 };
+
+/** Slugs for tiered packing kit — surfaced first when the list is collapsed (mobile + desktop). */
+const PACKING_KIT_ADDON_SLUGS = new Set([
+  "packing_materials",
+  "packing_materials_kit",
+  "packing_materials_premium",
+]);
 import SquarePaymentForm from "@/components/payments/SquarePaymentForm";
 import ContractSign, {
   type ContractQuoteData,
@@ -397,7 +404,7 @@ export default function QuotePageClient({
   }, [referralCode, quote.quote_id]);
 
   const contractRef = useRef<HTMLDivElement>(null);
-  const comparisonRef = useRef<HTMLDivElement>(null);
+  const comparisonRef = useRef<HTMLElement | null>(null);
   const tiersRef = useRef<HTMLElement>(null);
   const addonsRef = useRef<HTMLElement>(null);
   const protectionRef = useRef<HTMLElement>(null);
@@ -539,7 +546,7 @@ export default function QuotePageClient({
     );
   }, [isResidential, selectedTier, quote.service_type, residentialTierMeta]);
 
-  /* ── Applicable add-ons (tier bundles: Estate/Signature hide kits & included services — see addon-visibility) ── */
+  /* ── Applicable add-ons (Estate hides items bundled in-package — see getVisibleAddons / addon-visibility) ── */
   const applicableAddons = useMemo(() => {
     const serviceOk = (a: (typeof allAddons)[number]) =>
       !a.applicable_service_types?.length ||
@@ -841,27 +848,82 @@ export default function QuotePageClient({
   ]);
 
   /* ── Handlers ── */
-  const scrollToSection = useCallback(
-    (ref: React.RefObject<HTMLElement | null>) => {
-      setTimeout(
-        () =>
-          ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-        100,
-      );
+  /** Eased scroll (~1s) — reads better than instant jump when advancing steps. */
+  const smoothScrollToRef = useCallback(
+    (
+      ref: React.RefObject<HTMLElement | null>,
+      options?: { delayMs?: number; durationMs?: number; offsetPx?: number },
+    ) => {
+      const delayMs = options?.delayMs ?? 90;
+      const durationMs = options?.durationMs ?? 480;
+      const offsetPx = options?.offsetPx ?? 80;
+      window.setTimeout(() => {
+        const el = ref.current;
+        if (!el || typeof window === "undefined") return;
+        const startY = window.scrollY;
+        const rect = el.getBoundingClientRect();
+        const rawTarget = startY + rect.top - offsetPx;
+        const maxY = Math.max(
+          0,
+          document.documentElement.scrollHeight - window.innerHeight,
+        );
+        const targetY = Math.min(Math.max(0, rawTarget), maxY);
+        const distance = targetY - startY;
+        if (Math.abs(distance) < 2) return;
+        const t0 = performance.now();
+        const easeInOutCubic = (t: number) =>
+          t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        const step = (now: number) => {
+          const elapsed = now - t0;
+          const t = Math.min(1, elapsed / durationMs);
+          window.scrollTo(0, startY + distance * easeInOutCubic(t));
+          if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }, delayMs);
     },
     [],
   );
 
-  const scrollToContract = useCallback(() => {
-    setTimeout(
-      () =>
-        contractRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        }),
-      300,
-    );
-  }, []);
+  const scrollToSection = useCallback(
+    (
+      ref: React.RefObject<HTMLElement | null>,
+      opts?: { delayMs?: number; durationMs?: number; offsetPx?: number },
+    ) => {
+      smoothScrollToRef(ref, opts);
+    },
+    [smoothScrollToRef],
+  );
+
+  const scrollToContract = useCallback(
+    (opts?: { delayMs?: number; durationMs?: number; offsetPx?: number }) => {
+      smoothScrollToRef(contractRef, {
+        delayMs: opts?.delayMs ?? 120,
+        durationMs: opts?.durationMs ?? 480,
+        offsetPx: opts?.offsetPx ?? 80,
+      });
+    },
+    [smoothScrollToRef],
+  );
+
+  /** Non-residential + fallback: ease to “Your move included” first, then agreement (bin rental skips comparison). */
+  const scrollToComparisonThenContract = useCallback(() => {
+    window.setTimeout(() => {
+      if (comparisonRef.current) {
+        const legMs = 480;
+        scrollToSection(comparisonRef, {
+          delayMs: 0,
+          durationMs: legMs,
+          offsetPx: 80,
+        });
+        window.setTimeout(() => {
+          scrollToContract({ delayMs: 0, durationMs: legMs, offsetPx: 80 });
+        }, legMs + 60);
+      } else {
+        scrollToContract();
+      }
+    }, 120);
+  }, [scrollToContract, scrollToSection]);
 
   const handleSelectTier = useCallback(
     (tierKey: string) => {
@@ -893,17 +955,31 @@ export default function QuotePageClient({
         const hasAddons = visible.length > 0 || tierKey === "estate";
         const nextStep = hasAddons ? 2 : 3;
         setCurrentStep(nextStep);
-        const targetRef = nextStep === 2 ? addonsRef : protectionRef;
-        scrollToSection(targetRef);
+        // Land on “Your move included” (inclusions / Estate experience) first — not add-ons.
+        const tierScrollMs = 480;
+        scrollToSection(comparisonRef, {
+          delayMs: 160,
+          durationMs: tierScrollMs,
+          offsetPx: 80,
+        });
+        if (nextStep === 3) {
+          window.setTimeout(() => {
+            scrollToSection(protectionRef, {
+              delayMs: 0,
+              durationMs: tierScrollMs,
+              offsetPx: 80,
+            });
+          }, tierScrollMs + 80);
+        }
       } else {
-        scrollToContract();
+        scrollToComparisonThenContract();
       }
     },
     [
       allAddons,
       isResidential,
       quote.service_type,
-      scrollToContract,
+      scrollToComparisonThenContract,
       scrollToSection,
       trackEvent,
       trackEngagement,
@@ -972,8 +1048,8 @@ export default function QuotePageClient({
   const handleConfirm = useCallback(() => {
     setSelectedTier("custom");
     setConfirmed(true);
-    scrollToContract();
-  }, [scrollToContract]);
+    scrollToComparisonThenContract();
+  }, [scrollToComparisonThenContract]);
 
   const isConfirmed = confirmed && selectedTier != null;
 
@@ -1131,9 +1207,9 @@ export default function QuotePageClient({
             {hero.subtitle}
           </p>
 
-          {/* Quote meta (no chrome box) */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-            <div className="text-left min-w-0">
+          {/* Quote meta — vertical rules between columns (visible all breakpoints; row scrolls on very narrow screens) */}
+          <div className="mt-8 flex flex-nowrap items-stretch justify-center gap-x-0 gap-y-0 overflow-x-auto pb-1 [scrollbar-width:thin]">
+            <div className="text-left min-w-0 shrink-0 px-4 sm:px-6">
               <p
                 className="text-[11px] font-semibold tracking-[0.14em] uppercase"
                 style={{ color: HERO_META_LABEL }}
@@ -1150,10 +1226,10 @@ export default function QuotePageClient({
               </p>
             </div>
             <div
-              className="hidden sm:block w-px h-8 shrink-0 bg-white/20"
+              className="w-px shrink-0 self-stretch min-h-[3rem] bg-white/30"
               aria-hidden
             />
-            <div className="text-left min-w-0">
+            <div className="text-left min-w-0 shrink-0 px-4 sm:px-6">
               <p
                 className="text-[11px] font-semibold tracking-[0.14em] uppercase"
                 style={{ color: HERO_META_LABEL }}
@@ -1179,10 +1255,10 @@ export default function QuotePageClient({
             {quote.expires_at && (
               <>
                 <div
-                  className="hidden sm:block w-px h-8 shrink-0 bg-white/20"
+                  className="w-px shrink-0 self-stretch min-h-[3rem] bg-white/30"
                   aria-hidden
                 />
-                <div className="text-left min-w-0">
+                <div className="text-left min-w-0 shrink-0 px-4 sm:px-6">
                   <p
                     className="text-[11px] font-semibold tracking-[0.14em] uppercase"
                     style={{ color: HERO_META_LABEL }}
@@ -2329,7 +2405,10 @@ const InclusionsShowcase = React.forwardRef<
         : "Every detail, handled.";
 
   return (
-    <section ref={ref} className="mb-10 pt-6 border-t border-[var(--brd)]/30">
+    <section
+      ref={ref}
+      className="scroll-mt-24 mb-10 pt-6 border-t border-[var(--brd)]/30"
+    >
       <div className="text-center mb-6 max-w-xl mx-auto">
         <p
           className={`${QUOTE_EYEBROW_CLASS} mb-2`}
@@ -3244,16 +3323,16 @@ function ConfirmDetailsSection({
               Move details
             </p>
             <div className="space-y-1 text-[13px]" style={{ color: ink }}>
-              <div className="flex flex-wrap items-center justify-center gap-y-1 text-center">
-                <span>
+              <div className="flex flex-nowrap items-center justify-center gap-0 overflow-x-auto pb-0.5 [scrollbar-width:thin] text-center">
+                <span className="shrink-0 px-2 sm:px-3">
                   <strong>Date:</strong> {fmtDate(quote.move_date)}
                 </span>
                 <span
                   aria-hidden
-                  className="hidden sm:block w-px h-3.5 shrink-0 mx-3 sm:mx-4 self-center rounded-full"
+                  className="w-px h-3.5 shrink-0 self-center mx-2 sm:mx-3 rounded-full"
                   style={{ backgroundColor: inkHair }}
                 />
-                <span>
+                <span className="shrink-0 px-2 sm:px-3 text-left sm:text-center min-w-0">
                   <strong>Arrival time window:</strong>{" "}
                   {quoteArrivalTimeWindowLabel(quote) ??
                     "To be confirmed with you"}
@@ -3401,7 +3480,7 @@ function ConfirmDetailsSection({
             />
 
             <div
-              className="flex flex-wrap items-center justify-center gap-y-2 text-[13px] text-center"
+              className="flex flex-nowrap items-stretch justify-center gap-0 overflow-x-auto pb-0.5 [scrollbar-width:thin] text-[13px] text-center max-w-full mx-auto"
               style={{ color: ink }}
             >
               {moveSummarySegments.map((seg, i) => (
@@ -3409,11 +3488,13 @@ function ConfirmDetailsSection({
                   {i > 0 ? (
                     <span
                       aria-hidden
-                      className="hidden sm:block w-px h-3.5 shrink-0 mx-3 sm:mx-4 self-center rounded-full"
+                      className="w-px shrink-0 self-stretch min-h-[2.75rem] max-h-none my-0.5 mx-2 sm:mx-3"
                       style={{ backgroundColor: inkHair }}
                     />
                   ) : null}
-                  {seg.node}
+                  <span className="shrink-0 flex items-center px-2 sm:px-3 min-w-0 text-left sm:text-center">
+                    {seg.node}
+                  </span>
                 </Fragment>
               ))}
             </div>
@@ -4277,15 +4358,18 @@ function AddOnsSection({
       return next;
     });
   const KEY_COUNT = 3;
-  const keyAddons = addons
-    .filter((a) => a.is_popular || selectedAddons.has(a.id))
-    .slice(0, KEY_COUNT);
-  const hasMore = addons.length > keyAddons.length;
-  const visibleAddons = showAll
-    ? addons
-    : keyAddons.length > 0
-      ? keyAddons
+  const popularOrSelected = addons.filter(
+    (a) => a.is_popular || selectedAddons.has(a.id),
+  );
+  const keyAddons =
+    popularOrSelected.length > 0
+      ? [
+          ...popularOrSelected.filter((a) => PACKING_KIT_ADDON_SLUGS.has(a.slug)),
+          ...popularOrSelected.filter((a) => !PACKING_KIT_ADDON_SLUGS.has(a.slug)),
+        ].slice(0, KEY_COUNT)
       : addons.slice(0, KEY_COUNT);
+  const hasMore = addons.length > keyAddons.length;
+  const visibleAddons = showAll ? addons : keyAddons;
 
   return (
     <section
@@ -4370,6 +4454,19 @@ function AddOnsSection({
               break;
           }
 
+          const packingKitContentsIdx =
+            PACKING_KIT_ADDON_SLUGS.has(addon.slug) &&
+            isOn &&
+            addon.price_type === "tiered" &&
+            addon.tiers?.length
+              ? Math.min(
+                  Math.max(0, sel?.tier_index ?? 0),
+                  addon.tiers.length - 1,
+                )
+              : moveSize
+                ? (PACKING_KIT_TIER_IDX[moveSize] ?? 0)
+                : 0;
+
           return (
             <div
               key={addon.id}
@@ -4379,7 +4476,8 @@ function AddOnsSection({
                   : `first:pt-0 ${isOn ? "bg-[#FFFCF6]/80" : ""}`
               }`}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-start min-[420px]:gap-3">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
                 <button
                   type="button"
                   role="switch"
@@ -4420,24 +4518,40 @@ function AddOnsSection({
                     </span>
                     {addon.is_popular && (
                       <span
-                        className={QUOTE_EYEBROW_CLASS}
-                        style={{
-                          color: estateChrome
-                            ? ESTATE_ON_WINE.muted
-                            : FOREST_MUTED,
-                        }}
+                        className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
+                        style={
+                          estateChrome
+                            ? {
+                                color: ESTATE_ON_WINE.primary,
+                                backgroundColor: "rgba(249, 237, 228, 0.12)",
+                                borderColor: ESTATE_ON_WINE.borderSubtle,
+                              }
+                            : {
+                                color: FOREST,
+                                backgroundColor: "rgba(44, 62, 45, 0.08)",
+                                borderColor: "rgba(44, 62, 45, 0.18)",
+                              }
+                        }
                       >
                         Popular
                       </span>
                     )}
-                    {addon.slug === "packing_materials" && (
+                    {PACKING_KIT_ADDON_SLUGS.has(addon.slug) && (
                       <span
-                        className={QUOTE_EYEBROW_CLASS}
-                        style={{
-                          color: estateChrome
-                            ? ESTATE_ON_WINE.kicker
-                            : "#2C7A4B",
-                        }}
+                        className={`${QUOTE_EYEBROW_CLASS} inline-flex items-center px-2 py-0.5 rounded border shrink-0`}
+                        style={
+                          estateChrome
+                            ? {
+                                color: "#C8F0D8",
+                                backgroundColor: "rgba(74, 222, 128, 0.14)",
+                                borderColor: "rgba(134, 239, 172, 0.35)",
+                              }
+                            : {
+                                color: "#1F5C38",
+                                backgroundColor: "rgba(44, 122, 75, 0.1)",
+                                borderColor: "rgba(44, 122, 75, 0.28)",
+                              }
+                        }
                       >
                         Free delivery
                       </span>
@@ -4454,8 +4568,12 @@ function AddOnsSection({
                     </p>
                   )}
 
-                  {/* Packing kit contents expand */}
-                  {addon.slug === "packing_materials" && moveSize && (
+                  {/* Packing kit contents expand — tier dropdown drives copy when kit is on */}
+                  {PACKING_KIT_ADDON_SLUGS.has(addon.slug) &&
+                    (moveSize ||
+                      (isOn &&
+                        addon.price_type === "tiered" &&
+                        !!addon.tiers?.length)) && (
                     <div className="mt-1.5">
                       <button
                         type="button"
@@ -4486,7 +4604,7 @@ function AddOnsSection({
                       </button>
                       {expandedContents.has(addon.id) && (
                         <p
-                          className="mt-2 text-[11px] leading-relaxed px-3 py-2.5 rounded-none border"
+                          className="mt-2 text-[11px] leading-relaxed px-3 py-2.5 rounded-none border break-words"
                           style={
                             estateChrome
                               ? {
@@ -4501,11 +4619,8 @@ function AddOnsSection({
                                 }
                           }
                         >
-                          {
-                            PACKING_KIT_CONTENTS[
-                              PACKING_KIT_TIER_IDX[moveSize] ?? 0
-                            ]
-                          }
+                          {PACKING_KIT_CONTENTS[packingKitContentsIdx] ??
+                            PACKING_KIT_CONTENTS[0]}
                         </p>
                       )}
                     </div>
@@ -4565,13 +4680,13 @@ function AddOnsSection({
                   )}
 
                   {isOn && addon.price_type === "tiered" && addon.tiers && (
-                    <div className="mt-2">
+                    <div className="mt-2 w-full min-w-0 max-w-full">
                       <select
                         value={sel?.tier_index ?? 0}
                         onChange={(e) =>
                           updateTierIdx(addon.id, parseInt(e.target.value))
                         }
-                        className="text-[12px] rounded-none border px-3 py-2"
+                        className="text-[12px] rounded-none border px-3 py-2.5 w-full min-w-0 min-[420px]:w-auto min-[420px]:min-w-[12rem] min-[420px]:max-w-md"
                         style={
                           estateChrome
                             ? {
@@ -4595,8 +4710,9 @@ function AddOnsSection({
                     </div>
                   )}
                 </div>
+                </div>
 
-                <div className="text-right shrink-0">
+                <div className="text-left min-[420px]:text-right shrink-0 min-[420px]:pt-0.5 w-full min-[420px]:w-auto pl-14 min-[420px]:pl-0">
                   <span
                     className={`text-[13px] font-bold ${estateChrome ? "font-serif" : ""}`}
                     style={{

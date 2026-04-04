@@ -15,6 +15,10 @@ import {
 } from "../quote-shared";
 import { ESTATE_ON_WINE } from "../estate-quote-ui";
 
+/** Estate card face — Yugo wine (#5C1A33) shifting to deeper wine for depth. */
+const ESTATE_CARD_WINE_DEEP = "#3D1522";
+const ESTATE_CARD_WINE_HIGHLIGHT = "#6B2848";
+
 const TIER_ICONS: Record<string, LucideIcon> = {
   essential: Target,
   signature: Crown,
@@ -226,9 +230,9 @@ export default function ResidentialLayout({
                 style={
                   isEstate
                     ? {
-                        background: "linear-gradient(135deg, #2B0E18 0%, #5C1A33 38%, #722F45 70%, #3D1522 100%)",
+                        background: `linear-gradient(155deg, ${WINE} 0%, ${ESTATE_CARD_WINE_HIGHLIGHT} 42%, ${ESTATE_CARD_WINE_DEEP} 100%)`,
                         borderWidth: 0,
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
                       }
                     : { backgroundColor: meta.bg }
                 }
@@ -242,14 +246,14 @@ export default function ResidentialLayout({
                       const TierIcon = TIER_ICONS[tierKey];
                       return TierIcon ? (
                         <TierIcon
-                          className="h-5 w-5 shrink-0"
+                          className="h-6 w-6 shrink-0"
                           style={{ color: isEstate ? ESTATE_ACCENT_LIGHT : meta.accent }}
                           strokeWidth={1.5}
                           aria-hidden
                         />
                       ) : null;
                     })()}
-                    <h3 className="font-heading text-[16px] font-bold leading-tight min-w-0 flex-1">
+                    <h3 className="font-heading text-[19px] sm:text-[20px] font-bold leading-tight min-w-0 flex-1">
                       <span style={{ color: isEstate ? ESTATE_ACCENT_LIGHT : meta.accent }}>{meta.label}</span>
                       {isRecommended ? (
                         <span
@@ -263,7 +267,7 @@ export default function ResidentialLayout({
                     </h3>
                   </div>
                   <span
-                    className="font-hero shrink-0 text-right text-[clamp(1.125rem,0.85rem+1.5vw,1.5rem)] font-bold leading-none tabular-nums"
+                    className="font-hero shrink-0 text-right text-[clamp(1.35rem,1.05rem+2vw,1.875rem)] font-bold leading-none tabular-nums"
                     style={{ color: isEstate ? ESTATE_ACCENT_LIGHT : meta.accent }}
                   >
                     {fmtPrice(t.price)}
@@ -272,7 +276,7 @@ export default function ResidentialLayout({
                 {!isCollapsed && (
                   <p
                     data-tier-tagline
-                    className="mt-2 w-full min-h-9 leading-relaxed text-[11px] md:min-h-10 md:text-[12px] font-medium"
+                    className="mt-2 w-full min-h-10 leading-relaxed text-[13px] md:min-h-11 md:text-[14px] font-medium"
                     style={{ color: taglineColor }}
                   >
                     {meta.tagline}
@@ -282,7 +286,7 @@ export default function ResidentialLayout({
                 <div className={`flex flex-col flex-1 min-h-0 min-w-0 ${isCollapsed ? "mt-0" : "mt-4"}`}>
                   {!isCollapsed && (
                     <p
-                      className="mb-3 shrink-0 pl-6 text-[11px] md:text-[12px] font-medium tabular-nums"
+                      className="mb-3 shrink-0 pl-6 text-[12px] md:text-[13px] font-medium tabular-nums"
                       style={{ color: taxLineColor }}
                     >
                       +{fmtPrice(t.tax)} HST &middot; Total {fmtPrice(t.total)}
@@ -314,8 +318,8 @@ export default function ResidentialLayout({
                           <ul className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain space-y-2.5 pr-1 [scrollbar-gutter:stable]">
                             {bullets.map((inc, i) => (
                               <li key={`fb-${i}`} className="flex gap-2.5 items-start">
-                                <Check className="w-3.5 h-3.5 shrink-0 mt-[3px]" style={{ color: checkColor }} />
-                                <span className="text-[12px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
+                                <Check className="w-4 h-4 shrink-0 mt-[3px]" style={{ color: checkColor }} />
+                                <span className="text-[13px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
                               </li>
                             ))}
                           </ul>
@@ -337,8 +341,8 @@ export default function ResidentialLayout({
                           <ul className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain space-y-2.5 pr-1 [scrollbar-gutter:stable]">
                             {bullets.map((inc, i) => (
                               <li key={`full-${i}`} className="flex gap-2.5 items-start">
-                                <Check className="w-3.5 h-3.5 shrink-0 mt-[3px]" style={{ color: checkColor }} />
-                                <span className="text-[12px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
+                                <Check className="w-4 h-4 shrink-0 mt-[3px]" style={{ color: checkColor }} />
+                                <span className="text-[13px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
                               </li>
                             ))}
                           </ul>
@@ -353,7 +357,7 @@ export default function ResidentialLayout({
                       <div className="flex-1 min-h-0 flex flex-col mb-4 space-y-3">
                         {intro ? (
                           <p
-                            className="text-[11px] md:text-[12px] font-bold leading-snug pl-0.5 pr-1 shrink-0"
+                            className="text-[12px] md:text-[13px] font-bold leading-snug pl-0.5 pr-1 shrink-0"
                             style={{ color: cardFg ?? FOREST }}
                           >
                             {intro}
@@ -362,8 +366,8 @@ export default function ResidentialLayout({
                         <ul className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain space-y-2.5 pr-1 [scrollbar-gutter:stable]">
                           {listBullets.map((inc, i) => (
                             <li key={`add-${i}`} className="flex gap-2.5 items-start">
-                              <Check className="w-3.5 h-3.5 shrink-0 mt-[3px]" style={{ color: checkColor }} />
-                              <span className="text-[12px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
+                              <Check className="w-4 h-4 shrink-0 mt-[3px]" style={{ color: checkColor }} />
+                              <span className="text-[13px] leading-relaxed min-w-0" style={{ color: cardFg ?? FOREST }}>{inc}</span>
                             </li>
                           ))}
                         </ul>
@@ -371,7 +375,7 @@ export default function ResidentialLayout({
                     );
                   })()}
                   {!isCollapsed && meta.footer && (
-                    <p className="text-[12px] mb-4 leading-relaxed shrink-0 font-medium" style={{ color: footerColor }}>
+                    <p className="text-[13px] mb-4 leading-relaxed shrink-0 font-medium" style={{ color: footerColor }}>
                       {meta.footer}
                     </p>
                   )}
@@ -379,7 +383,7 @@ export default function ResidentialLayout({
                   <button
                     type="button"
                     onClick={() => onSelectTier(tierKey)}
-                    className={`w-full py-3.5 rounded-none text-[10px] font-bold tracking-[0.12em] uppercase transition-opacity flex-shrink-0 hover:opacity-90 border-0 ${
+                    className={`w-full py-3.5 rounded-none text-[11px] font-bold tracking-[0.12em] uppercase transition-opacity flex-shrink-0 hover:opacity-90 border-0 ${
                       isSelected ? "text-white" : ""
                     } ${isCollapsed ? "mt-auto" : ""}`}
                     style={
@@ -404,7 +408,7 @@ export default function ResidentialLayout({
                   </button>
 
                   {!isCollapsed && (
-                  <p className="text-center text-[10px] mt-2.5 flex-shrink-0 font-medium" style={{ color: depositColor }}>
+                  <p className="text-center text-[11px] mt-2.5 flex-shrink-0 font-medium" style={{ color: depositColor }}>
                     {fmtPrice(t.deposit)} deposit to book
                   </p>
                   )}

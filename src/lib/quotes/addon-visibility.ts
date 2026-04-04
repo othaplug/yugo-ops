@@ -18,8 +18,6 @@ const ESTATE_INCLUDED_SLUGS = [
   "floor_protection",
 ] as const;
 
-const SIGNATURE_HIDES_SLUGS = ["packing_materials", "packing_materials_kit", "packing_materials_premium"] as const;
-
 function slugHiddenForEstate(slug: string): boolean {
   return (ESTATE_INCLUDED_SLUGS as readonly string[]).includes(slug);
 }
@@ -33,9 +31,6 @@ export function getVisibleAddons(allAddons: Addon[], recommendedTier: string | n
       if (slugHiddenForEstate(a.slug)) return false;
       return true;
     }
-    if (tier === "signature") {
-      if ((SIGNATURE_HIDES_SLUGS as readonly string[]).includes(a.slug)) return false;
-    }
     return true;
   });
 }
@@ -43,7 +38,6 @@ export function getVisibleAddons(allAddons: Addon[], recommendedTier: string | n
 export function isAddonHiddenForTier(slug: string, tier: string): boolean {
   const t = tier.toLowerCase();
   if (t === "estate") return slugHiddenForEstate(slug);
-  if (t === "signature" && (SIGNATURE_HIDES_SLUGS as readonly string[]).includes(slug)) return true;
   return false;
 }
 

@@ -57,7 +57,10 @@ export const EstateExperienceSection = React.forwardRef<
   const crewN = crewSize ?? 3;
 
   return (
-    <section ref={ref} className="py-16 px-6 md:px-12 mb-10 border-t border-[#66143D]/25">
+    <section
+      ref={ref}
+      className="scroll-mt-24 py-16 px-6 md:px-12 mb-10 border-t border-[#66143D]/25"
+    >
       <div className="max-w-4xl mx-auto">
         <p className="text-sm uppercase tracking-[0.2em] mb-2 font-semibold" style={{ color: ESTATE_ON_WINE.kicker }}>
           Estate
