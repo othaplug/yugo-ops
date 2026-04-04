@@ -3,7 +3,6 @@ import {
   type Quote,
   WINE,
   FOREST,
-  GOLD,
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
@@ -50,7 +49,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <span
                 className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+                style={{ backgroundColor: `${FOREST}15`, color: FOREST }}
               >
                 {category}
               </span>
@@ -83,7 +82,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
                 {quote.from_address}
               </p>
             </div>
-            <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
+            <ArrowRight className="w-4 h-4 shrink-0" style={{ color: FOREST }} />
             <div className="flex-1 min-w-0 text-right">
               <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">DELIVERY</p>
               <p className="text-[12px] font-medium truncate" style={{ color: FOREST }}>
@@ -102,7 +101,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
       {specialHandling ? (
         <div
           className="rounded-xl border-2 p-4 mt-4"
-          style={{ borderColor: `${GOLD}55`, backgroundColor: `${GOLD}08` }}
+          style={{ borderColor: `${FOREST}55`, backgroundColor: `${FOREST}08` }}
         >
           <p className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1.5" style={{ color: WINE }}>
             SPECIAL HANDLING INSTRUCTIONS
@@ -121,7 +120,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
         <div className="space-y-2">
           {includes.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
-              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
+              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{item}</span>
             </div>
           ))}
@@ -129,7 +128,7 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
       </div>
 
       {/* Price + CTA */}
-      <div className="bg-white rounded-2xl border-2 shadow-sm p-6 text-center" style={{ borderColor: GOLD }}>
+      <div className="bg-white rounded-2xl border-2 shadow-sm p-6 text-center" style={{ borderColor: FOREST }}>
         {(weightSurcharge > 0 || truckBreakdown) && (
           <div className="text-left text-[11px] space-y-1 mb-4 pb-4 border-b" style={{ borderColor: "#E2DDD5", color: `${FOREST}75` }}>
             {weightSurcharge > 0 ? (
@@ -155,10 +154,10 @@ export default function SingleItemLayout({ quote, onConfirm, confirmed }: Props)
         <button
           type="button"
           onClick={onConfirm}
-          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
+          className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${
             confirmed ? "opacity-80" : ""
           }`}
-          style={{ backgroundColor: confirmed ? FOREST : WINE }}
+          style={{ backgroundColor: FOREST }}
         >
           {confirmed ? (
             <span className="flex items-center justify-center gap-2">

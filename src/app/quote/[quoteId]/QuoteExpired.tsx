@@ -31,7 +31,7 @@ export default function QuoteExpired({
         <div className="flex justify-center mb-3">
           <YugoLogo size={28} variant="gold" onLightBackground />
         </div>
-        <div className="w-16 h-px bg-[#B8962E] mx-auto mb-6" />
+        <div className="w-16 h-px mx-auto mb-6" style={{ backgroundColor: "#2C3E2D" }} />
         {reason === "expired" ? (
           <>
             <h1 className="font-hero text-[20px] font-bold mb-3" style={{ color: FOREST }}>

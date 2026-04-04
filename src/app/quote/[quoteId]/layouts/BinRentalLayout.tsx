@@ -5,7 +5,6 @@ import {
   type Quote,
   WINE,
   FOREST,
-  GOLD,
   TAX_RATE,
   fmtPrice,
 } from "../quote-shared";
@@ -64,7 +63,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
         </p>
         <div
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide uppercase mx-auto"
-          style={{ backgroundColor: `${GOLD}18`, color: FOREST }}
+          style={{ backgroundColor: `${FOREST}18`, color: FOREST }}
         >
           <SealCheck className="w-4 h-4" weight="fill" aria-hidden />
           Guaranteed price — no surprises
@@ -73,7 +72,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
 
       <div
         className="rounded-2xl border p-5 md:p-6 space-y-4"
-        style={{ borderColor: `${GOLD}55`, backgroundColor: `${GOLD}08` }}
+        style={{ borderColor: `${FOREST}55`, backgroundColor: `${FOREST}08` }}
       >
         <div className="flex items-center gap-3">
           <Recycle className="w-6 h-6 shrink-0" style={{ color: FOREST }} weight="regular" aria-hidden />
@@ -109,7 +108,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
             </p>
             <div className="flex justify-between items-baseline pt-2">
               <span className="text-[11px] text-[var(--tx3)]">Subtotal + HST</span>
-              <span className="text-xl font-black tabular-nums" style={{ color: GOLD }}>
+              <span className="text-xl font-black tabular-nums" style={{ color: FOREST }}>
                 {fmtPrice(total)}
               </span>
             </div>
@@ -124,7 +123,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
         <p className="text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)]">Your schedule</p>
         <div className="space-y-3 text-[12px]" style={{ color: FOREST }}>
           <div className="flex gap-2">
-            <CalendarBlank className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+            <CalendarBlank className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} aria-hidden />
             <div>
               <p className="font-semibold">Bin delivery</p>
               <p>{fmtLong(drop)}</p>
@@ -138,14 +137,14 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
             </div>
           </div>
           <div className="flex gap-2">
-            <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+            <Clock className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} aria-hidden />
             <div>
               <p className="font-semibold">Your move day</p>
               <p>{fmtLong(move)}</p>
             </div>
           </div>
           <div className="flex gap-2">
-            <CalendarBlank className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} aria-hidden />
+            <CalendarBlank className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} aria-hidden />
             <div>
               <p className="font-semibold">Bin pickup</p>
               <p>{fmtLong(pick)}</p>
@@ -168,7 +167,7 @@ export default function BinRentalLayout({ quote, onConfirm, confirmed }: Props) 
           <button
             type="button"
             onClick={onConfirm}
-            className="w-full py-3.5 rounded-xl font-bold text-[15px] text-white shadow-md transition-opacity hover:opacity-95"
+            className="w-full py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90"
             style={{ backgroundColor: FOREST }}
           >
             Continue to payment

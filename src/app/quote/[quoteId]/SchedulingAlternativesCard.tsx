@@ -26,8 +26,8 @@ function fmtDate(d: string) {
 
 export default function SchedulingAlternativesCard({
   moveId,
-  accentColor = "#C9A962",
-  forestColor = "#1B3A2D",
+  accentColor = "#2C3E2D",
+  forestColor = "#2C3E2D",
 }: SchedulingAlternativesCardProps) {
   const [status, setStatus] = useState<"loading" | "available" | "partial" | "unavailable" | "selected" | "none">("loading");
   const [alternatives, setAlternatives] = useState<SchedulingAlternative[]>([]);

@@ -3,7 +3,6 @@ import {
   type Quote,
   WINE,
   FOREST,
-  GOLD,
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
@@ -71,7 +70,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           <div>
             <span
               className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-              style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+              style={{ backgroundColor: `${FOREST}15`, color: FOREST }}
             >
               Labour Service
             </span>
@@ -92,7 +91,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           </div>
           {quote.move_date && (
             <div className="flex items-start gap-2">
-              <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} />
+              <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <div>
                 <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Date</p>
                 <p className="text-[12px] font-medium" style={{ color: FOREST }}>{fmtDate(quote.move_date)}</p>
@@ -110,7 +109,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
         {storageNeeded && storageWeeks != null && labourStorageFee > 0 ? (
           <div
             className="mt-4 p-3 rounded-xl text-[11px] leading-relaxed border"
-            style={{ backgroundColor: `${GOLD}08`, borderColor: `${GOLD}35`, color: FOREST }}
+            style={{ backgroundColor: `${FOREST}08`, borderColor: `${FOREST}35`, color: FOREST }}
           >
             <p className="font-semibold mb-1" style={{ color: WINE }}>Storage between visits</p>
             <p>
@@ -128,10 +127,10 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
           <p className="text-[22px] font-bold tabular-nums" style={{ color: WINE }}>{crewSize}</p>
           <p className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: `${WINE}60` }}>Movers</p>
         </div>
-        <div className="p-4 rounded-xl text-center" style={{ backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}20` }}>
-          <Clock className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
-          <p className="text-[22px] font-bold tabular-nums" style={{ color: GOLD }}>{hours}</p>
-          <p className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: `${GOLD}80` }}>Hours</p>
+        <div className="p-4 rounded-xl text-center" style={{ backgroundColor: `${FOREST}08`, border: `1px solid ${FOREST}20` }}>
+          <Clock className="w-5 h-5 mx-auto mb-1.5" style={{ color: FOREST }} />
+          <p className="text-[22px] font-bold tabular-nums" style={{ color: FOREST }}>{hours}</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: `${FOREST}80` }}>Hours</p>
         </div>
         <div className="p-4 rounded-xl text-center" style={{ backgroundColor: truckFee > 0 ? `${FOREST}06` : `${FOREST}03`, border: `1px solid ${FOREST}15` }}>
           <Truck className="w-5 h-5 mx-auto mb-1.5" style={{ color: truckFee > 0 ? FOREST : `${FOREST}40` }} />
@@ -144,8 +143,8 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
 
       {/* Visits breakdown if 2 visits */}
       {visits >= 2 && (
-        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: `${GOLD}40` }}>
-          <div className="px-5 py-3.5 border-b" style={{ backgroundColor: `${GOLD}08`, borderColor: `${GOLD}25` }}>
+        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: `${FOREST}40` }}>
+          <div className="px-5 py-3.5 border-b" style={{ backgroundColor: `${FOREST}08`, borderColor: `${FOREST}25` }}>
             <h2 className="admin-section-h2" style={{ color: WINE }}>Two-Visit Schedule</h2>
           </div>
           <div className="divide-y" style={{ borderColor: "#E2DDD5" }}>
@@ -175,7 +174,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
         <div className="grid sm:grid-cols-2 gap-2">
           {includes.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
-              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
+              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{item}</span>
             </div>
           ))}
@@ -183,8 +182,8 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
       </div>
 
       {/* Investment summary */}
-      <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: GOLD }}>
-        <div className="px-5 py-4 border-b" style={{ backgroundColor: `${GOLD}08`, borderColor: "#E2DDD5" }}>
+      <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: FOREST }}>
+        <div className="px-5 py-4 border-b" style={{ backgroundColor: `${FOREST}08`, borderColor: "#E2DDD5" }}>
           <h2 className="admin-section-h2" style={{ color: WINE }}>
             Investment Summary
           </h2>
@@ -226,7 +225,7 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             </tbody>
           </table>
 
-          <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${GOLD}30` }}>
+          <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${FOREST}30` }}>
             <p className="font-hero text-[36px] md:text-[44px]" style={{ color: WINE }}>
               {fmtPrice(price)}
             </p>
@@ -236,8 +235,8 @@ export default function LabourOnlyLayout({ quote, onConfirm, confirmed }: Props)
             <button
               type="button"
               onClick={onConfirm}
-              className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${confirmed ? "opacity-80" : ""}`}
-              style={{ backgroundColor: confirmed ? FOREST : GOLD }}
+              className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${confirmed ? "opacity-80" : ""}`}
+              style={{ backgroundColor: FOREST }}
             >
               {confirmed ? (
                 <span className="flex items-center justify-center gap-2">

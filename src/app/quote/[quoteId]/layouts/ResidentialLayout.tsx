@@ -7,8 +7,11 @@ import {
   TIER_ORDER,
   WINE,
   FOREST,
-  GOLD,
+  FOREST_BODY,
+  FOREST_MUTED,
   fmtPrice,
+  QUOTE_EYEBROW_CLASS,
+  QUOTE_SECTION_H2_CLASS,
 } from "../quote-shared";
 
 const TIER_ICONS: Record<string, LucideIcon> = {
@@ -17,14 +20,19 @@ const TIER_ICONS: Record<string, LucideIcon> = {
   estate: SketchLogo,
 };
 
-/** Tier card subcopy: enough contrast on cream / white (WCAG-friendly body text). */
-const LIGHT_TAGLINE = `${FOREST}CC`;
+/** Tier card subcopy on cream / white */
+const LIGHT_TAGLINE = FOREST_BODY;
 const LIGHT_TAX_LINE = FOREST;
-const LIGHT_FOOTER = `${FOREST}AA`;
+const LIGHT_FOOTER = FOREST_MUTED;
 
 const ESTATE_TAGLINE = "rgba(255,255,255,0.82)";
 const ESTATE_TAX_LINE = "rgba(255,255,255,0.92)";
 const ESTATE_FOOTER = "rgba(255,255,255,0.78)";
+/** Headings, icons, checks on Estate dark card (off-white — no gold). */
+const ESTATE_ACCENT_LIGHT = "rgba(255,255,255,0.92)";
+/** Yugo brand palette — inline “Recommended” suffix (light: leather; Estate: off-white). */
+const BRAND_LEATHER = "#492A1D";
+const BRAND_OFF_WHITE = "#F9EDE4";
 
 /** Tier cards: never show truck size (e.g. “20ft”) — one consistent client-facing line. */
 const TIER_CARD_TRUCK_LABEL = "Dedicated Moving Truck";
@@ -78,15 +86,18 @@ export default function ResidentialLayout({
   const recTier = TIER_ORDER.includes(raw as (typeof TIER_ORDER)[number]) ? raw : "signature";
   return (
     <section className="mb-10 min-w-0 w-full max-w-full">
-      <div className="text-center mb-8">
-        <h2 className="font-hero text-[30px] md:text-[32px] mb-2" style={{ color: WINE }}>
-          Choose your plan
+      <div className="text-center mb-8 max-w-xl mx-auto">
+        <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: FOREST_MUTED }}>
+          Your plan
+        </p>
+        <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-2`} style={{ color: WINE }}>
+          Choose your package
         </h2>
-        <p className="text-[13px] max-w-md mx-auto" style={{ color: `${FOREST}80` }}>
+        <p className="text-[13px] leading-relaxed max-w-md mx-auto" style={{ color: FOREST_BODY }}>
           Every package includes a professional crew, truck, and blanket wrapping.
         </p>
         {quote.expires_at && (
-          <p className="text-[12px] mt-2" style={{ color: "#5C5853" }}>
+          <p className="text-[12px] mt-2" style={{ color: FOREST_MUTED }}>
             Quote valid until{" "}
             {new Date(quote.expires_at).toLocaleDateString("en-CA", { month: "long", day: "numeric" })}
           </p>
@@ -94,27 +105,27 @@ export default function ResidentialLayout({
       </div>
 
       {recTier === "estate" && (
-        <div className="mb-6 flex justify-center w-full min-w-0 px-1 sm:px-0">
+        <div className="mb-6 w-full min-w-0 px-1 sm:px-0">
           <div
-            className="box-border flex w-full min-w-0 max-w-full items-start gap-2.5 rounded-xl px-4 py-2.5 text-left text-[12px] sm:inline-flex sm:w-fit sm:max-w-none sm:items-center sm:px-5 sm:text-[13px]"
-            style={{ backgroundColor: `${WINE}10`, color: FOREST }}
+            className="box-border flex w-full min-w-0 max-w-full flex-wrap items-center justify-center gap-2.5 rounded-none px-4 py-3 text-center text-[12px] sm:px-5 sm:text-[13px] border-t-2"
+            style={{ backgroundColor: `${FOREST}04`, color: FOREST, borderTopColor: WINE }}
           >
-            <Star className="w-4 h-4 shrink-0 mt-0.5 sm:mt-0" style={{ color: WINE }} weight="fill" />
-            <span className="min-w-0 leading-snug">
+            <Star className="w-4 h-4 shrink-0" style={{ color: WINE }} weight="fill" aria-hidden />
+            <span className="min-w-0 max-w-2xl leading-snug">
               Your move coordinator recommended <strong style={{ color: WINE }}>Estate</strong> based on your requirements.
             </span>
           </div>
         </div>
       )}
       {recTier === "signature" && (
-        <div className="mb-6 flex justify-center w-full min-w-0 px-1 sm:px-0">
+        <div className="mb-6 w-full min-w-0 px-1 sm:px-0">
           <div
-            className="box-border flex w-full min-w-0 max-w-full items-start gap-2.5 rounded-xl px-4 py-2.5 text-left text-[12px] sm:inline-flex sm:w-fit sm:max-w-none sm:items-center sm:px-5 sm:text-[13px]"
-            style={{ backgroundColor: `${GOLD}10`, color: FOREST }}
+            className="box-border flex w-full min-w-0 max-w-full flex-wrap items-center justify-center gap-2.5 rounded-none px-4 py-3 text-center text-[12px] sm:px-5 sm:text-[13px] border-t-2"
+            style={{ backgroundColor: `${FOREST}04`, color: FOREST, borderTopColor: WINE }}
           >
-            <Star className="w-4 h-4 shrink-0 mt-0.5 sm:mt-0" style={{ color: GOLD }} weight="fill" />
-            <span className="min-w-0 leading-snug">
-              Your move coordinator recommended <strong style={{ color: GOLD }}>Signature</strong> for full-service protection.
+            <Star className="w-4 h-4 shrink-0" style={{ color: WINE }} weight="fill" aria-hidden />
+            <span className="min-w-0 max-w-2xl leading-snug">
+              Your move coordinator recommended <strong style={{ color: WINE }}>Signature</strong> for full-service protection.
             </span>
           </div>
         </div>
@@ -134,8 +145,8 @@ export default function ResidentialLayout({
           const isCollapsed = hasSelection && !isSelected;
 
           const cardFg = isEstate ? "rgba(255,255,255,0.9)" : undefined;
-          const checkColor = isEstate ? "#C9A84C" : GOLD;
-          const depositColor = isEstate ? "#C9A84C" : GOLD;
+          const checkColor = isEstate ? ESTATE_ACCENT_LIGHT : FOREST;
+          const depositColor = isEstate ? ESTATE_ACCENT_LIGHT : FOREST_MUTED;
           const taglineColor = isEstate ? ESTATE_TAGLINE : LIGHT_TAGLINE;
           const taxLineColor = isEstate ? ESTATE_TAX_LINE : LIGHT_TAX_LINE;
           const footerColor = isEstate ? ESTATE_FOOTER : LIGHT_FOOTER;
@@ -143,20 +154,22 @@ export default function ResidentialLayout({
           return (
             <div
               key={tierKey}
-              className={`relative flex h-full min-h-0 flex-col rounded-2xl overflow-hidden transition-all duration-300 ease-in-out ${
-                isSelected ? "shadow-lg" : isRecommended ? "shadow-md" : "shadow-sm"
+              className={`relative flex h-full min-h-0 flex-col rounded-none overflow-hidden transition-all duration-300 ease-in-out border ${
+                isSelected ? "border-2" : "border"
               } ${isCollapsed ? "opacity-60" : ""}`}
+              style={{
+                borderColor: isSelected ? FOREST : isRecommended ? `${FOREST}40` : `${FOREST}12`,
+                boxShadow: "none",
+              }}
             >
               {/* Card body, no badge strip */}
               <div
-                className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl"
+                className="flex h-full min-h-0 flex-col overflow-hidden rounded-none"
                 style={
                   isEstate
                     ? {
                         background: "linear-gradient(135deg, #2B0E18 0%, #5C1A33 38%, #722F45 70%, #3D1522 100%)",
-                        borderWidth: 1,
-                        borderStyle: "solid",
-                        borderColor: "rgba(201, 168, 76, 0.4)",
+                        borderWidth: 0,
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
                       }
                     : { backgroundColor: meta.bg }
@@ -172,35 +185,28 @@ export default function ResidentialLayout({
                       return TierIcon ? (
                         <TierIcon
                           className="h-5 w-5 shrink-0"
-                          style={{ color: isEstate ? "#C9A84C" : meta.accent }}
+                          style={{ color: isEstate ? ESTATE_ACCENT_LIGHT : meta.accent }}
                           strokeWidth={1.5}
                           aria-hidden
                         />
                       ) : null;
                     })()}
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                      <h3 className="font-heading text-[16px] font-bold leading-tight" style={{ color: isEstate ? "#C9A84C" : meta.accent }}>
-                        {meta.label}
-                      </h3>
-                      {isRecommended && (
+                    <h3 className="font-heading text-[16px] font-bold leading-tight min-w-0 flex-1">
+                      <span style={{ color: isEstate ? ESTATE_ACCENT_LIGHT : meta.accent }}>{meta.label}</span>
+                      {isRecommended ? (
                         <span
-                          className="uppercase text-[8px] sm:text-[9px] font-semibold tracking-wide leading-tight shrink-0 inline-flex items-center"
-                          style={{
-                            letterSpacing: "0.2px",
-                            color: "#0A0A0A",
-                            backgroundColor: GOLD,
-                            padding: "4px 7px",
-                            borderRadius: "3px",
-                          }}
+                          className="font-medium uppercase tracking-[0.12em] text-[7px] sm:text-[8px] align-middle whitespace-nowrap"
+                          style={{ color: isEstate ? BRAND_OFF_WHITE : BRAND_LEATHER }}
                         >
-                          Recommended
+                          {" "}
+                          · RECOMMENDED
                         </span>
-                      )}
-                    </div>
+                      ) : null}
+                    </h3>
                   </div>
                   <span
                     className="font-hero shrink-0 text-right text-[clamp(1.125rem,0.85rem+1.5vw,1.5rem)] font-bold leading-none tabular-nums"
-                    style={{ color: isEstate ? "#C9A84C" : meta.accent }}
+                    style={{ color: isEstate ? ESTATE_ACCENT_LIGHT : meta.accent }}
                   >
                     {fmtPrice(t.price)}
                   </span>
@@ -315,13 +321,16 @@ export default function ResidentialLayout({
                   <button
                     type="button"
                     onClick={() => onSelectTier(tierKey)}
-                    className={`w-full py-3 rounded-xl text-[12px] font-bold tracking-wide transition-all flex-shrink-0 hover:opacity-90 ${
-                      isSelected ? "text-white shadow-md" : ""
+                    className={`w-full py-3.5 rounded-none text-[10px] font-bold tracking-[0.12em] uppercase transition-opacity flex-shrink-0 hover:opacity-90 border-0 ${
+                      isSelected ? "text-white" : ""
                     } ${isCollapsed ? "mt-auto" : ""}`}
                     style={
                       isSelected
-                        ? { backgroundColor: GOLD }
-                        : { backgroundColor: "transparent", color: isEstate ? "#C9A84C" : meta.accent }
+                        ? { backgroundColor: FOREST }
+                        : {
+                            backgroundColor: "transparent",
+                            color: isEstate ? ESTATE_ACCENT_LIGHT : meta.accent,
+                          }
                     }
                   >
                     {isSelected ? (

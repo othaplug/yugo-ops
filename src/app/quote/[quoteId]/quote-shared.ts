@@ -7,6 +7,45 @@ export const FOREST = "#2C3E2D";
 export const GOLD = "#B8962E";
 export const CREAM = "#FAF7F2";
 
+/**
+ * Quote / booking client copy on CREAM (#FAF7F2): WCAG-friendly greens (no washed-out hex+opacity).
+ * - FOREST_BODY: secondary paragraphs, list text (~7:1 on cream).
+ * - FOREST_MUTED: captions, helper lines (~5.5:1 on cream).
+ */
+export const FOREST_BODY = "#3E4D40";
+export const FOREST_MUTED = "#5A6B5E";
+
+/** Hero (wine) subtitle & meta — solid tints read better than 50% white */
+export const HERO_SUBTITLE = "rgba(255,255,255,0.92)";
+export const HERO_META_LABEL = "rgba(255,255,255,0.82)";
+export const HERO_META_VALUE = "#FFFFFF";
+
+/** Uppercase section label above h2 — readable size on cream */
+export const QUOTE_EYEBROW_CLASS =
+  "text-[11px] font-bold tracking-[0.12em] uppercase";
+
+/** Main section titles in quote / booking flow */
+export const QUOTE_SECTION_H2_CLASS =
+  "font-hero text-2xl md:text-[1.75rem] leading-snug tracking-tight";
+
+/** Pricing / investment summary (receipt-style) */
+export const QUOTE_PANEL_RECEIPT =
+  "rounded-none border border-[#2C3E2D]/16 bg-white py-5 px-4 sm:px-6 shadow-[0_2px_12px_rgba(44,62,45,0.07)]";
+/** Signature / legal commitment */
+export const QUOTE_PANEL_SIGNATURE =
+  "rounded-none border-2 border-[#5C1A33]/22 bg-[#FFFCFB] px-4 py-6 sm:px-6 sm:py-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]";
+
+/** Client-facing arrival window: coordinator window first, then legacy preferred time. */
+export function quoteArrivalTimeWindowLabel(quote: {
+  arrival_window?: string | null;
+  preferred_time?: string | null;
+}): string | null {
+  const w = quote.arrival_window?.trim();
+  if (w) return w;
+  const t = quote.preferred_time?.trim();
+  return t || null;
+}
+
 /* ─── Types ──────────────────────────────────── */
 
 /** Single feature entry used by both tier card bullets and the 'Your Move Includes' section. */
@@ -70,6 +109,8 @@ export interface Quote {
   to_access: string | null;
   move_date: string | null;
   preferred_time: string | null;
+  /** Arrival window label from quote creation (e.g. "Morning (8:00 AM – 10:00 AM)"). */
+  arrival_window?: string | null;
   move_size: string | null;
   tiers: Record<string, TierData> | null;
   custom_price: number | null;
@@ -175,9 +216,9 @@ export const TIER_META: ResidentialQuoteTierMetaMap = {
     label: TIER_LABELS.signature,
     tagline: "A fully managed move, where everything is handled before you have to think about it.",
     badge: "RECOMMENDED",
-    accent: GOLD,
+    accent: WINE,
     bg: "#FFFDF8",
-    border: GOLD,
+    border: `${WINE}45`,
     footer: "Best for: complete home moves where time, flow, and peace of mind matter.",
     inclusionsIntro: "Everything in Essential, plus:",
   },

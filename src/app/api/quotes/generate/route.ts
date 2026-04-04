@@ -86,6 +86,10 @@ interface QuoteInput {
   from_access?: string;
   to_access?: string;
   move_date: string;
+  /** Coordinator time input (legacy / supplemental). */
+  preferred_time?: string;
+  /** Coordinator arrival window label from quote form (e.g. morning band). */
+  arrival_window?: string;
   move_size?: string;
   specialty_items?: { type: string; qty: number }[];
   selected_addons?: AddonSelection[];
@@ -3625,6 +3629,8 @@ export async function POST(req: NextRequest) {
       to_address: input.to_address,
       to_access: input.to_access || null,
       move_date: input.move_date,
+      preferred_time: input.preferred_time?.trim() || null,
+      arrival_window: input.arrival_window?.trim() || null,
       move_size: input.move_size || null,
       distance_km: distInfo?.distance_km ?? null,
       drive_time_min: distInfo?.drive_time_min ?? null,

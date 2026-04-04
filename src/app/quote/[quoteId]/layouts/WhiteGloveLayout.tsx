@@ -3,7 +3,6 @@ import {
   type Quote,
   WINE,
   FOREST,
-  GOLD,
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
@@ -75,7 +74,7 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
               {declaredValue != null && (
                 <span
                   className="text-[10px] font-bold tracking-wide px-3 py-1 rounded-full"
-                  style={{ backgroundColor: `${GOLD}12`, color: GOLD }}
+                  style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
                 >
                   Declared Value: {fmtPrice(declaredValue)}
                 </span>
@@ -107,14 +106,14 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
             return (
               <div key={i} className="flex items-start gap-4">
                 <div className="flex flex-col items-center shrink-0">
-                  <Icon className="w-[18px] h-[18px] mt-0.5" style={{ color: i === 4 ? GOLD : WINE }} aria-hidden />
+                  <Icon className="w-[18px] h-[18px] mt-0.5" style={{ color: i === 4 ? FOREST : WINE }} aria-hidden />
                   {i < PROTOCOL_STEPS.length - 1 && (
                     <div className="w-px h-6 mt-2" style={{ backgroundColor: `${WINE}15` }} aria-hidden />
                   )}
                 </div>
                 <div className="pt-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold" style={{ color: GOLD }}>
+                    <span className="text-[10px] font-bold" style={{ color: FOREST }}>
                       Step {i + 1}
                     </span>
                     <span className="text-[13px] font-semibold" style={{ color: FOREST }}>
@@ -145,9 +144,9 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
       {/* Price card */}
       <div
         className="bg-white rounded-2xl border-2 shadow-sm p-6 md:p-8 text-center"
-        style={{ borderColor: GOLD }}
+        style={{ borderColor: FOREST }}
       >
-        <p className="text-[11px] font-semibold tracking-wider uppercase mb-2" style={{ color: GOLD }}>
+        <p className="text-[11px] font-semibold tracking-wider uppercase mb-2" style={{ color: FOREST }}>
           WHITE GLOVE SERVICE
         </p>
         {(weightSurcharge > 0 || truckBreakdown) && (
@@ -175,10 +174,10 @@ export default function WhiteGloveLayout({ quote, onConfirm, confirmed }: Props)
         <button
           type="button"
           onClick={onConfirm}
-          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
+          className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${
             confirmed ? "opacity-80" : ""
           }`}
-          style={{ backgroundColor: confirmed ? FOREST : WINE }}
+          style={{ backgroundColor: FOREST }}
         >
           {confirmed ? (
             <span className="flex items-center justify-center gap-2">

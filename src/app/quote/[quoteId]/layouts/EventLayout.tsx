@@ -4,7 +4,6 @@ import {
   type Quote,
   WINE,
   FOREST,
-  GOLD,
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
@@ -88,7 +87,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
               {eventName && (
                 <span
                   className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+                  style={{ backgroundColor: `${FOREST}15`, color: FOREST }}
                 >
                   {eventName}
                 </span>
@@ -117,7 +116,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
         <div className="pt-4 border-t border-[var(--brd)]/30 space-y-4">
           {isMulti ? (
             eventLegs.map((leg, idx) => (
-              <div key={idx} className="rounded-xl border p-3" style={{ borderColor: `${GOLD}30` }}>
+              <div key={idx} className="rounded-xl border p-3" style={{ borderColor: `${FOREST}30` }}>
                 <p className="text-[9px] font-bold tracking-[0.14em] uppercase mb-2 flex flex-wrap items-center gap-2" style={{ color: WINE }}>
                   <span>{leg.label || `Event ${idx + 1}`}</span>
                   {leg.is_on_site ? (
@@ -131,7 +130,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                     <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Origin</p>
                     <p className="text-[11px] font-medium" style={{ color: FOREST }}>{leg.from_address}</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
+                  <ArrowRight className="w-4 h-4 shrink-0" style={{ color: FOREST }} />
                   <div className="flex-1 min-w-0 text-right">
                     <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Venue</p>
                     <p className="text-[11px] font-medium" style={{ color: FOREST }}>{leg.to_address}</p>
@@ -154,7 +153,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                   </div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 shrink-0" style={{ color: GOLD }} />
+              <ArrowRight className="w-4 h-4 shrink-0" style={{ color: FOREST }} />
               <div className="flex-1 min-w-0 text-right">
                 <div className="flex items-start gap-2 justify-end">
                   <div>
@@ -170,8 +169,8 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
       </div>
 
       {/* Phase breakdown */}
-      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: `${GOLD}40` }}>
-        <div className="px-5 py-3.5 border-b" style={{ backgroundColor: `${GOLD}08`, borderColor: `${GOLD}25` }}>
+      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden" style={{ borderColor: `${FOREST}40` }}>
+        <div className="px-5 py-3.5 border-b" style={{ backgroundColor: `${FOREST}08`, borderColor: `${FOREST}25` }}>
           <h2 className="admin-section-h2" style={{ color: WINE }}>
             Service Breakdown
           </h2>
@@ -215,8 +214,8 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: GOLD }}>S</div>
-                        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: GOLD }}>Setup (program)</span>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: FOREST }}>S</div>
+                        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: FOREST }}>Setup (program)</span>
                       </div>
                       <div className="pl-7 text-[10px]" style={{ color: `${FOREST}60` }}>
                         {(f.setup_label as string) ?? "On-site setup service"}
@@ -256,8 +255,8 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: GOLD }}>S</div>
-                        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: GOLD }}>Setup at Venue</span>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: FOREST }}>S</div>
+                        <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: FOREST }}>Setup at Venue</span>
                       </div>
                       <div className="pl-7 text-[10px]" style={{ color: `${FOREST}60` }}>
                         {(f.setup_label as string) ?? "On-site setup service"}
@@ -318,8 +317,8 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
       </div>
 
       {/* Investment summary */}
-      <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: GOLD }}>
-        <div className="px-5 py-4 border-b" style={{ backgroundColor: `${GOLD}08`, borderColor: "#E2DDD5" }}>
+      <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: FOREST }}>
+        <div className="px-5 py-4 border-b" style={{ backgroundColor: `${FOREST}08`, borderColor: "#E2DDD5" }}>
           <h2 className="font-heading text-[13px] font-bold tracking-wider uppercase" style={{ color: WINE }}>
             Investment Summary
           </h2>
@@ -369,7 +368,7 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
               )}
             </tbody>
           </table>
-          <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${GOLD}30` }}>
+          <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${FOREST}30` }}>
             <p className="font-hero text-[36px] md:text-[44px]" style={{ color: WINE }}>
               {fmtPrice(price)}
             </p>
@@ -379,8 +378,8 @@ export default function EventLayout({ quote, onConfirm, confirmed }: Props) {
             <button
               type="button"
               onClick={onConfirm}
-              className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${confirmed ? "opacity-80" : ""}`}
-              style={{ backgroundColor: confirmed ? FOREST : GOLD }}
+              className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${confirmed ? "opacity-80" : ""}`}
+              style={{ backgroundColor: FOREST }}
             >
               {confirmed ? (
                 <span className="flex items-center justify-center gap-2">

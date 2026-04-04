@@ -4,7 +4,6 @@ import { useMemo } from "react";
 
 const WINE = "#5C1A33";
 const FOREST = "#2C3E2D";
-const GOLD = "#B8962E";
 const CREAM = "#FAF7F2";
 
 /**
@@ -52,10 +51,13 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
     return (
       <div
         style={{
-          borderRadius: 12,
-          padding: "12px 14px",
-          background: `${GOLD}08`,
-          border: `1.5px solid ${GOLD}20`,
+          borderRadius: 0,
+          padding: "14px 16px",
+          background: `${FOREST}04`,
+          borderLeft: `3px solid ${FOREST}`,
+          borderTop: `1px solid ${FOREST}10`,
+          borderRight: `1px solid ${FOREST}10`,
+          borderBottom: `1px solid ${FOREST}10`,
         }}
       >
         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: FOREST, opacity: 0.5, margin: "0 0 8px" }}>
@@ -77,7 +79,7 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
                   borderRadius: 3,
                   border: "none",
                   background: isSelected
-                    ? GOLD
+                    ? FOREST
                     : isPeak
                     ? `${WINE}30`
                     : isPast
@@ -86,7 +88,7 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
                   cursor: onSelectMonth ? "pointer" : "default",
                   opacity: isPast ? 0.4 : 1,
                   transition: "all 0.15s",
-                  outline: isSelected ? `2px solid ${GOLD}` : "none",
+                  outline: isSelected ? `2px solid ${FOREST}` : "none",
                 }}
               />
             );
@@ -122,8 +124,8 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
           </h3>
         </div>
         {cheapestMonth && (
-          <div style={{ background: `${GOLD}15`, borderRadius: 8, padding: "4px 10px", textAlign: "center" }}>
-            <p style={{ fontSize: 9, color: GOLD, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", margin: "0 0 1px" }}>Cheapest</p>
+          <div style={{ background: `${FOREST}15`, borderRadius: 8, padding: "4px 10px", textAlign: "center" }}>
+            <p style={{ fontSize: 9, color: FOREST, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", margin: "0 0 1px" }}>Cheapest</p>
             <p style={{ fontSize: 13, fontWeight: 700, color: WINE, margin: 0 }}>{MONTH_NAMES[cheapestMonth.month - 1]}</p>
           </div>
         )}
@@ -147,7 +149,7 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
                   borderRadius: 4,
                   border: "none",
                   background: isSelected
-                    ? GOLD
+                    ? FOREST
                     : isCheapest
                     ? `${FOREST}40`
                     : isPeak
@@ -158,7 +160,7 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
                   cursor: onSelectMonth ? "pointer" : "default",
                   opacity: isPast ? 0.4 : 1,
                   transition: "all 0.15s",
-                  outline: isSelected ? `2px solid ${GOLD}` : "none",
+                  outline: isSelected ? `2px solid ${FOREST}` : "none",
                   position: "relative",
                 }}
               />
@@ -190,7 +192,7 @@ export default function SeasonalPricingPreview({ basePrice = 1200, selectedMonth
         </div>
         {selectedMonth && (
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 2, background: GOLD }} />
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: FOREST }} />
             <span style={{ fontSize: 10, color: FOREST, opacity: 0.6 }}>Selected</span>
           </div>
         )}

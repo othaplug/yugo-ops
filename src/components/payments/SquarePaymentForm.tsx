@@ -3,10 +3,14 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Script from "next/script";
 import { Lock } from "@phosphor-icons/react";
-
-const WINE = "#5C1A33";
-const FOREST = "#2C3E2D";
-const GOLD = "#B8962E";
+import {
+  WINE,
+  FOREST,
+  FOREST_BODY,
+  FOREST_MUTED,
+  QUOTE_EYEBROW_CLASS,
+  QUOTE_SECTION_H2_CLASS,
+} from "@/app/quote/[quoteId]/quote-shared";
 
 // Square’s current Web Payments SDK (use CDN; legacy web.squareup.com can hang or fail)
 const SQUARE_SDK_SANDBOX = "https://sandbox.web.squarecdn.com/v1/square.js";
@@ -221,21 +225,23 @@ export default function SquarePaymentForm({
         }}
       />
 
-      {/* Amount display */}
-      <div className="text-center py-3">
-        <p className="text-[11px] font-semibold tracking-wider uppercase" style={{ color: FOREST }}>
+      {/* Amount display — receipt-style row */}
+      <div className="flex items-baseline justify-between gap-4 py-2">
+        <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: FOREST_MUTED }}>
           {amountHeading}
-        </p>
-        <p className="font-hero text-[36px] mt-1" style={{ color: WINE }}>
+        </span>
+        <span className={`${QUOTE_SECTION_H2_CLASS} font-bold tabular-nums text-right`} style={{ color: WINE }}>
           {fmtPrice(amount)}
-        </p>
+        </span>
       </div>
+
+      <hr className="border-0 h-px w-full mb-4" style={{ backgroundColor: `${FOREST}10` }} />
 
       {/* Card form container */}
       <div
-        className="rounded-xl border-2 p-4 transition-colors"
+        className="rounded-none border p-4 transition-colors"
         style={{
-          borderColor: cardReady && !disabled ? GOLD : "#E2DDD5",
+          borderColor: cardReady && !disabled ? `${FOREST}22` : "#E2DDD5",
           backgroundColor: disabled ? "#F5F3EF" : "#FFFFFF",
           opacity: disabled ? 0.5 : 1,
         }}
@@ -248,9 +254,9 @@ export default function SquarePaymentForm({
           <div className="flex items-center justify-center py-6">
             <div
               className="w-5 h-5 border-2 rounded-full animate-spin"
-              style={{ borderColor: `${GOLD}30`, borderTopColor: GOLD }}
+              style={{ borderColor: `${FOREST}30`, borderTopColor: FOREST }}
             />
-            <span className="ml-2 text-[12px]" style={{ color: `${FOREST}60` }}>
+            <span className="ml-2 text-[12px]" style={{ color: FOREST_BODY }}>
               Loading payment form…
             </span>
           </div>
@@ -260,8 +266,8 @@ export default function SquarePaymentForm({
       {/* Error message */}
       {error && (
         <div
-          className="px-4 py-3 rounded-xl text-[12px] font-medium"
-          style={{ backgroundColor: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA" }}
+          className="px-4 py-3 rounded-none text-[12px] font-medium border"
+          style={{ backgroundColor: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" }}
         >
           {error}
         </div>
@@ -272,8 +278,8 @@ export default function SquarePaymentForm({
         type="button"
         onClick={handlePay}
         disabled={disabled || !cardReady || processing}
-        className="w-full py-4 rounded-xl text-[var(--text-base)] font-bold tracking-wide text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{ backgroundColor: !disabled && cardReady ? WINE : `${WINE}60` }}
+        className="w-full py-3.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-95"
+        style={{ backgroundColor: !disabled && cardReady ? FOREST : `${FOREST}55` }}
       >
         {processing ? (
           <span className="flex items-center justify-center gap-2">
@@ -290,8 +296,8 @@ export default function SquarePaymentForm({
 
       {/* Security badge */}
       <div className="flex items-center justify-center gap-2">
-        <Lock size={14} color={`${FOREST}50`} aria-hidden />
-        <span className="text-[10px]" style={{ color: `${FOREST}50` }}>
+        <Lock size={14} color={FOREST_MUTED} aria-hidden />
+        <span className="text-[11px] leading-snug" style={{ color: FOREST_MUTED }}>
           Secured by Square &middot; 256-bit encryption
         </span>
       </div>

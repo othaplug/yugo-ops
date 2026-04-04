@@ -3,7 +3,6 @@ import {
   type Quote,
   WINE,
   FOREST,
-  GOLD,
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
@@ -123,7 +122,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           <div>
             <span
               className="text-[9px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full"
-              style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+              style={{ backgroundColor: `${FOREST}15`, color: FOREST }}
             >
               {PROJECT_TYPE_LABELS[projectType] ?? toTitleCase(projectType)}
             </span>
@@ -152,7 +151,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
           )}
           {quote.move_date && (
             <div className="flex items-start gap-2">
-              <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: GOLD }} />
+              <Calendar className="w-4 h-4 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <div>
                 <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5C5853]">Target Date</p>
                 <p className="text-[12px] font-medium" style={{ color: FOREST }}>
@@ -177,7 +176,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
             <ul className="space-y-1.5 mb-3">
               {buildingReqs.map((key) => (
                 <li key={key} className="flex items-start gap-2 text-[12px]" style={{ color: FOREST }}>
-                  <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
+                  <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
                   <span>{SPECIALTY_BUILDING_LABELS[key] ?? toTitleCase(key.replace(/_/g, " "))}</span>
                 </li>
               ))}
@@ -232,7 +231,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
         <div className="grid sm:grid-cols-2 gap-2.5">
           {includes.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
-              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
+              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{item}</span>
             </div>
           ))}
@@ -240,8 +239,8 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
       </div>
 
       {/* Investment Summary */}
-      <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: GOLD }}>
-        <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${GOLD}08` }}>
+      <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: FOREST }}>
+        <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${FOREST}08` }}>
           <h2
             className="font-heading text-[13px] font-bold tracking-wider uppercase"
             style={{ color: WINE }}
@@ -264,7 +263,7 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
               </tbody>
             </table>
           )}
-          <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${GOLD}30` }}>
+          <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${FOREST}30` }}>
             <p className="font-hero text-[36px] md:text-[44px]" style={{ color: WINE }}>
               {fmtPrice(price)}
             </p>
@@ -274,10 +273,10 @@ export default function SpecialtyLayout({ quote, onConfirm, confirmed }: Props) 
             <button
               type="button"
               onClick={onConfirm}
-              className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
+              className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${
                 confirmed ? "opacity-80" : ""
               }`}
-              style={{ backgroundColor: confirmed ? FOREST : GOLD }}
+              style={{ backgroundColor: FOREST }}
             >
               {confirmed ? (
                 <span className="flex items-center justify-center gap-2">

@@ -3,7 +3,6 @@ import {
   type Quote,
   WINE,
   FOREST,
-  GOLD,
   TAX_RATE,
   fmtPrice,
   fmtShortDate,
@@ -126,7 +125,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
       {/* Price card */}
       <div
         className="bg-white rounded-2xl border-2 shadow-sm p-6 md:p-8 text-center"
-        style={{ borderColor: GOLD }}
+        style={{ borderColor: FOREST }}
       >
         <h2 className="font-hero text-[26px] mb-1" style={{ color: WINE }}>
           All-Inclusive Flat Rate
@@ -154,10 +153,10 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
         <button
           type="button"
           onClick={onConfirm}
-          className={`w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
+          className={`w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${
             confirmed ? "opacity-80" : ""
           }`}
-          style={{ backgroundColor: confirmed ? FOREST : GOLD }}
+          style={{ backgroundColor: FOREST }}
         >
           {confirmed ? (
             <span className="flex items-center justify-center gap-2">
@@ -183,7 +182,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
         <div className="grid sm:grid-cols-2 gap-2.5">
           {includes.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
-              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
+              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <span className="text-[12px] leading-snug" style={{ color: FOREST }}>
                 {item}
               </span>
@@ -205,18 +204,18 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
             <div key={i} className="text-center relative">
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2.5 text-[var(--text-base)] font-bold text-white"
-                style={{ backgroundColor: i === 0 ? WINE : i === 3 ? FOREST : GOLD }}
+                style={{ backgroundColor: i === 0 ? WINE : i === 3 ? FOREST : FOREST }}
               >
                 {i + 1}
               </div>
               {i < phases.length - 1 && (
                 <div
                   className="hidden md:block absolute top-5 left-[calc(50%+24px)] right-[calc(-50%+24px)] h-px"
-                  style={{ backgroundColor: `${GOLD}40` }}
+                  style={{ backgroundColor: `${FOREST}40` }}
                 >
                   <ArrowRight
                     className="w-3 h-3 absolute -right-1.5 -top-1.5"
-                    style={{ color: `${GOLD}60` }}
+                    style={{ color: `${FOREST}60` }}
                   />
                 </div>
               )}
@@ -226,7 +225,7 @@ export default function LongDistanceLayout({ quote, onConfirm, confirmed }: Prop
               <p className="text-[10px] leading-snug mb-1" style={{ color: `${FOREST}60` }}>
                 {phase.desc}
               </p>
-              <p className="text-[10px] font-semibold" style={{ color: GOLD }}>
+              <p className="text-[10px] font-semibold" style={{ color: FOREST }}>
                 {phase.date}
               </p>
             </div>

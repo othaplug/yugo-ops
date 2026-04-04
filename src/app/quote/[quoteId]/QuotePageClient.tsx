@@ -1,6 +1,6 @@
-"use client";// Design and palette (wine, forest, gold, cream) are the source of truth for all client-facing UI. Do not change.
+"use client";// Design and palette (wine, forest, cream) are the source of truth for all client-facing UI. Do not change.
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect, Fragment } from "react";
 import SchedulingAlternativesCard from "./SchedulingAlternativesCard";
 import SeasonalPricingPreview from "@/components/SeasonalPricingPreview";
 import {
@@ -24,8 +24,14 @@ import {
   TAX_RATE,
   WINE,
   FOREST,
-  GOLD,
+  FOREST_BODY,
+  FOREST_MUTED,
   CREAM,
+  HERO_SUBTITLE,
+  HERO_META_LABEL,
+  HERO_META_VALUE,
+  QUOTE_EYEBROW_CLASS,
+  QUOTE_SECTION_H2_CLASS,
   type ResidentialQuoteTierMetaMap,
   HERO_CONFIG,
   SERVICE_LABEL,
@@ -33,6 +39,7 @@ import {
   fmtPrice,
   fmtPricePerLb,
   fmtDate,
+  quoteArrivalTimeWindowLabel,
   expiresLabel,
   expiresValue,
   calculateDeposit,
@@ -638,6 +645,7 @@ export default function QuotePageClient({
       toAccess: quote.to_access,
       moveDate: quote.move_date,
       preferredTime: quote.preferred_time ?? null,
+      arrivalTimeWindow: quoteArrivalTimeWindowLabel(quote),
       moveSize: quote.move_size,
       distanceKm: quote.distance_km,
       driveTimeMin: quote.drive_time_min,
@@ -687,6 +695,7 @@ export default function QuotePageClient({
     quote.to_access,
     quote.move_date,
     quote.preferred_time,
+    quote.arrival_window,
     quote.move_size,
     quote.distance_km,
     quote.drive_time_min,
@@ -911,7 +920,7 @@ export default function QuotePageClient({
       {expiringSoon && (
         <div
           className="sticky top-0 z-50 px-4 py-2.5 text-center text-[13px] font-medium"
-          style={{ backgroundColor: "#FFF8E1", color: "#8B6914", borderBottom: `1px solid ${GOLD}33` }}
+          style={{ backgroundColor: "#FFF8E1", color: "#8B6914", borderBottom: `1px solid ${FOREST}33` }}
         >
           <Clock className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
           This quote expires on {expiryDateStr}. Book now to secure your rate.
@@ -921,41 +930,44 @@ export default function QuotePageClient({
       <header className="relative overflow-hidden" style={{ backgroundColor: WINE }}>
         <div
           className="absolute inset-0 opacity-10"
-          style={{
+            style={{
             backgroundImage:
-              "radial-gradient(circle at 20% 50%, #B8962E 0%, transparent 50%), radial-gradient(circle at 80% 50%, #B8962E 0%, transparent 50%)",
+              "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.14) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(255,255,255,0.12) 0%, transparent 50%)",
           }}
         />
         <div className="relative max-w-3xl mx-auto px-5 py-12 md:py-16 text-center">
           <div className="flex justify-center mb-2">
             <YugoLogo size={36} variant="cream" />
           </div>
-          <div className="w-12 h-px mx-auto mb-6" style={{ backgroundColor: GOLD }} />
+          <div className="w-12 h-px mx-auto mb-6 bg-white/30" />
           <h1 className="font-hero text-[30px] md:text-[36px] text-white leading-snug mb-3">
             {hero.headline}
           </h1>
-          <p className="text-[var(--text-base)] text-white/70 max-w-md mx-auto leading-relaxed">
+          <p
+            className="max-w-md mx-auto text-[15px] md:text-[16px] leading-relaxed font-medium"
+            style={{ color: HERO_SUBTITLE }}
+          >
             {hero.subtitle}
           </p>
 
-          {/* Quote badge */}
-          <div className="mt-8 inline-flex items-center gap-4 px-6 py-3 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm">
-            <div className="text-left">
-              <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
+          {/* Quote meta (no chrome box) */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+            <div className="text-left min-w-0">
+              <p className="text-[11px] font-semibold tracking-[0.14em] uppercase" style={{ color: HERO_META_LABEL }}>
                 Your quote
               </p>
-              <p className="text-[13px] font-semibold text-white">
+              <p className="text-[14px] font-semibold" style={{ color: HERO_META_VALUE }}>
                 {SERVICE_LABEL[quote.service_type] ??
                   getDisplayLabel(quote.service_type, "service_type") ??
                   "Personalized estimate"}
               </p>
             </div>
-            <div className="w-px h-8 bg-white/20" />
-            <div className="text-left">
-              <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
+            <div className="hidden sm:block w-px h-8 shrink-0 bg-white/20" aria-hidden />
+            <div className="text-left min-w-0">
+              <p className="text-[11px] font-semibold tracking-[0.14em] uppercase" style={{ color: HERO_META_LABEL }}>
                 {dateLabel}
               </p>
-              <p className="text-[13px] font-semibold text-white">
+              <p className="text-[14px] font-semibold" style={{ color: HERO_META_VALUE }}>
                 {quote.move_date
                   ? new Date(quote.move_date + "T00:00:00").toLocaleDateString("en-CA", {
                       month: "short",
@@ -967,12 +979,12 @@ export default function QuotePageClient({
             </div>
             {quote.expires_at && (
               <>
-                <div className="w-px h-8 bg-white/20" />
-                <div className="text-left">
-                  <p className="text-[9px] font-semibold tracking-widest uppercase text-white/50">
+                <div className="hidden sm:block w-px h-8 shrink-0 bg-white/20" aria-hidden />
+                <div className="text-left min-w-0">
+                  <p className="text-[11px] font-semibold tracking-[0.14em] uppercase" style={{ color: HERO_META_LABEL }}>
                     Valid
                   </p>
-                  <p className="text-[13px] font-semibold text-white">
+                  <p className="text-[14px] font-semibold" style={{ color: HERO_META_VALUE }}>
                     {expiresValue(quote.expires_at)}
                   </p>
                 </div>
@@ -992,19 +1004,19 @@ export default function QuotePageClient({
           className={`mb-8 py-3 ${currentStep >= 2 && !booked ? "mt-3" : "mt-4"}`}
           style={{ backgroundColor: CREAM }}
         >
-          <div className="flex justify-center w-full min-w-0 px-1 sm:px-0">
+          <div className="w-full min-w-0 px-1 sm:px-0">
             <div
-              className="box-border w-full min-w-0 max-w-full rounded-xl px-4 py-3.5 text-center shadow-sm sm:inline-block sm:w-fit sm:max-w-none sm:px-6 sm:text-left"
+              className="box-border w-full min-w-0 max-w-full rounded-none px-4 py-3.5 text-center sm:px-5 border-t-2"
               style={{
-                backgroundColor: "#FFFDF8",
-                border: `1px solid ${GOLD}60`,
+                backgroundColor: `${FOREST}05`,
+                borderTopColor: FOREST,
               }}
             >
-              <div className="min-w-0">
-                <p className="text-[12px] font-bold tracking-wider uppercase sm:text-[13px]" style={{ color: GOLD }}>
+              <div className="min-w-0 max-w-2xl mx-auto">
+                <p className="text-[12px] font-bold tracking-wider uppercase sm:text-[13px]" style={{ color: FOREST }}>
                   Guaranteed Price
                 </p>
-                <p className="text-[11px] leading-snug sm:text-[12px]" style={{ color: `${FOREST}90` }}>
+                <p className="text-[11px] leading-snug sm:text-[12px]" style={{ color: FOREST }}>
                   The price you see is the price you pay. No hourly surprises. No hidden fees.
                 </p>
               </div>
@@ -1220,15 +1232,15 @@ export default function QuotePageClient({
                   type="button"
                   onClick={handleBack}
                   className="text-[12px] font-medium mb-4 transition-opacity hover:opacity-70 flex items-center gap-1"
-                  style={{ color: `${FOREST}60` }}
+                  style={{ color: FOREST_BODY }}
                 >
                   ← Back
                 </button>
               )}
               {isResidential && selectedTier === "estate" && (
                 <div
-                  className="mb-4 rounded-xl border p-4 space-y-1.5 text-[11px] leading-snug"
-                  style={{ color: `${FOREST}90`, backgroundColor: `${GOLD}10`, borderColor: `${GOLD}38` }}
+                  className="mb-4 rounded-none px-4 py-3.5 space-y-1.5 text-[11px] leading-snug text-center border-t-2 max-w-2xl mx-auto"
+                  style={{ color: FOREST, backgroundColor: `${FOREST}04`, borderTopColor: FOREST }}
                 >
                   <p className="font-bold text-[12px]" style={{ color: FOREST }}>
                     {ESTATE_ADDON_UI_LINES[0]}
@@ -1273,7 +1285,7 @@ export default function QuotePageClient({
                 type="button"
                 onClick={handleBack}
                 className="text-[12px] font-medium mb-4 transition-opacity hover:opacity-70 flex items-center gap-1"
-                style={{ color: `${FOREST}60` }}
+                style={{ color: FOREST_BODY }}
               >
                 ← Back
               </button>
@@ -1295,10 +1307,10 @@ export default function QuotePageClient({
                 <button
                   type="button"
                   onClick={handleProtectionComplete}
-                  className="w-full md:w-auto px-8 py-3 rounded-xl text-[13px] font-bold text-white transition-all"
-                  style={{ backgroundColor: GOLD }}
+                  className="w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: FOREST }}
                 >
-                  Continue →
+                  Continue
                 </button>
               </div>
             )}
@@ -1313,7 +1325,7 @@ export default function QuotePageClient({
                 type="button"
                 onClick={handleBack}
                 className="text-[12px] font-medium mb-4 transition-opacity hover:opacity-70 flex items-center gap-1"
-                style={{ color: `${FOREST}60` }}
+                style={{ color: FOREST_BODY }}
               >
                 ← Back
               </button>
@@ -1323,19 +1335,10 @@ export default function QuotePageClient({
                 quote={quoteForDisplay}
                 selectedTier={selectedTier}
                 packageLabel={packageLabel}
-                basePrice={basePrice}
-                addonTotal={addonTotal}
                 contractAddonsList={contractAddonsList}
-                valuationCost={valuationCost}
-                tax={tax}
-                grandTotal={grandTotal}
-                deposit={deposit}
-                referralDiscountAmt={referralDiscountAmt}
+                addonTotal={addonTotal}
                 valuationUpgradeSelected={valuationUpgradeSelected}
                 includedValuation={includedValuation}
-                onProceedToPayment={handleConfirmComplete}
-                isProgressive={isResidential}
-                currentStep={currentStep}
                 selectedAddons={selectedAddons}
                 pickupRows={clientPickupRows}
                 dropoffRows={clientDropoffRows}
@@ -1343,26 +1346,26 @@ export default function QuotePageClient({
             )}
             {/* Referral code, for residential, inside confirm; for non-residential, standalone */}
             {(!isResidential || currentStep >= 4) && (
-              <div className="mb-6 rounded-xl p-5 border" style={{ borderColor: `${GOLD}40`, backgroundColor: "#FFFDF8" }}>
-                <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: FOREST }}>
+              <div className="mb-6 px-4 py-3.5" style={{ backgroundColor: `${FOREST}06` }}>
+                <p className={`${QUOTE_EYEBROW_CLASS} mb-3`} style={{ color: FOREST_MUTED }}>
                   Have a referral code?
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                   <input
                     value={referralCode}
                     onChange={(e) => { setReferralCode(e.target.value.toUpperCase()); setReferralMsg(""); }}
                     placeholder="YUGO-NAME-XXXX"
                     disabled={referralVerified}
-                    className="flex-1 px-3 py-2 rounded-lg border text-[12px] font-mono focus:outline-none text-[#2C3E2D] placeholder:text-[#5D6B5E]"
-                    style={{ borderColor: referralVerified ? "#2D9F5A" : `${GOLD}60`, background: referralVerified ? "#F0FFF4" : "white" }}
+                    className="flex-1 min-w-[12rem] px-3 py-2.5 rounded-none border text-[12px] font-mono focus:outline-none text-[#2C3E2D] placeholder:text-[#5D6B5E]"
+                    style={{ borderColor: referralVerified ? "#2D9F5A" : `${FOREST}20`, background: referralVerified ? "#F0FFF4" : "white" }}
                   />
                   {!referralVerified && (
                     <button
                       type="button"
                       onClick={verifyReferral}
                       disabled={!referralCode.trim()}
-                      className="px-4 py-2 rounded-lg text-[11px] font-semibold disabled:opacity-50"
-                      style={{ background: GOLD, color: "#1A1714" }}
+                      className="px-5 py-2.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] disabled:opacity-50 transition-opacity"
+                      style={{ background: FOREST, color: "white" }}
                     >
                       Apply
                     </button>
@@ -1382,10 +1385,10 @@ export default function QuotePageClient({
                 <button
                   type="button"
                   onClick={handleConfirmComplete}
-                  className="w-full md:w-auto px-8 py-3 rounded-xl text-[13px] font-bold text-white transition-all"
-                  style={{ backgroundColor: GOLD }}
+                  className="w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: FOREST }}
                 >
-                  Proceed to Payment →
+                  Proceed to payment
                 </button>
               </div>
             )}
@@ -1400,7 +1403,7 @@ export default function QuotePageClient({
                 <p className="text-[13px] font-bold" style={{ color: FOREST }}>
                   360+ Reviews
                 </p>
-                <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
+                <p className="text-[12px] leading-snug" style={{ color: FOREST_BODY }}>
                   5-star rated on Google
                 </p>
               </div>
@@ -1408,7 +1411,7 @@ export default function QuotePageClient({
                 <p className="text-[13px] font-bold" style={{ color: FOREST }}>
                   $2M Insurance
                 </p>
-                <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
+                <p className="text-[12px] leading-snug" style={{ color: FOREST_BODY }}>
                   Full cargo coverage
                 </p>
               </div>
@@ -1416,13 +1419,13 @@ export default function QuotePageClient({
                 <p className="text-[13px] font-bold" style={{ color: FOREST }}>
                   Flat-Rate Guarantee
                 </p>
-                <p className="text-[10px]" style={{ color: `${FOREST}60` }}>
+                <p className="text-[12px] leading-snug" style={{ color: FOREST_BODY }}>
                   No hidden fees on quoted scope.
                 </p>
               </div>
             </div>
             <div className="mt-4 pt-3 text-center border-t border-[var(--brd)]/30">
-              <p className="text-[11px] font-medium" style={{ color: `${FOREST}60` }}>
+              <p className="text-[11px] font-medium" style={{ color: FOREST_BODY }}>
                 {isB2BDeliveryQuoteServiceType(quote.service_type)
                   ? "Trusted By Leading Toronto Businesses"
                   : "Trusted By Leading Toronto Businesses And Homeowners"}
@@ -1449,9 +1452,12 @@ export default function QuotePageClient({
         {/* ═══ SECTION 5: AGREEMENT + PAYMENT ═══ */}
         {((isResidential && currentStep >= 5) || (!isResidential && isConfirmed)) && !booked && (
           <section ref={paymentRef} className="mb-10 pt-6 border-t border-[var(--brd)]/30 scroll-mt-6">
-            <h2 className="font-hero text-[26px] md:text-[30px] mb-4" style={{ color: FOREST }}>
-              Review &amp; Book
+            <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-2 text-center`} style={{ color: WINE }}>
+              Review &amp; book
             </h2>
+            <p className="text-[12px] leading-relaxed mb-6 max-w-xl mx-auto text-center" style={{ color: FOREST_BODY }}>
+              Review the agreement below and sign with your full legal name. Payment or invoice confirmation is the next step when your quote requires it.
+            </p>
             <div ref={contractRef}>
             <ContractSign
               quoteData={contractData}
@@ -1480,45 +1486,31 @@ export default function QuotePageClient({
 
         {/* ═══ PAYMENT (inside Section 5, after contract signed) ═══ */}
         {((isResidential && currentStep >= 5) || (!isResidential && isConfirmed)) && contractSigned && !booked && (
-          <section className="mb-10">
-            <div className="bg-white rounded-2xl border border-[#E2DDD5] shadow-sm overflow-hidden">
-              {quoteBookingLocked && (
-                <div
-                  className="px-5 py-3 text-[12px] font-medium border-b border-[#E2DDD5]"
-                  style={{ backgroundColor: "#FFF4E5", color: "#8B4513" }}
-                  role="status"
-                >
-                  This quote has expired. Refresh the page or contact us for a new quote — payment is disabled.
-                </div>
-              )}
-              <div
-                className="px-5 py-4 border-b border-[#E2DDD5]"
-                style={{ backgroundColor: `${FOREST}06` }}
-              >
-                <h2
-                  className="font-heading text-[var(--text-base)] font-bold tracking-wider uppercase"
-                  style={{ color: FOREST }}
-                >
-                  {b2bInvoiceBooking ? "INVOICE (NET 30)" : "PAYMENT"}
-                </h2>
-                <p className="text-[11px] mt-0.5" style={{ color: `${FOREST}70` }}>
-                  {b2bInvoiceBooking
-                    ? "No card required. We will email an invoice; payment is due within 30 days of the invoice date."
-                    : binRentalBooking
-                      ? "Full payment confirms your rental. Your card stays on file for any late or missing-item fees."
-                      : isB2BDeliveryQuoteServiceType(quote.service_type)
-                        ? "Full payment (including HST) is required to confirm this commercial delivery booking."
-                        : "Complete your booking with a secure deposit payment."}
-                </p>
+          <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
+            {quoteBookingLocked && (
+              <div className="mb-5 px-4 py-3 text-[12px] font-medium" style={{ backgroundColor: "#FFF4E5", color: "#8B4513" }} role="status">
+                This quote has expired. Refresh the page or contact us for a new quote — payment is disabled.
               </div>
-              <div className="p-5 md:p-6">
+            )}
+            <div className="mb-6">
+              <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-2 text-center`} style={{ color: WINE }}>
+                {b2bInvoiceBooking ? "Invoice (Net 30)" : "Payment"}
+              </h2>
+              <p className="text-[12px] leading-relaxed max-w-xl mx-auto text-center" style={{ color: FOREST_BODY }}>
+                {b2bInvoiceBooking
+                  ? "No card required. We will email an invoice; payment is due within 30 days of the invoice date."
+                  : binRentalBooking
+                    ? "Full payment confirms your rental. Your card stays on file for any late or missing-item fees."
+                    : isB2BDeliveryQuoteServiceType(quote.service_type)
+                      ? "Full payment (including HST) is required to confirm this commercial delivery booking."
+                      : "Complete your booking with a secure deposit payment."}
+              </p>
+            </div>
+            <div>
                 {b2bInvoiceBooking ? (
                   <div className="space-y-4">
-                    <div
-                      className="rounded-xl border p-4 text-[12px] leading-relaxed"
-                      style={{ borderColor: `${FOREST}25`, backgroundColor: `${FOREST}06`, color: `${FOREST}90` }}
-                    >
-                      <p className="font-semibold mb-2" style={{ color: FOREST }}>
+                    <div className="text-[12px] leading-relaxed space-y-2 pb-2" style={{ color: FOREST_BODY }}>
+                      <p className="font-semibold text-[11px] uppercase tracking-[0.1em]" style={{ color: FOREST_MUTED }}>
                         Payment terms
                       </p>
                       <ul className="list-disc pl-4 space-y-1">
@@ -1543,7 +1535,7 @@ export default function QuotePageClient({
                         !(contactEmail ?? "").trim()
                       }
                       onClick={() => void handleB2bInvoiceConfirm()}
-                      className="w-full py-3.5 rounded-xl font-bold text-[var(--text-base)] text-white transition-opacity disabled:opacity-50"
+                      className="w-full py-3.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-opacity disabled:opacity-50"
                       style={{ backgroundColor: FOREST }}
                     >
                       {invoiceConfirmLoading ? "Confirming…" : "Confirm booking (invoice)"}
@@ -1589,25 +1581,20 @@ export default function QuotePageClient({
                     }}
                   />
                 )}
-              </div>
             </div>
           </section>
         )}
 
         {/* ═══ SUCCESS STATE ═══ */}
         {booked && (
-          <section className="mb-10">
-            <div
-              className="rounded-2xl border-2 p-8 md:p-10 text-center"
-              style={{ borderColor: GOLD, backgroundColor: "#FFFDF8" }}
-            >
-              <Check className="w-7 h-7 mx-auto mb-4 block" style={{ color: GOLD }} aria-hidden />
-              <h2 className="font-hero text-[30px] mb-2" style={{ color: WINE }}>
+          <section className="mb-10 pt-8 text-center border-t border-[var(--brd)]/25">
+              <Check className="w-7 h-7 mx-auto mb-4 block" style={{ color: FOREST }} aria-hidden />
+              <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-2`} style={{ color: WINE }}>
                 You&apos;re All Set!
               </h2>
               <p
                 className="text-[var(--text-base)] max-w-sm mx-auto leading-relaxed"
-                style={{ color: `${FOREST}80` }}
+                style={{ color: FOREST }}
               >
                 {b2bInvoiceBooking ? (
                   <>
@@ -1651,7 +1638,7 @@ export default function QuotePageClient({
                 <span className="text-[11px] font-semibold" style={{ color: FOREST }}>
                   Quote {quote.quote_id}
                 </span>
-                <span className="text-[11px]" style={{ color: `${FOREST}50` }}>
+                <span className="text-[11px]" style={{ color: FOREST_MUTED }}>
                   &middot;
                 </span>
                 <span className="text-[11px]" style={{ color: FOREST }}>
@@ -1659,7 +1646,7 @@ export default function QuotePageClient({
                 </span>
               </div>
               {(paymentMoveId || deliveryTrackingUrl || b2bInvoiceBooking) && (
-                <p className="text-[12px] mt-4" style={{ color: `${FOREST}60` }}>
+                <p className="text-[12px] mt-4" style={{ color: FOREST_BODY }}>
                   A confirmation email is on its way.
                   {(paymentMoveId || deliveryTrackingUrl) && !b2bInvoiceBooking
                     ? ` You can track your ${
@@ -1681,7 +1668,7 @@ export default function QuotePageClient({
                 <div className="mt-5">
                   <a
                     href={deliveryTrackingUrl}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[13px] font-bold text-white transition-opacity hover:opacity-90 min-h-[48px]"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 min-h-[48px]"
                     style={{ backgroundColor: FOREST }}
                   >
                     Open live delivery tracking
@@ -1691,25 +1678,24 @@ export default function QuotePageClient({
               {paymentMoveId && !deliveryTrackingUrl && (
                 <SchedulingAlternativesCard
                   moveId={paymentMoveId}
-                  accentColor={GOLD}
+                  accentColor={FOREST}
                   forestColor={FOREST}
                 />
               )}
-            </div>
           </section>
         )}
 
         <footer className="py-5 text-center border-t border-[var(--brd)]/20">
           <div className="flex justify-center mb-1">
-            <YugoLogo size={14} variant="gold" onLightBackground />
+            <YugoLogo size={14} variant="wine" onLightBackground />
           </div>
-          <p className="text-[7px]" style={{ color: `${FOREST}40` }}>
+          <p className="text-[11px] font-medium tracking-wide" style={{ color: FOREST_MUTED }}>
             The Art of Moving
           </p>
-          <p className="text-[7px] mt-0.5" style={{ color: `${FOREST}30` }}>
+          <p className="text-[11px] mt-0.5" style={{ color: FOREST_MUTED }}>
             <a
               href={`mailto:${branding.email}`}
-              style={{ color: `${FOREST}55` }}
+              style={{ color: FOREST_BODY }}
               className="hover:underline min-h-[44px] inline-flex items-center justify-center"
             >
               {branding.email}
@@ -1871,21 +1857,24 @@ const InclusionsShowcase = React.forwardRef<
 
   return (
     <section ref={ref} className="mb-10 pt-6 border-t border-[var(--brd)]/30">
-      <div className="text-center mb-6">
-        <h2 className="admin-section-h2 mb-1.5">
+      <div className="text-center mb-6 max-w-xl mx-auto">
+        <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: FOREST_MUTED }}>
+          {variant === "logistics" ? "Delivery" : variant === "event" ? "Event" : "Move"} inclusions
+        </p>
+        <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-2`} style={{ color: WINE }}>
           {sectionTitle}
         </h2>
-        <p className="font-hero text-[15px] italic" style={{ color: `${FOREST}60` }}>
+        <p className="text-[12px] leading-relaxed" style={{ color: FOREST_BODY }}>
           {sectionSub}
         </p>
       </div>
 
-      <div className="w-10 h-px mx-auto mb-8" style={{ backgroundColor: GOLD }} />
+      <hr className="border-0 h-px max-w-xs mx-auto mb-8" style={{ backgroundColor: `${FOREST}12` }} />
 
       {truckPricingNote ? (
         <p
           className="text-center text-[11px] font-semibold max-w-lg mx-auto mb-6 px-2"
-          style={{ color: `${FOREST}88` }}
+          style={{ color: FOREST }}
         >
           {truckPricingNote}
         </p>
@@ -1898,7 +1887,7 @@ const InclusionsShowcase = React.forwardRef<
               <p className="text-[13px] font-semibold leading-snug" style={{ color: FOREST }}>
                 {item.title}
               </p>
-              <p className="text-[11px] mt-0.5 leading-snug" style={{ color: `${FOREST}55` }}>
+              <p className="text-[11px] mt-0.5 leading-snug" style={{ color: FOREST_BODY }}>
                 {item.desc}
               </p>
             </div>
@@ -1910,8 +1899,8 @@ const InclusionsShowcase = React.forwardRef<
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="flex w-fit mx-auto mt-6 items-center gap-1.5 text-[11px] font-semibold py-1 transition-opacity hover:opacity-70"
-          style={{ color: `${FOREST}99` }}
+          className={`flex w-fit mx-auto mt-6 items-center gap-2 ${QUOTE_EYEBROW_CLASS} py-1 transition-opacity hover:opacity-70`}
+          style={{ color: FOREST }}
         >
           {expanded ? (
             <>
@@ -1978,16 +1967,16 @@ function RoomSection({ room, defaultOpen }: { room: InvRoom; defaultOpen: boolea
         onClick={() => setOpen((v) => !v)}
         className="flex items-center justify-between w-full py-2 text-left group"
       >
-        <span className="text-[12px] font-bold" style={{ color: `${FOREST}90` }}>
+        <span className="text-[12px] font-bold" style={{ color: FOREST }}>
           {room.label}
         </span>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold" style={{ color: `${FOREST}50` }}>
+          <span className="text-[11px] font-semibold" style={{ color: FOREST_MUTED }}>
             Qty
           </span>
           <ChevronDown
             className={`w-3 h-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-            style={{ color: `${FOREST}50` }}
+            style={{ color: FOREST_MUTED }}
           />
         </div>
       </button>
@@ -1998,16 +1987,16 @@ function RoomSection({ room, defaultOpen }: { room: InvRoom; defaultOpen: boolea
             <div key={i} className="flex items-center justify-between py-0.5 pl-2">
               <span
                 className="text-[12px] flex-1 leading-snug"
-                style={{ color: item.isSpecialty ? GOLD : `${FOREST}70` }}
+                style={{ color: item.isSpecialty ? FOREST : FOREST_BODY }}
               >
                 {item.name}
                 {item.isSpecialty && (
-                  <span className="ml-1 text-[10px] font-semibold" style={{ color: GOLD }}>
+                  <span className="ml-1 text-[11px] font-semibold" style={{ color: FOREST }}>
                     (specialty handling)
                   </span>
                 )}
               </span>
-              <span className="text-[12px] font-semibold shrink-0 ml-4" style={{ color: `${FOREST}80` }}>
+              <span className="text-[12px] font-semibold shrink-0 ml-4" style={{ color: FOREST }}>
                 {item.quantity}
               </span>
             </div>
@@ -2017,7 +2006,7 @@ function RoomSection({ room, defaultOpen }: { room: InvRoom; defaultOpen: boolea
               type="button"
               onClick={() => setShowAll((v) => !v)}
               className="mt-1 pl-2 text-[11px] font-semibold"
-              style={{ color: GOLD }}
+              style={{ color: FOREST }}
             >
               {showAll
                 ? "Show less"
@@ -2030,28 +2019,31 @@ function RoomSection({ room, defaultOpen }: { room: InvRoom; defaultOpen: boolea
   );
 }
 
-function WalkthroughDetails({ quote }: { quote: Quote }) {
+function WalkthroughDetails({
+  quote,
+  embedded = false,
+}: {
+  quote: Quote;
+  /** Used under a parent “Your inventory” heading — no duplicate title or top rule */
+  embedded?: boolean;
+}) {
   const fmtDate = quote.walkthrough_date
     ? new Date(quote.walkthrough_date + "T12:00:00").toLocaleDateString("en-CA", {
         month: "long", day: "numeric", year: "numeric",
       })
     : null;
 
-  return (
-    <div className="mt-2 pt-2" style={{ borderTop: `1px dashed ${FOREST}18` }}>
-      <p className="text-[12px] font-bold mb-2" style={{ color: `${FOREST}90` }}>
-        Your Move Details
-      </p>
+  const body = (
       <div className="space-y-1 pl-1">
         {fmtDate && (
-          <p className="text-[11px]" style={{ color: `${FOREST}70` }}>
+          <p className="text-[11px]" style={{ color: FOREST_BODY }}>
             A pre-move walkthrough was conducted on{" "}
             <span className="font-semibold">{fmtDate}</span>.
             Your quote is based on the walkthrough assessment.
           </p>
         )}
         {quote.move_size && (
-          <p className="text-[11px]" style={{ color: `${FOREST}70` }}>
+          <p className="text-[11px]" style={{ color: FOREST_BODY }}>
             Move Size:{" "}
             <span className="font-semibold">
               {MOVE_SIZE_LABELS[quote.move_size] ?? getDisplayLabel(quote.move_size)}
@@ -2059,7 +2051,7 @@ function WalkthroughDetails({ quote }: { quote: Quote }) {
           </p>
         )}
         {quote.walkthrough_special_items && (
-          <p className="text-[11px]" style={{ color: `${FOREST}70` }}>
+          <p className="text-[11px]" style={{ color: FOREST_BODY }}>
             Special Items Noted:{" "}
             <span className="font-semibold">
               <SafeText fallback="See your coordinator for details.">{quote.walkthrough_special_items}</SafeText>
@@ -2067,24 +2059,44 @@ function WalkthroughDetails({ quote }: { quote: Quote }) {
           </p>
         )}
         {quote.walkthrough_notes && (
-          <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
+          <p className="text-[11px] mt-1" style={{ color: FOREST_BODY }}>
             <SafeText fallback="Notes from your walkthrough are available from your coordinator.">
               {quote.walkthrough_notes}
             </SafeText>
           </p>
         )}
       </div>
+  );
+
+  if (embedded) {
+    return body;
+  }
+
+  return (
+    <div className="mt-2 pt-2" style={{ borderTop: `1px dashed ${FOREST}18` }}>
+      <p className="text-[12px] font-bold mb-2" style={{ color: FOREST }}>
+        Your Move Details
+      </p>
+      {body}
     </div>
   );
 }
 
-function InventoryCollapsible({ quote, selectedTier, selectedAddons }: { quote: Quote; selectedTier: string; selectedAddons?: Map<string, AddonSelection> }) {
-  const isEstate = selectedTier === "estate";
-  if (!INV_SERVICE_TYPES.has(quote.service_type) || isEstate) return null;
+function InventoryCollapsible({
+  quote,
+  selectedAddons,
+  omitOuterChrome = false,
+}: {
+  quote: Quote;
+  selectedAddons?: Map<string, AddonSelection>;
+  /** Parent supplies section border + “Your inventory” label */
+  omitOuterChrome?: boolean;
+}) {
+  if (!INV_SERVICE_TYPES.has(quote.service_type)) return null;
 
   // Walkthrough-based quote: show walkthrough details instead
   if (quote.walkthrough_based) {
-    return <WalkthroughDetails quote={quote} />;
+    return <WalkthroughDetails quote={quote} embedded={omitOuterChrome} />;
   }
 
   const rawItems = (quote.inventory_items ?? []) as {
@@ -2092,7 +2104,25 @@ function InventoryCollapsible({ quote, selectedTier, selectedAddons }: { quote: 
   }[];
   const boxCount = quote.client_box_count ?? 0;
   const itemCount = rawItems.reduce((s, i) => s + (i.quantity ?? 1), 0);
-  if (itemCount === 0 && boxCount === 0) return null;
+  if (itemCount === 0 && boxCount === 0) {
+    const emptyCopy = (
+      <p className="text-[12px] leading-relaxed" style={{ color: FOREST_BODY }}>
+        No room-by-room inventory is listed on this quote yet. Your coordinator can add or update items
+        anytime.
+      </p>
+    );
+    if (omitOuterChrome) {
+      return emptyCopy;
+    }
+    return (
+      <div className="mt-2 pt-2" style={{ borderTop: `1px dashed ${FOREST}18` }}>
+        <p className="text-[13px] font-semibold tracking-tight mb-2" style={{ color: FOREST }}>
+          Your inventory
+        </p>
+        {emptyCopy}
+      </div>
+    );
+  }
 
   // Group items by room
   const roomMap: Record<string, InvItem[]> = {};
@@ -2122,13 +2152,15 @@ function InventoryCollapsible({ quote, selectedTier, selectedAddons }: { quote: 
   if (itemCount > 0) labelParts.push(`${itemCount} item${itemCount === 1 ? "" : "s"}`);
   if (boxCount > 0) labelParts.push(`${boxCount} box${boxCount === 1 ? "" : "es"}`);
 
-  return (
-    <div className="mt-2 pt-2" style={{ borderTop: `1px dashed ${FOREST}18` }}>
-      <p className="text-[12px] font-bold mb-1" style={{ color: `${FOREST}90` }}>
-        Your Inventory
-      </p>
+  const listBody = (
+    <>
+      {!omitOuterChrome && (
+        <p className="text-[13px] font-semibold tracking-tight mb-2" style={{ color: FOREST }}>
+          Your inventory
+        </p>
+      )}
       {isLargeMove && (
-        <p className="text-[11px] mb-2" style={{ color: `${FOREST}60` }}>
+        <p className="text-[11px] mb-2" style={{ color: FOREST_BODY }}>
           {labelParts.join(" + ")}
         </p>
       )}
@@ -2137,13 +2169,13 @@ function InventoryCollapsible({ quote, selectedTier, selectedAddons }: { quote: 
       {boxCount > 0 && (
         <div className="mb-1" style={{ borderBottom: `1px solid ${FOREST}10` }}>
           <div className="flex items-center justify-between py-1.5">
-            <span className="text-[12px] font-bold" style={{ color: `${FOREST}90` }}>
+            <span className="text-[12px] font-bold" style={{ color: FOREST }}>
               Containers / Boxes / Bins
             </span>
-            <span className="text-[10px] font-semibold" style={{ color: `${FOREST}50` }}>Qty</span>
+            <span className="text-[11px] font-semibold" style={{ color: FOREST_MUTED }}>Qty</span>
           </div>
           <div className="flex items-center justify-between py-0.5 pl-2 pb-1.5">
-            <span className="text-[12px]" style={{ color: `${FOREST}70` }}>
+            <span className="text-[12px]" style={{ color: FOREST_BODY }}>
               {(() => {
                 const packingSelected = selectedAddons
                   ? [...selectedAddons.values()].some((s) => s.slug === "packing_materials")
@@ -2153,7 +2185,7 @@ function InventoryCollapsible({ quote, selectedTier, selectedAddons }: { quote: 
                   : "Boxes packed & supplied by owner";
               })()}
             </span>
-            <span className="text-[12px] font-semibold ml-4" style={{ color: `${FOREST}80` }}>
+            <span className="text-[12px] font-semibold ml-4" style={{ color: FOREST }}>
               {boxCount}
             </span>
           </div>
@@ -2173,14 +2205,24 @@ function InventoryCollapsible({ quote, selectedTier, selectedAddons }: { quote: 
 
       {/* Total */}
       <div className="mt-1.5 flex items-center justify-between">
-        <span className="text-[11px] font-semibold" style={{ color: `${FOREST}60` }}>
+        <span className="text-[11px] font-semibold" style={{ color: FOREST_BODY }}>
           Total: {labelParts.join(" + ")}
         </span>
       </div>
 
-      <p className="text-[10px] mt-1.5" style={{ color: `${FOREST}50` }}>
+      <p className="text-[11px] mt-2 leading-relaxed" style={{ color: FOREST_BODY }}>
         Not right? Contact your coordinator to update.
       </p>
+    </>
+  );
+
+  if (omitOuterChrome) {
+    return listBody;
+  }
+
+  return (
+    <div className="mt-2 pt-2" style={{ borderTop: `1px dashed ${FOREST}18` }}>
+      {listBody}
     </div>
   );
 }
@@ -2193,19 +2235,10 @@ function ConfirmDetailsSection({
   quote,
   selectedTier,
   packageLabel,
-  basePrice,
-  addonTotal,
   contractAddonsList,
-  valuationCost,
-  tax,
-  grandTotal,
-  deposit,
-  referralDiscountAmt,
+  addonTotal,
   valuationUpgradeSelected,
   includedValuation,
-  onProceedToPayment,
-  isProgressive,
-  currentStep,
   selectedAddons,
   pickupRows,
   dropoffRows,
@@ -2213,19 +2246,10 @@ function ConfirmDetailsSection({
   quote: Quote;
   selectedTier: string;
   packageLabel: string;
-  basePrice: number;
-  addonTotal: number;
   contractAddonsList: ContractAddon[];
-  valuationCost: number;
-  tax: number;
-  grandTotal: number;
-  deposit: number;
-  referralDiscountAmt: number;
+  addonTotal: number;
   valuationUpgradeSelected: boolean;
   includedValuation: string;
-  onProceedToPayment: () => void;
-  isProgressive: boolean;
-  currentStep: number;
   selectedAddons: Map<string, AddonSelection>;
   pickupRows: { address: string; access: string | null }[];
   dropoffRows: { address: string; access: string | null }[];
@@ -2244,82 +2268,76 @@ function ConfirmDetailsSection({
     : "Moving truck";
   const faConfirm = quote.factors_applied as Record<string, unknown> | null;
   const truckPricingLine: string | null = null;
-  const balanceDue = grandTotal - deposit;
+  const moveSummarySegments: { key: string; node: React.ReactNode }[] = [
+    {
+      key: "plan",
+      node: (
+        <span>
+          <strong>Plan:</strong> {packageLabel}
+        </span>
+      ),
+    },
+    {
+      key: "crew",
+      node: (
+        <span>
+          <strong>Crew:</strong> {quote.est_crew_size ?? 3} professional movers
+        </span>
+      ),
+    },
+    {
+      key: "truck",
+      node: (
+        <span>
+          <strong>Truck:</strong> {truckLine}
+        </span>
+      ),
+    },
+  ];
+  if (truckPricingLine) {
+    moveSummarySegments.push({
+      key: "pricing",
+      node: (
+        <span className="text-[12px]" style={{ color: FOREST_BODY }}>
+          <strong>Pricing:</strong> {truckPricingLine}
+        </span>
+      ),
+    });
+  }
+  moveSummarySegments.push({
+    key: "protection",
+    node: (
+      <span>
+        <strong>Protection:</strong> {protectionLabel}
+      </span>
+    ),
+  });
   return (
     <div className="mb-6">
-      <h2 className="font-hero text-[26px] md:text-[30px] mb-4" style={{ color: FOREST }}>
+      <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-6 text-center`} style={{ color: WINE }}>
         Confirm Your Move
       </h2>
-      <div
-        className="rounded-2xl border p-5 md:p-6 space-y-5"
-        style={{ borderColor: "#E2DDD5", backgroundColor: "white" }}
-      >
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
-            Move Details
-          </p>
-          <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
-            <p>
-              <strong>Date:</strong> {fmtDate(quote.move_date)}
-              {quote.preferred_time && (
-                <> · <strong>Arrival/start:</strong> {quote.preferred_time}</>
-              )}
-            </p>
-            {selectedTier === "estate" &&
-              (() => {
-                const plan = faConfirm?.estate_day_plan as { days?: number } | undefined;
-                const lines = faConfirm?.estate_schedule_lines as string[] | undefined;
-                const head = faConfirm?.estate_schedule_headline as string | undefined;
-                if (!plan || (plan.days ?? 0) <= 1 || !lines?.length || !head?.trim()) return null;
-                return (
-                  <div
-                    className="rounded-xl border my-3 p-4"
-                    style={{
-                      borderColor: "rgba(44, 62, 45, 0.08)",
-                      backgroundColor: "#F9F9F8",
-                    }}
-                  >
-                    <div className="flex gap-3">
-                      <Calendar
-                        className="w-4 h-4 shrink-0 mt-0.5"
-                        style={{ color: `${FOREST}40` }}
-                        weight="duotone"
-                        aria-hidden
-                      />
-                      <div className="min-w-0 space-y-2.5 flex-1">
-                        <p
-                          className="text-[9px] font-semibold uppercase tracking-[0.14em]"
-                          style={{ color: `${FOREST}45` }}
-                        >
-                          Schedule overview
-                        </p>
-                        <p className="text-[13px] font-semibold leading-snug tracking-tight" style={{ color: FOREST }}>
-                          {head.trim()}
-                        </p>
-                        <div className="space-y-2.5">
-                          {lines.map((ln, i) => (
-                            <p
-                              key={i}
-                              className="text-[12px] leading-relaxed pl-3 border-l-[2px]"
-                              style={{
-                                borderColor: `${GOLD}45`,
-                                color: `${FOREST}88`,
-                              }}
-                            >
-                              {ln}
-                            </p>
-                          ))}
-                        </div>
-                        <p className="text-[10px] leading-snug pt-0.5" style={{ color: `${FOREST}52` }}>
-                          Pack day is usually the day before your move unless your coordinator sets a different plan.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+      <div className="space-y-6">
+        <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: FOREST_MUTED }}>
+          Move details
+        </p>
+        <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
+            <div className="flex flex-wrap items-center justify-center gap-y-1 text-center">
+              <span>
+                <strong>Date:</strong> {fmtDate(quote.move_date)}
+              </span>
+              <span
+                aria-hidden
+                className="hidden sm:block w-px h-3.5 shrink-0 mx-3 sm:mx-4 self-center rounded-full"
+                style={{ backgroundColor: `${FOREST}22` }}
+              />
+              <span>
+                <strong>Arrival time window:</strong>{" "}
+                {quoteArrivalTimeWindowLabel(quote) ?? "To be confirmed with you"}
+              </span>
+            </div>
             <div className="space-y-1.5">
-              <p className="font-semibold text-[11px] uppercase tracking-wide" style={{ color: `${FOREST}55` }}>
+              <p className="font-semibold text-[11px] uppercase tracking-wide" style={{ color: FOREST_BODY }}>
                 Pickup locations
               </p>
               <ul className="space-y-1 pl-0 list-none">
@@ -2328,7 +2346,7 @@ function ConfirmDetailsSection({
                     <span>
                       {formatAddressForDisplay(row.address)}
                       {accessLabel(row.access) ? (
-                        <span className="block text-[11px] mt-0.5" style={{ color: `${FOREST}65` }}>
+                        <span className="block text-[11px] mt-0.5" style={{ color: FOREST_BODY }}>
                           Access: {accessLabel(row.access)}
                         </span>
                       ) : null}
@@ -2337,13 +2355,13 @@ function ConfirmDetailsSection({
                 ))}
               </ul>
               {pickupRows.length > 1 && (
-                <p className="text-[11px]" style={{ color: `${FOREST}65` }}>
+                <p className="text-[11px]" style={{ color: FOREST_BODY }}>
                   {pickupRows.length} pickup locations — crew will visit each stop.
                 </p>
               )}
             </div>
             <div className="space-y-1.5 pt-1">
-              <p className="font-semibold text-[11px] uppercase tracking-wide" style={{ color: `${FOREST}55` }}>
+              <p className="font-semibold text-[11px] uppercase tracking-wide" style={{ color: FOREST_BODY }}>
                 Destination
               </p>
               <ul className="space-y-1 pl-0 list-none">
@@ -2352,7 +2370,7 @@ function ConfirmDetailsSection({
                     <span>
                       {formatAddressForDisplay(row.address)}
                       {accessLabel(row.access) ? (
-                        <span className="block text-[11px] mt-0.5" style={{ color: `${FOREST}65` }}>
+                        <span className="block text-[11px] mt-0.5" style={{ color: FOREST_BODY }}>
                           Access: {accessLabel(row.access)}
                         </span>
                       ) : null}
@@ -2361,41 +2379,86 @@ function ConfirmDetailsSection({
                 ))}
               </ul>
             </div>
-          </div>
-          <InventoryCollapsible quote={quote} selectedTier={selectedTier} selectedAddons={selectedAddons} />
+            {selectedTier === "estate" &&
+              (() => {
+                const plan = faConfirm?.estate_day_plan as { days?: number } | undefined;
+                const lines = faConfirm?.estate_schedule_lines as string[] | undefined;
+                const head = faConfirm?.estate_schedule_headline as string | undefined;
+                if (!plan || (plan.days ?? 0) <= 1 || !lines?.length || !head?.trim()) return null;
+                return (
+                  <div className="my-4 pt-4 border-t-2 text-center max-w-xl mx-auto" style={{ borderColor: FOREST }}>
+                    <Calendar
+                      className="w-4 h-4 shrink-0 mx-auto mb-2"
+                      style={{ color: FOREST_MUTED }}
+                      weight="duotone"
+                      aria-hidden
+                    />
+                    <div className="min-w-0 space-y-2.5">
+                      <p className={`${QUOTE_EYEBROW_CLASS}`} style={{ color: FOREST_MUTED }}>
+                        Schedule overview
+                      </p>
+                      <p className="text-[13px] font-semibold leading-snug tracking-tight" style={{ color: FOREST }}>
+                        {head.trim()}
+                      </p>
+                      <div className="space-y-2.5 text-left max-w-md mx-auto">
+                        {lines.map((ln, i) => (
+                          <p
+                            key={i}
+                            className="text-[12px] leading-relaxed pl-3 border-l-2"
+                            style={{
+                              borderColor: `${FOREST}45`,
+                              color: FOREST,
+                            }}
+                          >
+                            {ln}
+                          </p>
+                        ))}
+                      </div>
+                      <p className="text-[12px] leading-snug pt-0.5" style={{ color: FOREST_BODY }}>
+                        Pack day is usually the day before your move unless your coordinator sets a different plan.
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
         </div>
 
-        <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
-          <p className="text-[12px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
-            Your plan
-          </p>
-          <div className="space-y-1 text-[13px]" style={{ color: FOREST }}>
-            <p className="flex items-center gap-2 flex-wrap">
-              <strong>Plan:</strong>
-              <span
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider"
-                style={{
-                  backgroundColor: selectedTier === "estate" ? `${WINE}15` : selectedTier === "signature" ? `${GOLD}18` : `${FOREST}15`,
-                  color: selectedTier === "estate" ? WINE : selectedTier === "signature" ? "#8B7332" : FOREST,
-                }}
-              >
-                {packageLabel}
-              </span>
-            </p>
-            <p><strong>Crew:</strong> {quote.est_crew_size ?? 3} professional movers</p>
-            <p><strong>Truck:</strong> {truckLine}</p>
-            {truckPricingLine ? (
-              <p className="text-[12px]" style={{ color: `${FOREST}70` }}>
-                <strong>Pricing:</strong> {truckPricingLine}
-              </p>
-            ) : null}
-            <p><strong>Protection:</strong> {protectionLabel}</p>
-          </div>
+        <hr
+          className="border-0 h-px w-full my-5 max-w-md mx-auto"
+          style={{ backgroundColor: `${FOREST}18` }}
+          aria-hidden
+        />
+
+        <div
+          className="flex flex-wrap items-center justify-center gap-y-2 text-[13px] text-center"
+          style={{ color: FOREST }}
+        >
+          {moveSummarySegments.map((seg, i) => (
+            <Fragment key={seg.key}>
+              {i > 0 ? (
+                <span
+                  aria-hidden
+                  className="hidden sm:block w-px h-3.5 shrink-0 mx-3 sm:mx-4 self-center rounded-full"
+                  style={{ backgroundColor: `${FOREST}22` }}
+                />
+              ) : null}
+              {seg.node}
+            </Fragment>
+          ))}
         </div>
+
+        {INV_SERVICE_TYPES.has(quote.service_type) && (
+          <div className="border-t pt-5 mt-6" style={{ borderColor: `${FOREST}12` }}>
+            <p className={`${QUOTE_EYEBROW_CLASS} mb-3`} style={{ color: FOREST_MUTED }}>
+              Your inventory
+            </p>
+            <InventoryCollapsible quote={quote} selectedAddons={selectedAddons} omitOuterChrome />
+          </div>
+        )}
 
         {contractAddonsList.length > 0 && (
           <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
-            <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
+            <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: FOREST_MUTED }}>
               Add-ons
             </p>
             <ul className="space-y-1 text-[13px]" style={{ color: FOREST }}>
@@ -2405,60 +2468,11 @@ function ConfirmDetailsSection({
                 </li>
               ))}
             </ul>
-            <p className="text-[12px] font-semibold mt-2" style={{ color: GOLD }}>
+            <p className="text-[12px] font-semibold mt-2" style={{ color: FOREST }}>
               Add-ons subtotal: {fmtPrice(addonTotal)}
             </p>
           </div>
         )}
-
-        <div className="border-t pt-4" style={{ borderColor: `${FOREST}10` }}>
-          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: `${FOREST}50` }}>
-            Pricing
-          </p>
-          <div className="space-y-1.5 text-[13px]" style={{ color: FOREST }}>
-            <div className="flex justify-between">
-              <span>{packageLabel} tier</span>
-              <span>{fmtPrice(basePrice)}</span>
-            </div>
-            {addonTotal > 0 && (
-              <div className="flex justify-between">
-                <span>Add-ons</span>
-                <span>{fmtPrice(addonTotal)}</span>
-              </div>
-            )}
-            {valuationCost > 0 && (
-              <div className="flex justify-between">
-                <span>Protection upgrade</span>
-                <span>{fmtPrice(valuationCost)}</span>
-              </div>
-            )}
-            {referralDiscountAmt > 0 && (
-              <div className="flex justify-between" style={{ color: GOLD }}>
-                <span>Referral discount</span>
-                <span>-{fmtPrice(referralDiscountAmt)}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>{fmtPrice(basePrice + addonTotal + valuationCost - referralDiscountAmt)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>HST (13%)</span>
-              <span>{fmtPrice(tax)}</span>
-            </div>
-            <div className="flex justify-between pt-2 border-t font-bold text-[15px]" style={{ borderColor: `${FOREST}10`, color: WINE }}>
-              <span>Total</span>
-              <span>{fmtPrice(grandTotal)}</span>
-            </div>
-            <div className="flex justify-between pt-2" style={{ color: GOLD }}>
-              <span className="font-bold">Deposit due today</span>
-              <span className="font-bold">{fmtPrice(deposit)}</span>
-            </div>
-            <p className="text-[11px] mt-1" style={{ color: `${FOREST}60` }}>
-              Balance due on move day: {fmtPrice(balanceDue)}
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -2550,18 +2564,16 @@ function ValuationProtectionCard({
   return (
     <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
 
-      {/* Section header */}
-      <h2 className="admin-section-h2 mb-5" style={{ color: WINE }}>
+      <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-6 text-center`} style={{ color: WINE }}>
         Your Protection
       </h2>
 
-      {/* Active protection card */}
-      <div className="rounded-2xl border overflow-hidden" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
-
-        <div className="px-5 py-4 flex items-center justify-between gap-3" style={{ borderBottom: `1px solid ${FOREST}08` }}>
+      {/* Active protection — open layout, label / value rows */}
+      <div>
+        <div className="flex items-start justify-between gap-4 pb-5">
           <div className="flex-1 min-w-0">
-            <div className="text-[var(--text-base)] font-semibold" style={{ color: FOREST }}>{dispActive.shortLabel}</div>
-            <div className="text-[11px]" style={{ color: `${FOREST}50` }}>
+            <div className="text-[15px] md:text-[var(--text-base)] font-semibold tracking-tight" style={{ color: FOREST }}>{dispActive.shortLabel}</div>
+            <div className="text-[11px] mt-1" style={{ color: FOREST_MUTED }}>
               {upgradeSelected
                 ? "Upgraded"
                 : journeyCopy === "delivery"
@@ -2570,69 +2582,71 @@ function ValuationProtectionCard({
             </div>
           </div>
           {isHighest && (
-            <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold" style={{ backgroundColor: `${GOLD}10`, color: GOLD }}>
+            <span className={`shrink-0 ${QUOTE_EYEBROW_CLASS}`} style={{ color: FOREST }}>
               Highest
             </span>
           )}
         </div>
 
-        {/* Coverage highlights, clean grid */}
-        <div className="px-5 py-4">
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {hasRatePerPound ? (
-              <>
-                <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Coverage Rate</div>
-                  <div className="text-[15px] font-bold" style={{ color: FOREST }}>{fmtPricePerLb(displayRatePerPound)}<span className="text-[11px] font-semibold" style={{ color: `${FOREST}50` }}>/lb</span></div>
-                </div>
-                {tierData.deductible === 0 && (
-                  <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${GOLD}06` }}>
-                    <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Deductible</div>
-                    <div className="text-[15px] font-bold" style={{ color: GOLD }}>$0</div>
-                  </div>
-                )}
-                {tierData.max_per_item && (
-                  <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                    <div className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
-                    <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item)}</div>
-                  </div>
-                )}
-                {tierData.max_per_shipment && (
-                  <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                    <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Shipment</div>
-                    <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment)}</div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                  <div className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Item</div>
-                  <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item ?? 10000)}</div>
-                </div>
-                <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: `${FOREST}04` }}>
-                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Per Shipment</div>
-                  <div className="text-[15px] font-bold" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment ?? 100000)}</div>
-                </div>
-                <div className="rounded-xl px-3.5 py-3 col-span-2" style={{ backgroundColor: `${GOLD}06` }}>
-                  <div className="text-[9px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: `${FOREST}40` }}>Deductible</div>
-                  <div className="text-[15px] font-bold" style={{ color: GOLD }}>$0, Zero deductible</div>
-                </div>
-              </>
-            )}
-          </div>
+        <hr className="border-0 h-px w-full" style={{ backgroundColor: `${FOREST}10` }} />
 
-          {/* How it works, one clear sentence */}
-          <p className="text-[12px] leading-relaxed" style={{ color: `${FOREST}60` }}>
-            {tierData.damage_process}
-          </p>
+        <div className="py-5 space-y-2.5">
+          {hasRatePerPound ? (
+            <>
+              <div className="flex justify-between items-baseline gap-6 text-[13px]">
+                <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: FOREST_MUTED }}>Coverage rate</span>
+                <span className="font-bold tabular-nums text-right" style={{ color: FOREST }}>
+                  {fmtPricePerLb(displayRatePerPound)}<span className="text-[11px] font-semibold" style={{ color: FOREST_MUTED }}>/lb</span>
+                </span>
+              </div>
+              {tierData.deductible === 0 && (
+                <div className="flex justify-between items-baseline gap-6 text-[13px]">
+                  <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: FOREST_MUTED }}>Deductible</span>
+                  <span className="font-bold tabular-nums" style={{ color: FOREST }}>$0</span>
+                </div>
+              )}
+              {tierData.max_per_item != null && (
+                <div className="flex justify-between items-baseline gap-6 text-[13px]">
+                  <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: FOREST_MUTED }}>Per item</span>
+                  <span className="font-bold tabular-nums text-right" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item)}</span>
+                </div>
+              )}
+              {tierData.max_per_shipment != null && (
+                <div className="flex justify-between items-baseline gap-6 text-[13px]">
+                  <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: FOREST_MUTED }}>Per shipment</span>
+                  <span className="font-bold tabular-nums text-right" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment)}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between items-baseline gap-6 text-[13px]">
+                <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: FOREST_MUTED }}>Per item</span>
+                <span className="font-bold tabular-nums text-right" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_item ?? 10000)}</span>
+              </div>
+              <div className="flex justify-between items-baseline gap-6 text-[13px]">
+                <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: FOREST_MUTED }}>Per shipment</span>
+                <span className="font-bold tabular-nums text-right" style={{ color: FOREST }}>up to {fmtPrice(tierData.max_per_shipment ?? 100000)}</span>
+              </div>
+              <div className="flex justify-between items-baseline gap-6 text-[13px]">
+                <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: FOREST_MUTED }}>Deductible</span>
+                <span className="font-bold tabular-nums text-right" style={{ color: FOREST }}>$0</span>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Expandable details */}
-        <div className="px-5 pb-4 space-y-0.5">
+        <p className="text-[12px] leading-relaxed pb-5" style={{ color: FOREST_BODY }}>
+          {tierData.damage_process}
+        </p>
+
+        <hr className="border-0 h-px w-full" style={{ backgroundColor: `${FOREST}10` }} />
+
+        <div className="pt-1 space-y-0.5">
           <button
+            type="button"
             onClick={() => setCoversOpen((p) => !p)}
-            className="flex items-center justify-between w-full py-2.5 text-left group"
+            className="flex items-center justify-between w-full py-3 text-left"
           >
             <span className="text-[12px] font-semibold" style={{ color: FOREST }}>What&apos;s covered</span>
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${coversOpen ? "rotate-180" : ""}`} style={{ color: FOREST }} />
@@ -2640,26 +2654,27 @@ function ValuationProtectionCard({
           {coversOpen && (
             <ul className="pb-3 space-y-2">
               {tierData.covers.map((c, i) => (
-                <li key={i} className="text-[12px] leading-relaxed" style={{ color: `${FOREST}70` }}>
+                <li key={i} className="text-[12px] leading-relaxed" style={{ color: FOREST_BODY }}>
                   {c}
                 </li>
               ))}
             </ul>
           )}
 
-          <div className="h-px" style={{ backgroundColor: `${FOREST}06` }} />
+          <hr className="border-0 h-px w-full" style={{ backgroundColor: `${FOREST}08` }} />
 
           <button
+            type="button"
             onClick={() => setExcludesOpen((p) => !p)}
-            className="flex items-center justify-between w-full py-2.5 text-left"
+            className="flex items-center justify-between w-full py-3 text-left"
           >
             <span className="text-[12px] font-semibold" style={{ color: FOREST }}>Exclusions</span>
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${excludesOpen ? "rotate-180" : ""}`} style={{ color: FOREST }} />
           </button>
           {excludesOpen && (
-            <ul className="pb-3 space-y-2">
+            <ul className="pb-1 space-y-2">
               {tierData.excludes.map((e, i) => (
-                <li key={i} className="text-[12px] leading-relaxed" style={{ color: `${FOREST}50` }}>
+                <li key={i} className="text-[12px] leading-relaxed" style={{ color: FOREST_MUTED }}>
                   {e}
                 </li>
               ))}
@@ -2668,153 +2683,147 @@ function ValuationProtectionCard({
         </div>
       </div>
 
-      {/* Upgrade card */}
       {!isHighest && upgradeData && upgradeTierData && dispUpgrade && (
-        <div
-          className="mt-4 rounded-2xl border overflow-hidden transition-colors duration-200"
-          style={{
-            borderColor: upgradeSelected ? GOLD : `${FOREST}12`,
-            backgroundColor: upgradeSelected ? `${GOLD}04` : "white",
-          }}
-        >
-          <div className="px-5 py-4">
-            <div className="min-w-0">
-              <div className="text-[9px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: GOLD }}>
-                {upgradeSelected ? "Upgrade Added" : "Upgrade Available"}
-              </div>
-              <div className="text-[var(--text-base)] font-semibold mb-0.5" style={{ color: FOREST }}>
-                {dispUpgrade.label}
-              </div>
-              <div className="text-[12px] mb-2" style={{ color: `${FOREST}60` }}>
-                {upgradeTierData.rate_description}
-              </div>
-              {upgradeData.assumed_shipment_value > 0 && (
-                <div className="text-[11px]" style={{ color: `${FOREST}45` }}>
-                  Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total shipment value
-                </div>
-              )}
+        <div className="mt-10 pt-6 border-t border-[var(--brd)]/25">
+          <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: FOREST }}>
+            {upgradeSelected ? "Upgrade added" : "Upgrade available"}
+          </p>
+          <div className="text-[15px] font-semibold tracking-tight mb-1" style={{ color: FOREST }}>{dispUpgrade.label}</div>
+          <p className="text-[12px] leading-snug mb-2" style={{ color: FOREST_BODY }}>
+            {upgradeTierData.rate_description}
+          </p>
+          {upgradeData.assumed_shipment_value > 0 && (
+            <p className="text-[11px]" style={{ color: FOREST_MUTED }}>
+              Covers up to {fmtPrice(upgradeData.assumed_shipment_value)} total shipment value
+            </p>
+          )}
+
+          <hr className="border-0 h-px w-full my-5" style={{ backgroundColor: `${FOREST}10` }} />
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-[20px] font-bold tabular-nums tracking-tight" style={{ color: FOREST }}>
+              {fmtPrice(upgradeData.price)}
             </div>
-            <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: `${FOREST}08` }}>
-              <div className="text-[18px] font-bold" style={{ color: FOREST }}>
-                {fmtPrice(upgradeData.price)}
-              </div>
-              <button
-                onClick={onToggleUpgrade}
-                className="px-5 py-2.5 rounded-xl text-[12px] font-bold transition-all"
-                style={{
-                  backgroundColor: upgradeSelected ? "white" : GOLD,
-                  color: upgradeSelected ? FOREST : "white",
-                  border: upgradeSelected ? `1px solid ${FOREST}20` : "1px solid transparent",
-                }}
-              >
-                {upgradeSelected
-                  ? "Remove upgrade"
-                  : journeyCopy === "delivery"
-                    ? "Add to my delivery"
-                    : "Add to my move"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onToggleUpgrade}
+              className="w-full sm:w-auto px-6 py-3 rounded-none text-[11px] font-bold uppercase tracking-[0.14em] transition-opacity hover:opacity-90"
+              style={{
+                backgroundColor: upgradeSelected ? "transparent" : FOREST,
+                color: upgradeSelected ? FOREST : "white",
+                border: upgradeSelected ? `1px solid ${FOREST}35` : "1px solid transparent",
+              }}
+            >
+              {upgradeSelected
+                ? "Remove upgrade"
+                : journeyCopy === "delivery"
+                  ? "Add to delivery"
+                  : "Add to move"}
+            </button>
           </div>
         </div>
       )}
 
-      {/* High-value item declarations */}
-      <div className="mt-4 rounded-2xl border overflow-hidden" style={{ borderColor: `${FOREST}10`, backgroundColor: "white" }}>
-        <div className="px-5 py-4">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="text-[13px] font-semibold" style={{ color: FOREST }}>High-Value Items</div>
-          </div>
-          <p className="text-[11px] mb-3" style={{ color: `${FOREST}50` }}>
-            Items valued over {fmtPrice(declThreshold)} can be individually declared for additional coverage.
-          </p>
+      <div className="mt-10 pt-6 border-t border-[var(--brd)]/25">
+        <div className="text-[12px] font-semibold tracking-tight mb-1" style={{ color: FOREST }}>High-value items</div>
+        <p className="text-[11px] mb-4 leading-relaxed" style={{ color: FOREST_MUTED }}>
+          Items valued over {fmtPrice(declThreshold)} can be individually declared for additional coverage.
+        </p>
 
-          {declarations.length > 0 && (
-            <div className="space-y-2 mb-3">
-              {declarations.map((d, i) => (
-                <div key={i} className="flex items-center justify-between rounded-xl px-3.5 py-2.5" style={{ backgroundColor: `${FOREST}04` }}>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="text-[12px] font-semibold truncate" style={{ color: FOREST }}>{d.item_name}</div>
-                    <div className="text-[11px] shrink-0" style={{ color: `${FOREST}45` }}>{fmtPrice(d.declared_value)}</div>
-                  </div>
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <span className="text-[11px] font-semibold" style={{ color: GOLD }}>{fmtPrice(d.fee)}</span>
-                    <button onClick={() => onRemoveDeclaration(i)} className="p-1 rounded-lg hover:bg-black/5 transition-colors">
-                      <X className="w-3.5 h-3.5" style={{ color: `${FOREST}30` }} />
-                    </button>
-                  </div>
+        {declarations.length > 0 && (
+          <div className="mb-4">
+            {declarations.map((d, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-3 py-3 border-b last:border-b-0"
+                style={{ borderColor: `${FOREST}10` }}
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="text-[12px] font-semibold truncate" style={{ color: FOREST }}>{d.item_name}</div>
+                  <div className="text-[11px] shrink-0 tabular-nums" style={{ color: FOREST_MUTED }}>{fmtPrice(d.declared_value)}</div>
                 </div>
-              ))}
-              <div className="text-right text-[11px] font-semibold pt-1" style={{ color: GOLD }}>
-                Total declaration fees: {fmtPrice(declarations.reduce((s, d) => s + d.fee, 0))}
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <span className="text-[11px] font-semibold tabular-nums" style={{ color: FOREST }}>{fmtPrice(d.fee)}</span>
+                  <button type="button" onClick={() => onRemoveDeclaration(i)} className="p-1.5 rounded-none hover:bg-black/[0.04] transition-colors" aria-label={`Remove ${d.item_name}`}>
+                    <X className="w-3.5 h-3.5" style={{ color: FOREST_MUTED }} />
+                  </button>
+                </div>
               </div>
+            ))}
+            <div className="flex justify-between items-baseline pt-3 text-[11px] font-semibold" style={{ color: FOREST }}>
+              <span className={`${QUOTE_EYEBROW_CLASS} tracking-[0.1em]`} style={{ color: FOREST_MUTED }}>Declaration fees</span>
+              <span className="tabular-nums">{fmtPrice(declarations.reduce((s, d) => s + d.fee, 0))}</span>
             </div>
-          )}
+          </div>
+        )}
 
-          {!declFormOpen ? (
-            <button
-              onClick={() => setDeclFormOpen(true)}
-              className="flex items-center gap-2 text-[12px] font-semibold transition-opacity hover:opacity-70"
-              style={{ color: GOLD }}
-            >
-              <Plus className="w-3.5 h-3.5 shrink-0" aria-hidden />
-              Declare an item
-            </button>
-          ) : (
-            <div className="space-y-3 rounded-xl border p-4" style={{ borderColor: `${FOREST}12` }}>
-              <div>
-                <label className="block text-[10px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: `${FOREST}50` }}>Item name</label>
-                <input
-                  value={declName}
-                  onChange={(e) => setDeclName(e.target.value)}
-                  placeholder="e.g. Steinway Piano"
-                  className="w-full px-3.5 py-2.5 rounded-xl border text-[13px] outline-none transition-colors"
-                  style={{ borderColor: `${FOREST}15`, color: FOREST }}
-                  onFocus={(e) => (e.target.style.borderColor = GOLD)}
-                  onBlur={(e) => (e.target.style.borderColor = `${FOREST}15`)}
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: `${FOREST}50` }}>Estimated value (CAD)</label>
-                <input
-                  value={declValue}
-                  onChange={(e) => setDeclValue(e.target.value.replace(/[^0-9.]/g, ""))}
-                  placeholder="15,000"
-                  className="w-full px-3.5 py-2.5 rounded-xl border text-[13px] outline-none transition-colors"
-                  style={{ borderColor: `${FOREST}15`, color: FOREST }}
-                  onFocus={(e) => (e.target.style.borderColor = GOLD)}
-                  onBlur={(e) => (e.target.style.borderColor = `${FOREST}15`)}
-                />
-                {declValue && parseFloat(declValue) > 0 && parseFloat(declValue) < 50000 && (
-                  <p className="text-[11px] mt-1.5 font-medium" style={{ color: GOLD }}>
-                    Coverage fee: {fmtPrice(calcFee(parseFloat(declValue)))}
-                  </p>
-                )}
-                {declValue && parseFloat(declValue) >= 50000 && (
-                  <p className="text-[11px] mt-1.5 font-medium" style={{ color: WINE }}>
-                    For items over $50,000, contact Yugo directly for custom coverage.
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => { setDeclFormOpen(false); setDeclName(""); setDeclValue(""); }}
-                  className="px-4 py-2 rounded-xl text-[12px] font-medium border transition-colors"
-                  style={{ borderColor: `${FOREST}15`, color: `${FOREST}60` }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddDeclaration}
-                  disabled={!declName.trim() || !declValue || parseFloat(declValue) <= 0 || parseFloat(declValue) >= 50000}
-                  className="px-5 py-2 rounded-xl text-[12px] font-bold text-white disabled:opacity-30 transition-colors"
-                  style={{ backgroundColor: GOLD }}
-                >
-                  Add
-                </button>
-              </div>
+        {!declFormOpen ? (
+          <button
+            type="button"
+            onClick={() => setDeclFormOpen(true)}
+            className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] transition-opacity hover:opacity-70"
+            style={{ color: FOREST }}
+          >
+            <Plus className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden />
+            Declare an item
+          </button>
+        ) : (
+          <div className="space-y-4 pt-1">
+            <div>
+              <label className={`block ${QUOTE_EYEBROW_CLASS} mb-1.5`} style={{ color: FOREST_MUTED }}>Item name</label>
+              <input
+                value={declName}
+                onChange={(e) => setDeclName(e.target.value)}
+                placeholder="e.g. Steinway Piano"
+                className="w-full px-3 py-2.5 rounded-none border text-[13px] outline-none transition-colors"
+                style={{ borderColor: `${FOREST}18`, color: FOREST }}
+                onFocus={(e) => (e.target.style.borderColor = FOREST)}
+                onBlur={(e) => (e.target.style.borderColor = `${FOREST}18`)}
+              />
             </div>
-          )}
-        </div>
+            <div>
+              <label className={`block ${QUOTE_EYEBROW_CLASS} mb-1.5`} style={{ color: FOREST_MUTED }}>Estimated value (CAD)</label>
+              <input
+                value={declValue}
+                onChange={(e) => setDeclValue(e.target.value.replace(/[^0-9.]/g, ""))}
+                placeholder="15,000"
+                className="w-full px-3 py-2.5 rounded-none border text-[13px] outline-none transition-colors"
+                style={{ borderColor: `${FOREST}18`, color: FOREST }}
+                onFocus={(e) => (e.target.style.borderColor = FOREST)}
+                onBlur={(e) => (e.target.style.borderColor = `${FOREST}18`)}
+              />
+              {declValue && parseFloat(declValue) > 0 && parseFloat(declValue) < 50000 && (
+                <p className="text-[11px] mt-1.5 font-medium" style={{ color: FOREST }}>
+                  Coverage fee: {fmtPrice(calcFee(parseFloat(declValue)))}
+                </p>
+              )}
+              {declValue && parseFloat(declValue) >= 50000 && (
+                <p className="text-[11px] mt-1.5 font-medium" style={{ color: WINE }}>
+                  For items over $50,000, contact Yugo directly for custom coverage.
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => { setDeclFormOpen(false); setDeclName(""); setDeclValue(""); }}
+                className="px-5 py-2.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] border transition-colors"
+                style={{ borderColor: `${FOREST}25`, color: FOREST_BODY }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddDeclaration}
+                disabled={!declName.trim() || !declValue || parseFloat(declValue) <= 0 || parseFloat(declValue) >= 50000}
+                className="px-6 py-2.5 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] text-white disabled:opacity-30 transition-opacity"
+                style={{ backgroundColor: FOREST }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -2830,27 +2839,22 @@ function FallbackPrice({
   confirmed: boolean;
 }) {
   return (
-    <section className="mb-10">
-      <div className="text-center mb-8">
-        <h2 className="font-hero text-[26px] md:text-[30px] mb-2" style={{ color: WINE }}>
-          Your Quote
-        </h2>
-      </div>
-      <div
-        className="max-w-sm mx-auto bg-white rounded-2xl border-2 p-6 text-center"
-        style={{ borderColor: GOLD }}
-      >
-        <p className="font-hero text-[36px]" style={{ color: WINE }}>
-          {fmtPrice(price)}
+    <section className="mb-10 pt-2">
+      <div className="text-center mb-6 max-w-sm mx-auto">
+        <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: FOREST_MUTED }}>
+          Your quote
         </p>
-        <p className="text-[12px] mt-1 mb-4" style={{ color: `${FOREST}70` }}>
+        <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-4`} style={{ color: WINE }}>
+          {fmtPrice(price)}
+        </h2>
+        <p className="text-[12px] mb-6" style={{ color: FOREST_BODY }}>
           +{fmtPrice(Math.round(price * TAX_RATE))} HST
         </p>
         <button
           type="button"
           onClick={onConfirm}
-          className="w-full py-3 rounded-xl text-[13px] font-bold text-white transition-all"
-          style={{ backgroundColor: GOLD }}
+          className="w-full max-w-md mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90"
+          style={{ backgroundColor: FOREST }}
         >
           {confirmed ? "Selected" : "Continue"}
         </button>
@@ -2911,16 +2915,19 @@ function AddOnsSection({
 
   return (
     <section className="mb-10 pt-6 border-t border-[var(--brd)]/30">
-      <div className="text-center mb-6">
-        <h2 className="admin-section-h2 mb-2">
-          Customize Your Move
+      <div className="text-center mb-6 max-w-xl mx-auto">
+        <p className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: FOREST_MUTED }}>
+          Add-ons
+        </p>
+        <h2 className={`${QUOTE_SECTION_H2_CLASS} mb-2`} style={{ color: WINE }}>
+          Customize your move
         </h2>
-        <p className="text-[13px]" style={{ color: `${FOREST}80` }}>
-          Add optional extras to make your move even smoother
+        <p className="text-[12px] leading-relaxed" style={{ color: FOREST_BODY }}>
+          Optional extras—toggle only what you need.
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="divide-y divide-[#2C3E2D]/10">
         {visibleAddons.map((addon) => {
           const sel = selectedAddons.get(addon.id);
           const isOn = !!sel;
@@ -2949,7 +2956,7 @@ function AddOnsSection({
           return (
             <div
               key={addon.id}
-              className={`p-4 transition-all border-b border-[var(--brd)]/30 last:border-b-0 ${isOn ? "bg-[#FFFDF8]" : ""}`}
+              className={`py-4 first:pt-0 transition-colors ${isOn ? "bg-[#FFFCF6]/80" : ""}`}
             >
               <div className="flex items-start gap-3">
                 <button
@@ -2959,7 +2966,7 @@ function AddOnsSection({
                   onClick={() => toggleAddon(addon)}
                   data-no-min-height
                   className="relative w-11 h-6 rounded-full transition-colors shrink-0 mt-0.5 flex-shrink-0"
-                  style={{ backgroundColor: isOn ? GOLD : "#D5D0C8" }}
+                  style={{ backgroundColor: isOn ? FOREST : "#D5D0C8" }}
                 >
                   <span
                     className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
@@ -2977,26 +2984,20 @@ function AddOnsSection({
                       {addon.name}
                     </span>
                     {addon.is_popular && (
-                      <span
-                        className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: `${GOLD}18`, color: GOLD }}
-                      >
+                      <span className={QUOTE_EYEBROW_CLASS} style={{ color: FOREST_MUTED }}>
                         Popular
                       </span>
                     )}
                     {addon.slug === "packing_materials" && (
-                      <span
-                        className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border"
-                        style={{ color: "#2C7A4B", backgroundColor: "#F0FBF4", borderColor: "#A3D9B4" }}
-                      >
-                        Free Delivery
+                      <span className={QUOTE_EYEBROW_CLASS} style={{ color: "#2C7A4B" }}>
+                        Free delivery
                       </span>
                     )}
                   </div>
                   {addon.description && (
                     <p
                       className="text-[11px] mt-0.5 leading-snug"
-                      style={{ color: `${FOREST}70` }}
+                      style={{ color: FOREST_BODY }}
                     >
                       {addon.description}
                     </p>
@@ -3009,15 +3010,19 @@ function AddOnsSection({
                         type="button"
                         data-no-min-height
                         onClick={() => toggleContents(addon.id)}
-                        className="text-[11px] font-medium transition-opacity hover:opacity-70 flex items-center gap-1"
-                        style={{ color: GOLD }}
+                        className={`${QUOTE_EYEBROW_CLASS} transition-opacity hover:opacity-70 inline-flex items-center gap-1.5`}
+                        style={{ color: FOREST }}
                       >
-                        {expandedContents.has(addon.id) ? "Hide contents ▲" : "What's included ▼"}
+                        {expandedContents.has(addon.id) ? (
+                          <>Hide contents <ChevronUp className="w-3 h-3 shrink-0" aria-hidden /></>
+                        ) : (
+                          <>What&apos;s included <ChevronDown className="w-3 h-3 shrink-0" aria-hidden /></>
+                        )}
                       </button>
                       {expandedContents.has(addon.id) && (
                         <p
-                          className="mt-1.5 text-[11px] leading-relaxed px-3 py-2 rounded-lg border"
-                          style={{ color: `${FOREST}80`, backgroundColor: "#FAFAF8", borderColor: "#E8E4DC" }}
+                          className="mt-2 text-[11px] leading-relaxed px-3 py-2.5 rounded-none border"
+                          style={{ color: FOREST_BODY, backgroundColor: "#FAFAF8", borderColor: `${FOREST}15` }}
                         >
                           {PACKING_KIT_CONTENTS[PACKING_KIT_TIER_IDX[moveSize] ?? 0]}
                         </p>
@@ -3030,7 +3035,7 @@ function AddOnsSection({
                       <button
                         type="button"
                         onClick={() => updateQty(addon.id, (sel?.quantity ?? 1) - 1)}
-                        className="w-7 h-7 rounded-lg border text-[var(--text-base)] font-bold flex items-center justify-center"
+                        className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
                         style={{ borderColor: "#D5D0C8", color: FOREST }}
                       >
                         &minus;
@@ -3044,12 +3049,12 @@ function AddOnsSection({
                       <button
                         type="button"
                         onClick={() => updateQty(addon.id, (sel?.quantity ?? 1) + 1)}
-                        className="w-7 h-7 rounded-lg border text-[var(--text-base)] font-bold flex items-center justify-center"
+                        className="w-7 h-7 rounded-none border text-[var(--text-base)] font-bold flex items-center justify-center"
                         style={{ borderColor: "#D5D0C8", color: FOREST }}
                       >
                         +
                       </button>
-                      <span className="text-[11px] ml-1" style={{ color: `${FOREST}60` }}>
+                      <span className="text-[11px] ml-1" style={{ color: FOREST_BODY }}>
                         {addon.unit_label ?? "units"}
                       </span>
                     </div>
@@ -3060,11 +3065,11 @@ function AddOnsSection({
                       <select
                         value={sel?.tier_index ?? 0}
                         onChange={(e) => updateTierIdx(addon.id, parseInt(e.target.value))}
-                        className="text-[12px] rounded-lg border px-3 py-1.5"
+                        className="text-[12px] rounded-none border px-3 py-2"
                         style={{
                           borderColor: "#D5D0C8",
                           color: FOREST,
-                          backgroundColor: "#FAFAF8",
+                          backgroundColor: "#FFFFFF",
                         }}
                       >
                         {addon.tiers.map((t, i) => (
@@ -3080,7 +3085,7 @@ function AddOnsSection({
                 <div className="text-right shrink-0">
                   <span
                     className="text-[13px] font-bold"
-                    style={{ color: isOn ? WINE : `${FOREST}50` }}
+                    style={{ color: isOn ? WINE : FOREST_MUTED }}
                   >
                     {isOn ? fmtPrice(computedCost) : priceLabel}
                   </span>
@@ -3095,8 +3100,8 @@ function AddOnsSection({
         <button
           type="button"
           onClick={() => setShowAll((p) => !p)}
-          className="w-full mt-3 py-2.5 text-[11px] font-semibold tracking-wider uppercase transition-colors rounded-lg hover:bg-[#FAF8F5]"
-          style={{ color: GOLD }}
+          className={`w-full mt-4 py-3 ${QUOTE_EYEBROW_CLASS} transition-opacity rounded-none hover:opacity-70 border-t border-[#2C3E2D]/10`}
+          style={{ color: FOREST }}
         >
           {showAll ? "Show less" : `View all ${addons.length} add-ons`}
           <ChevronDown
@@ -3110,38 +3115,40 @@ function AddOnsSection({
 
       {/* Running total bar */}
       {(addonTotal > 0 || valuationCost > 0) && (selectedTierData || basePrice > 0) && (
-        <div
-          className="mt-5 p-4 rounded-xl border"
-          style={{ borderColor: GOLD, backgroundColor: "#FFFDF8" }}
-        >
-          <div className="space-y-1.5 mb-2">
-            <div className="flex items-center justify-between text-[12px]" style={{ color: FOREST }}>
+        <div className="mt-6 pt-5 border-t border-[var(--brd)]/30">
+          <p className={`${QUOTE_EYEBROW_CLASS} mb-3`} style={{ color: FOREST_MUTED }}>
+            Summary
+          </p>
+          <div className="space-y-2 mb-3">
+            <div className="flex items-baseline justify-between gap-4 text-[12px]" style={{ color: FOREST }}>
               <span>Base price</span>
-              <b>{fmtPrice(basePrice)}</b>
+              <span className="font-bold tabular-nums">{fmtPrice(basePrice)}</span>
             </div>
             {addonTotal > 0 && (
-              <div className="flex items-center justify-between text-[12px]" style={{ color: FOREST }}>
+              <div className="flex items-baseline justify-between gap-4 text-[12px]" style={{ color: FOREST }}>
                 <span>Add-ons</span>
-                <b style={{ color: GOLD }}>{fmtPrice(addonTotal)}</b>
+                <span className="font-bold tabular-nums" style={{ color: FOREST }}>{fmtPrice(addonTotal)}</span>
               </div>
             )}
             {valuationCost > 0 && (
-              <div className="flex items-center justify-between text-[12px]" style={{ color: FOREST }}>
+              <div className="flex items-baseline justify-between gap-4 text-[12px]" style={{ color: FOREST }}>
                 <span>Protection upgrade</span>
-                <b style={{ color: WINE }}>{fmtPrice(valuationCost)}</b>
+                <span className="font-bold tabular-nums" style={{ color: WINE }}>{fmtPrice(valuationCost)}</span>
               </div>
             )}
-            <div className="flex items-center justify-between text-[12px]" style={{ color: `${FOREST}70` }}>
+            <div className="flex items-baseline justify-between gap-4 text-[12px]" style={{ color: FOREST_BODY }}>
               <span>HST (13%)</span>
-              <span>{fmtPrice(tax)}</span>
+              <span className="tabular-nums">{fmtPrice(tax)}</span>
             </div>
-            <div className="flex items-center justify-between pt-1.5 border-t" style={{ borderColor: `${FOREST}10` }}>
-              <span className="text-[13px] font-bold" style={{ color: FOREST }}>Total</span>
-              <span className="text-[15px] font-bold" style={{ color: WINE }}>{fmtPrice(grandTotal)}</span>
+            <hr className="border-0 h-px w-full my-2" style={{ backgroundColor: `${FOREST}10` }} />
+            <div className="flex items-baseline justify-between gap-4 text-[13px] font-bold" style={{ color: WINE }}>
+              <span>Total</span>
+              <span className="tabular-nums text-[15px]">{fmtPrice(grandTotal)}</span>
             </div>
           </div>
-          <p className="text-[11px] text-center pt-1 border-t" style={{ color: GOLD, borderColor: `${GOLD}20` }}>
-            {fmtPrice(deposit)} deposit to confirm · Balance due on move day
+          <p className="text-[11px] leading-snug" style={{ color: FOREST_BODY }}>
+            <span className="font-semibold" style={{ color: FOREST }}>{fmtPrice(deposit)}</span>
+            {" "}deposit to confirm · Balance due on move day
           </p>
         </div>
       )}
@@ -3151,10 +3158,10 @@ function AddOnsSection({
           <button
             type="button"
             onClick={onContinue}
-            className="w-full md:w-auto px-8 py-3 rounded-xl text-[13px] font-bold text-white transition-all"
-            style={{ backgroundColor: GOLD }}
+            className="w-full max-w-md py-3.5 rounded-none border-0 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: FOREST }}
           >
-            Continue →
+            Continue
           </button>
           <button
             type="button"

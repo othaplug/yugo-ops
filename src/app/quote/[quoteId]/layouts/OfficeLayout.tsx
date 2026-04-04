@@ -3,7 +3,6 @@ import {
   type Quote,
   WINE,
   FOREST,
-  GOLD,
   TAX_RATE,
   fmtPrice,
   calculateDeposit,
@@ -137,7 +136,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[12px] font-bold text-white"
                 style={{
-                  backgroundColor: i === 0 ? WINE : i === timelineItems.length - 1 ? FOREST : GOLD,
+                  backgroundColor: i === 0 ? WINE : i === timelineItems.length - 1 ? FOREST : FOREST,
                 }}
               >
                 {i + 1}
@@ -165,7 +164,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
             <p className="text-[10px]" style={{ color: `${FOREST}60` }}>Commercial crew</p>
           </div>
           <div>
-            <Clock className="w-5 h-5 mx-auto mb-1.5" style={{ color: GOLD }} />
+            <Clock className="w-5 h-5 mx-auto mb-1.5" style={{ color: FOREST }} />
             <p className="text-[13px] font-bold" style={{ color: FOREST }}>
               {(f?.estimated_hours as string) ?? "Full"} Day
             </p>
@@ -194,7 +193,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
         <div className="grid sm:grid-cols-2 gap-2.5">
           {includes.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
-              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: GOLD }} />
+              <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: FOREST }} />
               <span className="text-[12px] leading-snug" style={{ color: FOREST }}>{item}</span>
             </div>
           ))}
@@ -202,8 +201,8 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
       </div>
 
       {/* Investment Summary */}
-      <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: GOLD }}>
-        <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${GOLD}08` }}>
+      <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: FOREST }}>
+        <div className="px-5 py-4 border-b border-[#E2DDD5]" style={{ backgroundColor: `${FOREST}08` }}>
           <h2
             className="font-heading text-[13px] font-bold tracking-wider uppercase"
             style={{ color: WINE }}
@@ -226,7 +225,7 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
               </tbody>
             </table>
           )}
-          <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${GOLD}30` }}>
+          <div className="border-t-2 pt-4 text-center" style={{ borderColor: `${FOREST}30` }}>
             <p className="font-hero text-[36px] md:text-[42px]" style={{ color: WINE }}>
               {fmtPrice(price)}
             </p>
@@ -236,10 +235,10 @@ export default function OfficeLayout({ quote, onConfirm, confirmed }: Props) {
             <button
               type="button"
               onClick={onConfirm}
-              className={`mt-5 w-full max-w-xs mx-auto py-3.5 rounded-xl text-[13px] font-bold tracking-wide text-white transition-all ${
+              className={`mt-5 w-full max-w-xs mx-auto py-3.5 rounded-none border-0 text-[10px] font-bold tracking-[0.12em] uppercase text-white transition-opacity hover:opacity-90 ${
                 confirmed ? "opacity-80" : ""
               }`}
-              style={{ backgroundColor: confirmed ? FOREST : GOLD }}
+              style={{ backgroundColor: FOREST }}
             >
               {confirmed ? (
                 <span className="flex items-center justify-center gap-2">
