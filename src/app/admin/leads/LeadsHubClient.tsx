@@ -15,6 +15,7 @@ import {
 import LeadResponseSlaCountdown from "./LeadResponseSlaCountdown";
 import { useToast } from "../components/Toast";
 import ModalOverlay from "../components/ModalOverlay";
+import AdminPageHeader from "../components/AdminPageHeader";
 import {
   ChartBar,
   CheckCircle,
@@ -255,33 +256,21 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
     <div className="flex flex-wrap gap-2">
       <Link
         href="/admin/leads"
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
-          mode === "dashboard"
-            ? "bg-[var(--gold)]/15 border-[var(--gold)]/40 text-[var(--gold)]"
-            : "border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--gdim)]"
-        }`}
+        className={`admin-subnav-link${mode === "dashboard" ? " admin-subnav-link-active" : ""}`}
       >
         <ChartBar size={16} aria-hidden />
         Dashboard
       </Link>
       <Link
         href="/admin/leads/all"
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
-          mode === "all"
-            ? "bg-[var(--gold)]/15 border-[var(--gold)]/40 text-[var(--gold)]"
-            : "border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--gdim)]"
-        }`}
+        className={`admin-subnav-link${mode === "all" ? " admin-subnav-link-active" : ""}`}
       >
         <List size={16} aria-hidden />
         All Leads
       </Link>
       <Link
         href="/admin/leads/mine"
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
-          mode === "mine"
-            ? "bg-[var(--gold)]/15 border-[var(--gold)]/40 text-[var(--gold)]"
-            : "border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--gdim)]"
-        }`}
+        className={`admin-subnav-link${mode === "mine" ? " admin-subnav-link-active" : ""}`}
       >
         <User size={16} aria-hidden />
         My Leads
@@ -419,30 +408,24 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
           </div>
           <Link
             href={`/admin/leads/${lead.id}`}
-            className="text-[11px] font-semibold text-[var(--gold)] hover:underline shrink-0"
+            className="ty-label shrink-0 text-[var(--admin-cta-outline-text)] hover:underline"
           >
             Details
           </Link>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link
-            href={quoteHref}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--gold)] text-white text-[11px] font-bold hover:opacity-90"
-          >
+          <Link href={quoteHref} className="admin-cta-solid admin-cta-solid-sm">
             Send Quote
           </Link>
           {(lead.requires_specialty_quote || heavyParsed) && (
-            <Link
-              href={specialtyQuoteHref}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--gold)]/50 text-[var(--gold)] text-[11px] font-bold hover:bg-[var(--gold)]/10"
-            >
+            <Link href={specialtyQuoteHref} className="admin-cta-outline admin-cta-outline-sm">
               Specialty builder
             </Link>
           )}
           {tel ? (
             <a
               href={tel}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--tx2)] hover:bg-[var(--gdim)]"
+              className="admin-cta-outline admin-cta-outline-sm !border-[var(--brd)] !text-[var(--tx2)] hover:!bg-[var(--hover)]"
             >
               <Phone size={14} aria-hidden />
               Call
@@ -451,7 +434,7 @@ export default function LeadsHubClient({ mode }: { mode: "dashboard" | "all" | "
           {sms ? (
             <a
               href={sms}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--brd)] text-[11px] font-semibold text-[var(--tx2)] hover:bg-[var(--gdim)]"
+              className="admin-cta-outline admin-cta-outline-sm !border-[var(--brd)] !text-[var(--tx2)] hover:!bg-[var(--hover)]"
             >
               SMS
             </a>

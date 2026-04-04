@@ -116,6 +116,7 @@ import {
   getVisibleAddons,
   isAddonHiddenForTier,
   ESTATE_ADDON_SECTION_PREAMBLE,
+  estateAddonDisplayName,
 } from "@/lib/quotes/addon-visibility";
 import { formatAddressForDisplay } from "@/lib/format-text";
 import { getDisplayLabel, VALUATION_TIER_LABELS } from "@/lib/displayLabels";
@@ -719,10 +720,14 @@ export default function QuotePageClient({
           );
           break;
       }
-      list.push({ name: addon.name, price: cost, quantity: sel.quantity ?? 1 });
+      const displayName =
+        selectedTier === "estate"
+          ? estateAddonDisplayName(addon.slug, addon.name)
+          : addon.name;
+      list.push({ name: displayName, price: cost, quantity: sel.quantity ?? 1 });
     }
     return list;
-  }, [selectedAddons, allAddons, basePrice]);
+  }, [selectedAddons, allAddons, basePrice, selectedTier]);
 
   const contractData = useMemo((): ContractQuoteData => {
     const fa = quote.factors_applied as Record<string, unknown> | null;
@@ -4396,8 +4401,7 @@ function AddOnsSection({
               className="text-lg mb-8"
               style={{ color: ESTATE_ON_WINE.secondary }}
             >
-              {ESTATE_ADDON_SECTION_PREAMBLE.body} These optional services go
-              beyond.
+              {ESTATE_ADDON_SECTION_PREAMBLE.body}
             </p>
           </>
         ) : (
@@ -4514,7 +4518,9 @@ function AddOnsSection({
                             : FOREST,
                       }}
                     >
-                      {addon.name}
+                      {estateChrome
+                        ? estateAddonDisplayName(addon.slug, addon.name)
+                        : addon.name}
                     </span>
                     {addon.is_popular && (
                       <span

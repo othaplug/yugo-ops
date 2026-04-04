@@ -16,10 +16,19 @@ const ESTATE_INCLUDED_SLUGS = [
   "extra_assembly",
   "furniture_assembly",
   "floor_protection",
+  /** Included in Estate — do not upsell as add-ons */
+  "picture_crating",
+  "plastic_bin_rental",
 ] as const;
 
 function slugHiddenForEstate(slug: string): boolean {
   return (ESTATE_INCLUDED_SLUGS as readonly string[]).includes(slug);
+}
+
+/** Quote UI label when Estate tier (e.g. five wardrobe boxes already in package). */
+export function estateAddonDisplayName(slug: string, defaultName: string): string {
+  if (slug === "wardrobe_boxes") return "Extra wardrobe boxes";
+  return defaultName;
 }
 
 /** Add-ons shown for the selected / recommended residential tier. */
@@ -44,13 +53,13 @@ export function isAddonHiddenForTier(slug: string, tier: string): boolean {
 export const ESTATE_ADDON_SECTION_PREAMBLE = {
   title: "Estate includes",
   body:
-    "Full packing and unpacking, premium materials, five wardrobe boxes, mattress bags, complete furniture assembly, floor protection, and full replacement valuation.",
+    "Full packing and unpacking, premium materials, five wardrobe boxes, mattress bags, complete furniture assembly, floor protection, and full replacement valuation all included in your Estate Package. These optional services go beyond. Choose your additional add-ons.",
   sub: "Additional services (not included in Estate)",
 } as const;
 
 /** UI heading lines (admin + client add-on section) */
 export const ESTATE_ADDON_UI_LINES = [
   "Estate includes",
-  "Full packing + unpacking, premium materials, 5 wardrobe boxes, mattress bags, complete furniture assembly, floor protection, full replacement valuation.",
+  "Full packing and unpacking, premium materials, five wardrobe boxes, mattress bags, complete furniture assembly, floor protection, and full replacement valuation all included in your Estate Package. These optional services go beyond. Choose your additional add-ons.",
   "Additional services (not included in Estate)",
 ] as const;
