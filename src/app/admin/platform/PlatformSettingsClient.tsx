@@ -32,6 +32,7 @@ import {
   formatAppDateWithPreset,
   normalizeDisplayDateFormatPreset,
 } from "@/lib/display-date-format";
+import { DEFAULT_GOOGLE_REVIEW_COUNT_LABEL } from "@/lib/google-review-url";
 
 const TABS = [
   { id: "pricing",        label: "Pricing",        desc: "Rates & service fees",      Icon: CurrencyDollar },
@@ -409,6 +410,8 @@ interface AppToggles {
 interface ReviewConfig {
   autoReviewRequests: boolean;
   googleReviewUrl: string;
+  /** Trust bar on client quotes; empty = default "360+ Reviews" */
+  googleReviewCountLabel: string;
 }
 
 interface QuoteResidentialDisplayInitial {
@@ -1116,7 +1119,11 @@ function EmailTemplatesSection() {
   );
 }
 
-const DEFAULT_REVIEW_CONFIG: ReviewConfig = { autoReviewRequests: true, googleReviewUrl: "https://g.page/r/CU67iDN6TgMIEB0/review/" };
+const DEFAULT_REVIEW_CONFIG: ReviewConfig = {
+  autoReviewRequests: true,
+  googleReviewUrl: "https://g.page/r/CU67iDN6TgMIEB0/review/",
+  googleReviewCountLabel: "",
+};
 
 const DEFAULT_QUOTE_RESIDENTIAL_DISPLAY: QuoteResidentialDisplayInitial = {
   tierFeaturesJson: "",
@@ -1176,6 +1183,9 @@ export default function PlatformSettingsClient({
   }, [displayDateFormatPreset]);
   const [autoReviewRequests, setAutoReviewRequests] = useState(initialReviewConfig.autoReviewRequests);
   const [googleReviewUrl, setGoogleReviewUrl] = useState(initialReviewConfig.googleReviewUrl);
+  const [googleReviewCountLabel, setGoogleReviewCountLabel] = useState(
+    initialReviewConfig.googleReviewCountLabel,
+  );
   const [reviewConfigSaving, setReviewConfigSaving] = useState(false);
   const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
@@ -1420,7 +1430,11 @@ export default function PlatformSettingsClient({
     }
   };
 
-  const persistReviewConfig = async (next: { autoReviewRequests: boolean; googleReviewUrl: string }) => {
+  const persistReviewConfig = async (next: {
+    autoReviewRequests: boolean;
+    googleReviewUrl: string;
+    googleReviewCountLabel: string;
+  }) => {
     setReviewConfigSaving(true);
     try {
       const res = await fetch("/api/admin/business-config", {
@@ -1430,6 +1444,7 @@ export default function PlatformSettingsClient({
         body: JSON.stringify({
           auto_review_requests: next.autoReviewRequests ? "true" : "false",
           google_review_url: next.googleReviewUrl || "",
+          google_review_count_label: next.googleReviewCountLabel.trim(),
         }),
       });
       const errBody = await res.json().catch(() => ({}));
@@ -1444,6 +1459,7 @@ export default function PlatformSettingsClient({
       }
       setAutoReviewRequests(next.autoReviewRequests);
       setGoogleReviewUrl(next.googleReviewUrl);
+      setGoogleReviewCountLabel(next.googleReviewCountLabel.trim());
       toast("Review settings saved", "check");
       return true;
     } catch {
@@ -2236,7 +2252,11 @@ export default function PlatformSettingsClient({
                 if (ok) setCrewTracking(true);
               } else if (isReviewRequests) {
                 const next = !autoReviewRequests;
-                const ok = await persistReviewConfig({ autoReviewRequests: next, googleReviewUrl });
+                const ok = await persistReviewConfig({
+                  autoReviewRequests: next,
+                  googleReviewUrl,
+                  googleReviewCountLabel,
+                });
                 if (ok) setAutoReviewRequests(next);
               } else {
                 const next = !item.state;
@@ -2316,26 +2336,47 @@ export default function PlatformSettingsClient({
               </span>
             </p>
           </div>
-          <div className="pt-4 mt-4 border-t border-[var(--brd)]">
-            <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Google Review URL</label>
-            <p className="text-[11px] text-[var(--tx3)] mb-2">Link customers are redirected to when they click the review button in emails</p>
-            <div className="flex gap-2">
+          <div className="pt-4 mt-4 border-t border-[var(--brd)] space-y-4">
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">Google Review URL</label>
+              <p className="text-[11px] text-[var(--tx3)] mb-2">Link customers are redirected to when they click the review button in emails</p>
               <input
                 type="url"
                 value={googleReviewUrl}
                 onChange={(e) => setGoogleReviewUrl(e.target.value)}
                 placeholder="https://g.page/r/CU67iDN6TgMIEB0/review/"
-                className="flex-1 px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
               />
-              <button
-                type="button"
-                onClick={() => persistReviewConfig({ autoReviewRequests, googleReviewUrl })}
-                disabled={reviewConfigSaving}
-                className="px-4 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--bg)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
-              >
-                {reviewConfigSaving ? "Saving…" : "Save"}
-              </button>
             </div>
+            <div>
+              <label className="block text-[10px] font-bold tracking-wider uppercase text-[var(--tx3)] mb-1.5">
+                Quote page — Google reviews headline
+              </label>
+              <p className="text-[11px] text-[var(--tx3)] mb-2">
+                Shown on the client quote trust bar (e.g. 400+ Reviews). Leave blank to use the default ({DEFAULT_GOOGLE_REVIEW_COUNT_LABEL}).
+              </p>
+              <input
+                type="text"
+                value={googleReviewCountLabel}
+                onChange={(e) => setGoogleReviewCountLabel(e.target.value)}
+                placeholder={DEFAULT_GOOGLE_REVIEW_COUNT_LABEL}
+                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--brd)] rounded-lg text-[13px] text-[var(--tx)] placeholder:text-[var(--tx3)] focus:border-[var(--brd)] outline-none"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                persistReviewConfig({
+                  autoReviewRequests,
+                  googleReviewUrl,
+                  googleReviewCountLabel,
+                })
+              }
+              disabled={reviewConfigSaving}
+              className="px-4 py-2 rounded-lg bg-[var(--admin-primary-fill)] text-[var(--bg)] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60"
+            >
+              {reviewConfigSaving ? "Saving…" : "Save review settings"}
+            </button>
           </div>
         </div>
         </div>

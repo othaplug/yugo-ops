@@ -58,6 +58,7 @@ import YugoLogo from "@/components/YugoLogo";
 import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
 import { formatMoveDate, formatPlatformDisplay } from "@/lib/date-format";
+import { DEFAULT_GOOGLE_REVIEW_COUNT_LABEL } from "@/lib/google-review-url";
 
 /* ── Packing kit: move-size → tier index → contents ────────────────────── */
 const PACKING_KIT_TIER_IDX: Record<string, number> = {
@@ -251,6 +252,7 @@ export default function QuotePageClient({
   declineTokenFromUrl = null,
   openPaymentRetry = false,
   moveProjectData = null,
+  googleReviewCountLabel = DEFAULT_GOOGLE_REVIEW_COUNT_LABEL,
 }: {
   quote: Quote;
   addons: Addon[];
@@ -274,6 +276,8 @@ export default function QuotePageClient({
   /** Deep-link to payment after deposit failure (?retry=1) */
   openPaymentRetry?: boolean;
   moveProjectData?: MoveProjectQuotePayload | null;
+  /** Trust bar headline from platform_config `google_review_count_label` */
+  googleReviewCountLabel?: string;
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
   const tiers = quote.tiers as Record<string, TierData> | null;
@@ -2073,7 +2077,7 @@ export default function QuotePageClient({
                   className="text-sm sm:text-[13px] font-bold tracking-tight"
                   style={{ color: shellInk.primary }}
                 >
-                  360+ Reviews
+                  {googleReviewCountLabel}
                 </p>
                 <p
                   className="text-[11px] sm:text-[12px] leading-snug mt-1 mx-auto sm:max-w-none px-0.5"

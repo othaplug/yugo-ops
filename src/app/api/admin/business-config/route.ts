@@ -27,7 +27,7 @@ const BUSINESS_KEYS = [
   "quote_sms_enabled",
   "weather_alerts_enabled",
   // Review requests
-  "auto_review_requests", "google_review_url",
+  "auto_review_requests", "google_review_url", "google_review_count_label",
 ];
 
 export async function GET() {

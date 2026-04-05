@@ -16,6 +16,10 @@ import type { MoveProjectQuotePayload } from "./MoveProjectQuoteTimeline";
 import QuoteExpired from "./QuoteExpired";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
 import { randomBytes } from "crypto";
+import {
+  GOOGLE_REVIEW_COUNT_LABEL_KEY,
+  resolveGoogleReviewCountLabel,
+} from "@/lib/google-review-url";
 
 export const dynamic = "force-dynamic";
 
@@ -185,7 +189,11 @@ export default async function QuotePage({
     admin
       .from("platform_config")
       .select("key, value")
-      .in("key", [QUOTE_RESIDENTIAL_TIER_FEATURES_KEY, QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY]),
+      .in("key", [
+        QUOTE_RESIDENTIAL_TIER_FEATURES_KEY,
+        QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY,
+        GOOGLE_REVIEW_COUNT_LABEL_KEY,
+      ]),
   ]);
 
   const contactEmail = contactResult?.data?.email ?? null;
@@ -219,6 +227,9 @@ export default async function QuotePage({
   const residentialTierFeatures = residentialTierBundle.full;
   const residentialTierMeta = mergeResidentialTierMetaFromConfig(
     quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY],
+  );
+  const googleReviewCountLabel = resolveGoogleReviewCountLabel(
+    quoteDisplayMap[GOOGLE_REVIEW_COUNT_LABEL_KEY],
   );
 
   let moveProjectData: MoveProjectQuotePayload | null = null;
@@ -256,6 +267,7 @@ export default async function QuotePage({
       declineTokenFromUrl={declineTokenFromUrl}
       openPaymentRetry={openPaymentRetry && String(quote.status || "").toLowerCase() === "payment_failed"}
       moveProjectData={moveProjectData}
+      googleReviewCountLabel={googleReviewCountLabel}
     />
   );
 }

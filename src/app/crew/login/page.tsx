@@ -100,7 +100,10 @@ const CREW_LOGIN_PRIMARY_LINK_BTN: CSSProperties = {
   fontFamily: "'DM Sans', sans-serif",
 };
 
-/** Full-width row under forest CTA; color from `.crew-login-gate-secondary` in globals (hover contrast). */
+/**
+ * Full-width row under forest CTA. Must set `color` here: crew layout locks `data-theme="light"`,
+ * so body `--tx` is near-black (#141210) while this button sits on `#1A1A1A` — inheritance would fail WCAG.
+ */
 const CREW_LOGIN_GATE_SECONDARY: CSSProperties = {
   display: "flex",
   alignItems: "center",
@@ -120,6 +123,7 @@ const CREW_LOGIN_GATE_SECONDARY: CSSProperties = {
   cursor: "pointer",
   fontFamily: "'DM Sans', sans-serif",
   textAlign: "center",
+  color: "rgba(255, 255, 255, 0.92)",
 };
 
 const CREW_LOGIN_PANEL_H1_PHONE: CSSProperties = {

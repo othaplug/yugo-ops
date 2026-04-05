@@ -200,18 +200,19 @@ export default function CrewDashboardPage() {
     <PageContent>
       <section className="max-w-[520px] mx-auto">
         {/* Header + progress */}
-        <header className="pb-2 mb-8">
+        <header className="pb-2 mb-6 sm:mb-7">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)] mb-1 [font-family:var(--font-body)]">
-              Crew
-            </p>
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5C1A33] mb-2 [font-family:var(--font-body)]">
-              {data.crewMember?.teamName || "Team"}
+            <p className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx3)] [font-family:var(--font-body)]">
+              <span className="tracking-[0.14em]">Crew</span>
+              <span className="text-[var(--tx3)]/40 font-normal select-none" aria-hidden>
+                |
+              </span>
+              <span className="text-[#5C1A33] tracking-[0.12em]">{data.crewMember?.teamName || "Team"}</span>
             </p>
             <h1 className="font-hero text-[26px] sm:text-[28px] font-bold text-[#5C1A33] leading-[1.15] tracking-tight">
               {greeting}, {firstName}
             </h1>
-            <p className="text-[14px] text-[var(--tx2)] mt-3">
+            <p className="text-[14px] text-[var(--tx2)] mt-2.5 sm:mt-3">
               {scheduleFootnote ||
                 data.crewMember?.dateStr ||
                 formatDate(new Date(), { weekday: "long", month: "short", day: "numeric" })}

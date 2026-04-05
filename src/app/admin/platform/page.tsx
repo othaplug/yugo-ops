@@ -36,12 +36,19 @@ export default async function PlatformPage() {
   const { data: reviewConfig } = await db
     .from("platform_config")
     .select("key, value")
-    .in("key", ["auto_review_requests", "google_review_url", "display_date_locale", "display_date_format"]);
+    .in("key", [
+      "auto_review_requests",
+      "google_review_url",
+      "google_review_count_label",
+      "display_date_locale",
+      "display_date_format",
+    ]);
   const reviewConfigMap: Record<string, string> = {};
   for (const r of reviewConfig ?? []) reviewConfigMap[r.key] = r.value ?? "";
   const initialReviewConfig = {
     autoReviewRequests: reviewConfigMap.auto_review_requests === "true" || reviewConfigMap.auto_review_requests === "1",
     googleReviewUrl: reviewConfigMap.google_review_url || "https://g.page/r/CU67iDN6TgMIEB0/review/",
+    googleReviewCountLabel: reviewConfigMap.google_review_count_label || "",
   };
   const initialDisplayDateFormat = normalizeDisplayDateFormatPreset(
     resolveStoredDateFormat(reviewConfigMap.display_date_format, reviewConfigMap.display_date_locale),

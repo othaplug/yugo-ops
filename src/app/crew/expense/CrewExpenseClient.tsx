@@ -7,15 +7,15 @@ import PageContent from "@/app/admin/components/PageContent";
 import WineFadeRule from "@/components/crew/WineFadeRule";
 import { toTitleCase } from "@/lib/format-text";
 
-/** Tight caps — align with underline fields (`pl-0.5`); space below before control. */
+/** Section label — breathing room before control; sections use form gap for stack rhythm. */
 const CREW_EXPENSE_EYEBROW =
-  "block pl-0.5 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx2)] mb-3.5 [font-family:var(--font-body)]";
+  "block text-[10px] font-bold uppercase tracking-[0.12em] leading-snug text-[var(--tx2)] mb-2.5 [font-family:var(--font-body)]";
 
 const CREW_EXPENSE_META = "text-[13px] text-[var(--tx2)]";
 
-/** Minimal underline fields — depth from tone, not outlines. */
-const fieldMinimal =
-  "w-full bg-transparent border-0 border-b border-[var(--brd)]/30 px-0.5 py-3.5 text-[var(--tx)] placeholder:text-[var(--tx3)]/65 rounded-none shadow-none focus:outline-none focus:ring-0 focus:border-b-[#2C3E2D]/70 transition-[border-color] duration-200";
+/** Underline-only fields — single bottom rule, forest on focus. */
+const fieldCrewExpense =
+  "w-full bg-transparent border-0 border-b border-[var(--brd)]/40 px-0.5 py-3.5 text-[var(--tx)] placeholder:text-[var(--tx3)]/65 rounded-none shadow-none focus:outline-none focus:ring-0 focus:border-b-[#2C3E2D]/70 transition-[border-color] duration-200";
 
 const EXPENSE_STATUS_LABEL: Record<string, string> = {
   pending: "Pending review",
@@ -181,146 +181,147 @@ export default function CrewExpenseClient() {
           </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-8 sm:gap-9">
-          <div>
-            <label className={CREW_EXPENSE_EYEBROW}>Category</label>
-            {/* Padding below chips so drop shadow does not crowd the next label */}
-            <div className="flex flex-wrap gap-2.5 pl-0.5 pb-3 sm:pb-4">
-              {CATEGORIES.map((c) => {
-                const selected = category === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setCategory(c.id)}
-                    className={`px-4 py-2.5 min-h-[44px] text-[11px] font-bold uppercase tracking-[0.1em] leading-none transition-[background-color,color,transform] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)] ${
-                      selected
-                        ? "bg-[#2C3E2D] text-white shadow-[0_8px_24px_rgba(44,62,45,0.25)]"
-                        : "bg-[var(--card)]/25 text-[var(--tx2)] hover:bg-[var(--card)]/45 hover:text-[var(--tx)] active:scale-[0.99]"
-                    }`}
-                  >
-                    {c.label}
-                  </button>
-                );
-              })}
+        <div className="mt-8 sm:mt-10 rounded-2xl border border-[var(--brd)]/50 bg-[var(--card)]/30 p-5 sm:p-7 shadow-[0_10px_40px_rgba(44,62,45,0.07)]">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-10 sm:gap-11">
+            <div className="space-y-0">
+              <label className={CREW_EXPENSE_EYEBROW}>Category</label>
+              <div className="flex flex-wrap gap-3 pt-0.5">
+                {CATEGORIES.map((c) => {
+                  const selected = category === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCategory(c.id)}
+                      className={`px-4 py-2.5 min-h-[44px] rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] leading-none border transition-[background-color,color,border-color,transform,box-shadow] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C3E2D]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)] ${
+                        selected
+                          ? "border-[#2C3E2D] bg-[#2C3E2D] text-white shadow-[0_6px_22px_rgba(44,62,45,0.22)]"
+                          : "border-[var(--brd)]/65 bg-[var(--card)]/50 text-[var(--tx2)] hover:border-[var(--brd)] hover:bg-[var(--card)]/70 hover:text-[var(--tx)] active:scale-[0.99]"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label htmlFor="crew-expense-amount" className={CREW_EXPENSE_EYEBROW}>
-              Amount
-            </label>
-            <input
-              id="crew-expense-amount"
-              type="number"
-              step="0.01"
-              min="0"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="25.00"
-              className={`${fieldMinimal} text-[17px] tabular-nums`}
-              inputMode="decimal"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="crew-expense-desc" className={CREW_EXPENSE_EYEBROW}>
-              Description
-            </label>
-            <input
-              id="crew-expense-desc"
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Parking at 200 Bloor for move"
-              className={`${fieldMinimal} text-[15px]`}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="crew-expense-job" className={CREW_EXPENSE_EYEBROW}>
-              Link to job (optional)
-            </label>
-            <div className="relative border-b border-[var(--brd)]/30 focus-within:border-b-[#2C3E2D]/70 transition-[border-color] duration-200">
-              <select
-                id="crew-expense-job"
-                value={jobId}
-                onChange={(e) => setJobId(e.target.value)}
-                className="w-full cursor-pointer appearance-none border-0 bg-transparent py-3.5 pl-0.5 pr-10 text-[15px] text-[var(--tx)] shadow-none focus:outline-none focus:ring-0"
-              >
-                <option value="">— None —</option>
-                {jobs.map((j) => (
-                  <option key={j.id} value={j.id}>
-                    {j.jobId} · {j.clientName}
-                  </option>
-                ))}
-              </select>
-              <CaretDown
-                size={16}
-                weight="bold"
-                className="pointer-events-none absolute right-0.5 top-1/2 -translate-y-1/2 text-[var(--tx3)]"
-                aria-hidden
-              />
-            </div>
-          </div>
-
-          <div>
-            <span className={CREW_EXPENSE_EYEBROW}>Receipt photo (optional)</span>
-            <div className="flex flex-wrap items-center gap-4">
+            <div>
+              <label htmlFor="crew-expense-amount" className={CREW_EXPENSE_EYEBROW}>
+                Amount
+              </label>
               <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleReceiptChange}
-                className="sr-only"
+                id="crew-expense-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="25.00"
+                className={`${fieldCrewExpense} text-[17px] tabular-nums`}
+                inputMode="decimal"
               />
+            </div>
+
+            <div>
+              <label htmlFor="crew-expense-desc" className={CREW_EXPENSE_EYEBROW}>
+                Description
+              </label>
+              <input
+                id="crew-expense-desc"
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Parking at 200 Bloor for move"
+                className={`${fieldCrewExpense} text-[15px]`}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="crew-expense-job" className={CREW_EXPENSE_EYEBROW}>
+                Link to job (optional)
+              </label>
+              <div className="relative border-b border-[var(--brd)]/40 transition-[border-color] duration-200 focus-within:border-b-[#2C3E2D]/70">
+                <select
+                  id="crew-expense-job"
+                  value={jobId}
+                  onChange={(e) => setJobId(e.target.value)}
+                  className="w-full cursor-pointer appearance-none border-0 bg-transparent py-3.5 pl-0.5 pr-10 text-[15px] text-[var(--tx)] shadow-none focus:outline-none focus:ring-0"
+                >
+                  <option value="">— None —</option>
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.jobId} · {j.clientName}
+                    </option>
+                  ))}
+                </select>
+                <CaretDown
+                  size={16}
+                  weight="bold"
+                  className="pointer-events-none absolute right-0.5 top-1/2 -translate-y-1/2 text-[var(--tx3)]"
+                  aria-hidden
+                />
+              </div>
+            </div>
+
+            <div>
+              <span className={CREW_EXPENSE_EYEBROW}>Receipt photo (optional)</span>
+              <div className="mt-1 flex flex-wrap items-center gap-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleReceiptChange}
+                  className="sr-only"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingReceipt}
+                  className="inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-lg border border-[var(--brd)]/55 bg-[var(--card)]/45 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx2)] hover:border-[var(--brd)] hover:bg-[var(--card)]/65 hover:text-[var(--tx)] disabled:opacity-45 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C3E2D]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)]"
+                >
+                  {uploadingReceipt ? "Uploading…" : receiptStoragePath ? "Change receipt" : "Add receipt"}
+                  {!uploadingReceipt && (
+                    <CaretRight size={14} weight="bold" className="shrink-0 opacity-80" aria-hidden />
+                  )}
+                </button>
+                {receiptPreview && (
+                  <a
+                    href={receiptPreview}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-[72px] h-[72px] overflow-hidden rounded-lg border border-[var(--brd)]/40 bg-[var(--card)]/40 shrink-0 shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:opacity-95 transition-opacity"
+                  >
+                    <img src={receiptPreview} alt="Receipt preview" className="w-full h-full object-cover" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 sm:pt-4">
+              {error ? (
+                <p className="text-[12px] font-medium text-[var(--red)] mb-4" role="alert">
+                  {error}
+                </p>
+              ) : null}
               <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingReceipt}
-                className="inline-flex items-center justify-center gap-1.5 min-h-[44px] -ml-0.5 pl-0.5 pr-1 py-2 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[var(--tx2)] hover:text-[var(--tx)] disabled:opacity-45 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)]"
+                type="submit"
+                disabled={submitting}
+                className="crew-premium-cta w-full min-h-[52px] inline-flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] leading-none text-white disabled:opacity-45 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)]"
               >
-                {uploadingReceipt ? "Uploading…" : receiptStoragePath ? "Change receipt" : "Add receipt"}
-                {!uploadingReceipt && (
-                  <CaretRight size={14} weight="bold" className="shrink-0 opacity-80" aria-hidden />
+                {submitting ? (
+                  "Submitting…"
+                ) : (
+                  <>
+                    Submit expense
+                    <CaretRight size={16} weight="bold" className="shrink-0" aria-hidden />
+                  </>
                 )}
               </button>
-              {receiptPreview && (
-                <a
-                  href={receiptPreview}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-[72px] h-[72px] overflow-hidden bg-[var(--card)]/40 shrink-0 shadow-[0_12px_32px_rgba(0,0,0,0.2)] hover:opacity-95 transition-opacity"
-                >
-                  <img src={receiptPreview} alt="Receipt preview" className="w-full h-full object-cover" />
-                </a>
-              )}
             </div>
-          </div>
-
-          <div className="pt-2">
-            {error ? (
-              <p className="text-[12px] font-medium text-[var(--red)] mb-4" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="crew-premium-cta w-full min-h-[52px] inline-flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] leading-none text-white disabled:opacity-45 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] [font-family:var(--font-body)]"
-            >
-              {submitting ? (
-                "Submitting…"
-              ) : (
-                <>
-                  Submit expense
-                  <CaretRight size={16} weight="bold" className="shrink-0" aria-hidden />
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
 
         <div className="mt-16 sm:mt-20">
           <div className="mb-10">

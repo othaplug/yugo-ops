@@ -237,16 +237,15 @@ function PostDeliveryRating({
             href={googleReviewUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-none border text-[11px] font-bold uppercase tracking-[0.12em] transition-opacity hover:opacity-80"
+            className="inline-flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-none text-[11px] font-bold uppercase tracking-[0.12em] transition-opacity hover:opacity-80"
             style={{
-              borderColor: `${FOREST}`,
-              color: FOREST,
-              backgroundColor: "transparent",
+              backgroundColor: WINE,
+              color: CREAM,
             }}
           >
-            <GoogleLogo size={14} className="shrink-0" aria-hidden />
+            <GoogleLogo size={14} className="shrink-0" color={CREAM} aria-hidden />
             Google review
-            <CaretRight size={14} className="shrink-0" aria-hidden />
+            <CaretRight size={14} className="shrink-0" color={CREAM} aria-hidden />
           </a>
         )}
       </div>
@@ -375,7 +374,11 @@ export default function TrackDeliveryClient({
         if (data.liveStage != null) setLiveStage(data.liveStage);
         if (data.crew) setCrewLoc(data.crew);
         else setCrewLoc(null);
-        if (data.crewName) setCrewName(data.crewName);
+        setCrewName(
+          typeof data.crewName === "string" && data.crewName.trim()
+            ? data.crewName.trim()
+            : null,
+        );
         if (data.crewPhone) setCrewPhone(data.crewPhone);
         if (data.dispatchPhone) setDispatchPhone(data.dispatchPhone);
         if (data.center?.lat != null) setCenter(data.center);
@@ -502,11 +505,22 @@ export default function TrackDeliveryClient({
                   : toTitleCase(liveStage || "")}
               </div>
               <div className="text-[11px] opacity-70" style={{ color: FOREST }}>
-                {displayEta != null
-                  ? `~${displayEta} min away`
-                  : displayDeliveryCrewName
-                    ? `Crew: ${displayDeliveryCrewName}`
-                    : "Your crew is on the way"}
+                {displayEta != null ? (
+                  `~${displayEta} min away`
+                ) : displayDeliveryCrewName ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <User
+                      size={14}
+                      weight="duotone"
+                      className="shrink-0 opacity-90"
+                      color={FOREST}
+                      aria-hidden
+                    />
+                    {`Crew: ${displayDeliveryCrewName}`}
+                  </span>
+                ) : (
+                  "Your crew is on the way"
+                )}
               </div>
             </div>
           </div>
@@ -920,32 +934,31 @@ export default function TrackDeliveryClient({
           {/* ── Crew ── */}
           <div className="py-5 anim-slide-up anim-delay-4">
             <div className="flex items-center gap-3.5">
-              <div
-                className="w-10 h-10 rounded-none border flex items-center justify-center shrink-0"
-                style={{
-                  borderColor: `${FOREST}18`,
-                  backgroundColor: `${FOREST}06`,
-                }}
-                aria-hidden
-              >
-                <User size={18} color={FOREST} aria-hidden />
-              </div>
               <div className="flex-1 min-w-0">
                 {displayDeliveryCrewName ? (
-                  <>
-                    <div
-                      className="text-[14px] font-semibold"
-                      style={{ color: FOREST }}
-                    >
-                      {displayDeliveryCrewName}
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <User
+                      size={20}
+                      weight="duotone"
+                      className="shrink-0 mt-0.5"
+                      color={FOREST}
+                      aria-hidden
+                    />
+                    <div className="min-w-0">
+                      <div
+                        className="text-[14px] font-semibold"
+                        style={{ color: FOREST }}
+                      >
+                        {displayDeliveryCrewName}
+                      </div>
+                      <div
+                        className="text-[11px]"
+                        style={{ color: FOREST_MUTED }}
+                      >
+                        Your delivery crew
+                      </div>
                     </div>
-                    <div
-                      className="text-[11px]"
-                      style={{ color: FOREST_MUTED }}
-                    >
-                      Your delivery crew
-                    </div>
-                  </>
+                  </div>
                 ) : deliveryCrewAssigned ? (
                   <>
                     <div
@@ -1016,61 +1029,75 @@ export default function TrackDeliveryClient({
           {/* ── Item List ── */}
           {itemsCount > 0 &&
             (() => {
-              const grouped: Record<string, string[]> = {};
+              const grouped: Record<string, Map<string, number>> = {};
               const rawList = Array.isArray(delivery.items)
                 ? delivery.items
                 : [];
               rawList.forEach((raw: unknown) => {
                 const { room, name, qty } = normalizeDeliveryItem(raw);
-                const label = qty > 1 ? `${name} ×${qty}` : name;
-                if (!grouped[room]) grouped[room] = [];
-                grouped[room].push(label);
+                const trimmed = name.trim();
+                if (!trimmed) return;
+                const r = room.trim() || "Items";
+                if (!grouped[r]) grouped[r] = new Map();
+                const m = grouped[r];
+                const prev = m.get(trimmed) ?? 0;
+                m.set(trimmed, prev + Math.max(1, qty));
               });
-              const rooms = Object.keys(grouped);
+              const rooms = Object.keys(grouped).sort((a, b) =>
+                a.localeCompare(b, undefined, { sensitivity: "base" }),
+              );
+              const GENERIC_ROOM = "Items";
 
               return (
                 <div className="py-5 anim-slide-up anim-delay-4">
-                  <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="mb-4">
                     <span
                       className={QUOTE_EYEBROW_CLASS}
                       style={{ color: FOREST_MUTED }}
                     >
                       Items
                     </span>
-                    <span
-                      className={`${QUOTE_EYEBROW_CLASS} tabular-nums px-2 py-0.5 rounded-none border`}
-                      style={{
-                        borderColor: `${FOREST}18`,
-                        color: FOREST_MUTED,
-                      }}
-                    >
-                      {itemsCount}
-                    </span>
                   </div>
                   <div className="divide-y divide-[#2C3E2D]/12">
                     {rooms.map((room) => (
                       <div key={room} className="py-3.5 first:pt-0 last:pb-0">
-                        <div
-                          className={`${QUOTE_EYEBROW_CLASS} mb-2`}
-                          style={{ color: WINE }}
-                        >
-                          {room}
-                        </div>
+                        {room !== GENERIC_ROOM ? (
+                          <div
+                            className={`${QUOTE_EYEBROW_CLASS} mb-2`}
+                            style={{ color: WINE }}
+                          >
+                            {room}
+                          </div>
+                        ) : null}
                         <div className="space-y-2">
-                          {grouped[room].map((name, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                              <div
-                                className="w-1 h-1 rounded-full shrink-0"
-                                style={{ backgroundColor: `${FOREST}25` }}
-                              />
-                              <span
-                                className="text-[13px] font-medium"
-                                style={{ color: FOREST }}
-                              >
-                                {name}
-                              </span>
-                            </div>
-                          ))}
+                          {Array.from(grouped[room].entries())
+                            .sort(([a], [b]) =>
+                              a.localeCompare(b, undefined, {
+                                sensitivity: "base",
+                              }),
+                            )
+                            .map(([itemName, totalQty]) => {
+                              const label = `${itemName} ×${totalQty}`;
+                              return (
+                                <div
+                                  key={itemName}
+                                  className="flex items-center gap-3"
+                                >
+                                  <div
+                                    className="w-1 h-1 rounded-full shrink-0"
+                                    style={{
+                                      backgroundColor: `${FOREST}25`,
+                                    }}
+                                  />
+                                  <span
+                                    className="text-[13px] font-medium"
+                                    style={{ color: FOREST }}
+                                  >
+                                    {label}
+                                  </span>
+                                </div>
+                              );
+                            })}
                         </div>
                       </div>
                     ))}
@@ -1196,15 +1223,28 @@ export default function TrackDeliveryClient({
                         className="text-[12px] leading-snug"
                         style={{ color: FOREST_MUTED }}
                       >
-                        {crewHasStarted
-                          ? displayEta != null
-                            ? `~${displayEta} min away`
-                            : displayDeliveryCrewName
-                              ? `${displayDeliveryCrewName} is en route`
-                              : "Crew is on the way"
-                          : scheduledDate
-                            ? scheduledDate
-                            : "Activates when your crew begins"}
+                        {crewHasStarted ? (
+                          displayEta != null ? (
+                            `~${displayEta} min away`
+                          ) : displayDeliveryCrewName ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <User
+                                size={14}
+                                weight="duotone"
+                                className="shrink-0"
+                                color={FOREST_MUTED}
+                                aria-hidden
+                              />
+                              {`${displayDeliveryCrewName} is en route`}
+                            </span>
+                          ) : (
+                            "Crew is on the way"
+                          )
+                        ) : scheduledDate ? (
+                          scheduledDate
+                        ) : (
+                          "Activates when your crew begins"
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">

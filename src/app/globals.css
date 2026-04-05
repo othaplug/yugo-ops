@@ -3111,15 +3111,18 @@ select:focus-visible {
   text-decoration: underline;
 }
 
-/* Gate panel — secondary text action under primary CTA: reliable contrast vs inline colors */
-.crew-app .crew-login-panel .crew-login-gate-secondary {
-  color: rgba(255, 255, 255, 0.82) !important;
+/* Gate panel — secondary text action under primary CTA: light text on #1A1A1A (body may be light-theme --tx) */
+.crew-app .crew-login-panel .crew-login-gate-secondary,
+main.crew-login-gate .crew-login-panel .crew-login-gate-secondary {
+  color: rgba(255, 255, 255, 0.92) !important;
 }
-.crew-app .crew-login-panel .crew-login-gate-secondary:hover {
+.crew-app .crew-login-panel .crew-login-gate-secondary:hover,
+main.crew-login-gate .crew-login-panel .crew-login-gate-secondary:hover {
   color: #f5f5f3 !important;
   text-decoration: underline;
 }
-.crew-app .crew-login-panel .crew-login-gate-secondary:focus-visible {
+.crew-app .crew-login-panel .crew-login-gate-secondary:focus-visible,
+main.crew-login-gate .crew-login-panel .crew-login-gate-secondary:focus-visible {
   outline: 2px solid rgba(255, 250, 245, 0.55);
   outline-offset: 3px;
 }

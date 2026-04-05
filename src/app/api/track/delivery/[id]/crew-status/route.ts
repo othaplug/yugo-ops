@@ -5,6 +5,17 @@ import { isUuid } from "@/lib/move-code";
 import { getDispatchPhone } from "@/lib/config";
 import { buildClientMainStepCompletedAt } from "@/lib/delivery-track-stage-times";
 
+/** Public track: show assigned crew member names only — never internal team labels (e.g. Team Alpha). */
+function clientFacingDeliveryCrewNames(assignedMembers: unknown): string | null {
+  const names = Array.isArray(assignedMembers)
+    ? assignedMembers
+        .filter((n): n is string => typeof n === "string" && n.trim().length > 0)
+        .map((n) => n.trim())
+    : [];
+  if (names.length === 0) return null;
+  return names.join(", ");
+}
+
 const MAPBOX_TOKEN =
   process.env.MAPBOX_ACCESS_TOKEN ||
   process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
@@ -57,14 +68,14 @@ export async function GET(
       ? await admin
           .from("deliveries")
           .select(
-            "id, crew_id, stage, completed_at, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, delivery_window, eta_current_minutes",
+            "id, crew_id, assigned_members, stage, completed_at, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, delivery_window, eta_current_minutes",
           )
           .eq("id", slug)
           .single()
       : await admin
           .from("deliveries")
           .select(
-            "id, crew_id, stage, completed_at, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, delivery_window, eta_current_minutes",
+            "id, crew_id, assigned_members, stage, completed_at, pickup_address, delivery_address, pickup_lat, pickup_lng, delivery_lat, delivery_lng, scheduled_date, time_slot, delivery_window, eta_current_minutes",
           )
           .ilike("delivery_number", slug)
           .single();
@@ -116,20 +127,24 @@ export async function GET(
       }
     }
 
+    const clientCrewLabel = clientFacingDeliveryCrewNames(delivery.assigned_members);
+
     if (delivery.crew_id) {
       const { data: c } = await admin
         .from("crews")
-        .select("current_lat, current_lng, name")
+        .select("current_lat, current_lng")
         .eq("id", delivery.crew_id)
         .single();
-      if (c) crewName = c.name || "Crew";
+      crewName = clientCrewLabel;
 
       if (ts?.last_location && typeof ts.last_location === "object" && "lat" in ts.last_location && "lng" in ts.last_location) {
         const loc = ts.last_location as { lat: number; lng: number };
-        crew = { current_lat: loc.lat, current_lng: loc.lng, name: crewName || "Crew" };
+        const markerName = clientCrewLabel || "Crew";
+        crew = { current_lat: loc.lat, current_lng: loc.lng, name: markerName };
         liveStage = ts.status || liveStage;
       } else if (c && c.current_lat != null && c.current_lng != null) {
-        crew = { current_lat: c.current_lat, current_lng: c.current_lng, name: c.name || "Crew" };
+        const markerName = clientCrewLabel || "Crew";
+        crew = { current_lat: c.current_lat, current_lng: c.current_lng, name: markerName };
       }
     }
 
