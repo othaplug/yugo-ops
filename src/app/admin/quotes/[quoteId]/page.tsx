@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { redirect } from "next/navigation";
 import QuoteDetailClient from "./QuoteDetailClient";
+import { computeQuoteEngagementMetrics } from "@/lib/quotes/comparison-intelligence";
 
 interface Props {
   params: Promise<{ quoteId: string }>;
@@ -57,6 +58,8 @@ export default async function QuoteDetailPage({ params }: Props) {
     parseInt(maxFuRow?.value || "3", 10) || 3,
   );
 
+  const engagementMetrics = await computeQuoteEngagementMetrics(db, quote.id);
+
   return (
     <div className="max-w-[1400px] mx-auto px-5 md:px-6 py-5 md:py-6">
       <QuoteDetailClient
@@ -66,6 +69,7 @@ export default async function QuoteDetailPage({ params }: Props) {
         isSuperAdmin={isSuperAdmin}
         followupsSentCount={followupsSentCount ?? 0}
         followupMaxAttempts={followupMaxAttempts}
+        engagementMetrics={engagementMetrics}
       />
     </div>
   );

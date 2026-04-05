@@ -43,6 +43,14 @@ interface SquarePaymentFormProps {
   submitLabel?: string;
   /** Label above the amount (e.g. DEPOSIT AMOUNT vs TOTAL DUE NOW) */
   amountHeading?: string;
+  /** Eyebrow / label colour (use shell ink on wine or signature payment sections) */
+  amountHeadingColor?: string;
+  /** Amount figure colour (wine hex reads as near-invisible on deep wine shells) */
+  amountValueColor?: string;
+  /** Hairline between amount row and card (optional shell-tinted rule on dark backgrounds) */
+  amountSectionRuleColor?: string;
+  /** “Secured by Square” row — must contrast with section background */
+  footerNoteColor?: string;
 }
 
 type SquareCard = {
@@ -114,6 +122,10 @@ export default function SquarePaymentForm({
   disabled,
   submitLabel,
   amountHeading = "DEPOSIT AMOUNT",
+  amountHeadingColor = FOREST_MUTED,
+  amountValueColor = WINE,
+  amountSectionRuleColor,
+  footerNoteColor = FOREST_MUTED,
 }: SquarePaymentFormProps) {
   const [paymentSdk, setPaymentSdk] = useState<
     { scriptUrl: string; appId: string; locationId: string } | null
@@ -361,15 +373,23 @@ export default function SquarePaymentForm({
 
       {/* Amount display — receipt-style row */}
       <div className="flex items-baseline justify-between gap-4 py-2">
-        <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: FOREST_MUTED }}>
+        <span className={`${QUOTE_EYEBROW_CLASS} shrink-0`} style={{ color: amountHeadingColor }}>
           {amountHeading}
         </span>
-        <span className={`${QUOTE_SECTION_H2_CLASS} font-bold tabular-nums text-right`} style={{ color: WINE }}>
+        <span
+          className={`${QUOTE_SECTION_H2_CLASS} font-bold tabular-nums text-right`}
+          style={{ color: amountValueColor }}
+        >
           {fmtPrice(amount)}
         </span>
       </div>
 
-      <hr className="border-0 h-px w-full mb-4" style={{ backgroundColor: `${FOREST}10` }} />
+      <hr
+        className="border-0 h-px w-full mb-4"
+        style={{
+          backgroundColor: amountSectionRuleColor ?? `${FOREST}10`,
+        }}
+      />
 
       {/* Card form container */}
       <div
@@ -430,8 +450,8 @@ export default function SquarePaymentForm({
 
       {/* Security badge */}
       <div className="flex items-center justify-center gap-2">
-        <Lock size={14} color={FOREST_MUTED} aria-hidden />
-        <span className="text-[11px] leading-snug" style={{ color: FOREST_MUTED }}>
+        <Lock size={14} color={footerNoteColor} aria-hidden />
+        <span className="text-[11px] leading-snug" style={{ color: footerNoteColor }}>
           Secured by Square &middot; 256-bit encryption
         </span>
       </div>

@@ -51,6 +51,8 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
     { data: paymentLedger },
     { data: moveStatusEvents },
     { data: linkedBinOrders },
+    { data: surveyPhotos },
+    { data: pendingModifications },
   ] = await Promise.all([
     db.from("move_change_requests").select("fee_cents").eq("move_id", move.id).eq("status", "approved"),
     db.from("extra_items").select("fee_cents").eq("job_id", move.id).eq("job_type", "move").eq("status", "approved"),
@@ -80,6 +82,14 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
       .eq("entity_id", move.id)
       .order("created_at", { ascending: true }),
     db.from("bin_orders").select("*").eq("move_id", move.id).order("created_at", { ascending: false }),
+    db.from("move_survey_photos").select("id, room, photo_url, notes, uploaded_at").eq("move_id", move.id).order("uploaded_at", { ascending: false }),
+    db
+      .from("move_modifications")
+      .select("id, type, status, price_difference, created_at")
+      .eq("move_id", move.id)
+      .eq("status", "pending_approval")
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
   const changeFeesCents = (approvedChanges ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
   const extraFeesCents = (approvedExtras ?? []).reduce((s, r) => s + (Number(r.fee_cents) || 0), 0);
@@ -99,6 +109,8 @@ export default async function MoveDetailPage({ params }: { params: Promise<{ id:
       paymentLedger={paymentLedger ?? []}
       moveStatusEvents={moveStatusEvents ?? []}
       linkedBinOrders={linkedBinOrders ?? []}
+      surveyPhotos={surveyPhotos ?? []}
+      pendingModifications={pendingModifications ?? []}
     />
   );
 }

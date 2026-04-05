@@ -62,6 +62,11 @@ import {
   isSkidCatalogLabel,
 } from "./b2b-one-off-ui";
 import SpecialtyTransportQuoteBuilder from "./SpecialtyTransportQuoteBuilder";
+import MoveProjectPlannerSection, {
+  buildDefaultMoveProjectPayload,
+} from "./MoveProjectPlannerSection";
+import { shouldShowMoveProjectPlanner } from "@/lib/move-projects/visibility";
+import type { MoveProjectPayload } from "@/lib/move-projects/schema";
 import B2BJobsDeliveryForm, { type B2BJobsEmbedSnapshot } from "@/components/admin/b2b/B2BJobsDeliveryForm";
 import { calculateBinRentalPrice, BIN_RENTAL_BUNDLE_SPECS } from "@/lib/pricing/bin-rental";
 import {
@@ -1283,6 +1288,11 @@ export default function QuoteFormClient({
   const [referralMsg, setReferralMsg] = useState("");
   const [referralDiscount, setReferralDiscount] = useState(0);
 
+  const [multiDayEnabled, setMultiDayEnabled] = useState(false);
+  const [moveProjectPayload, setMoveProjectPayload] = useState<MoveProjectPayload | null>(null);
+  const [savedMoveProjectId, setSavedMoveProjectId] = useState<string | null>(null);
+  const moveProjectSeededRef = useRef(false);
+
   // Draft auto-save
   const quoteDraftState = useMemo(() => ({
     serviceType, firstName, lastName, email, phone,
@@ -1549,6 +1559,60 @@ export default function QuoteFormClient({
   const clientBoxCountNum = Number(clientBoxCount) || 0;
   const boxScore = clientBoxCountNum * 0.3;
   const inventoryScoreWithBoxes = inventoryScore + boxScore;
+
+  const workstationCountN = Number(wsCount) || 0;
+  const showMoveProjectPlanner = useMemo(
+    () =>
+      shouldShowMoveProjectPlanner({
+        serviceType,
+        moveSize,
+        recommendedTier,
+        multiDayEnabled,
+        workstationCount: workstationCountN,
+      }),
+    [serviceType, moveSize, recommendedTier, multiDayEnabled, workstationCountN],
+  );
+  const movePlannerVisible = showMoveProjectPlanner || multiDayEnabled;
+
+  useEffect(() => {
+    if (!movePlannerVisible) {
+      moveProjectSeededRef.current = false;
+      setMoveProjectPayload(null);
+      return;
+    }
+    if (moveProjectPayload) return;
+    if (moveProjectSeededRef.current) return;
+    moveProjectSeededRef.current = true;
+    const nm = [firstName, lastName].filter(Boolean).join(" ");
+    setMoveProjectPayload(
+      buildDefaultMoveProjectPayload({
+        clientName: nm,
+        fromAddress,
+        toAddress,
+        fromAccess,
+        toAccess,
+        moveDate,
+        serviceType,
+        workstationCount: workstationCountN,
+        companyName: b2bBusinessName,
+        officeEstHours,
+      }),
+    );
+  }, [
+    movePlannerVisible,
+    moveProjectPayload,
+    firstName,
+    lastName,
+    fromAddress,
+    toAddress,
+    fromAccess,
+    toAccess,
+    moveDate,
+    serviceType,
+    workstationCountN,
+    b2bBusinessName,
+    officeEstHours,
+  ]);
 
   const moveSizeSuggestion = useMemo(() => {
     if (inventoryItems.length === 0) return null;
@@ -2814,6 +2878,15 @@ export default function QuoteFormClient({
       base.internal_notes = binInternalNotes.trim() || undefined;
     }
     if (opts?.serviceAreaOverride || serviceAreaOverride) base.service_area_override = true;
+
+    const plannerActive = movePlannerVisible;
+    if (plannerActive && moveProjectPayload) {
+      const pid = moveProjectPayload.id ?? savedMoveProjectId ?? undefined;
+      base.move_project = pid ? { ...moveProjectPayload, id: pid } : { ...moveProjectPayload };
+    } else if (savedMoveProjectId) {
+      base.clear_move_project = true;
+    }
+
     return base;
   }, [
     serviceType, fromAddress, toAddress, fromAccess, toAccess, moveDate, preferredTime, arrivalWindow, hubspotDealId,
@@ -2850,6 +2923,7 @@ export default function QuoteFormClient({
     singleItemSpecialHandling, specialtyBuildingReqs, specialtyAccessDifficulty,
     binBundleType, binCustomCount, binExtraBins, binPackingPaper, binMaterialDelivery, binLinkedMoveId,
     binDeliveryNotes, binInternalNotes,
+    movePlannerVisible, moveProjectPayload, savedMoveProjectId,
   ]);
 
   // ── Generate quote (Step 1: creates quote in DB, returns quote_id) ────────────────────────
@@ -2952,6 +3026,10 @@ export default function QuoteFormClient({
       if (!id) throw new Error("Generate did not return a quote_id");
       setQuoteResult(data);
       setQuoteId(id);
+      setSavedMoveProjectId(typeof data.move_project_id === "string" ? data.move_project_id : null);
+      if (typeof data.move_project_id === "string" && moveProjectPayload) {
+        setMoveProjectPayload((prev) => (prev ? { ...prev, id: data.move_project_id } : prev));
+      }
       setB2bSubmitErrors({});
       quoteClearDraft();
       toast(`Quote ${id} generated`, "check");
@@ -3242,7 +3320,9 @@ export default function QuoteFormClient({
                 </div>
               </div>
 
-              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              {serviceType !== "b2b_delivery" && (
+                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              )}
 
               {/* ── 2. Client ── */}
               {serviceType !== "b2b_delivery" && (
@@ -3497,7 +3577,9 @@ export default function QuoteFormClient({
               </div>
               )}
 
-              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              {serviceType !== "b2b_delivery" && (
+                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              )}
 
               {/* ── 3. Addresses ── */}
               {serviceType !== "b2b_delivery" && (
@@ -3693,7 +3775,9 @@ export default function QuoteFormClient({
               </div>
               )}
 
-              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              {serviceType !== "b2b_delivery" && (
+                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              )}
 
               {/* ── 4. Move details ── */}
               {/* Event and labour_only manage their own date fields */}
@@ -3965,7 +4049,9 @@ export default function QuoteFormClient({
               </div>
               )}
 
-              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              {serviceType !== "b2b_delivery" && (
+                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              )}
 
               {/* ── 5. Specialty items ── */}
               {(serviceType === "local_move" || serviceType === "long_distance") && (
@@ -4110,7 +4196,9 @@ export default function QuoteFormClient({
                 </>
               )}
 
-              <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              {serviceType !== "b2b_delivery" && (
+                <div className="border-t border-[var(--brd)]/30 pt-5 pb-5" />
+              )}
 
               {/* ── Office fields ── */}
               {serviceType === "office_move" && (
@@ -4173,6 +4261,55 @@ export default function QuoteFormClient({
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {(serviceType === "local_move" ||
+                serviceType === "long_distance" ||
+                serviceType === "office_move") && (
+                <div className="col-span-full space-y-3">
+                  <div className="border-t border-[var(--brd)]/30 pt-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]">
+                          Multi-day scheduling
+                        </h3>
+                        <p className="text-[10px] text-[var(--tx3)] mt-1 max-w-xl leading-snug">
+                          {showMoveProjectPlanner
+                            ? "This quote qualifies for the multi-day planner. Adjust phases and days below."
+                            : "Turn on to plan pack, move, and setup as separate days, or for custom milestones."}
+                        </p>
+                      </div>
+                      {!showMoveProjectPlanner && (
+                        <label className="flex items-center gap-2 text-[11px] font-medium text-[var(--tx)] cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            className="rounded border-[var(--brd)]"
+                            checked={multiDayEnabled}
+                            onChange={(e) => setMultiDayEnabled(e.target.checked)}
+                          />
+                          Enable multi-day planner
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                  {movePlannerVisible && moveProjectPayload && (
+                    <MoveProjectPlannerSection
+                      value={moveProjectPayload}
+                      onChange={setMoveProjectPayload}
+                      clientName={[firstName, lastName].filter(Boolean).join(" ")}
+                      fromAddress={fromAddress}
+                      toAddress={toAddress}
+                      fromAccess={fromAccess}
+                      toAccess={toAccess}
+                      moveDate={moveDate}
+                      serviceType={serviceType}
+                      workstationCount={workstationCountN}
+                      companyName={b2bBusinessName}
+                      officeEstHours={officeEstHours}
+                      quoteFactors={(quoteResult?.factors as Record<string, unknown> | null) ?? null}
+                    />
+                  )}
                 </div>
               )}
 
@@ -5159,7 +5296,9 @@ export default function QuoteFormClient({
               )}
 
               {(serviceType === "b2b_delivery" || serviceType === "b2b_oneoff") && (
-                <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 md:p-6 space-y-4 max-w-[720px]">
+                <div
+                  className={`rounded-xl border border-[var(--brd)] bg-[var(--card)] p-5 md:p-6 space-y-4 max-w-[720px]${serviceType === "b2b_delivery" ? " mt-5" : ""}`}
+                >
                   <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--tx3)]/82">B2B delivery (single form)</p>
                   <p className="text-[12px] text-[var(--tx3)] leading-relaxed">
                     Same B2B Jobs form as Deliveries: verticals, dimensional pricing, multi-stop routes, draft / quote / schedule.

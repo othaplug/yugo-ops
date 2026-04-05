@@ -29,6 +29,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { formatPhone } from "@/lib/phone";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 import { quoteDetailDateLabel } from "@/lib/quotes/quote-field-labels";
+import type { QuoteEngagementMetrics } from "@/lib/quotes/comparison-intelligence";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -55,6 +56,7 @@ interface Props {
   isSuperAdmin?: boolean;
   followupsSentCount?: number;
   followupMaxAttempts?: number;
+  engagementMetrics?: QuoteEngagementMetrics | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -68,6 +70,7 @@ const STATUS_COLORS: Record<string, string> = {
   lost: "text-red-400",
   reactivated: "text-purple-400",
   superseded: "text-[var(--tx3)]",
+  payment_failed: "text-orange-400",
 };
 
 const LOSS_REASON_OPTIONS: { value: string; label: string }[] = [
@@ -124,6 +127,11 @@ const EVENT_CONFIG: Record<
     color: "text-[var(--gold)]",
   },
   page_exit: { icon: LogOut, label: "Left page", color: "text-[var(--tx3)]" },
+  engagement_ping: {
+    icon: Eye,
+    label: "Activity ping",
+    color: "text-[var(--tx3)]",
+  },
   quote_viewed: { icon: Eye, label: "Viewed quote", color: "text-blue-400" },
   tier_selected: {
     icon: MousePointerClick,
@@ -191,6 +199,14 @@ function engagementSignal(events: EngagementEvent[]): {
   return { label: "No engagement", color: "text-[var(--tx3)]" };
 }
 
+function tierInterestLine(metrics: QuoteEngagementMetrics): string {
+  const entries = Object.entries(metrics.tierClickCounts);
+  if (entries.length === 0) return "—";
+  return entries
+    .map(([k, v]) => `${toTitleCase(k)} ${v}×`)
+    .join(", ");
+}
+
 export default function QuoteDetailClient({
   quote,
   engagement,
@@ -198,6 +214,7 @@ export default function QuoteDetailClient({
   isSuperAdmin = false,
   followupsSentCount = 0,
   followupMaxAttempts = 3,
+  engagementMetrics = null,
 }: Props) {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1075,46 +1092,104 @@ export default function QuoteDetailClient({
               </div>
             </div>
 
-            {/* Engagement Stats */}
-            {engagement.length > 0 && (
+            {/* Client engagement (metrics + legacy stats) */}
+            {(engagement.length > 0 || engagementMetrics) && (
               <div className="border-t border-[var(--brd)]/30 pt-6 pb-6">
-                <h2 className="admin-section-h2 mb-3">Engagement Stats</h2>
-                <div className="space-y-2 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)]">Page Views</span>
-                    <span className="text-[var(--tx)] font-medium">
-                      {
-                        engagement.filter((e) => e.event_type === "page_view")
-                          .length
-                      }
-                    </span>
+                <h2 className="admin-section-h2 mb-3">Client engagement</h2>
+                {engagementMetrics && (
+                  <div className="space-y-2 text-[11px] mb-4">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[var(--tx3)] uppercase tracking-wide shrink-0">
+                        Views
+                      </span>
+                      <span className="text-[var(--tx)] font-medium text-right">
+                        {engagementMetrics.pageViewCount}
+                        {engagementMetrics.distinctViewDays > 0
+                          ? ` (across ${engagementMetrics.distinctViewDays} day${engagementMetrics.distinctViewDays === 1 ? "" : "s"})`
+                          : ""}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[var(--tx3)] uppercase tracking-wide shrink-0">
+                        Last activity
+                      </span>
+                      <span className="text-[var(--tx)] font-medium text-right">
+                        {engagementMetrics.lastEngagementAt
+                          ? timeAgo(engagementMetrics.lastEngagementAt)
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[var(--tx3)] uppercase tracking-wide shrink-0">
+                        Tier interest
+                      </span>
+                      <span className="text-[var(--tx)] font-medium text-right">
+                        {tierInterestLine(engagementMetrics)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[var(--tx3)] uppercase tracking-wide shrink-0">
+                        Time on page
+                      </span>
+                      <span className="text-[var(--tx)] font-medium text-right">
+                        {engagementMetrics.maxSessionSeconds > 0
+                          ? `up to ${fmtDuration(engagementMetrics.maxSessionSeconds)}`
+                          : "—"}
+                        {engagementMetrics.maxScrollPct > 0
+                          ? ` · scroll ${engagementMetrics.maxScrollPct}%`
+                          : ""}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-[var(--tx3)] uppercase tracking-wide shrink-0">
+                        Status
+                      </span>
+                      <span
+                        className={`font-medium text-right ${engagementMetrics.comparingRecommended ? "text-amber-500" : "text-[var(--tx)]"}`}
+                      >
+                        {engagementMetrics.comparingLabel}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)]">Longest Session</span>
-                    <span className="text-[var(--tx)] font-medium">
-                      {fmtDuration(
-                        Math.max(
-                          ...engagement.map(
-                            (e) => e.session_duration_seconds ?? 0,
+                )}
+                {engagement.length > 0 && (
+                  <div className="space-y-2 text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--tx3)]">Raw page views</span>
+                      <span className="text-[var(--tx)] font-medium">
+                        {
+                          engagement.filter((e) => e.event_type === "page_view")
+                            .length
+                        }
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--tx3)]">Longest session</span>
+                      <span className="text-[var(--tx)] font-medium">
+                        {fmtDuration(
+                          Math.max(
+                            ...engagement.map(
+                              (e) => e.session_duration_seconds ?? 0,
+                            ),
                           ),
-                        ),
-                      )}
-                    </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--tx3)]">Total events</span>
+                      <span className="text-[var(--tx)] font-medium">
+                        {engagement.length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--tx3)]">Device</span>
+                      <span className="text-[var(--tx)] font-medium uppercase">
+                        {engagement.find((e) => e.device_type)?.device_type ??
+                          "-"}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)]">Total Events</span>
-                    <span className="text-[var(--tx)] font-medium">
-                      {engagement.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--tx3)]">Device</span>
-                    <span className="text-[var(--tx)] font-medium uppercase">
-                      {engagement.find((e) => e.device_type)?.device_type ??
-                        "-"}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
             )}
           </div>

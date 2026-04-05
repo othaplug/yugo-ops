@@ -25,6 +25,7 @@ const NAV = [
   ]},
   { label: "Moves", items: [
     { name: "All Moves", icon: "truck", href: "/admin/moves" },
+    { name: "Move Projects", icon: "calendar", href: "/admin/move-projects" },
     { name: "Quotes", icon: "fileText", href: "/admin/quotes", badge: "pending_quotes" },
   ]},
   { label: "Finance", items: [

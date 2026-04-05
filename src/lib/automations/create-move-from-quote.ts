@@ -282,6 +282,8 @@ export async function createMoveFromQuote(
     neighbourhood_tier: (factors.neighbourhood_tier as string) ?? null,
     lead_source: "quote",
 
+    move_project_id: (quote as { move_project_id?: string | null }).move_project_id ?? null,
+
     ...officeFields,
     ...singleItemFields,
     ...whiteGloveFields,

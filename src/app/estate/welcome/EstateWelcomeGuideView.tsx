@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { CaretRight, Phone, EnvelopeSimple } from "@phosphor-icons/react/ssr";
 import { formatPhone } from "@/lib/phone";
+import { formatMoveDate } from "@/lib/date-format";
 import EstateWelcomeFaq from "./[token]/EstateWelcomeFaq";
 import { ESTATE_WELCOME_BG, ON_WINE } from "./estate-welcome-tokens";
 
@@ -194,7 +195,7 @@ const NEW_HOME_FEATURES: { title: string; description: string }[] = [
 
 const PROTECTION_LINES: string[] = [
   "Repair by our verified professionals or full replacement valuation, per your Estate agreement.",
-  "Up to $10,000 per item, $100,000 per shipment.",
+  "Up to $10,000 per item, $100,000 per move.",
   "Zero deductible.",
   "$2M commercial liability.",
 ];
@@ -217,6 +218,33 @@ const AFTER_MOVE_FEATURES: { title: string; description: string }[] = [
   },
 ];
 
+const ESTATE_CONCIERGE_NETWORK: { service: string; desc: string }[] = [
+  {
+    service: "TV and Wall Art Mounting",
+    desc: "Licensed installers for screens, mirrors, and artwork",
+  },
+  {
+    service: "Professional Organization",
+    desc: "Certified organizers for closets, kitchens, and storage systems",
+  },
+  {
+    service: "Interior Design",
+    desc: "Leading Toronto designers for styling and space planning",
+  },
+  {
+    service: "Cleaning Services",
+    desc: "Move-out deep cleans, move-in refreshes, ongoing housekeeping",
+  },
+  {
+    service: "Electricians",
+    desc: "Licensed professionals for chandeliers, fixtures, and outlets",
+  },
+  {
+    service: "Plumbing and Gas",
+    desc: "Licensed technicians for appliance reconnection and hookup",
+  },
+];
+
 export type EstateWelcomeGuideViewProps = {
   moveCode: string;
   moveDateLabel: string | null;
@@ -230,6 +258,11 @@ export type EstateWelcomeGuideViewProps = {
   /** Show track CTA in footer when the move has a scheduled date */
   hasScheduledMove: boolean;
   previewBanner?: string | null;
+  /** When set and more than 2 days, show full project timeline instead of pack/move/new-home story sections. */
+  moveProjectSchedule?: {
+    totalDays: number;
+    days: { date: string; label: string; description?: string | null }[];
+  } | null;
 };
 
 export default function EstateWelcomeGuideView({
@@ -243,6 +276,7 @@ export default function EstateWelcomeGuideView({
   clientName,
   hasScheduledMove,
   previewBanner,
+  moveProjectSchedule = null,
 }: EstateWelcomeGuideViewProps) {
   const greetingName = firstName(clientName);
 
@@ -369,65 +403,141 @@ export default function EstateWelcomeGuideView({
 
       <SubtleSectionDivider />
 
-      {/* ── Pack day ── */}
-      <section
-        className="estate-welcome-story py-20 md:py-28"
-        aria-labelledby="pack-heading"
-      >
-        <div className="max-w-4xl mx-auto px-5 md:px-8">
-          <Kicker>Pack day</Kicker>
-          <SectionTitle id="pack-heading">
-            The day before your move, our packing team arrives
-          </SectionTitle>
-          <BodyP>
-            Calm and thorough. You do not need to touch a box — we wrap,
-            protect, and label everything with a documented plan behind it.
-          </BodyP>
-          <FeatureGrid items={PACK_DAY_FEATURES} />
-        </div>
-      </section>
+      {moveProjectSchedule &&
+      moveProjectSchedule.totalDays > 2 &&
+      moveProjectSchedule.days.length > 0 ? (
+        <>
+          <section
+            className="estate-welcome-story py-20 md:py-28"
+            aria-labelledby="schedule-heading"
+          >
+            <div className="max-w-3xl mx-auto px-5 md:px-8">
+              <p
+                className="text-[11px] font-semibold tracking-[0.2em] uppercase mb-2"
+                style={{ color: "#66143D" }}
+              >
+                Your schedule
+              </p>
+              <h2
+                id="schedule-heading"
+                className="font-hero text-[28px] md:text-[34px] leading-tight mb-4 text-[#F9EDE4]"
+              >
+                {moveProjectSchedule.totalDays} days, one seamless experience
+              </h2>
+              <BodyP>
+                Your move is planned as a multi-day project. Each day has a clear
+                purpose, and your coordinator manages the full timeline.
+              </BodyP>
+              <div className="mt-10 space-y-8">
+                {moveProjectSchedule.days.map((day, i) => (
+                  <div key={`${day.date}-${i}`} className="flex gap-5">
+                    <div className="flex flex-col items-center shrink-0 w-12">
+                      <div
+                        className="w-10 h-10 rounded-full border flex items-center justify-center"
+                        style={{ borderColor: "#66143D" }}
+                      >
+                        <span className="text-sm font-serif text-[#F9EDE4]">{i + 1}</span>
+                      </div>
+                      {i < moveProjectSchedule.days.length - 1 ? (
+                        <div
+                          className="w-px flex-1 min-h-[3rem] mt-2"
+                          style={{ backgroundColor: "rgba(102,20,61,0.35)" }}
+                          aria-hidden
+                        />
+                      ) : null}
+                    </div>
+                    <div className="pt-1 pb-2 min-w-0">
+                      <p
+                        className="text-[11px] uppercase tracking-wider font-semibold"
+                        style={{ color: "#66143D" }}
+                      >
+                        {formatMoveDate(day.date)}
+                      </p>
+                      <p
+                        className="font-hero text-lg md:text-xl mt-1"
+                        style={{ color: ON_WINE.primary }}
+                      >
+                        {day.label}
+                      </p>
+                      {day.description ? (
+                        <p
+                          className="text-[14px] leading-relaxed mt-1"
+                          style={{ color: ON_WINE.secondary }}
+                        >
+                          {day.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <SubtleSectionDivider />
+        </>
+      ) : (
+        <>
+          {/* ── Pack day ── */}
+          <section
+            className="estate-welcome-story py-20 md:py-28"
+            aria-labelledby="pack-heading"
+          >
+            <div className="max-w-4xl mx-auto px-5 md:px-8">
+              <Kicker>Pack day</Kicker>
+              <SectionTitle id="pack-heading">
+                The day before your move, our packing team arrives
+              </SectionTitle>
+              <BodyP>
+                Calm and thorough. You do not need to touch a box — we wrap,
+                protect, and label everything with a documented plan behind it.
+              </BodyP>
+              <FeatureGrid items={PACK_DAY_FEATURES} />
+            </div>
+          </section>
 
-      <SubtleSectionDivider />
+          <SubtleSectionDivider />
 
-      {/* ── Move day ── */}
-      <section
-        className="estate-welcome-story py-20 md:py-28"
-        aria-labelledby="moveday-heading"
-      >
-        <div className="max-w-4xl mx-auto px-5 md:px-8">
-          <Kicker>Move day</Kicker>
-          <SectionTitle id="moveday-heading">
-            Your crew arrives in your window
-          </SectionTitle>
-          <BodyP>
-            This is what we do — precise, insured, and communicated. You always
-            know where things stand.
-          </BodyP>
-          <FeatureGrid items={MOVE_DAY_FEATURES} />
-        </div>
-      </section>
+          {/* ── Move day ── */}
+          <section
+            className="estate-welcome-story py-20 md:py-28"
+            aria-labelledby="moveday-heading"
+          >
+            <div className="max-w-4xl mx-auto px-5 md:px-8">
+              <Kicker>Move day</Kicker>
+              <SectionTitle id="moveday-heading">
+                Your crew arrives in your window
+              </SectionTitle>
+              <BodyP>
+                This is what we do — precise, insured, and communicated. You always
+                know where things stand.
+              </BodyP>
+              <FeatureGrid items={MOVE_DAY_FEATURES} />
+            </div>
+          </section>
 
-      <SubtleSectionDivider />
+          <SubtleSectionDivider />
 
-      {/* ── New home ── */}
-      <section
-        className="estate-welcome-story py-20 md:py-28"
-        aria-labelledby="newhome-heading"
-      >
-        <div className="max-w-4xl mx-auto px-5 md:px-8">
-          <Kicker>At your new home</Kicker>
-          <SectionTitle id="newhome-heading">
-            When the truck arrives, the next chapter begins
-          </SectionTitle>
-          <BodyP>
-            Unloading is not the end — it is the beginning of you actually
-            living in your new space.
-          </BodyP>
-          <FeatureGrid items={NEW_HOME_FEATURES} />
-        </div>
-      </section>
+          {/* ── New home ── */}
+          <section
+            className="estate-welcome-story py-20 md:py-28"
+            aria-labelledby="newhome-heading"
+          >
+            <div className="max-w-4xl mx-auto px-5 md:px-8">
+              <Kicker>At your new home</Kicker>
+              <SectionTitle id="newhome-heading">
+                When the truck arrives, the next chapter begins
+              </SectionTitle>
+              <BodyP>
+                Unloading is not the end — it is the beginning of you actually
+                living in your new space.
+              </BodyP>
+              <FeatureGrid items={NEW_HOME_FEATURES} />
+            </div>
+          </section>
 
-      <SubtleSectionDivider />
+          <SubtleSectionDivider />
+        </>
+      )}
 
       {/* ── Protection ── */}
       <section
@@ -495,6 +605,62 @@ export default function EstateWelcomeGuideView({
           <div className="mt-8">
             <EstateWelcomeFaq />
           </div>
+        </div>
+      </section>
+
+      {/* ── Concierge network ── */}
+      <section
+        className="estate-welcome-story py-12 md:py-16 border-t border-[#66143D]/20"
+        aria-labelledby="concierge-heading"
+      >
+        <div className="max-w-4xl mx-auto px-5 md:px-8">
+          <p
+            className="text-[11px] font-semibold tracking-[0.2em] uppercase mb-3"
+            style={{ color: "#66143D" }}
+          >
+            Beyond the Move
+          </p>
+          <h2
+            id="concierge-heading"
+            className="font-hero text-[22px] md:text-[26px] leading-tight mb-6"
+            style={{ color: ON_WINE.primary }}
+          >
+            Our Network, at Your Service
+          </h2>
+          <p
+            className="text-[14px] md:text-[15px] leading-relaxed mb-8 max-w-2xl"
+            style={{ color: ON_WINE.secondary }}
+          >
+            We stay in our lane — moving is what we do, and we do it
+            exceptionally well. For everything else, your coordinator can
+            connect you with vetted professionals from our trusted partner
+            network.
+          </p>
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+            {ESTATE_CONCIERGE_NETWORK.map((item) => (
+              <div key={item.service}>
+                <p
+                  className="font-medium text-[14px]"
+                  style={{ color: ON_WINE.primary }}
+                >
+                  {item.service}
+                </p>
+                <p
+                  className="text-[12px] mt-1 leading-relaxed"
+                  style={{ color: ON_WINE.muted }}
+                >
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p
+            className="text-[11px] mt-8 leading-relaxed max-w-2xl"
+            style={{ color: ON_WINE.subtle }}
+          >
+            Ask your coordinator about any of these services. Introductions are
+            complimentary for Estate clients.
+          </p>
         </div>
       </section>
 

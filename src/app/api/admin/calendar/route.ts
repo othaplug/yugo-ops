@@ -41,10 +41,11 @@ export async function GET(req: NextRequest) {
       const yearStart = `${year}-01-01`;
       const yearEnd = `${year}-12-31`;
 
-      const [{ data: moveCounts }, { data: delCounts }, { data: phaseCounts }, { data: binDropCounts }, { data: binPickCounts }] = await Promise.all([
+      const [{ data: moveCounts }, { data: delCounts }, { data: phaseCounts }, { data: mpDayHeat }, { data: binDropCounts }, { data: binPickCounts }] = await Promise.all([
         db.from("moves").select("scheduled_date").gte("scheduled_date", yearStart).lte("scheduled_date", yearEnd).not("scheduled_date", "is", null),
         db.from("deliveries").select("scheduled_date").gte("scheduled_date", yearStart).lte("scheduled_date", yearEnd).not("scheduled_date", "is", null),
         db.from("project_phases").select("scheduled_date").gte("scheduled_date", yearStart).lte("scheduled_date", yearEnd).not("scheduled_date", "is", null).neq("status", "skipped"),
+        db.from("move_project_days").select("date").gte("date", yearStart).lte("date", yearEnd).neq("status", "cancelled"),
         db.from("bin_orders").select("drop_off_date").gte("drop_off_date", yearStart).lte("drop_off_date", yearEnd).neq("status", "cancelled"),
         db.from("bin_orders").select("pickup_date").gte("pickup_date", yearStart).lte("pickup_date", yearEnd).neq("status", "cancelled"),
       ]);
@@ -66,6 +67,13 @@ export async function GET(req: NextRequest) {
       }
       for (const p of phaseCounts || []) {
         const dk = (p.scheduled_date as string)?.slice(0, 10);
+        if (!dk) continue;
+        if (!heat[dk]) heat[dk] = { total: 0, moves: 0, deliveries: 0, projects: 0 };
+        heat[dk].projects++;
+        heat[dk].total++;
+      }
+      for (const r of mpDayHeat || []) {
+        const dk = (r.date as string)?.slice(0, 10);
         if (!dk) continue;
         if (!heat[dk]) heat[dk] = { total: 0, moves: 0, deliveries: 0, projects: 0 };
         heat[dk].projects++;
@@ -95,7 +103,7 @@ export async function GET(req: NextRequest) {
     const startDate = String(start).slice(0, 10);
     const endDate = String(end).slice(0, 10);
 
-    const [movesResult, deliveriesResult, phasesResult, projectsResult, blocksResult, crewsResult, recurringResult, benchmarksResult, durationDefaultsResult, binDropResult, binPickResult] = await Promise.allSettled([
+    const [movesResult, deliveriesResult, phasesResult, projectsResult, blocksResult, crewsResult, recurringResult, benchmarksResult, durationDefaultsResult, binDropResult, binPickResult, moveProjectDaysResult] = await Promise.allSettled([
       db
         .from("moves")
         .select("id, move_code, client_name, move_type, move_size, est_hours, status, scheduled_date, scheduled_start, scheduled_end, crew_id, from_address, to_address, event_group_id, event_phase, event_name")
@@ -142,6 +150,14 @@ export async function GET(req: NextRequest) {
         .gte("pickup_date", startDate)
         .lte("pickup_date", endDate)
         .neq("status", "cancelled"),
+      db
+        .from("move_project_days")
+        .select(
+          "id, date, day_number, label, day_type, crew_size, truck_type, estimated_hours, status, project_id, move_projects(project_name)",
+        )
+        .gte("date", startDate)
+        .lte("date", endDate)
+        .neq("status", "cancelled"),
     ]);
 
     const moves = movesResult.status === "fulfilled" && !movesResult.value.error ? movesResult.value.data : null;
@@ -171,6 +187,10 @@ export async function GET(req: NextRequest) {
       binDropResult.status === "fulfilled" && !binDropResult.value.error ? binDropResult.value.data : null;
     const binOrdersPick =
       binPickResult.status === "fulfilled" && !binPickResult.value.error ? binPickResult.value.data : null;
+    const moveProjectDays =
+      moveProjectDaysResult.status === "fulfilled" && !moveProjectDaysResult.value.error
+        ? moveProjectDaysResult.value.data
+        : null;
 
     const diagnostics: { movesError?: string; deliveriesError?: string } = {};
     if (movesResult.status === "rejected") {
@@ -409,6 +429,46 @@ export async function GET(req: NextRequest) {
           scheduleBlockId: null,
         });
       }
+    }
+
+    for (const row of moveProjectDays || []) {
+      const dk = toDateKey(row.date as string | Date | null);
+      if (!dk) continue;
+      if (crewFilter) continue;
+      if (typeFilter && typeFilter !== "move_project_day") continue;
+      const mpRaw = row.move_projects as unknown;
+      const mpName =
+        (Array.isArray(mpRaw) ? (mpRaw[0] as { project_name?: string } | undefined)?.project_name : (mpRaw as { project_name?: string } | null)?.project_name) ||
+        "Move project";
+      const dayNum = row.day_number != null ? Number(row.day_number) : 0;
+      const totalHint = ""; // optional: fetch project total_days in a future pass
+      events.push({
+        id: String(row.id),
+        type: "move_project_day",
+        blockType: "move_project_day",
+        name: `${mpName} — ${String(row.label || "Day")}`,
+        description: `${toTitleCase(String(row.day_type || "day"))}${totalHint}`.trim(),
+        date: dk,
+        start: null,
+        end: null,
+        durationHours: row.estimated_hours != null ? Number(row.estimated_hours) : null,
+        crewId: null,
+        crewName: null,
+        truckId: null,
+        truckName: row.truck_type ? String(row.truck_type) : null,
+        status: String(row.status || "scheduled"),
+        calendarStatus: (row.status === "completed" ? "completed" : row.status === "cancelled" ? "cancelled" : "scheduled") as CalendarStatus,
+        color: JOB_COLORS.move_project_day,
+        href: `/admin/move-projects/${row.project_id}`,
+        clientName: mpName,
+        fromAddress: null,
+        toAddress: null,
+        deliveryAddress: null,
+        category: "move_project",
+        moveSize: row.crew_size != null ? `${row.crew_size} crew` : null,
+        itemCount: dayNum > 0 ? dayNum : null,
+        scheduleBlockId: null,
+      });
     }
 
     for (const p of phases || []) {

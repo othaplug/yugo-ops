@@ -70,6 +70,7 @@ import {
   wardrobeBoxesForBundle,
   type BinBundleKey,
 } from "@/lib/pricing/bin-rental";
+import { labelBookingModificationType } from "@/lib/moves/booking-modification-labels";
 
 function formatPerkOffer(
   offerType: string,
@@ -482,6 +483,8 @@ export default function TrackMoveClient({
   crewChangeRequest = null,
   binOrder = null,
   quotePickupStops = null,
+  pendingBookingModification = null,
+  moveProjectForTrack = null,
   fillParentHeight = false,
   companyContactEmail = process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
 }: {
@@ -536,6 +539,23 @@ export default function TrackMoveClient({
   binOrder?: BinOrderTrackRow | null;
   /** From originating quote factors when multiple pickups were quoted */
   quotePickupStops?: { address: string; access: string | null }[] | null;
+  /** Coordinator booking change waiting for client approval (price increase). */
+  pendingBookingModification?: {
+    id: string;
+    type: string;
+    new_price: number | null;
+    original_price: number | null;
+    price_difference: number | null;
+    created_at: string;
+  } | null;
+  /** Multi-day move project (from moves.move_project_id) for schedule banner. */
+  moveProjectForTrack?: {
+    project: Record<string, unknown>;
+    phases: {
+      phase_name?: string;
+      days?: { date?: string; label?: string; status?: string }[];
+    }[];
+  } | null;
   /** Preview routes: fill parent flex column instead of 100vh (banner above). */
   fillParentHeight?: boolean;
   /** Company inbox for footer “Contact us” (from platform config on live track). */
@@ -561,6 +581,7 @@ export default function TrackMoveClient({
     "idle" | "approving" | "approved" | "declined" | "approved_pending_payment"
   >("idle");
   const [crewCrError, setCrewCrError] = useState<string | null>(null);
+  const [bookingModBusy, setBookingModBusy] = useState(false);
 
   const pickupStopsForUi =
     quotePickupStops && quotePickupStops.length > 1
@@ -574,6 +595,40 @@ export default function TrackMoveClient({
         ];
 
   const { toast } = useToast();
+
+  const respondBookingMod = useCallback(
+    async (action: "approve" | "decline") => {
+      if (!pendingBookingModification) return;
+      setBookingModBusy(true);
+      try {
+        const res = await fetch(`/api/track/moves/${move.id}/modification-response`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token,
+            modificationId: pendingBookingModification.id,
+            action,
+          }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          toast(data.error || "Something went wrong", "x");
+          return;
+        }
+        toast(
+          action === "approve"
+            ? "Change approved. Your booking is updated."
+            : "Change declined. Your coordinator will follow up if needed.",
+          "check",
+        );
+        router.refresh();
+      } finally {
+        setBookingModBusy(false);
+      }
+    },
+    [pendingBookingModification, move.id, token, toast, router],
+  );
+
   const [liveStage, setLiveStage] = useState<string | null>(move.stage || null);
   const [showNotifyBanner, setShowNotifyBanner] = useState(!!fromNotify);
   const [dashboardInventory, setDashboardInventory] = useState<{
@@ -1080,6 +1135,137 @@ export default function TrackMoveClient({
     ],
   );
 
+  const moveProjectTrackSection = React.useMemo(() => {
+    if (!moveProjectForTrack || isLogisticsDeliveryTrack) return null;
+    const phases = moveProjectForTrack.phases;
+    const flat = phases
+      .flatMap((ph) =>
+        (Array.isArray(ph.days) ? ph.days : []).map((d) => ({
+          ...d,
+          phaseName: ph.phase_name,
+        })),
+      )
+      .filter((d) => d.date)
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (flat.length === 0) return null;
+    const total =
+      Number(moveProjectForTrack.project.total_days) || flat.length;
+    const norm = (s?: string) => (s || "").toLowerCase().replace(/\s+/g, "_");
+    const isCompleted = (s?: string) =>
+      norm(s) === "completed" || norm(s) === "complete";
+    const completed = flat.filter((d) => isCompleted(d.status));
+    const upcoming = flat.filter((d) => !isCompleted(d.status));
+    const sched = move.scheduled_date as string | null | undefined;
+    let currentIndex = 0;
+    if (sched) {
+      const idx = flat.findIndex((d) => d.date === sched);
+      if (idx >= 0) currentIndex = idx;
+    } else if (completed.length > 0) {
+      currentIndex = Math.min(completed.length, flat.length - 1);
+    }
+    const displayDay = Math.min(total, Math.max(1, currentIndex + 1));
+    const pct = total > 0 ? Math.round((completed.length / total) * 100) : 0;
+    const activePhase =
+      flat.find((d) => !isCompleted(d.status))?.phaseName ||
+      flat[flat.length - 1]?.phaseName;
+
+    return (
+      <div className="mb-5 space-y-3">
+        <div
+          className="rounded-xl border px-4 py-3"
+          style={{
+            borderColor: `${WINE}28`,
+            backgroundColor: `${WINE}08`,
+          }}
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p
+              className="text-[10px] font-bold uppercase tracking-[0.12em]"
+              style={{ color: `${FOREST}99` }}
+            >
+              Project schedule
+            </p>
+            {activePhase ? (
+              <p className="text-[11px] font-medium" style={{ color: FOREST }}>
+                {String(activePhase)}
+              </p>
+            ) : null}
+          </div>
+          <p className="text-[15px] font-semibold mt-2" style={{ color: WINE }}>
+            Day {displayDay} of {total}
+          </p>
+          <div
+            className="h-1.5 rounded-full mt-2 overflow-hidden"
+            style={{ backgroundColor: `${WINE}18` }}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pct}
+          >
+            <div
+              className="h-full rounded-full transition-[width]"
+              style={{ width: `${pct}%`, backgroundColor: WINE }}
+            />
+          </div>
+          <p className="text-[11px] mt-1.5 opacity-70" style={{ color: FOREST }}>
+            {completed.length} of {total} days marked complete
+          </p>
+        </div>
+        {upcoming.length > 0 ? (
+          <div
+            className="rounded-xl border px-3 py-2.5"
+            style={{ borderColor: `${FOREST}18`, backgroundColor: `${FOREST}06` }}
+          >
+            <p
+              className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5"
+              style={{ color: `${FOREST}88` }}
+            >
+              Upcoming
+            </p>
+            <ul className="space-y-1.5 text-[12px]" style={{ color: FOREST }}>
+              {upcoming.slice(0, 5).map((d) => (
+                <li key={d.date} className="flex justify-between gap-2">
+                  <span className="font-medium truncate">
+                    {d.label || "Day"}
+                  </span>
+                  <span className="shrink-0 opacity-70">
+                    {formatMoveDate(String(d.date))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {completed.length > 0 ? (
+          <div
+            className="rounded-xl border px-3 py-2.5"
+            style={{ borderColor: `${FOREST}14`, backgroundColor: "#FFFBF7" }}
+          >
+            <p
+              className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5"
+              style={{ color: `${FOREST}88` }}
+            >
+              Completed
+            </p>
+            <ul
+              className="space-y-1 text-[11px] opacity-80"
+              style={{ color: FOREST }}
+            >
+              {completed.slice(-5).map((d) => (
+                <li key={`c-${d.date}`} className="flex justify-between gap-2">
+                  <span className="truncate">{d.label || "Day"}</span>
+                  <span className="shrink-0">
+                    {formatMoveDate(String(d.date))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+    );
+  }, [moveProjectForTrack, isLogisticsDeliveryTrack, move.scheduled_date]);
+
   const trackPageBg = "#F9EDE4";
   const trackPageInk = FOREST;
   const trackHero = WINE;
@@ -1248,6 +1434,8 @@ export default function TrackMoveClient({
             </div>
           )}
 
+          {moveProjectTrackSection}
+
           {/* ── Move-Day Crew Change Request Banner ── */}
           {crewChangeRequest && crewCrApprovalState === "idle" && (
             <CrewChangeRequestBanner
@@ -1310,6 +1498,64 @@ export default function TrackMoveClient({
                 Extra items declined, your crew will proceed with the original
                 list only.
               </p>
+            </div>
+          )}
+
+          {pendingBookingModification && (
+            <div
+              className="mb-5 rounded-2xl border px-4 py-3.5"
+              style={{
+                borderColor: `${WINE}35`,
+                backgroundColor: `${WINE}06`,
+              }}
+            >
+              <p
+                className="text-[12px] font-bold uppercase tracking-[0.08em]"
+                style={{ color: WINE }}
+              >
+                Booking change needs your approval
+              </p>
+              <p
+                className="text-[12px] mt-1.5 leading-relaxed opacity-85"
+                style={{ color: FOREST }}
+              >
+                Your coordinator proposed an update:{" "}
+                <span className="font-semibold opacity-100">
+                  {labelBookingModificationType(pendingBookingModification.type)}
+                </span>
+                .
+                {Number(pendingBookingModification.price_difference) > 0 ? (
+                  <>
+                    {" "}
+                    Additional charge:{" "}
+                    <span className="font-semibold">
+                      {formatCurrency(
+                        Number(pendingBookingModification.price_difference) || 0,
+                      )}
+                    </span>
+                    .
+                  </>
+                ) : null}
+              </p>
+              <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+                <button
+                  type="button"
+                  disabled={bookingModBusy}
+                  onClick={() => void respondBookingMod("approve")}
+                  className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-[#2C3E2D] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/6 transition-colors disabled:opacity-50 [font-family:var(--font-body)]"
+                >
+                  Approve change
+                  <CaretRight size={16} weight="bold" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  disabled={bookingModBusy}
+                  onClick={() => void respondBookingMod("decline")}
+                  className="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-[var(--brd)] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--tx2)] bg-transparent hover:bg-[var(--bg)]/80 transition-colors disabled:opacity-50 [font-family:var(--font-body)]"
+                >
+                  Decline
+                </button>
+              </div>
             </div>
           )}
 

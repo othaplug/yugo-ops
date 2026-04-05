@@ -192,6 +192,7 @@ export function buildNotificationTitle(
     quote_cold: "Quote went cold",
     payment_received: "Payment received",
     payment_failed: "Payment failed",
+    quote_comparison_signal: "Quote comparison signal",
     deposit_received: "Deposit received",
     tip_received: "Tip received",
     partner_job_request: "New delivery request",
@@ -246,6 +247,9 @@ export function buildNotificationBody(
   if (slug === "partner_pm_booking") {
     return (data.body as string) || "";
   }
+  if (slug === "quote_comparison_signal") {
+    return (data.description as string) || "";
+  }
   return (data.description as string) || "";
 }
 
@@ -278,6 +282,7 @@ export function getNotificationIcon(slug: string): string {
     crew_gps_offline: "mapPin",
     lead_new: "lightning",
     partner_pm_booking: "truck",
+    quote_comparison_signal: "eye",
   };
   return icons[slug] || "bell";
 }
@@ -286,7 +291,7 @@ export function buildNotificationLink(
   slug: string,
   data: NotificationData
 ): string {
-  if (slug.startsWith("quote_") && data.quoteId)
+  if ((slug.startsWith("quote_") || slug === "quote_comparison_signal") && data.quoteId)
     return `/admin/quotes/${data.quoteId}`;
   if (slug.startsWith("partner_") && data.deliveryId)
     return `/admin/deliveries/${data.deliveryId}`;
@@ -301,8 +306,8 @@ export function buildNotificationLink(
     return `/admin/moves/${data.moveId}`;
   if (slug === "claim_submitted" && data.claimId)
     return `/admin/claims/${data.claimId}`;
-  if (slug === "payment_received" || slug === "payment_failed" || slug === "deposit_received")
-    return "/admin/invoices";
+  if (slug === "payment_failed" && data.quoteId) return `/admin/quotes/${data.quoteId}`;
+  if (slug === "payment_received" || slug === "deposit_received") return "/admin/invoices";
   if (slug === "tip_received") return "/admin/tips";
   if (slug === "lead_new" && data.sourceId) return `/admin/leads/${data.sourceId}`;
   if (slug === "partner_pm_booking" && data.moveId) return `/admin/moves/${data.moveId}`;
@@ -310,7 +315,7 @@ export function buildNotificationLink(
 }
 
 export function getSourceType(slug: string): string {
-  if (slug.startsWith("quote_")) return "quote";
+  if (slug.startsWith("quote_") || slug === "quote_comparison_signal") return "quote";
   if (
     slug.startsWith("move_") ||
     slug === "crew_checkin" ||

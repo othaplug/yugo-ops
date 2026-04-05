@@ -17,6 +17,10 @@
       "schedule": "0 15 * * *"
     },
     {
+      "path": "/api/cron/move-project-reminders",
+      "schedule": "15 14 * * *"
+    },
+    {
       "path": "/api/cron/estate-30day-checkin",
       "schedule": "30 15 * * *"
     },
@@ -71,6 +75,14 @@
     {
       "path": "/api/cron/data-integrity-weekly",
       "schedule": "0 7 * * 1"
+    },
+    {
+      "path": "/api/cron/scheduled-emails",
+      "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/quote-comparison",
+      "schedule": "45 16 * * *"
     }
   ]
 }

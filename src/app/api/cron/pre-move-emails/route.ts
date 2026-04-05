@@ -5,6 +5,11 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { signTrackToken } from "@/lib/track-token";
 import { sendMoveReminderSms } from "@/lib/quote-sms";
 import { moveMatchesBalanceReminder48hWindow } from "@/lib/quotes/estate-schedule";
+import { statusUpdateEmailHtml } from "@/lib/email-templates";
+import {
+  accessMentionsElevator,
+  parkingReminderLikelyNeeded,
+} from "@/lib/moves/pre-move-heuristics";
 
 /**
  * Vercel Cron: runs daily at 10 AM EST.
@@ -33,12 +38,16 @@ export async function GET(req: NextRequest) {
   const threeDaysOut = toDateStr(3);
   const twoDaysOut = toDateStr(2);
   const oneDayOut = toDateStr(1);
+  const fiveDaysOut = toDateStr(5);
 
   const results = {
     sent72hr: 0,
     sentBalance72hr: 0,
     sentBalance48hr: 0,
     sent24hr: 0,
+    sentElevator5d: 0,
+    sentParking5d: 0,
+    sentChecklist3d: 0,
     errors: [] as string[],
   };
 
@@ -214,6 +223,147 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  /* ── T-5 Day: elevator + parking reminders ── */
+  const { data: coordRows5 } = await supabase
+    .from("platform_config")
+    .select("key, value")
+    .in("key", ["coordinator_phone", "coordinator_name"]);
+  const coordPhone5 =
+    coordRows5?.find((r) => r.key === "coordinator_phone")?.value?.trim() || "";
+
+  const { data: moves5 } = await supabase
+    .from("moves")
+    .select(
+      "id, move_code, client_name, client_email, scheduled_date, arrival_window, from_access, to_access, from_postal, to_postal, from_parking, to_parking, elevator_reminder_sent_at, parking_reminder_sent_at",
+    )
+    .in("status", ["confirmed", "scheduled"])
+    .eq("scheduled_date", fiveDaysOut);
+
+  for (const m of moves5 || []) {
+    if (!m.client_email) continue;
+    const trackTok = signTrackToken("move", m.id);
+    const trackUrl = `${baseUrl}/track/move/${m.move_code ?? m.id}?token=${trackTok}`;
+
+    if (
+      !m.elevator_reminder_sent_at &&
+      accessMentionsElevator(m.from_access, m.to_access)
+    ) {
+      const first = (m.client_name || "").trim().split(/\s+/)[0] || "there";
+      const win = m.arrival_window || "your scheduled window";
+      const html = statusUpdateEmailHtml({
+        eyebrow: "Before your move",
+        headline: "Reminder: book your elevator",
+        body: `Hi ${first},<br/><br/>Your move is in five days. If you have not already, please book the freight or move elevator with your building. Many buildings need 48–72 hours notice.<br/><br/>Plan for your <strong>${win}</strong> arrival on <strong>${m.scheduled_date}</strong>.<br/><br/>Tips: ask for the freight elevator if available; pad extra time; confirm padding rules with building management.${coordPhone5 ? `<br/><br/>Questions? Call <strong>${coordPhone5}</strong>.` : ""}<br/><br/>Track your move anytime:`,
+        ctaUrl: trackUrl,
+        ctaLabel: "VIEW MOVE DETAILS",
+        includeFooter: true,
+        tone: "premium",
+      });
+      try {
+        const r = await sendEmail({
+          to: m.client_email,
+          subject: "Reminder: book your elevator for move day",
+          html,
+        });
+        if (r.success) {
+          await supabase
+            .from("moves")
+            .update({ elevator_reminder_sent_at: new Date().toISOString() })
+            .eq("id", m.id);
+          results.sentElevator5d++;
+        } else {
+          results.errors.push(`el5:${m.move_code}:${r.error}`);
+        }
+      } catch (e) {
+        results.errors.push(
+          `el5:${m.move_code}:${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+
+    if (!m.parking_reminder_sent_at && parkingReminderLikelyNeeded(m)) {
+      const first = (m.client_name || "").trim().split(/\s+/)[0] || "there";
+      const torontoParkingUrl =
+        "https://www.toronto.ca/services-payments/streets-parking-transportation/";
+      const html = statusUpdateEmailHtml({
+        eyebrow: "Before your move",
+        headline: "Parking for your move",
+        body: `Hi ${first},<br/><br/>If our truck needs street space at either address, you may need a temporary parking permit from the City of Toronto. Apply several business days before your move: <a href="${torontoParkingUrl}" style="color:#2C3E2D;font-weight:600;">City of Toronto — streets and parking</a>.<br/><br/>If you have a loading dock or dedicated parking, you may already be set.${coordPhone5 ? `<br/><br/>Questions? Call <strong>${coordPhone5}</strong>.` : ""}`,
+        ctaUrl: trackUrl,
+        ctaLabel: "VIEW MOVE DETAILS",
+        includeFooter: true,
+        tone: "premium",
+      });
+      try {
+        const r = await sendEmail({
+          to: m.client_email,
+          subject: "Parking for your move — quick heads up",
+          html,
+        });
+        if (r.success) {
+          await supabase
+            .from("moves")
+            .update({ parking_reminder_sent_at: new Date().toISOString() })
+            .eq("id", m.id);
+          results.sentParking5d++;
+        } else {
+          results.errors.push(`pk5:${m.move_code}:${r.error}`);
+        }
+      } catch (e) {
+        results.errors.push(
+          `pk5:${m.move_code}:${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+  }
+
+  /* ── T-3 Day: move-day checklist link (separate from 72hr bundle) ── */
+  const { data: movesCheck3 } = await supabase
+    .from("moves")
+    .select(
+      "id, move_code, client_name, client_email, checklist_token, move_prep_checklist_email_sent_at",
+    )
+    .in("status", ["confirmed", "scheduled"])
+    .eq("scheduled_date", threeDaysOut)
+    .is("move_prep_checklist_email_sent_at", null);
+
+  for (const m of movesCheck3 || []) {
+    if (!m.client_email) continue;
+    const tok = String((m as { checklist_token?: string }).checklist_token || "").trim();
+    if (!tok) continue;
+    const checklistUrl = `${baseUrl}/checklist/${tok}`;
+    const first = (m.client_name || "").trim().split(/\s+/)[0] || "there";
+    const html = statusUpdateEmailHtml({
+      eyebrow: "Prep",
+      headline: "Your move is in 3 days",
+      body: `Hi ${first},<br/><br/>Here is a quick checklist to help you prepare for move day. Check items off on your phone as you go.`,
+      ctaUrl: checklistUrl,
+      ctaLabel: "VIEW CHECKLIST",
+      includeFooter: true,
+      tone: "premium",
+    });
+    try {
+      const r = await sendEmail({
+        to: m.client_email,
+        subject: "Your move is in 3 days — quick prep checklist",
+        html,
+      });
+      if (r.success) {
+        await supabase
+          .from("moves")
+          .update({ move_prep_checklist_email_sent_at: new Date().toISOString() })
+          .eq("id", m.id);
+        results.sentChecklist3d++;
+      } else {
+        results.errors.push(`chk3:${m.move_code}:${r.error}`);
+      }
+    } catch (e) {
+      results.errors.push(
+        `chk3:${m.move_code}:${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
+
   /* ── T-24 Hour Emails ── */
   const { data: moves24 } = await supabase
     .from("moves")
@@ -329,6 +479,9 @@ export async function GET(req: NextRequest) {
     sentBalance72hr: results.sentBalance72hr,
     sentBalance48hr: results.sentBalance48hr,
     sent24hr: results.sent24hr,
+    sentElevator5d: results.sentElevator5d,
+    sentParking5d: results.sentParking5d,
+    sentChecklist3d: results.sentChecklist3d,
     errors: results.errors.length,
   });
 }

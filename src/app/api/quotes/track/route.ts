@@ -25,6 +25,7 @@ const ENGAGEMENT_EVENTS = new Set([
   "comparison_viewed",
   "call_crew_clicked",
   "page_exit",
+  "engagement_ping",
 ]);
 
 export async function POST(req: Request) {

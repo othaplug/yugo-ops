@@ -13,6 +13,7 @@ import EditMoveDetailsModal from "./EditMoveDetailsModal";
 import MoveInventorySection from "./MoveInventorySection";
 import InventoryChangeRequestPanel from "./InventoryChangeRequestPanel";
 import MoveFilesSection from "./MoveFilesSection";
+import MoveModificationQuickForm from "./MoveModificationQuickForm";
 import MoveSignOffSection from "./MoveSignOffSection";
 import LiveTrackingMap from "../../deliveries/[id]/LiveTrackingMap";
 import CollapsibleSection from "@/components/CollapsibleSection";
@@ -141,6 +142,14 @@ interface MoveDetailClientProps {
   }[];
   moveStatusEvents?: { event_type: string; created_at: string }[];
   linkedBinOrders?: Record<string, unknown>[];
+  surveyPhotos?: { id: string; room: string; photo_url: string; notes: string | null; uploaded_at: string }[];
+  pendingModifications?: {
+    id: string;
+    type: string;
+    status: string;
+    price_difference: number | null;
+    created_at: string;
+  }[];
 }
 import { MOVE_STATUS_OPTIONS, MOVE_STATUS_COLORS_ADMIN, MOVE_STATUS_INDEX, LIVE_TRACKING_STAGES, getStatusLabel, normalizeStatus } from "@/lib/move-status";
 import RecommendedCrewPanel from "./RecommendedCrewPanel";
@@ -345,6 +354,8 @@ export default function MoveDetailClient({
   paymentLedger = [],
   moveStatusEvents = [],
   linkedBinOrders = [],
+  surveyPhotos = [],
+  pendingModifications = [],
 }: MoveDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -1630,6 +1641,69 @@ export default function MoveDetailClient({
         ["pending", "admin_reviewing", "client_confirming"].includes(pendingInventoryChange.status) && (
           <InventoryChangeRequestPanel request={pendingInventoryChange} />
         )}
+
+      {pendingModifications.length > 0 && (
+        <div className="rounded-xl border border-amber-500/35 bg-amber-500/[0.06] p-4 mb-6">
+          <h3 className="text-[12px] font-bold text-[var(--tx)] mb-2 uppercase tracking-wide">
+            Pending booking changes
+          </h3>
+          <ul className="text-[11px] text-[var(--tx2)] space-y-1.5">
+            {pendingModifications.map((m) => (
+              <li key={m.id}>
+                <span className="font-semibold text-[var(--tx)]">
+                  {toTitleCase(String(m.type || "").replace(/_/g, " "))}
+                </span>
+                {m.price_difference != null && Number(m.price_difference) !== 0 ? (
+                  <span className="text-[var(--tx3)]">
+                    {" "}
+                    · Price impact {formatCurrency(Number(m.price_difference))}
+                  </span>
+                ) : null}
+                <span className="block text-[10px] text-amber-700/90 mt-0.5">
+                  Status: awaiting client approval
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {["owner", "admin", "coordinator"].includes(userRole) && !isCompleted && (
+        <MoveModificationQuickForm moveId={move.id} />
+      )}
+
+      {surveyPhotos.length > 0 && (
+        <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 mb-6">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--tx3)] mb-3">
+            Pre-move photos (client survey)
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {Object.entries(
+              surveyPhotos.reduce<Record<string, typeof surveyPhotos>>((acc, p) => {
+                const k = p.room || "other";
+                if (!acc[k]) acc[k] = [];
+                acc[k].push(p);
+                return acc;
+              }, {}),
+            ).map(([room, photos]) => (
+              <div key={room} className="border border-[var(--brd)]/60 rounded-lg p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--tx)] mb-2">
+                  {toTitleCase(room.replace(/_/g, " "))}
+                </p>
+                <p className="text-[10px] text-[var(--tx3)] mb-2">{photos.length} photo(s)</p>
+                <a
+                  href={photos[0]?.photo_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-semibold text-[#2C3E2D] underline"
+                >
+                  View
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Inventory, Files & Media */}
       <MoveInventorySection moveId={move.id} moveStatus={move.status} userRole={userRole} itemWeights={itemWeights} moveType={move.move_type} />

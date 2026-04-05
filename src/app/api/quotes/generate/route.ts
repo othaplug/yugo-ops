@@ -42,6 +42,9 @@ import {
   buildEstateScheduleLines,
   estateScheduleHeadline,
 } from "@/lib/quotes/estate-schedule";
+import { moveProjectPayloadSchema } from "@/lib/move-projects/schema";
+import { upsertMoveProjectForQuote, clearMoveProjectFromQuote } from "@/lib/move-projects/persist";
+import { computeMoveProjectPricingPreview, priceFromCostAndMargin } from "@/lib/move-projects/pricing";
 import { pickupDropoffFactorsFromPayload } from "@/lib/quotes/quote-address-display";
 import {
   generateNextQuoteId,
@@ -272,6 +275,10 @@ interface QuoteInput {
   client_name?: string;
   client_email?: string;
   client_phone?: string;
+  /** Multi-day move project planner payload (validated with moveProjectPayloadSchema). */
+  move_project?: unknown;
+  /** When true, detach and delete linked move_projects row for this quote. */
+  clear_move_project?: boolean;
 }
 
 /** One delivery/return pair in a multi-event quote */
@@ -3566,6 +3573,38 @@ export async function POST(req: NextRequest) {
     .eq("active", true)
     .order("tier_slug");
 
+  const moveProjectParsed = moveProjectPayloadSchema.safeParse(input.move_project);
+  if (
+    moveProjectParsed.success &&
+    (svcType === "local_move" ||
+      svcType === "long_distance" ||
+      svcType === "office_move" ||
+      svcType === "white_glove")
+  ) {
+    const fObj = factors as Record<string, unknown>;
+    const labourRate =
+      typeof fObj.labour_rate === "number" && Number.isFinite(fObj.labour_rate)
+        ? fObj.labour_rate
+        : cfgNum(config, "labour_rate_per_mover_hour", 55);
+    const pricing = computeMoveProjectPricingPreview(moveProjectParsed.data, {
+      labourRatePerMoverHour: labourRate,
+      truckDayRate: cfgNum(config, "move_project_truck_day_rate", 135),
+      fuelFlat: cfgNum(config, "move_project_fuel_flat", 45),
+    });
+    const marginFrac = cfgNum(config, "margin_target_estate", 45) / 100;
+    factors = {
+      ...factors,
+      move_project_pricing_preview: {
+        labour_subtotal: pricing.labourSubtotal,
+        truck_subtotal: pricing.truckSubtotal,
+        fuel: pricing.fuel,
+        total_cost_estimate: pricing.totalCostEstimate,
+        lines: pricing.lines,
+        suggested_pre_tax_at_estate_margin: priceFromCostAndMargin(pricing.totalCostEstimate, marginFrac),
+      },
+    };
+  }
+
   const isUpdate = !isPreview && !!input.quote_id?.trim();
   let quoteId: string;
   if (isPreview) {
@@ -3713,15 +3752,52 @@ export async function POST(req: NextRequest) {
         );
       }
     }
+
+    const { data: qUuidRow } = await sb.from("quotes").select("id").eq("quote_id", quoteId).maybeSingle();
+    if (qUuidRow?.id) {
+      if (input.clear_move_project) {
+        await clearMoveProjectFromQuote(sb, qUuidRow.id);
+      } else if (input.move_project != null && typeof input.move_project === "object") {
+        const parsedMp = moveProjectPayloadSchema.safeParse(input.move_project);
+        if (parsedMp.success) {
+          try {
+            await upsertMoveProjectForQuote(sb, {
+              quoteUuid: qUuidRow.id,
+              contactId,
+              partnerId: null,
+              payload: parsedMp.data,
+              persist: true,
+            });
+          } catch (e) {
+            console.error("[quotes/generate] move_project persist:", e);
+            return NextResponse.json(
+              { error: e instanceof Error ? e.message : "Failed to save move project" },
+              { status: 500 },
+            );
+          }
+        }
+      }
+    }
   }
 
   const expiresAtStr = new Date(Date.now() + expiryDays * 86_400_000).toISOString();
 
   const marginFieldsForCaller = isSuperAdminEmail(authUser?.email);
 
+  let moveProjectIdOut: string | null = null;
+  if (!isPreview && quoteId !== "PREVIEW") {
+    const { data: qMp } = await sb
+      .from("quotes")
+      .select("move_project_id")
+      .eq("quote_id", quoteId)
+      .maybeSingle();
+    moveProjectIdOut = (qMp?.move_project_id as string | null) ?? null;
+  }
+
   const response: Record<string, unknown> = {
     quote_id: quoteId,
     quoteId,
+    move_project_id: moveProjectIdOut,
     preview: isPreview,
     service_type: svcType,
     distance_km: distInfo?.distance_km ?? null,

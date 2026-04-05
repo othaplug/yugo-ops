@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { notifyAdmins } from "@/lib/notifications/dispatch";
+import { scheduleWinBackEmail } from "@/lib/quotes/win-back";
 
 const DECLINE_REASON_LABEL: Record<string, string> = {
   found_another: "Found another company",
@@ -92,6 +93,8 @@ export async function POST(
       description: `${quoteId}: ${reasonLabel}${comment ? ` — ${comment}` : ""}`,
       clientName: contactName ?? undefined,
     }).catch(() => {});
+
+    await scheduleWinBackEmail(sb, (quote as { id: string }).id, reason).catch(() => {});
 
     return NextResponse.json({ ok: true });
   } catch (e) {

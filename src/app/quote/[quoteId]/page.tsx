@@ -11,6 +11,8 @@ import {
   QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY,
 } from "@/lib/quotes/residential-tier-quote-display";
 import QuotePageClient from "./QuotePageClient";
+import { fetchMoveProjectWithTree } from "@/lib/move-projects/fetch";
+import type { MoveProjectQuotePayload } from "./MoveProjectQuoteTimeline";
 import QuoteExpired from "./QuoteExpired";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
 import { randomBytes } from "crypto";
@@ -33,6 +35,11 @@ export default async function QuotePage({
   const sp = (await searchParams) ?? {};
   const actionRaw = sp.action;
   const action = Array.isArray(actionRaw) ? actionRaw[0] : actionRaw;
+  const retryRaw = sp.retry;
+  const retryParam = Array.isArray(retryRaw) ? retryRaw[0] : retryRaw;
+  const openPaymentRetry =
+    retryParam === "1" ||
+    String(retryParam || "").toLowerCase() === "true";
   const tokenParam = sp.token;
   const declineTokenFromUrl =
     typeof tokenParam === "string"
@@ -214,6 +221,18 @@ export default async function QuotePage({
     quoteDisplayMap[QUOTE_RESIDENTIAL_TIER_META_OVERRIDES_KEY],
   );
 
+  let moveProjectData: MoveProjectQuotePayload | null = null;
+  const moveProjectId = (quote as { move_project_id?: string | null }).move_project_id;
+  if (moveProjectId) {
+    const mpRes = await fetchMoveProjectWithTree(admin, moveProjectId);
+    if (!mpRes.error && mpRes.project) {
+      moveProjectData = {
+        project: mpRes.project as Record<string, unknown>,
+        phases: mpRes.phases as MoveProjectQuotePayload["phases"],
+      };
+    }
+  }
+
   return (
     <QuotePageClient
       quote={quote}
@@ -235,6 +254,8 @@ export default async function QuotePage({
       publicActionToken={publicActionToken}
       openDeclineModalOnLoad={action === "decline"}
       declineTokenFromUrl={declineTokenFromUrl}
+      openPaymentRetry={openPaymentRetry && String(quote.status || "").toLowerCase() === "payment_failed"}
+      moveProjectData={moveProjectData}
     />
   );
 }

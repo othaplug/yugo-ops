@@ -112,6 +112,9 @@ import {
 } from "./quote-premium-shell";
 import LongDistanceLayout from "./layouts/LongDistanceLayout";
 import OfficeLayout from "./layouts/OfficeLayout";
+import MoveProjectQuoteTimeline, {
+  type MoveProjectQuotePayload,
+} from "./MoveProjectQuoteTimeline";
 import SingleItemLayout from "./layouts/SingleItemLayout";
 import WhiteGloveLayout from "./layouts/WhiteGloveLayout";
 import SpecialtyLayout from "./layouts/SpecialtyLayout";
@@ -246,6 +249,8 @@ export default function QuotePageClient({
   publicActionToken = "",
   openDeclineModalOnLoad = false,
   declineTokenFromUrl = null,
+  openPaymentRetry = false,
+  moveProjectData = null,
 }: {
   quote: Quote;
   addons: Addon[];
@@ -266,6 +271,9 @@ export default function QuotePageClient({
   publicActionToken?: string;
   openDeclineModalOnLoad?: boolean;
   declineTokenFromUrl?: string | null;
+  /** Deep-link to payment after deposit failure (?retry=1) */
+  openPaymentRetry?: boolean;
+  moveProjectData?: MoveProjectQuotePayload | null;
 }) {
   const isResidential = quote.service_type === "local_move" && !!quote.tiers;
   const tiers = quote.tiers as Record<string, TierData> | null;
@@ -332,7 +340,11 @@ export default function QuotePageClient({
   );
 
   /* ── State ── */
-  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [selectedTier, setSelectedTier] = useState<string | null>(() => {
+    const st = (quote as { selected_tier?: string | null }).selected_tier;
+    if (st && String(st).trim()) return String(st).toLowerCase().trim();
+    return null;
+  });
   const [confirmed, setConfirmed] = useState(quote.status === "accepted");
   const [currentStep, setCurrentStep] = useState(1);
   /** Highest step the client has reached; never reduced on Back so sections below tiers stay mounted. */
@@ -555,10 +567,48 @@ export default function QuotePageClient({
   }, []);
 
   useEffect(() => {
+    if (quote.status === "accepted" || booked) return;
+    let maxScrollPct = 0;
+    const onScroll = () => {
+      const doc = document.documentElement;
+      const h = doc.scrollHeight - doc.clientHeight;
+      const pct = h > 0 ? Math.min(100, Math.round((doc.scrollTop / h) * 100)) : 0;
+      maxScrollPct = Math.max(maxScrollPct, pct);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    const interval = window.setInterval(() => {
+      const elapsed = Math.round((Date.now() - pageStartTime.current) / 1000);
+      trackEngagement("engagement_ping", {
+        scroll_pct: maxScrollPct,
+        elapsed_seconds: elapsed,
+      });
+    }, 45_000);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.clearInterval(interval);
+    };
+  }, [quote.status, booked, trackEngagement]);
+
+  useEffect(() => {
     if (openDeclineModalOnLoad && !booked) {
       setShowDeclineModal(true);
     }
   }, [openDeclineModalOnLoad, booked]);
+
+  useEffect(() => {
+    if (!openPaymentRetry) return;
+    if (String(quote.status || "").toLowerCase() !== "payment_failed") return;
+    setContractSigned(true);
+    setCurrentStep(5);
+    setFurthestStepReached(5);
+    if (!selectedTier) {
+      const rec = (quote as { recommended_tier?: string | null }).recommended_tier;
+      if (rec && String(rec).trim()) {
+        setSelectedTier(String(rec).toLowerCase().trim());
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot deep link
+  }, []);
 
   // Track page exit + abandonment
   useEffect(() => {
@@ -1778,6 +1828,20 @@ export default function QuotePageClient({
           </div>
         )}
 
+        {moveProjectData &&
+          ((isResidential && tiers) ||
+            quote.service_type === "office_move" ||
+            quote.service_type === "long_distance" ||
+            quote.service_type === "white_glove") && (
+            <section className="scroll-mt-6 mb-10 w-full">
+              <MoveProjectQuoteTimeline
+                data={moveProjectData}
+                shellKind={shellKind}
+                forceOffice={quote.service_type === "office_move"}
+              />
+            </section>
+          )}
+
         {/* ═══ SECTION 2: ADD-ONS ═══ */}
         {((residentialSectionAtLeast(2) || (!isResidential && isConfirmed))) &&
           quote.service_type !== "bin_rental" &&
@@ -1916,6 +1980,7 @@ export default function QuotePageClient({
                   referralDiscountAmt={referralDiscountAmt}
                   basePrice={basePrice}
                   valuationCost={valuationCost}
+                  hideEstateScheduleSummary={Boolean(moveProjectData)}
                 />
               )}
               {/* Referral code, for residential, inside confirm; for non-residential, standalone */}
@@ -2172,6 +2237,22 @@ export default function QuotePageClient({
           contractSigned &&
           !booked && (
             <section className={`mb-10 pt-6 border-t ${shellBorderTopClass}`}>
+              {String(quote.status || "").toLowerCase() === "payment_failed" &&
+                openPaymentRetry &&
+                !quoteBookingLocked && (
+                  <div
+                    className="mb-5 px-4 py-3 text-[12px] font-medium rounded-md border"
+                    style={{
+                      backgroundColor: "rgba(45, 159, 90, 0.08)",
+                      borderColor: "rgba(44, 62, 45, 0.25)",
+                      color: "#2C3E2D",
+                    }}
+                    role="status"
+                  >
+                    Your agreement is signed. Complete payment below to confirm
+                    your booking.
+                  </div>
+                )}
               {quoteBookingLocked && (
                 <div
                   className="mb-5 px-4 py-3 text-[12px] font-medium"
@@ -2267,6 +2348,12 @@ export default function QuotePageClient({
                     selectedTier={selectedTier}
                     selectedAddons={Array.from(selectedAddons.values())}
                     disabled={quoteBookingLocked}
+                    amountHeadingColor={shellInk.muted}
+                    amountValueColor={premiumShell ? shellInk.primary : WINE}
+                    amountSectionRuleColor={
+                      premiumShell ? premiumShellRuleRgba(shellKind) : undefined
+                    }
+                    footerNoteColor={shellInk.muted}
                     amountHeading={
                       isB2BDeliveryQuoteServiceType(quote.service_type) &&
                       !binRentalBooking
@@ -3338,6 +3425,7 @@ function ConfirmDetailsSection({
   referralDiscountAmt = 0,
   basePrice = 0,
   valuationCost = 0,
+  hideEstateScheduleSummary = false,
 }: {
   quote: Quote;
   selectedTier: string;
@@ -3357,6 +3445,8 @@ function ConfirmDetailsSection({
   referralDiscountAmt?: number;
   basePrice?: number;
   valuationCost?: number;
+  /** When a DB-backed move project timeline is shown above, hide legacy estate lines. */
+  hideEstateScheduleSummary?: boolean;
 }) {
   const premiumChrome = premiumShellKind !== "none";
   const shellText = premiumShellInk(premiumShellKind);
@@ -3791,6 +3881,7 @@ function ConfirmDetailsSection({
                 </ul>
               </div>
               {selectedTier === "estate" &&
+                !hideEstateScheduleSummary &&
                 (() => {
                   const plan = faConfirm?.estate_day_plan as
                     | { days?: number }
@@ -3981,6 +4072,7 @@ function ConfirmDetailsSection({
 
         {premiumChrome &&
           selectedTier === "estate" &&
+          !hideEstateScheduleSummary &&
           (() => {
             const plan = faConfirm?.estate_day_plan as
               | { days?: number }

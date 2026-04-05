@@ -1,7 +1,14 @@
 export type ViewMode = "day" | "week" | "month" | "year";
 export type CalendarRole = "admin" | "partner";
 
-export type JobType = "move" | "delivery" | "project_phase" | "project" | "bin_delivery" | "bin_pickup";
+export type JobType =
+  | "move"
+  | "delivery"
+  | "project_phase"
+  | "project"
+  | "bin_delivery"
+  | "bin_pickup"
+  | "move_project_day";
 export type BlockType = JobType | "maintenance" | "training" | "break" | "blocked" | "time_off";
 
 export type CalendarStatus = "scheduled" | "in_progress" | "completed" | "cancelled" | "rescheduled";
@@ -20,6 +27,7 @@ export const JOB_COLORS = {
   recurring: "#34D399",
   bin_delivery: "#10B981",
   bin_pickup: "#059669",
+  move_project_day: "#818CF8",
 } as const;
 
 export const STATUS_DOT_COLORS: Record<string, string> = {

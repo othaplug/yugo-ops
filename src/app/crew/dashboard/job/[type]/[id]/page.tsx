@@ -44,6 +44,7 @@ import {
   type GeoPermissionState,
 } from "@/lib/crew/useCrewPersistentTracking";
 import type { CrewNavDestination } from "@/components/crew/CrewNavigation";
+import { MOVE_DAY_ISSUE_OPTIONS, defaultUrgencyForIssue } from "@/lib/crew/move-day-issues";
 
 const CrewNavigation = dynamic(
   () => import("@/components/crew/CrewNavigation").then((m) => m.CrewNavigation),
@@ -200,7 +201,8 @@ export default function CrewJobPage({
   const [note, setNote] = useState("");
   const [locationPermission, setLocationPermission] = useState<GeoPermissionState>("unknown");
   const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [reportType, setReportType] = useState("damage");
+  const [reportType, setReportType] = useState("access_problem");
+  const [reportUrgency, setReportUrgency] = useState<"high" | "medium" | "low">("medium");
   const [reportDesc, setReportDesc] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportSubmitted, setReportSubmitted] = useState(false);
@@ -1396,7 +1398,12 @@ export default function CrewJobPage({
                 </div>
                 <p className="text-[13px] text-[#243524] text-center mb-4">Issue reported. Dispatch notified.</p>
                 <button
-                  onClick={() => { setReportModalOpen(false); setReportSubmitted(false); setReportDesc(""); }}
+                  onClick={() => {
+                    setReportModalOpen(false);
+                    setReportSubmitted(false);
+                    setReportDesc("");
+                    setReportUrgency(defaultUrgencyForIssue(reportType));
+                  }}
                   className="crew-premium-cta w-full py-2 text-white font-semibold border border-[#2C3E2D]/30"
                 >
                   Done
@@ -1408,14 +1415,32 @@ export default function CrewJobPage({
                   <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">Issue type</label>
                   <select
                     value={reportType}
-                    onChange={(e) => setReportType(e.target.value)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setReportType(v);
+                      setReportUrgency(defaultUrgencyForIssue(v));
+                    }}
                     className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
                   >
-                    <option value="damage">Damage</option>
-                    <option value="delay">Delay</option>
-                    <option value="missing_item">Missing item</option>
-                    <option value="access_problem">Access problem</option>
-                    <option value="other">Other</option>
+                    {MOVE_DAY_ISSUE_OPTIONS.map((o) => (
+                      <option key={o.code} value={o.code}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-[10px] font-semibold text-[var(--tx3)] uppercase tracking-wider mb-1">Urgency</label>
+                  <select
+                    value={reportUrgency}
+                    onChange={(e) =>
+                      setReportUrgency(e.target.value as "high" | "medium" | "low")
+                    }
+                    className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] text-[13px] focus:border-[var(--brd)] outline-none"
+                  >
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
                   </select>
                 </div>
                 <div className="mb-4">
@@ -1448,6 +1473,7 @@ export default function CrewJobPage({
                             sessionId: session?.id,
                             issueType: reportType,
                             description: reportDesc.trim() || undefined,
+                            urgency: reportUrgency,
                           }),
                         });
                         if (!r.ok) throw new Error("Failed");

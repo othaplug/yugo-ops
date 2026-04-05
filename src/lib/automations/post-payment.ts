@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
 import { getResend } from "@/lib/resend";
@@ -21,6 +22,7 @@ import {
   curatedConfirmationEmail,
   signatureConfirmationEmail,
   estateConfirmationEmail,
+  statusUpdateEmailHtml,
   type TierConfirmationParams,
 } from "@/lib/email-templates";
 
@@ -131,6 +133,29 @@ export async function runPostPaymentActions(
   const baseUrl = getEmailBaseUrl();
   const trackToken = signTrackToken("move", input.moveId);
   const trackingUrl = `${baseUrl}/track/move/${input.moveCode}?token=${trackToken}`;
+
+  const tokenUpdates: Record<string, string> = {};
+  const existingSurveyTok = String(
+    (move as { survey_token?: string | null }).survey_token ?? "",
+  ).trim();
+  const existingChecklistTok = String(
+    (move as { checklist_token?: string | null }).checklist_token ?? "",
+  ).trim();
+  if (!existingSurveyTok) tokenUpdates.survey_token = randomBytes(24).toString("hex");
+  if (!existingChecklistTok) tokenUpdates.checklist_token = randomBytes(24).toString("hex");
+  if (Object.keys(tokenUpdates).length > 0) {
+    const { error: tokUpErr } = await supabase
+      .from("moves")
+      .update(tokenUpdates)
+      .eq("id", input.moveId);
+    if (tokUpErr) console.error("[postPayment] survey/checklist tokens", tokUpErr);
+  }
+  const surveyTokenForEmail = String(
+    tokenUpdates.survey_token ?? existingSurveyTok,
+  ).trim();
+  const checklistTokenForEmail = String(
+    tokenUpdates.checklist_token ?? existingChecklistTok,
+  ).trim();
 
   const selectedTier = move.tier_selected || quote.selected_tier;
   const tierLabel = TIER_LABELS[selectedTier ?? ""] ?? selectedTier ?? "";
@@ -382,6 +407,47 @@ export async function runPostPaymentActions(
       },
     },
 
+    /* ── 2b. Pre-move virtual survey (Essential / Signature only) ── */
+    {
+      name: "pre_move_survey_invite_email",
+      critical: false,
+      fn: async () => {
+        if (!clientEmail || !surveyTokenForEmail) return;
+        const tier = String(selectedTier ?? "").toLowerCase();
+        if (tier === "estate") return;
+        if (
+          !["essential", "curated", "signature", "essentials", "premier"].includes(
+            tier,
+          )
+        )
+          return;
+
+        const surveyUrl = `${baseUrl}/survey/${surveyTokenForEmail}`;
+        const resend = getResend();
+        const first = clientName.trim().split(/\s+/)[0] || "there";
+        const html = statusUpdateEmailHtml({
+          eyebrow: "Help us prepare",
+          headline: "Quick room photos",
+          body: `Hi ${first},<br/><br/>When you have a moment, snap a few photos of your main rooms so your coordinator can double-check the plan. It only takes a couple of minutes on your phone.`,
+          ctaUrl: surveyUrl,
+          ctaLabel: "TAKE PHOTOS",
+          includeFooter: true,
+          tone: "premium",
+        });
+        const emailFrom = await getEmailFrom();
+        await resend.emails.send({
+          from: emailFrom,
+          to: clientEmail,
+          subject: "Help us prepare — quick photos of your rooms",
+          html,
+          headers: {
+            Precedence: "auto",
+            "X-Auto-Response-Suppress": "All",
+          },
+        });
+      },
+    },
+
     /* ── 3. Client confirmation SMS ── */
     {
       name: "client_confirmation_sms",
@@ -401,6 +467,9 @@ export async function runPostPaymentActions(
 
         const companyDisplayName = await getCompanyDisplayName();
         const first = clientName?.trim().split(/\s+/)[0] || "there";
+        const checklistLine = checklistTokenForEmail
+          ? `Move-day checklist:\n${baseUrl}/checklist/${checklistTokenForEmail}`
+          : null;
         await sendSMS(
           to,
           [
@@ -408,6 +477,7 @@ export async function runPostPaymentActions(
             `You're booked with ${companyDisplayName}. Reference: ${input.moveCode}.`,
             `Your coordinator will reach out within 24 hours.`,
             `Track your move:\n${trackingUrl}`,
+            ...(checklistLine ? [checklistLine] : []),
           ].join("\n\n"),
         );
       },

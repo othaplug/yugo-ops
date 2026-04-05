@@ -6,6 +6,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import { formatMoveDate } from "@/lib/date-format";
 import EstateWelcomeGuideView from "../EstateWelcomeGuideView";
+import { fetchMoveProjectWithTree } from "@/lib/move-projects/fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function EstateWelcomePage({
   const { data: move, error } = await supabase
     .from("moves")
     .select(
-      "id, move_code, status, tier_selected, service_tier, client_name, scheduled_date, coordinator_name, coordinator_phone, coordinator_email, from_address, to_address, welcome_package_token",
+      "id, move_code, status, tier_selected, service_tier, client_name, scheduled_date, coordinator_name, coordinator_phone, coordinator_email, from_address, to_address, welcome_package_token, move_project_id",
     )
     .eq("welcome_package_token", raw)
     .maybeSingle();
@@ -48,6 +49,30 @@ export default async function EstateWelcomePage({
     ? formatMoveDate(move.scheduled_date)
     : null;
 
+  let moveProjectSchedule: {
+    totalDays: number;
+    days: { date: string; label: string; description?: string | null }[];
+  } | null = null;
+  const mpId = (move as { move_project_id?: string | null }).move_project_id;
+  if (mpId) {
+    const mpRes = await fetchMoveProjectWithTree(supabase, mpId);
+    const td = mpRes.project ? Number((mpRes.project as { total_days?: number }).total_days) : 0;
+    if (!mpRes.error && mpRes.project && td > 2) {
+      const flat = (mpRes.phases ?? [])
+        .flatMap((ph) => (Array.isArray(ph.days) ? ph.days : []) as { date?: string; label?: string; description?: string | null }[])
+        .filter((d) => d.date)
+        .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      moveProjectSchedule = {
+        totalDays: td,
+        days: flat.map((d) => ({
+          date: String(d.date),
+          label: String(d.label || "Day"),
+          description: d.description ?? null,
+        })),
+      };
+    }
+  }
+
   return (
     <EstateWelcomeGuideView
       moveCode={move.move_code ?? move.id}
@@ -59,6 +84,7 @@ export default async function EstateWelcomePage({
       supportEmail={getClientSupportEmail()}
       clientName={move.client_name?.trim() || null}
       hasScheduledMove={Boolean(move.scheduled_date)}
+      moveProjectSchedule={moveProjectSchedule}
     />
   );
 }

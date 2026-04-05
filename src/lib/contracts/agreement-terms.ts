@@ -78,7 +78,7 @@ function serviceDescription(p: NonBinAgreementBuildParams): string {
     case "office_move":
       return `${companyDisplayName} will relocate your workplace with the same care we bring to private homes: furniture, fixtures, and equipment within scope, coordinated access at origin and destination, and professional loading and unloading unless your quote states otherwise.`;
     case "single_item":
-      return `${companyDisplayName} will collect and deliver the piece(s) in your quote with measured handling and protection suited to the shipment.`;
+      return `${companyDisplayName} will collect and deliver the piece(s) in your quote with measured handling and protection suited to your items.`;
     case "white_glove":
       return `${companyDisplayName} will provide white-glove service as quoted: refined handling, inside placement, and optional assembly or debris removal where included.`;
     case "specialty":
@@ -97,11 +97,15 @@ function serviceDescription(p: NonBinAgreementBuildParams): string {
 
 /** Industry-standard non-allowables; not legal advice — operational disclosure. */
 function prohibitedItemsBody(p: NonBinAgreementBuildParams): string {
-  const { companyDisplayName, serviceType, residentialTier } = p;
+  const { companyDisplayName, serviceType, residentialTier, isLogisticsDelivery } = p;
   const tier = normTier(residentialTier);
+  const carryScope = isLogisticsDelivery ? "every shipment we carry" : "every move we carry";
+  const concealPhrase = isLogisticsDelivery
+    ? "concealed in a shipment"
+    : "concealed among the goods we are moving";
 
   const base = [
-    `For the safety of your home, our team, and every shipment we carry, the following categories fall outside what we pack, load, or transport unless ${companyDisplayName} confirms otherwise in writing:`,
+    `For the safety of your home, our team, and ${carryScope}, the following categories fall outside what we pack, load, or transport unless ${companyDisplayName} confirms otherwise in writing:`,
     "",
     "(a) Dangerous goods and hazardous materials—fuels, oils, solvents, paints and thinners, propane or other compressed gas (except where lawfully exempt), fireworks, ammunition, bulk household chemicals, pesticides, pool chemicals, and similar items that are regulated or unsafe aboard our vehicles.",
     "",
@@ -111,7 +115,7 @@ function prohibitedItemsBody(p: NonBinAgreementBuildParams): string {
     "",
     `(d) Irreplaceable valuables best kept with you—cash, negotiable instruments, jewelry and watches (unless declared and coverage is agreed), passports, wills, and other essential originals; and any piece you would prefer not to entrust to the truck.`,
     "",
-    `(e) Illegal goods or contraband. Firearms and ammunition must never be concealed in a shipment; any lawful arrangement must be confirmed in writing before move day.`,
+    `(e) Illegal goods or contraband. Firearms and ammunition must never be ${concealPhrase}; any lawful arrangement must be confirmed in writing before move day.`,
     "",
     `We ask that you remove or clearly identify these items before we arrive. Should prohibited or undisclosed goods appear, ${companyDisplayName} may decline them, adjust scope under Section 8, or pause service until the matter is resolved—with your comfort and our duty of care both in mind.`,
   ];
@@ -155,7 +159,7 @@ function clientResponsibilitiesBody(p: NonBinAgreementBuildParams): string {
   }
 
   if (serviceType === "long_distance") {
-    return `For a long-distance move done well, you agree to: (a) provide accurate item lists and declared values for coverage; (b) respect origin and destination access rules—elevators, long carry, parking; (c) clear perishables, hazardous materials, and prohibited items from the shipment; (d) be present or name an authorized representative at delivery. Changes to windows or storage may adjust pricing only with your written approval.`;
+    return `For a long-distance move done well, you agree to: (a) provide accurate item lists and declared values for coverage; (b) respect origin and destination access rules—elevators, long carry, parking; (c) clear perishables, hazardous materials, and prohibited items from the move; (d) be present or name an authorized representative at delivery. Changes to windows or storage may adjust pricing only with your written approval.`;
   }
 
   if (serviceType === "event") {
@@ -202,9 +206,9 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
   const liabilityTier = normTier(p.residentialTier);
   const liabilityBody =
     p.serviceType === "local_move" && liabilityTier === "estate"
-      ? `Valuation coverage is included with your Estate package. Eligible claims may be resolved through repair by verified professional restorers, replacement with an equivalent item at current market value, or a full cash settlement. Per-item coverage up to $10,000; per-shipment up to $100,000. Zero deductible. Items valued over $10,000 may be individually declared for additional coverage. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance.`
+      ? `Valuation coverage is included with your Estate package. Eligible claims may be resolved through repair by verified professional restorers, replacement with an equivalent item at current market value, or a full cash settlement. Per-item coverage up to $10,000; per move up to $100,000. Zero deductible. Items valued over $10,000 may be individually declared for additional coverage. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance.`
       : p.serviceType === "local_move" && liabilityTier === "signature"
-        ? `Enhanced valuation coverage is included with your Signature package, providing up to $2,500 per item and $25,000 per shipment protection. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance.`
+        ? `Enhanced valuation coverage is included with your Signature package, providing up to $2,500 per item and $25,000 per move in protection. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance.`
         : p.serviceType === "local_move" && liabilityTier === "essential"
           ? `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`
           : `Released-value cargo liability applies at $0.60 per pound per article unless you purchase upgraded coverage shown on your quote. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance. Where you select enhanced valuation or full-value protection, those terms on your quote govern.`;

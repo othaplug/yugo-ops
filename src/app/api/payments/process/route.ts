@@ -14,7 +14,9 @@ import { rateLimit } from "@/lib/rate-limit";
 import { isQuoteExpiredForBooking, quoteExpiryBlockedStatuses } from "@/lib/quote-expiry";
 import { squareThrownErrorMessage } from "@/lib/square-payment-errors";
 import { logActivity } from "@/lib/activity";
-import { notifyAllAdmins } from "@/lib/notifications";
+import { notifyAdmins } from "@/lib/notifications/dispatch";
+import { buildPaymentFailedClientEmailHtml } from "@/lib/email/payment-failed-client-email";
+import { sendEmail } from "@/lib/email/send";
 import {
   expectedB2BCardGrandTotalCad,
   isB2BInvoiceQuote,
@@ -140,6 +142,8 @@ export async function POST(req: Request) {
       }
     }
 
+    const retryCount = Number((quote as { payment_retry_count?: number }).payment_retry_count ?? 0);
+
     // ── 3. Store Card on File ──
     let squareCardId: string | undefined;
 
@@ -149,7 +153,7 @@ export async function POST(req: Request) {
         card: {
           customerId: squareCustomerId!,
         },
-        idempotencyKey: `card-${quoteId}`,
+        idempotencyKey: `card-${quoteId}-v${retryCount}`,
       });
       squareCardId = cardRes.card?.id;
     } catch (e) {
@@ -169,6 +173,8 @@ export async function POST(req: Request) {
     let squarePaymentId: string | undefined;
     let squareReceiptUrl: string | null = null;
 
+    const payIdempotencyKey = `pay-${quoteId}-v${retryCount}`;
+
     try {
       const paymentRes = await squareClient.payments.create({
         sourceId: paymentSourceId,
@@ -179,7 +185,7 @@ export async function POST(req: Request) {
           String(quote.service_type) === "b2b_oneoff" || String(quote.service_type) === "b2b_delivery"
             ? `YUGO B2B delivery payment ${quoteId}`
             : `YUGO deposit ${quoteId}`,
-        idempotencyKey: `pay-${quoteId}`,
+        idempotencyKey: payIdempotencyKey,
         locationId,
       });
       squarePaymentId = paymentRes.payment?.id;
@@ -191,13 +197,60 @@ export async function POST(req: Request) {
     } catch (e) {
       console.error("[Square] payment failed:", e);
       const msg = squareThrownErrorMessage(e);
-      notifyAllAdmins({
-        title: "Quote payment failed",
-        body: `Quote ${quoteId} — ${clientEmail}: ${msg}`,
-        icon: "warning",
-        sourceType: "payment",
-        sourceId: quoteId,
+      const nextRetry = retryCount + 1;
+      const failedAt = new Date().toISOString();
+      await supabase
+        .from("quotes")
+        .update({
+          status: "payment_failed",
+          payment_error: msg,
+          payment_failed_at: failedAt,
+          payment_retry_count: nextRetry,
+          updated_at: failedAt,
+        })
+        .eq("id", quote.id);
+
+      notifyAdmins("payment_failed", {
+        quoteId,
+        sourceId: quote.id,
+        subject: "Quote payment failed",
+        description: `${quoteId} — ${clientEmail}: ${msg}`,
+        clientName: clientName,
       }).catch(() => {});
+
+      const firstPayName = clientName.trim().split(/\s+/)[0] || "there";
+      buildPaymentFailedClientEmailHtml({
+        firstName: firstPayName,
+        quoteId,
+        friendlyReason: msg,
+      })
+        .then((html) =>
+          sendEmail({
+            to: clientEmail,
+            subject: "We could not process your payment — quick fix needed",
+            html,
+          }),
+        )
+        .catch(() => {});
+
+      const remindAt = new Date();
+      remindAt.setHours(remindAt.getHours() + 24);
+      const { data: existingRem } = await supabase
+        .from("scheduled_emails")
+        .select("id")
+        .eq("quote_id", quote.id)
+        .eq("type", "payment_retry_reminder")
+        .eq("status", "pending")
+        .limit(1);
+      if (!existingRem?.length) {
+        await supabase.from("scheduled_emails").insert({
+          quote_id: quote.id,
+          type: "payment_retry_reminder",
+          scheduled_for: remindAt.toISOString(),
+          status: "pending",
+        });
+      }
+
       return NextResponse.json({ error: msg }, { status: 402 });
     }
 
@@ -255,6 +308,8 @@ export async function POST(req: Request) {
           selected_tier: selectedTier ?? null,
           accepted_at: new Date().toISOString(),
           selected_addons: selectedAddons ?? [],
+          payment_error: null,
+          payment_failed_at: null,
         })
         .eq("id", quote.id);
     } catch (jobErr) {

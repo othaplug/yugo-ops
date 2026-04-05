@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuperAdminEmail, requireStaff } from "@/lib/api-auth";
 import { quoteStatusAllowsHardDelete } from "@/lib/quotes/delete-eligibility";
 import { syncDealStage } from "@/lib/hubspot/sync-deal-stage";
+import { scheduleWinBackEmail } from "@/lib/quotes/win-back";
 
 const PIPELINE_STATUSES = new Set([
   "draft",
@@ -15,6 +16,7 @@ const PIPELINE_STATUSES = new Set([
   "reactivated",
   "cold",
   "lost",
+  "payment_failed",
 ]);
 
 /**
@@ -105,6 +107,17 @@ export async function PATCH(
   const { error: upErr } = await admin.from("quotes").update(patch).eq("id", id);
   if (upErr) {
     return NextResponse.json({ error: upErr.message }, { status: 500 });
+  }
+
+  if (body.status !== undefined) {
+    const next = String(body.status || "").trim().toLowerCase();
+    if (next === "lost") {
+      const lr =
+        typeof body.loss_reason === "string" && body.loss_reason.trim()
+          ? body.loss_reason.trim()
+          : null;
+      await scheduleWinBackEmail(admin, id, lr).catch(() => {});
+    }
   }
 
   return NextResponse.json({ ok: true });

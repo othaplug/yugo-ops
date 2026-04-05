@@ -7,6 +7,7 @@ import { isMoveIdUuid } from "@/lib/move-code";
 import { isFeatureEnabled, getFeatureConfig } from "@/lib/platform-settings";
 import { parseDateOnly } from "@/lib/date-format";
 import TrackMoveClient from "./TrackMoveClient";
+import { fetchMoveProjectWithTree } from "@/lib/move-projects/fetch";
 import { pickupLocationsFromQuote, abbreviateLocationRows } from "@/lib/quotes/quote-address-display";
 
 export const metadata: Metadata = {
@@ -145,6 +146,15 @@ export default async function TrackMovePage({
   const pendingInventoryCr = pendingIcRows?.[0] ?? null;
   const crewChangeRequest = crewPendingRows?.[0] ?? null;
 
+  const { data: pendingBookingMod } = await supabase
+    .from("move_modifications")
+    .select("id, type, new_price, original_price, price_difference, created_at")
+    .eq("move_id", move.id)
+    .eq("status", "pending_approval")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   let quotePickupStops: { address: string; access: string | null }[] | null = null;
   if (move.quote_id) {
     const { data: originQuote } = await supabase
@@ -180,6 +190,28 @@ export default async function TrackMovePage({
   else if (!noPending) inventoryChangeReason = "You already have a pending inventory change request.";
 
   const { email: companyContactEmail } = await getLegalBranding();
+
+  let moveProjectForTrack: {
+    project: Record<string, unknown>;
+    phases: {
+      phase_name?: string;
+      days?: { date?: string; label?: string; status?: string }[];
+    }[];
+  } | null = null;
+  const mpTrackId = (move as { move_project_id?: string | null }).move_project_id;
+  if (mpTrackId) {
+    const mpRes = await fetchMoveProjectWithTree(supabase, mpTrackId);
+    const phaseTree = mpRes.phases ?? [];
+    if (!mpRes.error && mpRes.project && phaseTree.length > 0) {
+      moveProjectForTrack = {
+        project: mpRes.project as Record<string, unknown>,
+        phases: phaseTree as {
+          phase_name?: string;
+          days?: { date?: string; label?: string; status?: string }[];
+        }[],
+      };
+    }
+  }
 
   return (
     <TrackMoveClient
@@ -221,6 +253,8 @@ export default async function TrackMovePage({
       } | null}
       binOrder={binOrder}
       quotePickupStops={quotePickupStops}
+      pendingBookingModification={pendingBookingMod ?? null}
+      moveProjectForTrack={moveProjectForTrack}
     />
   );
 }
