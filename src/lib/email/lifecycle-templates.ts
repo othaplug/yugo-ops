@@ -120,8 +120,8 @@ function creamContractKvRow(
 /** Wine inset panel (pre-move checklist, card-on-file explainer, partner notices). */
 const WINE_INSET_RULE = "rgba(255,255,255,0.2)";
 const EQ_PANEL = `background:${EMAIL_WINE};border:1px solid ${WINE_INSET_RULE};border-radius:0;padding:20px;margin-bottom:20px;font-family:${PREMIUM_FONT}`;
-/** Light kicker on wine {@link EQ_PANEL} — 12px uppercase, tracked. */
-const PANEL_KICKER_ON_WINE_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#E8DFD8;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px`;
+/** Light kicker on wine {@link EQ_PANEL} — 12px uppercase, tracked (must stay high-contrast on #5C1A33). */
+const PANEL_KICKER_ON_WINE_UPPER = `font-family:${PREMIUM_FONT};font-size:12px;font-weight:700;color:#F5F0E8 !important;-webkit-text-fill-color:#F5F0E8;mso-color-alt:#F5F0E8;letter-spacing:0.06em;text-transform:uppercase`;
 /** Body copy on wine inset panels. */
 const EQ_ON_WINE_PANEL = "rgba(255,255,255,0.88)";
 
@@ -218,7 +218,7 @@ export function preMove72hrEmail(d: PreMove72hrData): string {
     </p>
 
     <div style="${EQ_PANEL}">
-      <div style="${PANEL_KICKER_ON_WINE_UPPER}margin-bottom:14px;">Pre-move checklist</div>
+      <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:14px;">Pre-move checklist</div>
       <div style="font-size:13px;color:${EQ_ON_WINE_PANEL};line-height:2;font-family:${PREMIUM_FONT}">
         <div>— Book elevator or loading dock at both locations</div>
         <div>— Reserve parking access for our truck</div>
@@ -874,7 +874,7 @@ export function balanceReminder72hrEmail(d: BalanceReminder72hrData): string {
     </p>
 
     <div style="${EQ_PANEL}">
-      <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:12px">Automatic payment</div>
+      <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:12px;">Automatic payment</div>
       <div style="background:${EMAIL_FOREST_CALLOUT_BG};border:1px solid ${EMAIL_FOREST_CALLOUT_BORDER};border-top:2px solid ${EMAIL_FOREST};border-radius:0;padding:16px;font-family:${PREMIUM_FONT}">
         <div style="${FOREST_EYEBROW_UPPER};margin-bottom:8px">Card on file</div>
         <div style="font-size:12px;color:${PROMO_CREAM_MUTED} !important;-webkit-text-fill-color:${PROMO_CREAM_MUTED};line-height:1.65">
@@ -1198,7 +1198,7 @@ export function partnerCardExpiringEmail(d: PartnerCardExpiringData): string {
       Hi ${firstName(d.partnerName) || d.partnerName}, your <strong style="color:${PROMO_CREAM_BODY} !important;-webkit-text-fill-color:${PROMO_CREAM_BODY};font-weight:600;">${d.cardBrand} ending in ${d.cardLastFour}</strong> on file for partner billing expires soon.
     </p>
     <div style="${EQ_PANEL}">
-      <div style="${PANEL_KICKER_ON_WINE_UPPER}">Why update now</div>
+      <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:12px;">Why update now</div>
       <div style="font-size:12px;color:${EQ_ON_WINE_PANEL};line-height:1.65">
         Automatic statement charges use this card. An expired card can delay payouts and require manual follow-up.
       </div>
@@ -1253,7 +1253,7 @@ export function clientCardExpiringEmail(d: ClientCardExpiringData): string {
       The card on file for <strong style="color:${EMAIL_FOREST}">${ref}</strong> expires before we can charge your remaining balance. Update it so payment runs on schedule.
     </p>
     <div style="${EQ_PANEL}">
-      <div style="${PANEL_KICKER_ON_WINE_UPPER}">Automatic balance charge</div>
+      <div style="${PANEL_KICKER_ON_WINE_UPPER};margin-bottom:12px;">Automatic balance charge</div>
       <div style="font-size:12px;color:${EQ_ON_WINE_PANEL};line-height:1.65">
         We charge the remaining balance to the card on file before move day. An expired card may delay service until billing is resolved.
       </div>

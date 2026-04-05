@@ -7,6 +7,10 @@ import { normalizeDeliveryItem } from "@/lib/delivery-items";
 import { buildFuelConfigMap, resolveNavigationFuelPriceCadPerLitre, NAV_FUEL_KEYS } from "@/lib/routing/fuel-config";
 import { normalizeCrewTruckType } from "@/lib/routing/truck-profile";
 import { CREW_JOB_UUID_RE, normalizeCrewJobId, selectDeliveryByJobId } from "@/lib/resolve-delivery-by-job-id";
+import {
+  isPreMoveChecklistComplete,
+  preMoveChecklistCounts,
+} from "@/lib/pre-move-checklist";
 
 const COMPLEXITY_BADGE_LABELS: Record<string, string> = {
   specialty_transport: "Specialty transport",
@@ -233,6 +237,11 @@ export async function GET(
     }
   }
 
+  const checklistRaw = (m.pre_move_checklist as Record<string, boolean> | null) || {};
+  const { done: preMoveChecklistDone, total: preMoveChecklistTotal } =
+    preMoveChecklistCounts(checklistRaw);
+  const preMoveChecklistAllComplete = isPreMoveChecklistComplete(checklistRaw);
+
   return NextResponse.json({
     id: m.id,
     jobId: m.move_code || m.id,
@@ -264,5 +273,11 @@ export async function GET(
     estCrewSize: m.est_crew_size != null ? Number(m.est_crew_size) : null,
     serviceType: (m.service_type as string | null) || (m.move_type as string | null) || null,
     complexityBadges: complexityBadgeLabels(m.complexity_indicators),
+    preMoveChecklistDone,
+    preMoveChecklistTotal,
+    preMoveChecklistAllComplete,
+    preMoveChecklistNotifiedAt:
+      (m as { pre_move_checklist_notified_at?: string | null }).pre_move_checklist_notified_at ??
+      null,
   });
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { ImageSquare } from "@phosphor-icons/react";
-
-const GOLD = "#2C3E2D";
+import type { ReactNode } from "react";
+import { useEffect, useState, useRef, useId } from "react";
+import { Plus, CaretRight } from "@phosphor-icons/react";
+import { WINE, FOREST, TEXT_MUTED_ON_LIGHT } from "@/lib/client-theme";
 const MAX_PHOTOS = 10;
 
 type Photo = {
@@ -14,19 +14,42 @@ type Photo = {
   created_at?: string;
 };
 
+function Outer({
+  embedded,
+  children,
+}: {
+  embedded?: boolean;
+  children: ReactNode;
+}) {
+  if (embedded) return <>{children}</>;
+  return (
+    <div
+      className="bg-white overflow-hidden border"
+      style={{ borderColor: `${FOREST}14` }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function TrackPhotos({
   moveId,
   token,
   moveComplete = false,
+  embedded = false,
 }: {
   moveId: string;
   token: string;
   moveComplete?: boolean;
+  /** Omit outer card — parent provides single bordered wrapper */
+  embedded?: boolean;
 }) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const reactId = useId();
+  const uploadFieldId = `client-photo-upload-${reactId.replace(/:/g, "")}`;
 
   const fetchPhotos = () => {
     fetch(`/api/track/moves/${moveId}/photos?token=${encodeURIComponent(token)}`)
@@ -56,12 +79,14 @@ export default function TrackPhotos({
     try {
       const res = await fetch(
         `/api/track/moves/${moveId}/photos?token=${encodeURIComponent(token)}`,
-        { method: "POST", body: formData }
+        { method: "POST", body: formData },
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
       fetchPhotos();
-    } catch {}
+    } catch {
+      /* silent */
+    }
     setUploading(false);
     if (fileRef.current) fileRef.current.value = "";
   };
@@ -94,33 +119,68 @@ export default function TrackPhotos({
 
   if (loading) {
     return (
-      <div className="bg-white border border-[#E7E5E4] rounded-xl p-5">
-        <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A] mb-4">Photos</h3>
-        <p className="text-[12px] text-[#454545]">Loading...</p>
-      </div>
+      <Outer embedded={embedded}>
+        <div
+          className="px-5 py-4 border-b"
+          style={{ borderColor: `${FOREST}10` }}
+        >
+          <div className="h-6 bg-[#E7E5E4] animate-pulse w-40" />
+        </div>
+        <div className="px-5 py-5">
+          <p className="text-[13px]" style={{ color: TEXT_MUTED_ON_LIGHT }}>
+            Loading…
+          </p>
+        </div>
+      </Outer>
     );
   }
 
   return (
-    <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between">
-        <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A]">
-          Photos{photos.length > 0 ? ` (${photos.length})` : ""}
-        </h3>
-        <div className="flex gap-2">
+    <Outer embedded={embedded}>
+      <div
+        className="px-5 py-4 border-b flex items-center justify-between gap-3"
+        style={{ borderColor: `${FOREST}10` }}
+      >
+        <div className="min-w-0">
+          <h2
+            className="font-hero text-[22px] sm:text-[24px] font-semibold leading-tight tracking-tight"
+            style={{ color: WINE }}
+          >
+            Photos
+          </h2>
+          {photos.length > 0 ? (
+            <p
+              className="text-[12px] mt-0.5"
+              style={{ color: TEXT_MUTED_ON_LIGHT }}
+            >
+              {photos.length} {photos.length === 1 ? "photo" : "photos"}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex gap-2 shrink-0">
           {photos.length > 0 && (
             <>
               <button
                 type="button"
                 onClick={handleDownloadAll}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#454545] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
+                className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest border border-solid transition-opacity hover:opacity-80"
+                style={{
+                  borderColor: `${FOREST}22`,
+                  color: FOREST,
+                  backgroundColor: "transparent",
+                }}
               >
-                Download All
+                Download all
               </button>
               <button
                 type="button"
                 onClick={handleShare}
-                className="rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#454545] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
+                className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest border border-solid transition-opacity hover:opacity-80"
+                style={{
+                  borderColor: `${FOREST}22`,
+                  color: FOREST,
+                  backgroundColor: "transparent",
+                }}
               >
                 Share
               </button>
@@ -129,9 +189,8 @@ export default function TrackPhotos({
         </div>
       </div>
 
-      {/* Upload area, before and during move only */}
       {canUpload && (
-        <div className="px-5 pt-4">
+        <div className="px-5 pt-4 pb-1 flex flex-col items-center text-center">
           <input
             ref={fileRef}
             type="file"
@@ -139,49 +198,41 @@ export default function TrackPhotos({
             multiple
             onChange={handleUpload}
             className="hidden"
-            id="client-photo-upload"
+            id={uploadFieldId}
           />
           <label
-            htmlFor="client-photo-upload"
-            className="flex items-center justify-center gap-2.5 w-full py-4 rounded-xl border-2 border-dashed cursor-pointer transition-all hover:border-[#2C3E2D] hover:bg-[#2C3E2D08] active:scale-[0.99]"
-            style={{ borderColor: uploading ? GOLD : "#D4D0C8" }}
+            htmlFor={uploadFieldId}
+            className={`inline-flex items-center justify-center gap-1.5 px-1 py-1 text-[11px] font-bold uppercase tracking-[0.12em] leading-none transition-opacity cursor-pointer ${uploading ? "opacity-60 pointer-events-none" : "hover:opacity-80"}`}
+            style={{ color: FOREST }}
           >
             {uploading ? (
-              <span className="text-[12px] font-semibold" style={{ color: GOLD }}>
-                Uploading...
-              </span>
+              <span>Uploading…</span>
             ) : (
               <>
-                <ImageSquare size={18} color={GOLD} />
-                <div className="text-left">
-                  <span className="text-[12px] font-semibold text-[#1A1A1A] block">
-                    Upload Photos
-                  </span>
-                  <span className="text-[10px] text-[#4F4B47]">
-                    {clientPhotoCount}/{MAX_PHOTOS} uploaded &middot; JPG, PNG, WebP
-                  </span>
-                </div>
+                <Plus size={12} weight="bold" className="shrink-0" aria-hidden />
+                Upload photos
+                <CaretRight size={12} weight="bold" className="shrink-0" aria-hidden />
               </>
             )}
           </label>
+          <p
+            className="text-[11px] mt-2 max-w-[240px]"
+            style={{ color: TEXT_MUTED_ON_LIGHT }}
+          >
+            {clientPhotoCount}/{MAX_PHOTOS} uploaded · JPG, PNG, WebP
+          </p>
         </div>
       )}
 
-      {photos.length === 0 ? (
-        <div className="px-5 py-8 text-center">
-          <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No photos yet</p>
-          <p className="text-[11px] text-[#4F4B47] max-w-[240px] mx-auto leading-relaxed">
-            {moveComplete
-              ? "No photos were uploaded for this move."
-              : "Upload photos of items you'd like moved, or your coordinator may add photos from the pre-move survey."}
-          </p>
-        </div>
-      ) : (
-        <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
+      {photos.length > 0 && (
+        <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
           {photos.map((p) => {
             const dateStr = p.created_at
               ? new Date(p.created_at)
-                  .toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                  .toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
                   .toUpperCase()
               : "";
             const isClient = p.source === "client";
@@ -192,19 +243,39 @@ export default function TrackPhotos({
                 href={p.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-lg overflow-hidden border border-[#E7E5E4] bg-[#FAFAF8] aspect-[4/3] hover:border-[#2C3E2D] transition-colors relative group"
+                className="block overflow-hidden border border-solid transition-opacity hover:opacity-90 aspect-[4/3] relative group"
+                style={{
+                  borderColor: `${FOREST}18`,
+                  backgroundColor: `${FOREST}04`,
+                }}
               >
-                <img src={p.url} alt={label} className="w-full h-full object-cover" />
-                <div className="absolute bottom-0 left-0 right-0 bg-white/95 px-3 py-2 flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#454545]">
-                    {label} {dateStr && `\u2022 ${dateStr}`}
+                <img
+                  src={p.url}
+                  alt={label}
+                  className="w-full h-full object-cover"
+                />
+                <div
+                  className="absolute bottom-0 left-0 right-0 px-3 py-2 flex items-center justify-between gap-2"
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.96)",
+                    borderTop: `1px solid ${FOREST}10`,
+                  }}
+                >
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wider truncate"
+                    style={{ color: TEXT_MUTED_ON_LIGHT }}
+                  >
+                    {label} {dateStr && `· ${dateStr}`}
                   </span>
                   {isClient && (
                     <span
-                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                      style={{ backgroundColor: `${GOLD}18`, color: GOLD }}
+                      className="text-[10px] font-bold px-1.5 py-0.5 shrink-0 uppercase tracking-wide"
+                      style={{
+                        backgroundColor: `${FOREST}14`,
+                        color: FOREST,
+                      }}
                     >
-                      YOU
+                      You
                     </span>
                   )}
                 </div>
@@ -213,6 +284,6 @@ export default function TrackPhotos({
           })}
         </div>
       )}
-    </div>
+    </Outer>
   );
 }

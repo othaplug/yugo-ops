@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   const { data: moves72 } = await supabase
     .from("moves")
     .select(
-      "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at",
+      "id, move_code, client_name, client_email, client_phone, scheduled_date, scheduled_time, from_address, to_address, from_access, to_access, balance_amount, balance_paid_at, deposit_paid_at, tier_selected",
     )
     .in("status", ["confirmed", "scheduled"])
     .eq("scheduled_date", threeDaysOut)
@@ -56,9 +56,13 @@ export async function GET(req: NextRequest) {
       const trackingUrl = `${baseUrl}/track/move/${move.move_code ?? move.id}?token=${trackToken}`;
 
       try {
+        const isEstate =
+          String(move.tier_selected || "").toLowerCase().trim() === "estate";
         const result = await sendEmail({
           to: move.client_email,
-          subject: `Your move is in 3 days - ${move.move_code || "Checklist"}`,
+          subject: isEstate
+            ? `Your Estate move is in 3 days - ${move.move_code || "Checklist"}`
+            : `Your move is in 3 days - ${move.move_code || "Checklist"}`,
           template: "pre-move-72hr",
           data: {
             clientName: move.client_name || "",
@@ -199,7 +203,7 @@ export async function GET(req: NextRequest) {
       `
       id, move_code, client_name, client_email, client_phone,
       scheduled_date, scheduled_time, from_address, to_address,
-      crew_id, crew_size, truck_info, arrival_window,
+      crew_id, crew_size, truck_info, arrival_window, tier_selected,
       crews:crew_id(name, members)
     `,
     )
@@ -233,9 +237,13 @@ export async function GET(req: NextRequest) {
       const crewSize = move.crew_size ?? (crew?.members?.length || null);
 
       try {
+        const isEstate24 =
+          String(move.tier_selected || "").toLowerCase().trim() === "estate";
         const result = await sendEmail({
           to: move.client_email,
-          subject: `Your crew is confirmed for tomorrow - ${move.move_code || "Details"}`,
+          subject: isEstate24
+            ? `Your Estate crew is confirmed for tomorrow - ${move.move_code || "Details"}`
+            : `Your crew is confirmed for tomorrow - ${move.move_code || "Details"}`,
           template: "pre-move-24hr",
           data: {
             clientName: move.client_name || "",

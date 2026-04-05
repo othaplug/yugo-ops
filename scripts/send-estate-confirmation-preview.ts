@@ -45,6 +45,7 @@ async function main() {
     depositPaid: 3_750,
     balanceRemaining: 11_250,
     trackingUrl: `${base}/track`,
+    welcomePackageUrl: `${base}/estate/welcome/preview-token-sample`,
     includes: [],
     coordinatorName: "Jordan Chen",
     coordinatorPhone: "(647) 555-0100",

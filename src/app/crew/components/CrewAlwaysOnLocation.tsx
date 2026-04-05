@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useCallback, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useCallback,
+  useState,
+} from "react";
 import { usePathname } from "next/navigation";
 import { registerCrewServiceWorker } from "@/lib/crew/register-sw";
 import {
@@ -8,6 +14,7 @@ import {
   readCrewGeoOptIn,
   revokeCrewLocationMemory,
 } from "@/lib/crew/useCrewPersistentTracking";
+import { CaretRight } from "@phosphor-icons/react";
 
 const IDLE_INTERVAL_MS = 30_000;
 
@@ -24,14 +31,17 @@ export default function CrewAlwaysOnLocation() {
   const pathname = usePathname();
   const watchIdRef = useRef<number | null>(null);
   const lastSentRef = useRef(0);
-  const [status, setStatus] = useState<"live" | "off" | "unavailable" | "denied">("off");
+  const [status, setStatus] = useState<
+    "live" | "off" | "unavailable" | "denied"
+  >("off");
 
   useLayoutEffect(() => {
     if (readCrewGeoOptIn()) setStatus("live");
   }, []);
 
   const isOnJobPage = pathname?.startsWith("/crew/dashboard/job/") ?? false;
-  const isPublicPage = pathname === "/crew/login" || pathname === "/crew/setup" || !pathname;
+  const isPublicPage =
+    pathname === "/crew/login" || pathname === "/crew/setup" || !pathname;
 
   const stopWatch = useCallback(() => {
     if (watchIdRef.current != null) {
@@ -92,6 +102,9 @@ export default function CrewAlwaysOnLocation() {
   // On job pages, the job page handles its own GPS — hide this indicator
   if (isOnJobPage || isPublicPage) return null;
 
+  const pillShell =
+    "rounded-full border border-[#2C3E2D]/20 bg-white/90 backdrop-blur-md shadow-[0_4px_24px_rgba(44,62,45,0.1)] [font-family:var(--font-body)]";
+
   return (
     <div
       className="fixed z-40 max-w-[calc(100vw-2rem)] sm:max-w-none right-4 left-auto bottom-[max(1rem,calc(4.75rem+env(safe-area-inset-bottom,0px)))] md:bottom-6 md:right-6"
@@ -99,31 +112,61 @@ export default function CrewAlwaysOnLocation() {
       aria-label="Location sharing status"
     >
       {status === "live" ? (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.08] shadow-lg text-[12px] font-medium text-[var(--tx2)]">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]" />
+        <div
+          className={`flex items-center gap-2.5 px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#243524] ${pillShell}`}
+        >
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2C3E2D] opacity-40" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2C3E2D]" />
           </span>
-          <span className="text-[#22C55E] font-semibold">Location Live</span>
+          <span>Location live</span>
         </div>
       ) : (
         <button
           type="button"
           onClick={() => {
             if (status === "denied") {
-              alert("Location permission was denied. Please enable location access in your browser settings and reload the page.");
+              alert(
+                "Location permission was denied. Please enable location access in your browser settings and reload the page.",
+              );
             } else {
               startTracking();
             }
           }}
-          className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 py-1.5 rounded-full bg-[#F59E0B]/12 shadow-lg text-[12px] font-medium text-[var(--tx2)] hover:bg-[#F59E0B]/18 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F59E0B]/40 transition-colors"
+          className={`group flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2.5 text-left transition-colors hover:border-[#2C3E2D]/35 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2C3E2D]/25 focus-visible:ring-offset-2 ${pillShell}`}
         >
-          <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
-          <span className="text-[#F59E0B] font-semibold">
-            {status === "denied" ? "Location Denied" : status === "unavailable" ? "GPS Unavailable" : "Location Off"}
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span
+              className={`h-2 w-2 shrink-0 rounded-full ${
+                status === "denied" ? "bg-[var(--red)]" : "bg-[#5C1A33]"
+              }`}
+              aria-hidden
+            />
+            <span
+              className={`text-[10px] font-bold uppercase tracking-[0.12em] ${
+                status === "denied" ? "text-[var(--red)]" : "text-[#5C1A33]"
+              }`}
+            >
+              {status === "denied"
+                ? "Location denied"
+                : status === "unavailable"
+                  ? "GPS unavailable"
+                  : "Location off"}
+            </span>
           </span>
           {status !== "denied" && status !== "unavailable" && (
-            <span className="text-[var(--tx3)] ml-0.5">· Tap to reconnect</span>
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[#243524]">
+              <span className="text-[#2C3E2D]/35" aria-hidden>
+                ·
+              </span>
+              Tap to reconnect
+              <CaretRight
+                size={12}
+                weight="bold"
+                className="shrink-0 text-[#2C3E2D] opacity-80 transition-transform group-hover:translate-x-0.5"
+                aria-hidden
+              />
+            </span>
           )}
         </button>
       )}

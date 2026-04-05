@@ -126,9 +126,9 @@ function ScheduleModal({
 
   return (
     <div className="fixed inset-0 z-[var(--z-modal)] flex min-h-0 items-center justify-center p-4 sm:p-5 bg-black/50" onClick={onClose}>
-      <div className="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-[520px] shadow-2xl border border-[var(--brd)] max-h-[92dvh] flex flex-col overflow-hidden animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[var(--brd)] flex items-center justify-between">
-          <h2 className="text-[15px] font-bold font-hero text-[var(--tx)]">{isEdit ? "Edit Schedule" : "Create Recurring Schedule"}</h2>
+      <div className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg w-full sm:max-w-[520px] shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10 max-h-[92dvh] flex flex-col overflow-hidden animate-slide-up sm:animate-none" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-[#2C3E2D]/10 flex items-center justify-between">
+          <h2 className="text-[15px] font-bold font-hero text-[#5C1A33]">{isEdit ? "Edit Schedule" : "Create Recurring Schedule"}</h2>
           <button onClick={onClose} className="text-[var(--tx3)] hover:text-[var(--tx)] p-1">
             <X size={18} weight="regular" />
           </button>
@@ -157,8 +157,8 @@ function ScheduleModal({
                   onClick={() => setFrequency(f)}
                   className={`flex-1 py-2 rounded-lg text-[12px] font-semibold border transition-colors ${
                     frequency === f
-                      ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                      : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
+                      ? "bg-[#2C3E2D] border-[#2C3E2D] text-white"
+                      : "border-[var(--brd)] text-[var(--tx2)] hover:border-[#5C1A33]/35"
                   }`}
                 >
                   {FREQ_LABELS[f]}
@@ -181,8 +181,8 @@ function ScheduleModal({
                     onClick={() => toggleDay(dow)}
                     className={`w-9 h-9 rounded-lg text-[11px] font-bold border transition-colors ${
                       active
-                        ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                        : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
+                        ? "bg-[#2C3E2D] border-[#2C3E2D] text-white"
+                        : "border-[var(--brd)] text-[var(--tx2)] hover:border-[#5C1A33]/35"
                     }`}
                   >
                     {day}
@@ -202,8 +202,8 @@ function ScheduleModal({
                   onClick={() => setBookingType(val)}
                   className={`flex-1 py-2 rounded-lg text-[12px] font-semibold border transition-colors ${
                     bookingType === val
-                      ? "bg-[var(--gold)] border-[var(--gold)] text-[var(--btn-text-on-accent)]"
-                      : "border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]"
+                      ? "bg-[#2C3E2D] border-[#2C3E2D] text-white"
+                      : "border-[var(--brd)] text-[var(--tx2)] hover:border-[#5C1A33]/35"
                   }`}
                 >
                   {label}
@@ -279,11 +279,11 @@ function ScheduleModal({
           </div>
         </div>
 
-        <div className="flex-shrink-0 px-5 py-4 border-t border-[var(--brd)] flex gap-2 bg-[var(--card)]">
+        <div className="flex-shrink-0 px-5 py-4 border-t border-[#2C3E2D]/10 flex gap-2 bg-[#FFFBF7]">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[var(--brd)] text-[var(--tx2)] hover:bg-[var(--bg)] hover:text-[var(--tx)]"
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold border border-[#2C3E2D]/20 text-[#2C3E2D] hover:bg-[#2C3E2D]/5"
           >
             Cancel
           </button>
@@ -291,7 +291,7 @@ function ScheduleModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243524] disabled:opacity-50 transition-colors"
           >
             {saving ? "Saving…" : isEdit ? "Save changes" : "Create schedule"}
           </button>
@@ -355,12 +355,12 @@ export default function PartnerRecurringTab({ orgId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-[17px] font-bold font-hero text-[var(--tx)]">Recurring Schedules</h2>
+          <h2 className="text-[17px] font-bold font-hero text-[#5C1A33]">Recurring Schedules</h2>
           <p className="text-[12px] text-[var(--tx3)] mt-0.5">Auto-generate draft deliveries on a repeating schedule</p>
         </div>
         <button
           onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-white hover:bg-[var(--gold2)] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243524] transition-colors"
         >
           <Plus size={13} weight="regular" />
           Create Schedule
@@ -380,7 +380,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
           <p className="text-[12px] text-[var(--tx3)] mb-4 max-w-[280px] mx-auto">Set up a recurring schedule and we'll auto-create draft deliveries before each run.</p>
           <button
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243524]"
           >
             + Create First Schedule
           </button>
@@ -418,7 +418,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
                   {s.next_generation_date && !s.is_paused && (
                     <div className="mt-2 text-[11px]">
                       <span className="text-[var(--tx3)]">Next: </span>
-                      <span className="font-semibold text-[var(--gold)]">{formatNextDate(s.next_generation_date)}</span>
+                      <span className="font-semibold text-[#5C1A33]">{formatNextDate(s.next_generation_date)}</span>
                     </div>
                   )}
                 </div>
@@ -428,7 +428,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
                   <button
                     title="Edit"
                     onClick={() => setEditTarget(s)}
-                    className="p-2 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors"
+                    className="p-2 rounded-lg text-[var(--tx3)] hover:text-[#5C1A33] hover:bg-[var(--bg)] transition-colors"
                   >
                     <PencilSimple size={14} />
                   </button>
@@ -436,7 +436,7 @@ export default function PartnerRecurringTab({ orgId }: Props) {
                     title={s.is_paused ? "Resume" : "Pause"}
                     onClick={() => handleTogglePause(s)}
                     disabled={toggling === s.id}
-                    className="p-2 rounded-lg text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--bg)] transition-colors disabled:opacity-50"
+                    className="p-2 rounded-lg text-[var(--tx3)] hover:text-[#5C1A33] hover:bg-[var(--bg)] transition-colors disabled:opacity-50"
                   >
                     {s.is_paused ? (
                       <Play size={14} />
@@ -463,9 +463,9 @@ export default function PartnerRecurringTab({ orgId }: Props) {
       <div className="rounded-xl border border-[var(--brd)]/50 p-4 bg-[var(--card)]/50">
         <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--tx3)] mb-2">How it works</h4>
         <ul className="space-y-1.5 text-[11px] text-[var(--tx3)]">
-          <li className="flex items-start gap-2"><span className="text-[var(--gold)] mt-0.5">→</span>7 days before each scheduled run, a draft delivery is created automatically</li>
-          <li className="flex items-start gap-2"><span className="text-[var(--gold)] mt-0.5">→</span>You&apos;ll receive a notification to add stops and confirm</li>
-          <li className="flex items-start gap-2"><span className="text-[var(--gold)] mt-0.5">→</span>Pausing a schedule skips future runs without deleting it</li>
+          <li className="flex items-start gap-2"><span className="text-[#5C1A33] mt-0.5">→</span>7 days before each scheduled run, a draft delivery is created automatically</li>
+          <li className="flex items-start gap-2"><span className="text-[#5C1A33] mt-0.5">→</span>You&apos;ll receive a notification to add stops and confirm</li>
+          <li className="flex items-start gap-2"><span className="text-[#5C1A33] mt-0.5">→</span>Pausing a schedule skips future runs without deleting it</li>
         </ul>
       </div>
 

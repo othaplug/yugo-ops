@@ -147,7 +147,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
 
       {/* Required photo nudge */}
       {needsPhoto && (
-        <p className="text-[10px] text-[var(--gold)] mb-2.5">
+        <p className="text-[10px] text-[#5C1A33] mb-2.5">
           Take at least 1 photo to advance, or skip below.
         </p>
       )}
@@ -169,7 +169,7 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
           {!readOnly && canAddPhotos && (
             <label
               htmlFor="job-photos-file-input"
-              className={`aspect-square rounded-xl border border-dashed border-[var(--brd)] flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:border-[var(--gold)]/50 hover:bg-[var(--gdim)]/20 ${uploading ? "opacity-40 pointer-events-none" : ""}`}
+              className={`aspect-square rounded-xl border border-dashed border-[var(--brd)] flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:border-[#5C1A33]/50 hover:bg-[var(--gdim)]/20 ${uploading ? "opacity-40 pointer-events-none" : ""}`}
             >
               <Plus size={16} weight="regular" color="var(--tx3)" />
             </label>
@@ -185,8 +185,8 @@ export default function JobPhotos({ jobId, jobType, sessionId, currentStatus, on
           disabled={uploading}
           className={`w-full flex items-center justify-center gap-2 py-3 border border-dashed transition-all disabled:opacity-40 active:scale-[0.98] ${
             needsPhoto
-              ? "border-[var(--gold)]/50 text-[var(--gold)] hover:bg-[var(--gold)]/5"
-              : "border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)]/30 hover:text-[var(--tx2)]"
+              ? "border-[#5C1A33]/50 text-[#5C1A33] hover:bg-[#5C1A33]/5"
+              : "border-[var(--brd)] text-[var(--tx3)] hover:border-[#5C1A33]/30 hover:text-[var(--tx2)]"
           }`}
         >
           <Image size={18} />

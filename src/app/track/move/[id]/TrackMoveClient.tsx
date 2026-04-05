@@ -25,18 +25,23 @@ import { formatCurrency, calcHST } from "@/lib/format-currency";
 import { formatAccessForDisplay, toTitleCase } from "@/lib/format-text";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
+import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import TipConfirmation from "@/components/tracking/TipConfirmation";
 import ExperienceRatingSection from "@/components/tracking/ExperienceRatingSection";
-import ClientSettingsMenu from "./ClientSettingsMenu";
 import TrackingAgreementModal from "./TrackingAgreementModal";
 import InventoryChangeRequestModal from "@/components/tracking/InventoryChangeRequestModal";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
-import { WINE, FOREST, GOLD } from "@/lib/client-theme";
+import {
+  WINE,
+  FOREST,
+  TEXT_MUTED_ON_LIGHT,
+  TRACK_EYEBROW_CLASS,
+  TRACK_CARD_TITLE_CLASS,
+} from "@/lib/client-theme";
 import {
   ArrowsClockwise,
   CaretDown,
   Check,
-  Phone,
   ShareNetwork,
   CaretRight,
   Plus,
@@ -45,15 +50,21 @@ import {
   Lock,
   Copy,
   Warning,
-  Receipt,
   UsersThree,
   ArrowsCounterClockwise,
   Recycle,
   ArrowRight,
 } from "@phosphor-icons/react";
 import PreMoveChecklist from "@/components/tracking/PreMoveChecklist";
+import EstateServiceChecklist from "@/components/tracking/EstateServiceChecklist";
 import LiveMoveTimeline from "@/components/tracking/LiveMoveTimeline";
-import ClientRoomPhotoCapture from "@/components/tracking/ClientRoomPhotoCapture";
+import TrackYourCrewSection from "@/components/tracking/TrackYourCrewSection";
+import {
+  isCrewAssignedOnMove,
+  shouldRevealCrewNamesOnMoveTrack,
+} from "@/lib/track-crew-visibility";
+import { calculateEstateDays } from "@/lib/quotes/estate-schedule";
+import { estateUsesWalkthroughScopedInventory } from "@/lib/estate-track-inventory";
 import {
   BIN_RENTAL_BUNDLE_SPECS,
   wardrobeBoxesForBundle,
@@ -232,8 +243,8 @@ function BinRentalTrackingSection({
       <div
         className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
         style={{
-          background: done ? "#22C55E22" : `${GOLD}15`,
-          border: `1.5px solid ${done ? "#22C55E" : GOLD}`,
+          background: done ? "#22C55E22" : `${FOREST}15`,
+          border: `1.5px solid ${done ? "#22C55E" : FOREST}`,
         }}
       >
         {done ? (
@@ -241,7 +252,7 @@ function BinRentalTrackingSection({
         ) : (
           <div
             className="w-2 h-2 rounded-full bg-current opacity-40"
-            style={{ color: GOLD }}
+            style={{ color: FOREST }}
           />
         )}
       </div>
@@ -253,20 +264,20 @@ function BinRentalTrackingSection({
   return (
     <div
       className="rounded-2xl border p-4 mb-4 space-y-4"
-      style={{ borderColor: `${GOLD}35`, background: `${GOLD}0A` }}
+      style={{ borderColor: `${FOREST}35`, background: `${FOREST}0A` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Recycle
             size={22}
-            color={GOLD}
+            color={FOREST}
             weight="regular"
             className="shrink-0"
             aria-hidden
           />
           <div className="min-w-0">
             <p
-              className="text-[10px] font-bold uppercase tracking-wider"
+              className="text-[11px] font-bold uppercase tracking-[0.08em]"
               style={{ color: FOREST }}
             >
               {primaryTitle ? "Your bin rental" : "Bin rental"}
@@ -280,9 +291,9 @@ function BinRentalTrackingSection({
           </div>
         </div>
         <span
-          className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md shrink-0"
+          className="text-[11px] font-bold uppercase tracking-[0.08em] px-2 py-1 rounded-md shrink-0"
           style={{
-            background: st === "overdue" ? "#FEE2E2" : `${GOLD}18`,
+            background: st === "overdue" ? "#FEE2E2" : `${FOREST}18`,
             color: st === "overdue" ? "#B91C1C" : FOREST,
           }}
         >
@@ -292,7 +303,7 @@ function BinRentalTrackingSection({
 
       <div>
         <p
-          className="text-[10px] font-bold uppercase tracking-wider mb-2"
+          className="text-[11px] font-bold uppercase tracking-[0.08em] mb-2"
           style={{ color: `${FOREST}99` }}
         >
           Timeline
@@ -302,13 +313,13 @@ function BinRentalTrackingSection({
             {stepIcon(deliveryDone)}
             <div className="min-w-0">
               <p
-                className="text-[12px] font-semibold"
+                className="text-[13px] font-semibold"
                 style={{ color: FOREST }}
               >
                 Bin delivery — {formatMoveDate(binOrder.drop_off_date)}
               </p>
               <p
-                className="text-[11px] opacity-70 mt-0.5"
+                className="text-[12px] opacity-70 mt-0.5"
                 style={{ color: FOREST }}
               >
                 {relativeDayPhrase(binOrder.drop_off_date)}
@@ -327,13 +338,13 @@ function BinRentalTrackingSection({
             {stepIcon(moveDayDone)}
             <div>
               <p
-                className="text-[12px] font-semibold"
+                className="text-[13px] font-semibold"
                 style={{ color: FOREST }}
               >
                 Your move — {formatMoveDate(binOrder.move_date)}
               </p>
               <p
-                className="text-[11px] opacity-70 mt-0.5"
+                className="text-[12px] opacity-70 mt-0.5"
                 style={{ color: FOREST }}
               >
                 {relativeDayPhrase(binOrder.move_date)}
@@ -344,13 +355,13 @@ function BinRentalTrackingSection({
             {stepIcon(pickupDone)}
             <div className="min-w-0">
               <p
-                className="text-[12px] font-semibold"
+                className="text-[13px] font-semibold"
                 style={{ color: FOREST }}
               >
                 Bin pickup — {formatMoveDate(binOrder.pickup_date)}
               </p>
               <p
-                className="text-[11px] opacity-70 mt-0.5"
+                className="text-[12px] opacity-70 mt-0.5"
                 style={{ color: FOREST }}
               >
                 {relativeDayPhrase(binOrder.pickup_date)}
@@ -370,13 +381,13 @@ function BinRentalTrackingSection({
 
       <div>
         <p
-          className="text-[10px] font-bold uppercase tracking-wider mb-1.5"
+          className="text-[11px] font-bold uppercase tracking-[0.08em] mb-1.5"
           style={{ color: `${FOREST}99` }}
         >
           What&apos;s included
         </p>
         <ul
-          className="text-[11px] space-y-1 pl-0 list-none"
+          className="text-[12px] space-y-1 pl-0 list-none"
           style={{ color: `${FOREST}CC` }}
         >
           <li>{binOrder.bin_count} plastic bins (27×16×13&quot;)</li>
@@ -388,12 +399,12 @@ function BinRentalTrackingSection({
           ) : (
             <li>Zip ties included</li>
           )}
-          <li className="text-[10px] opacity-80">{bundleTitle}</li>
+          <li className="text-[11px] opacity-80">{bundleTitle}</li>
         </ul>
       </div>
 
       <div
-        className="rounded-xl px-3 py-2.5 text-[11px] space-y-1"
+        className="rounded-xl px-3 py-2.5 text-[12px] space-y-1"
         style={{ background: `${FOREST}08`, border: `1px solid ${FOREST}14` }}
       >
         <p className="font-semibold" style={{ color: FOREST }}>
@@ -417,13 +428,13 @@ function BinRentalTrackingSection({
           className="rounded-xl px-3 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
           style={{ background: `${WINE}08`, border: `1px solid ${WINE}20` }}
         >
-          <p className="text-[11px] font-medium" style={{ color: FOREST }}>
+          <p className="text-[12px] font-medium" style={{ color: FOREST }}>
             Need a Yugo move? We can coordinate bin delivery with your crew.
           </p>
           <Link
             href={MARKETING_QUOTE_URL}
-            className="inline-flex items-center gap-1 text-[11px] font-bold whitespace-nowrap shrink-0"
-            style={{ color: GOLD }}
+            className="inline-flex items-center gap-1 text-[12px] font-bold whitespace-nowrap shrink-0"
+            style={{ color: FOREST }}
           >
             Get a moving quote
             <ArrowRight
@@ -435,12 +446,12 @@ function BinRentalTrackingSection({
         </div>
       )}
 
-      <p className="text-[10px] opacity-60" style={{ color: FOREST }}>
+      <p className="text-[11px] opacity-60" style={{ color: FOREST }}>
         Questions? Call{" "}
         <a
           href={`tel:${YUGO_PHONE.replace(/\D/g, "")}`}
           className="font-semibold underline-offset-2 hover:underline"
-          style={{ color: GOLD }}
+          style={{ color: FOREST }}
         >
           {YUGO_PHONE}
         </a>
@@ -474,6 +485,8 @@ export default function TrackMoveClient({
   crewChangeRequest = null,
   binOrder = null,
   quotePickupStops = null,
+  fillParentHeight = false,
+  companyContactEmail = process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
 }: {
   move: any;
   crew: { id: string; name: string; members?: string[] } | null;
@@ -526,6 +539,10 @@ export default function TrackMoveClient({
   binOrder?: BinOrderTrackRow | null;
   /** From originating quote factors when multiple pickups were quoted */
   quotePickupStops?: { address: string; access: string | null }[] | null;
+  /** Preview routes: fill parent flex column instead of 100vh (banner above). */
+  fillParentHeight?: boolean;
+  /** Company inbox for footer “Contact us” (from platform config on live track). */
+  companyContactEmail?: string;
 }) {
   const router = useRouter();
   const params = useParams();
@@ -790,6 +807,15 @@ export default function TrackMoveClient({
   const daysUntil = scheduledDate
     ? Math.ceil((scheduledDate.getTime() - Date.now()) / 86400000)
     : null;
+
+  const crewAssigned = isCrewAssignedOnMove(move);
+  const revealCrewNames = shouldRevealCrewNamesOnMoveTrack({
+    crewAssigned,
+    scheduledDate: liveScheduledDate ?? move.scheduled_date ?? null,
+    isInProgress,
+    isCompleted,
+  });
+
   const indicativeSettled =
     move.status === "paid" ||
     !!move.payment_marked_paid ||
@@ -1015,6 +1041,56 @@ export default function TrackMoveClient({
 
   const moveTotal = Number(move.amount || move.estimate || 0);
 
+  const isEstateTier =
+    String(move.tier_selected || move.service_tier || "")
+      .toLowerCase()
+      .trim() === "estate";
+  const estateInventoryWalkthroughDisclaimer =
+    isEstateTier && estateUsesWalkthroughScopedInventory(move.move_size);
+  const estateDayPlan = isEstateTier
+    ? calculateEstateDays(
+        move.move_size as string | null | undefined,
+        Number(move.inventory_score) || 0,
+      )
+    : null;
+
+  const estateServiceChecklistInitial = React.useMemo(() => {
+    const c = move.estate_service_checklist as
+      | Record<string, boolean>
+      | undefined
+      | null;
+    return c && typeof c === "object" ? c : {};
+  }, [move.estate_service_checklist]);
+
+  const estateAutomationInputs = React.useMemo(
+    () => ({
+      status: move.status,
+      stage: move.stage,
+      scheduled_date: move.scheduled_date,
+      move_size: move.move_size,
+      inventory_score: move.inventory_score,
+      tier_selected: move.tier_selected,
+      service_tier: move.service_tier,
+    }),
+    [
+      move.status,
+      move.stage,
+      move.scheduled_date,
+      move.move_size,
+      move.inventory_score,
+      move.tier_selected,
+      move.service_tier,
+    ],
+  );
+
+  const trackPageBg = "#F9EDE4";
+  const trackPageInk = FOREST;
+  const trackHero = WINE;
+  const trackMuted = FOREST;
+  const trackTabActive = FOREST;
+  const trackTabInactive = FOREST;
+  const trackTabBorderBg = `${FOREST}12`;
+
   // B2B one-off: no client tracking page — managed through partner portal
   if (isB2BOneOff) {
     return (
@@ -1030,13 +1106,13 @@ export default function TrackMoveClient({
           >
             Partner-Managed Delivery
           </h1>
-          <p className="text-[13px] mb-6 opacity-80" style={{ color: FOREST }}>
+          <p className="text-[14px] mb-6 opacity-80" style={{ color: FOREST }}>
             This delivery is managed through your partner portal.
           </p>
           <Link
             href="/partner"
-            className="inline-block rounded-lg font-semibold text-[12px] py-2.5 px-4 transition-colors hover:opacity-90"
-            style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
+            className="inline-block rounded-lg font-semibold text-[13px] py-2.5 px-4 transition-colors hover:opacity-90"
+            style={{ backgroundColor: FOREST, color: "#F9EDE4" }}
           >
             Go to Partner Portal
           </Link>
@@ -1059,14 +1135,14 @@ export default function TrackMoveClient({
           >
             Your move is complete
           </h1>
-          <p className="text-[13px] mb-6 opacity-80" style={{ color: FOREST }}>
+          <p className="text-[14px] mb-6 opacity-80" style={{ color: FOREST }}>
             This tracking link has expired. If you need documents or support,
             please contact us.
           </p>
           <a
             href={`tel:${normalizePhone(YUGO_PHONE)}`}
-            className="inline-block rounded-lg font-semibold text-[12px] py-2.5 px-4 transition-colors hover:opacity-90"
-            style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
+            className="inline-block rounded-lg font-semibold text-[13px] py-2.5 px-4 transition-colors hover:opacity-90"
+            style={{ backgroundColor: FOREST, color: "#F9EDE4" }}
           >
             Contact us
           </a>
@@ -1077,35 +1153,33 @@ export default function TrackMoveClient({
 
   return (
     <div
-      className="h-screen flex flex-col overflow-x-hidden overflow-y-hidden font-sans min-w-0 max-w-[100vw]"
+      className={`${fillParentHeight ? "h-full min-h-0" : "h-screen"} flex flex-col overflow-x-hidden overflow-y-hidden font-sans min-w-0 max-w-[100vw]`}
       data-theme="light"
-      style={{ backgroundColor: "#F9EDE4", color: FOREST }}
+      style={{ backgroundColor: trackPageBg, color: trackPageInk }}
     >
       <TrackingAgreementModal />
       {/* Header, outside scroll container; always visible on mobile */}
       <header
-        className="shrink-0 z-50 border-b"
-        style={{ backgroundColor: WINE, borderColor: `${WINE}80` }}
+        className="shrink-0 z-50"
+        style={{
+          backgroundColor: WINE,
+          borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
+        }}
       >
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
+        <div
+          className="flex items-center px-4 sm:px-6 py-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]"
+          style={{ backgroundColor: WINE }}
+        >
           <div className="flex items-center gap-2">
-            <YugoLogo size={20} variant="gold" />
+            <YugoLogo size={20} variant="cream" />
           </div>
-          <ClientSettingsMenu
-            moveId={move.id}
-            clientName={move.client_name || ""}
-            clientEmail={move.client_email || ""}
-            clientPhone={move.client_phone || ""}
-            valuationTier={
-              move.tier_selected || move.service_tier || "released"
-            }
-          />
         </div>
       </header>
-      <div
-        ref={pullRef as React.RefObject<HTMLDivElement>}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
-      >
+      <div className="flex-1 min-h-0 flex min-w-0 flex-col overflow-hidden">
+        <div
+          ref={pullRef as React.RefObject<HTMLDivElement>}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-px"
+        >
         {/* Pull-to-refresh indicator */}
         {(pullDistance > 0 || refreshing) && (
           <div
@@ -1114,19 +1188,19 @@ export default function TrackMoveClient({
               top: 52,
               transform: `translate(-50%, ${pullDistance}px)`,
               backgroundColor: "#FFFDF8",
-              border: `1px solid ${GOLD}40`,
+              border: `1px solid ${FOREST}40`,
             }}
             aria-live="polite"
           >
             {refreshing ? (
               <span
                 className="spinner w-4 h-4"
-                style={{ borderColor: `${GOLD}40`, borderTopColor: GOLD }}
+                style={{ borderColor: `${FOREST}40`, borderTopColor: FOREST }}
               />
             ) : (
               <ArrowsClockwise
                 size={16}
-                color={GOLD}
+                color={FOREST}
                 style={{
                   transform: `rotate(${(pullDistance / 72) * 180}deg)`,
                   transition: "transform 0.1s",
@@ -1141,15 +1215,15 @@ export default function TrackMoveClient({
             <div className="mb-5 text-center py-6 animate-fade-up">
               <div
                 className="inline-flex items-center justify-center w-10 h-10 rounded-full mb-3"
-                style={{ backgroundColor: `${GOLD}20` }}
+                style={{ backgroundColor: `${FOREST}20` }}
               >
-                <Check size={18} color={GOLD} weight="bold" />
+                <Check size={18} color={FOREST} weight="bold" />
               </div>
-              <h2 className="text-[13px] font-semibold" style={{ color: WINE }}>
+              <h2 className="text-[14px] font-semibold" style={{ color: WINE }}>
                 Payment received
               </h2>
               <p
-                className="text-[11px] mt-1 opacity-60"
+                className="text-[12px] mt-1 opacity-60"
                 style={{ color: FOREST }}
               >
                 {isLogisticsDeliveryTrack
@@ -1159,8 +1233,8 @@ export default function TrackMoveClient({
               <button
                 type="button"
                 onClick={handleBackToDashboard}
-                className="mt-4 rounded-md font-semibold text-[11px] py-2 px-4 transition-colors hover:opacity-90"
-                style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
+                className="mt-4 rounded-md font-semibold text-[12px] py-2 px-4 transition-colors hover:opacity-90"
+                style={{ backgroundColor: FOREST, color: "#F9EDE4" }}
               >
                 Continue
               </button>
@@ -1168,7 +1242,7 @@ export default function TrackMoveClient({
           )}
           {fromNotify && !showPaymentSuccess && showNotifyBanner && (
             <div
-              className="mb-4 text-[11px] font-medium opacity-60 transition-opacity"
+              className="mb-4 text-[12px] font-medium opacity-60 transition-opacity"
               style={{ color: FOREST }}
             >
               {isLogisticsDeliveryTrack
@@ -1205,13 +1279,13 @@ export default function TrackMoveClient({
               />
               <div>
                 <p
-                  className="text-[12px] font-semibold"
+                  className="text-[13px] font-semibold"
                   style={{ color: "#22C55E" }}
                 >
                   Approved, payment processed
                 </p>
                 <p
-                  className="text-[11px] opacity-70 mt-0.5"
+                  className="text-[12px] opacity-70 mt-0.5"
                   style={{ color: FOREST }}
                 >
                   Your crew has been notified to load the extra items.
@@ -1221,10 +1295,10 @@ export default function TrackMoveClient({
           )}
           {crewCrApprovalState === "approved_pending_payment" && (
             <div className="mb-5 rounded-2xl border border-amber-400/30 bg-amber-400/6 px-4 py-3">
-              <p className="text-[12px] font-semibold text-amber-600">
+              <p className="text-[13px] font-semibold text-amber-600">
                 Approved, pending payment
               </p>
-              <p className="text-[11px] text-amber-700/70 mt-0.5">
+              <p className="text-[12px] text-amber-700/70 mt-0.5">
                 Add a card below to authorize the charge, or contact your
                 coordinator.
               </p>
@@ -1233,7 +1307,7 @@ export default function TrackMoveClient({
           {crewCrApprovalState === "declined" && (
             <div className="mb-5 rounded-2xl border border-[var(--brd)]/40 bg-[var(--bg)]/60 px-4 py-3">
               <p
-                className="text-[12px] font-medium"
+                className="text-[13px] font-medium"
                 style={{ color: FOREST, opacity: 0.6 }}
               >
                 Extra items declined, your crew will proceed with the original
@@ -1247,7 +1321,7 @@ export default function TrackMoveClient({
             <div className="min-w-0">
               <h1
                 className="font-hero text-[26px] sm:text-[28px] leading-tight font-semibold tracking-tight truncate"
-                style={{ color: WINE }}
+                style={{ color: trackHero }}
               >
                 {greeting},{" "}
                 {move.client_name?.split(" ")[0] ||
@@ -1255,10 +1329,17 @@ export default function TrackMoveClient({
                   "Your Move"}
               </h1>
               <p
-                className="text-[11px] mt-0.5 font-sans opacity-60 flex items-center gap-1.5"
-                style={{ color: FOREST }}
+                className="text-[13px] mt-0.5 font-sans flex flex-wrap items-baseline gap-x-1.5 gap-y-1"
+                style={{
+                  color: TEXT_MUTED_ON_LIGHT,
+                }}
               >
-                {displayCode}
+                <span
+                  className="shrink-0 font-medium"
+                  style={{ color: FOREST }}
+                >
+                  {displayCode}
+                </span>
                 {(() => {
                   const isOffice = serviceType === "office_move";
                   const isWhiteGlove = serviceType === "white_glove";
@@ -1285,28 +1366,32 @@ export default function TrackMoveClient({
                                   .replace(/\s+/g, "_"),
                                 "tier",
                               ) || null;
-                  return label ? (
+                  if (!label) return null;
+                  /** Inline kicker — same language as quote tier `· RECOMMENDED` (ResidentialLayout). */
+                  const kickerColor = "#492A1D";
+                  return (
                     <span
-                      className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full"
-                      style={{
-                        backgroundColor: `${GOLD}18`,
-                        color: GOLD,
-                        opacity: 1,
-                      }}
+                      className={`${TRACK_EYEBROW_CLASS} whitespace-nowrap`}
+                      style={{ color: kickerColor }}
                     >
-                      {label}
+                      · {label}
                     </span>
-                  ) : null;
+                  );
                 })()}
               </p>
             </div>
             <span
-              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold shrink-0"
-              style={{ backgroundColor: `${GOLD}15`, color: WINE }}
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold shrink-0"
+              style={{
+                backgroundColor: `${FOREST}12`,
+                color: WINE,
+              }}
             >
               <span
                 className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: GOLD }}
+                style={{
+                  backgroundColor: FOREST,
+                }}
                 aria-hidden
               />
               {getStatusLabel(statusVal)}
@@ -1342,13 +1427,13 @@ export default function TrackMoveClient({
                 }}
               >
                 <p
-                  className="text-[11px] font-semibold"
+                  className="text-[12px] font-semibold"
                   style={{ color: WINE }}
                 >
                   Scheduling note
                 </p>
                 <ul
-                  className="mt-1.5 text-[11px] space-y-0.5 list-disc pl-4"
+                  className="mt-1.5 text-[12px] space-y-0.5 list-disc pl-4"
                   style={{ color: FOREST, opacity: 0.9 }}
                 >
                   {est != null && est >= 3 ? (
@@ -1385,12 +1470,12 @@ export default function TrackMoveClient({
                   <div className="text-center">
                     <div
                       className="font-hero text-[30px] md:text-[34px] leading-tight font-semibold"
-                      style={{ color: GOLD }}
+                      style={{ color: trackHero }}
                     >
                       Today&apos;s the day
                     </div>
                     <div
-                      className="mt-1 text-[11px] font-sans opacity-60"
+                      className="mt-1 text-[12px] font-sans opacity-60"
                       style={{ color: FOREST }}
                     >
                       {isInProgress &&
@@ -1458,7 +1543,7 @@ export default function TrackMoveClient({
                                 })()
                               : -1
                         }
-                        variant="dark"
+                        variant="light"
                       />
                     </div>
                   )}
@@ -1474,7 +1559,7 @@ export default function TrackMoveClient({
                       : "Move day has passed"}
                   </div>
                   <p
-                    className="mt-1 text-[11px] font-sans opacity-60"
+                    className="mt-1 text-[12px] font-sans opacity-60"
                     style={{ color: FOREST }}
                   >
                     {isLogisticsDeliveryTrack
@@ -1486,12 +1571,12 @@ export default function TrackMoveClient({
                 <div className="text-center">
                   <div
                     className="font-hero text-[56px] sm:text-[64px] leading-none font-semibold tracking-tight"
-                    style={{ color: GOLD }}
+                    style={{ color: trackHero }}
                   >
                     {daysUntil ?? "-"}
                   </div>
                   <div
-                    className="mt-1 text-[11px] font-sans opacity-60"
+                    className="mt-1 text-[12px] font-sans opacity-60"
                     style={{ color: FOREST }}
                   >
                     {isLogisticsDeliveryTrack
@@ -1540,7 +1625,7 @@ export default function TrackMoveClient({
                 <div
                   className="h-[3px] w-full"
                   style={{
-                    background: `linear-gradient(90deg, ${WINE} 0%, ${GOLD} 100%)`,
+                    background: `linear-gradient(90deg, ${WINE} 0%, ${FOREST} 100%)`,
                   }}
                 />
 
@@ -1551,45 +1636,43 @@ export default function TrackMoveClient({
                   className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 text-left transition-opacity hover:opacity-80"
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div
-                      className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center"
-                      style={{
-                        backgroundColor: `${FOREST}10`,
-                        boxShadow: `inset 0 0 0 1px ${FOREST}18`,
-                      }}
-                    >
-                      <Receipt
-                        size={18}
-                        weight="duotone"
-                        color={FOREST}
-                        aria-hidden
-                      />
-                    </div>
                     <div className="min-w-0">
                       <div
-                        className="text-[12px] font-semibold mb-0.5"
+                        className={`${TRACK_CARD_TITLE_CLASS} mb-0.5`}
                         style={{ color: FOREST }}
                       >
                         {isLogisticsDeliveryTrack
-                          ? "Delivery Details"
-                          : "Move Details"}
+                          ? "Delivery details"
+                          : "Move details"}
                       </div>
-                      <div
-                        className="text-[10px] flex items-center gap-1.5 flex-wrap"
-                        style={{ color: `${FOREST}55` }}
-                      >
-                        <span>{displayCode}</span>
-                        {scheduledDate && (
-                          <>
-                            <span>·</span>
-                            <span>{formatMoveDate(scheduledDate)}</span>
-                          </>
-                        )}
-                      </div>
+                      {scheduledDate ? (
+                        <div>
+                          <div
+                            className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-50"
+                            style={{ color: FOREST }}
+                          >
+                            Date
+                          </div>
+                          <div
+                            className="font-hero text-[20px] font-bold mt-0.5 leading-tight"
+                            style={{ color: FOREST }}
+                          >
+                            {formatMoveDate(scheduledDate)}
+                          </div>
+                          {arrivalWindow ? (
+                            <div
+                              className="text-[12px] mt-0.5 opacity-50"
+                              style={{ color: FOREST }}
+                            >
+                              Arrival: {arrivalWindow}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                   <CaretDown
-                    size={14}
+                    size={18}
                     color={FOREST}
                     style={{
                       opacity: 0.35,
@@ -1610,7 +1693,7 @@ export default function TrackMoveClient({
                   >
                     {/* Sub-tab nav */}
                     <div
-                      className="flex gap-5 pt-3 mb-4 border-b"
+                      className="flex justify-center items-center flex-wrap gap-x-3 gap-y-1 sm:gap-x-5 pt-2 mb-3 border-b w-full"
                       style={{ borderColor: `${FOREST}10` }}
                     >
                       {(
@@ -1624,7 +1707,7 @@ export default function TrackMoveClient({
                           t === "inv"
                             ? "Inventory"
                             : t === "photos_docs"
-                              ? "Photos & Docs"
+                              ? "Photos & docs"
                               : "Details";
                         const active = detailsSubTab === t;
                         return (
@@ -1632,11 +1715,11 @@ export default function TrackMoveClient({
                             key={t}
                             type="button"
                             onClick={() => setDetailsSubTab(t)}
-                            className="text-[11px] font-semibold pb-2.5 border-b-[2px] transition-all -mb-px"
+                            className="text-center text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.08em] leading-none pb-2 border-b-2 transition-all -mb-px [font-family:var(--font-body)]"
                             style={{
-                              borderColor: active ? GOLD : "transparent",
-                              color: active ? GOLD : FOREST,
-                              opacity: active ? 1 : 0.4,
+                              borderColor: active ? FOREST : "transparent",
+                              color: FOREST,
+                              opacity: active ? 1 : 0.45,
                             }}
                           >
                             {label}
@@ -1647,7 +1730,7 @@ export default function TrackMoveClient({
 
                     {/* Details tab */}
                     {detailsSubTab === "details" && (
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {isSingleItem &&
                           (move as { item_description?: string | null })
                             .item_description && (
@@ -1656,13 +1739,13 @@ export default function TrackMoveClient({
                               style={{ borderColor: `${FOREST}10` }}
                             >
                               <div
-                                className="text-[9px] font-bold uppercase tracking-[0.12em] mb-1"
-                                style={{ color: `${FOREST}55` }}
+                                className={`${TRACK_EYEBROW_CLASS} mb-1`}
+                                style={{ color: TEXT_MUTED_ON_LIGHT }}
                               >
                                 Item
                               </div>
                               <div
-                                className="text-[13px] font-medium leading-snug"
+                                className="text-[15px] font-medium leading-snug"
                                 style={{ color: FOREST }}
                               >
                                 <SafeText fallback="Item details are unavailable here. Check your confirmation email.">
@@ -1680,14 +1763,14 @@ export default function TrackMoveClient({
                             style={{ borderColor: `${FOREST}10` }}
                           >
                             <div
-                              className="text-[9px] font-bold uppercase tracking-[0.12em] mb-1"
-                              style={{ color: `${FOREST}55` }}
+                              className={`${TRACK_EYEBROW_CLASS} mb-1`}
+                              style={{ color: TEXT_MUTED_ON_LIGHT }}
                             >
                               Service included
                             </div>
                             <p
-                              className="text-[11px] leading-relaxed"
-                              style={{ color: `${FOREST}90` }}
+                              className="text-[14px] leading-snug"
+                              style={{ color: FOREST }}
                             >
                               White glove handling, custom crating when needed,
                               and specialty care for high-value items.
@@ -1695,129 +1778,64 @@ export default function TrackMoveClient({
                           </div>
                         )}
 
-                        {/* Balance row */}
-                        <div
-                          className="rounded-xl px-3.5 py-2.5"
-                          style={{
-                            backgroundColor:
-                              totalBalance > 0 ? `${GOLD}10` : `${FOREST}08`,
-                            border: `1px solid ${totalBalance > 0 ? GOLD : FOREST}18`,
-                          }}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <span
-                              className="text-[10px] font-semibold uppercase tracking-[0.1em]"
-                              style={{ color: `${FOREST}70` }}
-                            >
-                              Total balance
-                            </span>
-                            <span
-                              className="text-[15px] font-bold"
-                              style={{
-                                color: totalBalance > 0 ? GOLD : FOREST,
-                              }}
-                            >
-                              {totalBalance > 0
-                                ? formatCurrency(totalBalance)
-                                : "Paid ✓"}
-                            </span>
-                          </div>
-                          {isCompleted && totalBalance > 0 && (
-                            <div
-                              className="flex flex-wrap gap-2 mt-2.5 pt-2.5"
-                              style={{ borderTop: `1px solid ${GOLD}20` }}
-                            >
-                              {hasCardOnFile && (
-                                <button
-                                  type="button"
-                                  onClick={() => void handlePayWithSavedCard()}
-                                  disabled={chargingSavedCard}
-                                  className="rounded-full font-semibold text-[11px] py-1.5 px-4 transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
-                                  style={{
-                                    backgroundColor: GOLD,
-                                    color: "#F9EDE4",
-                                    boxShadow: `0 2px 8px ${GOLD}40`,
-                                  }}
-                                >
-                                  {chargingSavedCard
-                                    ? "Processing…"
-                                    : "Pay Now"}
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSqError(null);
-                                  setPaymentModalOpen(true);
-                                }}
-                                className="rounded-full font-semibold text-[11px] py-1.5 px-4 transition-all border hover:opacity-90 active:scale-95"
-                                style={{
-                                  borderColor: `${FOREST}25`,
-                                  color: FOREST,
-                                  backgroundColor: "transparent",
-                                }}
-                              >
-                                {hasCardOnFile
-                                  ? "Use a different card"
-                                  : "Pay with card"}
-                              </button>
-                            </div>
-                          )}
-                          {balanceChargeError && isCompleted && (
-                            <p
-                              className="text-[10px] mt-2 font-medium"
-                              style={{ color: "#D14343" }}
-                            >
-                              {balanceChargeError}
-                            </p>
-                          )}
-                        </div>
+                        {/* Same address animations as dashboard (dashboard tab hidden when completed) */}
+                        <style>{`
+                @keyframes slideInFrom {
+                  from { opacity: 0; transform: translateY(-6px); }
+                  to   { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes slideInTo {
+                  from { opacity: 0; transform: translateY(6px); }
+                  to   { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes drawLine {
+                  from { transform: scaleY(0); opacity: 0; }
+                  to   { transform: scaleY(1); opacity: 1; }
+                }
+                .addr-from { animation: slideInFrom 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+                .addr-line { animation: drawLine 0.35s ease 0.2s both; transform-origin: top; }
+                .addr-to   { animation: slideInTo 0.45s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
+              `}</style>
 
-                        {/* From / To */}
+                        {/* From / To — match dashboard spine + type scale */}
                         <div className="flex gap-3 items-stretch">
-                          <div className="flex flex-col items-center pt-1.5 shrink-0">
+                          <div className="flex flex-col items-center pt-1 shrink-0">
                             <div
-                              className="w-2 h-2 rounded-full border-[1.5px]"
+                              className="w-1.5 h-1.5 rounded-full mt-0.5"
+                              style={{ backgroundColor: FOREST }}
+                            />
+                            <div
+                              className="addr-line w-px flex-1 my-1"
                               style={{
-                                borderColor: GOLD,
-                                backgroundColor: `${GOLD}30`,
+                                background: `linear-gradient(to bottom, ${FOREST}70, ${FOREST}20)`,
                               }}
                             />
                             <div
-                              className="w-px flex-1 my-1.5"
-                              style={{
-                                background: `linear-gradient(to bottom, ${GOLD}60, ${GOLD}18)`,
-                              }}
-                            />
-                            <div
-                              className="w-2 h-2 rounded-sm rotate-45 border-[1.5px]"
-                              style={{
-                                borderColor: `${WINE}80`,
-                                backgroundColor: `${WINE}18`,
-                              }}
+                              className="w-1.5 h-1.5 rounded-sm rotate-45"
+                              style={{ backgroundColor: `${FOREST}90` }}
                             />
                           </div>
-                          <div className="flex flex-col gap-3.5 min-w-0 flex-1">
+                          <div className="flex flex-col gap-3 min-w-0 flex-1">
                             {pickupStopsForUi.map((stop, idx) => (
-                              <div key={idx}>
+                              <div key={idx} className="addr-from min-w-0">
                                 <div
-                                  className="text-[9px] font-bold uppercase tracking-[0.12em] mb-0.5"
-                                  style={{ color: `${FOREST}50` }}
+                                  className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-40"
+                                  style={{ color: FOREST }}
                                 >
                                   {pickupStopsForUi.length > 1
                                     ? `Pickup ${idx + 1}`
                                     : "From"}
                                 </div>
                                 <div
-                                  className="text-[13px] font-medium leading-snug"
+                                  className="text-[14px] font-medium mt-0.5 leading-snug"
                                   style={{ color: FOREST }}
                                 >
                                   {shortAddress(stop.address)}
                                 </div>
                                 {formatAccessForDisplay(stop.access) ? (
                                   <div
-                                    className="text-[10px] mt-0.5"
-                                    style={{ color: `${FOREST}65` }}
+                                    className="text-[11px] mt-0.5 opacity-60"
+                                    style={{ color: FOREST }}
                                   >
                                     Access:{" "}
                                     {formatAccessForDisplay(stop.access)}
@@ -1825,15 +1843,15 @@ export default function TrackMoveClient({
                                 ) : null}
                               </div>
                             ))}
-                            <div>
+                            <div className="addr-to min-w-0">
                               <div
-                                className="text-[9px] font-bold uppercase tracking-[0.12em] mb-0.5"
-                                style={{ color: `${FOREST}50` }}
+                                className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-40"
+                                style={{ color: FOREST }}
                               >
                                 To
                               </div>
                               <div
-                                className="text-[13px] font-medium leading-snug"
+                                className="text-[14px] font-medium mt-0.5 leading-snug"
                                 style={{ color: FOREST }}
                               >
                                 {shortAddress(
@@ -1847,8 +1865,8 @@ export default function TrackMoveClient({
                                     .to_access,
                                 ) && (
                                   <div
-                                    className="text-[10px] mt-0.5"
-                                    style={{ color: `${FOREST}65` }}
+                                    className="text-[11px] mt-0.5 opacity-60"
+                                    style={{ color: FOREST }}
                                   >
                                     Access:{" "}
                                     {formatAccessForDisplay(
@@ -1861,79 +1879,192 @@ export default function TrackMoveClient({
                           </div>
                         </div>
 
-                        {/* Crew */}
-                        {crewMembers.length > 0 && (
-                          <div
-                            className="pt-1 border-t"
-                            style={{ borderColor: `${FOREST}10` }}
-                          >
+                        {/* Balance — same stack as dashboard (Balance Due + serif amount + caption) */}
+                        <div
+                          className="flex flex-col gap-3 pt-3 border-t"
+                          style={{ borderColor: `${FOREST}18` }}
+                        >
+                          <div>
                             <div
-                              className="text-[9px] font-bold uppercase tracking-[0.12em] mb-2"
-                              style={{ color: `${FOREST}50` }}
+                              className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-50"
+                              style={{ color: FOREST }}
                             >
-                              Your Crew
+                              Balance Due
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                              {crewMembers.map((name: string, i: number) => (
-                                <div
-                                  key={i}
-                                  className="flex items-center gap-1.5 rounded-full px-2.5 py-1"
+                            <div
+                              className="font-hero text-[20px] font-bold mt-0.5 tabular-nums"
+                              style={{
+                                color: totalBalance > 0 ? WINE : FOREST,
+                              }}
+                            >
+                              {formatCurrency(totalBalance)}
+                            </div>
+                            {totalBalance > 0 ? (
+                              <div
+                                className="text-[11px] opacity-50 mt-0.5"
+                                style={{ color: FOREST }}
+                              >
+                                +{formatCurrency(calcHST(totalBalance))} HST
+                              </div>
+                            ) : (
+                              <div
+                                className="text-[11px] opacity-50 mt-0.5"
+                                style={{ color: FOREST }}
+                              >
+                                Fully paid, thank you!
+                              </div>
+                            )}
+                          </div>
+                          {isCompleted &&
+                            totalBalance > 0 &&
+                            outstandingInventoryAdj &&
+                            hasCardOnFile && (
+                              <p
+                                className="text-[12px] leading-snug opacity-85"
+                                style={{ color: FOREST }}
+                              >
+                                Inventory update approved. Additional charge:{" "}
+                                {formatCurrency(totalBalance)} +{" "}
+                                {formatCurrency(calcHST(totalBalance))} HST.
+                              </p>
+                            )}
+                          {isCompleted &&
+                            totalBalance > 0 &&
+                            outstandingInventoryAdj &&
+                            !hasCardOnFile && (
+                              <p
+                                className="text-[12px] leading-snug opacity-85"
+                                style={{ color: FOREST }}
+                              >
+                                Additional charge:{" "}
+                                {formatCurrency(totalBalance)} +{" "}
+                                {formatCurrency(calcHST(totalBalance))} HST. Add
+                                a card below to authorize the charge, or contact
+                                your coordinator.
+                              </p>
+                            )}
+                          {balanceChargeError && isCompleted && (
+                            <div
+                              className="text-[12px] font-medium px-3 py-2 rounded-lg"
+                              style={{
+                                backgroundColor: "rgba(209,67,67,0.08)",
+                                color: "#D14343",
+                                border: "1px solid rgba(209,67,67,0.2)",
+                              }}
+                            >
+                              {balanceChargeError}
+                            </div>
+                          )}
+                          {isCompleted && totalBalance > 0 && (
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                              {hasCardOnFile && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handlePayWithSavedCard()}
+                                  disabled={chargingSavedCard}
+                                  className="rounded-full font-semibold text-[12px] py-2 px-5 transition-all hover:opacity-90 active:scale-95 shrink-0 tracking-[0.08em] shadow-sm disabled:opacity-50"
                                   style={{
-                                    backgroundColor: `${FOREST}08`,
-                                    border: `1px solid ${FOREST}12`,
+                                    backgroundColor: FOREST,
+                                    color: "#F9EDE4",
+                                    boxShadow: `0 2px 12px ${FOREST}40`,
                                   }}
                                 >
-                                  <div
-                                    className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
-                                    style={{
-                                      background: `linear-gradient(135deg, ${GOLD}, #8B7332)`,
-                                    }}
-                                  >
-                                    {(name || "?")
-                                      .split(" ")
-                                      .map((w: string) => w[0])
-                                      .join("")
-                                      .slice(0, 2)
-                                      .toUpperCase()}
-                                  </div>
-                                  <span
-                                    className="text-[11px] font-medium"
-                                    style={{ color: FOREST }}
-                                  >
-                                    {name}
-                                  </span>
-                                </div>
-                              ))}
+                                  {chargingSavedCard
+                                    ? "Processing…"
+                                    : "Pay Now"}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSqError(null);
+                                  setPaymentModalOpen(true);
+                                }}
+                                className={`rounded-full font-semibold text-[12px] py-2 px-5 transition-all border ${
+                                  hasCardOnFile
+                                    ? "opacity-90 hover:opacity-100"
+                                    : ""
+                                }`}
+                                style={
+                                  hasCardOnFile
+                                    ? {
+                                        borderColor: `${FOREST}25`,
+                                        color: FOREST,
+                                        backgroundColor: "transparent",
+                                      }
+                                    : {
+                                        backgroundColor: FOREST,
+                                        color: "#F9EDE4",
+                                        borderColor: "transparent",
+                                        boxShadow: `0 2px 12px ${FOREST}40`,
+                                      }
+                                }
+                              >
+                                {hasCardOnFile
+                                  ? "Use a different card"
+                                  : "Pay with card"}
+                              </button>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
 
-                        {/* Call Us */}
-                        <div className="pt-1">
+                        {/* Crew — names only within 3 days / live / complete when crew assigned */}
+                        <div
+                          className="border-t pt-4 mt-1"
+                          style={{ borderColor: `${FOREST}18` }}
+                        >
+                          <TrackYourCrewSection
+                            crewAssigned={crewAssigned}
+                            revealNames={revealCrewNames}
+                            memberNames={crewMembers}
+                            roles={crewRoles}
+                            forest={FOREST}
+                          />
+                        </div>
+
+                        {/* Coordinator — same row as dashboard */}
+                        <div
+                          className="border-t pt-4 mt-1"
+                          style={{ borderColor: `${FOREST}18` }}
+                        >
                           <a
                             href={`tel:${normalizePhone(YUGO_PHONE)}`}
-                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold transition-opacity hover:opacity-70"
+                            className="inline-flex items-center gap-2 text-[12px] transition-opacity hover:opacity-70"
                             style={{ color: FOREST }}
                           >
-                            <Phone
+                            <YugoLogo
                               size={12}
-                              className="text-current"
-                              aria-hidden
+                              variant="wine"
+                              onLightBackground
                             />
-                            Call Us
+                            <span className="font-medium">
+                              {formatPhone(YUGO_PHONE)}
+                            </span>
+                            <span className="opacity-40">·</span>
+                            <span className="opacity-40">Coordinator</span>
                           </a>
                         </div>
                       </div>
                     )}
 
                     {detailsSubTab === "photos_docs" && (
-                      <div className="space-y-6 mt-1">
+                      <div
+                        className="mt-1 border overflow-hidden"
+                        style={{ borderColor: `${FOREST}14` }}
+                      >
                         <TrackPhotos
+                          embedded
                           moveId={move.id}
                           token={token}
                           moveComplete={true}
                         />
+                        <div
+                          className="border-t"
+                          style={{ borderColor: `${FOREST}08` }}
+                          aria-hidden
+                        />
                         <TrackDocuments
+                          embedded
                           moveId={move.id}
                           token={token}
                           refreshTrigger={paymentRecorded}
@@ -1941,13 +2072,15 @@ export default function TrackMoveClient({
                       </div>
                     )}
                     {detailsSubTab === "inv" && !isSingleItem && (
-                      <div className="mt-1">
-                        <TrackInventory
-                          moveId={move.id}
-                          token={token}
-                          moveComplete={true}
-                        />
-                      </div>
+                      <TrackInventory
+                        moveId={move.id}
+                        token={token}
+                        moveComplete={true}
+                        className="mt-1"
+                        estateWalkthroughScopeOnly={
+                          estateInventoryWalkthroughDisclaimer
+                        }
+                      />
                     )}
                   </div>
                 )}
@@ -1957,7 +2090,7 @@ export default function TrackMoveClient({
               {!isSingleItem && (
                 <div className="space-y-5">
                   <h2
-                    className="font-hero text-[20px] sm:text-[22px] font-semibold leading-tight"
+                    className="font-hero text-[24px] sm:text-[28px] font-semibold leading-tight tracking-tight"
                     style={{ color: WINE }}
                   >
                     Your offers
@@ -1981,7 +2114,7 @@ export default function TrackMoveClient({
                                 onLightBackground
                                 hidePlus
                               />
-                              <span className="text-[9px] font-bold text-black">
+                              <span className="text-[10px] font-bold text-black">
                                 Exclusive
                               </span>
                             </div>
@@ -1989,19 +2122,19 @@ export default function TrackMoveClient({
                             <div className="flex-1 px-4 py-3.5 pt-8 flex flex-col justify-between min-w-0">
                               <div>
                                 {perk.organizations?.name && (
-                                  <div className="text-[9px] font-semibold text-white/60 mb-1">
+                                  <div className="text-[10px] font-semibold text-white/60 mb-1">
                                     From{" "}
                                     <SafeText fallback="our partner">
                                       {perk.organizations.name}
                                     </SafeText>
                                   </div>
                                 )}
-                                <div className="text-[13px] font-bold text-white leading-tight line-clamp-2">
+                                <div className="text-[14px] font-bold text-white leading-tight line-clamp-2">
                                   <SafeText fallback="Partner offer">
                                     {perk.title}
                                   </SafeText>
                                 </div>
-                                <div className="text-[10px] text-white/80 mt-1 leading-snug line-clamp-3">
+                                <div className="text-[11px] text-white/80 mt-1 leading-snug line-clamp-3">
                                   <SafeText fallback="Exclusive offer for Yugo movers. Terms apply.">
                                     {perk.description ??
                                       "Exclusive offer for Yugo movers. Terms apply."}
@@ -2010,7 +2143,7 @@ export default function TrackMoveClient({
                               </div>
                               <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                                 {perk.redemption_code && (
-                                  <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
+                                  <span className="text-[10px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
                                     Code:{" "}
                                     <SafeText fallback="-">
                                       {perk.redemption_code}
@@ -2018,7 +2151,7 @@ export default function TrackMoveClient({
                                   </span>
                                 )}
                                 {perk.valid_until && (
-                                  <span className="text-[9px] text-white/45">
+                                  <span className="text-[10px] text-white/45">
                                     Ends {formatPerkExpiry(perk.valid_until)}
                                   </span>
                                 )}
@@ -2040,7 +2173,7 @@ export default function TrackMoveClient({
                                         }),
                                       }).catch(() => {});
                                     }}
-                                    className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+                                    className="ml-auto shrink-0 bg-white text-[11px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
                                     style={{ color: theme.stamp }}
                                   >
                                     {perk.redemption_code
@@ -2075,11 +2208,11 @@ export default function TrackMoveClient({
                     </div>
                   ) : serviceType !== "office_move" ? (
                     <p
-                      className="text-[11px] opacity-70 rounded-2xl border p-4"
+                      className="text-[14px] leading-relaxed rounded-2xl border p-4"
                       style={{
-                        color: FOREST,
-                        borderColor: `${FOREST}15`,
-                        backgroundColor: `${FOREST}04`,
+                        color: TEXT_MUTED_ON_LIGHT,
+                        borderColor: `${FOREST}20`,
+                        backgroundColor: `${FOREST}06`,
                       }}
                     >
                       No active perks right now. Check back later for partner
@@ -2092,7 +2225,7 @@ export default function TrackMoveClient({
                     className="rounded-2xl overflow-hidden"
                     style={{
                       backgroundColor: "#FFFDF8",
-                      border: `1px solid ${GOLD}40`,
+                      border: `1px solid ${FOREST}40`,
                       boxShadow: `0 2px 12px rgba(0,0,0,0.06)`,
                     }}
                   >
@@ -2100,7 +2233,7 @@ export default function TrackMoveClient({
                     <div
                       className="h-[3px] w-full"
                       style={{
-                        background: `linear-gradient(90deg, ${GOLD}80 0%, ${GOLD} 50%, ${GOLD}80 100%)`,
+                        background: `linear-gradient(90deg, ${FOREST}80 0%, ${FOREST} 50%, ${FOREST}80 100%)`,
                       }}
                     />
 
@@ -2110,28 +2243,28 @@ export default function TrackMoveClient({
                         <div
                           className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center"
                           style={{
-                            backgroundColor: `${GOLD}18`,
-                            boxShadow: `inset 0 0 0 1px ${GOLD}35`,
+                            backgroundColor: `${FOREST}18`,
+                            boxShadow: `inset 0 0 0 1px ${FOREST}35`,
                           }}
                         >
                           <UsersThree
                             size={22}
                             weight="duotone"
-                            color={GOLD}
+                            color={FOREST}
                             aria-hidden
                           />
                         </div>
                         <div className="pt-0.5">
                           <div
-                            className="text-[9px] font-bold uppercase tracking-[0.14em] mb-1"
-                            style={{ color: GOLD }}
+                            className={`${TRACK_EYEBROW_CLASS} mb-1`}
+                            style={{ color: FOREST }}
                           >
                             {serviceType === "office_move"
                               ? "Refer another business"
                               : "Refer a friend & earn cash"}
                           </div>
                           <p
-                            className="text-[14px] font-semibold leading-snug mb-1"
+                            className="text-[15px] font-semibold leading-snug mb-1"
                             style={{ color: FOREST }}
                           >
                             {serviceType === "office_move"
@@ -2139,8 +2272,8 @@ export default function TrackMoveClient({
                               : "Give a friend a discount. Get cash back."}
                           </p>
                           <p
-                            className="text-[11px] leading-relaxed"
-                            style={{ color: `${FOREST}80` }}
+                            className="text-[14px] leading-relaxed"
+                            style={{ color: TEXT_MUTED_ON_LIGHT }}
                           >
                             {serviceType === "office_move"
                               ? "Refer them to Yugo and earn a $200 credit on your next move."
@@ -2151,11 +2284,11 @@ export default function TrackMoveClient({
 
                       {!referral ? (
                         <p
-                          className="text-[11px] leading-relaxed rounded-xl px-4 py-3"
+                          className="text-[14px] leading-relaxed rounded-xl px-4 py-3.5"
                           style={{
-                            color: `${FOREST}60`,
-                            backgroundColor: `${FOREST}06`,
-                            border: `1px solid ${FOREST}12`,
+                            color: TEXT_MUTED_ON_LIGHT,
+                            backgroundColor: `${FOREST}08`,
+                            border: `1px solid ${FOREST}22`,
                           }}
                         >
                           {isCompleted
@@ -2164,18 +2297,18 @@ export default function TrackMoveClient({
                         </p>
                       ) : referral.status !== "active" ? (
                         <p
-                          className="text-[11px] leading-relaxed rounded-xl px-4 py-3"
+                          className="text-[14px] leading-relaxed rounded-xl px-4 py-3.5"
                           style={{
-                            color: `${FOREST}60`,
-                            backgroundColor: `${FOREST}06`,
-                            border: `1px solid ${FOREST}12`,
+                            color: TEXT_MUTED_ON_LIGHT,
+                            backgroundColor: `${FOREST}08`,
+                            border: `1px solid ${FOREST}22`,
                           }}
                         >
                           Your referral code has expired.{" "}
                           <a
                             href={`mailto:${YUGO_EMAIL}`}
                             className="underline"
-                            style={{ color: GOLD }}
+                            style={{ color: FOREST }}
                           >
                             Contact us
                           </a>{" "}
@@ -2185,13 +2318,13 @@ export default function TrackMoveClient({
                         <>
                           {/* Value prop inline */}
                           <p
-                            className="text-[12px] leading-relaxed mb-4"
+                            className="text-[13px] leading-relaxed mb-4"
                             style={{ color: `${FOREST}85` }}
                           >
                             Your friend gets{" "}
                             <span
                               className="font-semibold"
-                              style={{ color: GOLD }}
+                              style={{ color: FOREST }}
                             >
                               ${referral.referred_discount} off
                             </span>{" "}
@@ -2208,15 +2341,15 @@ export default function TrackMoveClient({
                           {/* Code + actions row */}
                           <div
                             className="flex items-center gap-0 rounded-xl mb-3 overflow-hidden"
-                            style={{ border: `1px solid ${GOLD}50` }}
+                            style={{ border: `1px solid ${FOREST}50` }}
                           >
                             {/* Code display */}
                             <div
                               className="flex-1 px-3.5 py-2"
-                              style={{ backgroundColor: `${GOLD}0c` }}
+                              style={{ backgroundColor: `${FOREST}0c` }}
                             >
                               <span
-                                className="font-mono text-[12px] font-bold tracking-[0.18em]"
+                                className="font-mono text-[13px] font-bold tracking-[0.18em]"
                                 style={{ color: FOREST }}
                               >
                                 {referral.referral_code}
@@ -2226,7 +2359,7 @@ export default function TrackMoveClient({
                             {/* Divider */}
                             <div
                               className="w-px self-stretch"
-                              style={{ backgroundColor: `${GOLD}50` }}
+                              style={{ backgroundColor: `${FOREST}50` }}
                             />
 
                             {/* Copy */}
@@ -2246,12 +2379,12 @@ export default function TrackMoveClient({
                                     );
                                   });
                               }}
-                              className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-[11px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                              className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
                               style={{
                                 backgroundColor: referralCopied
-                                  ? `${GOLD}18`
+                                  ? `${FOREST}18`
                                   : "white",
-                                color: referralCopied ? GOLD : `${FOREST}80`,
+                                color: referralCopied ? FOREST : `${FOREST}80`,
                               }}
                             >
                               {referralCopied ? (
@@ -2274,7 +2407,7 @@ export default function TrackMoveClient({
                             {/* Divider */}
                             <div
                               className="w-px self-stretch"
-                              style={{ backgroundColor: `${GOLD}50` }}
+                              style={{ backgroundColor: `${FOREST}50` }}
                             />
 
                             {/* Share */}
@@ -2296,7 +2429,7 @@ export default function TrackMoveClient({
                                   );
                                 }
                               }}
-                              className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-[11px] font-semibold transition-all hover:opacity-80 active:scale-95"
+                              className="shrink-0 inline-flex items-center gap-1 px-3 py-2 text-[12px] font-semibold transition-all hover:opacity-80 active:scale-95"
                               style={{ backgroundColor: "white", color: WINE }}
                             >
                               <ShareNetwork
@@ -2309,14 +2442,14 @@ export default function TrackMoveClient({
                           </div>
 
                           <p
-                            className="text-[10px]"
+                            className="text-[11px]"
                             style={{ color: `${FOREST}55` }}
                           >
                             Terms and conditions apply.{" "}
                             <Link
                               href="/terms"
                               className="underline hover:opacity-80"
-                              style={{ color: GOLD }}
+                              style={{ color: FOREST }}
                             >
                               Read more.
                             </Link>
@@ -2398,7 +2531,7 @@ export default function TrackMoveClient({
                             },
                             {
                               label: "Single Item Delivery",
-                              sub: "One piece? We&apos;ve got you",
+                              sub: "One piece? We've got you",
                               href: "https://helloyugo.com",
                             },
                           ]
@@ -2447,7 +2580,7 @@ export default function TrackMoveClient({
                     <div
                       className="h-1 w-full"
                       style={{
-                        background: `linear-gradient(90deg, ${WINE} 0%, ${GOLD} 100%)`,
+                        background: `linear-gradient(90deg, ${WINE} 0%, ${FOREST} 100%)`,
                       }}
                     />
 
@@ -2470,13 +2603,13 @@ export default function TrackMoveClient({
                         </div>
                         <div className="pt-0.5">
                           <div
-                            className="text-[9px] font-bold uppercase tracking-[0.13em] mb-1"
-                            style={{ color: `${FOREST}80` }}
+                            className={`${TRACK_EYEBROW_CLASS} mb-1`}
+                            style={{ color: FOREST }}
                           >
                             {heading}
                           </div>
                           <h3
-                            className="font-hero text-[19px] sm:text-[21px] font-semibold leading-snug"
+                            className="font-hero text-[20px] sm:text-[22px] font-semibold leading-snug"
                             style={{ color: WINE }}
                           >
                             {title}
@@ -2501,14 +2634,14 @@ export default function TrackMoveClient({
                           >
                             <div className="min-w-0">
                               <span
-                                className="block text-[12px] font-semibold leading-tight"
+                                className="block text-[14px] font-semibold leading-tight"
                                 style={{ color: FOREST }}
                               >
                                 {label}
                               </span>
                               <span
-                                className="block text-[10px] mt-0.5 leading-tight"
-                                style={{ color: `${FOREST}70` }}
+                                className="block text-[13px] mt-0.5 leading-snug"
+                                style={{ color: TEXT_MUTED_ON_LIGHT }}
                               >
                                 {sub}
                               </span>
@@ -2576,11 +2709,13 @@ export default function TrackMoveClient({
                       setTipSectionSubmitting(false);
                     }
                   };
+                  const tipCream = "#EDE6DC";
+                  const tipCreamMuted = "rgba(237,230,220,0.55)";
                   return (
                     <div
                       className="rounded-2xl overflow-hidden"
                       style={{
-                        border: `1px solid ${GOLD}40`,
+                        border: "1px solid rgba(237,230,220,0.28)",
                         background: `linear-gradient(165deg, ${WINE} 0%, #3a1422 38%, #1a0c12 100%)`,
                         boxShadow: `0 16px 48px rgba(92, 26, 51, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06)`,
                       }}
@@ -2595,14 +2730,14 @@ export default function TrackMoveClient({
                         <div
                           className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center"
                           style={{
-                            backgroundColor: `${GOLD}24`,
-                            boxShadow: `inset 0 0 0 1px ${GOLD}45`,
+                            backgroundColor: "rgba(237,230,220,0.16)",
+                            boxShadow: "inset 0 0 0 1px rgba(237,230,220,0.35)",
                           }}
                         >
                           <HandHeart
                             size={22}
                             weight="duotone"
-                            color={GOLD}
+                            color={tipCream}
                             aria-hidden
                           />
                         </div>
@@ -2611,7 +2746,7 @@ export default function TrackMoveClient({
                             Tip Your Crew
                           </span>
                           <span
-                            className="mt-0.5 block text-[11px] leading-snug"
+                            className="mt-0.5 block text-[12px] leading-snug"
                             style={{ color: "rgba(255, 255, 255, 0.52)" }}
                           >
                             A thank-you that goes straight to the people who
@@ -2634,11 +2769,11 @@ export default function TrackMoveClient({
                                 setTipSectionError(null);
                                 submitTipAmount(dollars);
                               }}
-                              className="min-w-[4.5rem] flex-1 py-2.5 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.98] disabled:opacity-40 border"
+                              className="min-w-[4.5rem] flex-1 py-2.5 rounded-xl text-[14px] font-semibold transition-all active:scale-[0.98] disabled:opacity-40 border"
                               style={{
                                 backgroundColor: "rgba(255, 255, 255, 0.07)",
                                 color: "#fff",
-                                borderColor: `${GOLD}35`,
+                                borderColor: "rgba(237,230,220,0.32)",
                               }}
                             >
                               {formatCurrency(dollars)}
@@ -2651,17 +2786,17 @@ export default function TrackMoveClient({
                               setTipSectionShowCustom(true);
                               setTipSectionError(null);
                             }}
-                            className="shrink-0 px-4 py-2.5 rounded-xl text-[12px] font-semibold transition-all active:scale-[0.98] disabled:opacity-40 border"
+                            className="shrink-0 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.98] disabled:opacity-40 border"
                             style={{
                               backgroundColor: tipSectionShowCustom
-                                ? `${GOLD}28`
+                                ? "rgba(237,230,220,0.22)"
                                 : "rgba(255, 255, 255, 0.05)",
                               color: tipSectionShowCustom
                                 ? "#fff"
                                 : "rgba(255, 255, 255, 0.65)",
                               borderColor: tipSectionShowCustom
-                                ? `${GOLD}70`
-                                : `${GOLD}30`,
+                                ? "rgba(237,230,220,0.65)"
+                                : "rgba(237,230,220,0.28)",
                             }}
                           >
                             Custom
@@ -2676,12 +2811,12 @@ export default function TrackMoveClient({
                             className="flex items-center rounded-xl px-3 gap-1"
                             style={{
                               backgroundColor: "rgba(0, 0, 0, 0.25)",
-                              border: `1px solid ${GOLD}50`,
+                              border: "1px solid rgba(237,230,220,0.4)",
                               boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.04)`,
                             }}
                           >
                             <span
-                              className="text-[13px] font-medium"
+                              className="text-[14px] font-medium"
                               style={{ color: "rgba(255,255,255,0.35)" }}
                             >
                               $
@@ -2704,7 +2839,7 @@ export default function TrackMoveClient({
                                   submitTipAmount(v);
                                 }
                               }}
-                              className="flex-1 bg-transparent text-[13px] font-medium outline-none py-2.5 placeholder:opacity-25"
+                              className="flex-1 bg-transparent text-[14px] font-medium outline-none py-2.5 placeholder:opacity-25"
                               style={{ color: "#fff" }}
                               autoFocus
                             />
@@ -2719,8 +2854,8 @@ export default function TrackMoveClient({
                                   parseFloat(tipSectionCustom) || 0,
                                 )
                               }
-                              className="text-[11px] font-semibold px-2 py-0.5 rounded-md transition-opacity disabled:opacity-30"
-                              style={{ color: GOLD }}
+                              className="text-[12px] font-semibold px-2 py-0.5 rounded-md transition-opacity disabled:opacity-30"
+                              style={{ color: tipCream }}
                             >
                               {tipSectionSubmitting ? "…" : "Send"}
                             </button>
@@ -2731,22 +2866,25 @@ export default function TrackMoveClient({
                       {/* Submitting / error state */}
                       {tipSectionSubmitting && !tipSectionError && (
                         <p
-                          className="px-4 pt-2 text-[11px]"
+                          className="px-4 pt-2 text-[12px]"
                           style={{ color: "rgba(255,255,255,0.4)" }}
                         >
                           Processing…
                         </p>
                       )}
                       {tipSectionError && (
-                        <p className="px-4 pt-2 text-[11px] text-red-400">
+                        <p className="px-4 pt-2 text-[12px] text-red-400">
                           {tipSectionError}
                         </p>
                       )}
 
                       {/* Footer */}
                       <p
-                        className="px-4 pt-3 pb-4 text-[10px] font-medium tracking-wide uppercase"
-                        style={{ color: `${GOLD}cc`, letterSpacing: "0.06em" }}
+                        className="px-4 pt-3 pb-4 text-[11px] font-medium tracking-wide uppercase"
+                        style={{
+                          color: tipCreamMuted,
+                          letterSpacing: "0.06em",
+                        }}
                       >
                         100% goes directly to your crew
                       </p>
@@ -2758,9 +2896,9 @@ export default function TrackMoveClient({
 
           {/* Tabs (hidden for completed moves, perks hub is the permanent view) */}
           {!isCompleted && (
-            <div className="relative mb-4">
+            <div className="relative mb-3">
               <div
-                className="flex gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth sm:justify-center"
+                className="flex flex-wrap justify-center gap-x-0 overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth"
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
                 {tabs.map((t) => (
@@ -2768,20 +2906,25 @@ export default function TrackMoveClient({
                     key={t.key}
                     type="button"
                     onClick={() => setActiveTab(t.key)}
-                    className={`shrink-0 px-3.5 py-2.5 text-[11px] font-semibold whitespace-nowrap border-b-[1.5px] transition-colors ${
+                    className={`shrink-0 px-3 py-2 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.08em] leading-none whitespace-nowrap border-b-2 transition-colors [font-family:var(--font-body)] ${
                       activeTab === t.key
-                        ? "border-[#2C3E2D] opacity-100"
-                        : "border-transparent opacity-40 hover:opacity-60"
+                        ? "opacity-100"
+                        : "border-transparent opacity-45 hover:opacity-70"
                     }`}
-                    style={{ color: activeTab === t.key ? GOLD : FOREST }}
+                    style={{
+                      color:
+                        activeTab === t.key ? trackTabActive : trackTabInactive,
+                      borderBottomColor:
+                        activeTab === t.key ? "#2C3E2D" : "transparent",
+                    }}
                   >
                     {t.label}
                   </button>
                 ))}
               </div>
               <div
-                className="absolute bottom-0 left-0 right-0 h-[1px]"
-                style={{ backgroundColor: `${FOREST}12` }}
+                className="absolute bottom-0 left-0 right-0 h-px"
+                style={{ backgroundColor: trackTabBorderBg }}
               />
             </div>
           )}
@@ -2804,7 +2947,7 @@ export default function TrackMoveClient({
                 !indicativeSettled &&
                 baseBalance <= 0 && (
                   <div
-                    className="pb-4 text-[11px] opacity-70"
+                    className="pb-4 text-[12px] opacity-70"
                     style={{ color: FOREST }}
                   >
                     Additional charges of{" "}
@@ -2823,7 +2966,7 @@ export default function TrackMoveClient({
                   }}
                 >
                   <div
-                    className="text-[10px] font-bold uppercase tracking-wider"
+                    className="text-[11px] font-bold uppercase tracking-[0.08em]"
                     style={{ color: "#7C3AED" }}
                   >
                     Event · {move.event_name}
@@ -2861,7 +3004,7 @@ export default function TrackMoveClient({
                       </div>
                       <div>
                         <div
-                          className="text-[12px] font-semibold"
+                          className="text-[13px] font-semibold"
                           style={{ color: FOREST }}
                         >
                           Delivery,{" "}
@@ -2878,7 +3021,7 @@ export default function TrackMoveClient({
                         </div>
                         {move.event_phase !== "delivery" && (
                           <div
-                            className="text-[10px] opacity-50"
+                            className="text-[11px] opacity-50"
                             style={{ color: FOREST }}
                           >
                             Items transported to venue
@@ -2886,7 +3029,7 @@ export default function TrackMoveClient({
                         )}
                         {move.event_phase === "delivery" && (
                           <div
-                            className="text-[10px] font-medium"
+                            className="text-[11px] font-medium"
                             style={{
                               color:
                                 move.status === "completed"
@@ -2933,7 +3076,7 @@ export default function TrackMoveClient({
                       </div>
                       <div>
                         <div
-                          className="text-[12px] font-semibold"
+                          className="text-[13px] font-semibold"
                           style={{ color: FOREST }}
                         >
                           Return,{" "}
@@ -2950,7 +3093,7 @@ export default function TrackMoveClient({
                         </div>
                         {move.event_phase !== "return" && (
                           <div
-                            className="text-[10px] opacity-50"
+                            className="text-[11px] opacity-50"
                             style={{ color: FOREST }}
                           >
                             Items returned from venue
@@ -2958,7 +3101,7 @@ export default function TrackMoveClient({
                         )}
                         {move.event_phase === "return" && (
                           <div
-                            className="text-[10px] font-medium"
+                            className="text-[11px] font-medium"
                             style={{
                               color:
                                 move.status === "completed"
@@ -2983,20 +3126,20 @@ export default function TrackMoveClient({
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div
-                        className="text-[10px] font-semibold uppercase tracking-wider opacity-50"
+                        className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-50"
                         style={{ color: FOREST }}
                       >
                         Date
                       </div>
                       <div
-                        className="text-[13px] font-medium mt-0.5"
+                        className="font-hero text-[20px] font-bold mt-0.5 leading-tight"
                         style={{ color: FOREST }}
                       >
                         {formatMoveDate(scheduledDate)}
                       </div>
                       {arrivalWindow && (
                         <div
-                          className="text-[11px] mt-0.5 opacity-50"
+                          className="text-[12px] mt-0.5 opacity-50"
                           style={{ color: FOREST }}
                         >
                           Arrival: {arrivalWindow}
@@ -3009,8 +3152,8 @@ export default function TrackMoveClient({
                       <button
                         type="button"
                         onClick={() => setActiveTab("inv")}
-                        className="text-[11px] font-semibold opacity-60 hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0 mt-1"
-                        style={{ color: GOLD }}
+                        className="text-[12px] font-semibold opacity-60 hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0 mt-1"
+                        style={{ color: FOREST }}
                       >
                         {(dashboardInventory?.items?.length ?? 0) +
                           (dashboardInventory?.extraItems?.length ?? 0)}{" "}
@@ -3047,17 +3190,17 @@ export default function TrackMoveClient({
                   <div className="flex flex-col items-center pt-1 shrink-0">
                     <div
                       className="w-1.5 h-1.5 rounded-full mt-0.5"
-                      style={{ backgroundColor: GOLD }}
+                      style={{ backgroundColor: FOREST }}
                     />
                     <div
                       className="addr-line w-px flex-1 my-1"
                       style={{
-                        background: `linear-gradient(to bottom, ${GOLD}70, ${GOLD}20)`,
+                        background: `linear-gradient(to bottom, ${FOREST}70, ${FOREST}20)`,
                       }}
                     />
                     <div
                       className="w-1.5 h-1.5 rounded-sm rotate-45"
-                      style={{ backgroundColor: `${GOLD}90` }}
+                      style={{ backgroundColor: `${FOREST}90` }}
                     />
                   </div>
                   {/* Address text */}
@@ -3065,7 +3208,7 @@ export default function TrackMoveClient({
                     {pickupStopsForUi.map((stop, idx) => (
                       <div key={idx} className="addr-from min-w-0">
                         <div
-                          className="text-[9px] font-bold uppercase tracking-widest opacity-40"
+                          className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-40"
                           style={{ color: FOREST }}
                         >
                           {pickupStopsForUi.length > 1
@@ -3073,14 +3216,14 @@ export default function TrackMoveClient({
                             : "From"}
                         </div>
                         <div
-                          className="text-[13px] font-medium mt-0.5 leading-snug"
+                          className="text-[14px] font-medium mt-0.5 leading-snug"
                           style={{ color: FOREST }}
                         >
                           {shortAddress(stop.address)}
                         </div>
                         {formatAccessForDisplay(stop.access) ? (
                           <div
-                            className="text-[10px] mt-0.5 opacity-60"
+                            className="text-[11px] mt-0.5 opacity-60"
                             style={{ color: FOREST }}
                           >
                             Access: {formatAccessForDisplay(stop.access)}
@@ -3090,13 +3233,13 @@ export default function TrackMoveClient({
                     ))}
                     <div className="addr-to min-w-0">
                       <div
-                        className="text-[9px] font-bold uppercase tracking-widest opacity-40"
+                        className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-40"
                         style={{ color: FOREST }}
                       >
                         To
                       </div>
                       <div
-                        className="text-[13px] font-medium mt-0.5 leading-snug"
+                        className="text-[14px] font-medium mt-0.5 leading-snug"
                         style={{ color: FOREST }}
                       >
                         {shortAddress(move.to_address || move.delivery_address)}
@@ -3109,27 +3252,29 @@ export default function TrackMoveClient({
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div
-                        className="text-[10px] font-semibold uppercase tracking-wider opacity-50"
+                        className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-50"
                         style={{ color: FOREST }}
                       >
                         Balance Due
                       </div>
                       <div
-                        className="font-hero text-[18px] font-bold mt-0.5"
-                        style={{ color: totalBalance > 0 ? GOLD : FOREST }}
+                        className="font-hero text-[20px] font-bold mt-0.5"
+                        style={{
+                          color: totalBalance > 0 ? WINE : FOREST,
+                        }}
                       >
                         {formatCurrency(totalBalance)}
                       </div>
                       {totalBalance > 0 ? (
                         <div
-                          className="text-[10px] opacity-50"
+                          className="text-[11px] opacity-50"
                           style={{ color: FOREST }}
                         >
                           +{formatCurrency(calcHST(totalBalance))} HST
                         </div>
                       ) : (
                         <div
-                          className="text-[10px] opacity-50"
+                          className="text-[11px] opacity-50"
                           style={{ color: FOREST }}
                         >
                           Fully paid, thank you!
@@ -3141,7 +3286,7 @@ export default function TrackMoveClient({
                     outstandingInventoryAdj &&
                     hasCardOnFile && (
                       <p
-                        className="text-[11px] leading-relaxed opacity-85"
+                        className="text-[12px] leading-relaxed opacity-85"
                         style={{ color: FOREST }}
                       >
                         Inventory update approved. Additional charge:{" "}
@@ -3153,7 +3298,7 @@ export default function TrackMoveClient({
                     outstandingInventoryAdj &&
                     !hasCardOnFile && (
                       <p
-                        className="text-[11px] leading-relaxed opacity-85"
+                        className="text-[12px] leading-relaxed opacity-85"
                         style={{ color: FOREST }}
                       >
                         Additional charge: {formatCurrency(totalBalance)} +{" "}
@@ -3164,7 +3309,7 @@ export default function TrackMoveClient({
                     )}
                   {balanceChargeError && (
                     <div
-                      className="text-[11px] font-medium px-3 py-2 rounded-lg"
+                      className="text-[12px] font-medium px-3 py-2 rounded-lg"
                       style={{
                         backgroundColor: "rgba(209,67,67,0.08)",
                         color: "#D14343",
@@ -3181,11 +3326,11 @@ export default function TrackMoveClient({
                           type="button"
                           onClick={() => void handlePayWithSavedCard()}
                           disabled={chargingSavedCard}
-                          className="rounded-full font-semibold text-[11px] py-2 px-5 transition-all hover:opacity-90 active:scale-95 shrink-0 tracking-wide shadow-sm disabled:opacity-50"
+                          className="rounded-full font-semibold text-[12px] py-2 px-5 transition-all hover:opacity-90 active:scale-95 shrink-0 tracking-wide shadow-sm disabled:opacity-50"
                           style={{
-                            backgroundColor: GOLD,
+                            backgroundColor: FOREST,
                             color: "#F9EDE4",
-                            boxShadow: `0 2px 12px ${GOLD}40`,
+                            boxShadow: `0 2px 12px ${FOREST}40`,
                           }}
                         >
                           {chargingSavedCard ? "Processing…" : "Pay Now"}
@@ -3197,7 +3342,7 @@ export default function TrackMoveClient({
                           setSqError(null);
                           setPaymentModalOpen(true);
                         }}
-                        className={`rounded-full font-semibold text-[11px] py-2 px-5 transition-all border ${
+                        className={`rounded-full font-semibold text-[12px] py-2 px-5 transition-all border ${
                           hasCardOnFile ? "opacity-90 hover:opacity-100" : ""
                         }`}
                         style={
@@ -3208,10 +3353,10 @@ export default function TrackMoveClient({
                                 backgroundColor: "transparent",
                               }
                             : {
-                                backgroundColor: GOLD,
+                                backgroundColor: FOREST,
                                 color: "#F9EDE4",
                                 borderColor: "transparent",
-                                boxShadow: `0 2px 12px ${GOLD}40`,
+                                boxShadow: `0 2px 12px ${FOREST}40`,
                               }
                         }
                       >
@@ -3223,75 +3368,40 @@ export default function TrackMoveClient({
               </div>
 
               {/* Crew */}
-              {crewMembers.length > 0 && (
-                <div className="border-t border-[var(--brd)]/20 pt-5 mt-6">
-                  <div
-                    className="text-[10px] font-semibold uppercase tracking-wider opacity-50 mb-3"
-                    style={{ color: FOREST }}
-                  >
-                    Your Crew
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    {crewMembers.map((name: string, i: number) => (
-                      <div key={i} className="flex items-center gap-2.5">
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-semibold text-white shrink-0"
-                          style={{
-                            background:
-                              "linear-gradient(135deg, #2C3E2D, #8B7332)",
-                          }}
-                        >
-                          {(name || "?")
-                            .split(" ")
-                            .map((w: string) => w[0])
-                            .join("")
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </div>
-                        <div>
-                          <span
-                            className="text-[12px] font-semibold"
-                            style={{ color: FOREST }}
-                          >
-                            {name}
-                          </span>
-                          <span
-                            className="text-[10px] opacity-50 ml-1.5"
-                            style={{ color: FOREST }}
-                          >
-                            {crewRoles[i] || "Team member"}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="border-t border-[var(--brd)]/20 pt-5 mt-6">
+                <TrackYourCrewSection
+                  crewAssigned={crewAssigned}
+                  revealNames={revealCrewNames}
+                  memberNames={crewMembers}
+                  roles={crewRoles}
+                  forest={FOREST}
+                />
+              </div>
 
               {/* Coordinator */}
               <div className="border-t border-[var(--brd)]/20 pt-4 mt-5">
                 <a
                   href={`tel:${normalizePhone(YUGO_PHONE)}`}
-                  className="inline-flex items-center gap-2 text-[11px] transition-opacity hover:opacity-70"
+                  className="inline-flex items-center gap-2 text-[12px] transition-opacity hover:opacity-70"
                   style={{ color: FOREST }}
                 >
-                  <YugoLogo size={12} variant="gold" onLightBackground />
+                  <YugoLogo size={12} variant="wine" onLightBackground />
                   <span className="font-medium">{formatPhone(YUGO_PHONE)}</span>
                   <span className="opacity-40">·</span>
                   <span className="opacity-40">Coordinator</span>
                 </a>
               </div>
 
-              {changeSubmitted && (
+              {changeSubmitted && !isEstateTier && (
                 <div className="border-t border-[var(--brd)]/20 pt-4 mt-4">
                   <div
-                    className="text-[12px] font-semibold"
+                    className="text-[13px] font-semibold"
                     style={{ color: FOREST }}
                   >
                     Change request submitted
                   </div>
                   <div
-                    className="text-[11px] mt-0.5 opacity-50"
+                    className="text-[12px] mt-0.5 opacity-50"
                     style={{ color: FOREST }}
                   >
                     Your coordinator will follow up shortly.
@@ -3299,8 +3409,21 @@ export default function TrackMoveClient({
                 </div>
               )}
 
-              {/* ── Pre-Move Checklist (72hr window, non-completed moves) ── */}
-              {!isCompleted &&
+              {/* Estate: service-milestone checklist. Standard: homeowner prep (72h). */}
+              {isEstateTier && estateDayPlan && !isCompleted && (
+                <div className="mt-5">
+                  <EstateServiceChecklist
+                    moveId={move.id}
+                    token={token}
+                    plan={estateDayPlan}
+                    initialChecked={estateServiceChecklistInitial}
+                    moveDateStr={move.scheduled_date || undefined}
+                    automationInputs={estateAutomationInputs}
+                  />
+                </div>
+              )}
+              {!isEstateTier &&
+                !isCompleted &&
                 daysUntil != null &&
                 daysUntil >= 0 &&
                 daysUntil <= 3 &&
@@ -3314,7 +3437,7 @@ export default function TrackMoveClient({
                         {}
                       }
                       crewName={
-                        crewMembers.length > 0
+                        revealCrewNames && crewMembers.length > 0
                           ? crewMembers.slice(0, 2).join(" & ")
                           : undefined
                       }
@@ -3322,26 +3445,6 @@ export default function TrackMoveClient({
                       moveDateStr={move.scheduled_date || undefined}
                       copyVariant={
                         isLogisticsDeliveryTrack ? "delivery" : "move"
-                      }
-                    />
-                  </div>
-                )}
-
-              {/* ── Client Room Photo Capture (3-day window, pre-move) ── */}
-              {!isCompleted &&
-                daysUntil != null &&
-                daysUntil >= 0 &&
-                daysUntil <= 5 &&
-                !isInProgress && (
-                  <div className="mt-5">
-                    <ClientRoomPhotoCapture
-                      moveId={move.id}
-                      token={token}
-                      initialPhotos={
-                        (move.client_room_photos as Record<
-                          string,
-                          { url: string; uploadedAt: string }
-                        >) || {}
                       }
                     />
                   </div>
@@ -3359,129 +3462,145 @@ export default function TrackMoveClient({
                 </div>
               )}
 
-              {!isCompleted && (
-                <div className="pt-5 mt-3 space-y-3">
-                  {inventoryChangeFeatureOn &&
-                    inventoryChangeItemWeights.length > 0 && (
-                      <>
-                        {inventoryChangePending ? (
-                          <div
-                            className="rounded-xl border px-4 py-3"
-                            style={{
-                              borderColor: `${GOLD}35`,
-                              backgroundColor: `${GOLD}08`,
-                            }}
-                          >
-                            <div
-                              className="text-[11px] font-bold"
-                              style={{ color: WINE }}
-                            >
-                              Inventory change pending review
-                            </div>
-                            <p
-                              className="text-[10px] mt-1 opacity-70 leading-snug"
-                              style={{ color: FOREST }}
-                            >
-                              Your coordinator will confirm pricing and truck
-                              fit. You&apos;ll get an email when it&apos;s
-                              decided.
-                            </p>
-                          </div>
-                        ) : (
-                          <>
+              {!isCompleted &&
+                ((inventoryChangeFeatureOn &&
+                  inventoryChangeItemWeights.length > 0) ||
+                  !isEstateTier) && (
+                  <div className="pt-5 mt-3 space-y-3">
+                    {inventoryChangeFeatureOn &&
+                      inventoryChangeItemWeights.length > 0 && (
+                        <>
+                          {inventoryChangePending ? (
                             <div
                               className="rounded-xl border px-4 py-3"
                               style={{
-                                borderColor: inventoryChangeEligible
-                                  ? `${GOLD}30`
-                                  : `${FOREST}12`,
-                                backgroundColor: inventoryChangeEligible
-                                  ? `${GOLD}06`
-                                  : `${FOREST}04`,
-                                opacity: inventoryChangeEligible ? 1 : 0.75,
+                                borderColor: `${FOREST}35`,
+                                backgroundColor: `${FOREST}08`,
                               }}
                             >
                               <div
-                                className="text-[10px] font-bold uppercase tracking-wider mb-1"
-                                style={{ color: GOLD }}
+                                className="text-[12px] font-bold"
+                                style={{ color: WINE }}
                               >
-                                Need to update your inventory?
+                                Inventory change pending review
                               </div>
                               <p
-                                className="text-[11px] leading-relaxed opacity-80 mb-3"
+                                className="text-[11px] mt-1 opacity-70 leading-snug"
                                 style={{ color: FOREST }}
                               >
-                                Add or remove items before your move. Changes
-                                are reviewed by your coordinator.
+                                Your coordinator will confirm pricing and truck
+                                fit. You&apos;ll get an email when it&apos;s
+                                decided.
                               </p>
-                              <button
-                                type="button"
-                                disabled={!inventoryChangeEligible}
-                                onClick={() =>
-                                  inventoryChangeEligible &&
-                                  setInventoryChangeModalOpen(true)
-                                }
-                                className="w-full sm:w-auto rounded-full font-semibold text-[11px] py-2.5 px-5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            </div>
+                          ) : (
+                            <>
+                              <div
+                                className="rounded-xl border px-4 py-3"
                                 style={{
-                                  backgroundColor: GOLD,
-                                  color: "#F9EDE4",
+                                  borderColor: inventoryChangeEligible
+                                    ? `${FOREST}30`
+                                    : `${FOREST}12`,
+                                  backgroundColor: inventoryChangeEligible
+                                    ? `${FOREST}06`
+                                    : `${FOREST}04`,
+                                  opacity: inventoryChangeEligible ? 1 : 0.75,
                                 }}
                               >
-                                Request inventory change
-                              </button>
-                              {!inventoryChangeEligible &&
-                                inventoryChangeReason && (
-                                  <p
-                                    className="text-[10px] mt-2 opacity-55 leading-snug"
-                                    style={{ color: FOREST }}
-                                  >
-                                    {inventoryChangeReason}
-                                  </p>
+                                <div
+                                  className="text-[11px] font-bold uppercase tracking-[0.08em] mb-1"
+                                  style={{ color: FOREST }}
+                                >
+                                  Need to update your inventory?
+                                </div>
+                                <p
+                                  className="text-[12px] leading-relaxed opacity-80 mb-3"
+                                  style={{ color: FOREST }}
+                                >
+                                  Add or remove items before your move. Changes
+                                  are reviewed by your coordinator.
+                                </p>
+                                <button
+                                  type="button"
+                                  disabled={!inventoryChangeEligible}
+                                  onClick={() =>
+                                    inventoryChangeEligible &&
+                                    setInventoryChangeModalOpen(true)
+                                  }
+                                  className="w-full sm:w-auto rounded-full font-semibold text-[12px] py-2.5 px-5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                  style={{
+                                    backgroundColor: FOREST,
+                                    color: "#F9EDE4",
+                                  }}
+                                >
+                                  Request inventory change
+                                </button>
+                                {!inventoryChangeEligible &&
+                                  inventoryChangeReason && (
+                                    <p
+                                      className="text-[11px] mt-2 opacity-55 leading-snug"
+                                      style={{ color: FOREST }}
+                                    >
+                                      {inventoryChangeReason}
+                                    </p>
+                                  )}
+                              </div>
+                              <InventoryChangeRequestModal
+                                open={inventoryChangeModalOpen}
+                                onClose={() =>
+                                  setInventoryChangeModalOpen(false)
+                                }
+                                moveId={move.id}
+                                token={token}
+                                itemWeights={inventoryChangeItemWeights}
+                                inventoryLines={(
+                                  dashboardInventory?.items ?? []
+                                ).map(
+                                  (i: { id: string; item_name?: string }) => ({
+                                    id: i.id,
+                                    item_name: i.item_name || "Item",
+                                  }),
                                 )}
-                            </div>
-                            <InventoryChangeRequestModal
-                              open={inventoryChangeModalOpen}
-                              onClose={() => setInventoryChangeModalOpen(false)}
-                              moveId={move.id}
-                              token={token}
-                              itemWeights={inventoryChangeItemWeights}
-                              inventoryLines={(
-                                dashboardInventory?.items ?? []
-                              ).map(
-                                (i: { id: string; item_name?: string }) => ({
-                                  id: i.id,
-                                  item_name: i.item_name || "Item",
-                                }),
-                              )}
-                              currentSubtotal={Number(move.amount) || 0}
-                              perScoreRate={inventoryChangePerScoreRate}
-                              maxLines={inventoryChangeMaxItems}
-                              onSubmitted={() => {
-                                toast(
-                                  "Change request sent. We'll email you when it's reviewed.",
-                                  "check",
-                                );
-                                router.refresh();
-                              }}
-                            />
-                          </>
-                        )}
-                      </>
+                                currentSubtotal={Number(move.amount) || 0}
+                                perScoreRate={inventoryChangePerScoreRate}
+                                maxLines={inventoryChangeMaxItems}
+                                onSubmitted={() => {
+                                  toast(
+                                    "Change request sent. We'll email you when it's reviewed.",
+                                    "check",
+                                  );
+                                  router.refresh();
+                                }}
+                              />
+                            </>
+                          )}
+                        </>
+                      )}
+                    {!isEstateTier && (
+                      <button
+                        type="button"
+                        onClick={() => setChangeModalOpen(true)}
+                        className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-none px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] leading-none transition-[filter,opacity] hover:brightness-95 active:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 [font-family:var(--font-body)]"
+                        style={{
+                          backgroundColor: FOREST,
+                          color: "#F9EDE4",
+                          outlineColor: FOREST,
+                        }}
+                      >
+                        <Plus
+                          size={12}
+                          weight="bold"
+                          className="shrink-0 text-current"
+                          aria-hidden
+                        />
+                        {inventoryChangeFeatureOn &&
+                        inventoryChangeItemWeights.length > 0
+                          ? "Other change request"
+                          : "Request a Change"}
+                      </button>
                     )}
-                  <button
-                    type="button"
-                    onClick={() => setChangeModalOpen(true)}
-                    className="text-[11px] font-semibold opacity-40 hover:opacity-70 transition-opacity flex items-center gap-1.5"
-                    style={{ color: FOREST }}
-                  >
-                    <Plus size={10} weight="regular" className="text-current" />
-                    {inventoryChangeFeatureOn &&
-                    inventoryChangeItemWeights.length > 0
-                      ? "Other change request"
-                      : "Request a Change"}
-                  </button>
-                </div>
-              )}
+                  </div>
+                )}
 
               {/* ── Perks & Referral (completed moves only) ── */}
               {isCompleted && (
@@ -3489,7 +3608,7 @@ export default function TrackMoveClient({
                   {/* Your offers (hero): perks + referral */}
                   <div className="space-y-5">
                     <h2
-                      className="font-hero text-[20px] sm:text-[22px] font-semibold leading-tight"
+                      className="font-hero text-[24px] sm:text-[28px] font-semibold leading-tight tracking-tight"
                       style={{ color: WINE }}
                     >
                       Your offers
@@ -3516,7 +3635,7 @@ export default function TrackMoveClient({
                                   onLightBackground
                                   hidePlus
                                 />
-                                <span className="text-[9px] font-bold text-black">
+                                <span className="text-[10px] font-bold text-black">
                                   Exclusive
                                 </span>
                               </div>
@@ -3524,19 +3643,19 @@ export default function TrackMoveClient({
                               <div className="flex-1 px-4 py-3.5 pt-8 flex flex-col justify-between min-w-0">
                                 <div>
                                   {perk.organizations?.name && (
-                                    <div className="text-[9px] font-semibold text-white/60 mb-1">
+                                    <div className="text-[10px] font-semibold text-white/60 mb-1">
                                       From{" "}
                                       <SafeText fallback="our partner">
                                         {perk.organizations.name}
                                       </SafeText>
                                     </div>
                                   )}
-                                  <div className="text-[13px] font-bold text-white leading-tight line-clamp-2">
+                                  <div className="text-[14px] font-bold text-white leading-tight line-clamp-2">
                                     <SafeText fallback="Partner offer">
                                       {perk.title}
                                     </SafeText>
                                   </div>
-                                  <div className="text-[10px] text-white/80 mt-1 leading-snug line-clamp-3">
+                                  <div className="text-[11px] text-white/80 mt-1 leading-snug line-clamp-3">
                                     <SafeText fallback="Exclusive offer for Yugo movers. Terms apply.">
                                       {perk.description ??
                                         "Exclusive offer for Yugo movers. Terms apply."}
@@ -3545,7 +3664,7 @@ export default function TrackMoveClient({
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                                   {perk.redemption_code && (
-                                    <span className="text-[9px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
+                                    <span className="text-[10px] font-mono font-bold text-white/90 bg-white/15 border border-white/25 px-1.5 py-0.5 rounded">
                                       Code:{" "}
                                       <SafeText fallback="-">
                                         {perk.redemption_code}
@@ -3553,7 +3672,7 @@ export default function TrackMoveClient({
                                     </span>
                                   )}
                                   {perk.valid_until && (
-                                    <span className="text-[9px] text-white/45">
+                                    <span className="text-[10px] text-white/45">
                                       Ends {formatPerkExpiry(perk.valid_until)}
                                     </span>
                                   )}
@@ -3575,7 +3694,7 @@ export default function TrackMoveClient({
                                           }),
                                         }).catch(() => {});
                                       }}
-                                      className="ml-auto shrink-0 bg-white text-[10px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+                                      className="ml-auto shrink-0 bg-white text-[11px] font-bold px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
                                       style={{ color: theme.stamp }}
                                     >
                                       {perk.redemption_code
@@ -3610,7 +3729,7 @@ export default function TrackMoveClient({
                       </div>
                     ) : (
                       <p
-                        className="text-[11px] opacity-70 rounded-2xl border p-4"
+                        className="text-[12px] opacity-70 rounded-2xl border p-4"
                         style={{
                           color: FOREST,
                           borderColor: `${FOREST}15`,
@@ -3625,13 +3744,13 @@ export default function TrackMoveClient({
                     {/* Refer a friend (under same hero) */}
                     <div>
                       <div
-                        className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1"
+                        className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-50 mb-1"
                         style={{ color: FOREST }}
                       >
                         Refer a friend & earn cash
                       </div>
                       <p
-                        className="text-[11px] opacity-70 mb-3"
+                        className="text-[12px] opacity-70 mb-3"
                         style={{ color: FOREST }}
                       >
                         {referral && referral.status === "active"
@@ -3647,7 +3766,7 @@ export default function TrackMoveClient({
                           }}
                         >
                           <p
-                            className="text-[12px] opacity-50 leading-relaxed"
+                            className="text-[13px] opacity-50 leading-relaxed"
                             style={{ color: FOREST }}
                           >
                             {isCompleted
@@ -3664,14 +3783,14 @@ export default function TrackMoveClient({
                           }}
                         >
                           <p
-                            className="text-[12px] opacity-60 leading-relaxed"
+                            className="text-[13px] opacity-60 leading-relaxed"
                             style={{ color: FOREST }}
                           >
                             Your referral code has expired.{" "}
                             <a
                               href={`mailto:${YUGO_EMAIL}`}
                               className="underline"
-                              style={{ color: GOLD }}
+                              style={{ color: FOREST }}
                             >
                               Contact us
                             </a>{" "}
@@ -3687,7 +3806,7 @@ export default function TrackMoveClient({
                           }}
                         >
                           <p
-                            className="text-[12px] leading-relaxed mb-4"
+                            className="text-[13px] leading-relaxed mb-4"
                             style={{ color: FOREST }}
                           >
                             Share your code, your friend gets{" "}
@@ -3702,12 +3821,12 @@ export default function TrackMoveClient({
                           <div
                             className="flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 mb-3"
                             style={{
-                              borderColor: `${GOLD}35`,
-                              backgroundColor: `${GOLD}08`,
+                              borderColor: `${FOREST}35`,
+                              backgroundColor: `${FOREST}08`,
                             }}
                           >
                             <span
-                              className="font-mono text-[var(--text-base)] font-bold tracking-widest"
+                              className="font-mono text-[var(--text-base)] font-bold tracking-[0.08em]"
                               style={{ color: WINE }}
                             >
                               {referral.referral_code}
@@ -3739,14 +3858,14 @@ export default function TrackMoveClient({
                             </button>
                           </div>
                           <p
-                            className="text-[10px] opacity-60 mb-3"
+                            className="text-[11px] opacity-60 mb-3"
                             style={{ color: FOREST }}
                           >
                             Terms and conditions apply.{" "}
                             <Link
                               href="/terms"
                               className="underline hover:opacity-80"
-                              style={{ color: GOLD }}
+                              style={{ color: FOREST }}
                             >
                               Click here to read more.
                             </Link>
@@ -3769,7 +3888,7 @@ export default function TrackMoveClient({
                                   );
                                 }
                               }}
-                              className="flex items-center gap-1.5 rounded-full text-[10px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
+                              className="flex items-center gap-1.5 rounded-full text-[11px] font-semibold px-3.5 py-2 transition-all hover:opacity-90 active:scale-95"
                               style={{
                                 backgroundColor: WINE,
                                 color: "#F9EDE4",
@@ -3795,7 +3914,7 @@ export default function TrackMoveClient({
             <div>
               {isCompleted ? (
                 <p
-                  className="text-center text-[11px] opacity-50 py-8"
+                  className="text-center text-[12px] opacity-50 py-8"
                   style={{ color: FOREST }}
                 >
                   Tracking is no longer active for this move.
@@ -3806,6 +3925,8 @@ export default function TrackMoveClient({
                   token={token}
                   move={move}
                   crew={crew}
+                  revealCrewNames={revealCrewNames}
+                  crewAssigned={crewAssigned}
                   onLiveStageChange={setLiveStage}
                 />
               )}
@@ -3813,23 +3934,33 @@ export default function TrackMoveClient({
           )}
 
           {activeTab === "inv" && (
-            <div className="mb-6">
-              <TrackInventory
-                moveId={move.id}
-                token={token}
-                moveComplete={isCompleted}
-              />
-            </div>
+            <TrackInventory
+              moveId={move.id}
+              token={token}
+              moveComplete={isCompleted}
+              className="mb-6"
+              estateWalkthroughScopeOnly={estateInventoryWalkthroughDisclaimer}
+            />
           )}
 
           {activeTab === "files" && (
-            <div className="mb-6 space-y-6">
+            <div
+              className="mb-6 bg-white overflow-hidden border"
+              style={{ borderColor: `${FOREST}14` }}
+            >
               <TrackPhotos
+                embedded
                 moveId={move.id}
                 token={token}
                 moveComplete={isCompleted}
               />
+              <div
+                className="border-t"
+                style={{ borderColor: `${FOREST}08` }}
+                aria-hidden
+              />
               <TrackDocuments
+                embedded
                 moveId={move.id}
                 token={token}
                 refreshTrigger={paymentRecorded}
@@ -3837,62 +3968,52 @@ export default function TrackMoveClient({
             </div>
           )}
         </main>
+        </div>
 
         <footer
-          className="py-3 px-4 text-center border-t"
+          className="shrink-0 border-t pt-3 px-4 text-center pb-[max(0.875rem,env(safe-area-inset-bottom,0px))]"
           style={{ backgroundColor: "#F9EDE4", borderColor: `${FOREST}10` }}
         >
-          <div className="flex items-center justify-center gap-1 mb-0.5">
-            <YugoLogo size={10} variant="gold" onLightBackground />
-          </div>
-          <p className="text-[6px] opacity-25" style={{ color: FOREST }}>
-            The Art of Moving &nbsp;·&nbsp;
-            <Link
-              href="/privacy"
-              className="hover:underline"
-              style={{ color: FOREST }}
-            >
-              Privacy
-            </Link>
-            &nbsp;·&nbsp;
-            <Link
-              href="/terms"
-              className="hover:underline"
-              style={{ color: FOREST }}
-            >
-              Terms
-            </Link>
-          </p>
+          <YugoMarketingFooter
+            contactEmail={companyContactEmail}
+            logoVariant="wine"
+            onLightBackground
+            logoSize={10}
+            mutedColor={FOREST}
+            linkColor={FOREST}
+            taglineClassName="text-[12px] leading-normal opacity-55 font-medium tracking-wide"
+          />
         </footer>
+      </div>
 
-        {/* Change Request Modal */}
-        {changeModalOpen && (
+        {/* Change Request Modal (not offered on Estate track — coordinator-led) */}
+        {changeModalOpen && !isEstateTier && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
             <div
-              className="w-full max-w-md rounded-xl border bg-white p-5"
+              className="w-full max-w-md rounded-2xl border bg-[#FFFDF8] p-4 sm:p-5 shadow-[0_8px_32px_rgba(44,62,45,0.12),0_2px_8px_rgba(0,0,0,0.06)]"
               style={{
-                borderColor: `${FOREST}20`,
+                borderColor: `${FOREST}18`,
                 maxHeight: "min(90dvh, 90vh)",
                 overflowY: "auto",
               }}
             >
-              <h3
-                className="mb-3 text-[16px] font-bold font-heading"
+              <h2
+                className="font-hero text-[22px] sm:text-[26px] font-semibold leading-tight tracking-tight mb-2"
                 style={{ color: WINE }}
               >
                 Request a Change
-              </h3>
+              </h2>
               <p
-                className="mb-4 text-[12px] leading-relaxed opacity-80"
-                style={{ color: FOREST }}
+                className="mb-4 text-[12px] sm:text-[13px] leading-tight"
+                style={{ color: TEXT_MUTED_ON_LIGHT }}
               >
                 Submit a change request. Your coordinator will review and
                 confirm.
               </p>
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 <div>
                   <label
-                    className="mb-1 block text-[10px] font-bold uppercase opacity-80"
+                    className={`${TRACK_EYEBROW_CLASS} mb-1 block`}
                     style={{ color: FOREST }}
                   >
                     Type of Change
@@ -3900,9 +4021,9 @@ export default function TrackMoveClient({
                   <select
                     value={changeType}
                     onChange={(e) => setChangeType(e.target.value)}
-                    className="w-full rounded-lg border px-3 py-2 text-[12px] outline-none focus:ring-2"
+                    className="w-full rounded-lg border px-3 py-2 text-[12px] sm:text-[13px] leading-tight outline-none focus:ring-2 focus:ring-[#2C3E2D]/20 focus:ring-offset-0 [font-family:var(--font-body)]"
                     style={{
-                      borderColor: `${FOREST}25`,
+                      borderColor: `${FOREST}22`,
                       backgroundColor: "#F9EDE4",
                       color: FOREST,
                     }}
@@ -3915,26 +4036,25 @@ export default function TrackMoveClient({
                   </select>
                 </div>
                 {changeType === "Change destination address" && (
-                  <div
-                    style={{
-                      borderColor: `${FOREST}25`,
-                      backgroundColor: "#F9EDE4",
-                      color: FOREST,
-                    }}
-                  >
+                  <div>
+                    <label
+                      className={`${TRACK_EYEBROW_CLASS} mb-1 block`}
+                      style={{ color: FOREST }}
+                    >
+                      New address
+                    </label>
                     <AddressAutocomplete
                       value={changeAddress}
                       onRawChange={setChangeAddress}
                       onChange={(r) => setChangeAddress(r.fullAddress)}
                       placeholder="Enter new destination address"
-                      label="New Address"
-                      className="w-full rounded-lg border px-3 py-2 text-[12px] outline-none focus:ring-2"
+                      className="w-full rounded-lg border border-[#2C3E2D38] px-3 py-2 text-[12px] sm:text-[13px] leading-tight text-[#2C3E2D] outline-none focus:ring-2 focus:ring-[#2C3E2D]/20 focus:ring-offset-0 bg-[#F9EDE4] [font-family:var(--font-body)]"
                     />
                   </div>
                 )}
                 <div>
                   <label
-                    className="mb-1 block text-[10px] font-bold uppercase opacity-80"
+                    className={`${TRACK_EYEBROW_CLASS} mb-1 block`}
                     style={{ color: FOREST }}
                   >
                     {changeType === "Change destination address"
@@ -3950,9 +4070,9 @@ export default function TrackMoveClient({
                         : "Describe what you need changed..."
                     }
                     rows={changeType === "Change destination address" ? 2 : 4}
-                    className="w-full resize-y rounded-lg border px-3 py-2 text-[12px] placeholder:opacity-60 outline-none focus:ring-2"
+                    className="w-full resize-y rounded-lg border px-3 py-2 text-[12px] sm:text-[13px] leading-tight placeholder:opacity-70 outline-none focus:ring-2 focus:ring-[#2C3E2D]/20 focus:ring-offset-0 min-h-[88px] [font-family:var(--font-body)]"
                     style={{
-                      borderColor: `${FOREST}25`,
+                      borderColor: `${FOREST}22`,
                       backgroundColor: "#F9EDE4",
                       color: FOREST,
                     }}
@@ -3960,14 +4080,14 @@ export default function TrackMoveClient({
                 </div>
                 <div>
                   <label
-                    className="mb-2 block text-[10px] font-bold uppercase opacity-80"
+                    className={`${TRACK_EYEBROW_CLASS} mb-1.5 block`}
                     style={{ color: FOREST }}
                   >
                     Urgency
                   </label>
-                  <div className="flex gap-4">
+                  <div className="flex flex-wrap gap-x-5 gap-y-2">
                     <label
-                      className="flex cursor-pointer items-center gap-2 text-[12px] opacity-80"
+                      className="flex cursor-pointer items-center gap-2 text-[12px] sm:text-[13px] leading-tight"
                       style={{ color: FOREST }}
                     >
                       <input
@@ -3975,12 +4095,12 @@ export default function TrackMoveClient({
                         name="urgency"
                         checked={!changeUrgent}
                         onChange={() => setChangeUrgent(false)}
-                        className="accent-[#2C3E2D]"
+                        className="accent-[#2C3E2D] shrink-0"
                       />
                       Normal
                     </label>
                     <label
-                      className="flex cursor-pointer items-center gap-2 text-[12px] opacity-80"
+                      className="flex cursor-pointer items-center gap-2 text-[12px] sm:text-[13px] leading-tight"
                       style={{ color: FOREST }}
                     >
                       <input
@@ -3988,18 +4108,22 @@ export default function TrackMoveClient({
                         name="urgency"
                         checked={changeUrgent}
                         onChange={() => setChangeUrgent(true)}
-                        className="accent-[#2C3E2D]"
+                        className="accent-[#2C3E2D] shrink-0"
                       />
                       Urgent
                     </label>
                   </div>
                 </div>
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => setChangeModalOpen(false)}
-                    className="flex-1 rounded-lg border py-2.5 text-[12px] font-semibold transition-colors"
-                    style={{ borderColor: `${FOREST}25`, color: FOREST }}
+                    className="flex-1 rounded-none border px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.08em] leading-none transition-opacity hover:opacity-80 [font-family:var(--font-body)]"
+                    style={{
+                      borderColor: `${FOREST}22`,
+                      color: FOREST,
+                      backgroundColor: "transparent",
+                    }}
                   >
                     Cancel
                   </button>
@@ -4012,10 +4136,26 @@ export default function TrackMoveClient({
                         ? !changeAddress.trim()
                         : !changeDesc.trim())
                     }
-                    className="flex-1 rounded-lg py-2.5 text-[12px] font-bold disabled:opacity-50 transition-colors hover:opacity-90"
-                    style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-none border px-3 py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.08em] leading-none transition-opacity hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed [font-family:var(--font-body)]"
+                    style={{
+                      borderColor: FOREST,
+                      color: FOREST,
+                      backgroundColor: "transparent",
+                    }}
                   >
-                    {changeSubmitting ? "Submitting…" : "Submit"}
+                    {changeSubmitting ? (
+                      "Submitting…"
+                    ) : (
+                      <>
+                        Submit
+                        <CaretRight
+                          size={11}
+                          weight="bold"
+                          className="shrink-0 -mr-0.5"
+                          aria-hidden
+                        />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -4068,7 +4208,7 @@ export default function TrackMoveClient({
                     }}
                   >
                     <div
-                      className="flex justify-between text-[13px] mb-1.5"
+                      className="flex justify-between text-[14px] mb-1.5"
                       style={{ color: FOREST }}
                     >
                       <span className="opacity-70">
@@ -4081,7 +4221,7 @@ export default function TrackMoveClient({
                       </span>
                     </div>
                     <div
-                      className="flex justify-between text-[13px] mb-1.5"
+                      className="flex justify-between text-[14px] mb-1.5"
                       style={{ color: FOREST }}
                     >
                       <span className="opacity-70">HST (13%)</span>
@@ -4091,7 +4231,7 @@ export default function TrackMoveClient({
                     </div>
                     <div
                       className="border-t pt-2 mt-2 flex justify-between text-[var(--text-base)] font-bold"
-                      style={{ borderColor: `${FOREST}15`, color: GOLD }}
+                      style={{ borderColor: `${FOREST}15`, color: FOREST }}
                     >
                       <span>Total</span>
                       <span>
@@ -4102,15 +4242,15 @@ export default function TrackMoveClient({
 
                   <div className="mb-1.5">
                     <div
-                      className="text-[9px] font-bold tracking-widest uppercase mb-2"
-                      style={{ color: GOLD }}
+                      className="text-[10px] font-bold tracking-[0.08em] uppercase mb-2"
+                      style={{ color: FOREST }}
                     >
                       Card Details
                     </div>
                     <div
                       className="rounded-xl border-2 p-3.5 transition-colors"
                       style={{
-                        borderColor: sqCardReady ? GOLD : `${FOREST}15`,
+                        borderColor: sqCardReady ? FOREST : `${FOREST}15`,
                         backgroundColor: "#F9EDE4",
                       }}
                     >
@@ -4120,12 +4260,12 @@ export default function TrackMoveClient({
                           <div
                             className="w-4 h-4 border-2 rounded-full animate-spin"
                             style={{
-                              borderColor: `${GOLD}30`,
-                              borderTopColor: GOLD,
+                              borderColor: `${FOREST}30`,
+                              borderTopColor: FOREST,
                             }}
                           />
                           <span
-                            className="ml-2 text-[11px] opacity-60"
+                            className="ml-2 text-[12px] opacity-60"
                             style={{ color: FOREST }}
                           >
                             Loading…
@@ -4137,7 +4277,7 @@ export default function TrackMoveClient({
 
                   {sqError && (
                     <div
-                      className="px-3 py-2 rounded-lg text-[11px] font-medium mb-3"
+                      className="px-3 py-2 rounded-lg text-[12px] font-medium mb-3"
                       style={{
                         backgroundColor: "rgba(209,67,67,0.08)",
                         color: "#D14343",
@@ -4154,10 +4294,10 @@ export default function TrackMoveClient({
                     type="button"
                     onClick={handleInlinePayment}
                     disabled={!sqCardReady || sqProcessing}
-                    className="w-full py-3 rounded-xl text-[13px] font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed mt-2"
+                    className="w-full py-3 rounded-xl text-[14px] font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed mt-2"
                     style={{
                       backgroundColor:
-                        sqCardReady && !sqProcessing ? GOLD : `${GOLD}60`,
+                        sqCardReady && !sqProcessing ? FOREST : `${FOREST}60`,
                       color: "#F9EDE4",
                     }}
                   >
@@ -4180,7 +4320,7 @@ export default function TrackMoveClient({
                   <div className="flex items-center justify-center gap-1.5 mt-3">
                     <Lock size={12} color="#6B6B6B" />
                     <span
-                      className="text-[10px] opacity-50"
+                      className="text-[11px] opacity-50"
                       style={{ color: FOREST }}
                     >
                       Secured by Square · 256-bit encryption
@@ -4191,7 +4331,6 @@ export default function TrackMoveClient({
             </div>
           </>
         )}
-      </div>
     </div>
   );
 }
@@ -4292,10 +4431,10 @@ function CrewChangeRequestBanner({
         <div className="flex items-start gap-2.5 mb-3">
           <Warning size={18} className="text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-[13px] font-bold text-amber-800">
+            <p className="text-[14px] font-bold text-amber-800">
               Inventory Update
             </p>
-            <p className="text-[11px] text-amber-700/70 mt-0.5">
+            <p className="text-[12px] text-amber-700/70 mt-0.5">
               Your crew found differences during the walkthrough.
             </p>
           </div>
@@ -4303,14 +4442,14 @@ function CrewChangeRequestBanner({
 
         {added.length > 0 && (
           <div className="mb-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/60 mb-1.5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-amber-700/60 mb-1.5">
               Items not on quote
             </p>
             <div className="space-y-1">
               {added.map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between text-[12px]"
+                  className="flex items-center justify-between text-[13px]"
                 >
                   <span className="text-amber-800">
                     {item.item_name}
@@ -4327,14 +4466,14 @@ function CrewChangeRequestBanner({
 
         {removed.length > 0 && (
           <div className="mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700/60 mb-1.5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-amber-700/60 mb-1.5">
               Items not found (credit)
             </p>
             <div className="space-y-1">
               {removed.map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between text-[12px]"
+                  className="flex items-center justify-between text-[13px]"
                 >
                   <span className="text-amber-800">
                     {(item as { item_name?: string }).item_name}
@@ -4352,19 +4491,19 @@ function CrewChangeRequestBanner({
         )}
 
         <div className="border-t border-amber-400/20 pt-2 mt-1 space-y-1">
-          <div className="flex items-center justify-between text-[11px] text-amber-700/70">
+          <div className="flex items-center justify-between text-[12px] text-amber-700/70">
             <span>Subtotal change</span>
             <span>
               {delta >= 0 ? "+" : ""}${delta}
             </span>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-amber-700/70">
+          <div className="flex items-center justify-between text-[12px] text-amber-700/70">
             <span>HST (13%)</span>
             <span>
               {hst >= 0 ? "+" : "-"}${Math.abs(hst).toFixed(2)}
             </span>
           </div>
-          <div className="flex items-center justify-between text-[13px] font-bold text-amber-800">
+          <div className="flex items-center justify-between text-[14px] font-bold text-amber-800">
             <span>Additional charge</span>
             <span>
               {total >= 0
@@ -4374,15 +4513,15 @@ function CrewChangeRequestBanner({
           </div>
         </div>
 
-        {error && <p className="mt-2 text-[11px] text-red-500">{error}</p>}
+        {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
       </div>
 
       <div className="grid grid-cols-2 border-t border-amber-400/20">
         <button
           onClick={handleApprove}
           disabled={approving || declining}
-          className="py-3 text-[12px] font-bold text-white disabled:opacity-50 transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+          className="py-3 text-[13px] font-bold text-white disabled:opacity-50 transition-all active:scale-[0.98]"
+          style={{ background: "linear-gradient(135deg, #2C3E2D, #1C3A2B)" }}
         >
           {approving
             ? "Processing…"
@@ -4393,7 +4532,7 @@ function CrewChangeRequestBanner({
         <button
           onClick={handleDecline}
           disabled={approving || declining}
-          className="py-3 text-[12px] font-medium text-amber-700 hover:bg-amber-400/10 disabled:opacity-50 transition-colors"
+          className="py-3 text-[13px] font-medium text-amber-700 hover:bg-amber-400/10 disabled:opacity-50 transition-colors"
         >
           {declining ? "…" : "Decline Extras"}
         </button>

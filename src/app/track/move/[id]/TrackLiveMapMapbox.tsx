@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Map from "react-map-gl/mapbox";
 import { Marker, Source, Layer, useMap } from "react-map-gl/mapbox";
-import { Clock, House, Sun } from "@phosphor-icons/react";
+import { House, Sun } from "@phosphor-icons/react";
 
 type Center = { latitude: number; longitude: number };
 type CenterLatLng = { lat: number; lng: number };
@@ -61,6 +61,7 @@ function useAnimatedPosition(
 
 const YUGO_GOLD = "#2C3E2D";
 const ROUTE_GOLD = "#2C3E2D";
+const ROUTE_ESTATE = "#C9A571";
 const CREW_RED = "#DC2626";
 
 /** Bearing in degrees (0 = north, 90 = east) from point A → point B. */
@@ -204,6 +205,7 @@ export function TrackLiveMapMapbox({
   isNavigating = false,
   etaOverlayMinutes = null,
   distanceRemainingM = null,
+  isEstate = false,
 }: {
   mapboxAccessToken: string;
   center: Center;
@@ -220,7 +222,11 @@ export function TrackLiveMapMapbox({
   isNavigating?: boolean;
   etaOverlayMinutes?: number | null;
   distanceRemainingM?: number | null;
+  /** Dark Mapbox style for Estate live tracking */
+  isEstate?: boolean;
 }) {
+  const routeColor = isEstate ? ROUTE_ESTATE : ROUTE_GOLD;
+  const accentPin = isEstate ? ROUTE_ESTATE : YUGO_GOLD;
   const hasPosition = crew != null;
   const animatedCrew = useAnimatedPosition(
     crew ? { lat: crew.current_lat, lng: crew.current_lng } : null,
@@ -363,7 +369,11 @@ export function TrackLiveMapMapbox({
       reuseMaps
       initialViewState={{ ...center, zoom: hasPosition ? 14 : 10 }}
       style={{ width: "100%", height: "100%" }}
-      mapStyle="mapbox://styles/mapbox/light-v11"
+      mapStyle={
+        isEstate
+          ? "mapbox://styles/mapbox/dark-v11"
+          : "mapbox://styles/mapbox/light-v11"
+      }
     >
       <FitBoundsController
         crew={crew}
@@ -380,7 +390,7 @@ export function TrackLiveMapMapbox({
             id="route-completed-layer"
             type="line"
             paint={{
-              "line-color": ROUTE_GOLD,
+              "line-color": routeColor,
               "line-width": 5,
               "line-opacity": 0.9,
             }}
@@ -395,7 +405,7 @@ export function TrackLiveMapMapbox({
             id="route-remaining-layer"
             type="line"
             paint={{
-              "line-color": ROUTE_GOLD,
+              "line-color": routeColor,
               "line-width": 4,
               "line-opacity": 0.65,
               "line-dasharray": [2, 2],
@@ -411,7 +421,7 @@ export function TrackLiveMapMapbox({
             id="route-fallback-layer"
             type="line"
             paint={{
-              "line-color": ROUTE_GOLD,
+              "line-color": routeColor,
               "line-width": 3,
               "line-opacity": 0.45,
               "line-dasharray": [2, 2],
@@ -488,7 +498,7 @@ export function TrackLiveMapMapbox({
                 className="absolute rounded-full animate-ping"
                 style={{
                   inset: 3,
-                  background: isLocationStale ? YUGO_GOLD : CREW_RED,
+                  background: isLocationStale ? accentPin : CREW_RED,
                   opacity: 0.22,
                   animationDuration: "2s",
                 }}
@@ -509,7 +519,7 @@ export function TrackLiveMapMapbox({
               {/* Arrow pointing north (up); CSS rotation turns it to heading */}
               <polygon
                 points="22,5 34,36 22,29 10,36"
-                fill={isLocationStale ? YUGO_GOLD : CREW_RED}
+                fill={isLocationStale ? accentPin : CREW_RED}
                 stroke="white"
                 strokeWidth="2.5"
                 strokeLinejoin="round"
@@ -517,13 +527,13 @@ export function TrackLiveMapMapbox({
             </svg>
             {/* Speed badge */}
             {speed != null && speed > 0 && !isLocationStale && (
-              <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+              <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                 {Math.round(speed)} km/h
               </div>
             )}
             {/* Stale label */}
             {isLocationStale && lastSeenLabel && (
-              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/75 text-[#2C3E2D] text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
+              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/75 text-[#2C3E2D] text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
                 {lastSeenLabel}
               </div>
             )}
@@ -544,15 +554,14 @@ export function TrackLiveMapMapbox({
           }}
         >
           <div
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold"
             style={{
               background: "rgba(20,20,20,0.82)",
               backdropFilter: "blur(8px)",
-              color: YUGO_GOLD,
-              border: `1px solid ${YUGO_GOLD}40`,
+              color: accentPin,
+              border: `1px solid ${accentPin}40`,
             }}
           >
-            <Clock size={10} color={YUGO_GOLD} aria-hidden />
             Last known location · {lastSeenLabel}
           </div>
         </div>
@@ -575,16 +584,16 @@ export function TrackLiveMapMapbox({
             <span className="text-lg font-bold tabular-nums">
               {etaOverlayMinutes} min
             </span>
-            <span className="text-[11px] ml-1.5 opacity-85">
+            <span className="text-[12px] ml-1.5 opacity-85">
               estimated arrival
             </span>
             {distanceRemainingM != null && distanceRemainingM > 0 && (
-              <p className="text-[10px] opacity-80 mt-0.5">
+              <p className="text-[11px] opacity-80 mt-0.5">
                 {formatDistClientM(distanceRemainingM)} remaining
               </p>
             )}
             {isNavigating && (
-              <p className="text-[9px] opacity-70 mt-1">
+              <p className="text-[10px] opacity-70 mt-1">
                 Crew is navigating in the Yugo app
               </p>
             )}

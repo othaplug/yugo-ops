@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getLegalBranding } from "@/lib/legal-branding";
 import B2BDeliveryTrackClient from "./B2BDeliveryTrackClient";
 
 export const metadata: Metadata = {
@@ -78,13 +79,15 @@ export default async function B2BDeliveryTrackPage({
       ? pod.signature_data
       : null);
 
-  const [[pickupCoords, dropoffCoords], googleReviewUrl] = await Promise.all([
-    Promise.all([
-      pickupAddr ? geocode(pickupAddr) : null,
-      dropoffAddr ? geocode(dropoffAddr) : null,
-    ]),
-    Promise.resolve(reviewCfg.data?.value || null),
-  ]);
+  const [[pickupCoords, dropoffCoords], googleReviewUrl, { email: companyContactEmail }] =
+    await Promise.all([
+      Promise.all([
+        pickupAddr ? geocode(pickupAddr) : null,
+        dropoffAddr ? geocode(dropoffAddr) : null,
+      ]),
+      Promise.resolve(reviewCfg.data?.value || null),
+      getLegalBranding(),
+    ]);
 
   return (
     <B2BDeliveryTrackClient
@@ -96,6 +99,7 @@ export default async function B2BDeliveryTrackPage({
       initialDropoff={dropoffCoords}
       googleReviewUrl={googleReviewUrl}
       podImageUrl={podImageUrl}
+      companyContactEmail={companyContactEmail}
     />
   );
 }

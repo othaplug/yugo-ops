@@ -76,7 +76,7 @@ export default function TipSection({
           >
             Tip your crew
           </h3>
-          <p className="text-[10px] mt-0.5" style={{ color: FOREST, opacity: 0.6 }}>
+          <p className="text-[11px] mt-0.5" style={{ color: FOREST, opacity: 0.6 }}>
             100% of tips go to your movers
           </p>
         </div>
@@ -101,7 +101,7 @@ export default function TipSection({
                 }}
               >
                 <div
-                  className="text-[13px] font-normal leading-tight"
+                  className="text-[14px] font-normal leading-tight"
                   style={{ color: isSelected ? WINE : FOREST }}
                 >
                   ${total}
@@ -117,7 +117,7 @@ export default function TipSection({
             <button
               type="button"
               onClick={() => setShowCustomAmount(true)}
-              className="text-[10px] transition-opacity hover:opacity-80 active:opacity-70"
+              className="text-[11px] transition-opacity hover:opacity-80 active:opacity-70"
               style={{ color: FOREST, opacity: 0.55 }}
             >
               Add custom tip
@@ -126,7 +126,7 @@ export default function TipSection({
         ) : (
           <div className="flex items-center gap-2 max-w-[180px] mx-auto">
             <span
-              className="text-[10px] shrink-0"
+              className="text-[11px] shrink-0"
               style={{ color: FOREST, opacity: 0.55 }}
             >
               Custom amount
@@ -138,7 +138,7 @@ export default function TipSection({
                 backgroundColor: "transparent",
               }}
             >
-              <span className="text-[11px] font-normal mr-0.5" style={{ color: FOREST, opacity: 0.5 }}>$</span>
+              <span className="text-[12px] font-normal mr-0.5" style={{ color: FOREST, opacity: 0.5 }}>$</span>
               <input
                 type="number"
                 min={5}
@@ -149,7 +149,7 @@ export default function TipSection({
                   setCustomAmount(e.target.value.replace(/[^0-9.]/g, ""));
                   setSelectedTotal(null);
                 }}
-                className="flex-1 bg-transparent text-[12px] font-normal outline-none min-w-0 placeholder:opacity-40"
+                className="flex-1 bg-transparent text-[13px] font-normal outline-none min-w-0 placeholder:opacity-40"
                 style={{ color: FOREST }}
               />
             </div>
@@ -157,7 +157,7 @@ export default function TipSection({
         )}
 
         {error && (
-          <p className="text-[11px] text-red-600 text-center">{error}</p>
+          <p className="text-[12px] text-red-600 text-center">{error}</p>
         )}
 
         {/* CTA, smaller */}
@@ -165,7 +165,7 @@ export default function TipSection({
           type="button"
           onClick={handleSubmit}
           disabled={submitting || currentAmount < 5}
-          className="w-full max-w-[150px] mx-auto rounded-lg py-2.5 text-[12px] font-semibold transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 block"
+          className="w-full max-w-[150px] mx-auto rounded-lg py-2.5 text-[13px] font-semibold transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 block"
           style={{
             backgroundColor: GOLD,
             color: "#fafafa",
@@ -181,7 +181,7 @@ export default function TipSection({
         <button
           type="button"
           onClick={handleSkip}
-          className="w-full text-center text-[11px] py-0.5 transition-opacity hover:opacity-80"
+          className="w-full text-center text-[12px] py-0.5 transition-opacity hover:opacity-80"
           style={{ color: "#6B7280" }}
         >
           Skip for now

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import YugoLogo from "@/components/YugoLogo";
+import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import SeasonalPricingPreview from "@/components/SeasonalPricingPreview";
 import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
@@ -1852,15 +1853,18 @@ export default function QuoteWidgetClient() {
 
         {/* ── Footer ── */}
         <div className="px-6 pb-5 pt-1">
-          <div
-            className="flex items-center justify-center gap-1.5"
-            style={{ opacity: 0.3 }}
-          >
-            <span className="text-[9px] font-medium" style={{ color: FOREST }}>
-              Powered by
-            </span>
-            <YugoLogo size={10} variant="gold" onLightBackground hidePlus />
-          </div>
+          <YugoMarketingFooter
+            contactEmail={
+              process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com"
+            }
+            logoVariant="gold"
+            onLightBackground
+            logoSize={10}
+            mutedColor={`${FOREST}99`}
+            linkColor={FOREST}
+            taglineClassName="text-[9px] font-medium tracking-wide"
+            navClassName="text-[9px]"
+          />
         </div>
       </div>
     </div>

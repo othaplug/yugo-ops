@@ -38,10 +38,10 @@ interface Props {
 
 const STOP_STATUS_CONFIG: Record<string, { label: string; icon: string; color: string; bg: string }> = {
   pending:     { label: "Pending",     icon: "circle",    color: "#9CA3AF", bg: "rgba(156,163,175,0.1)" },
-  current:     { label: "Up Next",     icon: "clock",     color: "#F59E0B", bg: "rgba(245,158,11,0.12)" },
-  arrived:     { label: "Arrived",     icon: "map-pin",   color: "#3B82F6", bg: "rgba(59,130,246,0.12)" },
-  in_progress: { label: "In Progress", icon: "dot-active",color: "#10B981", bg: "rgba(16,185,129,0.12)" },
-  completed:   { label: "Done",        icon: "check",     color: "#22C55E", bg: "rgba(34,197,94,0.1)" },
+  current:     { label: "Up Next",     icon: "clock",     color: "#B45309", bg: "rgba(180,83,9,0.12)" },
+  arrived:     { label: "Arrived",     icon: "map-pin",   color: "#2563EB", bg: "rgba(37,99,235,0.12)" },
+  in_progress: { label: "In Progress", icon: "dot-active",color: "#2C3E2D", bg: "rgba(44,62,45,0.12)" },
+  completed:   { label: "Done",        icon: "check",     color: "#243524", bg: "rgba(44,62,45,0.1)" },
   skipped:     { label: "Skipped",     icon: "skip",      color: "#6B7280", bg: "rgba(107,114,128,0.1)" },
 };
 
@@ -81,7 +81,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
       <div className="bg-[var(--card)] rounded-2xl p-4 border border-[var(--brd)]">
         <div className="flex items-center justify-between mb-1">
           <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">Day Rate</span>
-          <span className="text-[10px] font-semibold text-[var(--gold)] px-2 py-0.5 rounded-full bg-[var(--gold)]/10">
+          <span className="text-[10px] font-semibold text-[#5C1A33] px-2 py-0.5 rounded-full bg-[#5C1A33]/10">
             {completedCount}/{totalCount} stops
           </span>
         </div>
@@ -95,7 +95,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
             className="h-full rounded-full transition-all duration-700"
             style={{
               width: `${totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%`,
-              background: completedCount === totalCount ? "linear-gradient(90deg,#22C55E,#16A34A)" : "linear-gradient(90deg,#2C3E2D,#D4B56C)",
+              background: completedCount === totalCount ? "linear-gradient(90deg,#2C3E2D,#243524)" : "linear-gradient(90deg,#2C3E2D,#3d5240)",
             }}
           />
         </div>
@@ -119,8 +119,8 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
           return (
             <div
               key={stop.id}
-              className={`rounded-2xl border transition-all ${isCurrent ? "border-[#10B981]/40 shadow-sm" : "border-[var(--brd)]"}`}
-              style={{ background: isCurrent ? "rgba(16,185,129,0.04)" : "var(--card)" }}
+              className={`rounded-2xl border transition-all ${isCurrent ? "border-[#2C3E2D]/35 shadow-sm" : "border-[var(--brd)]"}`}
+              style={{ background: isCurrent ? "rgba(44,62,45,0.05)" : "var(--card)" }}
             >
               <button
                 type="button"
@@ -157,7 +157,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                     )}
                   </div>
                   {isDone && stop.completed_at && (
-                    <span className="text-[9px] text-[#22C55E] shrink-0">
+                    <span className="text-[9px] text-[#243524] shrink-0">
                       {new Date(stop.completed_at).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   )}
@@ -176,7 +176,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                       {(stop.customer_phone || stop.client_phone) && (
                         <a
                           href={`tel:${stop.customer_phone || stop.client_phone}`}
-                          className="text-[11px] text-[var(--gold)] hover:underline"
+                          className="text-[11px] text-[#5C1A33] hover:underline"
                         >
                           {stop.customer_phone || stop.client_phone}
                         </a>
@@ -199,7 +199,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           type="button"
                           onClick={() => advanceStop(stop.id, "arrived")}
                           disabled={advancing === stop.id}
-                          className="px-3 py-1.5 text-[11px] font-semibold bg-[#3B82F6] text-white disabled:opacity-50"
+                          className="px-3 py-1.5 text-[11px] font-semibold bg-[#2563EB] text-white disabled:opacity-50"
                         >
                           {advancing === stop.id ? "…" : "Arrived"}
                         </button>
@@ -209,7 +209,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           type="button"
                           onClick={() => advanceStop(stop.id, "in_progress")}
                           disabled={advancing === stop.id}
-                          className="px-3 py-1.5 text-[11px] font-semibold bg-[#F59E0B] text-white disabled:opacity-50"
+                          className="px-3 py-1.5 text-[11px] font-semibold bg-[#B45309] text-white disabled:opacity-50"
                         >
                           {advancing === stop.id ? "…" : stop.stop_type === "pickup" ? "Loading" : "Unloading"}
                         </button>
@@ -220,7 +220,7 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                           onClick={() => advanceStop(stop.id, "completed")}
                           disabled={advancing === stop.id}
                           className="px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
-                          style={{ background: "linear-gradient(135deg,#22C55E,#16A34A)" }}
+                          style={{ background: "linear-gradient(135deg,#2C3E2D,#243524)" }}
                         >
                           {advancing === stop.id ? "…" : "Complete stop →"}
                         </button>
@@ -234,14 +234,14 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
                       type="button"
                       onClick={() => advanceStop(stop.id, "current")}
                       disabled={advancing === stop.id}
-                      className="px-3 py-1.5 text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+                      className="crew-premium-cta px-3 py-1.5 text-[11px] font-semibold text-white border border-[#2C3E2D]/30 disabled:opacity-50"
                     >
                       {advancing === stop.id ? "…" : "Start This Stop"}
                     </button>
                   )}
 
                   {isDone && (
-                    <div className="flex items-center gap-2 text-[10px] text-[#22C55E]">
+                    <div className="flex items-center gap-2 text-[10px] text-[#243524]">
                       <Check size={14} weight="bold" />
                       Completed {stop.completed_at ? `at ${new Date(stop.completed_at).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" })}` : ""}
                     </div>
@@ -254,8 +254,8 @@ export default function DayRateStopFlow({ stops, delivery, partnerName, vehicleT
       </div>
 
       {completedCount === totalCount && totalCount > 0 && (
-        <div className="rounded-2xl p-4 text-center border border-[#22C55E]/30" style={{ background: "rgba(34,197,94,0.06)" }}>
-          <p className="text-[#22C55E] font-bold text-[var(--text-base)]">All {totalCount} stops completed!</p>
+        <div className="rounded-2xl p-4 text-center border border-[#2C3E2D]/30" style={{ background: "rgba(44,62,45,0.06)" }}>
+          <p className="text-[#243524] font-bold text-[var(--text-base)]">All {totalCount} stops completed!</p>
           <p className="text-[11px] text-[var(--tx3)] mt-1">Day rate job is done. Great work!</p>
         </div>
       )}

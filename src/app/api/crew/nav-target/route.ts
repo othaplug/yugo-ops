@@ -10,6 +10,18 @@ function normalizeStatus(raw: string, jobType: "move" | "delivery"): string {
   return jobType === "delivery" ? normalizeDeliveryStatus(raw) : raw;
 }
 
+/** Sidebar Navigation is enabled when the crew is likely driving between stops (or legacy status strings). */
+function sessionAllowsNavLink(raw: string, jobType: "move" | "delivery"): boolean {
+  const normalized = normalizeStatus(String(raw || ""), jobType);
+  if (NAV_STATUSES.has(normalized)) return true;
+  const r = String(raw || "")
+    .trim()
+    .toLowerCase();
+  if (r === "on_route" || r === "en_route") return true;
+  if (jobType === "delivery" && r === "delivering") return true;
+  return false;
+}
+
 /** GET — crew deep link to open turn-by-turn navigation for the active en-route session (if any). */
 export async function GET() {
   const cookieStore = await cookies();
@@ -34,8 +46,7 @@ export async function GET() {
   for (const row of rows || []) {
     const jobType = row.job_type as "move" | "delivery";
     if (jobType !== "move" && jobType !== "delivery") continue;
-    const st = normalizeStatus(String(row.status || ""), jobType);
-    if (!NAV_STATUSES.has(st)) continue;
+    if (!sessionAllowsNavLink(String(row.status || ""), jobType)) continue;
 
     const jobId = String(row.job_id || "").trim();
     if (!jobId) continue;

@@ -10,6 +10,7 @@ import { createClientReferralIfNeeded } from "@/lib/client-referral";
 import { generateMovePDFs } from "@/lib/documents/generateMovePDFs";
 import { calcActualMargin } from "@/lib/pricing/engine";
 import { collectCalibrationData } from "@/lib/learning/engine";
+import { applyEstateServiceChecklistAutomation } from "@/lib/estate-service-checklist-sync";
 
 /**
  * When admin marks a move as completed in the UI, this endpoint sends the
@@ -112,6 +113,10 @@ export async function POST(
   // 6. Learning engine — fire-and-forget calibration data collection
   collectCalibrationData(moveId).catch((e) =>
     console.error("[notify-complete] calibration data collection failed:", e)
+  );
+
+  applyEstateServiceChecklistAutomation(admin, moveId).catch((e) =>
+    console.error("[notify-complete] estate checklist sync failed:", e),
   );
 
   return NextResponse.json({

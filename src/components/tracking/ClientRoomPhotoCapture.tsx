@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Camera, Image as ImageIcon, X, Check, Plus, Warning } from "@phosphor-icons/react";
-import { WINE, FOREST, GOLD } from "@/lib/client-theme";
+import { WINE, FOREST } from "@/lib/client-theme";
 
 const CREAM = "#F9EDE4";
 
@@ -115,15 +115,18 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
         <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: `${GOLD}15` }}
+            style={{ background: `${FOREST}12` }}
           >
-            <Camera size={18} color={GOLD} weight="fill" />
+            <Camera size={18} color={FOREST} weight="fill" />
           </div>
           <div>
             <div className="text-[13px] font-bold" style={{ color: FOREST }}>
               Room Photos
             </div>
-            <div className="text-[11px] opacity-50 mt-0.5" style={{ color: FOREST }}>
+            <div
+              className="text-[11px] mt-0.5"
+              style={{ color: "#4F4B47" }}
+            >
               {uploadedCount === 0
                 ? "Help your crew prepare, optional"
                 : `${uploadedCount} of ${total} rooms captured`}
@@ -134,7 +137,7 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
           {uploadedCount > 0 && (
             <div
               className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{ background: `${GOLD}15`, color: WINE }}
+              style={{ background: `${FOREST}12`, color: WINE }}
             >
               {uploadedCount}/{total}
             </div>
@@ -147,7 +150,10 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
 
       {!collapsed && (
         <div className="px-4 pb-4 space-y-2">
-          <p className="text-[11px] leading-relaxed mb-3" style={{ color: `${FOREST}60` }}>
+          <p
+            className="text-[11px] leading-relaxed mb-3"
+            style={{ color: "#4F4B47" }}
+          >
             Take a quick photo of each room before the move. This helps your crew plan the truck load and reduces surprises.
           </p>
 
@@ -157,7 +163,7 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
                 key={room.key}
                 className="relative rounded-xl overflow-hidden border"
                 style={{
-                  borderColor: room.uploaded ? `${GOLD}30` : `${FOREST}12`,
+                  borderColor: room.uploaded ? `${FOREST}30` : `${FOREST}18`,
                   background: room.dataUrl ? "transparent" : `${FOREST}04`,
                   aspectRatio: "4/3",
                 }}
@@ -222,8 +228,11 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
                       className="hidden"
                       onChange={(e) => handleFileChange(room.key, e.target.files?.[0] ?? null)}
                     />
-                    <Plus size={18} color={`${FOREST}30`} weight="bold" />
-                    <span className="text-[10px] font-semibold mt-1.5 text-center leading-tight" style={{ color: `${FOREST}50` }}>
+                    <Plus size={18} color={FOREST} weight="bold" className="opacity-70" />
+                    <span
+                      className="text-[10px] font-semibold mt-1.5 text-center leading-tight"
+                      style={{ color: "#2C3E2D" }}
+                    >
                       {room.label}
                     </span>
                     {room.error && (
@@ -240,9 +249,17 @@ export default function ClientRoomPhotoCapture({ moveId, token, initialPhotos = 
           {uploadedCount >= 4 && (
             <div
               className="flex items-start gap-2.5 rounded-xl p-3 mt-2"
-              style={{ background: `${GOLD}08`, border: `1px solid ${GOLD}25` }}
+              style={{
+                background: `${FOREST}08`,
+                border: `1px solid ${FOREST}22`,
+              }}
             >
-              <Check size={14} color={GOLD} weight="bold" className="mt-0.5 shrink-0" />
+              <Check
+                size={14}
+                color={FOREST}
+                weight="bold"
+                className="mt-0.5 shrink-0"
+              />
               <p className="text-[11px] leading-relaxed" style={{ color: FOREST }}>
                 Great job! Your crew has been notified and will review these before arrival.
               </p>

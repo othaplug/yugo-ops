@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getLegalBranding } from "@/lib/legal-branding";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isMoveIdUuid } from "@/lib/move-code";
 import { isFeatureEnabled, getFeatureConfig } from "@/lib/platform-settings";
@@ -178,9 +179,12 @@ export default async function TrackMovePage({
   else if (!hoursOk) inventoryChangeReason = `Changes must be submitted before move day.`;
   else if (!noPending) inventoryChangeReason = "You already have a pending inventory change request.";
 
+  const { email: companyContactEmail } = await getLegalBranding();
+
   return (
     <TrackMoveClient
       move={move}
+      companyContactEmail={companyContactEmail}
       crew={crew}
       token={token || ""}
       fromNotify={from === "notify"}

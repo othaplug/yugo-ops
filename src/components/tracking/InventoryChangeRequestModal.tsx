@@ -210,14 +210,14 @@ export default function InventoryChangeRequestModal({
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {step === 1 && (
             <div className="space-y-4">
-              <p className="text-[11px] leading-relaxed opacity-75" style={{ color: FOREST }}>
+              <p className="text-[12px] leading-relaxed opacity-75" style={{ color: FOREST }}>
                 Search our catalog or add a custom item. Estimated pricing uses your coordinator&apos;s standard rates.
               </p>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search items…"
-                className="w-full rounded-xl border px-3 py-2.5 text-[13px] outline-none"
+                className="w-full rounded-xl border px-3 py-2.5 text-[14px] outline-none"
                 style={{ borderColor: `${FOREST}20`, backgroundColor: "#F9EDE4", color: FOREST }}
               />
               {searchHits.length > 0 && (
@@ -227,7 +227,7 @@ export default function InventoryChangeRequestModal({
                       <button
                         type="button"
                         onClick={() => addCatalogItem(w)}
-                        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-[12px] hover:bg-black/[0.03]"
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-[13px] hover:bg-black/[0.03]"
                         style={{ color: FOREST }}
                       >
                         <span className="font-medium">{w.item_name}</span>
@@ -238,20 +238,20 @@ export default function InventoryChangeRequestModal({
                 </ul>
               )}
               <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: `${GOLD}30`, backgroundColor: `${GOLD}08` }}>
-                <div className="text-[9px] font-bold uppercase tracking-wider opacity-60" style={{ color: FOREST }}>
+                <div className="text-[10px] font-bold uppercase tracking-wider opacity-60" style={{ color: FOREST }}>
                   Can&apos;t find your item?
                 </div>
                 <input
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
                   placeholder="Item name"
-                  className="w-full rounded-lg border px-3 py-2 text-[12px]"
+                  className="w-full rounded-lg border px-3 py-2 text-[13px]"
                   style={{ borderColor: `${FOREST}18`, backgroundColor: "#fff", color: FOREST }}
                 />
                 <select
                   value={customClass}
                   onChange={(e) => setCustomClass(e.target.value as CustomWeightClass)}
-                  className="w-full rounded-lg border px-3 py-2 text-[12px]"
+                  className="w-full rounded-lg border px-3 py-2 text-[13px]"
                   style={{ borderColor: `${FOREST}18`, backgroundColor: "#fff", color: FOREST }}
                 >
                   <option value="light">Light</option>
@@ -263,7 +263,7 @@ export default function InventoryChangeRequestModal({
                   type="button"
                   onClick={addCustomItem}
                   disabled={!customName.trim()}
-                  className="w-full py-2 rounded-lg text-[11px] font-bold disabled:opacity-40"
+                  className="w-full py-2 rounded-lg text-[12px] font-bold disabled:opacity-40"
                   style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
                 >
                   Add custom item
@@ -271,7 +271,7 @@ export default function InventoryChangeRequestModal({
               </div>
               {added.length > 0 && (
                 <div>
-                  <div className="text-[9px] font-bold uppercase tracking-wider opacity-50 mb-2" style={{ color: FOREST }}>
+                  <div className="text-[10px] font-bold uppercase tracking-wider opacity-50 mb-2" style={{ color: FOREST }}>
                     Adding
                   </div>
                   <ul className="space-y-2">
@@ -281,7 +281,7 @@ export default function InventoryChangeRequestModal({
                         className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2"
                         style={{ borderColor: `${FOREST}12` }}
                       >
-                        <span className="text-[12px] font-medium flex-1 min-w-0 truncate" style={{ color: FOREST }}>
+                        <span className="text-[13px] font-medium flex-1 min-w-0 truncate" style={{ color: FOREST }}>
                           {a.item_name}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
@@ -299,7 +299,7 @@ export default function InventoryChangeRequestModal({
                           >
                             <Minus size={12} />
                           </button>
-                          <span className="text-[11px] w-6 text-center font-semibold" style={{ color: FOREST }}>
+                          <span className="text-[12px] w-6 text-center font-semibold" style={{ color: FOREST }}>
                             {a.quantity}
                           </span>
                           <button
@@ -318,7 +318,7 @@ export default function InventoryChangeRequestModal({
                           </button>
                           <button
                             type="button"
-                            className="ml-1 text-[10px] font-semibold opacity-50"
+                            className="ml-1 text-[11px] font-semibold opacity-50"
                             style={{ color: "#B83030" }}
                             onClick={() => setAdded((prev) => prev.filter((x) => x.key !== a.key))}
                           >
@@ -335,11 +335,11 @@ export default function InventoryChangeRequestModal({
 
           {step === 2 && (
             <div className="space-y-3">
-              <p className="text-[11px] leading-relaxed opacity-75" style={{ color: FOREST }}>
+              <p className="text-[12px] leading-relaxed opacity-75" style={{ color: FOREST }}>
                 Tap a line to mark it for removal. Your coordinator will confirm.
               </p>
               {inventoryLines.length === 0 ? (
-                <p className="text-[12px] opacity-60" style={{ color: FOREST }}>
+                <p className="text-[13px] opacity-60" style={{ color: FOREST }}>
                   No inventory on file yet. Skip to review if you only need to add items.
                 </p>
               ) : (
@@ -351,7 +351,7 @@ export default function InventoryChangeRequestModal({
                         <button
                           type="button"
                           onClick={() => toggleRemoveLine(line)}
-                          className="w-full text-left rounded-xl border px-3 py-2.5 text-[12px] font-medium transition-colors"
+                          className="w-full text-left rounded-xl border px-3 py-2.5 text-[13px] font-medium transition-colors"
                           style={{
                             borderColor: on ? GOLD : `${FOREST}15`,
                             backgroundColor: on ? `${GOLD}12` : "transparent",
@@ -359,7 +359,7 @@ export default function InventoryChangeRequestModal({
                           }}
                         >
                           {line.item_name}
-                          {on && <span className="block text-[10px] opacity-60 mt-0.5">Marked for removal</span>}
+                          {on && <span className="block text-[11px] opacity-60 mt-0.5">Marked for removal</span>}
                         </button>
                       </li>
                     );
@@ -372,27 +372,27 @@ export default function InventoryChangeRequestModal({
           {step === 3 && (
             <div className="space-y-3">
               <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: `${FOREST}12` }}>
-                <div className="flex justify-between text-[12px]" style={{ color: FOREST }}>
+                <div className="flex justify-between text-[13px]" style={{ color: FOREST }}>
                   <span className="opacity-70">Current total</span>
                   <span className="font-semibold">{formatCurrency(currentSubtotal)}</span>
                 </div>
-                <div className="flex justify-between text-[12px]" style={{ color: FOREST }}>
+                <div className="flex justify-between text-[13px]" style={{ color: FOREST }}>
                   <span className="opacity-70">Estimated change</span>
                   <span className="font-semibold" style={{ color: netDelta >= 0 ? GOLD : "#2D9F5A" }}>
                     {netDelta >= 0 ? "+" : ""}
                     {formatCurrency(netDelta)}
                   </span>
                 </div>
-                <div className="border-t pt-2 flex justify-between text-[13px] font-bold" style={{ borderColor: `${FOREST}10`, color: WINE }}>
+                <div className="border-t pt-2 flex justify-between text-[14px] font-bold" style={{ borderColor: `${FOREST}10`, color: WINE }}>
                   <span>Estimated new total</span>
                   <span>{formatCurrency(currentSubtotal + netDelta)}</span>
                 </div>
               </div>
-              <p className="text-[10px] leading-relaxed opacity-60" style={{ color: FOREST }}>
+              <p className="text-[11px] leading-relaxed opacity-60" style={{ color: FOREST }}>
                 Final pricing is confirmed by your coordinator. Truck size or crew may need to change if volume increases.
               </p>
               {error && (
-                <div className="text-[11px] font-medium px-3 py-2 rounded-lg" style={{ backgroundColor: "rgba(209,67,67,0.08)", color: "#B83030" }}>
+                <div className="text-[12px] font-medium px-3 py-2 rounded-lg" style={{ backgroundColor: "rgba(209,67,67,0.08)", color: "#B83030" }}>
                   {error}
                 </div>
               )}
@@ -405,7 +405,7 @@ export default function InventoryChangeRequestModal({
             <button
               type="button"
               onClick={() => setStep((s) => (s === 3 ? 2 : 1))}
-              className="flex-1 py-2.5 rounded-xl border text-[12px] font-semibold"
+              className="flex-1 py-2.5 rounded-xl border text-[13px] font-semibold"
               style={{ borderColor: `${FOREST}20`, color: FOREST }}
             >
               Back
@@ -414,7 +414,7 @@ export default function InventoryChangeRequestModal({
             <button
               type="button"
               onClick={close}
-              className="flex-1 py-2.5 rounded-xl border text-[12px] font-semibold"
+              className="flex-1 py-2.5 rounded-xl border text-[13px] font-semibold"
               style={{ borderColor: `${FOREST}20`, color: FOREST }}
             >
               Cancel
@@ -424,7 +424,7 @@ export default function InventoryChangeRequestModal({
             <button
               type="button"
               onClick={() => setStep((s) => (s === 1 ? 2 : 3))}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-bold"
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-bold"
               style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
             >
               Continue
@@ -434,7 +434,7 @@ export default function InventoryChangeRequestModal({
               type="button"
               onClick={submit}
               disabled={submitting}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-bold disabled:opacity-50"
               style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
             >
               {submitting ? "Submitting…" : "Submit request"}

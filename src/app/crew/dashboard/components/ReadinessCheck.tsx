@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { CaretRight } from "@phosphor-icons/react";
 
 const FALLBACK_ITEMS = [
   { label: "Vehicle in good condition", status: "ok" as const, note: null as string | null },
@@ -33,18 +34,6 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const toggleItem = (index: number) => {
-    setItems((prev) => {
-      const next = [...prev];
-      next[index] = {
-        ...next[index],
-        status: next[index].status === "ok" ? "issue" : "ok",
-        note: next[index].status === "ok" ? next[index].note : null,
-      };
-      return next;
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -73,37 +62,44 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
 
   const flaggedCount = items.filter((i) => i.status === "issue").length;
 
+  const toggleBase =
+    "min-h-9 min-w-[80px] px-3 py-2 text-[10px] font-bold uppercase leading-none tracking-[0.12em] border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]";
+
   if (loading) {
     return (
-      <div className="max-w-[420px] mx-auto rounded-xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
-        <p className="text-[13px] text-[var(--tx3)]">Loading readiness check…</p>
+      <div className="max-w-[420px] mx-auto border border-[var(--brd)] bg-[var(--card)] p-8 text-center">
+        <p className="text-[13px] text-[rgba(255,255,255,0.55)]">Loading readiness check…</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-[420px] mx-auto">
-      <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
+      <div className="border border-[var(--brd)] bg-[var(--card)] overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--brd)] bg-[var(--bg2)]">
           <h2 className="font-hero text-[26px] font-bold text-[var(--tx)]">Pre-Trip Readiness Check</h2>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">Quick 60-second check before starting the day</p>
+          <p className="text-[11px] text-[rgba(255,255,255,0.55)] mt-0.5 leading-relaxed">
+            Quick 60-second check before starting the day
+          </p>
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4">
           <div className="space-y-2">
             {items.map((item, i) => (
               <div
                 key={item.label}
-                className="flex items-center justify-between gap-3 py-2.5 px-4 rounded-lg border border-[var(--brd)] bg-[var(--bg)]"
+                className="flex items-center justify-between gap-3 py-3 px-4 border border-[var(--brd)] bg-[var(--bg)]"
               >
-                <span className="text-[13px] text-[var(--tx)]">{item.label}</span>
-                <div className="flex gap-2">
+                <span className="min-w-0 flex-1 text-[13px] leading-snug text-[rgba(255,250,245,0.92)]">
+                  {item.label}
+                </span>
+                <div className="flex shrink-0 gap-2">
                   <button
                     type="button"
                     onClick={() => setItems((p) => p.map((x, j) => (j === i ? { ...x, status: "ok" as const } : x)))}
-                    className={`px-3 py-1 rounded text-[11px] font-semibold transition-colors ${
+                    className={`${toggleBase} ${
                       item.status === "ok"
-                        ? "bg-[var(--grn)]/20 text-[var(--grn)] border border-[var(--grn)]/40"
-                        : "bg-transparent text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--grn)]/40"
+                        ? "border-[#2C3E2D] bg-[#2C3E2D] text-[rgba(255,250,245,0.96)]"
+                        : "border-[rgba(255,255,255,0.2)] bg-transparent text-[rgba(255,255,255,0.45)] hover:border-[rgba(255,255,255,0.32)] hover:text-[rgba(255,250,245,0.85)]"
                     }`}
                   >
                     OK
@@ -111,10 +107,10 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
                   <button
                     type="button"
                     onClick={() => setItems((p) => p.map((x, j) => (j === i ? { ...x, status: "issue" as const } : x)))}
-                    className={`px-3 py-1 rounded text-[11px] font-semibold transition-colors ${
+                    className={`${toggleBase} ${
                       item.status === "issue"
-                        ? "bg-[var(--org)]/20 text-[var(--org)] border border-[var(--org)]/40"
-                        : "bg-transparent text-[var(--tx3)] border border-[var(--brd)] hover:border-[var(--org)]/40"
+                        ? "border-[#ef4444] bg-[#7f1d1d] text-[rgba(255,250,245,0.96)]"
+                        : "border-[rgba(255,255,255,0.2)] bg-transparent text-[rgba(255,255,255,0.45)] hover:border-[rgba(248,113,113,0.45)] hover:text-[#fca5a5]"
                     }`}
                   >
                     Issue
@@ -124,7 +120,7 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
             ))}
           </div>
           <div>
-            <label className="block text-[10px] font-semibold text-[var(--tx3)] mb-1.5 uppercase tracking-wider">
+            <label className="block text-[10px] font-bold text-[rgba(255,255,255,0.55)] mb-1.5 uppercase tracking-[0.12em] leading-none">
               Note (optional)
             </label>
             <input
@@ -132,23 +128,32 @@ export default function ReadinessCheck({ onComplete }: ReadinessCheckProps) {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Any notes about today's setup..."
-              className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg)] border border-[var(--brd)] text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] focus:border-[var(--brd)] outline-none"
+              className="w-full px-3 py-2.5 border border-[var(--brd)] bg-[var(--bg)] text-[13px] text-[rgba(255,250,245,0.92)] placeholder:text-[rgba(255,255,255,0.38)] outline-none focus-visible:border-[rgba(92,26,51,0.45)] focus-visible:ring-1 focus-visible:ring-[#5C1A33]/35"
             />
           </div>
           {error && (
-            <div className="text-[12px] text-[var(--red)] bg-[var(--red)]/10 px-3 py-2 rounded-lg">{error}</div>
+            <div className="text-[12px] text-[var(--red)] bg-[var(--red)]/10 px-3 py-2 border border-[var(--red)]/25">
+              {error}
+            </div>
           )}
           {flaggedCount > 0 && (
-            <p className="text-[11px] text-[var(--org)]">
+            <p className="text-[11px] text-[#fca5a5]">
               {flaggedCount} item{flaggedCount > 1 ? "s" : ""} flagged, dispatch will be notified
             </p>
           )}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-2 font-semibold text-[var(--text-base)] text-[var(--btn-text-on-accent)] bg-[var(--gold)] hover:bg-[var(--gold2)] disabled:opacity-50 transition-colors"
+            className="crew-premium-cta flex w-full min-h-12 items-center justify-center gap-1.5 px-4 py-3 font-bold text-[10px] uppercase leading-none tracking-[0.12em] text-white border border-[#2C3E2D]/30 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5C1A33]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)]"
           >
-            {submitting ? "Submitting…" : "Complete & Continue"}
+            {submitting ? (
+              "Submitting…"
+            ) : (
+              <>
+                Complete & continue
+                <CaretRight size={12} weight="bold" className="shrink-0 opacity-90" aria-hidden />
+              </>
+            )}
           </button>
         </form>
       </div>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { WINE, FOREST, GOLD } from "@/lib/client-theme";
-import { GoogleLogo, Star } from "@phosphor-icons/react";
+import { WINE, FOREST, TEXT_MUTED_ON_LIGHT } from "@/lib/client-theme";
+import { CaretRight, Star } from "@phosphor-icons/react";
 
 interface ExperienceRatingSectionProps {
   moveId: string;
@@ -181,7 +181,7 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
   if (loading || !fetchState) {
     return (
       <div className="flex justify-center py-6">
-        <div className="text-[12px] opacity-50" style={{ color: FOREST }}>
+        <div className="text-[14px] opacity-60" style={{ color: FOREST }}>
           Loading…
         </div>
       </div>
@@ -203,12 +203,12 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
 
   return (
     <div className="flex flex-col items-center text-center max-w-[320px] mx-auto w-full py-4">
-      <h3
-        className="font-hero text-[20px] font-semibold leading-tight mb-4"
+      <h2
+        className="font-hero text-[26px] sm:text-[30px] font-semibold leading-tight mb-4"
         style={{ color: WINE }}
       >
         How was your experience?
-      </h3>
+      </h2>
 
       {/* Stars row: swipe/tap to select; persist only when user clicks Google or submits feedback */}
       <div
@@ -242,9 +242,9 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
                 setSelectedRating(value);
                 setError(null);
               }}
-              className="p-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[var(--gold)] disabled:opacity-70 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="p-2 rounded-full transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#2C3E2D]/35 disabled:opacity-70 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
               style={{
-                color: filled ? GOLD : `${FOREST}40`,
+                color: filled ? FOREST : `${FOREST}40`,
                 backgroundColor: "transparent",
                 transform: isCurrent && isInteractive ? "scale(1.15)" : "scale(1)",
                 ...(isInteractive ? { cursor: "pointer" } : { cursor: "default" }),
@@ -258,7 +258,7 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
       </div>
 
       {error && (
-        <p className="text-[11px] text-red-600 mb-2">{error}</p>
+        <p className="text-[13px] text-red-600 mb-2">{error}</p>
       )}
 
       {/* After star selection: 4-5 show Google CTA (saves on click); 1-3 show feedback form */}
@@ -266,11 +266,17 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
         <div className="mt-4 w-full space-y-3">
           {isHighRating && (
             <>
-              <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+              <p
+                className="text-[15px] font-medium leading-relaxed"
+                style={{ color: FOREST }}
+              >
                 We&apos;re glad you had a great experience!
               </p>
               {fetchState.reviewClicked ? (
-                <p className="text-[11px] opacity-70" style={{ color: FOREST }}>
+                <p
+                  className="text-[13px] leading-snug"
+                  style={{ color: TEXT_MUTED_ON_LIGHT }}
+                >
                   Thanks for leaving a review!
                 </p>
               ) : (selectedRating ?? 0) >= 4 ? (
@@ -278,11 +284,15 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
                   type="button"
                   onClick={handleLeaveReviewClick}
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full text-[12px] font-semibold border transition-all hover:opacity-80 disabled:opacity-60"
-                  style={{ borderColor: `${GOLD}40`, color: GOLD, backgroundColor: `${GOLD}08` }}
+                  className="inline-flex items-center justify-center gap-1.5 mt-4 px-4 py-2.5 rounded-none text-[13px] font-bold uppercase tracking-[0.12em] leading-none transition-[filter,opacity] hover:brightness-95 active:brightness-90 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 [font-family:var(--font-body)]"
+                  style={{
+                    backgroundColor: FOREST,
+                    color: "#F9EDE4",
+                    outlineColor: FOREST,
+                  }}
                 >
-                  <GoogleLogo size={14} className="shrink-0" aria-hidden />
-                  {submitting ? "Saving…" : "Leave a Google Review"}
+                  {submitting ? "Saving…" : "Leave a Google review"}
+                  <CaretRight size={14} weight="bold" className="shrink-0 text-current" aria-hidden />
                 </button>
               ) : null}
             </>
@@ -290,7 +300,10 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
 
           {isLowRating && (
             <>
-              <p className="text-[13px] font-medium" style={{ color: FOREST }}>
+              <p
+                className="text-[15px] font-medium leading-relaxed"
+                style={{ color: FOREST }}
+              >
                 We&apos;re sorry to hear that. How can we improve?
               </p>
               {!feedbackSubmitted ? (
@@ -300,7 +313,7 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
                     onChange={(e) => setFeedback(e.target.value)}
                     placeholder="Your feedback (optional)"
                     rows={3}
-                    className="w-full rounded-lg border px-3 py-2 text-[12px] resize-none focus:outline-none focus:ring-2 focus:ring-offset-0"
+                    className="w-full rounded-lg border px-3 py-2.5 text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[#2C3E2D]/25"
                     style={{
                       borderColor: `${FOREST}25`,
                       color: FOREST,
@@ -311,14 +324,17 @@ export default function ExperienceRatingSection({ moveId, token }: ExperienceRat
                     type="button"
                     onClick={handleSubmitFeedback}
                     disabled={submitting}
-                    className="w-full rounded-lg font-semibold text-[12px] py-2.5 px-4 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-                    style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
+                    className="w-full rounded-none font-bold uppercase tracking-[0.12em] text-[13px] py-2.5 px-4 transition-[filter,opacity] hover:brightness-95 active:brightness-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 leading-none [font-family:var(--font-body)]"
+                    style={{ backgroundColor: FOREST, color: "#F9EDE4", outlineColor: FOREST }}
                   >
-                    {submitting ? "Submitting…" : "Submit Feedback"}
+                    {submitting ? "Submitting…" : "Submit feedback"}
                   </button>
                 </>
               ) : (
-                <p className="text-[11px] opacity-70" style={{ color: FOREST }}>
+                <p
+                  className="text-[13px] leading-snug"
+                  style={{ color: TEXT_MUTED_ON_LIGHT }}
+                >
                   Thanks for your feedback. We&apos;ll use it to improve.
                 </p>
               )}

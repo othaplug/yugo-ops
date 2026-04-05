@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { Check } from "@phosphor-icons/react";
 
+/** Forest + cream accents — no gold chrome (client track / quote system). */
+const FOREST = "#2C3E2D";
+const CREAM_ON_DARK = "#EDE6DC";
+
 export default function StageProgressBar({
   stages,
   currentIndex,
@@ -24,6 +28,7 @@ export default function StageProgressBar({
   }, []);
 
   const isDark = variant === "dark";
+  const accent = isDark ? CREAM_ON_DARK : FOREST;
 
   return (
     <div className="w-full py-5">
@@ -51,7 +56,9 @@ export default function StageProgressBar({
                       style={{
                         width: 36,
                         height: 36,
-                        background: "rgba(201,169,98,0.18)",
+                        background: isDark
+                          ? "rgba(237,230,220,0.22)"
+                          : "rgba(44,62,45,0.12)",
                       }}
                     />
                   )}
@@ -78,19 +85,21 @@ export default function StageProgressBar({
                           ? "#22C55E"
                           : "rgba(34,197,94,0.15)"
                         : isCurrent
-                        ? "var(--gold)"
+                        ? accent
                         : isDark
                         ? "rgba(255,255,255,0.04)"
-                        : "rgba(0,0,0,0.05)",
+                        : "rgba(44,62,45,0.06)",
                       border: isDone
                         ? `1.5px solid ${isLast && isComplete ? "#22C55E" : "rgba(34,197,94,0.45)"}`
                         : isCurrent
                         ? "none"
-                        : `1.5px solid ${isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.15)"}`,
+                        : `1.5px solid ${isDark ? "rgba(255,255,255,0.12)" : `${FOREST}22`}`,
                       boxShadow: isComplete && isLast
                         ? "0 0 0 4px rgba(34,197,94,0.12), 0 2px 8px rgba(34,197,94,0.2)"
                         : isCurrent
-                        ? "0 0 0 4px rgba(201,169,98,0.18), 0 2px 8px rgba(201,169,98,0.25)"
+                        ? isDark
+                          ? "0 0 0 4px rgba(237,230,220,0.2), 0 2px 8px rgba(0,0,0,0.12)"
+                          : "0 0 0 4px rgba(44,62,45,0.12), 0 2px 8px rgba(44,62,45,0.15)"
                         : "none",
                     }}
                   >
@@ -104,7 +113,12 @@ export default function StageProgressBar({
                     ) : isCurrent ? (
                       <span
                         className="rounded-full"
-                        style={{ width: 7, height: 7, background: "#1A1A1A", opacity: 0.85 }}
+                        style={{
+                          width: 7,
+                          height: 7,
+                          background: isDark ? "#1A1A1A" : "#FFFBF7",
+                          opacity: isDark ? 0.85 : 1,
+                        }}
                       />
                     ) : (
                       <span
@@ -112,7 +126,7 @@ export default function StageProgressBar({
                         style={{
                           width: 5,
                           height: 5,
-                          background: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)",
+                          background: isDark ? "rgba(255,255,255,0.15)" : `${FOREST}35`,
                         }}
                       />
                     )}
@@ -121,17 +135,19 @@ export default function StageProgressBar({
 
                 {/* Stage label */}
                 <span
-                  className="mt-2.5 text-[9.5px] font-semibold text-center leading-tight tracking-wide transition-colors duration-300"
+                  className="mt-2.5 text-[11px] font-semibold text-center leading-tight tracking-wide transition-colors duration-300"
                   style={{
                     color: isDone
                       ? isComplete
                         ? "#22C55E"
-                        : isDark ? "rgba(232,229,224,0.85)" : "#1A1A1A"
+                        : isDark
+                          ? "rgba(232,229,224,0.85)"
+                          : FOREST
                       : isCurrent
-                      ? "var(--gold)"
+                      ? accent
                       : isDark
                       ? "rgba(255,255,255,0.22)"
-                      : "rgba(0,0,0,0.25)",
+                      : `${FOREST}55`,
                   }}
                 >
                   {s.label}
@@ -145,7 +161,7 @@ export default function StageProgressBar({
                   style={{
                     height: 2,
                     marginTop: 11,
-                    background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)",
+                    background: isDark ? "rgba(255,255,255,0.07)" : `${FOREST}12`,
                   }}
                 >
                   <div
@@ -162,7 +178,9 @@ export default function StageProgressBar({
                       transitionDelay: `${i * 80}ms`,
                       background: isComplete
                         ? "linear-gradient(90deg, #22C55E, #16A34A)"
-                        : "linear-gradient(90deg, var(--gold), #2C3E2D)",
+                        : isDark
+                        ? `linear-gradient(90deg, ${CREAM_ON_DARK}, rgba(237,230,220,0.35))`
+                        : `linear-gradient(90deg, ${FOREST}, #1C3A2B)`,
                     }}
                   />
                 </div>

@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import TrackingLookup from "./TrackingLookup";
+import { getLegalBranding } from "@/lib/legal-branding";
 
 export const metadata: Metadata = {
   title: "Track Your Move or Delivery",
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
   robots: "noindex, nofollow",
 };
 
-export default function TrackingPage() {
-  return <TrackingLookup />;
+export default async function TrackingPage() {
+  const { email: companyContactEmail } = await getLegalBranding();
+  return <TrackingLookup companyContactEmail={companyContactEmail} />;
 }

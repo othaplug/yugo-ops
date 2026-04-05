@@ -111,7 +111,7 @@ export default function PartnerEditDeliveryModal({ delivery: d, onClose, onSaved
       zClassName="z-[99999]"
       backdropClassName="bg-black/50"
       onBackdropClick={onClose}
-      panelClassName="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[540px] overflow-y-auto mx-0 sm:mx-4 sheet-card sm:modal-card"
+      panelClassName="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10 w-full max-w-[540px] overflow-y-auto mx-0 sm:mx-4 sheet-card sm:modal-card"
       panelStyle={{ maxHeight: "min(90dvh, 90vh)" }}
     >
         <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--brd)] px-5 py-4 flex items-center justify-between">

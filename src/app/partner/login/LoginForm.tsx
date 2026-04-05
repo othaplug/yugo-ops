@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Eye, EyeSlash, Lock, Shield, MapPin, Calendar, ShareNetwork, Envelope } from "@phosphor-icons/react";
+import {
+  X,
+  Eye,
+  EyeSlash,
+  Lock,
+  Shield,
+  MapPin,
+  Calendar,
+  ShareNetwork,
+  Envelope,
+} from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 import { resolveLoginPortal } from "@/lib/auth/resolve-login-portal";
 import { useRouter } from "next/navigation";
@@ -15,7 +25,13 @@ interface LoginFormProps {
   isWelcome?: boolean;
 }
 
-export default function PartnerLoginForm({ title, subtitle, redirectTo, initialError, isWelcome }: LoginFormProps) {
+export default function PartnerLoginForm({
+  title,
+  subtitle,
+  redirectTo,
+  initialError,
+  isWelcome,
+}: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,15 +50,18 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isWelcome && !consentChecked) {
-      setError("Please agree to the Privacy Policy and Terms of Use to continue.");
+      setError(
+        "Please agree to the Privacy Policy and Terms of Use to continue.",
+      );
       return;
     }
     setLoading(true);
     setError("");
-    const { data: signData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data: signData, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
     if (authError) {
       setError(authError.message);
       setLoading(false);
@@ -76,7 +95,7 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
       router.replace("/admin");
     } else {
       setError(
-        "Your account doesn't have partner portal access.\n\nWe don't see a partner organization tied to this login. Contact your YUGO+ contact or support to get access."
+        "Your account doesn't have partner portal access.\n\nWe don't see a partner organization tied to this login. Contact your YUGO+ contact or support to get access.",
       );
       await supabase.auth.signOut();
     }
@@ -159,47 +178,160 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
         <div className="ptr-card" style={{ animation: "ptrFade 0.5s ease" }}>
           {/* Brand */}
           <div style={{ marginBottom: 40 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <YugoLogo size={20} variant="gold" />
-              <div style={{ height: 16, width: 1, background: "rgba(201,169,98,0.3)" }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#2C3E2D", letterSpacing: 0.5 }}>Partner Portal</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 6,
+              }}
+            >
+              <YugoLogo size={20} variant="wine" />
+              <div
+                style={{
+                  height: 16,
+                  width: 1,
+                  background: "rgba(201,169,98,0.3)",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#2C3E2D",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Partner Portal
+              </span>
             </div>
           </div>
 
           {mode === "login" && (
             <>
               {isWelcome && (
-                <div style={{ background: "#F0FFF4", border: "1px solid #C6F6D5", color: "#2D6A4F", fontSize: 13, padding: "12px 16px", borderRadius: 12, marginBottom: 20, lineHeight: 1.5 }}>
-                  <strong>Welcome!</strong> Your partner account is ready. Sign in with the email and temporary password from your invite.
+                <div
+                  style={{
+                    background: "#F0FFF4",
+                    border: "1px solid #C6F6D5",
+                    color: "#2D6A4F",
+                    fontSize: 13,
+                    padding: "12px 16px",
+                    borderRadius: 12,
+                    marginBottom: 20,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <strong>Welcome!</strong> Your partner account is ready. Sign
+                  in with the email and temporary password from your invite.
                 </div>
               )}
 
               <div style={{ marginBottom: 32 }}>
-                <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 32, fontWeight: 500, color: "#1A1714", marginBottom: 6, lineHeight: 1.2 }}>
+                <h1
+                  style={{
+                    fontFamily: "'Instrument Serif', serif",
+                    fontSize: 32,
+                    fontWeight: 500,
+                    color: "#1A1714",
+                    marginBottom: 6,
+                    lineHeight: 1.2,
+                  }}
+                >
                   {title}
                 </h1>
-                <p style={{ fontSize: 14, color: "#4F4B47", lineHeight: 1.5 }}>{subtitle}</p>
+                <p style={{ fontSize: 14, color: "#4F4B47", lineHeight: 1.5 }}>
+                  {subtitle}
+                </p>
               </div>
 
               {error && (
-                <div style={{ background: "#FFF5F5", border: "1px solid #FED7D7", color: "#C53030", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 8 }}>
-                  <X size={14} weight="regular" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ whiteSpace: "pre-line", lineHeight: 1.5 }}>{error}</span>
+                <div
+                  style={{
+                    background: "#FFF5F5",
+                    border: "1px solid #FED7D7",
+                    color: "#C53030",
+                    fontSize: 12,
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    marginBottom: 20,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 8,
+                  }}
+                >
+                  <X
+                    size={14}
+                    weight="regular"
+                    style={{ flexShrink: 0, marginTop: 2 }}
+                  />
+                  <span style={{ whiteSpace: "pre-line", lineHeight: 1.5 }}>
+                    {error}
+                  </span>
                 </div>
               )}
 
               <form onSubmit={handleLogin}>
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Email address</label>
-                  <input className="ptr-input" type="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#555",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Email address
+                  </label>
+                  <input
+                    className="ptr-input"
+                    type="email"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
                 </div>
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Password</label>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#555",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Password
+                  </label>
                   <div style={{ position: "relative" }}>
-                    <input className="ptr-input" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required
-                      style={{ paddingRight: 40 }} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Toggle"
-                      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2, color: "#6B6B6B" }}>
+                    <input
+                      className="ptr-input"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      style={{ paddingRight: 40 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label="Toggle"
+                      style={{
+                        position: "absolute",
+                        right: 12,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 2,
+                        color: "#6B6B6B",
+                      }}
+                    >
                       {showPassword ? (
                         <Eye size={16} weight="regular" />
                       ) : (
@@ -209,41 +341,114 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
                   </div>
                 </div>
                 <div style={{ textAlign: "right", marginBottom: 24 }}>
-                  <button type="button" className="ptr-link" onClick={() => { setMode("forgot"); setError(""); }}>Forgot password?</button>
+                  <button
+                    type="button"
+                    className="ptr-link"
+                    onClick={() => {
+                      setMode("forgot");
+                      setError("");
+                    }}
+                  >
+                    Forgot password?
+                  </button>
                 </div>
 
                 {isWelcome && (
-                  <div style={{ marginBottom: 20, padding: "12px 14px", background: "#F7F5F0", borderRadius: 10, border: "1px solid #E8E4DC" }}>
-                    <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                  <div
+                    style={{
+                      marginBottom: 20,
+                      padding: "12px 14px",
+                      background: "#F7F5F0",
+                      borderRadius: 10,
+                      border: "1px solid #E8E4DC",
+                    }}
+                  >
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        cursor: "pointer",
+                      }}
+                    >
                       <input
                         type="checkbox"
                         checked={consentChecked}
                         onChange={(e) => setConsentChecked(e.target.checked)}
-                        style={{ marginTop: 3, width: 15, height: 15, accentColor: "#2D6A4F", flexShrink: 0, cursor: "pointer" }}
+                        style={{
+                          marginTop: 3,
+                          width: 15,
+                          height: 15,
+                          accentColor: "#2D6A4F",
+                          flexShrink: 0,
+                          cursor: "pointer",
+                        }}
                       />
-                      <span style={{ fontSize: 12, color: "#777", lineHeight: 1.6 }}>
+                      <span
+                        style={{ fontSize: 12, color: "#777", lineHeight: 1.6 }}
+                      >
                         I agree to Yugo&apos;s{" "}
-                        <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                        <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
+                        <a
+                          href="/legal/privacy-policy"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: "#2C3E2D",
+                            textDecoration: "underline",
+                          }}
+                        >
+                          Privacy Policy
+                        </a>{" "}
+                        and{" "}
+                        <a
+                          href="/legal/terms-of-use"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: "#2C3E2D",
+                            textDecoration: "underline",
+                          }}
+                        >
+                          Terms of Use
+                        </a>
                       </span>
                     </label>
                   </div>
                 )}
 
-                <button type="submit" className="ptr-btn" disabled={loading || (isWelcome && !consentChecked)} style={{ opacity: isWelcome && !consentChecked ? 0.5 : undefined }}>
+                <button
+                  type="submit"
+                  className="ptr-btn"
+                  disabled={loading || (isWelcome && !consentChecked)}
+                  style={{
+                    opacity: isWelcome && !consentChecked ? 0.5 : undefined,
+                  }}
+                >
                   {loading ? "Signing in..." : "Sign in to your portal"}
                 </button>
               </form>
 
               {/* Trust indicators */}
-              <div style={{ marginTop: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+              <div
+                style={{
+                  marginTop: 28,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 16,
+                }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <Lock size={12} color="#2D6A4F" />
-                  <span style={{ fontSize: 10, color: "#6B6B6B" }}>Encrypted</span>
+                  <span style={{ fontSize: 10, color: "#6B6B6B" }}>
+                    Encrypted
+                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <Shield size={12} color="#2D6A4F" />
-                  <span style={{ fontSize: 10, color: "#6B6B6B" }}>Secure portal</span>
+                  <span style={{ fontSize: 10, color: "#6B6B6B" }}>
+                    Secure portal
+                  </span>
                 </div>
               </div>
             </>
@@ -252,25 +457,78 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
           {mode === "forgot" && (
             <>
               <div style={{ marginBottom: 28 }}>
-                <h1 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 28, fontWeight: 500, color: "#1A1714", marginBottom: 6 }}>Reset your password</h1>
-                <p style={{ fontSize: 14, color: "#4F4B47" }}>Enter your email and we&apos;ll send you a temporary password and login link</p>
+                <h1
+                  style={{
+                    fontFamily: "'Instrument Serif', serif",
+                    fontSize: 28,
+                    fontWeight: 500,
+                    color: "#1A1714",
+                    marginBottom: 6,
+                  }}
+                >
+                  Reset your password
+                </h1>
+                <p style={{ fontSize: 14, color: "#4F4B47" }}>
+                  Enter your email and we&apos;ll send you a temporary password
+                  and login link
+                </p>
               </div>
               {error && (
-                <div style={{ background: "#FFF5F5", border: "1px solid #FED7D7", color: "#C53030", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20 }}>
+                <div
+                  style={{
+                    background: "#FFF5F5",
+                    border: "1px solid #FED7D7",
+                    color: "#C53030",
+                    fontSize: 12,
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    marginBottom: 20,
+                  }}
+                >
                   {error}
                 </div>
               )}
               <form onSubmit={handleForgotPassword}>
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6 }}>Email address</label>
-                  <input className="ptr-input" type="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#555",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Email address
+                  </label>
+                  <input
+                    className="ptr-input"
+                    type="email"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
                 </div>
-                <button type="submit" className="ptr-btn" disabled={resetLoading}>
+                <button
+                  type="submit"
+                  className="ptr-btn"
+                  disabled={resetLoading}
+                >
                   {resetLoading ? "Sending..." : "Email reset"}
                 </button>
               </form>
               <div style={{ marginTop: 16 }}>
-                <button className="ptr-back" onClick={() => { setMode("login"); setError(""); }}>← Back to sign in</button>
+                <button
+                  className="ptr-back"
+                  onClick={() => {
+                    setMode("login");
+                    setError("");
+                  }}
+                >
+                  ← Back to sign in
+                </button>
               </div>
             </>
           )}
@@ -278,20 +536,58 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
           {mode === "sent" && (
             <>
               <div style={{ textAlign: "center", marginBottom: 20 }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: 16, margin: "0 auto 16px",
-                  background: "#F0FFF4", border: "1px solid #C6F6D5",
-                  display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 16,
+                    margin: "0 auto 16px",
+                    background: "#F0FFF4",
+                    border: "1px solid #C6F6D5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <Envelope size={28} color="#2D6A4F" />
                 </div>
-                <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#1A1714", marginBottom: 6 }}>Check your email</h2>
-                <p style={{ fontSize: 13, color: "#4F4B47" }}>If that email is on file, we sent a temporary password and login link to <strong style={{ color: "#1A1714" }}>{email}</strong></p>
+                <h2
+                  style={{
+                    fontFamily: "'Instrument Serif', serif",
+                    fontSize: 24,
+                    color: "#1A1714",
+                    marginBottom: 6,
+                  }}
+                >
+                  Check your email
+                </h2>
+                <p style={{ fontSize: 13, color: "#4F4B47" }}>
+                  If that email is on file, we sent a temporary password and
+                  login link to{" "}
+                  <strong style={{ color: "#1A1714" }}>{email}</strong>
+                </p>
               </div>
-              <div style={{ background: "#F0FFF4", border: "1px solid #C6F6D5", color: "#2D6A4F", fontSize: 12, padding: "10px 14px", borderRadius: 10, marginBottom: 20, textAlign: "center" }}>
+              <div
+                style={{
+                  background: "#F0FFF4",
+                  border: "1px solid #C6F6D5",
+                  color: "#2D6A4F",
+                  fontSize: 12,
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  marginBottom: 20,
+                  textAlign: "center",
+                }}
+              >
                 Check your inbox and spam folder
               </div>
-              <button className="ptr-btn" onClick={() => { setMode("login"); setError(""); }}>
+              <button
+                className="ptr-btn"
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+                }}
+              >
                 Back to Sign In
               </button>
             </>
@@ -301,51 +597,159 @@ export default function PartnerLoginForm({ title, subtitle, redirectTo, initialE
 
       {/* Right - Decorative Panel (desktop only) */}
       <div className="ptr-right">
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 48px", maxWidth: 440 }}>
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            textAlign: "center",
+            padding: "0 48px",
+            maxWidth: 440,
+          }}
+        >
           {/* Floating cards */}
-          <div style={{ marginBottom: 40, animation: "ptrFloat 4s ease-in-out infinite" }}>
-            <div style={{
-              display: "inline-flex", flexDirection: "column" as const, gap: 12,
-              padding: "24px 28px", borderRadius: 16,
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
-              backdropFilter: "blur(20px)", textAlign: "left" as const,
-            }}>
+          <div
+            style={{
+              marginBottom: 40,
+              animation: "ptrFloat 4s ease-in-out infinite",
+            }}
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                flexDirection: "column" as const,
+                gap: 12,
+                padding: "24px 28px",
+                borderRadius: 16,
+                background: "rgba(255,255,255,0.09)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                backdropFilter: "blur(20px)",
+                textAlign: "left" as const,
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(201,169,98,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <MapPin size={18} color="#2C3E2D" />
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(255,255,255,0.12)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <MapPin size={18} color="#FAF7F2" weight="duotone" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#E8E5E0" }}>Live GPS Tracking</div>
-                  <div style={{ fontSize: 10, color: "#666" }}>Real-time delivery updates</div>
+                  <div
+                    style={{ fontSize: 12, fontWeight: 600, color: "#FAF7F2" }}
+                  >
+                    Live GPS Tracking
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      lineHeight: 1.45,
+                      color: "rgba(255,255,255,0.78)",
+                    }}
+                  >
+                    Real-time delivery updates
+                  </div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(45,106,79,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Calendar size={18} color="#4ADE80" />
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(45,106,79,0.22)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Calendar size={18} color="#86EFAC" weight="duotone" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#E8E5E0" }}>Schedule & Calendar</div>
-                  <div style={{ fontSize: 10, color: "#666" }}>Plan deliveries ahead</div>
+                  <div
+                    style={{ fontSize: 12, fontWeight: 600, color: "#FAF7F2" }}
+                  >
+                    Schedule & Calendar
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      lineHeight: 1.45,
+                      color: "rgba(255,255,255,0.78)",
+                    }}
+                  >
+                    Plan deliveries ahead
+                  </div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(139,92,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <ShareNetwork size={18} color="#A78BFA" />
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(139,92,246,0.22)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ShareNetwork size={18} color="#DDD6FE" weight="duotone" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#E8E5E0" }}>Share Tracking Links</div>
-                  <div style={{ fontSize: 10, color: "#666" }}>Email or text your clients</div>
+                  <div
+                    style={{ fontSize: 12, fontWeight: 600, color: "#FAF7F2" }}
+                  >
+                    Share Tracking Links
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      lineHeight: 1.45,
+                      color: "rgba(255,255,255,0.78)",
+                    }}
+                  >
+                    Email or text your clients
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 28, color: "#E8E5E0", marginBottom: 8, lineHeight: 1.3 }}>
-            Your delivery operations,<br />all in one place
+          <h2
+            style={{
+              fontFamily: "'Instrument Serif', serif",
+              fontSize: 28,
+              color: "#FAF7F2",
+              marginBottom: 8,
+              lineHeight: 1.3,
+            }}
+          >
+            Your delivery operations,
+            <br />
+            all in one place
           </h2>
-          <p style={{ fontSize: 13, color: "#666", lineHeight: 1.6, display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 6 }}>
-            Track deliveries, schedule pickups, share live updates with your clients, and manage invoices, powered by{" "}
-            <YugoLogo size={16} variant="gold" />
+          <p
+            style={{
+              fontSize: 13,
+              color: "rgba(255,255,255,0.82)",
+              lineHeight: 1.6,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              gap: 6,
+            }}
+          >
+            Track deliveries, schedule pickups, share live updates with your
+            clients, and manage invoices, powered by{" "}
+            <YugoLogo size={16} variant="wine" />
           </p>
         </div>
       </div>

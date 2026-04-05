@@ -256,7 +256,7 @@ export default function PartnerDeliveryDetailModal({ delivery: d, onClose, onSha
       zClassName="z-[99999]"
       backdropClassName="bg-black/40"
       onBackdropClick={onClose}
-      panelClassName="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col sheet-card sm:modal-card"
+      panelClassName="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] border border-[#2C3E2D]/10 w-full max-w-lg overflow-hidden flex flex-col sheet-card sm:modal-card"
       panelStyle={{ maxHeight: "min(92dvh, 92vh)" }}
       role="dialog"
       ariaModal

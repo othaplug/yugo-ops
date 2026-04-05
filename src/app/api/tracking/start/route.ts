@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCrewToken, CREW_COOKIE_NAME } from "@/lib/crew-token";
 import { getFirstStatus } from "@/lib/crew-tracking-status";
 import { notifyOnCheckpoint } from "@/lib/tracking-notifications";
+import { applyEstateServiceChecklistAutomation } from "@/lib/estate-service-checklist-sync";
 import { fetchCrewAssignmentSnapshot } from "@/lib/crew-job-snapshot";
 import { CREW_JOB_UUID_RE, normalizeCrewJobId, selectDeliveryByJobId } from "@/lib/resolve-delivery-by-job-id";
 
@@ -126,6 +127,12 @@ export async function POST(req: NextRequest) {
     updated_at: now,
     eta_tracking_active: true,
   }).eq("id", entityId);
+
+  if (jobType === "move") {
+    applyEstateServiceChecklistAutomation(admin, entityId).catch((e) =>
+      console.error("[tracking/start] estate checklist sync failed:", e),
+    );
+  }
 
   // Fire-and-forget: send "Crew Departed" SMS (ETA system)
   const origin = process.env.VERCEL_URL

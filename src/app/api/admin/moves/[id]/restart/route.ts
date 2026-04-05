@@ -57,6 +57,36 @@ export async function POST(
 
     if (moveErr) return NextResponse.json({ error: moveErr.message }, { status: 500 });
 
+    const tier = String(
+      (updatedMove as { tier_selected?: string | null; service_tier?: string | null })
+        .tier_selected ||
+        (updatedMove as { service_tier?: string | null }).service_tier ||
+        "",
+    )
+      .toLowerCase()
+      .trim();
+    let moveOut = updatedMove;
+    if (tier === "estate") {
+      const cur =
+        (
+          (updatedMove as { estate_service_checklist?: Record<string, boolean> | null })
+            .estate_service_checklist
+        ) || {};
+      const next = { ...cur };
+      delete next.estate_move;
+      delete next.estate_unpacking;
+      await admin
+        .from("moves")
+        .update({ estate_service_checklist: next })
+        .eq("id", moveId);
+      const { data: refetched } = await admin
+        .from("moves")
+        .select("*")
+        .eq("id", moveId)
+        .single();
+      if (refetched) moveOut = refetched;
+    }
+
     syncDealStage(move.hubspot_deal_id, newStatus).catch(() => {});
 
     // 2. End any active tracking sessions for this move (so crew can start fresh)
@@ -71,7 +101,7 @@ export async function POST(
       .eq("job_type", "move")
       .eq("is_active", true);
 
-    return NextResponse.json({ ok: true, move: updatedMove });
+    return NextResponse.json({ ok: true, move: moveOut });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to restart move" },

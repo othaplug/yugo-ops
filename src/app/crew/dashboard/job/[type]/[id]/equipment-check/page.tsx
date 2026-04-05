@@ -12,7 +12,7 @@ import {
   isEquipmentRelationUnavailable,
 } from "@/lib/supabase-equipment-errors";
 
-const GOLD = "#2C3E2D";
+const FOREST_PRIMARY = "#2C3E2D";
 const INK = "#1A1A1A";
 const MUTED = "#6B7A6E";
 const BG = "#FAF8F4";
@@ -244,7 +244,7 @@ export default function CrewEquipmentCheckPage({
             >
               <ChevronLeft size={15} /> Back
             </Link>
-            <YugoLogo size={22} variant="gold" onLightBackground />
+            <YugoLogo size={22} variant="wine" onLightBackground />
             <div className="w-14" />
           </div>
           <h1 className="font-hero text-[26px] font-semibold leading-tight mb-2" style={{ color: INK }}>
@@ -256,7 +256,7 @@ export default function CrewEquipmentCheckPage({
           <Link
             href={backHref}
             className="inline-flex w-full justify-center py-2.5 font-semibold rounded-xl transition-opacity hover:opacity-90"
-            style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+            style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
           >
             Back to job
           </Link>
@@ -290,12 +290,12 @@ export default function CrewEquipmentCheckPage({
           >
             <ChevronLeft size={15} /> Back
           </Link>
-          <YugoLogo size={22} variant="gold" onLightBackground />
+          <YugoLogo size={22} variant="wine" onLightBackground />
           <div className="w-14" />
         </div>
 
         <div className="mb-6">
-          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${FOREST_PRIMARY}AA` }}>
             After sign-off
           </p>
           <h1 className="font-hero text-[26px] font-semibold leading-tight" style={{ color: INK }}>
@@ -310,14 +310,14 @@ export default function CrewEquipmentCheckPage({
           <div
             className="mb-4 p-3 rounded-xl flex gap-2 items-start"
             style={{
-              backgroundColor: equipmentUnavailable ? "#FEF2F2" : `${GOLD}12`,
-              border: `1px solid ${equipmentUnavailable ? "#FECACA" : `${GOLD}35`}`,
+              backgroundColor: equipmentUnavailable ? "#FEF2F2" : `${FOREST_PRIMARY}12`,
+              border: `1px solid ${equipmentUnavailable ? "#FECACA" : `${FOREST_PRIMARY}35`}`,
             }}
           >
             <WarningCircle
               size={18}
               className="shrink-0 mt-0.5"
-              color={equipmentUnavailable ? "#B91C1C" : GOLD}
+              color={equipmentUnavailable ? "#B91C1C" : FOREST_PRIMARY}
               aria-hidden
             />
             <p className="text-[11px] leading-relaxed" style={{ color: equipmentUnavailable ? "#991B1B" : INK }}>
@@ -439,7 +439,7 @@ export default function CrewEquipmentCheckPage({
               onClick={submitEquipmentCheck}
               disabled={eqEquipSubmitting || eqLines.length === 0}
               className="w-full py-2 font-semibold transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 mb-2"
-              style={{ backgroundColor: GOLD, color: "#1A1A1A", fontSize: 16 }}
+              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A", fontSize: 16 }}
             >
               {eqEquipSubmitting ? "Saving…" : "Submit equipment check"}
             </button>

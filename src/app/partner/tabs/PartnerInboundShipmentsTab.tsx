@@ -101,7 +101,7 @@ export default function PartnerInboundShipmentsTab() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <ShippingContainer className="text-[var(--gold)]" size={24} weight="duotone" aria-hidden />
+        <ShippingContainer className="text-[#5C1A33]" size={24} weight="duotone" aria-hidden />
         <h2 className="text-lg font-semibold text-[var(--tx)]">Inbound shipments</h2>
       </div>
       <p className="text-sm text-[var(--tx3)]">
@@ -130,7 +130,7 @@ export default function PartnerInboundShipmentsTab() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-b border-[var(--brd)]/50">
-                  <td className="px-3 py-2 font-mono text-[var(--gold)] font-semibold">{r.shipment_number}</td>
+                  <td className="px-3 py-2 font-mono text-[#5C1A33] font-semibold">{r.shipment_number}</td>
                   <td className="px-3 py-2">{itemTitle(r.items)}</td>
                   <td className="px-3 py-2">{INBOUND_SHIPMENT_STATUS_LABELS[r.status] || r.status}</td>
                   <td className="px-3 py-2 text-[var(--tx3)]">
@@ -153,7 +153,7 @@ export default function PartnerInboundShipmentsTab() {
                     <button
                       type="button"
                       onClick={() => setSelected(r)}
-                      className="text-xs font-semibold text-[var(--gold)] inline-flex items-center gap-1"
+                      className="text-xs font-semibold text-[#5C1A33] inline-flex items-center gap-1"
                     >
                       Details <ArrowSquareOut size={14} aria-hidden />
                     </button>
@@ -170,7 +170,7 @@ export default function PartnerInboundShipmentsTab() {
           <div className="w-full max-w-lg rounded-2xl bg-[var(--card)] border border-[var(--brd)] shadow-xl max-h-[90vh] overflow-y-auto p-5">
             <div className="flex justify-between items-start gap-2 mb-4">
               <div>
-                <div className="font-mono text-[var(--gold)] font-semibold">{selected.shipment_number}</div>
+                <div className="font-mono text-[#5C1A33] font-semibold">{selected.shipment_number}</div>
                 <div className="text-xs text-[var(--tx3)]">
                   {INBOUND_SHIPMENT_STATUS_LABELS[selected.status] || selected.status}
                 </div>

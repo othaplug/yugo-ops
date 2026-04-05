@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import Link from "next/link";
 import YugoLogo from "@/components/YugoLogo";
 import { formatCurrency } from "@/lib/format-currency";
@@ -20,9 +26,15 @@ type MoveReason = {
   urgency_default: string;
 };
 
-type ContractAddon = { id: string; addon_code: string; label: string; price: number; price_type: string };
+type ContractAddon = {
+  id: string;
+  addon_code: string;
+  label: string;
+  price: number;
+  price_type: string;
+};
 
-type PmProjectRow = {
+export type PmProjectRow = {
   id: string;
   project_name: string;
   project_type: string;
@@ -31,7 +43,7 @@ type PmProjectRow = {
   status: string;
 };
 
-type Summary = {
+export type PmPortalSummary = {
   org: { name?: string | null };
   contract: {
     id: string;
@@ -119,7 +131,36 @@ const ZONE_LABELS: Record<string, string> = {
   outside_gta: "Outside GTA",
 };
 
-const TIME_WINDOWS = ["8 AM – 10 AM", "10 AM – 12 PM", "12 PM – 2 PM", "2 PM – 4 PM", "4 PM – 6 PM"];
+const TIME_WINDOWS = [
+  "8 AM – 10 AM",
+  "10 AM – 12 PM",
+  "12 PM – 2 PM",
+  "2 PM – 4 PM",
+  "4 PM – 6 PM",
+];
+
+/** Align with main partner dashboard (`PartnerPortalClient`): cream cards, forest hairlines, wine focus. */
+const PM_HEADER =
+  "sticky top-0 z-30 bg-[#FFFBF7]/95 backdrop-blur-sm border-b border-[#2C3E2D]/12 px-4 sm:px-6 py-3 flex items-center justify-between gap-3";
+const PM_SUBNAV =
+  "flex flex-wrap gap-1 px-3 sm:px-6 py-2 bg-[#FFFBF7]/90 backdrop-blur-sm border-b border-[#2C3E2D]/10 text-[11px] font-semibold";
+const PM_CARD =
+  "rounded-xl border border-[#2C3E2D]/10 bg-[#FFFBF7] shadow-[0_1px_0_rgba(44,62,45,0.05)]";
+const PM_MAIN =
+  "p-4 sm:px-6 max-w-3xl mx-auto space-y-4 pb-28 text-[#1a1f1b]";
+const PM_TABLE_SHELL =
+  "rounded-xl border border-[#2C3E2D]/10 bg-[#FFFBF7] overflow-hidden";
+const PM_TABLE_HEAD =
+  "bg-[#FAF7F2] text-left text-[10px] font-bold uppercase tracking-wider text-[#2C3E2D]/50";
+const PM_ROW = "border-t border-[#2C3E2D]/10";
+const PM_LABEL =
+  "block text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D]/50 mb-1";
+const PM_FIELD =
+  "w-full px-3 py-2 rounded-lg border border-[#2C3E2D]/12 bg-white text-[13px] text-[#1a1f1b] placeholder:text-[#2C3E2D]/35 focus:border-[#5C1A33]/40 focus:ring-1 focus:ring-[#5C1A33]/10 outline-none";
+const PM_INSET =
+  "rounded-lg border border-[#2C3E2D]/10 bg-[#FAF7F2]/70 p-3 text-[12px] space-y-1";
+const PM_SECTION_EYE =
+  "text-[10px] font-bold uppercase tracking-[0.14em] text-[#2C3E2D]/50 mb-2";
 
 function labelFor(key: string, map: Record<string, string>) {
   const k = (key || "").toLowerCase();
@@ -134,16 +175,26 @@ export default function PartnerPropertyManagementPortal({
   orgId,
   orgName,
   contactName,
+  preview,
 }: {
   orgId: string;
   orgName: string;
   contactName: string;
+  /** Static sample data — skips API; booking tab shows a placeholder. */
+  preview?: {
+    initialSummary: PmPortalSummary;
+    initialPrograms?: PmProjectRow[];
+  };
 }) {
   const { toast } = useToast();
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<PmPortalSummary | null>(() =>
+    preview?.initialSummary ?? null,
+  );
+  const [loading, setLoading] = useState(() => !preview?.initialSummary);
   const [tab, setTab] = useState<"dash" | "book" | "programs">("dash");
-  const [programs, setPrograms] = useState<{ projects: PmProjectRow[] } | null>(null);
+  const [programs, setPrograms] = useState<{ projects: PmProjectRow[] } | null>(
+    null,
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -160,34 +211,54 @@ export default function PartnerPropertyManagementPortal({
   }, [toast]);
 
   useEffect(() => {
+    if (preview) return;
     load();
-  }, [load]);
+  }, [load, preview]);
 
   useEffect(() => {
     if (tab !== "programs") return;
+    if (preview) {
+      setPrograms({
+        projects:
+          preview.initialPrograms ??
+          preview.initialSummary.projects ??
+          [],
+      });
+      return;
+    }
     fetch("/api/partner/pm/projects")
       .then((r) => r.json())
       .then((d) => setPrograms(d))
       .catch(() => setPrograms({ projects: [] }));
-  }, [tab]);
+  }, [tab, preview]);
 
   const dash = summary?.dashboard;
-  const showPropStrip = dash?.showPropertyStrip ?? (summary?.properties.length ?? 0) >= 2;
-  const showProjectsOnDash = dash?.showProjects ?? ((summary?.projects?.length ?? 0) > 0);
+  const showPropStrip =
+    dash?.showPropertyStrip ?? (summary?.properties.length ?? 0) >= 2;
+  const showProjectsOnDash =
+    dash?.showProjects ?? (summary?.projects?.length ?? 0) > 0;
 
   return (
     <PartnerNotificationProvider orgId={orgId}>
       <PartnerChangePasswordGate>
-        <div className="min-h-screen bg-[#F5F3F0]">
-          <header className="bg-[var(--card)] border-b border-[var(--brd)] px-4 py-3 flex items-center justify-between sticky top-0 z-20">
-            <div className="flex items-center gap-2">
-              <YugoLogo size={18} variant="gold" />
-              <span className="text-[13px] font-semibold text-[var(--tx)] truncate max-w-[200px]">{orgName}</span>
+        <div className="min-h-screen">
+          <header className={PM_HEADER}>
+            <div className="flex items-center gap-2 min-w-0">
+              <YugoLogo size={18} variant="wine" className="shrink-0" />
+              <span
+                className="h-3 w-px bg-[#2C3E2D]/12 shrink-0 hidden sm:block"
+                aria-hidden
+              />
+              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D]/70 truncate max-w-[200px] sm:ml-1">
+                {orgName}
+              </span>
             </div>
-            <span className="text-[11px] text-[var(--tx3)]">Hi, {contactName}</span>
+            <span className="text-[11px] text-[#2C3E2D]/55 shrink-0">
+              Hi, {contactName}
+            </span>
           </header>
 
-          <nav className="flex gap-1 px-3 py-2 bg-[var(--card)] border-b border-[var(--brd)] text-[11px] font-semibold">
+          <nav className={PM_SUBNAV}>
             {(
               [
                 { id: "dash" as const, label: "Overview" },
@@ -200,62 +271,107 @@ export default function PartnerPropertyManagementPortal({
                 type="button"
                 onClick={() => setTab(t.id)}
                 className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  tab === t.id ? "bg-[var(--gold)] text-[var(--btn-text-on-accent)]" : "text-[var(--tx2)] hover:bg-[var(--bg)]"
+                  tab === t.id
+                    ? "bg-[#2C3E2D] text-white shadow-sm"
+                    : "text-[#2C3E2D]/72 hover:bg-[#5C1A33]/6"
                 }`}
               >
                 {t.label}
               </button>
             ))}
-            <Link href="/partner/login" className="ml-auto px-2 py-1.5 text-[var(--tx3)] hover:text-[var(--tx)]">
+            <Link
+              href="/partner/login"
+              className="ml-auto px-2 py-1.5 text-[10px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D]/50 hover:text-[#5C1A33] transition-colors"
+            >
               Account
             </Link>
           </nav>
 
-          <main className="p-4 max-w-3xl mx-auto space-y-4 pb-24">
-            {loading && <p className="text-[13px] text-[var(--tx3)]">Loading…</p>}
+          <main className={PM_MAIN}>
+            {loading && (
+              <p className="text-[13px] text-[#2C3E2D]/55">Loading…</p>
+            )}
 
             {!loading && tab === "dash" && summary && (
               <>
-                <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                  <h1 className="text-[18px] font-bold text-[var(--tx)]">Property dashboard</h1>
-                  <p className="text-[12px] text-[var(--tx3)] mt-1">Contract service, buildings, and upcoming work.</p>
+                <div className={`${PM_CARD} p-4 sm:p-5`}>
+                  <h1 className="text-[18px] font-bold font-hero text-[#5C1A33]">
+                    Property dashboard
+                  </h1>
+                  <p className="text-[12px] text-[#2C3E2D]/60 mt-1 leading-relaxed">
+                    Contract service, buildings, and upcoming work.
+                  </p>
                 </div>
 
                 {summary.contract ? (
-                  <div className="rounded-xl border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-4 space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--gold)]">Active contract</p>
-                    <p className="text-[15px] font-semibold text-[var(--tx)]">{summary.contract.contract_number}</p>
-                    <p className="text-[12px] text-[var(--tx2)]">
-                      {formatDate(summary.contract.start_date, { month: "short", day: "numeric", year: "numeric" })} –{" "}
-                      {formatDate(summary.contract.end_date, { month: "short", day: "numeric", year: "numeric" })}
-                      {" · "}
-                      {CONTRACT_LABELS[summary.contract.contract_type] ?? summary.contract.contract_type}
+                  <div className="rounded-xl border border-[#5C1A33]/20 bg-[#5C1A33]/5 p-4 space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#5C1A33]">
+                      Active contract
                     </p>
-                    <p className="text-[11px] text-[var(--tx3)]">
-                      {summary.stats.propertiesCount} buildings · {summary.stats.totalUnits || "—"} units tracked
+                    <p className="text-[15px] font-semibold text-[#1a1f1b]">
+                      {summary.contract.contract_number}
+                    </p>
+                    <p className="text-[12px] text-[#2C3E2D]/72">
+                      {formatDate(summary.contract.start_date, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}{" "}
+                      –{" "}
+                      {formatDate(summary.contract.end_date, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                      {" · "}
+                      {CONTRACT_LABELS[summary.contract.contract_type] ??
+                        summary.contract.contract_type}
+                    </p>
+                    <p className="text-[11px] text-[#2C3E2D]/55">
+                      {summary.stats.propertiesCount} buildings ·{" "}
+                      {summary.stats.totalUnits || "—"} units tracked
                     </p>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 text-[13px] text-[var(--tx2)]">
-                    No active contract on file yet. Your Yugo account manager will finalize rates and terms.
+                  <div
+                    className={`${PM_CARD} p-4 text-[13px] text-[#2C3E2D]/72 leading-relaxed`}
+                  >
+                    No active contract on file yet. Your Yugo account manager
+                    will finalize rates and terms.
                   </div>
                 )}
 
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3">
-                    <p className="text-[10px] text-[var(--tx3)] uppercase font-bold">This month</p>
-                    <p className="text-[20px] font-bold text-[var(--tx)]">{summary.stats.movesThisMonth}</p>
-                    <p className="text-[10px] text-[var(--tx3)]">Jobs scheduled</p>
+                  <div className={`${PM_CARD} p-3`}>
+                    <p className="text-[10px] text-[#2C3E2D]/50 uppercase font-bold tracking-wider">
+                      This month
+                    </p>
+                    <p className="text-[20px] font-bold text-[#1a1f1b]">
+                      {summary.stats.movesThisMonth}
+                    </p>
+                    <p className="text-[10px] text-[#2C3E2D]/55">
+                      Jobs scheduled
+                    </p>
                   </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3">
-                    <p className="text-[10px] text-[var(--tx3)] uppercase font-bold">Completed</p>
-                    <p className="text-[20px] font-bold text-[var(--tx)]">{summary.stats.movesCompletedThisMonth}</p>
-                    <p className="text-[10px] text-[var(--tx3)]">This month</p>
+                  <div className={`${PM_CARD} p-3`}>
+                    <p className="text-[10px] text-[#2C3E2D]/50 uppercase font-bold tracking-wider">
+                      Completed
+                    </p>
+                    <p className="text-[20px] font-bold text-[#1a1f1b]">
+                      {summary.stats.movesCompletedThisMonth}
+                    </p>
+                    <p className="text-[10px] text-[#2C3E2D]/55">This month</p>
                   </div>
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3 col-span-2">
-                    <p className="text-[10px] text-[var(--tx3)] uppercase font-bold">Revenue</p>
-                    <p className="text-[18px] font-bold text-[var(--tx)]">{formatCurrency(summary.stats.revenueThisMonth)}</p>
-                    <p className="text-[10px] text-[var(--tx3)]">Quoted / booked (month)</p>
+                  <div className={`${PM_CARD} p-3 col-span-2`}>
+                    <p className="text-[10px] text-[#2C3E2D]/50 uppercase font-bold tracking-wider">
+                      Revenue
+                    </p>
+                    <p className="text-[18px] font-bold text-[#1a1f1b]">
+                      {formatCurrency(summary.stats.revenueThisMonth)}
+                    </p>
+                    <p className="text-[10px] text-[#2C3E2D]/55">
+                      Quoted / booked (month)
+                    </p>
                   </div>
                 </div>
 
@@ -263,7 +379,7 @@ export default function PartnerPropertyManagementPortal({
                   <button
                     type="button"
                     onClick={() => setTab("book")}
-                    className="px-4 py-2 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]"
+                    className="px-4 py-2.5 rounded-lg text-[11px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243524] transition-colors"
                   >
                     Book A Delivery
                   </button>
@@ -271,17 +387,21 @@ export default function PartnerPropertyManagementPortal({
 
                 {showPropStrip && (
                   <div>
-                    <h2 className="text-[12px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">Properties</h2>
+                    <h2 className={PM_SECTION_EYE}>Properties</h2>
                     <div className="flex flex-wrap gap-2">
                       {summary.properties.map((p) => {
                         const n = dash?.scheduledByProperty?.[p.id] ?? 0;
                         return (
                           <div
                             key={p.id}
-                            className="rounded-xl border border-[var(--brd)] bg-[var(--card)] px-3 py-2 min-w-[140px]"
+                            className={`${PM_CARD} px-3 py-2 min-w-[140px] shadow-none`}
                           >
-                            <p className="text-[13px] font-semibold text-[var(--tx)]">{p.building_name}</p>
-                            <p className="text-[10px] text-[var(--tx3)]">{n > 0 ? `${n} scheduled` : "No upcoming"}</p>
+                            <p className="text-[13px] font-semibold text-[#1a1f1b]">
+                              {p.building_name}
+                            </p>
+                            <p className="text-[10px] text-[#2C3E2D]/55">
+                              {n > 0 ? `${n} scheduled` : "No upcoming"}
+                            </p>
                           </div>
                         );
                       })}
@@ -290,22 +410,34 @@ export default function PartnerPropertyManagementPortal({
                 )}
 
                 {!showPropStrip && summary.properties.length === 1 && (
-                  <div className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3">
-                    <p className="text-[13px] font-semibold text-[var(--tx)]">{summary.properties[0]!.building_name}</p>
-                    <p className="text-[11px] text-[var(--tx3)]">{summary.properties[0]!.address}</p>
+                  <div className={`${PM_CARD} p-3`}>
+                    <p className="text-[13px] font-semibold text-[#1a1f1b]">
+                      {summary.properties[0]!.building_name}
+                    </p>
+                    <p className="text-[11px] text-[#2C3E2D]/55">
+                      {summary.properties[0]!.address}
+                    </p>
                   </div>
                 )}
 
                 {showProjectsOnDash && (summary.projects?.length ?? 0) > 0 && (
                   <div>
-                    <h2 className="text-[12px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">Active programs</h2>
+                    <h2 className={PM_SECTION_EYE}>Active programs</h2>
                     <div className="space-y-2">
                       {summary.projects!.map((p) => (
-                        <div key={p.id} className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-3">
-                          <p className="text-[14px] font-semibold text-[var(--tx)]">{p.project_name}</p>
-                          <p className="text-[11px] text-[var(--tx3)]">
-                            {PROJECT_TYPE_LABELS[p.project_type] ?? labelFor(p.project_type, PROJECT_TYPE_LABELS)}
-                            {p.total_units != null ? ` · ${p.total_units} units planned` : ""}
+                        <div
+                          key={p.id}
+                          className={`${PM_CARD} p-3 shadow-none`}
+                        >
+                          <p className="text-[14px] font-semibold text-[#1a1f1b]">
+                            {p.project_name}
+                          </p>
+                          <p className="text-[11px] text-[#2C3E2D]/55">
+                            {PROJECT_TYPE_LABELS[p.project_type] ??
+                              labelFor(p.project_type, PROJECT_TYPE_LABELS)}
+                            {p.total_units != null
+                              ? ` · ${p.total_units} units planned`
+                              : ""}
                           </p>
                         </div>
                       ))}
@@ -314,10 +446,10 @@ export default function PartnerPropertyManagementPortal({
                 )}
 
                 <div>
-                  <h2 className="text-[12px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">UPCOMING SERVICE</h2>
-                  <div className="rounded-xl border border-[var(--brd)] overflow-hidden bg-[var(--card)]">
-                    <table className="w-full text-[11px]">
-                      <thead className="bg-[var(--bg)] text-[var(--tx3)] text-left">
+                  <h2 className={PM_SECTION_EYE}>Upcoming service</h2>
+                  <div className={PM_TABLE_SHELL}>
+                    <table className="w-full text-[11px] text-[#1a1f1b]">
+                      <thead className={PM_TABLE_HEAD}>
                         <tr>
                           <th className="p-2">DATE</th>
                           <th className="p-2">BUILDING</th>
@@ -330,25 +462,46 @@ export default function PartnerPropertyManagementPortal({
                       <tbody>
                         {summary.upcomingMoves.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="p-4 text-center text-[var(--tx3)]">
+                            <td
+                              colSpan={6}
+                              className="p-4 text-center text-[#2C3E2D]/55"
+                            >
                               No upcoming scheduled service
                             </td>
                           </tr>
                         ) : (
                           summary.upcomingMoves.map((m) => (
-                            <tr key={m.id} className="border-t border-[var(--brd)]">
+                            <tr
+                              key={m.id}
+                              className={PM_ROW}
+                            >
                               <td className="p-2 whitespace-nowrap">
-                                {m.scheduled_date ? formatDate(m.scheduled_date, { month: "short", day: "numeric" }) : "—"}
+                                {m.scheduled_date
+                                  ? formatDate(m.scheduled_date, {
+                                      month: "short",
+                                      day: "numeric",
+                                    })
+                                  : "—"}
                               </td>
-                              <td className="p-2 truncate max-w-[90px]" title={m.building_name || ""}>
+                              <td
+                                className="p-2 truncate max-w-[90px]"
+                                title={m.building_name || ""}
+                              >
                                 {m.building_name || "—"}
                               </td>
                               <td className="p-2">{m.unit_number || "—"}</td>
-                              <td className="p-2 truncate max-w-[100px]" title={m.move_type_label || ""}>
+                              <td
+                                className="p-2 truncate max-w-[100px]"
+                                title={m.move_type_label || ""}
+                              >
                                 {m.move_type_label || "—"}
                               </td>
-                              <td className="p-2 truncate max-w-[80px]">{m.tenant_name || "—"}</td>
-                              <td className="p-2">{labelFor(m.status || "", STATUS_LABELS)}</td>
+                              <td className="p-2 truncate max-w-[80px]">
+                                {m.tenant_name || "—"}
+                              </td>
+                              <td className="p-2">
+                                {labelFor(m.status || "", STATUS_LABELS)}
+                              </td>
                             </tr>
                           ))
                         )}
@@ -359,10 +512,10 @@ export default function PartnerPropertyManagementPortal({
 
                 {(summary.recentCompleted?.length ?? 0) > 0 && (
                   <div>
-                    <h2 className="text-[12px] font-bold text-[var(--tx3)] uppercase tracking-wider mb-2">Recent completed</h2>
-                    <div className="rounded-xl border border-[var(--brd)] overflow-hidden bg-[var(--card)]">
-                      <table className="w-full text-[11px]">
-                        <thead className="bg-[var(--bg)] text-[var(--tx3)] text-left">
+                    <h2 className={PM_SECTION_EYE}>Recent completed</h2>
+                    <div className={PM_TABLE_SHELL}>
+                      <table className="w-full text-[11px] text-[#1a1f1b]">
+                        <thead className={PM_TABLE_HEAD}>
                           <tr>
                             <th className="p-2">DATE</th>
                             <th className="p-2">UNIT</th>
@@ -372,13 +525,24 @@ export default function PartnerPropertyManagementPortal({
                         </thead>
                         <tbody>
                           {summary.recentCompleted!.map((m) => (
-                            <tr key={m.id} className="border-t border-[var(--brd)]">
+                            <tr key={m.id} className={PM_ROW}>
                               <td className="p-2 whitespace-nowrap">
-                                {m.scheduled_date ? formatDate(m.scheduled_date, { month: "short", day: "numeric" }) : "—"}
+                                {m.scheduled_date
+                                  ? formatDate(m.scheduled_date, {
+                                      month: "short",
+                                      day: "numeric",
+                                    })
+                                  : "—"}
                               </td>
                               <td className="p-2">{m.unit_number || "—"}</td>
-                              <td className="p-2">{m.move_type_label || "—"}</td>
-                              <td className="p-2">{formatCurrency(Number(m.amount ?? m.estimate) || 0)}</td>
+                              <td className="p-2">
+                                {m.move_type_label || "—"}
+                              </td>
+                              <td className="p-2">
+                                {formatCurrency(
+                                  Number(m.amount ?? m.estimate) || 0,
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -390,33 +554,50 @@ export default function PartnerPropertyManagementPortal({
             )}
 
             {!loading && tab === "book" && summary && (
-              <PmBookForm
-                summary={summary}
-                onBooked={() => {
-                  toast("Booking submitted — our team will confirm shortly.", "check");
-                  load();
-                  setTab("dash");
-                }}
-              />
+              preview ? (
+                <PmBookPreviewPlaceholder />
+              ) : (
+                <PmBookForm
+                  summary={summary}
+                  onBooked={() => {
+                    toast(
+                      "Booking submitted — our team will confirm shortly.",
+                      "check",
+                    );
+                    load();
+                    setTab("dash");
+                  }}
+                />
+              )
             )}
 
             {!loading && tab === "programs" && (
               <div className="space-y-3">
-                <h2 className="text-[16px] font-bold text-[var(--tx)]">Programs & campaigns</h2>
+                <h2 className="text-[16px] font-bold font-hero text-[#5C1A33]">
+                  Programs & campaigns
+                </h2>
                 {!programs ? (
-                  <p className="text-[13px] text-[var(--tx3)]">Loading…</p>
+                  <p className="text-[13px] text-[#2C3E2D]/55">Loading…</p>
                 ) : programs.projects.length === 0 ? (
-                  <p className="text-[13px] text-[var(--tx2)]">
-                    No programs yet. Moves can still be booked without a program. Your coordinator can add a program in Yugo when needed.
+                  <p className="text-[13px] text-[#2C3E2D]/72 leading-relaxed">
+                    No programs yet. Moves can still be booked without a
+                    program. Your coordinator can add a program in Yugo when
+                    needed.
                   </p>
                 ) : (
                   programs.projects.map((p) => (
-                    <div key={p.id} className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-                      <p className="text-[14px] font-semibold text-[var(--tx)]">{p.project_name}</p>
-                      <p className="text-[11px] text-[var(--tx3)]">
+                    <div key={p.id} className={`${PM_CARD} p-4`}>
+                      <p className="text-[14px] font-semibold text-[#1a1f1b]">
+                        {p.project_name}
+                      </p>
+                      <p className="text-[11px] text-[#2C3E2D]/55">
                         {PROJECT_TYPE_LABELS[p.project_type] ?? p.project_type}
-                        {p.total_units != null ? ` · ${p.total_units} units` : ""}
-                        {p.tracked_units != null ? ` · ${p.tracked_units} tracked` : ""}
+                        {p.total_units != null
+                          ? ` · ${p.total_units} units`
+                          : ""}
+                        {p.tracked_units != null
+                          ? ` · ${p.tracked_units} tracked`
+                          : ""}
                       </p>
                     </div>
                   ))
@@ -430,7 +611,34 @@ export default function PartnerPropertyManagementPortal({
   );
 }
 
-function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => void }) {
+function PmBookPreviewPlaceholder() {
+  return (
+    <div className={`${PM_CARD} p-5 space-y-3`}>
+      <h2 className="text-[16px] font-bold font-hero text-[#5C1A33]">
+        Schedule a tenant move
+      </h2>
+      <p className="text-[13px] text-[#2C3E2D]/72 leading-relaxed">
+        This sample page shows layout and copy only. Sign in as a
+        property-management partner to load the live booking form and
+        submit requests.
+      </p>
+      <Link
+        href="/partner/login"
+        className="inline-flex text-[11px] font-bold tracking-[0.12em] uppercase text-[#5C1A33] border border-[#5C1A33]/35 rounded-lg px-3 py-2.5 hover:bg-[#5C1A33]/6 transition-colors"
+      >
+        Partner sign in
+      </Link>
+    </div>
+  );
+}
+
+function PmBookForm({
+  summary,
+  onBooked,
+}: {
+  summary: PmPortalSummary;
+  onBooked: () => void;
+}) {
   const { toast } = useToast();
   const contract = summary.contract;
   const [propertyId, setPropertyId] = useState(summary.properties[0]?.id ?? "");
@@ -453,12 +661,16 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
   const [scheduledDate, setScheduledDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState(TIME_WINDOWS[0]!);
-  const [urgency, setUrgency] = useState<"standard" | "priority" | "emergency">("standard");
+  const [urgency, setUrgency] = useState<"standard" | "priority" | "emergency">(
+    "standard",
+  );
   const [afterHours, setAfterHours] = useState(false);
   const [holiday, setHoliday] = useState(false);
   const [weekendOverride, setWeekendOverride] = useState(false);
   const [instructions, setInstructions] = useState("");
-  const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>({});
+  const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>(
+    {},
+  );
   const [saving, setSaving] = useState(false);
   const [pricing, setPricing] = useState<{
     zone: string;
@@ -477,14 +689,19 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
     if (!contract?.id) return;
     let cancelled = false;
     Promise.all([
-      fetch(`/api/partner/pm/move-reasons?contract_id=${encodeURIComponent(contract.id)}`).then((r) => r.json()),
-      fetch(`/api/partner/pm/addons?contract_id=${encodeURIComponent(contract.id)}`).then((r) => r.json()),
+      fetch(
+        `/api/partner/pm/move-reasons?contract_id=${encodeURIComponent(contract.id)}`,
+      ).then((r) => r.json()),
+      fetch(
+        `/api/partner/pm/addons?contract_id=${encodeURIComponent(contract.id)}`,
+      ).then((r) => r.json()),
       fetch("/api/partner/pm/projects").then((r) => r.json()),
     ])
       .then(([r1, r2, r3]) => {
         if (cancelled) return;
         setReasons(r1.reasons ?? []);
-        if (r1.reasons?.[0]?.reason_code) setReasonCode((c) => c || r1.reasons[0].reason_code);
+        if (r1.reasons?.[0]?.reason_code)
+          setReasonCode((c) => c || r1.reasons[0].reason_code);
         setAddons(r2.addons ?? []);
         setProjects(r3.projects ?? []);
       })
@@ -496,15 +713,18 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
     };
   }, [contract?.id, toast]);
 
-  const selectedReason = reasons.find((r) => r.reason_code === reasonCode) ?? null;
+  const selectedReason =
+    reasons.find((r) => r.reason_code === reasonCode) ?? null;
 
   useEffect(() => {
     if (!selectedReason || !prop) return;
-    const reasonJustChanged = prevReasonRef.current !== selectedReason.reason_code;
+    const reasonJustChanged =
+      prevReasonRef.current !== selectedReason.reason_code;
     if (reasonJustChanged) prevReasonRef.current = selectedReason.reason_code;
 
     const ua = unitLine(prop.address, unitNumber);
-    const storageHint = "Storage location (Yugo warehouse, building storage, or full address)";
+    const storageHint =
+      "Storage location (Yugo warehouse, building storage, or full address)";
     if (selectedReason.reason_code === "suite_transfer") {
       setFromAddress(unitLine(prop.address, suiteFrom));
       setToAddress(unitLine(prop.address, suiteTo));
@@ -516,23 +736,34 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
     else if (o === "external") {
       if (reasonJustChanged) setFromAddress("");
       else setFromAddress((prev) => (prev.trim() ? prev : ""));
-    } else if (o === "storage") setFromAddress((prev) => (prev.includes("Storage") ? prev : storageHint));
+    } else if (o === "storage")
+      setFromAddress((prev) => (prev.includes("Storage") ? prev : storageHint));
     else if (o === "custom" && reasonJustChanged) setFromAddress("");
 
     if (d === "unit") setToAddress(ua);
     else if (d === "external") {
       if (reasonJustChanged) setToAddress("");
       else setToAddress((prev) => (prev.trim() ? prev : ""));
-    } else if (d === "storage") setToAddress((prev) => (prev.includes("Storage") || prev.length > 12 ? prev : storageHint));
+    } else if (d === "storage")
+      setToAddress((prev) =>
+        prev.includes("Storage") || prev.length > 12 ? prev : storageHint,
+      );
     else if (d === "custom" && reasonJustChanged) setToAddress("");
 
     if (selectedReason.urgency_default === "emergency") setUrgency("emergency");
-    else if (selectedReason.urgency_default === "priority") setUrgency("priority");
+    else if (selectedReason.urgency_default === "priority")
+      setUrgency("priority");
     else setUrgency("standard");
   }, [selectedReason, prop, unitNumber, suiteFrom, suiteTo]);
 
   const runPreview = useCallback(() => {
-    if (!contract?.id || !reasonCode || !fromAddress.trim() || !toAddress.trim() || !propertyId) {
+    if (
+      !contract?.id ||
+      !reasonCode ||
+      !fromAddress.trim() ||
+      !toAddress.trim() ||
+      !propertyId
+    ) {
       setPricing(null);
       return;
     }
@@ -557,7 +788,13 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) {
-          setPricing({ zone: "", subtotal: 0, base_price: 0, weekend: false, error: d.error || "Could not price" });
+          setPricing({
+            zone: "",
+            subtotal: 0,
+            base_price: 0,
+            weekend: false,
+            error: d.error || "Could not price",
+          });
           return;
         }
         setPricing({
@@ -567,9 +804,29 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
           weekend: d.weekend,
         });
       })
-      .catch(() => setPricing({ zone: "", subtotal: 0, base_price: 0, weekend: false, error: "Network error" }))
+      .catch(() =>
+        setPricing({
+          zone: "",
+          subtotal: 0,
+          base_price: 0,
+          weekend: false,
+          error: "Network error",
+        }),
+      )
       .finally(() => setPricingLoading(false));
-  }, [contract?.id, reasonCode, fromAddress, toAddress, propertyId, unitType, scheduledDate, urgency, afterHours, holiday, weekendOverride]);
+  }, [
+    contract?.id,
+    reasonCode,
+    fromAddress,
+    toAddress,
+    propertyId,
+    unitType,
+    scheduledDate,
+    urgency,
+    afterHours,
+    holiday,
+    weekendOverride,
+  ]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -579,7 +836,9 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
     };
   }, [runPreview]);
 
-  const needsReturn = !!(selectedReason?.requires_return_move || selectedReason?.is_round_trip);
+  const needsReturn = !!(
+    selectedReason?.requires_return_move || selectedReason?.is_round_trip
+  );
   const suiteMode = reasonCode === "suite_transfer";
 
   const submit = async (e: FormEvent) => {
@@ -600,7 +859,11 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
     try {
       const addon_selections = addons
         .filter((a) => selectedAddons[a.addon_code])
-        .map((a) => ({ addon_code: a.addon_code, label: a.label, price: a.price }));
+        .map((a) => ({
+          addon_code: a.addon_code,
+          label: a.label,
+          price: a.price,
+        }));
       const res = await fetch("/api/partner/pm/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -640,19 +903,30 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
   };
 
   if (!contract) {
-    return <p className="text-[13px] text-[var(--tx2)]">Booking opens once your contract is active.</p>;
+    return (
+      <p className="text-[13px] text-[#2C3E2D]/72 leading-relaxed">
+        Booking opens once your contract is active.
+      </p>
+    );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4 rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4">
-      <h2 className="text-[16px] font-bold text-[var(--tx)]">Schedule a tenant move</h2>
+    <form
+      onSubmit={submit}
+      className={`space-y-4 ${PM_CARD} p-4 sm:p-5`}
+    >
+      <h2 className="text-[16px] font-bold font-hero text-[#5C1A33]">
+        Schedule a tenant move
+      </h2>
 
       <div>
-        <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Property</label>
+        <label className={PM_LABEL}>
+          Property
+        </label>
         <select
           value={propertyId}
           onChange={(e) => setPropertyId(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          className={PM_FIELD}
           required
         >
           {summary.properties.map((p) => (
@@ -665,31 +939,37 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Unit #</label>
+          <label className={PM_LABEL}>
+            Unit #
+          </label>
           <input
             value={unitNumber}
             onChange={(e) => setUnitNumber(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+            className={PM_FIELD}
             required
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Floor</label>
+          <label className={PM_LABEL}>
+            Floor
+          </label>
           <input
             value={unitFloor}
             onChange={(e) => setUnitFloor(e.target.value)}
             placeholder="Optional"
-            className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+            className={PM_FIELD}
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Unit type</label>
+        <label className={PM_LABEL}>
+          Unit type
+        </label>
         <select
           value={unitType}
           onChange={(e) => setUnitType(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          className={PM_FIELD}
         >
           {["studio", "1br", "2br", "3br", "4br_plus"].map((u) => (
             <option key={u} value={u}>
@@ -700,11 +980,13 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
       </div>
 
       <div>
-        <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Move type</label>
+        <label className={PM_LABEL}>
+          Move type
+        </label>
         <select
           value={reasonCode}
           onChange={(e) => setReasonCode(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          className={PM_FIELD}
           required
         >
           {reasons.length === 0 ? (
@@ -713,21 +995,27 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
             reasons.map((r) => (
               <option key={r.reason_code} value={r.reason_code}>
                 {r.label}
-                {r.urgency_default === "emergency" ? " ⚡" : ""}
+                {r.urgency_default === "emergency" ? " · Emergency" : ""}
               </option>
             ))
           )}
         </select>
-        {selectedReason?.description && <p className="text-[11px] text-[var(--tx3)] mt-1">{selectedReason.description}</p>}
+        {selectedReason?.description && (
+          <p className="text-[11px] text-[#2C3E2D]/55 mt-1 leading-relaxed">
+            {selectedReason.description}
+          </p>
+        )}
       </div>
 
       {projects.length > 0 && (
         <div>
-          <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Program (optional)</label>
+          <label className={PM_LABEL}>
+            Program (optional)
+          </label>
           <select
             value={pmProjectId}
             onChange={(e) => setPmProjectId(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+            className={PM_FIELD}
           >
             <option value="">None — standalone job</option>
             {projects.map((p) => (
@@ -740,34 +1028,40 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
       )}
 
       <div>
-        <label className="flex items-center gap-2 text-[12px] text-[var(--tx2)]">
-          <input type="checkbox" checked={vacantNoTenant} onChange={(e) => setVacantNoTenant(e.target.checked)} />
+        <label className="flex items-center gap-2 text-[12px] text-[#2C3E2D]/75">
+          <input
+            type="checkbox"
+            checked={vacantNoTenant}
+            onChange={(e) => setVacantNoTenant(e.target.checked)}
+          />
           No tenant — vacant unit
         </label>
       </div>
 
       {!vacantNoTenant && (
         <div>
-          <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Tenant / occupant</label>
+          <label className={PM_LABEL}>
+            Tenant / occupant
+          </label>
           <input
             placeholder="Name"
             value={tenantName}
             onChange={(e) => setTenantName(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px] mb-2"
+            className={`${PM_FIELD} mb-2`}
             required={!vacantNoTenant}
           />
           <input
             placeholder="Phone"
             value={tenantPhone}
             onChange={(e) => setTenantPhone(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px] mb-2"
+            className={`${PM_FIELD} mb-2`}
           />
           <input
             placeholder="Email"
             type="email"
             value={tenantEmail}
             onChange={(e) => setTenantEmail(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+            className={PM_FIELD}
           />
         </div>
       )}
@@ -775,20 +1069,24 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
       {suiteMode && (
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">From unit</label>
+            <label className={PM_LABEL}>
+              From unit
+            </label>
             <input
               value={suiteFrom}
               onChange={(e) => setSuiteFrom(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+              className={PM_FIELD}
               required
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">To unit</label>
+            <label className={PM_LABEL}>
+              To unit
+            </label>
             <input
               value={suiteTo}
               onChange={(e) => setSuiteTo(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+              className={PM_FIELD}
               required
             />
           </div>
@@ -796,57 +1094,69 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
       )}
 
       <div>
-        <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Origin</label>
+        <label className={PM_LABEL}>
+          Origin
+        </label>
         <textarea
           value={fromAddress}
           onChange={(e) => setFromAddress(e.target.value)}
           rows={2}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          className={PM_FIELD}
           required
         />
       </div>
       <div>
-        <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Destination</label>
+        <label className={PM_LABEL}>
+          Destination
+        </label>
         <textarea
           value={toAddress}
           onChange={(e) => setToAddress(e.target.value)}
           rows={2}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          className={PM_FIELD}
           required
         />
       </div>
 
       <div>
-        <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Move date</label>
+        <label className={PM_LABEL}>
+          Move date
+        </label>
         <input
           type="date"
           value={scheduledDate}
           onChange={(e) => setScheduledDate(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          className={PM_FIELD}
           required
         />
       </div>
 
       {needsReturn && (
         <div>
-          <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Return Date</label>
+          <label className={PM_LABEL}>
+            Return Date
+          </label>
           <input
             type="date"
             value={returnDate}
             onChange={(e) => setReturnDate(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+            className={PM_FIELD}
             required
           />
-          <p className="text-[10px] text-[var(--tx3)] mt-1">A return leg will be created automatically for ops to confirm.</p>
+          <p className="text-[10px] text-[#2C3E2D]/55 mt-1 leading-relaxed">
+            A return leg will be created automatically for ops to confirm.
+          </p>
         </div>
       )}
 
       <div>
-        <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Time window</label>
+        <label className={PM_LABEL}>
+          Time window
+        </label>
         <select
           value={scheduledTime}
           onChange={(e) => setScheduledTime(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          className={PM_FIELD}
         >
           {TIME_WINDOWS.map((w) => (
             <option key={w} value={w}>
@@ -857,11 +1167,15 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
       </div>
 
       <div>
-        <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Urgency</label>
+        <label className={PM_LABEL}>
+          Urgency
+        </label>
         <select
           value={urgency}
-          onChange={(e) => setUrgency(e.target.value as "standard" | "priority" | "emergency")}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          onChange={(e) =>
+            setUrgency(e.target.value as "standard" | "priority" | "emergency")
+          }
+          className={PM_FIELD}
         >
           <option value="standard">Standard</option>
           <option value="priority">Priority (+15%)</option>
@@ -869,35 +1183,57 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
         </select>
       </div>
 
-      <div className="space-y-2 text-[12px] text-[var(--tx2)]">
+      <div className="space-y-2 text-[12px] text-[#2C3E2D]/75">
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={afterHours} onChange={(e) => setAfterHours(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={afterHours}
+            onChange={(e) => setAfterHours(e.target.checked)}
+          />
           After-hours window
         </label>
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={holiday} onChange={(e) => setHoliday(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={holiday}
+            onChange={(e) => setHoliday(e.target.checked)}
+          />
           Holiday / statutory day
         </label>
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={weekendOverride} onChange={(e) => setWeekendOverride(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={weekendOverride}
+            onChange={(e) => setWeekendOverride(e.target.checked)}
+          />
           Count as weekend pricing
         </label>
       </div>
 
       {addons.length > 0 && (
         <div>
-          <p className="text-[10px] font-bold text-[var(--tx3)] uppercase mb-2">Add-ons (contract rates)</p>
+          <p className={PM_SECTION_EYE}>Add-ons (contract rates)</p>
           <div className="space-y-2">
             {addons.map((a) => (
-              <label key={a.addon_code} className="flex items-start gap-2 text-[12px] text-[var(--tx)]">
+              <label
+                key={a.addon_code}
+                className="flex items-start gap-2 text-[12px] text-[#1a1f1b]"
+              >
                 <input
                   type="checkbox"
                   checked={!!selectedAddons[a.addon_code]}
-                  onChange={(e) => setSelectedAddons((s) => ({ ...s, [a.addon_code]: e.target.checked }))}
+                  onChange={(e) =>
+                    setSelectedAddons((s) => ({
+                      ...s,
+                      [a.addon_code]: e.target.checked,
+                    }))
+                  }
                 />
                 <span>
                   {a.label} — {formatCurrency(Number(a.price))}
-                  {a.price_type !== "flat" ? ` (${a.price_type.replace("_", " ")})` : ""}
+                  {a.price_type !== "flat"
+                    ? ` (${a.price_type.replace("_", " ")})`
+                    : ""}
                 </span>
               </label>
             ))}
@@ -906,27 +1242,36 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
       )}
 
       <div>
-        <label className="block text-[10px] font-bold text-[var(--tx3)] uppercase mb-1">Special instructions</label>
+        <label className={PM_LABEL}>
+          Special instructions
+        </label>
         <textarea
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--brd)] bg-[var(--bg)] text-[13px]"
+          className={PM_FIELD}
         />
       </div>
 
-      <div className="rounded-lg border border-[var(--brd)] bg-[var(--bg)] p-3 text-[12px] space-y-1">
-        <p className="text-[10px] font-bold text-[var(--tx3)] uppercase">Pricing (estimate)</p>
-        {pricingLoading && <p className="text-[var(--tx3)]">Calculating…</p>}
-        {!pricingLoading && pricing?.error && <p className="text-red-600">{pricing.error}</p>}
+      <div className={PM_INSET}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#2C3E2D]/50">
+          Pricing (estimate)
+        </p>
+        {pricingLoading && (
+          <p className="text-[#2C3E2D]/55">Calculating…</p>
+        )}
+        {!pricingLoading && pricing?.error && (
+          <p className="text-red-600">{pricing.error}</p>
+        )}
         {!pricingLoading && pricing && !pricing.error && (
           <>
-            <p className="text-[var(--tx)]">
+            <p className="text-[#1a1f1b]">
               Zone: {ZONE_LABELS[pricing.zone] ?? pricing.zone}
               {pricing.weekend ? " · Weekend surcharges apply" : ""}
             </p>
-            <p className="text-[var(--tx)]">
-              Base: {formatCurrency(pricing.base_price)} → Total: {formatCurrency(pricing.subtotal)}
+            <p className="text-[#1a1f1b]">
+              Base: {formatCurrency(pricing.base_price)} → Total:{" "}
+              {formatCurrency(pricing.subtotal)}
             </p>
           </>
         )}
@@ -935,11 +1280,13 @@ function PmBookForm({ summary, onBooked }: { summary: Summary; onBooked: () => v
       <button
         type="submit"
         disabled={saving || !propertyId || !reasonCode}
-        className="w-full py-3 rounded-xl text-[13px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-50"
+        className="w-full py-3 rounded-lg text-[11px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243524] disabled:opacity-50 transition-colors"
       >
         {saving ? "Submitting…" : "Submit booking request"}
       </button>
-      <p className="text-[10px] text-[var(--tx3)]">Submissions are reviewed by Yugo operations before confirmation.</p>
+      <p className="text-[10px] text-[#2C3E2D]/55 leading-relaxed">
+        Submissions are reviewed by Yugo operations before confirmation.
+      </p>
     </form>
   );
 }

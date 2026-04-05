@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getLegalBranding } from "@/lib/legal-branding";
 import { verifyTrackToken } from "@/lib/track-token";
 import { isUuid } from "@/lib/move-code";
 import TrackDeliveryClient from "./TrackDeliveryClient";
@@ -65,6 +66,8 @@ export default async function TrackDeliveryPage({
 
   const googleReviewUrl = reviewCfg.data?.value || null;
 
+  const { email: companyContactEmail } = await getLegalBranding();
+
   return (
     <TrackDeliveryClient
       delivery={delivery}
@@ -72,6 +75,7 @@ export default async function TrackDeliveryPage({
       initialPickup={pickupCoords}
       initialDropoff={dropoffCoords}
       googleReviewUrl={googleReviewUrl}
+      companyContactEmail={companyContactEmail}
     />
   );
 }

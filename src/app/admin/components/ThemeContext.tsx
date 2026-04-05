@@ -5,8 +5,13 @@ import {
   useContext,
   useState,
   useEffect,
+  useLayoutEffect,
   ReactNode,
 } from "react";
+import {
+  applyDocumentDarkTheme,
+  applyDocumentLightTheme,
+} from "@/lib/document-theme-tokens";
 
 type Theme = "light" | "dark";
 
@@ -20,46 +25,51 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(
   undefined,
 );
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+export function ThemeProvider({
+  children,
+  lockTheme,
+}: {
+  children: ReactNode;
+  /** Crew portal: always light; do not persist or read `yugo-theme` so admin prefs stay independent. */
+  lockTheme?: "light";
+}) {
+  const [theme, setThemeState] = useState<Theme>(lockTheme === "light" ? "light" : "dark");
 
   useEffect(() => {
-    const saved = localStorage.getItem("yugo-theme") as Theme;
-    if (saved) setThemeState(saved);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    const root = document.documentElement.style;
-    if (theme === "light") {
-      /* Match partner light mode: warm off-white/beige palette */
-      root.setProperty("--bg", "#FAF8F5");
-      root.setProperty("--bg2", "#F5F3F0");
-      root.setProperty("--card", "#FFFFFF");
-      root.setProperty("--tx", "#1A1A1A");
-      root.setProperty("--tx2", "#333333");
-      root.setProperty("--tx3", "#524D47");
-      root.setProperty("--brd", "#E8E4DF");
-      root.setProperty("--gdim", "rgba(201,169,98,0.2)");
-      root.setProperty("--btn-text-on-accent", "#FFFFFF");
-      root.setProperty("--gold2", "#B89A52");
-    } else {
-      root.setProperty("--bg", "#0F0F0F");
-      root.setProperty("--bg2", "#1A1A1A");
-      root.setProperty("--card", "#1E1E1E");
-      root.setProperty("--tx", "#E8E5E0");
-      root.setProperty("--tx2", "#999");
-      root.setProperty("--tx3", "#666");
-      root.setProperty("--brd", "#2A2A2A");
-      root.setProperty("--btn-text-on-accent", "#FFFFFF");
-      root.setProperty("--gold2", "#B89A52");
+    if (lockTheme === "light") {
+      setThemeState("light");
+      return;
     }
-    localStorage.setItem("yugo-theme", theme);
-  }, [theme]);
+    const saved = localStorage.getItem("yugo-theme") as Theme;
+    if (saved === "light" || saved === "dark") setThemeState(saved);
+  }, [lockTheme]);
 
-  const toggleTheme = () =>
+  useLayoutEffect(() => {
+    if (lockTheme === "light") {
+      applyDocumentLightTheme();
+      return;
+    }
+    if (theme === "light") {
+      applyDocumentLightTheme();
+    } else {
+      applyDocumentDarkTheme();
+    }
+  }, [theme, lockTheme]);
+
+  useEffect(() => {
+    if (lockTheme !== "light") {
+      localStorage.setItem("yugo-theme", theme);
+    }
+  }, [theme, lockTheme]);
+
+  const toggleTheme = () => {
+    if (lockTheme === "light") return;
     setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
-  const setTheme = (newTheme: Theme) => setThemeState(newTheme);
+  };
+  const setTheme = (newTheme: Theme) => {
+    if (lockTheme === "light") return;
+    setThemeState(newTheme);
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>

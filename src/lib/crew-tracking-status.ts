@@ -37,6 +37,7 @@ export const DELIVERY_STATUS_FLOW: TrackingStatus[] = [
 /** Map legacy short delivery statuses to the full flow equivalents */
 const DELIVERY_STATUS_COMPAT: Record<string, TrackingStatus> = {
   en_route: "en_route_to_pickup",
+  on_route: "en_route_to_pickup",
   arrived: "arrived_at_pickup",
   delivering: "arrived_at_destination",
 };

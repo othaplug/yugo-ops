@@ -23,6 +23,19 @@ import SegmentedProgressBar from "../../components/SegmentedProgressBar";
 import { useToast } from "../../components/Toast";
 import { useRelativeTime } from "./useRelativeTime";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { isPreMoveChecklistComplete, preMoveChecklistCounts } from "@/lib/pre-move-checklist";
+import EstateServiceChecklistAdminRow from "./EstateServiceChecklistAdminRow";
+
+function isEstateTierMove(m: {
+  tier_selected?: string | null;
+  service_tier?: string | null;
+}) {
+  return (
+    String(m.tier_selected || m.service_tier || "")
+      .toLowerCase()
+      .trim() === "estate"
+  );
+}
 
 interface EtaSmsLogEntry {
   message_type: string;
@@ -481,6 +494,21 @@ export default function MoveDetailClient({
     });
   };
 
+  const prepChecklistRecord =
+    (move.pre_move_checklist as Record<string, boolean> | null | undefined) || undefined;
+  const prepCounts = preMoveChecklistCounts(prepChecklistRecord);
+  const prepAllDone = isPreMoveChecklistComplete(prepChecklistRecord);
+  const prepNotifiedAt = move.pre_move_checklist_notified_at as string | null | undefined;
+  const prepNotifiedLabel = prepNotifiedAt
+    ? new Date(prepNotifiedAt).toLocaleString("en-CA", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-5 md:px-6 py-4 md:py-5 space-y-3 animate-fade-up">
       <div className="flex items-center gap-2 mb-1">
@@ -608,6 +636,21 @@ export default function MoveDetailClient({
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ action: "log_status_change", new_status: v, previous_status: move.status }),
                     }).catch(() => {});
+                    if (data && isEstateTierMove(data)) {
+                      fetch(`/api/admin/moves/${move.id}/sync-estate-checklist`, {
+                        method: "POST",
+                      })
+                        .then((r) => (r.ok ? r.json() : null))
+                        .then((j) => {
+                          if (j?.estate_service_checklist != null) {
+                            setMove((p: any) => ({
+                              ...p,
+                              estate_service_checklist: j.estate_service_checklist,
+                            }));
+                          }
+                        })
+                        .catch(() => {});
+                    }
                     if (v.toLowerCase() === "completed") {
                       fetch(`/api/admin/moves/${move.id}/notify-complete`, { method: "POST" }).catch(() => {});
                     }
@@ -674,6 +717,34 @@ export default function MoveDetailClient({
               <span className="text-[12px] tabular-nums text-[var(--tx2)]">{lastUpdatedRelative}</span>
             </div>
           </div>
+
+          <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-xl border border-[var(--brd)]/40 bg-[var(--gdim)]/20 px-3 py-2.5 sm:px-4">
+            <span className="text-[9px] font-semibold tracking-widest uppercase text-[var(--tx3)]/80 shrink-0">
+              Client prep checklist
+            </span>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--tx)]">
+              <span
+                className={
+                  prepAllDone ? "font-bold text-emerald-700 dark:text-emerald-400" : "font-semibold"
+                }
+              >
+                {prepCounts.done}/{prepCounts.total} complete
+              </span>
+              {prepAllDone && prepNotifiedLabel ? (
+                <span className="text-[11px] text-[var(--tx3)]">
+                  · Ops / coordinator notified {prepNotifiedLabel}
+                </span>
+              ) : null}
+              {prepAllDone && !prepNotifiedLabel ? (
+                <span className="text-[11px] text-[var(--tx3)]">· Tracked complete (no notification logged)</span>
+              ) : null}
+            </div>
+          </div>
+
+          {isEstateTierMove(move) ? (
+            <EstateServiceChecklistAdminRow move={move} setMove={setMove} />
+          ) : null}
+
           {(normalizeStatus(move.status) || move.status) !== "cancelled" && (
             <div className="mt-4">
               <SegmentedProgressBar
@@ -1614,6 +1685,29 @@ export default function MoveDetailClient({
         onSaved={(updates) => {
           setMove((prev: any) => ({ ...prev, ...updates }));
           router.refresh();
+          const merged = { ...move, ...updates };
+          if (
+            isEstateTierMove(merged) &&
+            (updates.status != null ||
+              updates.stage != null ||
+              updates.scheduled_date != null ||
+              updates.move_size != null ||
+              updates.inventory_score != null)
+          ) {
+            fetch(`/api/admin/moves/${move.id}/sync-estate-checklist`, {
+              method: "POST",
+            })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((j) => {
+                if (j?.estate_service_checklist != null) {
+                  setMove((p: any) => ({
+                    ...p,
+                    estate_service_checklist: j.estate_service_checklist,
+                  }));
+                }
+              })
+              .catch(() => {});
+          }
         }}
       />
 
@@ -1633,6 +1727,21 @@ export default function MoveDetailClient({
           if (data) setMove(data);
           setEditingCard(null);
           router.refresh();
+          if (data && isEstateTierMove(data)) {
+            fetch(`/api/admin/moves/${move.id}/sync-estate-checklist`, {
+              method: "POST",
+            })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((j) => {
+                if (j?.estate_service_checklist != null) {
+                  setMove((p: any) => ({
+                    ...p,
+                    estate_service_checklist: j.estate_service_checklist,
+                  }));
+                }
+              })
+              .catch(() => {});
+          }
           fetch(`/api/admin/moves/${move.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },

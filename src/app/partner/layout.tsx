@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { getPlatformToggles } from "@/lib/platform-settings";
 import { PartnerOrgProvider } from "./PartnerOrgContext";
+import PartnerLightTheme from "./PartnerLightTheme";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,12 @@ export default async function PartnerLayout({
   }
 
   if (!user) {
-    return <>{children}</>;
+    return (
+      <>
+        <PartnerLightTheme />
+        {children}
+      </>
+    );
   }
 
   if (!toggles.partner_portal) redirect("/portal-disabled");
@@ -78,7 +84,11 @@ export default async function PartnerLayout({
 
   return (
     <PartnerOrgProvider orgDisplayName={orgDisplayName}>
-      <div className="min-h-screen bg-[#FAF8F5]" suppressHydrationWarning>
+      <PartnerLightTheme />
+      <div
+        className="min-h-screen bg-[#FAF7F2]"
+        suppressHydrationWarning
+      >
         {children}
       </div>
     </PartnerOrgProvider>

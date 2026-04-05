@@ -54,6 +54,10 @@ import {
 import { getNotificationsFromEmail } from "@/lib/config";
 import { getClientSupportEmail } from "@/lib/email/client-support-email";
 import { finalizeClientEmailHtml } from "@/lib/email/finalize-client-html";
+import {
+  estate30DayCheckinEmailHtml,
+  type Estate30DayCheckinEmailParams,
+} from "@/lib/email-templates";
 
 export { finalizeClientEmailHtml } from "@/lib/email/finalize-client-html";
 
@@ -106,7 +110,8 @@ export type TemplateName =
   | "partner-statement-charge-failed-partner"
   | "partner-card-expiring"
   | "admin-card-expiring-notice"
-  | "client-card-expiring";
+  | "client-card-expiring"
+  | "estate-30day-checkin";
 
 type TemplateDataMap = {
   "quote-residential": QuoteTemplateData;
@@ -156,6 +161,7 @@ type TemplateDataMap = {
   "partner-card-expiring": Record<string, unknown>;
   "admin-card-expiring-notice": Record<string, unknown>;
   "client-card-expiring": Record<string, unknown>;
+  "estate-30day-checkin": Estate30DayCheckinEmailParams;
 };
 
 interface SendEmailBaseOptions {
@@ -264,6 +270,7 @@ function renderTemplate(template: string, data: unknown): string {
     "partner-card-expiring": partnerCardExpiringEmail,
     "admin-card-expiring-notice": adminCardExpiringNoticeEmail,
     "client-card-expiring": clientCardExpiringEmail,
+    "estate-30day-checkin": estate30DayCheckinEmailHtml,
   };
 
   const renderer = renderers[template];

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import YugoLogo from "@/components/YugoLogo";
+import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import { WINE, FOREST, CREAM } from "@/lib/client-theme";
 import {
   FOREST_BODY,
@@ -12,8 +13,13 @@ import {
   QUOTE_PANEL_RECEIPT,
   QUOTE_SECTION_H2_CLASS,
 } from "@/app/quote/[quoteId]/quote-shared";
-import { toTitleCase } from "@/lib/format-text";
+import {
+  addressWithoutPostalSuffix,
+  formatAddressForDisplay,
+  toTitleCase,
+} from "@/lib/format-text";
 import { normalizeDeliveryItem } from "@/lib/delivery-items";
+import { shouldRevealCrewNamesOnMoveTrack } from "@/lib/track-crew-visibility";
 import {
   CaretDown,
   CaretRight,
@@ -36,7 +42,13 @@ const DeliveryTrackMap = dynamic(() => import("./DeliveryTrackMap"), {
 });
 
 /** Full 5 stages (two-leg delivery). Used for progress %, ETA logic, and admin/partner. */
-const DELIVERY_STAGES_FULL = ["en_route_to_pickup", "arrived_at_pickup", "en_route_to_destination", "arrived_at_destination", "completed"] as const;
+const DELIVERY_STAGES_FULL = [
+  "en_route_to_pickup",
+  "arrived_at_pickup",
+  "en_route_to_destination",
+  "arrived_at_destination",
+  "completed",
+] as const;
 
 /** Legacy stage → normalized stage for backward compatibility */
 function normalizeDeliveryStage(stage: string | null): string | null {
@@ -62,12 +74,18 @@ const CLIENT_STAGE_LABELS: Record<string, string> = {
 };
 
 /** 4 separate client steps: pick up → on the way to you → delivering → complete */
-const CLIENT_MAIN_STEPS = ["En route to pick up", "On the way to you", "Delivering", "Complete"] as const;
+const CLIENT_MAIN_STEPS = [
+  "En route to pick up",
+  "On the way to you",
+  "Delivering",
+  "Complete",
+] as const;
 
 /** Map normalized stage to main step index (0–3) for 4-step progress */
 function getClientMainStepIndex(normalized: string | null): number {
   if (!normalized) return 0;
-  if (normalized === "en_route_to_pickup" || normalized === "arrived_at_pickup") return 0;
+  if (normalized === "en_route_to_pickup" || normalized === "arrived_at_pickup")
+    return 0;
   if (normalized === "en_route_to_destination") return 1;
   if (normalized === "arrived_at_destination") return 2;
   if (normalized === "completed") return 3;
@@ -75,24 +93,44 @@ function getClientMainStepIndex(normalized: string | null): number {
 }
 
 type Coord = { lat: number; lng: number };
-type CrewPos = { current_lat: number; current_lng: number; name?: string } | null;
-type StepCompletedAtTuple = [string | null, string | null, string | null, string | null];
+type CrewPos = {
+  current_lat: number;
+  current_lng: number;
+  name?: string;
+} | null;
+type StepCompletedAtTuple = [
+  string | null,
+  string | null,
+  string | null,
+  string | null,
+];
 
 const TRACK_TZ = "America/Toronto";
 
 function formatStepCompletedTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("en-US", { timeZone: TRACK_TZ, hour: "numeric", minute: "2-digit" });
+  return d.toLocaleTimeString("en-US", {
+    timeZone: TRACK_TZ,
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+function haversineKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -124,7 +162,15 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId: string; token: string; googleReviewUrl?: string | null }) {
+function PostDeliveryRating({
+  deliveryId,
+  token,
+  googleReviewUrl,
+}: {
+  deliveryId: string;
+  token: string;
+  googleReviewUrl?: string | null;
+}) {
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -132,8 +178,10 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
   const [existingRating, setExistingRating] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch(`/api/track/delivery/${deliveryId}/rating?token=${encodeURIComponent(token)}`)
-      .then((r) => r.ok ? r.json() : null)
+    fetch(
+      `/api/track/delivery/${deliveryId}/rating?token=${encodeURIComponent(token)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.satisfaction_rating) {
           setExistingRating(d.satisfaction_rating);
@@ -141,7 +189,9 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
           setSubmitted(true);
         }
       })
-      .catch((err) => { console.error("Failed to load existing delivery rating:", err); });
+      .catch((err) => {
+        console.error("Failed to load existing delivery rating:", err);
+      });
   }, [deliveryId, token]);
 
   const handleSubmit = async () => {
@@ -151,10 +201,16 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
       const res = await fetch(`/api/track/delivery/${deliveryId}/rating`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, rating, comment: comment.trim() || null }),
+        body: JSON.stringify({
+          token,
+          rating,
+          comment: comment.trim() || null,
+        }),
       });
       if (res.ok) setSubmitted(true);
-    } catch (err) { console.error("Failed to submit delivery rating:", err); }
+    } catch (err) {
+      console.error("Failed to submit delivery rating:", err);
+    }
     setSubmitting(false);
   };
 
@@ -164,17 +220,29 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
       <div className="text-center py-4">
         <div className="flex justify-center gap-1 mb-2">
           {[1, 2, 3, 4, 5].map((n) => (
-            <Star key={n} size={22} color={WINE} weight={n <= finalRating ? "fill" : "regular"} aria-hidden />
+            <Star
+              key={n}
+              size={22}
+              color={WINE}
+              weight={n <= finalRating ? "fill" : "regular"}
+              aria-hidden
+            />
           ))}
         </div>
-        <p className="text-[13px] font-semibold" style={{ color: FOREST }}>Thank you for your feedback!</p>
+        <p className="text-[13px] font-semibold" style={{ color: FOREST }}>
+          Thank you for your feedback!
+        </p>
         {finalRating >= 5 && googleReviewUrl && (
           <a
             href={googleReviewUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2 mt-4 px-5 py-3 rounded-none border text-[11px] font-bold uppercase tracking-[0.12em] transition-opacity hover:opacity-80"
-            style={{ borderColor: `${FOREST}`, color: FOREST, backgroundColor: "transparent" }}
+            style={{
+              borderColor: `${FOREST}`,
+              color: FOREST,
+              backgroundColor: "transparent",
+            }}
           >
             <GoogleLogo size={14} className="shrink-0" aria-hidden />
             Google review
@@ -187,10 +255,20 @@ function PostDeliveryRating({ deliveryId, token, googleReviewUrl }: { deliveryId
 
   return (
     <div className="space-y-4">
-      <h3 className={`${QUOTE_SECTION_H2_CLASS} text-[1.25rem]`} style={{ color: WINE }}>Rate your delivery</h3>
+      <h3
+        className={`${QUOTE_SECTION_H2_CLASS} text-[1.25rem]`}
+        style={{ color: WINE }}
+      >
+        Rate your delivery
+      </h3>
       <div className="flex justify-center gap-2">
         {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} type="button" onClick={() => setRating(n)} className="transition-transform hover:scale-110">
+          <button
+            key={n}
+            type="button"
+            onClick={() => setRating(n)}
+            className="transition-transform hover:scale-110"
+          >
             <Star
               size={32}
               color={WINE}
@@ -234,6 +312,7 @@ export default function TrackDeliveryClient({
   b2bCrewSize = null,
   b2bAssembly = false,
   b2bDebrisRemoval = false,
+  companyContactEmail = process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
 }: {
   delivery: any;
   token: string;
@@ -248,24 +327,33 @@ export default function TrackDeliveryClient({
   b2bCrewSize?: number | null;
   b2bAssembly?: boolean;
   b2bDebrisRemoval?: boolean;
+  companyContactEmail?: string;
 }) {
-  const [liveStage, setLiveStage] = useState<string | null>(delivery.stage || null);
+  const [liveStage, setLiveStage] = useState<string | null>(
+    delivery.stage || null,
+  );
   const [crewLoc, setCrewLoc] = useState<CrewPos>(null);
   const [crewName, setCrewName] = useState<string | null>(null);
   const [crewPhone, setCrewPhone] = useState<string | null>(null);
   const [dispatchPhone, setDispatchPhone] = useState<string | null>(null);
-  const defaultCenter = initialDropoff || initialPickup || { lat: 43.665, lng: -79.385 };
+  const defaultCenter = initialDropoff ||
+    initialPickup || { lat: 43.665, lng: -79.385 };
   const [center, setCenter] = useState<Coord>(defaultCenter);
   const [pickup, setPickup] = useState<Coord | null>(initialPickup || null);
   const [dropoff, setDropoff] = useState<Coord | null>(initialDropoff || null);
   const [hasActiveTracking, setHasActiveTracking] = useState(false);
-  const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(delivery.eta_current_minutes ?? null);
-  const [stepCompletedAt, setStepCompletedAt] = useState<StepCompletedAtTuple | null>(null);
+  const [liveEtaMinutes, setLiveEtaMinutes] = useState<number | null>(
+    delivery.eta_current_minutes ?? null,
+  );
+  const [stepCompletedAt, setStepCompletedAt] =
+    useState<StepCompletedAtTuple | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
   const prevTrackingRef = useRef(false);
 
-  useEffect(() => { injectStyles(); }, []);
+  useEffect(() => {
+    injectStyles();
+  }, []);
 
   // Auto-expand when tracking becomes active
   useEffect(() => {
@@ -280,7 +368,7 @@ export default function TrackDeliveryClient({
     const poll = async () => {
       try {
         const res = await fetch(
-          `/api/track/delivery/${delivery.id}/crew-status?token=${encodeURIComponent(token)}`
+          `/api/track/delivery/${delivery.id}/crew-status?token=${encodeURIComponent(token)}`,
         );
         if (cancelled || !res.ok) return;
         const data = await res.json();
@@ -294,41 +382,101 @@ export default function TrackDeliveryClient({
         if (data.pickup) setPickup(data.pickup);
         if (data.dropoff) setDropoff(data.dropoff);
         setHasActiveTracking(!!data.hasActiveTracking);
-        if (data.eta_current_minutes != null) setLiveEtaMinutes(data.eta_current_minutes);
+        if (data.eta_current_minutes != null)
+          setLiveEtaMinutes(data.eta_current_minutes);
         else setLiveEtaMinutes(null);
-        if (Array.isArray(data.stepCompletedAt) && data.stepCompletedAt.length === 4) {
+        if (
+          Array.isArray(data.stepCompletedAt) &&
+          data.stepCompletedAt.length === 4
+        ) {
           setStepCompletedAt(data.stepCompletedAt as StepCompletedAtTuple);
         }
-      } catch (err) { console.error("Failed to poll delivery crew status:", err); }
+      } catch (err) {
+        console.error("Failed to poll delivery crew status:", err);
+      }
     };
     poll();
     const id = setInterval(poll, 5_000);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [delivery.id, token]);
 
   const itemsCount = Array.isArray(delivery.items) ? delivery.items.length : 0;
   const normalizedStage = normalizeDeliveryStage(liveStage);
-  const statusVal = normalizedStage === "completed" ? "delivered" : delivery.status;
-  const isInProgress = !!normalizedStage && normalizedStage !== "completed" && DELIVERY_STAGES_FULL.includes(normalizedStage as (typeof DELIVERY_STAGES_FULL)[number]);
-  const isCompleted = statusVal === "delivered" || statusVal === "completed" || normalizedStage === "completed";
+  const statusVal =
+    normalizedStage === "completed" ? "delivered" : delivery.status;
+  const isInProgress =
+    !!normalizedStage &&
+    normalizedStage !== "completed" &&
+    DELIVERY_STAGES_FULL.includes(
+      normalizedStage as (typeof DELIVERY_STAGES_FULL)[number],
+    );
+  const isCompleted =
+    statusVal === "delivered" ||
+    statusVal === "completed" ||
+    normalizedStage === "completed";
 
   const clientMainStepIdx = getClientMainStepIndex(normalizedStage);
 
-  const PICKUP_STAGES = ["en_route_to_pickup", "arrived_at_pickup", "en_route", "on_route", "arrived", "arrived_on_site"];
-  const isPrePickup = PICKUP_STAGES.includes(normalizedStage || "") || PICKUP_STAGES.includes(liveStage || "") || !(normalizedStage ?? "").trim();
+  const PICKUP_STAGES = [
+    "en_route_to_pickup",
+    "arrived_at_pickup",
+    "en_route",
+    "on_route",
+    "arrived",
+    "arrived_on_site",
+  ];
+  const isPrePickup =
+    PICKUP_STAGES.includes(normalizedStage || "") ||
+    PICKUP_STAGES.includes(liveStage || "") ||
+    !(normalizedStage ?? "").trim();
   const etaTarget = isPrePickup && pickup ? pickup : dropoff;
   const haversineEta =
     crewLoc && etaTarget && isInProgress
-      ? Math.max(1, Math.round((haversineKm(crewLoc.current_lat, crewLoc.current_lng, etaTarget.lat, etaTarget.lng) / 30) * 60))
+      ? Math.max(
+          1,
+          Math.round(
+            (haversineKm(
+              crewLoc.current_lat,
+              crewLoc.current_lng,
+              etaTarget.lat,
+              etaTarget.lng,
+            ) /
+              30) *
+              60,
+          ),
+        )
       : null;
-  const displayEta = (liveEtaMinutes != null && liveEtaMinutes > 0) ? liveEtaMinutes : haversineEta;
+  const displayEta =
+    liveEtaMinutes != null && liveEtaMinutes > 0
+      ? liveEtaMinutes
+      : haversineEta;
 
   const scheduledDate = delivery.scheduled_date
-    ? new Date(delivery.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { timeZone: "America/Toronto", weekday: "long", month: "long", day: "numeric" })
+    ? new Date(delivery.scheduled_date + "T00:00:00").toLocaleDateString(
+        "en-US",
+        {
+          timeZone: "America/Toronto",
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        },
+      )
     : null;
 
   const hasMapCoords = !!(pickup || dropoff) || !!crewLoc;
   const crewHasStarted = hasActiveTracking;
+  const deliveryCrewAssigned = !!delivery.crew_id;
+  const deliveryRevealCrewNames = shouldRevealCrewNamesOnMoveTrack({
+    crewAssigned: deliveryCrewAssigned,
+    scheduledDate: delivery.scheduled_date ?? null,
+    isInProgress: isInProgress || crewHasStarted,
+    isCompleted,
+  });
+  const displayDeliveryCrewName =
+    deliveryRevealCrewNames && crewName ? crewName : null;
   const timeWindow = delivery.delivery_window || delivery.time_slot || null;
   const pickupAddr = delivery.pickup_address || delivery.from_address;
   const dropoffAddr = delivery.delivery_address || delivery.to_address;
@@ -338,17 +486,27 @@ export default function TrackDeliveryClient({
     return (
       <div className="fixed inset-0 z-50 bg-[#1A1A1A]">
         {crewHasStarted && liveStage && (
-          <div className="absolute top-4 left-4 z-20 rounded-none bg-white/95 backdrop-blur-sm border px-4 py-3 flex items-center gap-3 shadow-lg" style={{ borderColor: `${FOREST}22` }}>
+          <div
+            className="absolute top-4 left-4 z-20 rounded-none bg-white/95 backdrop-blur-sm border px-4 py-3 flex items-center gap-3 shadow-lg"
+            style={{ borderColor: `${FOREST}22` }}
+          >
             <span className="relative flex h-3 w-3 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
               <span className="relative inline-flex rounded-full h-3 w-3 bg-[#22C55E]" />
             </span>
             <div>
               <div className="text-[13px] font-bold" style={{ color: FOREST }}>
-                {normalizedStage ? CLIENT_STAGE_LABELS[normalizedStage] || CLIENT_MAIN_STEPS[clientMainStepIdx] : toTitleCase(liveStage || "")}
+                {normalizedStage
+                  ? CLIENT_STAGE_LABELS[normalizedStage] ||
+                    CLIENT_MAIN_STEPS[clientMainStepIdx]
+                  : toTitleCase(liveStage || "")}
               </div>
               <div className="text-[11px] opacity-70" style={{ color: FOREST }}>
-                {displayEta != null ? `~${displayEta} min away` : crewName ? `Crew: ${crewName}` : "Your crew is on the way"}
+                {displayEta != null
+                  ? `~${displayEta} min away`
+                  : displayDeliveryCrewName
+                    ? `Crew: ${displayDeliveryCrewName}`
+                    : "Your crew is on the way"}
               </div>
             </div>
           </div>
@@ -365,10 +523,18 @@ export default function TrackDeliveryClient({
         </button>
 
         {hasMapCoords ? (
-          <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
+          <DeliveryTrackMap
+            center={center}
+            crew={crewLoc}
+            pickup={pickup}
+            dropoff={dropoff}
+            liveStage={liveStage}
+          />
         ) : (
           <div className="h-full flex items-center justify-center">
-            <span className="text-[13px] text-white/60">No map data available</span>
+            <span className="text-[13px] text-white/60">
+              No map data available
+            </span>
           </div>
         )}
       </div>
@@ -381,10 +547,8 @@ export default function TrackDeliveryClient({
       style={{ backgroundColor: CREAM, color: FOREST }}
       data-theme="light"
     >
-
       {/* ── CONTENT ── */}
       <div className="flex-1 max-w-[520px] w-full mx-auto px-4 sm:px-5 py-5 md:py-6">
-
         {/* Logo */}
         <div className="mb-4 anim-slide-up">
           <Link href="/tracking">
@@ -394,33 +558,58 @@ export default function TrackDeliveryClient({
 
         {/* Header */}
         <div className="mb-5 anim-slide-up anim-delay-1">
-          <p className={`${QUOTE_EYEBROW_CLASS} mb-1.5`} style={{ color: FOREST_MUTED }}>
+          <p
+            className={`${QUOTE_EYEBROW_CLASS} mb-1.5`}
+            style={{ color: FOREST_MUTED }}
+          >
             {b2bAudience === "recipient" && b2bCoBrand
               ? `${b2bCoBrand} · Yugo`
               : b2bAudience === "business"
                 ? "Your delivery from Yugo"
                 : "Delivery Tracking"}
           </p>
-          <h1 className={`${QUOTE_SECTION_H2_CLASS} font-semibold`} style={{ color: WINE }}>
+          <h1
+            className={`${QUOTE_SECTION_H2_CLASS} font-semibold`}
+            style={{ color: WINE }}
+          >
             {b2bAudience === "recipient" && b2bCoBrand
               ? `Your ${b2bCoBrand} delivery`
               : delivery.customer_name || "Your Delivery"}
           </h1>
           {b2bItemSummary ? (
-            <p className="text-[13px] mt-2 font-medium leading-relaxed" style={{ color: FOREST_BODY }}>
+            <p
+              className="text-[13px] mt-2 font-medium leading-relaxed"
+              style={{ color: FOREST_BODY }}
+            >
               Item: {b2bItemSummary}
             </p>
           ) : null}
           {b2bAudience ? (
-            <p className="text-[12px] mt-3 font-semibold" style={{ color: FOREST }}>
-              <span className={`${QUOTE_EYEBROW_CLASS} mr-2`} style={{ color: FOREST_MUTED }}>Status</span>
+            <p
+              className="text-[12px] mt-3 font-semibold"
+              style={{ color: FOREST }}
+            >
+              <span
+                className={`${QUOTE_EYEBROW_CLASS} mr-2`}
+                style={{ color: FOREST_MUTED }}
+              >
+                Status
+              </span>
               {(() => {
-                const st = (delivery.status || "").toLowerCase().replace(/-/g, "_");
+                const st = (delivery.status || "")
+                  .toLowerCase()
+                  .replace(/-/g, "_");
                 if (isCompleted || st === "delivered") return "Delivered";
-                if (st === "confirmed" || st === "scheduled") return "Confirmed";
-                if (st === "pending" || st === "pending_approval") return "Pending";
+                if (st === "confirmed" || st === "scheduled")
+                  return "Confirmed";
+                if (st === "pending" || st === "pending_approval")
+                  return "Pending";
                 if (isInProgress || st === "in_progress") {
-                  if (normalizedStage === "en_route_to_pickup" || normalizedStage === "arrived_at_pickup") return "Dispatched";
+                  if (
+                    normalizedStage === "en_route_to_pickup" ||
+                    normalizedStage === "arrived_at_pickup"
+                  )
+                    return "Dispatched";
                   return "In transit";
                 }
                 return "Confirmed";
@@ -433,7 +622,14 @@ export default function TrackDeliveryClient({
             </p>
           ) : null}
           <div className="flex items-center gap-2 mt-1.5">
-            <span className="font-mono text-[11px] px-2 py-0.5 rounded-none border" style={{ color: FOREST_MUTED, borderColor: `${FOREST}18`, backgroundColor: `${FOREST}05` }}>
+            <span
+              className="font-mono text-[11px] px-2 py-0.5 rounded-none border"
+              style={{
+                color: FOREST_MUTED,
+                borderColor: `${FOREST}18`,
+                backgroundColor: `${FOREST}05`,
+              }}
+            >
               {delivery.delivery_number}
             </span>
             {isInProgress && (
@@ -451,169 +647,336 @@ export default function TrackDeliveryClient({
         </div>
 
         <div className={TRACK_SECTION_DIVIDE}>
-        {/* ── Progress (completed steps show check; upcoming steps are empty nodes) ── */}
-        {(isInProgress || isCompleted) && (
-          <div className="py-5 anim-slide-up anim-delay-2">
-            {/* Progress bar with stage nodes (no title row, stage labels are under each node; "Complete" badge is in header) */}
-            {/* Each node is fixed 64 px wide so the absolute track can be anchored at left/right: 32 (= half node width) */}
-            <div className="relative" style={{ paddingBottom: 30 }}>
-              {/* Track */}
-              <div
-                className="absolute rounded-full"
-                style={{
-                  top: 12.5,
-                  left: 32,
-                  right: 32,
-                  height: 5,
-                  backgroundColor: `${FOREST}10`,
-                  zIndex: 0,
-                }}
-              />
-              <div
-                className="absolute rounded-full transition-all duration-700 ease-out"
-                style={{
-                  top: 12.5,
-                  left: 32,
-                  height: 5,
-                  width: `calc(${(isCompleted ? 1 : clientMainStepIdx / (CLIENT_MAIN_STEPS.length - 1))} * (100% - 64px))`,
-                  background: `linear-gradient(90deg, ${WINE}, ${FOREST})`,
-                  zIndex: 1,
-                }}
-              />
-              {/* Stage nodes */}
-              <div className="flex justify-between items-start" style={{ position: "relative", zIndex: 2 }}>
-                {CLIENT_MAIN_STEPS.map((label, i) => {
-                  const isPast = clientMainStepIdx > i || isCompleted;
-                  const isCurrent = clientMainStepIdx === i && !isCompleted;
-                  const doneAt = stepCompletedAt?.[i];
-                  const doneTimeLabel = doneAt ? formatStepCompletedTime(doneAt) : "";
-                  return (
-                    <div key={label} className="flex flex-col items-center" style={{ width: 64 }}>
-                      <div className="relative">
-                        {isCurrent && (
-                          <span
-                            className="step-ping absolute inset-0 rounded-full"
-                            style={{ backgroundColor: WINE, opacity: 0.25 }}
-                          />
-                        )}
+          {/* ── Progress (completed steps show check; upcoming steps are empty nodes) ── */}
+          {(isInProgress || isCompleted) && (
+            <div className="py-5 anim-slide-up anim-delay-2">
+              {/* Progress bar with stage nodes (no title row, stage labels are under each node; "Complete" badge is in header) */}
+              {/* Each node is fixed 64 px wide so the absolute track can be anchored at left/right: 32 (= half node width) */}
+              <div className="relative" style={{ paddingBottom: 30 }}>
+                {/* Track */}
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    top: 12.5,
+                    left: 32,
+                    right: 32,
+                    height: 5,
+                    backgroundColor: `${FOREST}10`,
+                    zIndex: 0,
+                  }}
+                />
+                <div
+                  className="absolute rounded-full transition-all duration-700 ease-out"
+                  style={{
+                    top: 12.5,
+                    left: 32,
+                    height: 5,
+                    width: `calc(${isCompleted ? 1 : clientMainStepIdx / (CLIENT_MAIN_STEPS.length - 1)} * (100% - 64px))`,
+                    background: `linear-gradient(90deg, ${WINE}, ${FOREST})`,
+                    zIndex: 1,
+                  }}
+                />
+                {/* Stage nodes */}
+                <div
+                  className="flex justify-between items-start"
+                  style={{ position: "relative", zIndex: 2 }}
+                >
+                  {CLIENT_MAIN_STEPS.map((label, i) => {
+                    const isPast = clientMainStepIdx > i || isCompleted;
+                    const isCurrent = clientMainStepIdx === i && !isCompleted;
+                    const doneAt = stepCompletedAt?.[i];
+                    const doneTimeLabel = doneAt
+                      ? formatStepCompletedTime(doneAt)
+                      : "";
+                    return (
+                      <div
+                        key={label}
+                        className="flex flex-col items-center"
+                        style={{ width: 64 }}
+                      >
+                        <div className="relative">
+                          {isCurrent && (
+                            <span
+                              className="step-ping absolute inset-0 rounded-full"
+                              style={{ backgroundColor: WINE, opacity: 0.25 }}
+                            />
+                          )}
+                          <div
+                            className={`flex items-center justify-center rounded-full transition-all duration-500 ${isPast ? "step-bounce-in" : ""}`}
+                            style={{
+                              width: 30,
+                              height: 30,
+                              backgroundColor: isPast
+                                ? FOREST
+                                : isCurrent
+                                  ? WINE
+                                  : CREAM,
+                              border:
+                                !isPast && !isCurrent
+                                  ? `1.5px solid ${FOREST}22`
+                                  : isCurrent
+                                    ? `1.5px solid ${WINE}`
+                                    : "none",
+                              boxShadow: isCurrent
+                                ? `0 0 0 3px ${WINE}22`
+                                : undefined,
+                            }}
+                          >
+                            {isPast ? (
+                              <Check
+                                weight="bold"
+                                size={12}
+                                color="#fff"
+                                aria-hidden
+                              />
+                            ) : null}
+                          </div>
+                        </div>
                         <div
-                          className={`flex items-center justify-center rounded-full transition-all duration-500 ${isPast ? "step-bounce-in" : ""}`}
+                          className="mt-2 text-center leading-tight font-semibold"
                           style={{
-                            width: 30,
-                            height: 30,
-                            backgroundColor: isPast ? FOREST : isCurrent ? WINE : CREAM,
-                            border: !isPast && !isCurrent ? `1.5px solid ${FOREST}22` : isCurrent ? `1.5px solid ${WINE}` : "none",
-                            boxShadow: isCurrent ? `0 0 0 3px ${WINE}22` : undefined,
+                            fontSize: 9.5,
+                            maxWidth: 76,
+                            color: isCurrent
+                              ? WINE
+                              : isPast
+                                ? FOREST
+                                : FOREST_MUTED,
                           }}
                         >
-                          {isPast ? (
-                            <Check weight="bold" size={12} color="#fff" aria-hidden />
+                          {label}
+                          {isPast && doneTimeLabel ? (
+                            <div
+                              className="font-normal tabular-nums mt-0.5"
+                              style={{
+                                fontSize: 8.5,
+                                color: `${FOREST}52`,
+                                letterSpacing: "0.02em",
+                              }}
+                            >
+                              {doneTimeLabel}
+                            </div>
                           ) : null}
                         </div>
                       </div>
-                      <div
-                        className="mt-2 text-center leading-tight font-semibold"
-                        style={{
-                          fontSize: 9.5,
-                          maxWidth: 76,
-                          color: isCurrent ? WINE : isPast ? FOREST : FOREST_MUTED,
-                        }}
-                      >
-                        {label}
-                        {isPast && doneTimeLabel ? (
-                          <div
-                            className="font-normal tabular-nums mt-0.5"
-                            style={{ fontSize: 8.5, color: `${FOREST}52`, letterSpacing: "0.02em" }}
-                          >
-                            {doneTimeLabel}
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Route ── */}
-        {(pickupAddr || dropoffAddr) ? (
-          <div className="py-5 anim-slide-up anim-delay-3 space-y-4">
-            {pickupAddr && (
-              <div className="min-w-0">
-                <div className={`${QUOTE_EYEBROW_CLASS} mb-0.5`} style={{ color: FOREST_MUTED }}>Pickup from</div>
-                <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{pickupAddr}</div>
-              </div>
-            )}
-            {pickupAddr && dropoffAddr && (
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px" style={{ backgroundColor: `${FOREST}10` }} />
-                <div className="flex flex-col items-center gap-[3px] shrink-0">
-                  {[0, 1, 2].map((d) => (
-                    <div key={d} className="w-[3px] h-[3px] rounded-full route-dot-pulse" style={{ backgroundColor: `${FOREST}25`, animationDelay: `${d * 0.3}s` }} />
-                  ))}
+                    );
+                  })}
                 </div>
-                <div className="flex-1 h-px" style={{ backgroundColor: `${FOREST}10` }} />
               </div>
-            )}
-            {dropoffAddr && (
-              <div className="min-w-0">
-                <div className={`${QUOTE_EYEBROW_CLASS} mb-0.5`} style={{ color: FOREST_MUTED }}>Deliver to</div>
-                <div className="text-[13px] font-medium leading-snug" style={{ color: FOREST }}>{dropoffAddr}</div>
-              </div>
-            )}
-          </div>
-        ) : null}
+            </div>
+          )}
 
-        {/* ── Schedule & status (receipt-style panel, quote-aligned) ── */}
-        <div className="py-5 anim-slide-up anim-delay-3">
-          <div className={QUOTE_PANEL_RECEIPT}>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <div className="min-w-0">
-                <span className={QUOTE_EYEBROW_CLASS} style={{ color: FOREST_MUTED }}>Date</span>
-                <p className="text-[13px] font-semibold mt-1 leading-snug" style={{ color: FOREST }}>
-                  {scheduledDate || delivery.scheduled_date || "TBD"}
-                </p>
-              </div>
-              <div className="min-w-0">
-                <span className={QUOTE_EYEBROW_CLASS} style={{ color: FOREST_MUTED }}>Window</span>
-                <p className="text-[13px] font-semibold mt-1 leading-snug" style={{ color: FOREST }}>
-                  {timeWindow || "Flexible"}
-                </p>
-              </div>
-              <div className="min-w-0">
-                <span className={QUOTE_EYEBROW_CLASS} style={{ color: FOREST_MUTED }}>Items</span>
-                <p className="text-[13px] font-semibold mt-1 leading-snug" style={{ color: FOREST }}>
-                  {itemsCount} item{itemsCount !== 1 ? "s" : ""}
-                </p>
-              </div>
-              <div className="min-w-0">
-                <span className={QUOTE_EYEBROW_CLASS} style={{ color: FOREST_MUTED }}>
-                  {displayEta != null ? "ETA" : "Status"}
-                </span>
-                <p className="text-[13px] font-semibold mt-1 leading-snug" style={{ color: displayEta != null ? WINE : FOREST }}>
-                  {displayEta != null ? `~${displayEta} min` : isCompleted ? "Complete" : isInProgress ? (CLIENT_STAGE_LABELS[normalizedStage || ""] || CLIENT_MAIN_STEPS[clientMainStepIdx] || "In Progress") : "Scheduled"}
-                </p>
+          {/* ── Route (vertical timeline: P / dashed / D, forest) ── */}
+          {pickupAddr || dropoffAddr ? (
+            <div className="py-5 anim-slide-up anim-delay-3 flex flex-col gap-5 min-w-0">
+              {pickupAddr ? (
+                <div className="flex gap-3.5 min-w-0">
+                  <div
+                    className="w-7 flex justify-center shrink-0 pt-0.5"
+                    aria-hidden
+                  >
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold tracking-[0.04em] text-white"
+                      style={{ backgroundColor: FOREST }}
+                    >
+                      P
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className={`${QUOTE_EYEBROW_CLASS} mb-0.5`}
+                      style={{ color: FOREST }}
+                    >
+                      Pickup
+                    </div>
+                    <div
+                      className="text-[13px] font-bold leading-snug"
+                      style={{ color: FOREST }}
+                    >
+                      {addressWithoutPostalSuffix(
+                        formatAddressForDisplay(pickupAddr),
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              {pickupAddr && dropoffAddr ? (
+                <div className="flex gap-3.5 min-w-0 -my-1" aria-hidden>
+                  <div className="w-7 flex justify-center shrink-0">
+                    <div
+                      className="w-0 border-l-2 border-dashed min-h-[28px]"
+                      style={{ borderColor: FOREST }}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0" />
+                </div>
+              ) : null}
+              {dropoffAddr ? (
+                <div className="flex gap-3.5 min-w-0">
+                  <div
+                    className="w-7 flex justify-center shrink-0 pt-0.5"
+                    aria-hidden
+                  >
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold tracking-[0.04em] text-white"
+                      style={{ backgroundColor: FOREST }}
+                    >
+                      D
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className={`${QUOTE_EYEBROW_CLASS} mb-0.5`}
+                      style={{ color: FOREST }}
+                    >
+                      Delivery
+                    </div>
+                    <div
+                      className="text-[13px] font-bold leading-snug"
+                      style={{ color: FOREST }}
+                    >
+                      {addressWithoutPostalSuffix(
+                        formatAddressForDisplay(dropoffAddr),
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* ── Schedule & status (receipt-style panel, quote-aligned) ── */}
+          <div className="py-5 anim-slide-up anim-delay-3">
+            <div className={QUOTE_PANEL_RECEIPT}>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                <div className="min-w-0">
+                  <span
+                    className={QUOTE_EYEBROW_CLASS}
+                    style={{ color: FOREST_MUTED }}
+                  >
+                    Date
+                  </span>
+                  <p
+                    className="text-[13px] font-semibold mt-1 leading-snug"
+                    style={{ color: FOREST }}
+                  >
+                    {scheduledDate || delivery.scheduled_date || "TBD"}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <span
+                    className={QUOTE_EYEBROW_CLASS}
+                    style={{ color: FOREST_MUTED }}
+                  >
+                    Window
+                  </span>
+                  <p
+                    className="text-[13px] font-semibold mt-1 leading-snug"
+                    style={{ color: FOREST }}
+                  >
+                    {timeWindow || "Flexible"}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <span
+                    className={QUOTE_EYEBROW_CLASS}
+                    style={{ color: FOREST_MUTED }}
+                  >
+                    Items
+                  </span>
+                  <p
+                    className="text-[13px] font-semibold mt-1 leading-snug"
+                    style={{ color: FOREST }}
+                  >
+                    {itemsCount} item{itemsCount !== 1 ? "s" : ""}
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <span
+                    className={QUOTE_EYEBROW_CLASS}
+                    style={{ color: FOREST_MUTED }}
+                  >
+                    {displayEta != null ? "ETA" : "Status"}
+                  </span>
+                  <p
+                    className="text-[13px] font-semibold mt-1 leading-snug"
+                    style={{ color: displayEta != null ? WINE : FOREST }}
+                  >
+                    {displayEta != null
+                      ? `~${displayEta} min`
+                      : isCompleted
+                        ? "Complete"
+                        : isInProgress
+                          ? CLIENT_STAGE_LABELS[normalizedStage || ""] ||
+                            CLIENT_MAIN_STEPS[clientMainStepIdx] ||
+                            "In Progress"
+                          : "Scheduled"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ── Crew ── */}
-        {crewName && (
+          {/* ── Crew ── */}
           <div className="py-5 anim-slide-up anim-delay-4">
             <div className="flex items-center gap-3.5">
               <div
                 className="w-10 h-10 rounded-none border flex items-center justify-center shrink-0"
-                style={{ borderColor: `${FOREST}18`, backgroundColor: `${FOREST}06` }}
+                style={{
+                  borderColor: `${FOREST}18`,
+                  backgroundColor: `${FOREST}06`,
+                }}
                 aria-hidden
               >
                 <User size={18} color={FOREST} aria-hidden />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[14px] font-semibold" style={{ color: FOREST }}>{crewName}</div>
-                <div className="text-[11px]" style={{ color: FOREST_MUTED }}>Your delivery crew</div>
+                {displayDeliveryCrewName ? (
+                  <>
+                    <div
+                      className="text-[14px] font-semibold"
+                      style={{ color: FOREST }}
+                    >
+                      {displayDeliveryCrewName}
+                    </div>
+                    <div
+                      className="text-[11px]"
+                      style={{ color: FOREST_MUTED }}
+                    >
+                      Your delivery crew
+                    </div>
+                  </>
+                ) : deliveryCrewAssigned ? (
+                  <>
+                    <div
+                      className="text-[14px] font-semibold"
+                      style={{ color: FOREST }}
+                    >
+                      Crew assigned
+                    </div>
+                    <div
+                      className="text-[11px] leading-snug"
+                      style={{ color: FOREST_MUTED }}
+                    >
+                      Names are shared within three days of your delivery.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className="text-[14px] font-semibold"
+                      style={{ color: FOREST }}
+                    >
+                      Crew not assigned yet
+                    </div>
+                    <div
+                      className="text-[11px] leading-snug"
+                      style={{ color: FOREST_MUTED }}
+                    >
+                      Your coordinator will confirm your team here.
+                    </div>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {(crewPhone || dispatchPhone) && (
@@ -622,7 +985,11 @@ export default function TrackDeliveryClient({
                     className="shrink-0 inline-flex items-center gap-1.5 py-2 px-3 rounded-none border text-[11px] font-bold uppercase tracking-[0.12em] transition-opacity hover:opacity-80"
                     style={{ borderColor: FOREST, color: FOREST }}
                   >
-                    <Phone size={12} className="text-current shrink-0" aria-hidden />
+                    <Phone
+                      size={12}
+                      className="text-current shrink-0"
+                      aria-hidden
+                    />
                     {crewPhone ? "Call" : "Dispatch"}
                   </a>
                 )}
@@ -631,280 +998,399 @@ export default function TrackDeliveryClient({
                     <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
                     LIVE
                   </span>
-                ) : (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold" style={{ backgroundColor: `${FOREST}08`, color: `${FOREST}70` }}>
-                    Assigned
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Item List ── */}
-        {itemsCount > 0 && (() => {
-          const grouped: Record<string, string[]> = {};
-          const rawList = Array.isArray(delivery.items) ? delivery.items : [];
-          rawList.forEach((raw: unknown) => {
-            const { room, name, qty } = normalizeDeliveryItem(raw);
-            const label = qty > 1 ? `${name} ×${qty}` : name;
-            if (!grouped[room]) grouped[room] = [];
-            grouped[room].push(label);
-          });
-          const rooms = Object.keys(grouped);
-
-          return (
-            <div className="py-5 anim-slide-up anim-delay-4">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <span className={QUOTE_EYEBROW_CLASS} style={{ color: FOREST_MUTED }}>Items</span>
-                <span
-                  className={`${QUOTE_EYEBROW_CLASS} tabular-nums px-2 py-0.5 rounded-none border`}
-                  style={{ borderColor: `${FOREST}18`, color: FOREST_MUTED }}
-                >
-                  {itemsCount}
-                </span>
-              </div>
-              <div className="divide-y divide-[#2C3E2D]/12">
-                {rooms.map((room) => (
-                  <div key={room} className="py-3.5 first:pt-0 last:pb-0">
-                    <div className={`${QUOTE_EYEBROW_CLASS} mb-2`} style={{ color: WINE }}>
-                      {room}
-                    </div>
-                    <div className="space-y-2">
-                      {grouped[room].map((name, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <div
-                            className="w-1 h-1 rounded-full shrink-0"
-                            style={{ backgroundColor: `${FOREST}25` }}
-                          />
-                          <span className="text-[13px] font-medium" style={{ color: FOREST }}>
-                            {name}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
-
-        {b2bAudience ? (
-          <div className="py-5 anim-slide-up anim-delay-3">
-            <div className={`${QUOTE_EYEBROW_CLASS} mb-3`} style={{ color: FOREST_MUTED }}>
-              Service includes
-            </div>
-            <ul className="space-y-2 text-[13px]" style={{ color: FOREST }}>
-              {[
-                "Professional delivery crew",
-                "Protective wrapping",
-                "Move inside and placement",
-                "Floor protection",
-                ...(b2bAssembly ? ["Assembly"] : []),
-                ...(b2bDebrisRemoval ? ["Debris removal"] : []),
-              ].map((line) => (
-                <li key={line} className="flex items-start gap-2">
+                ) : deliveryCrewAssigned ? (
                   <span
-                    className="w-1 h-1 rounded-full shrink-0 mt-2"
-                    style={{ backgroundColor: `${FOREST}28` }}
-                    aria-hidden
-                  />
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-[12px] mt-4 font-semibold" style={{ color: FOREST }}>
-              Questions?{" "}
-              <a href="tel:+16473704525" className="underline underline-offset-2" style={{ color: WINE }}>
-                (647) 370-4525
-              </a>
-            </p>
-          </div>
-        ) : null}
-
-        {/* ── Live map (single framed module; section rule from parent divide) ── */}
-        {!isCompleted && (
-          <div className="py-5 anim-slide-up anim-delay-4">
-            <div
-              className={`overflow-hidden border border-[#2C3E2D]/16 transition-colors duration-300 ${crewHasStarted ? "border-[#22C55E]/35" : ""}`}
-            >
-            <button
-              type="button"
-              onClick={() => setMapExpanded((v) => !v)}
-              className="w-full text-left transition-colors hover:bg-black/[0.02] active:bg-black/[0.04]"
-            >
-              {/* Mini map preview strip when collapsed */}
-              {!mapExpanded && (
-                <div className="relative h-[56px] bg-[#1E1E1E] overflow-hidden">
-                  <div className="absolute inset-0" style={{ filter: "blur(2px) brightness(0.6) saturate(0.4)" }}>
-                    {hasMapCoords && (
-                      <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
-                    )}
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center gap-2 z-10">
-                    {crewHasStarted ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none border border-[#22C55E]/35 text-[11px] font-bold bg-white/95 backdrop-blur-sm shadow-lg" style={{ color: "#22C55E" }}>
-                        <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]" /></span>
-                        Tap to view live map
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none border border-white/30 text-[11px] font-semibold bg-white/90 backdrop-blur-sm shadow-lg" style={{ color: FOREST }}>
-                        Tap to preview route
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className={`flex items-center justify-between px-3 sm:px-4 py-3.5 bg-white/40 ${!mapExpanded ? "border-t border-[#2C3E2D]/10" : ""}`}>
-                <div className="min-w-0 flex-1 pr-2">
-                    <div className="text-[14px] font-semibold flex items-center gap-2" style={{ color: FOREST }}>
-                      Live Tracking
-                      {crewHasStarted && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-none border border-[#22C55E]/25 text-[9px] font-bold bg-[#22C55E]/10 text-[#22C55E]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-                          ACTIVE
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[12px] leading-snug" style={{ color: FOREST_MUTED }}>
-                      {crewHasStarted
-                        ? displayEta != null
-                          ? `~${displayEta} min away`
-                          : crewName
-                            ? `${crewName} is en route`
-                            : "Crew is on the way"
-                        : scheduledDate
-                          ? scheduledDate
-                          : "Activates when your crew begins"}
-                    </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {!mapExpanded && (
-                    <span className={`${QUOTE_EYEBROW_CLASS} hidden sm:inline`} style={{ color: FOREST_MUTED }}>
-                      {crewHasStarted ? "View" : "Preview"}
-                    </span>
-                  )}
-                  <div
-                    className="w-7 h-7 rounded-none border flex items-center justify-center transition-all duration-300"
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold"
                     style={{
-                      borderColor: mapExpanded ? `${FOREST}25` : `${FOREST}18`,
-                      backgroundColor: mapExpanded ? `${FOREST}08` : `${FOREST}05`,
+                      backgroundColor: `${FOREST}08`,
+                      color: `${FOREST}70`,
                     }}
                   >
-                    <CaretDown
-                      size={14}
-                      color={FOREST}
-                      className="transition-transform duration-300"
-                      style={{ transform: mapExpanded ? "rotate(180deg)" : "rotate(0deg)", opacity: mapExpanded ? 0.5 : 0.8 }}
+                    Assigned
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Item List ── */}
+          {itemsCount > 0 &&
+            (() => {
+              const grouped: Record<string, string[]> = {};
+              const rawList = Array.isArray(delivery.items)
+                ? delivery.items
+                : [];
+              rawList.forEach((raw: unknown) => {
+                const { room, name, qty } = normalizeDeliveryItem(raw);
+                const label = qty > 1 ? `${name} ×${qty}` : name;
+                if (!grouped[room]) grouped[room] = [];
+                grouped[room].push(label);
+              });
+              const rooms = Object.keys(grouped);
+
+              return (
+                <div className="py-5 anim-slide-up anim-delay-4">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <span
+                      className={QUOTE_EYEBROW_CLASS}
+                      style={{ color: FOREST_MUTED }}
+                    >
+                      Items
+                    </span>
+                    <span
+                      className={`${QUOTE_EYEBROW_CLASS} tabular-nums px-2 py-0.5 rounded-none border`}
+                      style={{
+                        borderColor: `${FOREST}18`,
+                        color: FOREST_MUTED,
+                      }}
+                    >
+                      {itemsCount}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-[#2C3E2D]/12">
+                    {rooms.map((room) => (
+                      <div key={room} className="py-3.5 first:pt-0 last:pb-0">
+                        <div
+                          className={`${QUOTE_EYEBROW_CLASS} mb-2`}
+                          style={{ color: WINE }}
+                        >
+                          {room}
+                        </div>
+                        <div className="space-y-2">
+                          {grouped[room].map((name, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                              <div
+                                className="w-1 h-1 rounded-full shrink-0"
+                                style={{ backgroundColor: `${FOREST}25` }}
+                              />
+                              <span
+                                className="text-[13px] font-medium"
+                                style={{ color: FOREST }}
+                              >
+                                {name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+          {b2bAudience ? (
+            <div className="py-5 anim-slide-up anim-delay-3">
+              <div
+                className={`${QUOTE_EYEBROW_CLASS} mb-3`}
+                style={{ color: FOREST_MUTED }}
+              >
+                Service includes
+              </div>
+              <ul className="space-y-2 text-[13px]" style={{ color: FOREST }}>
+                {[
+                  "Professional delivery crew",
+                  "Protective wrapping",
+                  "Move inside and placement",
+                  "Floor protection",
+                  ...(b2bAssembly ? ["Assembly"] : []),
+                  ...(b2bDebrisRemoval ? ["Debris removal"] : []),
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-2">
+                    <span
+                      className="w-1 h-1 rounded-full shrink-0 mt-2"
+                      style={{ backgroundColor: `${FOREST}28` }}
                       aria-hidden
                     />
-                  </div>
-                </div>
-              </div>
-            </button>
-
-            {/* Collapsible map body */}
-            <div
-              className="transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden"
-              style={{ maxHeight: mapExpanded ? 340 : 0, opacity: mapExpanded ? 1 : 0 }}
-            >
-              <div className="relative h-[300px] bg-[#1A1A1A]">
-                {/* Map layer, blurred when crew hasn't started */}
-                <div
-                  className="absolute inset-0 transition-[filter] duration-700"
-                  style={{ filter: crewHasStarted ? "none" : "blur(6px) saturate(0.5) brightness(0.7)" }}
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+              <p
+                className="text-[12px] mt-4 font-semibold"
+                style={{ color: FOREST }}
+              >
+                Questions?{" "}
+                <a
+                  href="tel:+16473704525"
+                  className="underline underline-offset-2"
+                  style={{ color: WINE }}
                 >
-                  {hasMapCoords ? (
-                    <DeliveryTrackMap center={center} crew={crewLoc} pickup={pickup} dropoff={dropoff} liveStage={liveStage} />
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-[13px] font-semibold text-white/60">Map loading…</span>
-                    </div>
-                  )}
-                </div>
+                  (647) 370-4525
+                </a>
+              </p>
+            </div>
+          ) : null}
 
-                {/* Waiting overlay when crew hasn't started, z-[1000] above Leaflet */}
-                {!crewHasStarted && (
-                  <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-black/30 px-4 text-center">
-                    <span className="text-[13px] font-semibold text-white/90 tracking-tight">Waiting for crew</span>
-                    <span className="text-[11px] text-white/50 mt-0.5">
-                      {timeWindow ? `Window: ${timeWindow}` : "Map goes live when crew starts the job"}
-                    </span>
-                  </div>
-                )}
-
-                {/* Live status badge inside map when active, z-[1000] so it sits above Leaflet map panes */}
-                {crewHasStarted && liveStage && (
-                  <div className="absolute top-3 left-3 z-[1000] rounded-none bg-white/95 backdrop-blur-sm border px-3 py-2 flex items-center gap-2 shadow-lg" style={{ borderColor: `${FOREST}22` }}>
-                    <span className="relative flex h-2.5 w-2.5 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]" />
-                    </span>
-                    <span className="text-[11px] font-bold" style={{ color: FOREST }}>
-                      {normalizedStage ? CLIENT_STAGE_LABELS[normalizedStage] : toTitleCase(liveStage || "")}
-                    </span>
-                  </div>
-                )}
-
-                {/* Fullscreen button, z-[1000] so it sits above Leaflet map panes */}
+          {/* ── Live map (single framed module; section rule from parent divide) ── */}
+          {!isCompleted && (
+            <div className="py-5 anim-slide-up anim-delay-4">
+              <div
+                className={`overflow-hidden border border-[#2C3E2D]/16 transition-colors duration-300 ${crewHasStarted ? "border-[#22C55E]/35" : ""}`}
+              >
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setIsFullscreen(true); }}
-                  className="absolute bottom-3 right-3 z-[1000] inline-flex items-center gap-1.5 px-3 py-2 rounded-none bg-white/95 backdrop-blur-sm border shadow-lg transition-opacity hover:opacity-90 active:scale-[0.99]"
-                  style={{ borderColor: `${FOREST}22`, color: FOREST }}
+                  onClick={() => setMapExpanded((v) => !v)}
+                  className="w-full text-left transition-colors hover:bg-black/[0.02] active:bg-black/[0.04]"
                 >
-                  <CornersOut size={13} className="text-current shrink-0" aria-hidden />
-                  <span className="text-[11px] font-bold uppercase tracking-[0.1em]">Expand</span>
+                  {/* Mini map preview strip when collapsed */}
+                  {!mapExpanded && (
+                    <div className="relative h-[56px] bg-[#1E1E1E] overflow-hidden">
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          filter: "blur(2px) brightness(0.6) saturate(0.4)",
+                        }}
+                      >
+                        {hasMapCoords && (
+                          <DeliveryTrackMap
+                            center={center}
+                            crew={crewLoc}
+                            pickup={pickup}
+                            dropoff={dropoff}
+                            liveStage={liveStage}
+                          />
+                        )}
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center gap-2 z-10">
+                        {crewHasStarted ? (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none border border-[#22C55E]/35 text-[11px] font-bold bg-white/95 backdrop-blur-sm shadow-lg"
+                            style={{ color: "#22C55E" }}
+                          >
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]" />
+                            </span>
+                            Tap to view live map
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none border border-white/30 text-[11px] font-semibold bg-white/90 backdrop-blur-sm shadow-lg"
+                            style={{ color: FOREST }}
+                          >
+                            Tap to preview route
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className={`flex items-center justify-between px-3 sm:px-4 py-3.5 bg-white/40 ${!mapExpanded ? "border-t border-[#2C3E2D]/10" : ""}`}
+                  >
+                    <div className="min-w-0 flex-1 pr-2">
+                      <div
+                        className="text-[14px] font-semibold flex items-center gap-2"
+                        style={{ color: FOREST }}
+                      >
+                        Live Tracking
+                        {crewHasStarted && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-none border border-[#22C55E]/25 text-[9px] font-bold bg-[#22C55E]/10 text-[#22C55E]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+                            ACTIVE
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className="text-[12px] leading-snug"
+                        style={{ color: FOREST_MUTED }}
+                      >
+                        {crewHasStarted
+                          ? displayEta != null
+                            ? `~${displayEta} min away`
+                            : displayDeliveryCrewName
+                              ? `${displayDeliveryCrewName} is en route`
+                              : "Crew is on the way"
+                          : scheduledDate
+                            ? scheduledDate
+                            : "Activates when your crew begins"}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {!mapExpanded && (
+                        <span
+                          className={`${QUOTE_EYEBROW_CLASS} hidden sm:inline`}
+                          style={{ color: FOREST_MUTED }}
+                        >
+                          {crewHasStarted ? "View" : "Preview"}
+                        </span>
+                      )}
+                      <div
+                        className="w-7 h-7 rounded-none border flex items-center justify-center transition-all duration-300"
+                        style={{
+                          borderColor: mapExpanded
+                            ? `${FOREST}25`
+                            : `${FOREST}18`,
+                          backgroundColor: mapExpanded
+                            ? `${FOREST}08`
+                            : `${FOREST}05`,
+                        }}
+                      >
+                        <CaretDown
+                          size={14}
+                          color={FOREST}
+                          className="transition-transform duration-300"
+                          style={{
+                            transform: mapExpanded
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                            opacity: mapExpanded ? 0.5 : 0.8,
+                          }}
+                          aria-hidden
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </button>
+
+                {/* Collapsible map body */}
+                <div
+                  className="transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden"
+                  style={{
+                    maxHeight: mapExpanded ? 340 : 0,
+                    opacity: mapExpanded ? 1 : 0,
+                  }}
+                >
+                  <div className="relative h-[300px] bg-[#1A1A1A]">
+                    {/* Map layer, blurred when crew hasn't started */}
+                    <div
+                      className="absolute inset-0 transition-[filter] duration-700"
+                      style={{
+                        filter: crewHasStarted
+                          ? "none"
+                          : "blur(6px) saturate(0.5) brightness(0.7)",
+                      }}
+                    >
+                      {hasMapCoords ? (
+                        <DeliveryTrackMap
+                          center={center}
+                          crew={crewLoc}
+                          pickup={pickup}
+                          dropoff={dropoff}
+                          liveStage={liveStage}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-[13px] font-semibold text-white/60">
+                            Map loading…
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Waiting overlay when crew hasn't started, z-[1000] above Leaflet */}
+                    {!crewHasStarted && (
+                      <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center bg-black/30 px-4 text-center">
+                        <span className="text-[13px] font-semibold text-white/90 tracking-tight">
+                          Waiting for crew
+                        </span>
+                        <span className="text-[11px] text-white/50 mt-0.5">
+                          {timeWindow
+                            ? `Window: ${timeWindow}`
+                            : "Map goes live when crew starts the job"}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Live status badge inside map when active, z-[1000] so it sits above Leaflet map panes */}
+                    {crewHasStarted && liveStage && (
+                      <div
+                        className="absolute top-3 left-3 z-[1000] rounded-none bg-white/95 backdrop-blur-sm border px-3 py-2 flex items-center gap-2 shadow-lg"
+                        style={{ borderColor: `${FOREST}22` }}
+                      >
+                        <span className="relative flex h-2.5 w-2.5 shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]" />
+                        </span>
+                        <span
+                          className="text-[11px] font-bold"
+                          style={{ color: FOREST }}
+                        >
+                          {normalizedStage
+                            ? CLIENT_STAGE_LABELS[normalizedStage]
+                            : toTitleCase(liveStage || "")}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Fullscreen button, z-[1000] so it sits above Leaflet map panes */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsFullscreen(true);
+                      }}
+                      className="absolute bottom-3 right-3 z-[1000] inline-flex items-center gap-1.5 px-3 py-2 rounded-none bg-white/95 backdrop-blur-sm border shadow-lg transition-opacity hover:opacity-90 active:scale-[0.99]"
+                      style={{ borderColor: `${FOREST}22`, color: FOREST }}
+                    >
+                      <CornersOut
+                        size={13}
+                        className="text-current shrink-0"
+                        aria-hidden
+                      />
+                      <span className="text-[11px] font-bold uppercase tracking-[0.1em]">
+                        Expand
+                      </span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
+          )}
+
+          {isCompleted && b2bPodImageUrl ? (
+            <div className="py-5 anim-slide-up anim-delay-5 space-y-3">
+              <div
+                className={QUOTE_EYEBROW_CLASS}
+                style={{ color: FOREST_MUTED }}
+              >
+                Delivery photo
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={b2bPodImageUrl}
+                alt="Proof of delivery"
+                className="w-full max-h-[280px] object-cover border border-[#2C3E2D]/16"
+              />
             </div>
-          </div>
-        )}
+          ) : null}
 
-        {isCompleted && b2bPodImageUrl ? (
-          <div className="py-5 anim-slide-up anim-delay-5 space-y-3">
-            <div className={QUOTE_EYEBROW_CLASS} style={{ color: FOREST_MUTED }}>
-              Delivery photo
+          {/* Post-delivery rating */}
+          {isCompleted && (
+            <div className="py-5 anim-slide-up anim-delay-5">
+              <PostDeliveryRating
+                deliveryId={delivery.id}
+                token={token}
+                googleReviewUrl={googleReviewUrl}
+              />
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={b2bPodImageUrl}
-              alt="Proof of delivery"
-              className="w-full max-h-[280px] object-cover border border-[#2C3E2D]/16"
-            />
-          </div>
-        ) : null}
+          )}
 
-        {/* Post-delivery rating */}
-        {isCompleted && (
-          <div className="py-5 anim-slide-up anim-delay-5">
-            <PostDeliveryRating deliveryId={delivery.id} token={token} googleReviewUrl={googleReviewUrl} />
+          {/* Track another */}
+          <div className="py-5 text-center anim-slide-up anim-delay-5">
+            <Link
+              href="/tracking"
+              className="inline-flex items-center justify-center gap-2 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition-opacity hover:opacity-70 mx-auto"
+              style={{ color: FOREST }}
+            >
+              Track another delivery
+              <CaretRight size={14} className="shrink-0" aria-hidden />
+            </Link>
           </div>
-        )}
-
-        {/* Track another */}
-        <div className="py-5 text-center anim-slide-up anim-delay-5">
-          <Link
-            href="/tracking"
-            className="inline-flex items-center justify-center gap-2 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition-opacity hover:opacity-70 mx-auto"
-            style={{ color: FOREST }}
-          >
-            Track another delivery
-            <CaretRight size={14} className="shrink-0" aria-hidden />
-          </Link>
-        </div>
         </div>
       </div>
 
       {/* ── Sticky Footer ── */}
       <footer className="shrink-0 py-3.5 text-center border-t border-[#2C3E2D]/10">
-        <div className="flex items-center justify-center gap-1.5 opacity-50">
-          <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: FOREST_MUTED }}>Powered by</span>
-          <YugoLogo size={14} variant="wine" />
-        </div>
+        <YugoMarketingFooter
+          contactEmail={companyContactEmail}
+          logoVariant="wine"
+          onLightBackground
+          logoSize={14}
+          mutedColor={FOREST_MUTED}
+          linkColor={FOREST}
+        />
       </footer>
     </div>
   );

@@ -62,14 +62,14 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
       {children}
       {showModal && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60">
-          <div className="w-full max-w-[420px] bg-[var(--card)] rounded-2xl shadow-2xl overflow-hidden" style={{ animation: "ptrFadeUp 0.4s ease" }}>
+          <div className="w-full max-w-[420px] bg-[#FFFBF7] rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] overflow-hidden" style={{ animation: "ptrFadeUp 0.4s ease" }}>
             <style>{`@keyframes ptrFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }`}</style>
 
             <div className="px-6 pt-6 pb-4 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-[var(--grdim)] border border-[var(--grn)]/30 flex items-center justify-center mx-auto mb-4">
-                <Lock size={28} color="#2D6A4F" />
+              <div className="w-14 h-14 rounded-sm border border-[#2C3E2D]/15 flex items-center justify-center mx-auto mb-4 bg-[#2C3E2D]/[0.04]">
+                <Lock size={28} color="#2C3E2D" />
               </div>
-              <h2 className="font-hero text-[22px] font-bold text-[var(--tx)]">
+              <h2 className="font-hero text-[22px] font-normal text-[#5C1A33]">
                 Set your password
               </h2>
               <p className="text-[13px] text-[var(--tx3)] mt-1.5 leading-relaxed">
@@ -79,7 +79,7 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
 
             <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4">
               {error && (
-                <div className="px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-[12px] text-red-600 dark:text-red-400">
+                <div className="px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-[12px] text-red-600">
                   {error}
                 </div>
               )}
@@ -114,7 +114,7 @@ export default function PartnerChangePasswordGate({ children }: { children: Reac
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-3.5 rounded-xl text-[var(--text-base)] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-sm text-[10px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors disabled:opacity-50"
               >
                 {saving ? "Updating..." : "Set new password"}
               </button>

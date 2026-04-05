@@ -105,13 +105,13 @@ export default function PartnerInvoicesTab({ invoices }: { invoices: Invoice[] }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search invoices…"
-            className="w-full rounded-lg border border-[var(--brd)] bg-[var(--card)] py-2 pl-10 pr-3 text-[12px] text-[var(--tx)] transition-colors placeholder:text-[var(--tx3)] focus:border-[var(--gold)] focus:outline-none"
+            className="w-full rounded-lg border border-[var(--brd)] bg-[var(--card)] py-2 pl-10 pr-3 text-[12px] text-[var(--tx)] transition-colors placeholder:text-[var(--tx3)] focus:border-[#5C1A33]/45 focus:ring-1 focus:ring-[#5C1A33]/12 focus:outline-none"
           />
         </div>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] bg-[var(--card)] focus:border-[var(--gold)] focus:outline-none transition-colors"
+          className="px-3 py-2 rounded-lg border border-[var(--brd)] text-[12px] font-semibold text-[var(--tx)] bg-[var(--card)] focus:border-[#5C1A33]/45 focus:ring-1 focus:ring-[#5C1A33]/12 focus:outline-none transition-colors"
         >
           <option value="all">All</option>
           <option value="paid">Paid</option>

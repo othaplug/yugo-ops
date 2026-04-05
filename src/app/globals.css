@@ -397,6 +397,56 @@ textarea {
   }
 }
 
+/* Estate welcome guide: smooth scroll + narrative flow */
+html:has(.estate-welcome-root) {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:has(.estate-welcome-root) {
+    scroll-behavior: auto;
+  }
+}
+@keyframes estate-welcome-hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.estate-welcome-root .estate-welcome-hero-inner {
+  animation: estate-welcome-hero-enter 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .estate-welcome-root .estate-welcome-hero-inner {
+    animation: none;
+  }
+}
+@keyframes estate-welcome-story-in {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@supports (animation-timeline: view()) {
+  .estate-welcome-root .estate-welcome-story {
+    animation: estate-welcome-story-in linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 24%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .estate-welcome-root .estate-welcome-story {
+      animation: none;
+    }
+  }
+}
+
 /* ═══════════════════════════════════════════════════════
    MODAL / DIALOG / SHEET TRANSITIONS
    ═══════════════════════════════════════════════════════ */
@@ -853,11 +903,18 @@ button:focus-visible,
   outline-offset: 2px;
 }
 
-/* Date/time picker - dark spinner styling (selected: light on dark gray rounded bg, unselected: dim gray) */
-input[type="date"],
-input[type="datetime-local"],
-input[type="time"] {
+/* Date/time picker native chrome — dark in admin dark mode */
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="datetime-local"],
+[data-theme="dark"] input[type="time"] {
   color-scheme: dark;
+}
+
+/* Light portals + admin light: match page background */
+[data-theme="light"] input[type="date"],
+[data-theme="light"] input[type="datetime-local"],
+[data-theme="light"] input[type="time"] {
+  color-scheme: light;
 }
 
 /*
@@ -2557,6 +2614,87 @@ select:focus-visible {
 }
 
 /* ═══════════════════════════════════════════════════════
+   CREW SHELL SIDEBAR — light-only crew portal nav tokens
+   ═══════════════════════════════════════════════════════ */
+.crew-app .glass-sidebar {
+  --crew-nav-active-bg: color-mix(in srgb, var(--yugo-rose-accent) 12%, transparent);
+  --crew-nav-active-fg: var(--yugo-rose-accent);
+  --crew-nav-active-border: color-mix(in srgb, var(--yugo-rose-accent) 45%, transparent);
+  --crew-nav-hover-bg: rgba(44, 62, 45, 0.08);
+  --crew-nav-hover-fg: #1a241b;
+  --crew-nav-item-fg: #3a3a38;
+  --crew-nav-disabled-fg: rgba(0, 0, 0, 0.42);
+  background: linear-gradient(180deg, #fcfaf8 0%, #f5f2ef 55%, #f0ece8 100%);
+  border-right-color: rgba(92, 26, 51, 0.1) !important;
+  box-shadow: 4px 0 28px rgba(44, 62, 45, 0.07);
+}
+
+/* Wine wordmark legibility on warm sidebar */
+.crew-app .glass-sidebar .crew-sidebar-wordmark img {
+  filter: drop-shadow(0 1px 2px rgba(92, 26, 51, 0.1));
+}
+
+.crew-app .glass-sidebar .crew-sidebar-nav-item {
+  color: var(--crew-nav-item-fg);
+  border-left-color: transparent;
+}
+.crew-app .glass-sidebar .crew-sidebar-nav-item .crew-sidebar-nav-icon {
+  color: currentColor;
+}
+.crew-app .glass-sidebar .crew-sidebar-nav-item.is-active {
+  background-color: var(--crew-nav-active-bg) !important;
+  color: var(--crew-nav-active-fg) !important;
+  border-left-color: var(--crew-nav-active-border) !important;
+  font-weight: 600;
+}
+.crew-app .glass-sidebar .crew-sidebar-nav-item.is-active:hover {
+  background-color: var(--crew-nav-active-bg) !important;
+  color: var(--crew-nav-active-fg) !important;
+  border-left-color: var(--crew-nav-active-border) !important;
+  box-shadow: none !important;
+}
+.crew-app .glass-sidebar .crew-sidebar-nav-item:not(.is-active):not(.is-disabled):hover {
+  background-color: var(--crew-nav-hover-bg) !important;
+  color: var(--crew-nav-hover-fg) !important;
+  border-left-color: transparent !important;
+  box-shadow: none !important;
+}
+.crew-app .glass-sidebar .crew-sidebar-nav-item.is-disabled,
+.crew-app .glass-sidebar .crew-sidebar-nav-item.is-disabled:hover {
+  transform: none !important;
+  background-color: transparent !important;
+  color: var(--crew-nav-disabled-fg) !important;
+  border-left-color: transparent !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.crew-app .glass-sidebar .crew-sidebar-rail-item {
+  color: var(--crew-nav-item-fg);
+}
+.crew-app .glass-sidebar .crew-sidebar-rail-item.is-active {
+  background-color: var(--crew-nav-active-bg) !important;
+  color: var(--crew-nav-active-fg) !important;
+}
+.crew-app .glass-sidebar .crew-sidebar-rail-item.is-active:hover {
+  background-color: var(--crew-nav-active-bg) !important;
+  color: var(--crew-nav-active-fg) !important;
+}
+.crew-app .glass-sidebar .crew-sidebar-rail-item:not(.is-active):not(.is-disabled):hover {
+  background-color: var(--crew-nav-hover-bg) !important;
+  color: var(--crew-nav-hover-fg) !important;
+}
+.crew-app .glass-sidebar .crew-sidebar-rail-item.is-disabled,
+.crew-app .glass-sidebar .crew-sidebar-rail-item.is-disabled:hover {
+  transform: none !important;
+  background-color: transparent !important;
+  color: var(--crew-nav-disabled-fg) !important;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════
    CREW PORTAL — rectangular buttons (body portals: data-crew-portal)
    Use .crew-keep-round on rare controls that must stay circular.
    ═══════════════════════════════════════════════════════ */
@@ -2569,17 +2707,59 @@ select:focus-visible {
   border-radius: 9999px !important;
 }
 
+/* Anchor CTAs use the same rectangular chrome as buttons. */
+.crew-app a.crew-premium-cta:not(.crew-keep-round),
+[data-crew-portal] a.crew-premium-cta:not(.crew-keep-round) {
+  border-radius: 0 !important;
+}
+
+/* Premium crew CTAs — solid forest (no gold gradient). */
+.crew-app .crew-premium-cta,
+[data-crew-portal] .crew-premium-cta {
+  background-color: #2c3e2d !important;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.1s ease;
+}
+.crew-app .crew-premium-cta:hover:not(:disabled),
+[data-crew-portal] .crew-premium-cta:hover:not(:disabled) {
+  background-color: #243524 !important;
+}
+.crew-app a.crew-premium-cta:hover {
+  background-color: #243524 !important;
+}
+
 /* ═══════════════════════════════════════════════════════
    CREW LOGIN — shared input/link styles used across all member-select screens
    ═══════════════════════════════════════════════════════ */
 .crew-login-input:focus {
-  border-bottom-color: rgba(201, 169, 98, 0.65) !important;
+  border-bottom-color: rgba(92, 26, 51, 0.55) !important;
   outline: none;
   box-shadow: none !important;
 }
 .crew-login-link:hover {
-  color: #d4b56c !important;
+  color: #5c1a33 !important;
   text-decoration: underline;
+}
+
+/* Crew login full-page — rose hover on dark (exclude gate secondary; it uses high-contrast hover below) */
+.crew-app main.crew-login-gate .crew-login-link:hover:not(.crew-login-gate-secondary) {
+  color: #c9a8b3 !important;
+  text-decoration: underline;
+}
+
+/* Gate panel — secondary text action under primary CTA: reliable contrast vs inline colors */
+.crew-app .crew-login-panel .crew-login-gate-secondary {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+.crew-app .crew-login-panel .crew-login-gate-secondary:hover {
+  color: #f5f5f3 !important;
+  text-decoration: underline;
+}
+.crew-app .crew-login-panel .crew-login-gate-secondary:focus-visible {
+  outline: 2px solid rgba(255, 250, 245, 0.55);
+  outline-offset: 3px;
 }
 
 /* ═══════════════════════════════════════════════════════

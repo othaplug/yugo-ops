@@ -55,6 +55,7 @@ import {
 } from "./quote-shared";
 
 import YugoLogo from "@/components/YugoLogo";
+import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import { isQuoteExpiredForBooking } from "@/lib/quote-expiry";
 
 /* ── Packing kit: move-size → tier index → contents ────────────────────── */
@@ -2274,28 +2275,14 @@ export default function QuotePageClient({
         )}
 
         <footer className={`py-5 text-center border-t ${shellBorderTopClass}`}>
-          <div className="flex justify-center mb-1">
-            <YugoLogo
-              size={14}
-              variant={premiumShell ? "cream" : "black"}
-              onLightBackground={!premiumShell}
-            />
-          </div>
-          <p
-            className="text-[11px] font-medium tracking-wide"
-            style={{ color: shellInk.muted }}
-          >
-            The Art of Moving
-          </p>
-          <p className="text-[11px] mt-0.5" style={{ color: shellInk.muted }}>
-            <a
-              href={`mailto:${branding.email}`}
-              style={{ color: shellInk.secondary }}
-              className="hover:underline min-h-[44px] inline-flex items-center justify-center"
-            >
-              {branding.email}
-            </a>
-          </p>
+          <YugoMarketingFooter
+            contactEmail={branding.email}
+            logoVariant={premiumShell ? "cream" : "black"}
+            onLightBackground={!premiumShell}
+            logoSize={14}
+            mutedColor={shellInk.muted}
+            linkColor={shellInk.secondary}
+          />
         </footer>
       </div>
     </div>

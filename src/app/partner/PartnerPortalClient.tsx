@@ -20,6 +20,8 @@ import {
   ClipboardText,
   MapPin,
   ArrowsClockwise,
+  HandWaving,
+  CaretRight,
 } from "@phosphor-icons/react";
 import { getPartnerFeatures, getPartnerGreeting } from "@/lib/partner-type";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -52,6 +54,8 @@ import { usePartnerOrgDisplayName } from "./PartnerOrgContext";
 import { ToastProvider, useToast } from "@/app/admin/components/Toast";
 import YugoLogo from "@/components/YugoLogo";
 import Link from "next/link";
+import { applyPartnerPortalLightTheme } from "@/lib/partner-portal-theme";
+import { FOREST, WINE } from "@/app/quote/[quoteId]/quote-shared";
 import { normalizeDeliveryItemsForDisplay } from "@/lib/delivery-items";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
@@ -246,32 +250,8 @@ function PartnerPortalInner({
   const [notifOpen, setNotifOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const [partnerTheme, setPartnerTheme] = useState<string>("light");
-
   useEffect(() => {
-    const stored =
-      typeof window !== "undefined"
-        ? localStorage.getItem("partner-theme")
-        : null;
-    const resolved =
-      stored === "dark"
-        ? "dark"
-        : stored === "system"
-          ? window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light"
-          : "light";
-    setPartnerTheme(resolved);
-    document.documentElement.setAttribute("data-theme", resolved);
-    document.documentElement.classList.toggle("dark", resolved === "dark");
-
-    const onThemeChange = (e: Event) => {
-      const r = (e as CustomEvent).detail || "light";
-      setPartnerTheme(r);
-    };
-    window.addEventListener("partner-theme-change", onThemeChange);
-    return () =>
-      window.removeEventListener("partner-theme-change", onThemeChange);
+    applyPartnerPortalLightTheme();
   }, []);
 
   const [loginInfo, setLoginInfo] = useState<{
@@ -414,15 +394,10 @@ function PartnerPortalInner({
 
   if (!features.hasSelfServePortal) {
     return (
-      <div
-        className={`min-h-screen flex flex-col items-center justify-center px-6 py-12 ${
-          partnerTheme === "dark" ? "bg-[var(--bg)]" : "bg-[#F5F3F0]"
-        }`}
-        data-theme={partnerTheme}
-      >
-        <div className="max-w-md w-full rounded-2xl border border-[var(--brd)] bg-[var(--card)] p-8 text-center shadow-sm">
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-[#FAF7F2]">
+        <div className="max-w-md w-full rounded-2xl border border-[#2C3E2D]/12 bg-white p-8 text-center shadow-sm">
           <div className="flex justify-center mb-4">
-            <YugoLogo size={24} variant="gold" />
+            <YugoLogo size={24} variant="wine" />
           </div>
           <h1 className="font-semibold text-[var(--tx)] text-lg mb-2">
             No self-serve portal for this partner type
@@ -454,21 +429,25 @@ function PartnerPortalInner({
     <PartnerNotificationProvider orgId={orgId}>
       <PartnerChangePasswordGate>
         <div
-          className={`min-h-screen ${partnerTheme === "dark" ? "bg-[var(--bg)]" : "bg-[#F5F3F0]"}`}
-          data-theme={partnerTheme}
+          className="min-h-screen bg-[#FAF7F2] text-[#1a1f1b]"
+          data-theme="light"
         >
           {/* Header */}
-          <header className="bg-[var(--card)]/95 backdrop-blur border-b border-[var(--brd)] px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-            <div className="flex items-center gap-1.5">
-              <YugoLogo size={19} variant="gold" />
-              <span className="text-[9px] font-bold tracking-[1.5px] uppercase text-[var(--gold)] opacity-60 ml-0.5">
+          <header className="bg-[#FFFBF7]/95 backdrop-blur border-b border-[#2C3E2D]/12 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30">
+            <div className="flex items-center gap-2 min-w-0">
+              <YugoLogo size={19} variant="wine" />
+              <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#2C3E2D]/40 shrink-0">
                 BETA
               </span>
-              <span className="text-[13px] text-[var(--tx3)] font-medium ml-1.5">
+              <span
+                className="h-3 w-px bg-[#2C3E2D]/12 shrink-0 hidden sm:block"
+                aria-hidden
+              />
+              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D]/70 truncate ml-0 sm:ml-1">
                 {headerOrgName}
               </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <PartnerNotificationBell
                 open={notifOpen}
                 onToggle={() => setNotifOpen(!notifOpen)}
@@ -478,7 +457,8 @@ function PartnerPortalInner({
                 type="button"
                 onClick={() => setSettingsOpen(true)}
                 aria-label="Account settings"
-                className="w-8 h-8 rounded-full bg-[#C9A962] flex items-center justify-center text-white text-[11px] font-bold cursor-pointer hover:opacity-90 transition-opacity"
+                className="w-8 h-8 rounded-sm border border-[#5C1A33]/28 bg-transparent flex items-center justify-center text-[10px] font-bold cursor-pointer transition-colors hover:bg-[#5C1A33]/[0.06]"
+                style={{ color: WINE }}
               >
                 {contactName.charAt(0).toUpperCase()}
                 {(contactName.split(" ")[1] || "").charAt(0).toUpperCase() ||
@@ -508,10 +488,10 @@ function PartnerPortalInner({
                       height: 8,
                       background:
                         i === welcomeStep
-                          ? "#2D6A4F"
+                          ? "#2C3E2D"
                           : i < welcomeStep
-                            ? "#C9A962"
-                            : "var(--brd)",
+                            ? "#2C3E2D"
+                            : "rgba(44, 62, 45, 0.2)",
                     }}
                   />
                 ))}
@@ -520,14 +500,13 @@ function PartnerPortalInner({
               <div className="p-8 pb-6">
                 {welcomeStep === 0 && (
                   <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#C9A962]/10 border border-[#C9A962]/20 flex items-center justify-center">
-                      <span
-                        className="text-[30px]"
-                        role="img"
-                        aria-label="wave"
-                      >
-                        &#128075;
-                      </span>
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#2C3E2D]/6 border border-[#2C3E2D]/15 flex items-center justify-center">
+                      <HandWaving
+                        size={36}
+                        weight="duotone"
+                        color="#2C3E2D"
+                        aria-hidden
+                      />
                     </div>
                     <h2 className="font-hero text-[36px] font-semibold text-[var(--tx)] mb-2">
                       Welcome to Yugo, {contactName}!
@@ -669,7 +648,7 @@ function PartnerPortalInner({
             ref={(el) => {
               pullRef.current = el;
             }}
-            className="max-w-[1100px] mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-[calc(72px+env(safe-area-inset-bottom,0px))] sm:pb-6"
+            className="max-w-[1100px] mx-auto px-4 sm:px-8 py-5 sm:py-8 pb-[calc(72px+env(safe-area-inset-bottom,0px))] sm:pb-10"
           >
             {/* Pull-to-refresh indicator */}
             {(pullDistance > 0 || refreshing) && (
@@ -683,7 +662,7 @@ function PartnerPortalInner({
                 ) : (
                   <ArrowsClockwise
                     size={16}
-                    color="var(--gold)"
+                    color={FOREST}
                     style={{
                       transform: `rotate(${(pullDistance / 72) * 180}deg)`,
                       transition: "transform 0.1s",
@@ -749,23 +728,29 @@ function PartnerPortalInner({
             )}
 
             {/* Hero + Greeting */}
-            <div className="mb-6">
-              <h1 className="font-hero text-[36px] sm:text-[36px] font-semibold text-[var(--tx)] leading-tight tracking-tight">
+            <div className="mb-6 pt-1">
+              <p className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#2C3E2D]/45 mb-2">
+                Partner portal
+              </p>
+              <h1
+                className="font-hero text-[32px] sm:text-[36px] font-normal leading-[1.08] tracking-tight"
+                style={{ color: WINE }}
+              >
                 {isReturning ? "Welcome back" : getPartnerGreeting()},{" "}
                 {contactName}
               </h1>
               {features.showReferrals ? (
-                <p className="text-[15px] text-[var(--tx3)] mt-1.5">
+                <p className="text-[14px] text-[#5A6B5E] mt-2 leading-relaxed max-w-xl">
                   Your referral dashboard and commission tracking
                 </p>
               ) : isDesignerOrg ? (
-                <p className="text-[15px] text-[var(--tx3)] mt-1.5">
+                <p className="text-[14px] text-[#5A6B5E] mt-2 leading-relaxed max-w-xl">
                   {data?.todayDeliveries && data.todayDeliveries.length > 0
                     ? `${data.todayDeliveries.length} ${data.todayDeliveries.length !== 1 ? "deliveries" : "delivery"} scheduled today`
                     : "Your projects and deliveries dashboard"}
                 </p>
               ) : features.showProjects ? (
-                <p className="text-[15px] text-[var(--tx3)] mt-1.5">
+                <p className="text-[14px] text-[#5A6B5E] mt-2 leading-relaxed max-w-xl">
                   {data?.projects?.length ?? 0} active project
                   {(data?.projects?.length ?? 0) !== 1 ? "s" : ""}
                   {data &&
@@ -776,7 +761,7 @@ function PartnerPortalInner({
                     : ""}
                 </p>
               ) : (
-                <p className="text-[15px] text-[var(--tx3)] mt-1.5">
+                <p className="text-[14px] text-[#5A6B5E] mt-2 leading-relaxed max-w-xl">
                   {dayStr} here are your deliveries
                 </p>
               )}
@@ -808,12 +793,12 @@ function PartnerPortalInner({
                       <Warning size={16} color="#EF4444" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold text-red-600 dark:text-red-400">
+                      <div className="text-[13px] font-semibold text-red-600">
                         You have {overdueInvoices.length} overdue invoice
                         {overdueInvoices.length > 1 ? "s" : ""} totaling{" "}
                         {formatCurrency(totalOverdue)}
                       </div>
-                      <div className="text-[11px] text-red-500/70 dark:text-red-400/60 mt-0.5">
+                      <div className="text-[11px] text-red-500/70 mt-0.5">
                         New bookings are paused until outstanding invoices are
                         paid. Please contact us or settle your balance to resume
                         scheduling.
@@ -822,7 +807,7 @@ function PartnerPortalInner({
                     <button
                       type="button"
                       onClick={() => setActiveTab("invoices")}
-                      className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors"
+                      className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors"
                     >
                       View Invoices
                     </button>
@@ -830,28 +815,21 @@ function PartnerPortalInner({
                 );
               })()}
 
-            <div className="flex flex-wrap gap-2.5 gap-x-5 mb-6">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-8">
               {!features.showReferrals && (
                 <>
                   {features.canCreateDelivery && !hasOverdueInvoices && (
-                    <div className="relative ml-6 hidden sm:block">
+                    <div className="relative ml-0 sm:ml-1 hidden sm:block">
                       <button
                         type="button"
                         onClick={() =>
                           setBookServiceModalOpen(!bookServiceModalOpen)
                         }
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all active:scale-[0.97] select-none"
-                        style={{
-                          background:
-                            "linear-gradient(145deg, #D4AF37, #C9A962)",
-                          boxShadow:
-                            "0 4px 16px rgba(201,169,98,0.45), 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 0 rgba(0,0,0,0.15)",
-                        }}
+                        className="w-9 h-9 flex items-center justify-center border border-[#2C3E2D]/35 text-[#2C3E2D] bg-[#FFFBF7] text-[20px] font-light leading-none transition-colors hover:bg-[#2C3E2D]/[0.04] select-none rounded-sm"
                         title="Book a service"
+                        aria-expanded={bookServiceModalOpen}
                       >
-                        <span className="text-[18px] font-bold leading-none">
-                          +
-                        </span>
+                        +
                       </button>
 
                       {bookServiceModalOpen && (
@@ -860,19 +838,13 @@ function PartnerPortalInner({
                             className="fixed inset-0 z-40"
                             onClick={() => setBookServiceModalOpen(false)}
                           />
-                          <div
-                            className="absolute left-0 top-full mt-2.5 z-50 w-[272px] bg-[var(--card)] rounded-2xl border border-[var(--brd)] overflow-hidden"
-                            style={{
-                              boxShadow:
-                                "0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08)",
-                            }}
-                          >
-                            <div className="px-4 pt-3.5 pb-2.5 border-b border-[var(--brd)]/40">
-                              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--tx3)]/60">
-                                BOOK A SERVICE
+                          <div className="absolute left-0 top-full mt-2 z-50 w-[min(100vw-2rem,280px)] bg-[#FFFBF7] border border-[#2C3E2D]/12 overflow-hidden shadow-[0_20px_50px_rgba(44,62,45,0.1)] rounded-sm">
+                            <div className="px-4 py-3 border-b border-[#2C3E2D]/10">
+                              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#2C3E2D]/50">
+                                Book a service
                               </p>
                             </div>
-                            <div className="p-2">
+                            <div className="py-0">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -880,13 +852,19 @@ function PartnerPortalInner({
                                   setScheduleModalKey((k) => k + 1);
                                   setScheduleOpen(true);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[var(--bg)] transition-colors text-left"
+                                className="w-full flex items-start gap-2 px-4 py-3 text-left border-b border-[#2C3E2D]/8 hover:bg-[#2C3E2D]/[0.03] transition-colors"
                               >
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-[13px] font-semibold text-[var(--tx)]">
+                                  <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] flex items-center gap-1">
                                     Schedule delivery
+                                    <CaretRight
+                                      className="opacity-60"
+                                      size={12}
+                                      weight="bold"
+                                      aria-hidden
+                                    />
                                   </div>
-                                  <div className="text-[11px] text-[var(--tx3)]">
+                                  <div className="text-[11px] text-[#5A6B5E] mt-0.5 leading-snug font-normal normal-case tracking-normal">
                                     Single or multi-stop delivery
                                   </div>
                                 </div>
@@ -896,14 +874,20 @@ function PartnerPortalInner({
                                 <Link
                                   href="/partner/book-day-rate"
                                   onClick={() => setBookServiceModalOpen(false)}
-                                  className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[var(--bg)] transition-colors text-left"
+                                  className="flex items-start gap-2 px-4 py-3 text-left border-b border-[#2C3E2D]/8 hover:bg-[#2C3E2D]/[0.03] transition-colors"
                                 >
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-[13px] font-semibold text-[var(--tx)]">
-                                      Book Day Rate
+                                    <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] flex items-center gap-1">
+                                      Book day rate
+                                      <CaretRight
+                                        className="opacity-60"
+                                        size={12}
+                                        weight="bold"
+                                        aria-hidden
+                                      />
                                     </div>
-                                    <div className="text-[11px] text-[var(--tx3)]">
-                                      Full day crew &amp; van
+                                    <div className="text-[11px] text-[#5A6B5E] mt-0.5 leading-snug font-normal normal-case tracking-normal">
+                                      Full day crew and van
                                     </div>
                                   </div>
                                 </Link>
@@ -916,13 +900,19 @@ function PartnerPortalInner({
                                     setBookServiceModalOpen(false);
                                     setActiveTab("b2b-projects");
                                   }}
-                                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[var(--bg)] transition-colors text-left"
+                                  className="w-full flex items-start gap-2 px-4 py-3 text-left hover:bg-[#2C3E2D]/[0.03] transition-colors"
                                 >
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-[13px] font-semibold text-[var(--tx)]">
-                                      New Project
+                                    <div className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] flex items-center gap-1">
+                                      New project
+                                      <CaretRight
+                                        className="opacity-60"
+                                        size={12}
+                                        weight="bold"
+                                        aria-hidden
+                                      />
                                     </div>
-                                    <div className="text-[11px] text-[var(--tx3)]">
+                                    <div className="text-[11px] text-[#5A6B5E] mt-0.5 leading-snug font-normal normal-case tracking-normal">
                                       Coordinate multi-vendor items
                                     </div>
                                   </div>
@@ -939,25 +929,43 @@ function PartnerPortalInner({
                     data.allDeliveries.length > 0 && (
                       <button
                         onClick={() => setShareTarget(data.allDeliveries[0])}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#2C3E2D]/25 text-[10px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
                       >
-                        <ShareNetwork size={14} />
-                        Share with Client
+                        <ShareNetwork size={14} weight="regular" />
+                        Share with client
+                        <CaretRight
+                          size={12}
+                          weight="bold"
+                          className="opacity-50"
+                          aria-hidden
+                        />
                       </button>
                     )}
                   <button
                     onClick={() => setActiveTab("calendar")}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#2C3E2D]/25 text-[10px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
                   >
-                    <Calendar size={14} />
+                    <Calendar size={14} weight="regular" />
                     Calendar
+                    <CaretRight
+                      size={12}
+                      weight="bold"
+                      className="opacity-50"
+                      aria-hidden
+                    />
                   </button>
                   <button
                     onClick={() => setActiveTab("billing")}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-[var(--card)] text-[var(--tx)] border border-[var(--brd)] hover:border-[var(--gold)] transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#2C3E2D]/25 text-[10px] font-bold tracking-[0.12em] uppercase text-[#2C3E2D] bg-transparent hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
                   >
-                    <ChartBar size={14} />
-                    Monthly Report
+                    <ChartBar size={14} weight="regular" />
+                    Monthly report
+                    <CaretRight
+                      size={12}
+                      weight="bold"
+                      className="opacity-50"
+                      aria-hidden
+                    />
                   </button>
                 </>
               )}
@@ -965,7 +973,7 @@ function PartnerPortalInner({
 
             {/* API error */}
             {portalError && (
-              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-[13px] flex items-center justify-between gap-4">
+              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 text-[13px] flex items-center justify-between gap-4">
                 <span>{portalError}</span>
                 <button
                   type="button"
@@ -999,9 +1007,9 @@ function PartnerPortalInner({
             )}
 
             {/* Tabs, horizontally scrollable, no wrapping, no vertical movement */}
-            <div className="overflow-hidden mb-4">
+            <div className="overflow-hidden mb-2">
               <div
-                className="flex items-center justify-start sm:justify-center gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-[var(--brd)]/30 px-2 sm:px-4"
+                className="flex items-center justify-start sm:justify-center gap-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-[#2C3E2D]/10 px-0 sm:px-2"
                 style={{
                   touchAction: "pan-x",
                   overscrollBehaviorX: "contain",
@@ -1014,12 +1022,12 @@ function PartnerPortalInner({
                     <button
                       key={t.key}
                       onClick={() => setActiveTab(t.key)}
-                      className={`flex-shrink-0 px-4 py-3.5 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors -mb-px ${
-                        hasCount ? "min-w-[7rem]" : "min-w-[5rem]"
+                      className={`flex-shrink-0 px-3 sm:px-4 py-3 text-[10px] font-bold tracking-[0.1em] uppercase whitespace-nowrap border-b transition-colors -mb-px ${
+                        hasCount ? "min-w-[6.5rem]" : "min-w-[4.5rem]"
                       } ${
                         activeTab === t.key
-                          ? "border-[var(--gold)] text-[var(--gold)]"
-                          : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
+                          ? "border-[#2C3E2D] text-[#2C3E2D]"
+                          : "border-transparent text-[#5A6B5E] hover:text-[#2C3E2D]/80"
                       }`}
                     >
                       {t.label}
@@ -1029,7 +1037,10 @@ function PartnerPortalInner({
               </div>
 
               {/* Tab Content */}
-              <div key={activeTab} className="p-4 sm:p-6 tab-content">
+              <div
+                key={activeTab}
+                className="pt-6 sm:pt-8 px-0 sm:px-1 tab-content"
+              >
                 {activeTab === "b2b-projects" && (
                   <PartnerB2BProjectsTab
                     initialProjectId={initialProjectId}
@@ -1265,7 +1276,7 @@ function PartnerPortalInner({
           {/* Mobile bottom navigation, hidden on sm+ */}
           {!features.showReferrals && (
             <nav
-              className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[var(--brd)] flex items-stretch bg-[var(--card)]/95 backdrop-blur-md safe-area-bottom"
+              className="sm:hidden fixed bottom-0 left-0 right-0 z-[var(--z-topbar)] border-t border-[#2C3E2D]/10 flex items-stretch bg-[#FFFBF7]/98 backdrop-blur-md safe-area-bottom"
               aria-label="Main navigation"
             >
               {[
@@ -1275,7 +1286,7 @@ function PartnerPortalInner({
                   icon: (active: boolean) => (
                     <Calendar
                       size={22}
-                      color={active ? "var(--gold)" : "var(--tx3)"}
+                      color={active ? FOREST : "var(--tx3)"}
                       weight={active ? "duotone" : "regular"}
                     />
                   ),
@@ -1286,7 +1297,7 @@ function PartnerPortalInner({
                   icon: (active: boolean) => (
                     <ListBullets
                       size={22}
-                      color={active ? "var(--gold)" : "var(--tx3)"}
+                      color={active ? FOREST : "var(--tx3)"}
                       weight={active ? "duotone" : "regular"}
                     />
                   ),
@@ -1297,15 +1308,8 @@ function PartnerPortalInner({
                         key: "__schedule__",
                         label: "Book",
                         icon: (_active: boolean) => (
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-white -mt-4 shadow-lg"
-                            style={{
-                              background:
-                                "linear-gradient(145deg, #D4AF37, #C9A962)",
-                              boxShadow: "0 4px 12px rgba(201,169,98,0.45)",
-                            }}
-                          >
-                            <Plus size={20} color="white" weight="bold" />
+                          <div className="w-10 h-10 flex items-center justify-center text-[#2C3E2D] bg-[#FFFBF7] border border-[#2C3E2D]/35 -mt-3 rounded-sm">
+                            <Plus size={20} color="#2C3E2D" weight="bold" />
                           </div>
                         ),
                       },
@@ -1317,7 +1321,7 @@ function PartnerPortalInner({
                   icon: (active: boolean) => (
                     <NavigationArrow
                       size={22}
-                      color={active ? "var(--gold)" : "var(--tx3)"}
+                      color={active ? FOREST : "var(--tx3)"}
                       weight={active ? "duotone" : "regular"}
                     />
                   ),
@@ -1328,7 +1332,7 @@ function PartnerPortalInner({
                   icon: (active: boolean) => (
                     <UserCircle
                       size={22}
-                      color={active ? "var(--gold)" : "var(--tx3)"}
+                      color={active ? FOREST : "var(--tx3)"}
                       weight={active ? "duotone" : "regular"}
                     />
                   ),
@@ -1347,8 +1351,8 @@ function PartnerPortalInner({
                         setSettingsOpen(true);
                       } else setActiveTab(key);
                     }}
-                    className={`flex-1 flex flex-col items-center justify-end gap-1 pb-3 pt-2 min-h-[56px] text-[10px] font-semibold transition-colors touch-manipulation ${
-                      isActive ? "text-[var(--gold)]" : "text-[var(--tx3)]"
+                    className={`flex-1 flex flex-col items-center justify-end gap-1 pb-3 pt-2 min-h-[56px] text-[9px] font-bold tracking-[0.08em] uppercase transition-colors touch-manipulation ${
+                      isActive ? "text-[#2C3E2D]" : "text-[#5A6B5E]"
                     }`}
                     aria-current={isActive ? "page" : undefined}
                   >
@@ -1374,50 +1378,42 @@ export default function PartnerPortalClient(props: Props) {
 }
 
 function DeliveryKPIs({ data }: { data: DashboardData | null }) {
+  const cell =
+    "text-center px-3 sm:px-6 py-1 md:border-l md:border-[#2C3E2D]/10 md:first:border-l-0";
+  const label =
+    "text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]/70";
+  const figure =
+    "text-[24px] sm:text-[28px] font-normal text-[#2C3E2D] mt-1.5 font-hero leading-none";
   return (
-    <div className="border-t border-[var(--brd)]/30 pt-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-        <div className="text-center">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
-            This Month
-          </div>
-          <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">
-            {data?.completedThisMonth ?? 0}
-          </div>
-          <div className="text-[11px] text-[#2D9F5A] mt-0.5 font-medium">
+    <div className="border-t border-[#2C3E2D]/10 pt-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 md:gap-y-0">
+        <div className={cell}>
+          <div className={label}>This month</div>
+          <div className={figure}>{data?.completedThisMonth ?? 0}</div>
+          <div className="text-[11px] text-[#2D9F5A] mt-1 font-medium min-h-[1rem]">
             {(data?.completedThisMonth ?? 0) > 0
               ? `+${data?.completedThisMonth} vs last`
-              : ""}
+              : "\u00a0"}
           </div>
         </div>
-        <div className="text-center">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
-            On-Time Rate
-          </div>
-          <div className="text-[26px] sm:text-[30px] font-bold text-[#22C55E] mt-1 font-hero">
-            {data?.onTimeRate ?? 100}%
-          </div>
+        <div className={cell}>
+          <div className={label}>On-time rate</div>
+          <div className={figure}>{data?.onTimeRate ?? 100}%</div>
         </div>
-        <div className="text-center">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
-            Satisfaction
-          </div>
-          <div className="text-[26px] sm:text-[30px] font-bold text-[#C9A962] mt-1 font-hero">
-            {data?.satisfactionScore ?? "-"}
-          </div>
+        <div className={cell}>
+          <div className={label}>Satisfaction</div>
+          <div className={figure}>{data?.satisfactionScore ?? "—"}</div>
           {data?.satisfactionScore != null && (
-            <div className="text-[11px] text-[var(--tx3)] mt-0.5">out of 5</div>
+            <div className="text-[11px] text-[#5A6B5E] mt-1">out of 5</div>
           )}
         </div>
-        <div className="text-center">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
-            Outstanding
-          </div>
-          <div className="text-[26px] sm:text-[30px] font-bold text-[var(--tx)] mt-1 font-hero">
+        <div className={cell}>
+          <div className={label}>Outstanding</div>
+          <div className={figure}>
             {formatCurrency(data?.outstandingAmount ?? 0)}
           </div>
           {data?.outstandingDueDate && (
-            <div className="text-[11px] text-[var(--tx3)] mt-0.5">
+            <div className="text-[11px] text-[#5A6B5E] mt-1">
               Due{" "}
               {new Date(data.outstandingDueDate).toLocaleDateString("en-US", {
                 month: "short",
@@ -1435,7 +1431,7 @@ function RealtorKPIs({ data }: { data: DashboardData | null }) {
   return (
     <div className="border-t border-[var(--brd)]/30 pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
       <div className="flex flex-col justify-center">
-        <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50">
+        <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#3D4F41]">
           Total Earned
         </div>
         <div className="text-[44px] font-bold text-[#2D9F5A] mt-2 font-hero">
@@ -1491,7 +1487,7 @@ function ReferralForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-3">
+      <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#3D4F41] mb-3">
         Submit New Referral
       </div>
       <div className="space-y-2">
@@ -1502,7 +1498,7 @@ function ReferralForm() {
           }
           placeholder="Client full name"
           required
-          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#2C3E2D] focus:outline-none transition-colors bg-white"
         />
         <input
           value={form.client_email}
@@ -1511,14 +1507,14 @@ function ReferralForm() {
           }
           placeholder="Client email"
           type="email"
-          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#2C3E2D] focus:outline-none transition-colors bg-white"
         />
         <AddressAutocomplete
           value={form.property}
           onRawChange={(t) => setForm((f) => ({ ...f, property: t }))}
           onChange={(r) => setForm((f) => ({ ...f, property: r.fullAddress }))}
           placeholder="Property address"
-          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#2C3E2D] focus:outline-none transition-colors bg-white"
         />
         <input
           value={form.move_date}
@@ -1527,12 +1523,12 @@ function ReferralForm() {
           }
           placeholder="Target move date"
           type="date"
-          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] placeholder-[#aaa] focus:border-[#2C3E2D] focus:outline-none transition-colors bg-white"
         />
         <select
           value={form.tier}
           onChange={(e) => setForm((f) => ({ ...f, tier: e.target.value }))}
-          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] focus:border-[#C9A962] focus:outline-none transition-colors bg-white"
+          className="w-full px-3 py-2 rounded-lg border border-[#E8E4DF] text-[13px] text-[#1A1A1A] focus:border-[#2C3E2D] focus:outline-none transition-colors bg-white"
         >
           <option value="standard">Essential</option>
           <option value="premium">Signature</option>
@@ -1542,7 +1538,7 @@ function ReferralForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full mt-3 px-4 py-2.5 rounded-lg text-[12px] font-bold bg-[#C9A962] text-white hover:bg-[#B89A52] transition-colors disabled:opacity-50"
+        className="w-full mt-3 px-4 py-2.5 rounded-lg text-[12px] font-bold bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors disabled:opacity-50"
       >
         {submitting
           ? "Submitting..."
@@ -1576,11 +1572,11 @@ function PartnerNotificationBell({
     >
       <button
         onClick={onToggle}
-        className="relative p-2 rounded-lg hover:bg-[var(--bg)] transition-colors"
+        className="relative p-2 rounded-sm hover:bg-[#5C1A33]/[0.06] transition-colors"
       >
-        <Bell size={18} color="var(--tx3)" />
+        <Bell size={18} color={WINE} weight="regular" />
         {unreadCount > 0 && (
-          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 rounded-full bg-[#C9A962] text-white text-[8px] font-bold flex items-center justify-center px-1">
+          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 rounded-full bg-[#5C1A33] text-white text-[8px] font-bold flex items-center justify-center px-1">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -1597,7 +1593,7 @@ function PartnerNotificationBell({
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-[10px] font-semibold text-[#C9A962] hover:underline"
+                  className="text-[10px] font-semibold text-[#2C3E2D] hover:underline"
                 >
                   Mark all read
                 </button>
@@ -1619,14 +1615,14 @@ function PartnerNotificationBell({
                       onClose();
                     }}
                     className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--brd)] last:border-0 hover:bg-[var(--bg)] cursor-pointer transition-colors w-full text-left ${
-                      !notif.read ? "bg-[#C9A962]/5" : ""
+                      !notif.read ? "bg-[#2C3E2D]/6" : ""
                     }`}
                   >
                     <div className="flex-shrink-0 mt-0.5 w-4 flex items-center justify-center">
                       {!notif.read && (
                         <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C9A962] opacity-50" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C9A962]" />
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2C3E2D] opacity-50" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2C3E2D]" />
                         </span>
                       )}
                     </div>
@@ -1644,7 +1640,7 @@ function PartnerNotificationBell({
                           {notif.body}
                         </div>
                       )}
-                      <div className="text-[9px] text-[var(--tx3)]/60 mt-1">
+                      <div className="text-[9px] text-[#5A635C] mt-1">
                         {notif.time}
                       </div>
                     </div>
@@ -1692,7 +1688,7 @@ function MaterialsTab() {
 
   return (
     <div>
-      <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--tx3)]/50 mb-4">
+      <div className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#3D4F41] mb-4">
         Marketing Materials
       </div>
       <div className="space-y-0">
@@ -1703,7 +1699,7 @@ function MaterialsTab() {
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-[var(--bg)] flex items-center justify-center">
-                <FileText size={20} color="var(--gold)" />
+                <FileText size={20} color={FOREST} />
               </div>
               <div>
                 <div className="text-[var(--text-base)] font-semibold text-[var(--tx)]">
@@ -1713,7 +1709,7 @@ function MaterialsTab() {
               </div>
             </div>
             <button className="p-2 rounded-lg hover:bg-[var(--bg)] transition-colors">
-              <DownloadSimple size={18} color="var(--gold)" />
+              <DownloadSimple size={18} color={FOREST} />
             </button>
           </div>
         ))}

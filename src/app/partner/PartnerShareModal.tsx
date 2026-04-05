@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import { partnerModalPanelClass } from "@/components/partner/PartnerChrome";
 
 interface Props {
   delivery: {
@@ -65,26 +66,26 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
   const modalContent = (
     <ModalDialogFrame
       zClassName="z-[99999]"
-      backdropClassName="bg-black/50"
+      backdropClassName="bg-black/45 backdrop-blur-[2px]"
       onBackdropClick={onClose}
-      panelClassName="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[420px] sheet-card sm:modal-card"
+      panelClassName={`${partnerModalPanelClass} w-full sm:max-w-[420px] sheet-card sm:modal-card`}
       panelStyle={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[18px] font-bold text-[var(--tx)] font-hero">Share Tracking Link</h2>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg2)] transition-colors text-[var(--tx3)]">
+            <h2 className="font-hero text-[20px] font-normal text-[#5C1A33]">Share tracking link</h2>
+            <button onClick={onClose} className="p-2 rounded-sm hover:bg-[#2C3E2D]/[0.04] transition-colors text-[#5A6B5E]">
               <X size={18} weight="regular" />
             </button>
           </div>
 
-          <div className="bg-[var(--bg2)] rounded-xl p-3 mb-4">
+          <div className="border border-[#2C3E2D]/10 rounded-sm p-3 mb-4 bg-[#2C3E2D]/[0.02]">
             <div className="text-[13px] font-semibold text-[var(--tx)]">{delivery.customer_name || delivery.delivery_number}</div>
             <div className="text-[11px] text-[var(--tx3)] mt-0.5">{delivery.delivery_address || "-"}</div>
           </div>
 
           {error && (
-            <div className="mb-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-[12px] text-red-600 dark:text-red-400">{error}</div>
+            <div className="mb-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-[12px] text-red-600">{error}</div>
           )}
 
           {sent ? (
@@ -129,7 +130,7 @@ export default function PartnerShareModal({ delivery, onClose, onSent }: Props) 
               <button
                 onClick={handleSend}
                 disabled={sending}
-                className="w-full px-4 py-2.5 rounded-lg text-[13px] font-bold bg-[#2C3E2D] text-white hover:bg-[#B89A52] transition-colors disabled:opacity-50"
+                className="w-full px-4 py-2.5 rounded-sm text-[10px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors disabled:opacity-50"
               >
                 {sending ? "Sending..." : "Send tracking link"}
               </button>

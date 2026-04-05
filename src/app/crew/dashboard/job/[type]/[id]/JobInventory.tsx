@@ -265,7 +265,7 @@ export default function JobInventory({
                   checked={isCompleted ? bothVerified : verified}
                   onChange={() => !readOnly && !isCompleted && toggleRoomVerify(room)}
                   disabled={readOnly}
-                  className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
+                  className="rounded border-[var(--brd)] text-[#5C1A33] focus:ring-[#5C1A33]"
                 />
                 <span className="text-[13px] text-[var(--tx)] flex-1">{room}</span>
                 {isCompleted && (
@@ -284,7 +284,7 @@ export default function JobInventory({
                 const r = window.prompt("Add room name");
                 if (r?.trim() && !customRooms.includes(r.trim())) setCustomRooms((prev) => [...prev, r.trim()]);
               }}
-              className="w-full py-1.5 border border-dashed border-[var(--brd)] text-[12px] text-[var(--tx3)] hover:border-[var(--gold)]"
+              className="w-full py-1.5 border border-dashed border-[var(--brd)] text-[12px] text-[var(--tx3)] hover:border-[#5C1A33]"
             >
               + Add room
             </button>
@@ -307,7 +307,7 @@ export default function JobInventory({
             })}
             className="w-full flex items-center justify-between gap-2 bg-[var(--bg)]/80 px-3 py-2.5 text-left hover:bg-[var(--bg)] transition-colors cursor-pointer group"
           >
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--gold)] group-hover:text-[var(--gold2)] transition-colors">{r.room}</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#5C1A33] group-hover:text-[var(--yugo-rose-accent)] transition-colors">{r.room}</span>
             <span className="flex items-center gap-1.5">
               <span className="text-[10px] font-medium text-[var(--tx3)]">{items.length} item{items.length !== 1 ? "s" : ""}</span>
               <ChevronDown className={`w-[14px] h-[14px] text-[var(--tx3)] transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`} />
@@ -344,7 +344,7 @@ export default function JobInventory({
                           hasId ? toggleVerify(id) : void toggleLineItemVerify(r.room, rawName);
                         }}
                         disabled={readOnly}
-                        className="rounded border-[var(--brd)] text-[var(--gold)] focus:ring-[var(--gold)]"
+                        className="rounded border-[var(--brd)] text-[#5C1A33] focus:ring-[#5C1A33]"
                       />
                       <span className="text-[13px] flex-1 text-[var(--tx)]">{rawName}</span>
                       <span className="text-[11px] text-[var(--tx3)] tabular-nums">{qty}</span>
@@ -369,9 +369,9 @@ export default function JobInventory({
       })}
       {extraItems.length > 0 && (
         <div className="mb-3">
-          <div className="text-[12px] font-semibold text-[var(--gold)] mb-1.5">Added on-site</div>
+          <div className="text-[12px] font-semibold text-[#5C1A33] mb-1.5">Added on-site</div>
           {extraItems.map((e) => (
-            <div key={e.id} className="py-1.5 px-3 rounded-lg bg-[var(--gdim)]/30 border border-[var(--gold)]/20 text-[12px]">
+            <div key={e.id} className="py-1.5 px-3 rounded-lg bg-[var(--gdim)]/30 border border-[#5C1A33]/20 text-[12px]">
               {e.description ?? "-"} {(e.quantity ?? 1) > 1 && `×${e.quantity}`} {e.room && `(${e.room})`}
             </div>
           ))}
@@ -381,7 +381,7 @@ export default function JobInventory({
       <button
         type="button"
         onClick={() => setAddExtraOpen(true)}
-        className="w-full py-2.5 rounded-xl bg-[var(--gold)]/10 text-[12px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/15 transition-colors"
+        className="w-full py-2.5 rounded-xl border border-[#2C3E2D]/25 bg-[#5C1A33]/8 text-[12px] font-medium text-[#f5f0e8] hover:bg-[#5C1A33]/14 transition-colors"
       >
         + Add Extra Item
       </button>
@@ -434,7 +434,7 @@ export default function JobInventory({
                 <button
                   type="submit"
                   disabled={submitting || !extraDesc.trim()}
-                  className="flex-1 py-2 bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold disabled:opacity-50"
+                  className="crew-premium-cta flex-1 py-2 text-white font-semibold disabled:opacity-50 border border-[#2C3E2D]/30"
                 >
                   {submitting ? "Submitting…" : "Submit for approval"}
                 </button>

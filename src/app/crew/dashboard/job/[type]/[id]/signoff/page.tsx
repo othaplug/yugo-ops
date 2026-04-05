@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import YugoLogo from "@/components/YugoLogo";
 import { useCrewImmersiveNav } from "@/app/crew/components/CrewImmersiveNavContext";
 
-const GOLD = "#2C3E2D";
+/** Primary forest accent (CTAs, stars — not legacy gold). */
+const FOREST_PRIMARY = "#2C3E2D";
 const FOREST = "#2A3D2E";
 const INK = "#1A1A1A";
 const MUTED = "#6B7A6E";
@@ -183,14 +184,14 @@ interface ItemCondition {
 }
 
 const CONDITION_OPTIONS = [
-  { value: "pristine" as const, label: "Pristine", color: "#22C55E" },
-  { value: "minor_scuff" as const, label: "Minor Scuff", color: "#F59E0B" },
+  { value: "pristine" as const, label: "Pristine", color: "#2C3E2D" },
+  { value: "minor_scuff" as const, label: "Minor Scuff", color: "#B45309" },
   { value: "pre_existing_damage" as const, label: "Pre-existing", color: "#6B7280" },
   { value: "new_damage" as const, label: "New Damage", color: "#EF4444" },
 ];
 
 function StarIcon({ filled, size = 28 }: { filled: boolean; size?: number }) {
-  return <PhStar size={size} color={GOLD} weight={filled ? "fill" : "regular"} />;
+  return <PhStar size={size} color={FOREST_PRIMARY} weight={filled ? "fill" : "regular"} />;
 }
 
 function ChevronLeft({ size = 16 }: { size?: number }) {
@@ -207,7 +208,7 @@ function CheckMark({ size = 10 }: { size?: number }) {
 
 function YugoWordmark() {
   return (
-    <span className="font-hero text-[20px] font-semibold tracking-tight" style={{ color: GOLD }}>
+    <span className="font-hero text-[20px] font-semibold tracking-tight" style={{ color: FOREST_PRIMARY }}>
       yugo
     </span>
   );
@@ -542,9 +543,9 @@ export default function ClientSignOffPage({
         <div className="text-center max-w-sm">
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ backgroundColor: `${GOLD}15` }}
+            style={{ backgroundColor: `${FOREST_PRIMARY}15` }}
           >
-            <Check size={24} color={GOLD} weight="bold" />
+            <Check size={24} color={FOREST_PRIMARY} weight="bold" />
           </div>
           <h1 className="font-hero text-[26px] font-semibold mb-2" style={{ color: INK }}>Already Signed</h1>
           <p className="text-[var(--text-base)] mb-6" style={{ color: MUTED }}>This job has already been signed off.</p>
@@ -627,7 +628,7 @@ export default function ClientSignOffPage({
           >
             <ChevronLeft size={15} /> Back
           </Link>
-          <YugoLogo size={22} variant="gold" onLightBackground />
+          <YugoLogo size={22} variant="wine" onLightBackground />
           <div className="w-14" />
         </div>
 
@@ -662,7 +663,7 @@ export default function ClientSignOffPage({
                   {i < STEP_LABELS.length - 1 && (
                     <div
                       className="flex-1 h-px transition-colors duration-300 mt-[-14px]"
-                      style={{ backgroundColor: phase > step ? `${GOLD}60` : BORDER }}
+                      style={{ backgroundColor: phase > step ? `${FOREST_PRIMARY}60` : BORDER }}
                     />
                   )}
                 </div>
@@ -675,7 +676,7 @@ export default function ClientSignOffPage({
         {phase === 1 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${FOREST_PRIMARY}AA` }}>
                 Step 1 of 4
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
@@ -753,7 +754,7 @@ export default function ClientSignOffPage({
               onClick={() => setPhase(2)}
               disabled={!phase1Valid}
               className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
             >
               Continue to Confirmation
             </button>
@@ -764,7 +765,7 @@ export default function ClientSignOffPage({
         {phase === 2 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${FOREST_PRIMARY}AA` }}>
                 Step 2 of 4
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
@@ -849,7 +850,7 @@ export default function ClientSignOffPage({
               onClick={() => setPhase(3)}
               disabled={!phase2Valid}
               className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
             >
               Continue to Rating
             </button>
@@ -860,7 +861,7 @@ export default function ClientSignOffPage({
         {phase === 3 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${FOREST_PRIMARY}AA` }}>
                 Step 3 of 4
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
@@ -890,7 +891,7 @@ export default function ClientSignOffPage({
                 })}
               </div>
               {rating && (
-                <p className="text-center text-[13px] font-semibold pop-in" style={{ color: GOLD }}>
+                <p className="text-center text-[13px] font-semibold pop-in" style={{ color: FOREST_PRIMARY }}>
                   {RATING_LABELS[rating]}
                 </p>
               )}
@@ -909,8 +910,8 @@ export default function ClientSignOffPage({
                   let textC = MUTED;
                   if (isSelected) {
                     if (n <= 6) { bg = "#EF4444"; textC = "white"; }
-                    else if (n <= 8) { bg = "#F59E0B"; textC = "white"; }
-                    else { bg = "#22C55E"; textC = "white"; }
+                    else if (n <= 8) { bg = "#B45309"; textC = "white"; }
+                    else { bg = "#2C3E2D"; textC = "white"; }
                   }
                   return (
                     <button
@@ -928,7 +929,7 @@ export default function ClientSignOffPage({
               {npsScore !== null && (
                 <p
                   className="text-center text-[11px] mt-2 font-semibold pop-in"
-                  style={{ color: npsScore >= 9 ? "#22C55E" : npsScore >= 7 ? "#F59E0B" : "#EF4444" }}
+                  style={{ color: npsScore >= 9 ? "#2C3E2D" : npsScore >= 7 ? "#B45309" : "#EF4444" }}
                 >
                   {NPS_LABELS[npsScore]}
                 </p>
@@ -1018,7 +1019,7 @@ export default function ClientSignOffPage({
               onClick={() => setPhase(4)}
               disabled={!phase3Valid}
               className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
             >
               Continue to Sign
             </button>
@@ -1029,7 +1030,7 @@ export default function ClientSignOffPage({
         {phase === 4 && (
           <div className="phase-enter">
             <div className="mb-7">
-              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${GOLD}AA` }}>
+              <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: `${FOREST_PRIMARY}AA` }}>
                 Step 4 of 4
               </p>
               <h1 className="font-hero text-[28px] font-semibold leading-tight" style={{ color: INK }}>
@@ -1064,7 +1065,7 @@ export default function ClientSignOffPage({
                   type="button"
                   onClick={clearSignature}
                   className="text-[11px] font-semibold transition-opacity hover:opacity-60"
-                  style={{ color: GOLD }}
+                  style={{ color: FOREST_PRIMARY }}
                 >
                   Clear
                 </button>
@@ -1108,7 +1109,7 @@ export default function ClientSignOffPage({
             {/* Legal disclosure */}
             <div
               className="p-4 rounded-2xl mb-5"
-              style={{ backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}28` }}
+              style={{ backgroundColor: `${FOREST_PRIMARY}08`, border: `1px solid ${FOREST_PRIMARY}28` }}
             >
               <p className="text-[11px] leading-relaxed" style={{ color: FOREST }}>
                 {copy?.legalNote
@@ -1128,7 +1129,7 @@ export default function ClientSignOffPage({
               onClick={handleSubmit}
               disabled={submitting || !clientName.trim()}
               className="w-full py-2 font-semibold text-[var(--text-base)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ backgroundColor: GOLD, color: "#1A1A1A" }}
+              style={{ backgroundColor: FOREST_PRIMARY, color: "#1A1A1A" }}
             >
               {submitting ? "Submitting…" : "Confirm & Sign Off"}
             </button>
@@ -1142,15 +1143,15 @@ export default function ClientSignOffPage({
             <div className="relative inline-flex items-center justify-center mb-7">
               <div
                 className="absolute w-20 h-20 rounded-full"
-                style={{ backgroundColor: `${GOLD}18`, animation: "sparkleRing 2s ease-out 0.15s infinite" }}
+                style={{ backgroundColor: `${FOREST_PRIMARY}18`, animation: "sparkleRing 2s ease-out 0.15s infinite" }}
               />
               <div
                 className="absolute w-20 h-20 rounded-full"
-                style={{ backgroundColor: `${GOLD}10`, animation: "sparkleRing 2s ease-out 0.7s infinite" }}
+                style={{ backgroundColor: `${FOREST_PRIMARY}10`, animation: "sparkleRing 2s ease-out 0.7s infinite" }}
               />
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center pop-in text-[#1A1A1A]"
-                style={{ backgroundColor: GOLD }}
+                style={{ backgroundColor: FOREST_PRIMARY }}
               >
                 <Check size={26} color="#1A1A1A" weight="bold" />
               </div>

@@ -154,6 +154,35 @@ export function estateBookingAdminEmailHtml(params: {
 }
 
 /** Tip received — admin notification. */
+/** Client completed full pre-move checklist from live tracking — admin/coordinator heads-up. */
+export function preMoveChecklistCompleteAdminEmailHtml(params: {
+  clientName: string;
+  moveCode: string;
+  scheduledDateLabel: string | null;
+  adminMoveUrl: string;
+}): string {
+  const inner = `
+    <div style="${ADMIN_KICKER}">Client prep checklist</div>
+    <h1 style="font-size:20px;font-weight:700;color:${TEXT};margin:0 0 8px;">All items complete</h1>
+    <p style="font-size:14px;color:${TEXT_MUTED};line-height:1.6;margin:0 0 16px;">
+      The client finished every item on the pre-move checklist in their tracking link.
+    </p>
+    <div style="background:${DETAIL_BAND_BG};border-radius:0;padding:16px 20px;margin-bottom:20px;border:1px solid ${BORDER};">
+      <table style="width:100%;font-size:13px;border-collapse:collapse;font-family:${BTN_FONT};">
+        <tr><td style="${ADMIN_LABEL_TD}">Move</td><td style="color:${TEXT};font-weight:600;padding:4px 0;">${escapeHtml(params.moveCode)}</td></tr>
+        <tr><td style="${ADMIN_LABEL_TD}">Client</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(params.clientName)}</td></tr>
+        ${
+          params.scheduledDateLabel
+            ? `<tr><td style="${ADMIN_LABEL_TD}">Scheduled</td><td style="color:${TEXT};padding:4px 0;">${escapeHtml(params.scheduledDateLabel)}</td></tr>`
+            : ""
+        }
+      </table>
+    </div>
+    <a href="${params.adminMoveUrl}" style="${emailPrimaryCtaStyle(BTN_FONT, "inline-block")}">VIEW MOVE</a>
+  `;
+  return adminNotificationLayout(inner, undefined);
+}
+
 export function tipReceivedAdminEmailHtml(params: {
   clientName: string;
   amount: string;

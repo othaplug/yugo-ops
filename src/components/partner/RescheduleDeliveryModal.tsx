@@ -80,11 +80,11 @@ export default function RescheduleDeliveryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md bg-[var(--bg)] border border-[var(--brd)]/40 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="w-full max-w-md bg-[#FFFBF7] border border-[#2C3E2D]/10 rounded-lg overflow-hidden shadow-[0_24px_80px_rgba(44,62,45,0.14)]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--brd)]/30">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2C3E2D]/10">
           <div>
-            <p className="text-[9px] font-bold tracking-widest uppercase text-[var(--gold)]">
+            <p className="text-[9px] font-bold tracking-widest uppercase text-[#5C1A33]">
               Reschedule Delivery
             </p>
             <h2 className="admin-section-h2">
@@ -134,7 +134,7 @@ export default function RescheduleDeliveryModal({
                   min={tomorrowStr}
                   max={maxDate.toISOString().slice(0, 10)}
                   onChange={(e) => setNewDate(e.target.value)}
-                  className="w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--brd)]/70 rounded-xl text-[13px] text-[var(--tx)] focus:border-[var(--gold)]/60 outline-none"
+                  className="w-full px-3.5 py-3 bg-[var(--bg)] border border-[var(--brd)]/70 rounded-xl text-[13px] text-[var(--tx)] focus:border-[#5C1A33]/45 focus:ring-1 focus:ring-[#5C1A33]/15 outline-none"
                 />
               </div>
 
@@ -151,8 +151,8 @@ export default function RescheduleDeliveryModal({
                       onClick={() => setNewWindow(opt.value)}
                       className={`px-3 py-2.5 rounded-xl border text-left transition-all ${
                         newWindow === opt.value
-                          ? "border-[var(--gold)]/50 bg-[var(--gold)]/8"
-                          : "border-[var(--brd)]/60 hover:border-[var(--brd)]"
+                          ? "border-[#2C3E2D]/35 bg-[#2C3E2D]/6"
+                          : "border-[var(--brd)]/60 hover:border-[#5C1A33]/25"
                       }`}
                     >
                       <p className="text-[12px] font-semibold text-[var(--tx)]">{opt.label}</p>
@@ -180,7 +180,7 @@ export default function RescheduleDeliveryModal({
                         key={i}
                         type="button"
                         onClick={() => handleReschedule(alt.date, alt.window)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-[var(--brd)]/60 hover:border-[var(--gold)]/40 hover:bg-[var(--gold)]/4 transition-all text-left"
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-[var(--brd)]/60 hover:border-[#5C1A33]/30 hover:bg-[#5C1A33]/5 transition-all text-left"
                       >
                         <span className="text-[12px] font-semibold text-[var(--tx)]">
                           {formatDate(alt.date)}
@@ -195,8 +195,7 @@ export default function RescheduleDeliveryModal({
               <button
                 onClick={() => handleReschedule()}
                 disabled={loading || !newDate || !newWindow}
-                className="w-full py-3 rounded-xl font-bold text-[13px] text-white transition-all disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                className="w-full py-3 rounded-xl font-bold text-[13px] text-white bg-[#2C3E2D] hover:bg-[#243524] transition-colors disabled:opacity-50"
               >
                 {loading ? "Checking availability…" : "Confirm Reschedule"}
               </button>

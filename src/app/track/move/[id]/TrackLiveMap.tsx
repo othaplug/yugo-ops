@@ -7,12 +7,13 @@ import { CREW_STATUS_TO_LABEL } from "@/lib/move-status";
 import { toTitleCase } from "@/lib/format-text";
 import {
   ChatCircle,
-  Clock,
   CornersIn,
   CornersOut,
   NavigationArrow,
   Phone,
 } from "@phosphor-icons/react";
+import { CREAM, FOREST, TEXT_MUTED_ON_LIGHT } from "@/lib/client-theme";
+import { QUOTE_EYEBROW_CLASS } from "@/app/quote/[quoteId]/quote-shared";
 
 type Center = { lat: number; lng: number };
 type Crew = { current_lat: number; current_lng: number; name?: string } | null;
@@ -57,8 +58,11 @@ const LeafletMap = dynamic(
 
 function MapLoading() {
   return (
-    <div className="w-full h-full min-h-[320px] flex items-center justify-center bg-[#FAFAF8] text-[#454545] text-[12px]">
-      Loading map...
+    <div
+      className="w-full h-full min-h-[320px] flex items-center justify-center text-[13px]"
+      style={{ background: CREAM, color: TEXT_MUTED_ON_LIGHT }}
+    >
+      Loading map…
     </div>
   );
 }
@@ -79,6 +83,9 @@ export default function TrackLiveMap({
   move,
   crew,
   onLiveStageChange,
+  isEstate = false,
+  revealCrewNames = true,
+  crewAssigned = false,
 }: {
   moveId: string;
   token: string;
@@ -89,6 +96,10 @@ export default function TrackLiveMap({
   };
   crew?: { name: string; members?: string[] } | null;
   onLiveStageChange?: (stage: string | null) => void;
+  isEstate?: boolean;
+  /** When false, crew team names are hidden until the track page allows reveal. */
+  revealCrewNames?: boolean;
+  crewAssigned?: boolean;
 }) {
   const [crewLoc, setCrewLoc] = useState<{
     current_lat: number;
@@ -350,9 +361,10 @@ export default function TrackLiveMap({
         )
       : null;
 
-  const crewMembers = crew?.members?.length
-    ? crew.members.join(", ")
-    : crew?.name || "";
+  const maskCrewIdentity = crewAssigned && !revealCrewNames;
+  const displayCrewTitle = maskCrewIdentity
+    ? "Your crew"
+    : crew?.name || "Your Crew";
   const showPlaceholder = !loading && !hasActiveTracking;
   const canShowMap = !loading && (hasActiveTracking || !!pickup || !!dropoff);
 
@@ -364,44 +376,117 @@ export default function TrackLiveMap({
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#22C55E]" />
           </span>
-          <span className="text-[12px] font-semibold text-[#22C55E]">LIVE</span>
+          <span
+            className={`text-[13px] font-semibold text-[#22C55E]${isEstate ? " drop-shadow-sm" : ""}`}
+          >
+            LIVE
+          </span>
         </div>
       )}
 
       {showPlaceholder && (
-        <div className="rounded-xl border border-[#E7E5E4] bg-[#FAFAF8] p-5">
-          <p className="text-[var(--text-base)] text-[#1A1A1A] mb-2">
+        <div
+          className="border p-5 rounded-none"
+          style={
+            isEstate
+              ? {
+                  borderColor: "rgba(237, 230, 220, 0.2)",
+                  background: "#321018",
+                }
+              : {
+                  borderColor: `${FOREST}18`,
+                  background: CREAM,
+                }
+          }
+        >
+          <p
+            className="text-[15px] font-semibold leading-snug mb-1.5"
+            style={{ color: isEstate ? "#F5F0E8" : FOREST }}
+          >
             Your crew will appear here on move day.
           </p>
-          <p className="text-[13px] text-[#454545] mb-4">
-            Live tracking activates when your crew begins.
+          <p
+            className="text-[14px] leading-relaxed mb-4"
+            style={{
+              color: isEstate ? "rgba(237, 230, 220, 0.78)" : TEXT_MUTED_ON_LIGHT,
+            }}
+          >
+            We turn on the live map when your crew starts the job.
           </p>
           {scheduledStr && (
-            <p className="text-[12px] text-[#454545] mb-1">
-              Scheduled: {scheduledStr}
+            <p
+              className="text-[13px] mb-2"
+              style={{
+                color: isEstate ? "rgba(237, 230, 220, 0.78)" : TEXT_MUTED_ON_LIGHT,
+              }}
+            >
+              Scheduled:{" "}
+              <span
+                className="font-medium"
+                style={{ color: isEstate ? "#F5F0E8" : FOREST }}
+              >
+                {scheduledStr}
+              </span>
             </p>
           )}
           {move?.arrival_window && (
-            <p className="text-[12px] text-[#454545] mb-1">
-              Crew arrives: {move.arrival_window}
+            <p
+              className="text-[13px] mb-1"
+              style={{
+                color: isEstate ? "rgba(237, 230, 220, 0.78)" : TEXT_MUTED_ON_LIGHT,
+              }}
+            >
+              Crew arrives:{" "}
+              <span
+                className="font-medium"
+                style={{ color: isEstate ? "#F5F0E8" : FOREST }}
+              >
+                {move.arrival_window}
+              </span>
             </p>
           )}
-          <p className="text-[11px] text-[#5C5853] font-medium uppercase tracking-wider">
-            Live signal off
-          </p>
+          <div
+            className="mt-4 pt-4"
+            style={{
+              borderTop: isEstate
+                ? "1px solid rgba(237, 230, 220, 0.12)"
+                : `1px solid ${FOREST}12`,
+            }}
+          >
+            <p
+              className="text-[12px] leading-relaxed"
+              style={{
+                color: isEstate ? "rgba(237, 230, 220, 0.62)" : `${FOREST}99`,
+              }}
+            >
+              No live location yet — the route preview below is for your
+              reference.
+            </p>
+          </div>
         </div>
       )}
 
       {canShowMap && (
         <>
           <div
-            className={`track-live-map-container relative overflow-hidden transition-all duration-300 ease-out ${
+            className={`track-live-map-container relative overflow-hidden transition-all duration-300 ease-out rounded-none! ${
               hasActiveTracking
                 ? isFullscreen
                   ? "map-fullscreen"
-                  : "rounded-xl h-[50vh] min-h-[320px] bg-[#FAFAF8] border border-[#E7E5E4]"
-                : "mt-4 rounded-xl h-[200px] bg-[#FAFAF8] border border-[#E7E5E4]"
+                  : isEstate
+                    ? "h-[50vh] min-h-[320px] bg-[#1a0f14] border border-[#EDE6DC]/15"
+                    : "h-[50vh] min-h-[320px] border"
+                : isEstate
+                  ? "mt-4 h-[200px] bg-[#1a0f14] border border-[#EDE6DC]/15"
+                  : "mt-4 h-[200px] border"
             }`}
+            style={
+              hasActiveTracking && !isFullscreen && !isEstate
+                ? { borderColor: `${FOREST}18`, background: CREAM }
+                : !hasActiveTracking && !isEstate
+                  ? { borderColor: `${FOREST}18`, background: CREAM }
+                  : undefined
+            }
           >
             <div className="track-live-map-fill absolute inset-0 w-full h-full min-h-0">
               {HAS_MAPBOX && MAPBOX_TOKEN ? (
@@ -410,7 +495,11 @@ export default function TrackLiveMap({
                   center={mapCenter}
                   crew={hasActiveTracking ? crewLoc : null}
                   crewName={
-                    hasActiveTracking ? crewLoc?.name || crew?.name : undefined
+                    hasActiveTracking
+                      ? maskCrewIdentity
+                        ? "Your crew"
+                        : crewLoc?.name || crew?.name
+                      : undefined
                   }
                   pickup={pickup}
                   dropoff={dropoff}
@@ -425,6 +514,7 @@ export default function TrackLiveMap({
                   distanceRemainingM={
                     hasActiveTracking ? navDistanceRemainingM : null
                   }
+                  isEstate={isEstate}
                 />
               ) : (
                 <LeafletMap
@@ -440,14 +530,24 @@ export default function TrackLiveMap({
 
             {!hasActiveTracking && (
               <div
-                className="absolute inset-0 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center z-10 pointer-events-none rounded-xl"
+                className={`absolute inset-0 backdrop-blur-md flex flex-col items-center justify-center z-10 pointer-events-none px-4 text-center ${
+                  isEstate ? "bg-[#1a0f14]/82" : "bg-[#FFFBF7]/85"
+                }`}
                 aria-hidden="true"
               >
-                <span className="text-[12px] font-semibold text-[#454545]">
-                  Live signal off
+                <span
+                  className="text-[13px] font-semibold"
+                  style={{ color: isEstate ? "#F5F0E8" : FOREST }}
+                >
+                  Live map paused
                 </span>
-                <span className="text-[11px] text-[#4F4B47] mt-1">
-                  Tracking begins when your crew starts the job
+                <span
+                  className="text-[12px] mt-1 max-w-[240px] leading-snug"
+                  style={{
+                    color: isEstate ? "rgba(237,230,220,0.72)" : TEXT_MUTED_ON_LIGHT,
+                  }}
+                >
+                  Turns on automatically when your crew is en route.
                 </span>
               </div>
             )}
@@ -547,27 +647,27 @@ export default function TrackLiveMap({
                 {/* Compact row (always visible) */}
                 <div className="flex items-center gap-2.5 px-3 pb-2.5">
                   <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold text-white shrink-0"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0"
                     style={{
                       background: "linear-gradient(135deg, #2C3E2D, #8B7332)",
                     }}
                   >
-                    {(crew?.name || "Y")
+                    {(maskCrewIdentity ? "Y" : (crew?.name || "Y"))
                       .replace("Team ", "")
                       .slice(0, 1)
                       .toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[13px] font-bold text-[#1A1A1A] truncate">
-                        {crew?.name || "Your Crew"}
+                      <span className="text-[14px] font-bold text-[#1A1A1A] truncate">
+                        {displayCrewTitle}
                       </span>
-                      {crew?.members && (
-                        <span className="text-[10px] text-[#454545]">
+                      {!maskCrewIdentity && crew?.members && (
+                        <span className="text-[11px] text-[#454545]">
                           {crew.members.length} movers
                         </span>
                       )}
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#22C55E]/15 text-[#22C55E]">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#22C55E]/15 text-[#22C55E]">
                         <span className="relative flex h-1 w-1">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
                           <span className="relative inline-flex rounded-full h-1 w-1 bg-[#22C55E]" />
@@ -580,7 +680,7 @@ export default function TrackLiveMap({
                   </div>
                   <a
                     href={`tel:${(crewPhone || dispatchPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
-                    className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-[11px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
+                    className="shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-lg border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
                   >
                     <Phone
                       size={13}
@@ -601,14 +701,11 @@ export default function TrackLiveMap({
                 >
                   {/* ETA + last update */}
                   {(displayEta != null || lastLocationAt) && (
-                    <div className="flex items-center gap-4 pt-3 text-[11px] text-[#454545]">
+                    <div className="flex items-center gap-4 pt-3 text-[12px] text-[#454545]">
                       {displayEta != null && (
-                        <div className="flex items-center gap-1.5">
-                          <Clock size={12} color="#2C3E2D" aria-hidden />
-                          <span className="font-semibold text-[#2C3E2D]">
-                            ~{displayEta} min ETA
-                          </span>
-                        </div>
+                        <span className="font-semibold text-[#2C3E2D]">
+                          ~{displayEta} min ETA
+                        </span>
                       )}
                       {lastLocationAt && (
                         <span>
@@ -622,41 +719,51 @@ export default function TrackLiveMap({
                   )}
 
                   {/* Crew members */}
-                  {crew?.members && crew.members.length > 0 && (
-                    <div>
-                      <div className="text-[9px] font-bold tracking-wider uppercase text-[#5C5853] mb-2">
-                        Your Team
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {crew.members.map((name, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#E7E5E4]"
-                          >
-                            <div className="w-6 h-6 rounded-full bg-[#C19A6B] flex items-center justify-center text-[9px] font-bold text-white">
-                              {(name || "?").slice(0, 2).toUpperCase()}
+                  {!maskCrewIdentity &&
+                    crew?.members &&
+                    crew.members.length > 0 && (
+                      <div>
+                        <div
+                          className={`${QUOTE_EYEBROW_CLASS} mb-2`}
+                          style={{ color: `${FOREST}90` }}
+                        >
+                          Your Team
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {crew.members.map((name, i) => (
+                            <div
+                              key={i}
+                              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#E7E5E4]"
+                            >
+                              <div className="w-6 h-6 rounded-full bg-[#C19A6B] flex items-center justify-center text-[10px] font-bold text-white">
+                                {(name || "?").slice(0, 2).toUpperCase()}
+                              </div>
+                              <span className="text-[12px] font-medium text-[#1A1A1A]">
+                                {name}
+                              </span>
                             </div>
-                            <span className="text-[11px] font-medium text-[#1A1A1A]">
-                              {name}
-                            </span>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
+                  {maskCrewIdentity && (
+                    <p className="pt-3 text-[12px] leading-relaxed text-[#454545]">
+                      Crew names are shared within three days of your move.
+                    </p>
                   )}
 
                   {/* Call + Text buttons */}
                   <div className="flex gap-2 pt-1">
                     <a
                       href={`tel:${(crewPhone || dispatchPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[13px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
                     >
                       <Phone size={14} className="text-current shrink-0" />
                       {crewPhone ? "Call crew" : "Call dispatch"}
                     </a>
                     <a
                       href={`sms:${(dispatchPhone || crewPhone || process.env.NEXT_PUBLIC_YUGO_PHONE || "+16473704525").replace(/[^\d+]/g, "")}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[12px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[13px] font-semibold text-[#1A1A1A] hover:border-[#2C3E2D] transition-colors"
                     >
                       <ChatCircle
                         size={14}
@@ -674,8 +781,15 @@ export default function TrackLiveMap({
       )}
 
       {loading && (
-        <div className="rounded-xl h-[200px] flex items-center justify-center bg-[#FAFAF8] border border-[#E7E5E4] text-[#454545] text-[12px]">
-          Loading...
+        <div
+          className="h-[200px] flex items-center justify-center border text-[13px] rounded-none"
+          style={{
+            borderColor: `${FOREST}18`,
+            background: CREAM,
+            color: TEXT_MUTED_ON_LIGHT,
+          }}
+        >
+          Loading…
         </div>
       )}
     </div>

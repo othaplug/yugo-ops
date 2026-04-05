@@ -8,6 +8,7 @@ import {
   maybeNotifyB2BOneOffDelivered,
 } from "@/lib/b2b-delivery-business-notifications";
 import { syncDealStageByMoveId } from "@/lib/hubspot/sync-deal-stage";
+import { applyEstateServiceChecklistAutomation } from "@/lib/estate-service-checklist-sync";
 
 export async function POST(req: NextRequest) {
   // Checkpoints always allowed; `crew_tracking` gates live location pings only.
@@ -196,6 +197,12 @@ export async function POST(req: NextRequest) {
     }
   } else {
     await admin.from(table).update({ stage: status, updated_at: now }).eq("id", session.job_id);
+  }
+
+  if (session.job_type === "move") {
+    applyEstateServiceChecklistAutomation(admin, session.job_id).catch((e) =>
+      console.error("[checkpoint] estate checklist sync failed:", e),
+    );
   }
 
   // Fetch job details for notifications

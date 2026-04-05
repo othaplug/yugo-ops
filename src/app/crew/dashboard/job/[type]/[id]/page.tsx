@@ -3,7 +3,21 @@
 import { use, useState, useEffect, useCallback, useRef, useMemo, Suspense, type Dispatch, type SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
-import { CaretLeft, CheckCircle, FileText, ClipboardText, Image, Clock, Lock, PencilSimple, Warning, Phone, Check, Toolbox } from "@phosphor-icons/react";
+import {
+  CaretLeft,
+  CheckCircle,
+  FileText,
+  ClipboardText,
+  Image,
+  Clock,
+  Lock,
+  PencilSimple,
+  Warning,
+  Phone,
+  Check,
+  Toolbox,
+  ListChecks,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { formatTime, formatDate } from "@/lib/client-timezone";
@@ -62,9 +76,9 @@ function CrewLocationStatusPill({ locationPermission }: { locationPermission: Ge
       <span
         className={`min-w-0 font-semibold normal-case tracking-normal ${
           locationPermission === "granted"
-            ? "text-emerald-400/95"
+            ? "text-[#2C3E2D]"
             : locationPermission === "denied"
-              ? "text-amber-200/90"
+              ? "text-[#B45309]"
               : "text-[var(--tx)]"
         }`}
       >
@@ -141,6 +155,11 @@ interface JobDetail {
   estCrewSize?: number | null;
   serviceType?: string | null;
   complexityBadges?: string[];
+  /** Move jobs only — client pre-move checklist from tracking. */
+  preMoveChecklistDone?: number;
+  preMoveChecklistTotal?: number;
+  preMoveChecklistAllComplete?: boolean;
+  preMoveChecklistNotifiedAt?: string | null;
 }
 
 interface Session {
@@ -477,7 +496,7 @@ export default function CrewJobPage({
       <PageContent>
         <div className="flex items-center justify-center min-h-[40vh]">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#5C1A33]/25 border-t-[#5C1A33] rounded-full animate-spin" />
             <p className="text-[13px] text-[var(--tx3)]">Loading job...</p>
           </div>
         </div>
@@ -492,7 +511,7 @@ export default function CrewJobPage({
           <p className="text-[var(--text-base)] text-[var(--red)] mb-4">{error || "Job not found"}</p>
           <Link
             href="/crew/dashboard"
-            className="inline-flex items-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-medium text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
+            className="inline-flex items-center gap-2 py-2.5 px-4 rounded-xl text-[13px] font-medium text-[#5C1A33] hover:bg-[var(--gdim)] transition-colors"
           >
             <span aria-hidden>←</span> Back to Jobs
           </Link>
@@ -509,7 +528,7 @@ export default function CrewJobPage({
         <div className="flex items-center gap-2 mb-5">
           <Link
             href="/crew/dashboard"
-            className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
+            className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[#5C1A33] hover:bg-[var(--gdim)] transition-colors"
           >
             <CaretLeft size={15} weight="regular" />
             Jobs
@@ -561,7 +580,7 @@ export default function CrewJobPage({
       <div className="flex items-center justify-between gap-2 mb-5">
         <Link
           href="/crew/dashboard"
-          className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[var(--gold)] hover:bg-[var(--gdim)] transition-colors"
+          className="inline-flex items-center gap-1.5 py-1.5 px-2.5 -ml-2.5 rounded-lg text-[12px] font-medium text-[var(--tx3)] hover:text-[#5C1A33] hover:bg-[var(--gdim)] transition-colors"
         >
           <CaretLeft size={15} weight="regular" />
           Jobs
@@ -580,16 +599,16 @@ export default function CrewJobPage({
               className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
                 locationPermission === "denied" || locationPermission === "unsupported"
                   ? "bg-red-500/10 text-red-400 border border-red-500/25"
-                  : "bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/25"
+                  : "bg-[#2C3E2D]/10 text-[#243524] border border-[#2C3E2D]/25"
               }`}
             >
               <span className="relative flex h-1.5 w-1.5">
                 {locationPermission !== "denied" && locationPermission !== "unsupported" && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2C3E2D] opacity-40" />
                 )}
                 <span
                   className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
-                    locationPermission === "denied" || locationPermission === "unsupported" ? "bg-red-400" : "bg-[#22C55E]"
+                    locationPermission === "denied" || locationPermission === "unsupported" ? "bg-red-400" : "bg-[#2C3E2D]"
                   }`}
                 />
               </span>
@@ -607,7 +626,7 @@ export default function CrewJobPage({
                       setLocationPermission(r.status);
                     })
                   }
-                  className="shrink-0 text-[11px] font-semibold text-[var(--gold)] underline-offset-2 hover:underline"
+                  className="shrink-0 text-[11px] font-semibold text-[#5C1A33] underline-offset-2 hover:underline"
                 >
                   Check again
                 </button>
@@ -645,7 +664,7 @@ export default function CrewJobPage({
               return (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {b2b ? (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[var(--gold)]/35 bg-[var(--gold)]/10 text-[var(--gold)]">
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#5C1A33]/35 bg-[#5C1A33]/10 text-[#5C1A33]">
                       B2B delivery
                     </span>
                   ) : null}
@@ -657,7 +676,7 @@ export default function CrewJobPage({
                   {badges.map((b) => (
                     <span
                       key={b}
-                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-500/35 bg-amber-500/10 text-amber-200/90"
+                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#B45309]/30 bg-[#B45309]/10 text-[#92400e]"
                     >
                       {b}
                     </span>
@@ -667,22 +686,22 @@ export default function CrewJobPage({
             })()}
           </div>
           {isCompleted && (
-            <span className="shrink-0 px-2.5 py-1 rounded-lg bg-[#22C55E]/12 border border-[#22C55E]/30 text-[10px] font-bold text-[#22C55E]">Complete</span>
+            <span className="shrink-0 px-2.5 py-1 rounded-lg bg-[#2C3E2D]/12 border border-[#2C3E2D]/30 text-[10px] font-bold text-[#243524]">Complete</span>
           )}
         </div>
         <div className="border-t border-[var(--brd)]/50 pt-3">
           <div className="flex gap-3">
             {/* Dot + connector column */}
             <div className="flex flex-col items-center shrink-0 pt-1">
-              {/* Pickup dot, outlined ring with gold inner */}
-              <div className="w-4 h-4 rounded-full border-2 border-[var(--gold)]/60 flex items-center justify-center shrink-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--gold)]" />
+              {/* Pickup dot — wine */}
+              <div className="w-4 h-4 rounded-full border-2 border-[#5C1A33]/50 flex items-center justify-center shrink-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#5C1A33]" />
               </div>
               {/* Connector line */}
               <div className="w-[2px] flex-1 my-1 rounded-full" style={{ background: "rgba(255,255,255,0.1)", minHeight: 20 }} />
-              {/* Drop-off dot, solid green */}
-              <div className="w-4 h-4 rounded-full border-2 border-[#22C55E]/60 flex items-center justify-center shrink-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+              {/* Drop-off dot — forest */}
+              <div className="w-4 h-4 rounded-full border-2 border-[#2C3E2D]/45 flex items-center justify-center shrink-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#2C3E2D]" />
               </div>
             </div>
 
@@ -692,7 +711,7 @@ export default function CrewJobPage({
                 <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Pickup</p>
                 <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.fromAddress}</p>
                 {fromAccessDisplay && (
-                  <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
+                  <p className="text-[10px] text-[#5C1A33]/80 mt-0.5 flex items-center gap-1">
                     <Lock size={9} />
                     {fromAccessDisplay}
                   </p>
@@ -702,7 +721,7 @@ export default function CrewJobPage({
                 <p className="text-[9px] font-semibold tracking-[0.12em] uppercase text-[var(--tx3)]/50 mb-0.5">Drop-off</p>
                 <p className="text-[var(--text-base)] text-[var(--tx)] leading-snug">{job.toAddress}</p>
                 {toAccessDisplay && (
-                  <p className="text-[10px] text-[var(--gold)]/80 mt-0.5 flex items-center gap-1">
+                  <p className="text-[10px] text-[#5C1A33]/80 mt-0.5 flex items-center gap-1">
                     <Lock size={9} />
                     {toAccessDisplay}
                   </p>
@@ -721,13 +740,13 @@ export default function CrewJobPage({
             onClick={() => setActiveTab(t.id)}
             className={`relative flex-1 px-3 py-2.5 text-[11px] font-bold tracking-[0.10em] uppercase transition-colors duration-150 whitespace-nowrap touch-manipulation ${
               activeTab === t.id
-                ? "text-[var(--gold)]"
+                ? "text-[var(--yugo-rose-accent)]"
                 : "text-[var(--tx3)]/45 hover:text-[var(--tx3)]"
             }`}
           >
             {t.label}
             {activeTab === t.id && (
-              <span className="absolute bottom-0 left-3 right-3 h-[1.5px] rounded-full bg-[var(--gold)]" />
+              <span className="absolute bottom-0 left-3 right-3 h-[1.5px] rounded-full bg-[var(--yugo-rose-accent)]" />
             )}
           </button>
         ))}
@@ -742,12 +761,54 @@ export default function CrewJobPage({
             </div>
           )}
 
+          {jobType === "move" &&
+            job &&
+            typeof job.preMoveChecklistTotal === "number" &&
+            job.preMoveChecklistTotal > 0 && (
+              <div
+                className={`mx-2 flex items-start gap-3 rounded-2xl border px-4 py-3 ${
+                  job.preMoveChecklistAllComplete
+                    ? "border-[#2C3E2D]/35 bg-[#2C3E2D]/10"
+                    : "border-[var(--brd)]/50 bg-[var(--card)]/40"
+                }`}
+              >
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                    job.preMoveChecklistAllComplete ? "bg-[#2C3E2D]/20 text-[#243524]" : "bg-[var(--gdim)]/50 text-[var(--tx3)]"
+                  }`}
+                >
+                  <ListChecks size={22} weight="bold" aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--tx3)]">
+                    Client pre-move prep
+                  </p>
+                  <p className="text-[12px] text-[var(--tx2)] mt-1 leading-snug">
+                    {job.preMoveChecklistAllComplete ? (
+                      <>
+                        Checklist complete ({job.preMoveChecklistDone}/{job.preMoveChecklistTotal}
+                        ).{" "}
+                        {job.preMoveChecklistNotifiedAt
+                          ? "Coordinator and ops were emailed when they finished."
+                          : "They finished every item in their tracking link."}
+                      </>
+                    ) : (
+                      <>
+                        {job.preMoveChecklistDone ?? 0}/{job.preMoveChecklistTotal} items done in their
+                        tracking link — confirm access and parking with dispatch if needed.
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+
           {isCompleted && equipmentCheckPending && (
             <Link
               href={`/crew/dashboard/job/${jobType}/${id}/equipment-check`}
-              className="mx-2 flex items-center gap-3 rounded-2xl border border-[var(--gold)]/35 bg-[var(--gold)]/10 px-4 py-3.5 transition-colors hover:bg-[var(--gold)]/15"
+              className="mx-2 flex items-center gap-3 rounded-2xl border border-[#5C1A33]/35 bg-[#5C1A33]/10 px-4 py-3.5 transition-colors hover:bg-[#5C1A33]/15"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold)]/20 text-[var(--gold)]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#5C1A33]/20 text-[#5C1A33]">
                 <Toolbox size={22} aria-hidden />
               </div>
               <div className="min-w-0 flex-1">
@@ -756,7 +817,7 @@ export default function CrewJobPage({
                   Count gear before your next stop or end-of-day report. Client sign-off is already done.
                 </p>
               </div>
-              <span className="text-[11px] font-semibold text-[var(--gold)] shrink-0">Open</span>
+              <span className="text-[11px] font-semibold text-[#5C1A33] shrink-0">Open</span>
             </Link>
           )}
 
@@ -788,8 +849,7 @@ export default function CrewJobPage({
                 type="button"
                 onClick={() => void startJob()}
                 disabled={advancing || blockedByLocation}
-                className="w-full py-2 font-bold text-[14px] text-white disabled:opacity-50 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
-                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                className="crew-premium-cta w-full py-2 font-bold text-[14px] text-white disabled:opacity-50 border border-[#2C3E2D]/30 active:scale-[0.99]"
               >
                 {advancing ? "Starting…" : "Start job"}
               </button>
@@ -828,7 +888,7 @@ export default function CrewJobPage({
                       : progressIdx <= 0 ? 0 : progressIdx <= 1 ? 1 : progressIdx <= 3 ? 2 : 3
                     : -1
               }
-              variant="dark"
+              variant="light"
             />
           </div>
 
@@ -845,7 +905,7 @@ export default function CrewJobPage({
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="e.g. Delayed at gate, client at side entrance…"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--card)] border-0 text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] outline-none focus:ring-2 focus:ring-[var(--gold)]/35 focus:ring-offset-0"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--card)] border-0 text-[var(--tx)] placeholder:text-[var(--tx3)] text-[13px] outline-none focus:ring-2 focus:ring-[#5C1A33]/35 focus:ring-offset-0"
                 autoComplete="off"
               />
             </div>
@@ -853,7 +913,7 @@ export default function CrewJobPage({
 
           {/* Walkthrough gate, shown when at pickup and walkthrough not done */}
           {currentStatus === "arrived_at_pickup" && blockedByWalkthrough && (
-            <div className="bg-[var(--gold)]/5 p-4 space-y-3">
+            <div className="bg-[#5C1A33]/5 p-4 space-y-3">
               <div>
                 <p className="text-[12px] font-bold text-[var(--tx)]">Inventory Walkthrough Required</p>
                 <p className="text-[11px] text-[var(--tx3)]">Complete before loading starts</p>
@@ -865,8 +925,7 @@ export default function CrewJobPage({
               <button
                 type="button"
                 onClick={() => setWalkthroughModalOpen(true)}
-                className="inline-flex items-center justify-center px-3 py-1.5 font-bold text-[12px] text-white"
-                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                className="crew-premium-cta inline-flex items-center justify-center px-3 py-1.5 font-bold text-[12px] text-white border border-[#2C3E2D]/30"
               >
                 Start Inventory Check
               </button>
@@ -875,13 +934,13 @@ export default function CrewJobPage({
 
           {/* Change request submitted banner */}
           {changeRequestSubmitted && walkthroughResult && !walkthroughResult.noChanges && (
-            <div className="rounded-2xl border border-[#22C55E]/25 bg-[#22C55E]/5 px-4 py-3 flex items-start gap-2.5">
-              <CheckCircle size={16} color="#22C55E" className="shrink-0 mt-0.5" />
+            <div className="rounded-2xl border border-[#2C3E2D]/25 bg-[#2C3E2D]/5 px-4 py-3 flex items-start gap-2.5">
+              <CheckCircle size={16} color="#2C3E2D" className="shrink-0 mt-0.5" />
               <div>
-                <p className="text-[12px] font-bold text-[#22C55E]">
+                <p className="text-[12px] font-bold text-[#243524]">
                   {jobType === "delivery" ? "Walkthrough logged" : "Change request submitted"}
                 </p>
-                <p className="text-[11px] text-[#22C55E]/70 mt-0.5">
+                <p className="text-[11px] text-[#2C3E2D]/70 mt-0.5">
                   {walkthroughResult.itemsExtra > 0 && `${walkthroughResult.itemsExtra} extra item${walkthroughResult.itemsExtra !== 1 ? "s" : ""}. `}
                   {walkthroughResult.itemsMissing > 0 && `${walkthroughResult.itemsMissing} missing. `}
                   {jobType === "move" ? (
@@ -901,8 +960,7 @@ export default function CrewJobPage({
             nextStatus === "completed" ? (
               <Link
                 href={`/crew/dashboard/job/${jobType}/${id}/signoff`}
-                className="w-full flex items-center justify-center gap-2 py-2 font-semibold text-[13px] text-white transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
-                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                className="crew-premium-cta w-full flex items-center justify-center gap-2 py-2 font-semibold text-[13px] text-white border border-[#2C3E2D]/30 active:scale-[0.99]"
               >
                 <CheckCircle size={14} />
                 Client Sign-Off
@@ -912,8 +970,7 @@ export default function CrewJobPage({
                 type="button"
                 onClick={advanceStatus}
                 disabled={advancing}
-                className="w-full py-2 font-semibold text-[13px] text-white disabled:opacity-60 transition-all border border-[var(--gold)]/20 active:scale-[0.99]"
-                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                className="crew-premium-cta w-full py-2 font-semibold text-[13px] text-white disabled:opacity-60 border border-[#2C3E2D]/30 active:scale-[0.99]"
               >
                 {advancing ? "Updating…" : getStatusLabel(nextStatus!)}
               </button>
@@ -955,26 +1012,25 @@ export default function CrewJobPage({
                 // Dot styles — Uber-style solid circles
                 const DOT = 20;
                 const dotBg = state === "done"
-                  ? (isLast && isCompleted ? "#22C55E" : "rgba(34,197,94,0.18)")
+                  ? (isLast && isCompleted ? "#2C3E2D" : "rgba(44,62,45,0.18)")
                   : state === "act"
-                  ? "var(--gold)"
+                  ? "#5C1A33"
                   : "transparent";
                 const dotBorder = state === "done"
-                  ? (isLast && isCompleted ? "#22C55E" : "rgba(34,197,94,0.5)")
+                  ? (isLast && isCompleted ? "#2C3E2D" : "rgba(44,62,45,0.5)")
                   : state === "act"
-                  ? "var(--gold)"
+                  ? "#5C1A33"
                   : "rgba(255,255,255,0.12)";
                 const dotShadow = state === "act"
-                  ? "0 0 0 5px rgba(201,169,98,0.18)"
+                  ? "0 0 0 5px rgba(92,26,51,0.2)"
                   : isLast && isCompleted
-                  ? "0 0 0 4px rgba(34,197,94,0.12)"
+                  ? "0 0 0 4px rgba(44,62,45,0.12)"
                   : "none";
 
-                // Connector: gold for active step leading down, green for done, faint for wait
                 const connectorColor = state === "done"
-                  ? "rgba(34,197,94,0.35)"
+                  ? "rgba(44,62,45,0.35)"
                   : state === "act"
-                  ? "rgba(201,169,98,0.3)"
+                  ? "rgba(92,26,51,0.35)"
                   : "rgba(255,255,255,0.08)";
 
                 return (
@@ -998,7 +1054,7 @@ export default function CrewJobPage({
                             style={{
                               width: isLast && isCompleted ? 8 : 7,
                               height: isLast && isCompleted ? 8 : 7,
-                              background: isLast && isCompleted ? "rgba(255,255,255,0.9)" : "#22C55E",
+                              background: isLast && isCompleted ? "rgba(255,255,255,0.9)" : "#2C3E2D",
                               opacity: isLast && isCompleted ? 1 : 0.9,
                             }}
                           />
@@ -1032,13 +1088,13 @@ export default function CrewJobPage({
                         <div className="min-w-0">
                           <span className={`text-[12px] font-semibold leading-tight block ${
                             state === "done" ? "text-[var(--tx)]"
-                            : state === "act" ? "text-[var(--gold)]"
+                            : state === "act" ? "text-[#5C1A33]"
                             : "text-[var(--tx3)]/35"
                           }`}>
                             {getStatusLabel(s)}
                           </span>
                           {state === "act" && (
-                            <span className="text-[9px] font-bold text-[var(--gold)]/70 uppercase tracking-widest block mt-0.5">Now</span>
+                            <span className="text-[9px] font-bold text-[#5C1A33]/70 uppercase tracking-widest block mt-0.5">Now</span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -1048,7 +1104,7 @@ export default function CrewJobPage({
                           {(() => {
                             const ts = cp?.timestamp ?? (isLast && isCompleted ? session?.completedAt ?? null : null);
                             return ts ? (
-                              <span className={`text-[10px] tabular-nums font-medium ${state === "done" && isLast ? "text-[#22C55E]" : "text-[var(--tx3)]"}`}>
+                              <span className={`text-[10px] tabular-nums font-medium ${state === "done" && isLast ? "text-[#243524]" : "text-[var(--tx3)]"}`}>
                                 {formatTime(ts, { hour: "numeric", minute: "2-digit" })}
                               </span>
                             ) : null;
@@ -1067,8 +1123,8 @@ export default function CrewJobPage({
 
           {/* Dispatch notes */}
           {job.internalNotes && (
-            <div className="rounded-2xl bg-[var(--gold)]/5 p-4">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--gold)]/60 mb-2">Dispatch Notes</p>
+            <div className="rounded-2xl bg-[#5C1A33]/5 p-4">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#5C1A33]/60 mb-2">Dispatch Notes</p>
               <p className="text-[12px] text-[var(--tx2)] whitespace-pre-wrap leading-relaxed">{job.internalNotes}</p>
             </div>
           )}
@@ -1086,7 +1142,7 @@ export default function CrewJobPage({
                       el.focus();
                     }
                   }}
-                  className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
+                  className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[#5C1A33]/10 active:scale-95 transition-all"
                 >
                   <PencilSimple size={14} />
                   Note
@@ -1094,14 +1150,14 @@ export default function CrewJobPage({
               )}
               <button
                 onClick={() => setReportModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-[#F59E0B] bg-[#F59E0B]/8 hover:bg-[#F59E0B]/15 active:scale-95 transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-[#B45309] bg-[#B45309]/10 hover:bg-[#B45309]/16 active:scale-95 transition-all"
               >
                 <Warning size={14} />
                 Report Issue
               </button>
               <a
                 href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-                className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[var(--gold)]/10 active:scale-95 transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-[var(--tx2)] bg-[var(--bg)] hover:bg-[#5C1A33]/10 active:scale-95 transition-all"
               >
                 <Phone size={14} />
                 Dispatch
@@ -1116,13 +1172,13 @@ export default function CrewJobPage({
         <>
           {/* Project context banner */}
           {job.projectContext && (
-            <div className="mx-0 mb-4 px-4 py-3 rounded-2xl border border-[var(--gold)]/20 bg-[var(--gold)]/5">
-              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--gold)]/60 mb-0.5">Part of Project</p>
+            <div className="mx-0 mb-4 px-4 py-3 rounded-2xl border border-[#5C1A33]/20 bg-[#5C1A33]/5">
+              <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#5C1A33]/60 mb-0.5">Part of Project</p>
               <p className="text-[13px] font-semibold text-[var(--tx)]">
                 {job.projectContext.projectNumber}, {job.projectContext.projectName}
               </p>
               {job.projectContext.phaseName && (
-                <p className="text-[11px] text-[var(--gold)] mt-0.5">{job.projectContext.phaseName}</p>
+                <p className="text-[11px] text-[#5C1A33] mt-0.5">{job.projectContext.phaseName}</p>
               )}
             </div>
           )}
@@ -1160,7 +1216,7 @@ export default function CrewJobPage({
               <div className="space-y-2.5">
                 {job.crewMembers.map((m, i) => (
                   <div key={i} className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[var(--gold)]/15 text-[var(--gold)] shrink-0">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-[#5C1A33]/15 text-[#5C1A33] shrink-0">
                       {m.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -1297,8 +1353,7 @@ export default function CrewJobPage({
                   setPickupModalOpen(false);
                 }}
                 disabled={pickupPhotosCount < 1 && totalItems > 0}
-                className="w-full py-2.5 font-bold text-[15px] text-white disabled:opacity-50 transition-all shadow-lg"
-                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                className="crew-premium-cta w-full py-2.5 font-bold text-[15px] text-white disabled:opacity-50 shadow-lg border border-[#2C3E2D]/30"
               >
                 {pickupPhotosCount < 1 && totalItems > 0
                   ? "Take at least 1 photo to continue"
@@ -1335,14 +1390,13 @@ export default function CrewJobPage({
             <h3 id="crew-report-issue-title" className="font-hero text-[24px] font-bold text-[var(--tx)] mb-2">Report Issue</h3>
             {reportSubmitted ? (
               <div className="py-4">
-                <div className="w-10 h-10 rounded-2xl bg-[#22C55E]/10 flex items-center justify-center mx-auto mb-3">
-                  <Check size={18} color="#22C55E" weight="bold" />
+                <div className="w-10 h-10 rounded-2xl bg-[#2C3E2D]/10 flex items-center justify-center mx-auto mb-3">
+                  <Check size={18} color="#2C3E2D" weight="bold" />
                 </div>
-                <p className="text-[13px] text-[#22C55E] text-center mb-4">Issue reported. Dispatch notified.</p>
+                <p className="text-[13px] text-[#243524] text-center mb-4">Issue reported. Dispatch notified.</p>
                 <button
                   onClick={() => { setReportModalOpen(false); setReportSubmitted(false); setReportDesc(""); }}
-                  className="w-full py-2 text-white font-semibold"
-                  style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                  className="crew-premium-cta w-full py-2 text-white font-semibold border border-[#2C3E2D]/30"
                 >
                   Done
                 </button>
@@ -1402,7 +1456,7 @@ export default function CrewJobPage({
                       }
                     }}
                     disabled={reportSubmitting}
-                    className="flex-1 py-2 bg-[#F59E0B] text-white font-semibold disabled:opacity-50 transition-colors"
+                    className="flex-1 py-2 bg-[#B45309] text-white font-semibold disabled:opacity-50 transition-colors"
                   >
                     {reportSubmitting ? "Sending..." : "Submit"}
                   </button>

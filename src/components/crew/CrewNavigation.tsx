@@ -226,7 +226,7 @@ function CrewNavOpsFloatingControls({
           onRecenter(u);
         }}
       >
-        <NavigationArrow className="text-[#4ADE80]" size={26} weight="fill" aria-hidden />
+        <NavigationArrow className="text-[#2C3E2D]" size={26} weight="fill" aria-hidden />
       </button>
 
       <button
@@ -968,7 +968,7 @@ export function CrewNavigation({
                     navBearingDeg != null ? `rotate(${navBearingDeg - mapBearing}deg)` : undefined,
                 }}
               >
-                <NavigationArrow className="text-[#4ADE80]" size={34} weight="fill" aria-hidden />
+                <NavigationArrow className="text-[#2C3E2D]" size={34} weight="fill" aria-hidden />
               </div>
             </Marker>
           )}

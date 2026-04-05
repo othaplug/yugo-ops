@@ -202,7 +202,7 @@ export function buildNonBinAgreementSections(p: NonBinAgreementBuildParams): { t
   const liabilityTier = normTier(p.residentialTier);
   const liabilityBody =
     p.serviceType === "local_move" && liabilityTier === "estate"
-      ? `Full replacement valuation coverage is included with your Estate package. Items are covered at full replacement value: repair by a professional restorer, replacement with an equivalent item at current market value, or a full cash settlement. Per-item coverage up to $10,000; per-shipment up to $100,000. Zero deductible. Items valued over $10,000 may be individually declared for additional coverage. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance.`
+      ? `Valuation coverage is included with your Estate package. Eligible claims may be resolved through repair by verified professional restorers, replacement with an equivalent item at current market value, or a full cash settlement. Per-item coverage up to $10,000; per-shipment up to $100,000. Zero deductible. Items valued over $10,000 may be individually declared for additional coverage. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance.`
       : p.serviceType === "local_move" && liabilityTier === "signature"
         ? `Enhanced valuation coverage is included with your Signature package, providing up to $2,500 per item and $25,000 per shipment protection. ${companyDisplayName} maintains $2,000,000 in commercial liability insurance.`
         : p.serviceType === "local_move" && liabilityTier === "essential"

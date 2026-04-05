@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, type RefObject } from "react";
+import { useState, useEffect, useRef, useMemo, type CSSProperties, type RefObject } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { CaretRight } from "@phosphor-icons/react";
 import { formatPhone, normalizePhone, PHONE_PLACEHOLDER } from "@/lib/phone";
 import YugoLogo from "@/components/YugoLogo";
 import { formatDate } from "@/lib/client-timezone";
@@ -11,6 +12,140 @@ const CONSENT_KEY = "yugo-crew-consent-accepted";
 const DISPATCH_PHONE = process.env.NEXT_PUBLIC_YUGO_PHONE || "(647) 370-4525";
 /** Phone + PIN login API expects exactly this many digits (matches `CREW_PIN_LENGTH` in `@/lib/crew-token`). */
 const PHONE_LOGIN_PIN_DIGITS = 6;
+
+/** Dark `#1A1A1A` card: forest green fails WCAG — use cream / off-white tints. */
+const CREW_LOGIN_CARD_INK_LABEL = "rgba(255, 255, 255, 0.82)";
+const CREW_LOGIN_CARD_INK_BODY = "rgba(255, 255, 255, 0.7)";
+const CREW_LOGIN_CARD_INK_SUBTLE = "rgba(255, 255, 255, 0.52)";
+const CREW_LOGIN_CARD_LINK = "rgba(255, 250, 245, 0.95)";
+const CREW_LOGIN_CARD_PIN_RING = "rgba(255, 255, 255, 0.48)";
+const CREW_LOGIN_CARD_DIVIDER = "rgba(255, 255, 255, 0.28)";
+const CREW_LOGIN_CARD_CHECKBOX_ACCENT = "#ddd9d3";
+
+const CREW_LOGIN_MAIN_STYLE: CSSProperties = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontFamily: "'DM Sans', sans-serif",
+  background:
+    "radial-gradient(ellipse 120% 85% at 50% -18%, rgba(92, 26, 51, 0.52) 0%, transparent 58%), linear-gradient(180deg, #141016 0%, #0a0909 50%, #050505 100%)",
+};
+
+/** Horizontal inset on <main>; width constraint lives on the login panel <section>. */
+const CREW_LOGIN_MAIN_EDGE: CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "0 28px",
+};
+
+const CREW_LOGIN_CARD_SHELL: CSSProperties = {
+  background: "#1A1A1A",
+  border: "1px solid #2A2A2A",
+  borderRadius: 0,
+  padding: "36px 40px",
+  boxShadow: "0 4px 28px rgba(0,0,0,0.4)",
+  textAlign: "left",
+  width: "100%",
+  maxWidth: 460,
+};
+
+const CREW_LOGIN_GATE_CARD: CSSProperties = {
+  ...CREW_LOGIN_CARD_SHELL,
+  textAlign: "center",
+};
+
+const CREW_LOGIN_EYEBROW: CSSProperties = {
+  fontFamily: "'DM Sans', sans-serif",
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  lineHeight: 1,
+  color: "rgba(255,255,255,0.45)",
+  marginBottom: 10,
+};
+
+/** Uppercase micro-labels above fields (matches quote / portal label rhythm). */
+const CREW_LOGIN_FIELD_LABEL: CSSProperties = {
+  display: "block",
+  fontFamily: "'DM Sans', sans-serif",
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  lineHeight: 1,
+  color: CREW_LOGIN_CARD_INK_LABEL,
+  marginBottom: 10,
+};
+
+const CREW_LOGIN_PRIMARY_LINK_BTN: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 4,
+  width: "100%",
+  boxSizing: "border-box",
+  minHeight: 48,
+  padding: "14px 16px",
+  borderRadius: 0,
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  lineHeight: 1,
+  textDecoration: "none",
+  color: "rgba(255,255,255,0.92)",
+  border: "1px solid rgba(44, 62, 45, 0.35)",
+  fontFamily: "'DM Sans', sans-serif",
+};
+
+/** Full-width row under forest CTA; color from `.crew-login-gate-secondary` in globals (hover contrast). */
+const CREW_LOGIN_GATE_SECONDARY: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "100%",
+  boxSizing: "border-box",
+  marginTop: 16,
+  minHeight: 44,
+  padding: "14px 12px",
+  background: "none",
+  border: "none",
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  lineHeight: 1.35,
+  cursor: "pointer",
+  fontFamily: "'DM Sans', sans-serif",
+  textAlign: "center",
+};
+
+const CREW_LOGIN_PANEL_H1_PHONE: CSSProperties = {
+  fontFamily: "'Instrument Serif', serif",
+  fontSize: 24,
+  fontWeight: 400,
+  color: "#F5F5F3",
+  margin: "0 0 6px 0",
+  textAlign: "center",
+};
+
+const CREW_LOGIN_PANEL_H1_MAIN: CSSProperties = {
+  fontFamily: "'Instrument Serif', serif",
+  fontSize: 26,
+  fontWeight: 400,
+  color: "#F5F5F3",
+  margin: "0 0 6px 0",
+};
+
+const CREW_LOGIN_GATE_H1: CSSProperties = {
+  fontFamily: "'Instrument Serif', serif",
+  fontSize: 24,
+  fontWeight: 400,
+  color: "#F5F5F3",
+  margin: "0 0 12px 0",
+};
 
 type LoginContext = {
   hasDevice: boolean;
@@ -222,53 +357,24 @@ export default function CrewLoginPage() {
 
   if (loading) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#0D0D0D",
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
-        <div style={{ color: "#666", fontSize: 14 }}>Loading...</div>
+      <main className="crew-login-gate" style={{ ...CREW_LOGIN_MAIN_STYLE, ...CREW_LOGIN_MAIN_EDGE }}>
+        <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 14 }}>Loading...</span>
       </main>
     );
   }
 
   if (!deviceId) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#0D0D0D",
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
-        <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", textAlign: "center" }}>
-
+      <main className="crew-login-gate" style={{ ...CREW_LOGIN_MAIN_STYLE, ...CREW_LOGIN_MAIN_EDGE }}>
           {usePhoneLogin ? (
-            <div
-              style={{
-                background: "#1A1A1A",
-                border: "1px solid #2A2A2A",
-                borderRadius: 20,
-                padding: "36px 40px",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
-                textAlign: "left",
-              }}
-            >
+            <section className="crew-login-panel" style={CREW_LOGIN_CARD_SHELL} aria-labelledby="crew-login-panel-title">
               <div style={{ textAlign: "center", marginBottom: 20 }}>
-                <YugoLogo size={22} variant="gold" />
+                <YugoLogo size={22} variant="cream" />
               </div>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 6, textAlign: "center" }}>
+              <h1 id="crew-login-panel-title" style={CREW_LOGIN_PANEL_H1_PHONE}>
                 Crew Portal
-              </div>
-              <div style={{ fontSize: 14, color: "#666", marginBottom: 20, textAlign: "center" }}>Phone & PIN</div>
+              </h1>
+              <div style={{ fontSize: 14, color: CREW_LOGIN_CARD_INK_BODY, marginBottom: 20, textAlign: "center" }}>Phone & PIN</div>
               <CrewPhoneLoginFields
                 phoneDigits={phoneDigits}
                 onPhoneDigitsChange={(d) => {
@@ -302,110 +408,71 @@ export default function CrewLoginPage() {
                 </div>
               )}
               {isWelcome && !consentAccepted && (
-                <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(201,169,98,0.06)", borderRadius: 10, border: "1px solid rgba(201,169,98,0.15)" }}>
+                <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(92,26,51,0.08)", borderRadius: 10, border: "1px solid rgba(92,26,51,0.22)" }}>
                   <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
                     <input
                       type="checkbox"
                       checked={consentChecked}
                       onChange={(e) => handleConsentChange(e.target.checked)}
-                      style={{ marginTop: 2, width: 15, height: 15, accentColor: "#2C3E2D", flexShrink: 0, cursor: "pointer" }}
+                      style={{ marginTop: 2, width: 15, height: 15, accentColor: CREW_LOGIN_CARD_CHECKBOX_ACCENT, flexShrink: 0, cursor: "pointer" }}
                     />
-                    <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
+                    <span style={{ fontSize: 11, color: CREW_LOGIN_CARD_INK_BODY, lineHeight: 1.6 }}>
                       I agree to Yugo&apos;s{" "}
-                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
+                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: CREW_LOGIN_CARD_LINK, textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: CREW_LOGIN_CARD_LINK, textDecoration: "underline" }}>Terms of Use</a>
                     </span>
                   </label>
                 </div>
               )}
-              <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: CREW_LOGIN_CARD_INK_SUBTLE, textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
                 Dispatch:{" "}
-                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: "#2C3E2D", fontWeight: 600, textDecoration: "none" }}>
+                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: CREW_LOGIN_CARD_LINK, fontWeight: 600, textDecoration: "none" }}>
                   {formatPhone(DISPATCH_PHONE)}
                 </a>
               </div>
-            </div>
+            </section>
           ) : (
-            <>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 12 }}>
-                Device Not Registered
+            <section className="crew-login-panel" style={CREW_LOGIN_GATE_CARD} aria-labelledby="crew-login-gate-title">
+              <div style={{ marginBottom: 20 }}>
+                <YugoLogo size={22} variant="cream" />
               </div>
-              <div style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>
+              <div style={CREW_LOGIN_EYEBROW}>Device setup</div>
+              <h1 id="crew-login-gate-title" style={CREW_LOGIN_GATE_H1}>
+                Device Not Registered
+              </h1>
+              <div style={{ fontSize: 14, color: CREW_LOGIN_CARD_INK_BODY, marginBottom: 24, lineHeight: 1.55 }}>
                 Set up this iPad first to link it to your truck and team.
               </div>
-              <a
-                href="/crew/setup"
-                style={{
-                  display: "inline-block",
-                  padding: "12px 24px",
-                  background: "#2C3E2D",
-                  color: "#0D0D0D",
-                  borderRadius: 10,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                Go to Setup
+              <a href="/crew/setup" className="crew-premium-cta" style={CREW_LOGIN_PRIMARY_LINK_BTN}>
+                Go to setup
+                <CaretRight size={12} weight="bold" style={{ flexShrink: 0, opacity: 0.9 }} aria-hidden />
               </a>
-              <div style={{ marginTop: 28 }}>
-                <button
-                  type="button"
-                  onClick={openPhoneLogin}
-                  className="crew-login-link"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#2C3E2D",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Log in with phone & PIN instead
-                </button>
-              </div>
-            </>
+              <button
+                type="button"
+                onClick={openPhoneLogin}
+                className="crew-login-link crew-login-gate-secondary"
+                style={CREW_LOGIN_GATE_SECONDARY}
+              >
+                Log in with phone & PIN
+              </button>
+            </section>
           )}
-        </div>
       </main>
     );
   }
 
   if (!context?.hasDevice) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#0D0D0D",
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
-        <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", textAlign: "center" }}>
-
+      <main className="crew-login-gate" style={{ ...CREW_LOGIN_MAIN_STYLE, ...CREW_LOGIN_MAIN_EDGE }}>
           {usePhoneLogin ? (
-            <div
-              style={{
-                background: "#1A1A1A",
-                border: "1px solid #2A2A2A",
-                borderRadius: 20,
-                padding: "36px 40px",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
-                textAlign: "left",
-              }}
-            >
+            <section className="crew-login-panel" style={CREW_LOGIN_CARD_SHELL} aria-labelledby="crew-login-panel-title">
               <div style={{ textAlign: "center", marginBottom: 20 }}>
-                <YugoLogo size={22} variant="gold" />
+                <YugoLogo size={22} variant="cream" />
               </div>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 6, textAlign: "center" }}>
+              <h1 id="crew-login-panel-title" style={CREW_LOGIN_PANEL_H1_PHONE}>
                 Crew Portal
-              </div>
-              <div style={{ fontSize: 14, color: "#666", marginBottom: 20, textAlign: "center" }}>Phone & PIN</div>
+              </h1>
+              <div style={{ fontSize: 14, color: CREW_LOGIN_CARD_INK_BODY, marginBottom: 20, textAlign: "center" }}>Phone & PIN</div>
               <CrewPhoneLoginFields
                 phoneDigits={phoneDigits}
                 onPhoneDigitsChange={(d) => {
@@ -439,110 +506,71 @@ export default function CrewLoginPage() {
                 </div>
               )}
               {isWelcome && !consentAccepted && (
-                <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(201,169,98,0.06)", borderRadius: 10, border: "1px solid rgba(201,169,98,0.15)" }}>
+                <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(92,26,51,0.08)", borderRadius: 10, border: "1px solid rgba(92,26,51,0.22)" }}>
                   <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
                     <input
                       type="checkbox"
                       checked={consentChecked}
                       onChange={(e) => handleConsentChange(e.target.checked)}
-                      style={{ marginTop: 2, width: 15, height: 15, accentColor: "#2C3E2D", flexShrink: 0, cursor: "pointer" }}
+                      style={{ marginTop: 2, width: 15, height: 15, accentColor: CREW_LOGIN_CARD_CHECKBOX_ACCENT, flexShrink: 0, cursor: "pointer" }}
                     />
-                    <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
+                    <span style={{ fontSize: 11, color: CREW_LOGIN_CARD_INK_BODY, lineHeight: 1.6 }}>
                       I agree to Yugo&apos;s{" "}
-                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
+                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: CREW_LOGIN_CARD_LINK, textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: CREW_LOGIN_CARD_LINK, textDecoration: "underline" }}>Terms of Use</a>
                     </span>
                   </label>
                 </div>
               )}
-              <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: CREW_LOGIN_CARD_INK_SUBTLE, textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
                 Dispatch:{" "}
-                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: "#2C3E2D", fontWeight: 600, textDecoration: "none" }}>
+                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: CREW_LOGIN_CARD_LINK, fontWeight: 600, textDecoration: "none" }}>
                   {formatPhone(DISPATCH_PHONE)}
                 </a>
               </div>
-            </div>
+            </section>
           ) : (
-            <>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 12 }}>
-                Device Not Found
+            <section className="crew-login-panel" style={CREW_LOGIN_GATE_CARD} aria-labelledby="crew-login-gate-title">
+              <div style={{ marginBottom: 20 }}>
+                <YugoLogo size={22} variant="cream" />
               </div>
-              <div style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>
+              <div style={CREW_LOGIN_EYEBROW}>Device</div>
+              <h1 id="crew-login-gate-title" style={CREW_LOGIN_GATE_H1}>
+                Device Not Found
+              </h1>
+              <div style={{ fontSize: 14, color: CREW_LOGIN_CARD_INK_BODY, marginBottom: 24, lineHeight: 1.55 }}>
                 This device may need to be re-registered. Contact dispatch or set up again.
               </div>
-              <a
-                href="/crew/setup"
-                style={{
-                  display: "inline-block",
-                  padding: "12px 24px",
-                  background: "#2C3E2D",
-                  color: "#0D0D0D",
-                  borderRadius: 10,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                Re-register Device
+              <a href="/crew/setup" className="crew-premium-cta" style={CREW_LOGIN_PRIMARY_LINK_BTN}>
+                Re-register device
+                <CaretRight size={12} weight="bold" style={{ flexShrink: 0, opacity: 0.9 }} aria-hidden />
               </a>
-              <div style={{ marginTop: 28 }}>
-                <button
-                  type="button"
-                  onClick={openPhoneLogin}
-                  className="crew-login-link"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#2C3E2D",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Log in with phone & PIN instead
-                </button>
-              </div>
-            </>
+              <button
+                type="button"
+                onClick={openPhoneLogin}
+                className="crew-login-link crew-login-gate-secondary"
+                style={CREW_LOGIN_GATE_SECONDARY}
+              >
+                Log in with phone & PIN
+              </button>
+            </section>
           )}
-        </div>
       </main>
     );
   }
 
   if (context.noTeamAssigned || context.noMembers) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#0D0D0D",
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
-        <div style={{ width: "100%", maxWidth: 460, padding: "0 28px", textAlign: "center" }}>
-
+      <main className="crew-login-gate" style={{ ...CREW_LOGIN_MAIN_STYLE, ...CREW_LOGIN_MAIN_EDGE }}>
           {usePhoneLogin ? (
-            <div
-              style={{
-                background: "#1A1A1A",
-                border: "1px solid #2A2A2A",
-                borderRadius: 20,
-                padding: "36px 40px",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
-                textAlign: "left",
-              }}
-            >
+            <section className="crew-login-panel" style={CREW_LOGIN_CARD_SHELL} aria-labelledby="crew-login-panel-title">
               <div style={{ textAlign: "center", marginBottom: 20 }}>
-                <YugoLogo size={22} variant="gold" />
+                <YugoLogo size={22} variant="cream" />
               </div>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 6, textAlign: "center" }}>
+              <h1 id="crew-login-panel-title" style={CREW_LOGIN_PANEL_H1_PHONE}>
                 Crew Portal
-              </div>
-              <div style={{ fontSize: 14, color: "#666", marginBottom: 20, textAlign: "center" }}>Phone & PIN</div>
+              </h1>
+              <div style={{ fontSize: 14, color: CREW_LOGIN_CARD_INK_BODY, marginBottom: 20, textAlign: "center" }}>Phone & PIN</div>
               <CrewPhoneLoginFields
                 phoneDigits={phoneDigits}
                 onPhoneDigitsChange={(d) => {
@@ -576,64 +604,63 @@ export default function CrewLoginPage() {
                 </div>
               )}
               {isWelcome && !consentAccepted && (
-                <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(201,169,98,0.06)", borderRadius: 10, border: "1px solid rgba(201,169,98,0.15)" }}>
+                <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(92,26,51,0.08)", borderRadius: 10, border: "1px solid rgba(92,26,51,0.22)" }}>
                   <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
                     <input
                       type="checkbox"
                       checked={consentChecked}
                       onChange={(e) => handleConsentChange(e.target.checked)}
-                      style={{ marginTop: 2, width: 15, height: 15, accentColor: "#2C3E2D", flexShrink: 0, cursor: "pointer" }}
+                      style={{ marginTop: 2, width: 15, height: 15, accentColor: CREW_LOGIN_CARD_CHECKBOX_ACCENT, flexShrink: 0, cursor: "pointer" }}
                     />
-                    <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
+                    <span style={{ fontSize: 11, color: CREW_LOGIN_CARD_INK_BODY, lineHeight: 1.6 }}>
                       I agree to Yugo&apos;s{" "}
-                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
+                      <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: CREW_LOGIN_CARD_LINK, textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                      <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: CREW_LOGIN_CARD_LINK, textDecoration: "underline" }}>Terms of Use</a>
                     </span>
                   </label>
                 </div>
               )}
-              <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: CREW_LOGIN_CARD_INK_SUBTLE, textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
                 Dispatch:{" "}
-                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: "#2C3E2D", fontWeight: 600, textDecoration: "none" }}>
+                <a className="crew-login-link" href={`tel:${normalizePhone(DISPATCH_PHONE)}`} style={{ color: CREW_LOGIN_CARD_LINK, fontWeight: 600, textDecoration: "none" }}>
                   {formatPhone(DISPATCH_PHONE)}
                 </a>
               </div>
-            </div>
+            </section>
           ) : (
-            <>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: "#F5F5F3", marginBottom: 12 }}>
-                No Team Assigned
+            <section className="crew-login-panel" style={CREW_LOGIN_GATE_CARD} aria-labelledby="crew-login-gate-title">
+              <div style={{ marginBottom: 20 }}>
+                <YugoLogo size={22} variant="cream" />
               </div>
-              <div style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>
+              <div style={CREW_LOGIN_EYEBROW}>Schedule</div>
+              <h1 id="crew-login-gate-title" style={CREW_LOGIN_GATE_H1}>
+                No Team Assigned
+              </h1>
+              <div style={{ fontSize: 14, color: CREW_LOGIN_CARD_INK_BODY, marginBottom: 24, lineHeight: 1.55 }}>
                 {context.noTeamAssigned
                   ? "No team is assigned to this truck today. Contact dispatch to get scheduled."
                   : "No crew members found for this team. Contact dispatch."}
               </div>
-              <div style={{ fontSize: 12, color: "#555", marginBottom: 24 }}>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", marginBottom: 4 }}>
                 Dispatch:{" "}
-                <a href={`tel:${normalizePhone(DISPATCH_PHONE)}`} className="crew-login-link" style={{ color: "#2C3E2D", textDecoration: "none" }}>
+                <a
+                  href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
+                  className="crew-login-link"
+                  style={{ color: "rgba(255,255,255,0.78)", fontWeight: 600, textDecoration: "none" }}
+                >
                   {formatPhone(DISPATCH_PHONE)}
                 </a>
               </div>
               <button
                 type="button"
                 onClick={openPhoneLogin}
-                className="crew-login-link"
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#2C3E2D",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
+                className="crew-login-link crew-login-gate-secondary"
+                style={CREW_LOGIN_GATE_SECONDARY}
               >
-                Log in with phone & PIN instead
+                Log in with phone & PIN
               </button>
-            </>
+            </section>
           )}
-        </div>
       </main>
     );
   }
@@ -644,50 +671,37 @@ export default function CrewLoginPage() {
 
   return (
     <main
+      className="crew-login-gate"
       style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#0D0D0D",
-        fontFamily: "'DM Sans', sans-serif",
+        ...CREW_LOGIN_MAIN_STYLE,
+        ...CREW_LOGIN_MAIN_EDGE,
         position: "relative",
         overflow: "hidden",
       }}
     >
-      <div
+      <style>{`
+        @keyframes loginFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .crew-login-input:focus { border-bottom-color: rgba(92,26,51,0.55) !important; outline: none; box-shadow: none !important; }
+      `}</style>
+
+      <section
+        className="crew-login-panel"
         style={{
-          width: "100%",
-          maxWidth: 460,
-          padding: "0 28px",
+          ...CREW_LOGIN_CARD_SHELL,
           position: "relative",
           zIndex: 1,
           animation: "loginFadeIn 0.6s ease",
         }}
+        aria-labelledby="crew-login-panel-title"
       >
-        <style>{`
-          @keyframes loginFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-          .crew-login-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
-          .crew-login-link:hover { color: #D4B56C !important; text-decoration: underline; }
-        `}</style>
-
-        <div
-          style={{
-            background: "#1A1A1A",
-            border: "1px solid #2A2A2A",
-            borderRadius: 20,
-            padding: "36px 40px",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
-          }}
-        >
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <YugoLogo size={22} variant="gold" />
+            <YugoLogo size={22} variant="cream" />
           </div>
 
-          <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 26, color: "#F5F5F3", marginBottom: 6 }}>
+          <h1 id="crew-login-panel-title" style={CREW_LOGIN_PANEL_H1_MAIN}>
             Crew Portal
-          </div>
-          <div style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>
+          </h1>
+          <div style={{ fontSize: 14, color: CREW_LOGIN_CARD_INK_BODY, marginBottom: 24 }}>
             {usePhoneLogin ? "Your number on file · 6-digit PIN" : `${context.truckName} · ${dateStr}`}
           </div>
 
@@ -695,7 +709,7 @@ export default function CrewLoginPage() {
             style={{
               width: 48,
               height: 1,
-              background: "linear-gradient(90deg, transparent, #2C3E2D, transparent)",
+              background: `linear-gradient(90deg, transparent, ${CREW_LOGIN_CARD_DIVIDER}, transparent)`,
               margin: "0 auto 28px",
             }}
           />
@@ -727,15 +741,15 @@ export default function CrewLoginPage() {
                       width: 72,
                       height: 72,
                       borderRadius: "50%",
-                      background: "linear-gradient(135deg, rgba(201,169,98,0.3), rgba(201,169,98,0.1))",
-                      border: "2px solid rgba(201,169,98,0.5)",
+                      background: "linear-gradient(135deg, rgba(92,26,51,0.35), rgba(92,26,51,0.08))",
+                      border: "2px solid rgba(92,26,51,0.45)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       margin: "0 auto 12px",
                       fontSize: 24,
                       fontWeight: 600,
-                      color: "#2C3E2D",
+                      color: CREW_LOGIN_CARD_LINK,
                       fontFamily: "'DM Sans', sans-serif",
                     }}
                   >
@@ -744,7 +758,7 @@ export default function CrewLoginPage() {
                   <div style={{ fontSize: 18, fontWeight: 600, color: "#F5F5F3", marginBottom: 4 }}>
                     {selectedMember?.name ?? "-"}
                   </div>
-                  <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: CREW_LOGIN_CARD_INK_SUBTLE, marginBottom: 8 }}>
                     {selectedMember?.role === "lead" ? "Lead" : selectedMember?.role} · {context.teamName ?? "Team"}
                   </div>
                   <button
@@ -754,7 +768,7 @@ export default function CrewLoginPage() {
                     style={{
                       background: "none",
                       border: "none",
-                      color: "#888",
+                      color: CREW_LOGIN_CARD_INK_SUBTLE,
                       fontSize: 12,
                       cursor: "pointer",
                       fontFamily: "inherit",
@@ -766,9 +780,7 @@ export default function CrewLoginPage() {
                 </div>
               ) : (
                 <div style={{ marginBottom: 28 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", color: "#666", marginBottom: 12 }}>
-                    Select crew member
-                  </div>
+                  <div style={{ ...CREW_LOGIN_FIELD_LABEL, textAlign: "center", marginBottom: 12 }}>Select crew member</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
                     {context.teamMembers?.map((m) => (
                       <button
@@ -786,14 +798,14 @@ export default function CrewLoginPage() {
                           width: 56,
                           height: 56,
                           borderRadius: "50%",
-                          background: selectedMember?.id === m.id ? "rgba(201,169,98,0.2)" : "rgba(255,255,255,0.05)",
-                          border: selectedMember?.id === m.id ? "2px solid #2C3E2D" : "1px solid #333",
+                          background: selectedMember?.id === m.id ? "rgba(92,26,51,0.22)" : "rgba(255,255,255,0.05)",
+                          border: selectedMember?.id === m.id ? `2px solid ${CREW_LOGIN_CARD_PIN_RING}` : "1px solid #333",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           fontSize: 14,
                           fontWeight: 600,
-                          color: selectedMember?.id === m.id ? "#2C3E2D" : "#999",
+                          color: selectedMember?.id === m.id ? CREW_LOGIN_CARD_LINK : "rgba(255,255,255,0.42)",
                           fontFamily: "'DM Sans', sans-serif",
                           cursor: "pointer",
                           transition: "all 0.2s",
@@ -812,7 +824,7 @@ export default function CrewLoginPage() {
                       style={{
                         background: "none",
                         border: "none",
-                        color: "#888",
+                        color: CREW_LOGIN_CARD_INK_SUBTLE,
                         fontSize: 12,
                         cursor: "pointer",
                         fontFamily: "inherit",
@@ -830,7 +842,7 @@ export default function CrewLoginPage() {
                   <p
                     style={{
                       fontSize: 12,
-                      color: "#666",
+                      color: CREW_LOGIN_CARD_INK_BODY,
                       lineHeight: 1.55,
                       textAlign: "center",
                       margin: "0 0 16px",
@@ -846,7 +858,7 @@ export default function CrewLoginPage() {
                       style={{
                         background: "none",
                         border: "none",
-                        color: "#2C3E2D",
+                        color: CREW_LOGIN_CARD_LINK,
                         fontSize: 13,
                         fontWeight: 600,
                         cursor: "pointer",
@@ -861,17 +873,7 @@ export default function CrewLoginPage() {
               )}
 
               <div style={{ marginBottom: 18 }}>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    letterSpacing: 0.5,
-                    textTransform: "uppercase",
-                    color: "#666",
-                    marginBottom: 10,
-                  }}
-                >
+                <label style={CREW_LOGIN_FIELD_LABEL} htmlFor="crew-login-pin-hidden">
                   Enter PIN
                 </label>
                 <div
@@ -895,7 +897,7 @@ export default function CrewLoginPage() {
                         height: 56,
                         borderRadius: 10,
                         background: "#0D0D0D",
-                        border: `2px solid ${pin.length > i ? "#2C3E2D" : "#2A2A2A"}`,
+                        border: `2px solid ${pin.length > i ? CREW_LOGIN_CARD_PIN_RING : "#2A2A2A"}`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -910,6 +912,7 @@ export default function CrewLoginPage() {
                   ))}
                 </div>
                 <input
+                  id="crew-login-pin-hidden"
                   ref={pinInputRef}
                   type="password"
                   inputMode="numeric"
@@ -949,35 +952,34 @@ export default function CrewLoginPage() {
           )}
 
           {isWelcome && !consentAccepted && (
-            <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(201,169,98,0.06)", borderRadius: 10, border: "1px solid rgba(201,169,98,0.15)" }}>
+            <div style={{ marginTop: 20, padding: "14px 16px", background: "rgba(92,26,51,0.08)", borderRadius: 10, border: "1px solid rgba(92,26,51,0.22)" }}>
               <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
                 <input
                   type="checkbox"
                   checked={consentChecked}
                   onChange={(e) => handleConsentChange(e.target.checked)}
-                  style={{ marginTop: 2, width: 15, height: 15, accentColor: "#2C3E2D", flexShrink: 0, cursor: "pointer" }}
+                  style={{ marginTop: 2, width: 15, height: 15, accentColor: CREW_LOGIN_CARD_CHECKBOX_ACCENT, flexShrink: 0, cursor: "pointer" }}
                 />
-                <span style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
+                <span style={{ fontSize: 11, color: CREW_LOGIN_CARD_INK_BODY, lineHeight: 1.6 }}>
                   I agree to Yugo&apos;s{" "}
-                  <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-                  <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: "#2C3E2D", textDecoration: "underline" }}>Terms of Use</a>
+                  <a href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: CREW_LOGIN_CARD_LINK, textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+                  <a href="/legal/terms-of-use" target="_blank" rel="noopener noreferrer" style={{ color: CREW_LOGIN_CARD_LINK, textDecoration: "underline" }}>Terms of Use</a>
                 </span>
               </label>
             </div>
           )}
 
-          <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: CREW_LOGIN_CARD_INK_SUBTLE, textAlign: "center", marginTop: 20, lineHeight: 1.5 }}>
             Dispatch:{" "}
             <a
               className="crew-login-link"
               href={`tel:${normalizePhone(DISPATCH_PHONE)}`}
-              style={{ color: "#2C3E2D", fontWeight: 600, textDecoration: "none" }}
+              style={{ color: CREW_LOGIN_CARD_LINK, fontWeight: 600, textDecoration: "none" }}
             >
               {formatPhone(DISPATCH_PHONE)}
             </a>
           </div>
-        </div>
-      </div>
+        </section>
     </main>
   );
 }
@@ -1010,7 +1012,7 @@ function CrewPhoneLoginFields({
       <p
         style={{
           fontSize: 13,
-          color: "#888",
+          color: CREW_LOGIN_CARD_INK_BODY,
           lineHeight: 1.55,
           textAlign: "center",
           margin: "0 0 20px",
@@ -1018,18 +1020,7 @@ function CrewPhoneLoginFields({
       >
         Use the mobile number on file with Yugo and your 6-digit crew PIN. This works when the tablet still shows another crew.
       </p>
-      <label
-        htmlFor="crew-login-phone"
-        style={{
-          display: "block",
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: 0.5,
-          textTransform: "uppercase",
-          color: "#666",
-          marginBottom: 10,
-        }}
-      >
+      <label htmlFor="crew-login-phone" style={CREW_LOGIN_FIELD_LABEL}>
         Phone number
       </label>
       <input
@@ -1058,17 +1049,7 @@ function CrewPhoneLoginFields({
         }}
       />
       <div style={{ marginBottom: 18, position: "relative" }}>
-        <label
-          style={{
-            display: "block",
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: 0.5,
-            textTransform: "uppercase",
-            color: "#666",
-            marginBottom: 10,
-          }}
-        >
+        <label htmlFor="crew-login-phone-pin" style={CREW_LOGIN_FIELD_LABEL}>
           Enter PIN (6 digits)
         </label>
         <div
@@ -1092,7 +1073,7 @@ function CrewPhoneLoginFields({
                 height: 56,
                 borderRadius: 10,
                 background: "#0D0D0D",
-                border: `2px solid ${phonePin.length > i ? "#2C3E2D" : "#2A2A2A"}`,
+                border: `2px solid ${phonePin.length > i ? CREW_LOGIN_CARD_PIN_RING : "#2A2A2A"}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1107,6 +1088,7 @@ function CrewPhoneLoginFields({
           ))}
         </div>
         <input
+          id="crew-login-phone-pin"
           ref={phonePinInputRef}
           type="password"
           inputMode="numeric"
@@ -1136,7 +1118,7 @@ function CrewPhoneLoginFields({
           width: "100%",
           background: "none",
           border: "none",
-          color: "#888",
+          color: CREW_LOGIN_CARD_INK_SUBTLE,
           fontSize: 13,
           cursor: "pointer",
           fontFamily: "inherit",

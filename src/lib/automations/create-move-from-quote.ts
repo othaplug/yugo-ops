@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { formatAccessForDisplay } from "@/lib/format-text";
 import { createBinOrderFromBinRentalQuote } from "@/lib/automations/create-bin-order-from-quote";
 import { isB2BDeliveryQuoteServiceType } from "@/lib/quotes/b2b-quote-copy";
+import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 
 /* ═══════════════════════════════════════════════════════════
    createMoveFromQuote
@@ -300,6 +301,9 @@ export async function createMoveFromQuote(
     square_card_id: input.squareCardId ?? null,
     square_payment_id: input.squarePaymentId ?? null,
     square_receipt_url: input.squareReceiptUrl ?? null,
+    ...(selectedTier === "estate"
+      ? { welcome_package_token: generateWelcomePackageToken() }
+      : {}),
   });
 
   const buildFinancialSibling = (): RowInsert => ({

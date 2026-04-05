@@ -86,7 +86,7 @@ export default function CrewSetupPage() {
         <style>{`
           @keyframes setupFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
           .crew-setup-input:focus { border-bottom-color: rgba(201,169,98,0.65) !important; outline: none; box-shadow: none !important; }
-          .crew-setup-btn:hover:not(:disabled) { background: #D4B56C !important; transform: translateY(-1px); }
+          .crew-setup-btn:hover:not(:disabled) { background: #243524 !important; transform: translateY(-1px); }
         `}</style>
 
         <div
@@ -139,7 +139,7 @@ export default function CrewSetupPage() {
                 border: "1px solid rgba(201,169,98,0.4)",
               }}
             >
-              <YugoLogo size={18} variant="gold" />
+              <YugoLogo size={18} variant="cream" />
             </div>
           </div>
 

@@ -448,8 +448,8 @@ export default function WalkthroughModal({
           {/* ── INTRO ── */}
           {step === "intro" && (
             <div className="text-center py-6 space-y-5">
-              <div className="w-16 h-16 rounded-2xl bg-[var(--gold)]/10 flex items-center justify-center mx-auto">
-                <CheckCircle size={32} color="var(--gold)" weight="duotone" />
+              <div className="w-16 h-16 rounded-2xl bg-[#5C1A33]/10 flex items-center justify-center mx-auto">
+                <CheckCircle size={32} color="#5C1A33" weight="duotone" />
               </div>
               <div>
                 <h4 className="font-hero text-[18px] font-bold text-[var(--tx)] mb-2">Step 1: Inventory Walkthrough</h4>
@@ -458,8 +458,8 @@ export default function WalkthroughModal({
                   matches what's actually here. Flag missing items and add anything extra.
                 </p>
               </div>
-              <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 px-4 py-3 text-left">
-                <p className="text-[11px] font-bold text-[var(--gold)] uppercase tracking-wider mb-1">Remember</p>
+              <div className="rounded-xl border border-[#5C1A33]/20 bg-[#5C1A33]/5 px-4 py-3 text-left">
+                <p className="text-[11px] font-bold text-[#5C1A33] uppercase tracking-wider mb-1">Remember</p>
                 <p className="text-[12px] text-[var(--tx2)]">
                   You cannot set or change prices. Just identify what's here and what's missing -
                   your coordinator will handle any price adjustments.
@@ -468,8 +468,7 @@ export default function WalkthroughModal({
               <div className="flex flex-col gap-2 pt-2">
                 <button
                   onClick={() => setStep("checklist")}
-                  className="w-full py-2 font-bold text-[var(--text-base)] text-white"
-                  style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                  className="crew-premium-cta w-full py-2 font-bold text-[var(--text-base)] text-white border border-[#2C3E2D]/30"
                 >
                   Start Inventory Check
                 </button>
@@ -492,7 +491,7 @@ export default function WalkthroughModal({
                   key={r.value}
                   className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
                     skipReason === r.value
-                      ? "border-[var(--gold)] bg-[var(--gold)]/8"
+                      ? "border-[#5C1A33] bg-[#5C1A33]/8"
                       : "border-[var(--brd)] hover:border-[var(--brd)]/80"
                   }`}
                 >
@@ -502,7 +501,7 @@ export default function WalkthroughModal({
                     value={r.value}
                     checked={skipReason === r.value}
                     onChange={() => setSkipReason(r.value)}
-                    className="accent-[var(--gold)]"
+                    className="accent-[#5C1A33]"
                   />
                   <span className="text-[13px] text-[var(--tx)]">{r.label}</span>
                 </label>
@@ -521,7 +520,7 @@ export default function WalkthroughModal({
                 roomGroups.map((group) => (
                   <div key={group.room} className="rounded-xl border border-[var(--brd)]/60 overflow-hidden">
                     <div className="px-3 py-2 bg-[var(--bg)]/80 border-b border-[var(--brd)]/40">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--gold)]">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5C1A33]">
                         {group.room}
                       </span>
                     </div>
@@ -530,8 +529,8 @@ export default function WalkthroughModal({
                         <div key={item.id} className="flex items-center gap-3 px-3 py-2.5">
                           <div className="shrink-0">
                             {item.status === "here" ? (
-                              <div className="w-5 h-5 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/50 flex items-center justify-center">
-                                <Check size={10} color="#22C55E" weight="bold" />
+                              <div className="w-5 h-5 rounded-full bg-[#2C3E2D]/15 border border-[#2C3E2D]/50 flex items-center justify-center">
+                                <Check size={10} color="#2C3E2D" weight="bold" />
                               </div>
                             ) : item.status === "missing" ? (
                               <div className="w-5 h-5 rounded-full bg-red-500/15 border border-red-500/50 flex items-center justify-center">
@@ -550,7 +549,7 @@ export default function WalkthroughModal({
                           {item.status !== "here" && (
                             <button
                               onClick={() => setItemStatus(item.id, "here")}
-                              className="shrink-0 px-2 py-1 text-[11px] font-semibold bg-[#22C55E]/10 text-[#22C55E] hover:bg-[#22C55E]/20 transition-colors active:scale-95"
+                              className="shrink-0 px-2 py-1 text-[11px] font-semibold bg-[#2C3E2D]/10 text-[#2C3E2D] hover:bg-[#2C3E2D]/20 transition-colors active:scale-95"
                             >
                               Here
                             </button>
@@ -590,7 +589,7 @@ export default function WalkthroughModal({
                   {extraItems.map((e, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[var(--gold)]/25 bg-[var(--gold)]/5"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[#5C1A33]/25 bg-[#5C1A33]/5"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] text-[var(--tx)] font-medium">
@@ -600,7 +599,7 @@ export default function WalkthroughModal({
                           {e.is_custom ? WEIGHT_CLASS_LABELS[e.custom_weight_class ?? "medium"] : `Score ${e.weight_score}`}
                         </p>
                       </div>
-                      <span className="text-[13px] font-semibold text-[#22C55E]">+${e.surcharge}</span>
+                      <span className="text-[13px] font-semibold text-[#2C3E2D]">+${e.surcharge}</span>
                       <button
                         onClick={() => removeExtra(i)}
                         className="p-1 rounded-lg text-[var(--tx3)] hover:text-red-400 transition-colors"
@@ -631,7 +630,7 @@ export default function WalkthroughModal({
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="e.g. dining table, boxes…"
-                          className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] text-[13px] placeholder:text-[var(--tx3)] outline-none focus:border-[var(--gold)]/60"
+                          className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--brd)] text-[var(--tx)] text-[13px] placeholder:text-[var(--tx3)] outline-none focus:border-[#5C1A33]/60"
                         />
                         {searching && (
                           <CircleNotch size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--tx3)] animate-spin" />
@@ -656,7 +655,7 @@ export default function WalkthroughModal({
                           Not found -{" "}
                           <button
                             onClick={() => { setCustomItemName(searchQuery); setSearchQuery(""); }}
-                            className="text-[var(--gold)] font-medium"
+                            className="text-[#5C1A33] font-medium"
                           >
                             add custom item
                           </button>
@@ -667,7 +666,7 @@ export default function WalkthroughModal({
 
                   {/* Selected item */}
                   {selectedItem && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--gold)]/8 border border-[var(--gold)]/20">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#5C1A33]/8 border border-[#5C1A33]/20">
                       <span className="flex-1 text-[13px] font-medium text-[var(--tx)]">{selectedItem.item_name}</span>
                       <span className="text-[11px] text-[var(--tx3)]">+${Math.round(selectedItem.weight_score * perScoreRate)}/unit</span>
                       <button onClick={() => setSelectedItem(null)} className="text-[var(--tx3)] hover:text-red-400">
@@ -697,7 +696,7 @@ export default function WalkthroughModal({
                             onClick={() => setCustomWeightClass(k)}
                             className={`px-3 py-2 rounded-lg border text-[12px] font-medium transition-colors ${
                               customWeightClass === k
-                                ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold)]"
+                                ? "border-[#5C1A33] bg-[#5C1A33]/10 text-[#5C1A33]"
                                 : "border-[var(--brd)] text-[var(--tx2)]"
                             }`}
                           >
@@ -742,7 +741,7 @@ export default function WalkthroughModal({
                     <button
                       onClick={addExtraItem}
                       disabled={!selectedItem && !customItemName.trim()}
-                      className="flex-1 py-2 bg-[var(--gold)] text-[var(--btn-text-on-accent)] font-semibold text-[13px] disabled:opacity-40"
+                      className="crew-premium-cta flex-1 py-2 text-white font-semibold text-[13px] disabled:opacity-40 border border-[#2C3E2D]/30"
                     >
                       Add
                     </button>
@@ -752,7 +751,7 @@ export default function WalkthroughModal({
                 <button
                   type="button"
                   onClick={() => setAddExtraOpen(true)}
-                  className="w-full py-2.5 rounded-xl bg-[var(--gold)]/10 text-[13px] font-medium text-[var(--gold)] hover:bg-[var(--gold)]/15 flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-2.5 rounded-xl border border-[#5C1A33]/30 bg-[#5C1A33]/6 text-[13px] font-medium text-[#5C1A33] hover:bg-[#5C1A33]/12 flex items-center justify-center gap-2 transition-colors"
                 >
                   <Plus size={14} /> Add Extra Item
                 </button>
@@ -766,16 +765,16 @@ export default function WalkthroughModal({
               {/* Stats */}
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <p className="text-[20px] font-bold text-[#22C55E]">{matched}</p>
-                  <p className="text-[10px] text-[#22C55E]/70 uppercase tracking-wider mt-0.5">Matched</p>
+                  <p className="text-[20px] font-bold text-[#2C3E2D]">{matched}</p>
+                  <p className="text-[10px] text-[#2C3E2D]/70 uppercase tracking-wider mt-0.5">Matched</p>
                 </div>
                 <div>
                   <p className="text-[20px] font-bold text-red-400">{missing}</p>
                   <p className="text-[10px] text-red-400/70 uppercase tracking-wider mt-0.5">Missing</p>
                 </div>
                 <div>
-                  <p className="text-[20px] font-bold text-[var(--gold)]">{extraItems.length}</p>
-                  <p className="text-[10px] text-[var(--gold)]/70 uppercase tracking-wider mt-0.5">Extra</p>
+                  <p className="text-[20px] font-bold text-[#5C1A33]">{extraItems.length}</p>
+                  <p className="text-[10px] text-[#5C1A33]/70 uppercase tracking-wider mt-0.5">Extra</p>
                 </div>
               </div>
 
@@ -789,7 +788,7 @@ export default function WalkthroughModal({
                         <span className="text-[13px] text-[var(--tx)]">
                           {e.item_name} {e.quantity > 1 && `×${e.quantity}`}
                         </span>
-                        <span className="text-[13px] font-semibold text-[#22C55E]">+${e.surcharge}</span>
+                        <span className="text-[13px] font-semibold text-[#2C3E2D]">+${e.surcharge}</span>
                       </div>
                     ))}
                   </div>
@@ -835,7 +834,7 @@ export default function WalkthroughModal({
                 <div className="rounded-xl border border-[var(--brd)] bg-[var(--bg)] px-4 py-3 space-y-1.5">
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="text-[var(--tx3)]">Subtotal change</span>
-                    <span className={`font-semibold ${netDelta >= 0 ? "text-[var(--tx)]" : "text-[#22C55E]"}`}>
+                    <span className={`font-semibold ${netDelta >= 0 ? "text-[var(--tx)]" : "text-[#2C3E2D]"}`}>
                       {netDelta >= 0 ? "+" : ""}{netDelta >= 0 ? `$${netDelta}` : `-$${Math.abs(netDelta)}`}
                     </span>
                   </div>
@@ -845,7 +844,7 @@ export default function WalkthroughModal({
                   </div>
                   <div className="flex items-center justify-between text-[var(--text-base)] font-bold border-t border-[var(--brd)] pt-1.5 mt-1.5">
                     <span className="text-[var(--tx)]">Net change</span>
-                    <span className={total >= 0 ? "text-[var(--tx)]" : "text-[#22C55E]"}>
+                    <span className={total >= 0 ? "text-[var(--tx)]" : "text-[#2C3E2D]"}>
                       {total >= 0 ? `+$${total.toFixed(2)}` : `-$${Math.abs(total).toFixed(2)}`}
                     </span>
                   </div>
@@ -854,7 +853,7 @@ export default function WalkthroughModal({
 
               {/* No-change hint */}
               {!hasDiscrepancyForSubmit && (
-                <p className="text-center text-[13px] text-[#22C55E] font-medium">Everything matches, no changes needed.</p>
+                <p className="text-center text-[13px] text-[#2C3E2D] font-medium">Everything matches, no changes needed.</p>
               )}
 
               {submitError && (
@@ -874,8 +873,7 @@ export default function WalkthroughModal({
             <>
               <button
                 onClick={() => onSkip(skipReason)}
-                className="w-full py-2 font-bold text-[var(--text-base)] text-white"
-                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                className="crew-premium-cta w-full py-2 font-bold text-[var(--text-base)] text-white border border-[#2C3E2D]/30"
               >
                 Skip Walkthrough
               </button>
@@ -892,8 +890,7 @@ export default function WalkthroughModal({
             <>
               <button
                 onClick={() => setStep("extras")}
-                className="w-full py-2 font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                className="crew-premium-cta w-full py-2 font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2 border border-[#2C3E2D]/30"
               >
                 Continue <CaretRight size={14} />
               </button>
@@ -907,8 +904,7 @@ export default function WalkthroughModal({
             <>
               <button
                 onClick={() => setStep("summary")}
-                className="w-full py-2 font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                className="crew-premium-cta w-full py-2 font-bold text-[var(--text-base)] text-white flex items-center justify-center gap-2 border border-[#2C3E2D]/30"
               >
                 Review Summary <CaretRight size={14} />
               </button>
@@ -928,8 +924,7 @@ export default function WalkthroughModal({
                   <button
                     onClick={submitChangeRequest}
                     disabled={submitting}
-                    className="w-full py-2 font-bold text-[var(--text-base)] text-white disabled:opacity-60 flex items-center justify-center gap-2"
-                    style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                    className="crew-premium-cta w-full py-2 font-bold text-[var(--text-base)] text-white disabled:opacity-60 flex items-center justify-center gap-2 border border-[#2C3E2D]/30"
                   >
                     {submitting ? (
                       <>
@@ -954,8 +949,7 @@ export default function WalkthroughModal({
                   type="button"
                   onClick={() => void submitNoChanges()}
                   disabled={submitting}
-                  className="w-full py-2 font-bold text-[var(--text-base)] text-white disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg, #2C3E2D, #8B7332)" }}
+                  className="crew-premium-cta w-full py-2 font-bold text-[var(--text-base)] text-white disabled:opacity-60 border border-[#2C3E2D]/30"
                 >
                   {submitting ? "Saving…" : "No Changes, Inventory Matches"}
                 </button>

@@ -158,3 +158,16 @@ export function formatAddressForDisplay(address: string | null | undefined): str
   out = out.replace(/,?\s*Canada\s*$/i, "").replace(/,?\s*CA\s*$/i, "").trim();
   return out.replace(/,+\s*$/, "").trim() || address.trim();
 }
+
+/**
+ * Remove trailing postal / ZIP from a comma-separated line for compact UI (e.g. track route).
+ * "200 Sackville St, Toronto, ON M5A 0C4" → "200 Sackville St, Toronto, ON"
+ */
+export function addressWithoutPostalSuffix(address: string | null | undefined): string {
+  if (!address || !address.trim()) return "";
+  let out = address.trim();
+  out = out.replace(/\s+[A-Z]\d[A-Z]\s?\d[A-Z]\d\s*$/i, "");
+  out = out.replace(/\s+\d{5}(-\d{4})?\s*$/i, "");
+  out = out.replace(/,+\s*$/, "").trim();
+  return out || address.trim();
+}

@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { X, Check, FloppyDisk, Sun, SunHorizon as Sunset, Clock } from "@phosphor-icons/react";
+import {
+  X,
+  Check,
+  FloppyDisk,
+  Sun,
+  SunHorizon as Sunset,
+  Clock,
+  CaretLeft,
+  CaretRight,
+} from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { TIME_WINDOW_OPTIONS } from "@/lib/time-windows";
@@ -11,6 +20,7 @@ import { Plus, Trash as Trash2 } from "@phosphor-icons/react";
 import type { VehicleType, DayType } from "@/lib/delivery-day-booking";
 import { calcHST } from "@/lib/format-currency";
 import { ModalDialogFrame } from "@/components/ui/ModalDialogFrame";
+import { WINE } from "@/lib/client-theme";
 
 const COMPLEXITY_PRESETS = ["White Glove", "High Value", "Fragile", "Artwork", "Antiques", "Storage"];
 
@@ -581,105 +591,95 @@ export default function PartnerScheduleModal({
   const modalContent = (
     <ModalDialogFrame
       zClassName="z-[99999]"
-      backdropClassName="bg-black/50"
+      backdropClassName="bg-black/45 backdrop-blur-[2px]"
       onBackdropClick={onClose}
-      panelClassName="bg-[var(--card)] rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[640px] overflow-hidden mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card"
+      panelClassName="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[640px] overflow-hidden mx-0 sm:mx-4 flex flex-col sheet-card sm:modal-card border border-[#2C3E2D]/10"
       panelStyle={{ maxHeight: "min(92dvh, 92vh)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
         {/* ── Header ── */}
-        <div className="shrink-0 bg-[var(--card)] border-b border-[var(--brd)]">
-          {/* Title row */}
-          <div className="px-5 sm:px-6 pt-5 pb-3 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--gold)] mb-0.5">
+        <div className="shrink-0 border-b border-[#2C3E2D]/10">
+          <div className="px-5 sm:px-6 pt-5 pb-4 flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]/80 mb-1.5">
+                {bookingType === "day_rate" ? "Day booking" : "Per delivery"}
+                <span className="text-[#2C3E2D]/25 mx-1.5" aria-hidden>
+                  —
+                </span>
                 {currentStep.description}
               </p>
-              <h2 className="font-hero text-[22px] sm:text-[26px] font-bold text-[var(--tx)] leading-tight">
+              <h2 className="font-hero text-[24px] sm:text-[28px] font-normal text-[#5C1A33] leading-[1.1] tracking-tight">
                 {currentStep.label}
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[var(--bg2)] text-[var(--tx3)] hover:text-[var(--tx)] transition-colors shrink-0"
+              className="w-9 h-9 flex items-center justify-center rounded-sm border border-transparent hover:border-[#2C3E2D]/15 hover:bg-[#2C3E2D]/[0.03] text-[#5A6B5E] hover:text-[#2C3E2D] transition-colors shrink-0"
               aria-label="Close"
             >
               <X size={18} weight="regular" />
             </button>
           </div>
 
-          {/* Tab bar */}
-          <div className="flex border-b border-[var(--brd)] px-5 sm:px-6">
+          <div className="flex px-5 sm:px-6 gap-6 border-b border-[#2C3E2D]/10">
             {(["day_rate", "per_delivery"] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => switchTab(tab)}
-                className={`relative pb-3 pt-1 mr-6 text-[13px] font-semibold transition-colors duration-150 ${
-                  bookingType === tab
-                    ? "text-[#2C3E2D]"
-                    : "text-[var(--tx3)] hover:text-[var(--tx)]"
+                className={`relative pb-3 pt-0 text-[10px] font-bold tracking-[0.12em] uppercase transition-colors ${
+                  bookingType === tab ? "text-[#2C3E2D]" : "text-[#5A6B5E] hover:text-[#2C3E2D]/75"
                 }`}
               >
-                {tab === "day_rate" ? "Day Rate" : "Per Delivery"}
+                {tab === "day_rate" ? "Day rate" : "Per delivery"}
                 {bookingType === tab && (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2C3E2D] rounded-t-full" />
+                  <span className="absolute bottom-0 left-0 right-0 h-px bg-[#2C3E2D]" />
                 )}
               </button>
             ))}
           </div>
 
-          {/* Step progress */}
-          <div className="px-5 sm:px-6 py-4">
-              <div className="flex items-center gap-0">
-                {steps.map((s, i) => (
-                  <div key={s.id} className="flex items-center flex-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (bookingType === "day_rate" && s.id < dayRateStep) setDayRateStep(s.id);
-                        if (bookingType === "per_delivery" && s.id < perDeliveryStep) setPerDeliveryStep(s.id);
-                      }}
-                      className="flex flex-col items-center gap-1.5 shrink-0"
-                      style={{ cursor: s.id < step ? "pointer" : "default" }}
-                    >
-                      <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-200 ${
-                          step === s.id
-                            ? "bg-[#2C3E2D] text-white shadow-sm shadow-[#2C3E2D]/30 scale-110"
-                            : step > s.id
-                            ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
-                            : "bg-[var(--brd)]/60 text-[var(--tx3)] border border-[var(--brd)]"
-                        }`}
-                      >
-                        {step > s.id ? <Check size={12} weight="bold" /> : s.id}
-                      </div>
-                      <span
-                        className={`text-[10px] font-semibold tracking-wide transition-colors duration-150 hidden sm:block ${
-                          step === s.id ? "text-[var(--tx)]" : "text-[var(--tx3)]"
-                        }`}
-                      >
-                        {s.label}
-                      </span>
-                    </button>
-                    {i < steps.length - 1 && (
-                      <div className="flex-1 mx-2 mb-4">
-                        <div
-                          className={`h-px transition-all duration-500 ${
-                            step > s.id ? "bg-emerald-500/40" : "bg-[var(--brd)]/50"
-                          }`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+          <div className="px-5 sm:px-6 py-3.5">
+            <nav
+              className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[9px] font-bold tracking-[0.12em] uppercase"
+              aria-label="Booking steps"
+            >
+              {steps.map((s, i) => (
+                <span key={s.id} className="contents">
+                  {i > 0 ? (
+                    <span className="text-[#2C3E2D]/20 px-0.5 select-none" aria-hidden>
+                      —
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (bookingType === "day_rate" && s.id < dayRateStep) setDayRateStep(s.id);
+                      if (bookingType === "per_delivery" && s.id < perDeliveryStep) setPerDeliveryStep(s.id);
+                    }}
+                    className={`inline-flex items-center gap-1 transition-colors ${
+                      step === s.id
+                        ? "text-[#2C3E2D]"
+                        : step > s.id
+                          ? "text-[#2C3E2D]/55 hover:text-[#2C3E2D]"
+                          : "text-[#5A6B5E]/50"
+                    }`}
+                    style={{ cursor: s.id < step ? "pointer" : "default" }}
+                  >
+                    {step > s.id ? (
+                      <Check size={11} weight="bold" className="text-[#2C3E2D]/70 shrink-0" aria-hidden />
+                    ) : null}
+                    {s.label}
+                  </button>
+                </span>
+              ))}
+            </nav>
           </div>
         </div>
 
         {/* ── Body ── */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 sm:px-6 py-5 space-y-6 min-h-0">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 sm:px-6 py-6 space-y-8 min-h-0">
           {error && (
-            <div className="px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-[13px] text-red-600 dark:text-red-400">
+            <div className="py-2.5 border-b border-red-500/25 text-[13px] text-red-700">
               {error}
             </div>
           )}
@@ -694,13 +694,12 @@ export default function PartnerScheduleModal({
                   value={dayScheduledDate}
                   onChange={(e) => setDayScheduledDate(e.target.value)}
                   className={fieldInput}
-                  style={{ colorScheme: "dark" }}
                 />
               </section>
 
-              <section className="space-y-2">
-                <SectionLabel>Time Window</SectionLabel>
-                <div className="flex gap-1 p-1 bg-[var(--bg2)] rounded-xl border border-[var(--brd)]">
+              <section className="space-y-3">
+                <SectionLabel>Time window</SectionLabel>
+                <div className="grid grid-cols-3 border border-[#2C3E2D]/15 divide-x divide-[#2C3E2D]/10 rounded-sm overflow-hidden">
                   {DAY_TIME_WINDOWS.map(({ value, label, range, Icon }) => {
                     const active = dayTimeWindow === value;
                     return (
@@ -708,15 +707,22 @@ export default function PartnerScheduleModal({
                         key={value}
                         type="button"
                         onClick={() => setDayTimeWindow(value)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-[12px] font-semibold transition-all duration-200 ${
-                          active
-                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] text-white shadow-sm shadow-[#2C3E2D]/20"
-                            : "text-[var(--tx3)] hover:text-[var(--tx)] hover:bg-[var(--card)]"
+                        className={`flex flex-col items-center justify-center gap-0.5 py-3 px-1.5 text-center transition-colors ${
+                          active ? "bg-[#2C3E2D]/[0.06]" : "bg-transparent hover:bg-[#2C3E2D]/[0.03]"
                         }`}
                       >
-                        <Icon size={13} weight={active ? "fill" : "regular"} />
-                        <span>{label}</span>
-                        <span className={`text-[10px] font-normal hidden sm:inline ${active ? "text-white/75" : "text-[var(--tx3)]"}`}>{range}</span>
+                        <Icon
+                          size={14}
+                          weight={active ? "fill" : "regular"}
+                          className={active ? "text-[#2C3E2D]" : "text-[#5A6B5E]"}
+                          aria-hidden
+                        />
+                        <span className={`text-[10px] font-bold tracking-[0.08em] uppercase ${active ? "text-[#2C3E2D]" : "text-[#5A6B5E]"}`}>
+                          {label}
+                        </span>
+                        <span className="text-[9px] font-normal normal-case tracking-normal text-[#5A6B5E]/85 hidden sm:block">
+                          {range}
+                        </span>
                       </button>
                     );
                   })}
@@ -735,10 +741,13 @@ export default function PartnerScheduleModal({
               </section>
 
               {dayStops.map((stop, idx) => (
-                <div key={stop.id} className="rounded-xl border border-[var(--brd)] bg-[var(--card)] p-4 space-y-3 shadow-sm">
+                <div
+                  key={stop.id}
+                  className="pt-6 border-t border-[#2C3E2D]/10 first:border-t-0 first:pt-0 space-y-3"
+                >
                   <div className="flex items-center justify-between">
-                    <h4 className="text-[13px] font-bold text-[var(--tx)] flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-[var(--gold)] text-white text-[10px] font-bold flex items-center justify-center">
+                    <h4 className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-sm border border-[#2C3E2D]/30 text-[#2C3E2D] text-[10px] font-bold flex items-center justify-center tabular-nums">
                         {idx + 1}
                       </span>
                       Stop {idx + 1}
@@ -787,7 +796,7 @@ export default function PartnerScheduleModal({
               <button
                 type="button"
                 onClick={() => setDayStops((p) => [...p, { id: `ds${Date.now()}`, address: "", customerName: "", customerPhone: "", instructions: "" }])}
-                className="w-full py-2 text-[12px] font-semibold text-[var(--tx3)] hover:text-[var(--gold)] transition-colors flex items-center justify-center gap-1.5"
+                className="w-full py-2 text-[12px] font-semibold text-[var(--tx3)] hover:text-[#2C3E2D] transition-colors flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-4 h-4" /> Add another stop
               </button>
@@ -796,43 +805,47 @@ export default function PartnerScheduleModal({
 
           {/* ═══ Day Rate Step 4: Review ═══ */}
           {bookingType === "day_rate" && dayRateStep === 4 && (
-            <div className="space-y-5">
-              <div className="rounded-xl border border-[var(--brd)] p-4 space-y-2">
+            <div className="space-y-0 divide-y divide-[#2C3E2D]/10">
+              <div className="pb-5 space-y-3">
                 {[
-                  ["Date",     dayScheduledDate || "-"],
+                  ["Date",     dayScheduledDate || "—"],
                   ["Time",     DAY_TIME_WINDOWS.find((w) => w.value === dayTimeWindow)?.label ?? dayTimeWindow],
                   ["Vehicle",  VEHICLE_TYPES.find((v) => v.value === vehicleType)?.label ?? vehicleType],
                   ["Duration", dayType === "full_day" ? "Full Day" : "Half Day"],
                   ["Stops",    String(dayStops.length)],
-                  ["Pickup",   dayPickupAddress || "-"],
+                  ["Pickup",   dayPickupAddress || "—"],
                 ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between text-[13px]">
-                    <span className="text-[var(--tx3)]">{k}</span>
-                    <span className="font-semibold text-[var(--tx)] text-right max-w-[60%] truncate">{v}</span>
+                  <div key={k} className="flex justify-between gap-4 text-[13px]">
+                    <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] shrink-0">{k}</span>
+                    <span className="text-[#1a1f1b] text-right max-w-[65%] font-medium leading-snug">{v}</span>
                   </div>
                 ))}
               </div>
 
               {dayStops.filter((s) => s.address).map((stop, idx) => (
-                <div key={stop.id} className="rounded-xl border border-[var(--brd)] p-4 space-y-1.5">
-                  <h4 className="text-[12px] font-bold text-[var(--tx)] flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full bg-[var(--gold)] text-white text-[9px] font-bold flex items-center justify-center">
+                <div key={stop.id} className="py-5 space-y-1.5 first:pt-0">
+                  <h4 className="text-[10px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-sm border border-[#2C3E2D]/30 text-[#2C3E2D] text-[9px] font-bold flex items-center justify-center tabular-nums">
                       {idx + 1}
                     </span>
                     Stop {idx + 1}
                   </h4>
-                  <p className="text-[12px] text-[var(--tx2)] truncate">{stop.address}</p>
+                  <p className="text-[13px] text-[#1a1f1b] leading-snug">{stop.address}</p>
                   {stop.customerName && (
-                    <p className="text-[11px] text-[var(--tx3)]">
+                    <p className="text-[12px] text-[#5A6B5E]">
                       {stop.customerName}{stop.customerPhone ? ` · ${formatPhone(stop.customerPhone)}` : ""}
                     </p>
                   )}
-                  {stop.instructions && <p className="text-[11px] text-[var(--tx3)] italic">{stop.instructions}</p>}
+                  {stop.instructions && <p className="text-[12px] text-[#5A6B5E]">{stop.instructions}</p>}
                 </div>
               ))}
 
-              {renderPricePreview()}
-              <p className="text-[11px] text-[var(--tx3)] text-center">Your rates are locked in per your partnership agreement.</p>
+              <div className="pt-5 space-y-3">
+                {renderPricePreview()}
+                <p className="text-[11px] text-[#5A6B5E] text-center leading-relaxed">
+                  Your rates are locked in per your partnership agreement.
+                </p>
+              </div>
             </div>
           )}
 
@@ -841,7 +854,7 @@ export default function PartnerScheduleModal({
             <div className="space-y-6">
               <section className="space-y-3">
                 <SectionLabel>Vehicle</SectionLabel>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-px bg-[#2C3E2D]/10 rounded-sm overflow-hidden border border-[#2C3E2D]/10">
                   {VEHICLE_TYPES.map((v) => {
                     const sel = vehicleType === v.value;
                     return (
@@ -849,15 +862,28 @@ export default function PartnerScheduleModal({
                         key={v.value}
                         type="button"
                         onClick={() => setVehicleType(v.value as VehicleType)}
-                        className={`relative text-left px-3 py-3 rounded-lg border transition-all duration-200 ${
-                          sel
-                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
-                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/50 hover:bg-[var(--bg)]"
+                        className={`relative text-left px-3 py-3 transition-colors ${
+                          sel ? "" : "bg-[#FFFBF7] hover:bg-[#2C3E2D]/[0.03]"
                         }`}
+                        style={sel ? { backgroundColor: WINE } : undefined}
                       >
-                        <div className={`text-[13px] font-semibold leading-tight ${sel ? "text-white" : "text-[var(--tx)]"}`}>{v.label}</div>
-                        <div className={`text-[10px] mt-0.5 ${sel ? "text-white/90" : "text-[var(--tx3)]"}`}>{v.capacity}</div>
-                        <div className={`text-[10px] ${sel ? "text-white/90" : "text-[var(--tx3)]"}`}>Max payload: {v.payload}</div>
+                        <div
+                          className={`text-[12px] font-semibold leading-tight ${
+                            sel ? "text-[#FFFBF7]" : "text-[#1a1f1b]"
+                          }`}
+                        >
+                          {v.label}
+                        </div>
+                        <div
+                          className={`text-[10px] mt-1 ${sel ? "text-[#F9EDE4]/85" : "text-[#5A6B5E]"}`}
+                        >
+                          {v.capacity}
+                        </div>
+                        <div
+                          className={`text-[10px] ${sel ? "text-[#F9EDE4]/75" : "text-[#5A6B5E]/90"}`}
+                        >
+                          Max payload: {v.payload}
+                        </div>
                       </button>
                     );
                   })}
@@ -866,7 +892,7 @@ export default function PartnerScheduleModal({
 
               <section className="space-y-3">
                 <SectionLabel>Duration</SectionLabel>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-px bg-[#2C3E2D]/10 rounded-sm overflow-hidden border border-[#2C3E2D]/10">
                   {([["full_day", "Full Day", "6 stops incl."], ["half_day", "Half Day", "3 stops incl."]] as const).map(([val, label, desc]) => {
                     const sel = dayType === val;
                     return (
@@ -874,14 +900,23 @@ export default function PartnerScheduleModal({
                         key={val}
                         type="button"
                         onClick={() => { setDayType(val); setNumStops(INCLUDED_STOPS[val]); }}
-                        className={`relative text-left px-3 py-3 rounded-lg border transition-all duration-200 ${
-                          sel
-                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
-                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/50 hover:bg-[var(--bg)]"
+                        className={`relative text-left px-3 py-3 transition-colors ${
+                          sel ? "" : "bg-[#FFFBF7] hover:bg-[#2C3E2D]/[0.03]"
                         }`}
+                        style={sel ? { backgroundColor: WINE } : undefined}
                       >
-                        <div className={`text-[13px] font-semibold leading-tight ${sel ? "text-white" : "text-[var(--tx)]"}`}>{label}</div>
-                        <div className={`text-[10px] mt-0.5 ${sel ? "text-white/90" : "text-[var(--tx3)]"}`}>{desc}</div>
+                        <div
+                          className={`text-[12px] font-semibold leading-tight ${
+                            sel ? "text-[#FFFBF7]" : "text-[#1a1f1b]"
+                          }`}
+                        >
+                          {label}
+                        </div>
+                        <div
+                          className={`text-[10px] mt-1 ${sel ? "text-[#F9EDE4]/85" : "text-[#5A6B5E]"}`}
+                        >
+                          {desc}
+                        </div>
                       </button>
                     );
                   })}
@@ -905,15 +940,15 @@ export default function PartnerScheduleModal({
                           type="button"
                           onClick={() => setNumStops((n) => Math.max(included, n - 1))}
                           disabled={numStops <= included}
-                          className="w-10 h-10 rounded-xl border border-[var(--brd)] flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg2)] text-lg font-bold disabled:opacity-30"
+                          className="w-10 h-10 rounded-sm border border-[#2C3E2D]/20 flex items-center justify-center text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04] text-lg font-light disabled:opacity-30"
                         >
                           −
                         </button>
-                        <span className="text-[26px] font-bold text-[var(--tx)] w-10 text-center">{numStops}</span>
+                        <span className="text-[26px] font-normal text-[#2C3E2D] w-10 text-center font-hero tabular-nums">{numStops}</span>
                         <button
                           type="button"
                           onClick={() => setNumStops((n) => n + 1)}
-                          className="w-10 h-10 rounded-xl border border-[var(--brd)] flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg2)] text-lg font-bold"
+                          className="w-10 h-10 rounded-sm border border-[#2C3E2D]/20 flex items-center justify-center text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04] text-lg font-light"
                         >
                           +
                         </button>
@@ -965,7 +1000,7 @@ export default function PartnerScheduleModal({
                   <section className="space-y-3">
                     <SectionLabel>Items</SectionLabel>
                     {b2bItems.map((row, idx) => (
-                      <div key={row.id} className="rounded-lg border border-[var(--brd)] p-3 space-y-2">
+                      <div key={row.id} className="py-4 border-t border-[#2C3E2D]/10 first:border-t-0 first:pt-0 space-y-2">
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-[11px] font-semibold text-[var(--tx3)]">Item {idx + 1}</span>
                           {b2bItems.length > 1 && (
@@ -1034,7 +1069,7 @@ export default function PartnerScheduleModal({
                           { id: `bi${Date.now()}`, description: "", quantity: 1, handling: "threshold" },
                         ])
                       }
-                      className="flex items-center gap-1.5 text-[12px] font-semibold text-[#2C3E2D]"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold tracking-[0.1em] uppercase text-[#2C3E2D] mt-1"
                     >
                       <Plus className="w-4 h-4" /> Add item
                     </button>
@@ -1085,7 +1120,7 @@ export default function PartnerScheduleModal({
               <>
               <section className="space-y-3">
                 <SectionLabel>Delivery Type</SectionLabel>
-                <div className="grid grid-cols-1 gap-2">
+                <div className="divide-y divide-[#2C3E2D]/10 border border-[#2C3E2D]/10 rounded-sm overflow-hidden">
                   {DELIVERY_TYPES.map((dt) => {
                     const sel = deliveryType === dt.value;
                     return (
@@ -1093,14 +1128,12 @@ export default function PartnerScheduleModal({
                         key={dt.value}
                         type="button"
                         onClick={() => setDeliveryType(dt.value)}
-                        className={`relative text-left px-4 py-3 rounded-lg border transition-all duration-200 ${
-                          sel
-                            ? "bg-gradient-to-br from-[#2C3E2D] to-[#8B7332] border-[#2C3E2D] shadow-md shadow-[#2C3E2D]/15"
-                            : "bg-[var(--card)] border-[var(--brd)] hover:border-[#2C3E2D]/50 hover:bg-[var(--bg)]"
+                        className={`relative w-full text-left px-4 py-3 transition-colors ${
+                          sel ? "bg-[#2C3E2D]/[0.06]" : "bg-[#FFFBF7] hover:bg-[#2C3E2D]/[0.03]"
                         }`}
                       >
-                        <div className={`text-[13px] font-semibold leading-tight ${sel ? "text-white" : "text-[var(--tx)]"}`}>{dt.label}</div>
-                        <div className={`text-[10px] mt-0.5 ${sel ? "text-white/90" : "text-[var(--tx3)]"}`}>{dt.desc}</div>
+                        <div className={`text-[12px] font-semibold leading-tight ${sel ? "text-[#2C3E2D]" : "text-[#1a1f1b]"}`}>{dt.label}</div>
+                        <div className="text-[10px] mt-1 text-[#5A6B5E]">{dt.desc}</div>
                       </button>
                     );
                   })}
@@ -1145,17 +1178,17 @@ export default function PartnerScheduleModal({
               <section className="space-y-3">
                 <SectionLabel>Heavy / Oversized Items</SectionLabel>
                 <p className="text-[11px] text-[var(--tx3)] -mt-2">Items over 250 lbs incur additional surcharges.</p>
-                <div className="space-y-2">
+                <div className="border-t border-[#2C3E2D]/10 pt-1">
                   {([{ label: "250–400 lbs", tier: "250_400" as const }, { label: "400–600 lbs", tier: "400_600" as const }]).map((t) => {
                     const existing = heavyItems.find((h) => h.tier === t.tier);
                     const count = existing?.count ?? 0;
                     return (
-                      <div key={t.tier} className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-[var(--brd)]">
+                      <div key={t.tier} className="flex items-center justify-between py-3 border-b border-[#2C3E2D]/10 last:border-b-0">
                         <span className="text-[13px] text-[var(--tx)]">{t.label}</span>
                         <div className="flex items-center gap-2">
-                          <button type="button" onClick={() => setHeavyItems((prev) => { const u = prev.filter((h) => h.tier !== t.tier); if (count > 1) u.push({ tier: t.tier, count: count - 1 }); return u; })} disabled={count === 0} className="w-7 h-7 rounded border border-[var(--brd)] flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg2)] disabled:opacity-30">−</button>
-                          <span className="w-6 text-center font-bold text-[var(--tx)]">{count}</span>
-                          <button type="button" onClick={() => setHeavyItems((prev) => { const u = prev.filter((h) => h.tier !== t.tier); u.push({ tier: t.tier, count: count + 1 }); return u; })} className="w-7 h-7 rounded border border-[var(--brd)] flex items-center justify-center text-[var(--tx3)] hover:bg-[var(--bg2)]">+</button>
+                          <button type="button" onClick={() => setHeavyItems((prev) => { const u = prev.filter((h) => h.tier !== t.tier); if (count > 1) u.push({ tier: t.tier, count: count - 1 }); return u; })} disabled={count === 0} className="w-7 h-7 rounded-sm border border-[#2C3E2D]/20 flex items-center justify-center text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04] disabled:opacity-30">−</button>
+                          <span className="w-6 text-center font-semibold text-[#2C3E2D] tabular-nums">{count}</span>
+                          <button type="button" onClick={() => setHeavyItems((prev) => { const u = prev.filter((h) => h.tier !== t.tier); u.push({ tier: t.tier, count: count + 1 }); return u; })} className="w-7 h-7 rounded-sm border border-[#2C3E2D]/20 flex items-center justify-center text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04]">+</button>
                         </div>
                       </div>
                     );
@@ -1255,30 +1288,30 @@ export default function PartnerScheduleModal({
                 {inventory.length > 0 && (
                   <ul className="space-y-1.5 mb-2">
                     {inventory.map((item, idx) => (
-                      <li key={idx} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[var(--bg2)] border border-[var(--brd)]">
+                      <li key={idx} className="flex items-center justify-between gap-2 py-2.5 border-b border-[#2C3E2D]/10 last:border-0">
                         <span className="text-[12px] text-[var(--tx)]">{item}</span>
                         <button type="button" onClick={() => removeInventoryItem(idx)} className="p-1 rounded text-[var(--tx3)] hover:text-red-600"><Trash2 className="w-[14px] h-[14px]" /></button>
                       </li>
                     ))}
                   </ul>
                 )}
-                <div className="flex items-center gap-2 mb-2">
-                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${!inventoryBulkMode ? "bg-[#2C3E2D] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}>Single add</button>
-                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${inventoryBulkMode ? "bg-[#2C3E2D] text-white" : "bg-[var(--bg2)] text-[var(--tx3)] hover:bg-[var(--brd)]"}`}>Bulk add</button>
+                <div className="flex items-center gap-0 border border-[#2C3E2D]/15 rounded-sm overflow-hidden w-fit">
+                  <button type="button" onClick={() => setInventoryBulkMode(false)} className={`text-[9px] font-bold tracking-[0.1em] uppercase px-3 py-2 transition-colors ${!inventoryBulkMode ? "bg-[#2C3E2D] text-white" : "bg-transparent text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04]"}`}>Single</button>
+                  <button type="button" onClick={() => setInventoryBulkMode(true)} className={`text-[9px] font-bold tracking-[0.1em] uppercase px-3 py-2 border-l border-[#2C3E2D]/15 transition-colors ${inventoryBulkMode ? "bg-[#2C3E2D] text-white" : "bg-transparent text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04]"}`}>Bulk</button>
                 </div>
                 {inventoryBulkMode ? (
                   <div className="space-y-2">
                     <textarea value={inventoryBulkText} onChange={(e) => setInventoryBulkText(e.target.value)} placeholder={"One item per line, e.g. Sofa x2\nCoffee Table"} rows={3} className={`${fieldInput} resize-y text-[13px]`} />
-                    <button type="button" onClick={addBulkInventoryItems} disabled={!inventoryBulkText.trim()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
-                      <Plus className="w-[14px] h-[14px]" /> Add all
+                    <button type="button" onClick={addBulkInventoryItems} disabled={!inventoryBulkText.trim()} className="inline-flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold tracking-[0.1em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] disabled:opacity-50 rounded-sm">
+                      <Plus className="w-[14px] h-[14px]" weight="bold" /> Add all
                     </button>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-2 items-end">
                     <input type="text" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInventoryItem())} placeholder="Item (e.g. Couch x2)" className={`${fieldInput} flex-1 min-w-[120px]`} />
                     <input type="number" min={1} max={99} value={newItemQty} onChange={(e) => setNewItemQty(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))} className={`${fieldInput} w-16`} />
-                    <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim()} className="flex-none inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#2D6A4F] text-white hover:bg-[#245840] disabled:opacity-50">
-                      <Plus className="w-[14px] h-[14px]" /> Add
+                    <button type="button" onClick={addInventoryItem} disabled={!newItemName.trim()} className="flex-none inline-flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold tracking-[0.1em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] disabled:opacity-50 rounded-sm">
+                      <Plus className="w-[14px] h-[14px]" weight="bold" /> Add
                     </button>
                   </div>
                 )}
@@ -1288,7 +1321,7 @@ export default function PartnerScheduleModal({
                 <SectionLabel>Complexity</SectionLabel>
                 <div className="flex flex-wrap gap-2">
                   {COMPLEXITY_PRESETS.map((preset) => (
-                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors ${form.complexityIndicators.includes(preset) ? "bg-[#2C3E2D]/20 text-[#8B6914] border-[#2C3E2D]" : "bg-[var(--card)] text-[var(--tx3)] border-[var(--brd)] hover:border-[#2C3E2D]/50"}`}>
+                    <button key={preset} type="button" onClick={() => toggleComplexity(preset)} className={`px-2.5 py-1.5 text-[10px] font-bold tracking-[0.08em] uppercase border transition-colors rounded-sm ${form.complexityIndicators.includes(preset) ? "bg-[#2C3E2D]/[0.08] text-[#2C3E2D] border-[#2C3E2D]/35" : "bg-transparent text-[#5A6B5E] border-[#2C3E2D]/15 hover:border-[#2C3E2D]/30"}`}>
                       {preset}
                     </button>
                   ))}
@@ -1312,49 +1345,48 @@ export default function PartnerScheduleModal({
 
           {/* ═══ Per Delivery Step 3: Review ═══ */}
           {bookingType === "per_delivery" && perDeliveryStep === 3 && (
-            <div className="space-y-5">
-              <div className="rounded-xl border border-[var(--brd)] divide-y divide-[var(--brd)]">
+            <div className="space-y-0 divide-y divide-[#2C3E2D]/10">
+              <div className="pb-6 space-y-0 divide-y divide-[#2C3E2D]/10">
                 {b2bActive ? (
                   <>
-                    <div className="px-4 py-3">
-                      <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Delivery type</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
-                        <span className="text-[var(--tx3)]">Vertical</span>
-                        <span className="font-semibold text-[var(--tx)]">
+                    <div className="py-4 first:pt-0">
+                      <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] mb-3">Delivery type</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+                        <span className="text-[#5A6B5E]">Vertical</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">
                           {partnerB2bVerticals.find((v) => v.code === b2bVerticalCode)?.name || b2bVerticalCode || "—"}
                         </span>
-                        <span className="text-[var(--tx3)]">Access</span>
-                        <span className="font-semibold text-[var(--tx)] uppercase">{deliveryAccess.replace(/_/g, " ")}</span>
+                        <span className="text-[#5A6B5E]">Access</span>
+                        <span className="font-medium text-[#1a1f1b] text-right uppercase">{deliveryAccess.replace(/_/g, " ")}</span>
                       </div>
                     </div>
-                    <div className="px-4 py-3">
-                      <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Client</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
-                        <span className="text-[var(--tx3)]">Name</span>
-                        <span className="font-semibold text-[var(--tx)]">{form.customer_name || "-"}</span>
-                        <span className="text-[var(--tx3)]">Date</span>
-                        <span className="font-semibold text-[var(--tx)]">{form.scheduled_date || "-"}</span>
-                        <span className="text-[var(--tx3)]">Pickup</span>
-                        <span className="font-semibold text-[var(--tx)] truncate">{pickupResolved || "-"}</span>
-                        <span className="text-[var(--tx3)]">Deliver to</span>
-                        <span className="font-semibold text-[var(--tx)] truncate">{form.delivery_address || "-"}</span>
+                    <div className="py-4">
+                      <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] mb-3">Client</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+                        <span className="text-[#5A6B5E]">Name</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{form.customer_name || "—"}</span>
+                        <span className="text-[#5A6B5E]">Date</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{form.scheduled_date || "—"}</span>
+                        <span className="text-[#5A6B5E]">Pickup</span>
+                        <span className="font-medium text-[#1a1f1b] text-right truncate max-w-full">{pickupResolved || "—"}</span>
+                        <span className="text-[#5A6B5E]">Deliver to</span>
+                        <span className="font-medium text-[#1a1f1b] text-right truncate max-w-full">{form.delivery_address || "—"}</span>
                       </div>
                     </div>
                     {b2bItems.filter((i) => i.description.trim()).length > 0 && (
-                      <div className="px-4 py-3">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Items</p>
-                        <ul className="space-y-1">
+                      <div className="py-4">
+                        <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] mb-3">Items</p>
+                        <ul className="space-y-1.5">
                           {b2bItems
                             .filter((i) => i.description.trim())
                             .map((row) => (
-                              <li key={row.id} className="text-[12px] text-[var(--tx)]">
-                                · {row.description.trim()}
-                                {row.quantity > 1 ? ` ×${row.quantity}` : ""}
-                                <span className="text-[var(--tx3)]">
-                                  {" "}
-                                  (
+                              <li key={row.id} className="text-[13px] text-[#1a1f1b] flex justify-between gap-3 border-b border-[#2C3E2D]/5 last:border-0 pb-1.5 last:pb-0">
+                                <span>
+                                  {row.description.trim()}
+                                  {row.quantity > 1 ? ` ×${row.quantity}` : ""}
+                                </span>
+                                <span className="text-[11px] text-[#5A6B5E] shrink-0">
                                   {B2B_HANDLING_OPTIONS.find((o) => o.value === row.handling)?.label || row.handling}
-                                  )
                                 </span>
                               </li>
                             ))}
@@ -1364,33 +1396,37 @@ export default function PartnerScheduleModal({
                   </>
                 ) : (
                   <>
-                    <div className="px-4 py-3">
-                      <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Delivery</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
-                        <span className="text-[var(--tx3)]">Type</span>
-                        <span className="font-semibold text-[var(--tx)]">{DELIVERY_TYPES.find((d) => d.value === deliveryType)?.label}</span>
-                        <span className="text-[var(--tx3)]">Zone</span>
-                        <span className="font-semibold text-[var(--tx)]">Zone {zone}</span>
-                        <span className="text-[var(--tx3)]">Access</span>
-                        <span className="font-semibold text-[var(--tx)] uppercase">{deliveryAccess.replace(/_/g, " ")}</span>
+                    <div className="py-4 first:pt-0">
+                      <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] mb-3">Delivery</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+                        <span className="text-[#5A6B5E]">Type</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{DELIVERY_TYPES.find((d) => d.value === deliveryType)?.label}</span>
+                        <span className="text-[#5A6B5E]">Zone</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">Zone {zone}</span>
+                        <span className="text-[#5A6B5E]">Access</span>
+                        <span className="font-medium text-[#1a1f1b] text-right uppercase">{deliveryAccess.replace(/_/g, " ")}</span>
                       </div>
                     </div>
-                    <div className="px-4 py-3">
-                      <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Client</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
-                        <span className="text-[var(--tx3)]">Name</span>
-                        <span className="font-semibold text-[var(--tx)]">{form.customer_name || "-"}</span>
-                        <span className="text-[var(--tx3)]">Date</span>
-                        <span className="font-semibold text-[var(--tx)]">{form.scheduled_date || "-"}</span>
-                        <span className="text-[var(--tx3)]">Deliver to</span>
-                        <span className="font-semibold text-[var(--tx)] truncate">{form.delivery_address || "-"}</span>
+                    <div className="py-4">
+                      <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] mb-3">Client</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+                        <span className="text-[#5A6B5E]">Name</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{form.customer_name || "—"}</span>
+                        <span className="text-[#5A6B5E]">Date</span>
+                        <span className="font-medium text-[#1a1f1b] text-right">{form.scheduled_date || "—"}</span>
+                        <span className="text-[#5A6B5E]">Deliver to</span>
+                        <span className="font-medium text-[#1a1f1b] text-right truncate max-w-full">{form.delivery_address || "—"}</span>
                       </div>
                     </div>
                     {inventory.length > 0 && (
-                      <div className="px-4 py-3">
-                        <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--tx3)] mb-2">Items ({inventory.length})</p>
-                        <ul className="space-y-0.5">
-                          {inventory.map((item, i) => <li key={i} className="text-[12px] text-[var(--tx)]">· {item}</li>)}
+                      <div className="py-4">
+                        <p className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#5A6B5E] mb-3">Items ({inventory.length})</p>
+                        <ul className="space-y-0">
+                          {inventory.map((item, i) => (
+                            <li key={i} className="text-[13px] text-[#1a1f1b] py-1.5 border-b border-[#2C3E2D]/5 last:border-0 flex justify-between gap-3">
+                              <span>{item}</span>
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     )}
@@ -1398,34 +1434,38 @@ export default function PartnerScheduleModal({
                 )}
               </div>
 
-              {b2bActive ? renderB2BPricePreview() : renderPricePreview()}
-              <p className="text-[11px] text-[var(--tx3)] text-center">Your rates are locked in per your partnership agreement.</p>
+              <div className="pt-6 space-y-3">
+                {b2bActive ? renderB2BPricePreview() : renderPricePreview()}
+                <p className="text-[11px] text-[#5A6B5E] text-center leading-relaxed">
+                  Your rates are locked in per your partnership agreement.
+                </p>
+              </div>
             </div>
           )}
         </div>
 
         {/* ── Footer ── */}
-        <div className="sticky bottom-0 bg-[var(--card)] border-t border-[var(--brd)] px-5 sm:px-6 py-3 flex items-center gap-2 shrink-0">
+        <div className="sticky bottom-0 bg-[#FFFBF7] border-t border-[#2C3E2D]/10 px-5 sm:px-6 py-3.5 flex items-center gap-3 shrink-0">
           <button
             type="button"
             onClick={handleBack}
-            className="px-4 py-2 rounded-lg text-[12px] font-semibold border border-[var(--brd)] text-[var(--tx3)] hover:bg-[var(--bg2)] transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase border border-[#2C3E2D]/25 text-[#2C3E2D] hover:bg-[#2C3E2D]/[0.04] transition-colors rounded-sm"
           >
-            {step === 1 ? "Cancel" : "← Back"}
+            <CaretLeft size={14} weight="bold" aria-hidden />
+            {step === 1 ? "Cancel" : "Back"}
           </button>
 
-          <div className="flex-1" />
+          <div className="flex-1 min-w-2" />
 
           {isLastStep ? (
             <>
-              {/* Save as draft only available for per-delivery */}
               {bookingType === "per_delivery" && (
                 <button
                   type="button"
                   onClick={handleSaveDraft}
                   disabled={submitting || savingDraft}
                   title={savingDraft ? "Saving…" : "Save as draft"}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--brd)] text-[var(--tx3)] hover:bg-[var(--bg2)] hover:text-[var(--tx)] transition-colors disabled:opacity-40"
+                  className="w-9 h-9 flex items-center justify-center rounded-sm border border-[#2C3E2D]/20 text-[#5A6B5E] hover:bg-[#2C3E2D]/[0.04] hover:text-[#2C3E2D] transition-colors disabled:opacity-40"
                 >
                   <FloppyDisk size={15} weight="regular" />
                 </button>
@@ -1435,16 +1475,16 @@ export default function PartnerScheduleModal({
                   type="button"
                   onClick={handleContinue}
                   disabled={dayRateSubmitting}
-                  className="px-4 py-2 rounded-lg text-[12px] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors disabled:opacity-50 rounded-sm"
                 >
-                  {dayRateSubmitting ? "Submitting…" : "Submit Delivery Day"}
+                  {dayRateSubmitting ? "Submitting…" : "Submit delivery day"}
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting || savingDraft}
-                  className="px-4 py-2 rounded-lg text-[12px] font-bold bg-[#2D6A4F] text-white hover:bg-[#245840] transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors disabled:opacity-50 rounded-sm"
                 >
                   {submitting ? "Submitting…" : "Submit request"}
                 </button>
@@ -1454,9 +1494,10 @@ export default function PartnerScheduleModal({
             <button
               type="button"
               onClick={handleContinue}
-              className="px-5 py-2 rounded-lg text-[12px] font-bold bg-[#2C3E2D] text-white hover:bg-[#B8862E] transition-colors"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors rounded-sm"
             >
-              Continue →
+              Continue
+              <CaretRight size={14} weight="bold" aria-hidden />
             </button>
           )}
         </div>
@@ -1490,24 +1531,24 @@ export default function PartnerScheduleModal({
     const displayServices = availableServices.filter((s) => s.price_unit !== "percentage");
     if (displayServices.length === 0) return null;
     return (
-      <section className="space-y-2">
-        <SectionLabel>Add-on Services</SectionLabel>
-        <div className="space-y-1.5">
+      <section className="space-y-3">
+        <SectionLabel>Add-on services</SectionLabel>
+        <div className="border-t border-b border-[#2C3E2D]/10 divide-y divide-[#2C3E2D]/10">
           {displayServices.map((svc) => (
-            <label key={svc.slug} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-[var(--brd)] hover:border-[#2C3E2D]/40 transition-colors cursor-pointer">
-              <div className="flex items-center gap-2.5">
-                <input type="checkbox" checked={!!selectedServices[svc.slug]?.enabled} onChange={() => toggleService(svc.slug)} className="rounded border-[var(--brd)] text-[#2C3E2D] focus:ring-[#2C3E2D]" />
-                <div>
-                  <div className="text-[13px] text-[var(--tx)]">{svc.service_name}</div>
+            <label key={svc.slug} className="flex items-start justify-between gap-4 py-3 cursor-pointer hover:bg-[#2C3E2D]/[0.02] px-1 -mx-1 transition-colors">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <input type="checkbox" checked={!!selectedServices[svc.slug]?.enabled} onChange={() => toggleService(svc.slug)} className="rounded-sm border-[#2C3E2D]/25 text-[#2C3E2D] mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-[13px] text-[#1a1f1b]">{svc.service_name}</div>
                   {svc.slug === "stair_carry" && selectedServices[svc.slug]?.enabled && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-[var(--tx3)]">Flights:</span>
-                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Math.max(1, parseInt(e.target.value, 10) || 1))} className="w-14 text-[12px] bg-[var(--card)] border border-[var(--brd)] rounded px-2 py-1 text-[var(--tx)]" />
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[10px] font-bold tracking-wide uppercase text-[#5A6B5E]">Flights</span>
+                      <input type="number" min={1} max={10} value={stairFlights} onChange={(e) => setStairFlights(Math.max(1, parseInt(e.target.value, 10) || 1))} className="w-12 text-[12px] bg-transparent border-b border-[#2C3E2D]/20 px-0 py-0.5 text-[#1a1f1b]" />
                     </div>
                   )}
                 </div>
               </div>
-              <span className="text-[12px] font-semibold text-[#2C3E2D] shrink-0">
+              <span className="text-[12px] font-semibold text-[#2C3E2D] shrink-0 tabular-nums">
                 {fmtCurrency(svc.price_min)}{svc.price_max ? ` – ${fmtCurrency(svc.price_max)}` : ""}
                 {svc.price_unit === "per_flight" ? "/flight" : svc.price_unit === "per_stop" ? "/stop" : ""}
               </span>
@@ -1525,27 +1566,27 @@ export default function PartnerScheduleModal({
     const std = b2bPreview?.standard_subtotal;
     const vname = b2bPreview?.vertical_name || "";
     return (
-      <div className="rounded-xl border border-[#2C3E2D]/30 bg-[var(--gdim)] p-4 space-y-2">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--gold)]">Your rate</h3>
-          {b2bPreviewLoading && <span className="text-[10px] text-[var(--tx3)]">Calculating…</span>}
+      <div className="space-y-3 pt-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]">Your rate</h3>
+          {b2bPreviewLoading && <span className="text-[10px] text-[#5A6B5E]">Calculating…</span>}
         </div>
         {b2bPreview && vname ? (
-          <p className="text-[11px] font-semibold text-[var(--tx2)]">
+          <p className="text-[12px] font-medium text-[#1a1f1b]">
             {vname} — partner rate
           </p>
         ) : null}
         {b2bPreview && b2bPreview.breakdown.length > 0 ? (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {b2bPreview.breakdown.map((line, i) => (
-              <div key={i} className="flex justify-between text-[13px] gap-2">
-                <span className="text-[var(--tx3)]">{line.label}</span>
-                <span className="font-semibold text-[var(--tx)] shrink-0">{fmtCurrency(line.amount)}</span>
+              <div key={i} className="flex justify-between text-[13px] gap-3 border-b border-[#2C3E2D]/5 pb-2 last:border-0 last:pb-0">
+                <span className="text-[#5A6B5E]">{line.label}</span>
+                <span className="font-semibold text-[#1a1f1b] shrink-0 tabular-nums">{fmtCurrency(line.amount)}</span>
               </div>
             ))}
           </div>
         ) : (
-          <div className={`text-[12px] ${b2bPreviewLoading ? "text-[var(--tx3)]" : "text-[var(--tx3)]"}`}>
+          <div className="text-[12px] text-[#5A6B5E]">
             {b2bPreviewLoading
               ? "Calculating partner pricing…"
               : "Add items, delivery address, and pickup to see your rate."}
@@ -1553,22 +1594,22 @@ export default function PartnerScheduleModal({
         )}
         {b2bPreview ? (
           <>
-            <div className="border-t border-[#2C3E2D]/20 pt-2 mt-1 space-y-1">
+            <div className="border-t border-[#2C3E2D]/10 pt-3 space-y-2">
               <div className="flex justify-between text-[13px]">
-                <span className="text-[var(--tx3)]">Subtotal</span>
-                <span className="font-semibold text-[var(--tx)]">{fmtCurrency(sub)}</span>
+                <span className="text-[#5A6B5E]">Subtotal</span>
+                <span className="font-semibold text-[#1a1f1b] tabular-nums">{fmtCurrency(sub)}</span>
               </div>
               <div className="flex justify-between text-[13px]">
-                <span className="text-[var(--tx3)]">HST (13%)</span>
-                <span className="font-semibold text-[var(--tx)]">{fmtCurrency(hst)}</span>
+                <span className="text-[#5A6B5E]">HST (13%)</span>
+                <span className="font-semibold text-[#1a1f1b] tabular-nums">{fmtCurrency(hst)}</span>
               </div>
-              <div className="flex justify-between pt-1">
-                <span className="text-[var(--text-base)] font-bold text-[var(--tx)]">Total incl. HST</span>
-                <span className="text-[16px] font-bold text-[#2C3E2D]">{fmtCurrency(totalWithHst)}</span>
+              <div className="flex justify-between pt-1 items-baseline">
+                <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-[#5A6B5E]">Total incl. HST</span>
+                <span className="text-[22px] font-normal text-[#2C3E2D] font-hero tabular-nums">{fmtCurrency(totalWithHst)}</span>
               </div>
             </div>
             {std != null && std > sub ? (
-              <p className="text-[10px] text-[var(--tx3)] pt-1">
+              <p className="text-[10px] text-[#5A6B5E] leading-relaxed">
                 List pricing for the same job would be about {fmtCurrency(std)} before HST.
               </p>
             ) : null}
@@ -1582,44 +1623,48 @@ export default function PartnerScheduleModal({
     const hst = pricing ? calcHST(pricing.totalPrice) : 0;
     const totalWithHst = pricing ? pricing.totalPrice + hst : 0;
     return (
-      <div className="rounded-xl border border-[#2C3E2D]/30 bg-[var(--gdim)] p-4 space-y-2">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="text-[12px] font-bold tracking-wider uppercase text-[var(--gold)]">Price Preview</h3>
-          {pricingLoading && <span className="text-[10px] text-[var(--tx3)]">Calculating…</span>}
+      <div className="space-y-3 pt-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]">Price preview</h3>
+          {pricingLoading && <span className="text-[10px] text-[#5A6B5E]">Calculating…</span>}
         </div>
         {pricing ? (
           <>
-            {pricing.breakdown.map((item, i) => (
-              <div key={i} className="flex justify-between text-[13px]">
-                <span className="text-[var(--tx3)]">{item.label}</span>
-                <span className={`font-semibold ${item.amount < 0 ? "text-green-600" : "text-[var(--tx)]"}`}>
-                  {item.amount < 0 ? `-${fmtCurrency(Math.abs(item.amount))}` : fmtCurrency(item.amount)}
-                </span>
+            <div className="space-y-2">
+              {pricing.breakdown.map((item, i) => (
+                <div key={i} className="flex justify-between text-[13px] gap-3">
+                  <span className="text-[#5A6B5E]">{item.label}</span>
+                  <span className={`font-semibold tabular-nums ${item.amount < 0 ? "text-emerald-700" : "text-[#1a1f1b]"}`}>
+                    {item.amount < 0 ? `-${fmtCurrency(Math.abs(item.amount))}` : fmtCurrency(item.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-[#2C3E2D]/10 pt-3 space-y-2">
+              <div className="flex justify-between text-[13px]">
+                <span className="text-[#5A6B5E]">Subtotal</span>
+                <span className="font-semibold text-[#1a1f1b] tabular-nums">{fmtCurrency(pricing.totalPrice)}</span>
               </div>
-            ))}
-            <div className="flex justify-between text-[13px] pt-1">
-              <span className="text-[var(--tx3)]">Subtotal</span>
-              <span className="font-semibold text-[var(--tx)]">{fmtCurrency(pricing.totalPrice)}</span>
-            </div>
-            <div className="flex justify-between text-[13px]">
-              <span className="text-[var(--tx3)]">HST (13%)</span>
-              <span className="font-semibold text-[var(--tx)]">{fmtCurrency(hst)}</span>
-            </div>
-            <div className="border-t border-[#2C3E2D]/20 pt-2 mt-1 flex justify-between">
-              <span className="text-[var(--text-base)] font-bold text-[var(--tx)]">Total incl. HST</span>
-              <span className="text-[16px] font-bold text-[#2C3E2D]">{fmtCurrency(totalWithHst)}</span>
+              <div className="flex justify-between text-[13px]">
+                <span className="text-[#5A6B5E]">HST (13%)</span>
+                <span className="font-semibold text-[#1a1f1b] tabular-nums">{fmtCurrency(hst)}</span>
+              </div>
+              <div className="flex justify-between pt-1 items-baseline">
+                <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-[#5A6B5E]">Total incl. HST</span>
+                <span className="text-[22px] font-normal text-[#2C3E2D] font-hero tabular-nums">{fmtCurrency(totalWithHst)}</span>
+              </div>
             </div>
             {pricing.effectivePerStop && bookingType === "day_rate" && (
-              <div className="text-[11px] text-[var(--tx3)] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>
+              <div className="text-[11px] text-[#5A6B5E] text-right">Effective per stop: {fmtCurrency(pricing.effectivePerStop)}</div>
             )}
             {bookingType === "per_delivery" && (
-              <p className="text-[10px] text-[var(--tx3)] mt-2 pt-2 border-t border-[#2C3E2D]/20">
+              <p className="text-[10px] text-[#5A6B5E] leading-relaxed pt-1">
                 Rates shown are base prices for standard access. Walk-up, long carry, and heavy item surcharges may apply.
               </p>
             )}
           </>
         ) : (
-          <div className={`text-[12px] ${pricingError ? "text-red-600" : "text-[var(--tx3)]"}`}>
+          <div className={`text-[12px] ${pricingError ? "text-red-600" : "text-[#5A6B5E]"}`}>
             {pricingLoading ? "Loading rates…" : pricingError || "Configure options above to see pricing"}
           </div>
         )}
@@ -1630,7 +1675,7 @@ export default function PartnerScheduleModal({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-[11px] font-bold tracking-widest uppercase text-[var(--tx3)]">{children}</h3>
+    <h3 className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#5A6B5E]">{children}</h3>
   );
 }
 

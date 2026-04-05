@@ -196,7 +196,7 @@ export const EstateExperienceSection = React.forwardRef<
             </h3>
             <div className="grid md:grid-cols-2 gap-6">
               <EstateFeatureCard
-                title="Full Replacement Valuation"
+                title="Verified repair or full replacement valuation"
                 description="Up to $10,000 per item, $100,000 per move. Zero deductible."
               />
               <EstateFeatureCard

@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { ReactNode } from "react";
+import CrewCssVarsBridge from "./components/CrewCssVarsBridge";
 import CrewThemeProvider from "./components/CrewThemeProvider";
 import CrewAlwaysOnLocation from "./components/CrewAlwaysOnLocation";
+import CrewLocalPreferencesHydration from "./components/CrewLocalPreferencesHydration";
+import CrewRouteLightLock from "./components/CrewRouteLightLock";
 
 export const metadata: Metadata = {
   manifest: "/manifest.json",
@@ -13,13 +16,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#B8962E",
+  themeColor: "#5C1A33",
 };
 
 export default function CrewLayout({ children }: { children: ReactNode }) {
   return (
     <CrewThemeProvider>
+      <CrewCssVarsBridge />
       <div className="crew-app min-h-dvh">
+        <CrewRouteLightLock />
+        <CrewLocalPreferencesHydration />
         <CrewAlwaysOnLocation />
         {children}
       </div>

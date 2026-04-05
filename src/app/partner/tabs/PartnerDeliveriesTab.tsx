@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { MagnifyingGlass, Check, Link, PencilSimple, ShareNetwork, Info, CalendarBlank } from "@phosphor-icons/react";
+import { MagnifyingGlass, Check, Link, PencilSimple, ShareNetwork, Info, CalendarBlank, Plus } from "@phosphor-icons/react";
 import RescheduleDeliveryModal from "@/components/partner/RescheduleDeliveryModal";
 import { getDeliveryTimelineIndex, DELIVERY_TIMELINE_STEPS } from "@/lib/partner-type";
 import DeliveryProgressBar from "@/components/DeliveryProgressBar";
@@ -163,8 +163,9 @@ export default function PartnerDeliveriesTab({
               <button
                 type="button"
                 onClick={onScheduleDelivery}
-                className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-[#2C3E2D]/40 text-[#2C3E2D] hover:bg-[#2C3E2D]/10 transition-colors"
+                className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-[13px] font-semibold uppercase tracking-[0.08em] text-[var(--tx)] bg-[var(--bg)] hover:bg-[var(--bg2)] transition-colors"
               >
+                <Plus size={16} weight="bold" className="shrink-0" aria-hidden />
                 Schedule delivery
               </button>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import YugoLogo from "@/components/YugoLogo";
+import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import { CREAM, FOREST, TEXT_MUTED_ON_LIGHT } from "@/lib/client-theme";
 import { normalizePhone } from "@/lib/phone";
 import { formatDateEt } from "@/lib/datetime-et";
@@ -94,6 +95,16 @@ export default function QuoteExpired({
           >
             Call Us
           </a>
+        </div>
+        <div className="mt-10 pt-6 border-t border-[#2C3E2D]/12">
+          <YugoMarketingFooter
+            contactEmail={mail}
+            logoVariant="gold"
+            onLightBackground
+            mutedColor={TEXT_MUTED_ON_LIGHT}
+            linkColor={FOREST}
+            showLogo={false}
+          />
         </div>
       </div>
     </div>

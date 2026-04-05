@@ -13,6 +13,7 @@ import { getEmailBaseUrl } from "@/lib/email-base-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { getCompanyDisplayName } from "@/lib/config";
 import { autoScheduleMove } from "@/lib/scheduling/auto-schedule";
+import { generateWelcomePackageToken } from "@/lib/welcome-package-token";
 import {
   bookingConfirmationEmail,
   internalBookingAlertEmail,
@@ -283,6 +284,28 @@ export async function runPostPaymentActions(
         const timeWindow =
           (move.arrival_window as string) || "Morning (7 AM – 12 PM)";
 
+        let welcomePackageUrl: string | null = null;
+        if (tier === "estate") {
+          let wpToken = String(
+            (move as { welcome_package_token?: string | null })
+              .welcome_package_token ?? "",
+          ).trim();
+          if (!wpToken) {
+            wpToken = generateWelcomePackageToken();
+            const { error: tokErr } = await supabase
+              .from("moves")
+              .update({ welcome_package_token: wpToken })
+              .eq("id", input.moveId);
+            if (tokErr) {
+              console.error("[postPayment] welcome_package_token", tokErr);
+              wpToken = "";
+            }
+          }
+          if (wpToken) {
+            welcomePackageUrl = `${baseUrl}/estate/welcome/${wpToken}`;
+          }
+        }
+
         const confirmParams: TierConfirmationParams = {
           clientName,
           moveCode: input.moveCode,
@@ -302,6 +325,7 @@ export async function runPostPaymentActions(
           coordinatorName: (move.coordinator_name as string) || null,
           coordinatorPhone: (move.coordinator_phone as string) || null,
           coordinatorEmail: (move.coordinator_email as string) || null,
+          welcomePackageUrl,
         };
 
         const templateFns: Record<

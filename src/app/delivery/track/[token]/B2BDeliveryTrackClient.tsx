@@ -27,6 +27,7 @@ export default function B2BDeliveryTrackClient({
   initialDropoff,
   googleReviewUrl,
   podImageUrl,
+  companyContactEmail,
 }: {
   delivery: Record<string, unknown>;
   token: string;
@@ -36,6 +37,7 @@ export default function B2BDeliveryTrackClient({
   initialDropoff?: { lat: number; lng: number } | null;
   googleReviewUrl?: string | null;
   podImageUrl?: string | null;
+  companyContactEmail: string;
 }) {
   const { assembly, debris } = flagsFromDelivery(delivery);
   const crewSize =
@@ -54,6 +56,7 @@ export default function B2BDeliveryTrackClient({
       initialPickup={initialPickup}
       initialDropoff={initialDropoff}
       googleReviewUrl={googleReviewUrl}
+      companyContactEmail={companyContactEmail}
       b2bAudience={audience}
       b2bCoBrand={coBrandName}
       b2bPodImageUrl={podImageUrl || null}

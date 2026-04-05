@@ -3,10 +3,19 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/app/admin/components/Toast";
 import { expandItemRow } from "@/lib/inventory-parse";
-import { CaretDown, X, Plus, DownloadSimple } from "@phosphor-icons/react";
-
-const GOLD = "#2C3E2D";
-const FOREST = "#2C3B2D";
+import {
+  CaretDown,
+  CaretRight,
+  X,
+  Plus,
+  DownloadSimple,
+} from "@phosphor-icons/react";
+import {
+  WINE,
+  FOREST,
+  TEXT_MUTED_ON_LIGHT,
+} from "@/lib/client-theme";
+import { QUOTE_EYEBROW_CLASS } from "@/app/quote/[quoteId]/quote-shared";
 
 type InventoryItem = {
   id: string;
@@ -28,12 +37,15 @@ type ExtraItem = {
 
 function SkeletonRow() {
   return (
-    <tr className="border-b border-[#E7E5E4] last:border-0">
+    <tr
+      className="border-b last:border-0"
+      style={{ borderColor: `${FOREST}08` }}
+    >
       <td className="px-5 py-3.5">
-        <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-2/5" />
+        <div className="h-3 bg-[#E7E5E4] animate-pulse w-2/5" />
       </td>
       <td className="px-5 py-3.5 text-right">
-        <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-6 ml-auto" />
+        <div className="h-3 bg-[#E7E5E4] animate-pulse w-6 ml-auto" />
       </td>
     </tr>
   );
@@ -41,10 +53,19 @@ function SkeletonRow() {
 
 function SkeletonRoom({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="rounded-xl border border-[#E7E5E4] overflow-hidden">
-      <div className="px-5 py-3.5 bg-[#FAFAF8] flex items-center justify-between border-b border-[#E7E5E4]">
-        <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-28" />
-        <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-8" />
+    <div
+      className="overflow-hidden border"
+      style={{ borderColor: `${FOREST}14` }}
+    >
+      <div
+        className="px-5 py-3.5 flex items-center justify-between border-b"
+        style={{
+          backgroundColor: `${FOREST}05`,
+          borderColor: `${FOREST}10`,
+        }}
+      >
+        <div className="h-3 bg-[#E7E5E4] animate-pulse w-28" />
+        <div className="h-3 bg-[#E7E5E4] animate-pulse w-8" />
       </div>
       <table className="w-full">
         <tbody>
@@ -55,11 +76,25 @@ function SkeletonRoom({ rows = 3 }: { rows?: number }) {
   );
 }
 
-export default function TrackInventory({ moveId, token, moveComplete = false }: { moveId: string; token: string; moveComplete?: boolean }) {
+export default function TrackInventory({
+  moveId,
+  token,
+  moveComplete = false,
+  className = "",
+  /** Estate tier, 3+ BR: no itemized list; walkthrough scope copy only */
+  estateWalkthroughScopeOnly = false,
+}: {
+  moveId: string;
+  token: string;
+  moveComplete?: boolean;
+  /** e.g. `mb-6` for tab content spacing — avoids a parent wrapper div */
+  className?: string;
+  estateWalkthroughScopeOnly?: boolean;
+}) {
   const { toast } = useToast();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !estateWalkthroughScopeOnly);
   const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
   const [addExtraOpen, setAddExtraOpen] = useState(false);
   const [extraDesc, setExtraDesc] = useState("");
@@ -68,6 +103,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (estateWalkthroughScopeOnly) return;
     let cancelled = false;
     setLoading(true);
     fetch(`/api/track/moves/${moveId}/inventory?token=${encodeURIComponent(token)}`)
@@ -80,7 +116,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
       .catch(() => { if (!cancelled) { setItems([]); setExtraItems([]); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [moveId, token]);
+  }, [moveId, token, estateWalkthroughScopeOnly]);
 
   const handleAddExtra = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,17 +224,17 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
       style={{ minHeight: "100dvh" }}
       onClick={(e) => { if (e.target === e.currentTarget) setAddExtraOpen(false); }}
     >
-      <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden my-auto">
+      <div className="bg-white w-full max-w-[400px] shadow-2xl overflow-hidden my-auto">
         <div className="px-5 pt-5 pb-4 border-b border-[#E7E5E4]">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-[15px] font-bold text-[#1A1A1A]">Request Extra Item</h3>
-              <p className="text-[11px] text-[#4F4B47] mt-0.5">Sent to your coordinator for approval</p>
+              <h3 className="text-[15px] font-bold text-[#1A1A1A]">Request change</h3>
+              <p className="text-[12px] text-[#4F4B47] mt-0.5">Sent to your coordinator for approval</p>
             </div>
             <button
               type="button"
               onClick={() => setAddExtraOpen(false)}
-              className="w-7 h-7 rounded-full bg-[#F5F5F3] flex items-center justify-center text-[#454545] hover:bg-[#EEECEA] transition-colors"
+              className="w-7 h-7 bg-[#F5F5F3] flex items-center justify-center text-[#454545] hover:bg-[#EEECEA] transition-colors"
             >
               <X size={10} weight="regular" className="text-current" />
             </button>
@@ -206,33 +242,33 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
         </div>
         <form onSubmit={handleAddExtra} className="p-5 space-y-4">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Description *</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Description *</label>
             <input
               value={extraDesc}
               onChange={(e) => setExtraDesc(e.target.value)}
               placeholder="e.g. Extra boxes from garage"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] placeholder:text-[#BBB] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
+              className="w-full px-3.5 py-2.5 border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[14px] placeholder:text-[#BBB] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
               required
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Quantity</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Quantity</label>
               <input
                 type="number"
                 min={1}
                 value={extraQty}
                 onChange={(e) => setExtraQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
+                className="w-full px-3.5 py-2.5 border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[14px] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Room</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4F4B47] mb-1.5">Room</label>
               <input
                 value={extraRoom}
                 onChange={(e) => setExtraRoom(e.target.value)}
                 placeholder="e.g. Garage"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[13px] placeholder:text-[#BBB] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
+                className="w-full px-3.5 py-2.5 border border-[#E7E5E4] bg-[#FAFAF8] text-[#1A1A1A] text-[14px] placeholder:text-[#BBB] focus:outline-none focus:border-[#2C3E2D] focus:bg-white transition-colors"
               />
             </div>
           </div>
@@ -240,15 +276,15 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
             <button
               type="button"
               onClick={() => setAddExtraOpen(false)}
-              className="flex-1 py-2.5 rounded-xl border border-[#E7E5E4] text-[#555] text-[12px] font-semibold hover:bg-[#F5F5F3] transition-colors"
+              className="flex-1 py-2.5 border border-[#E7E5E4] text-[#555] text-[13px] font-semibold hover:bg-[#F5F5F3] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !extraDesc.trim()}
-              className="flex-1 py-2.5 rounded-xl text-[12px] font-bold disabled:opacity-40 transition-all active:scale-[0.98]"
-              style={{ backgroundColor: GOLD, color: "#F9EDE4" }}
+              className="flex-1 py-2.5 text-[13px] font-bold disabled:opacity-40 transition-all active:scale-[0.98]"
+              style={{ backgroundColor: FOREST, color: "#F9EDE4" }}
             >
               {submitting ? "Submitting…" : "Submit Request"}
             </button>
@@ -260,66 +296,144 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
 
   if (loading) {
     return (
-      <div className="space-y-3">
-        <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between">
-            <div className="h-4 rounded-full bg-[#E7E5E4] animate-pulse w-20" />
-            <div className="h-7 rounded-lg bg-[#E7E5E4] animate-pulse w-16" />
+      <div
+        className={`bg-white overflow-hidden border ${className}`.trim()}
+        style={{ borderColor: `${FOREST}14` }}
+      >
+          <div
+            className="px-5 py-4 flex items-center justify-between border-b"
+            style={{ borderColor: `${FOREST}10` }}
+          >
+            <div className="h-4 bg-[#E7E5E4] animate-pulse w-20" />
+            <div className="h-7 bg-[#E7E5E4] animate-pulse w-16" />
           </div>
-          <div className="px-5 py-3 border-b border-[#E7E5E4]">
-            <div className="h-3 rounded-full bg-[#E7E5E4] animate-pulse w-40" />
+          <div className="px-5 py-3 border-b" style={{ borderColor: `${FOREST}10` }}>
+            <div className="h-3 bg-[#E7E5E4] animate-pulse w-40" />
           </div>
-          <div className="p-4 space-y-2.5">
-            <SkeletonRoom rows={4} />
-            <SkeletonRoom rows={3} />
-            <SkeletonRoom rows={2} />
-          </div>
+        <div className="p-4 space-y-2.5">
+          <SkeletonRoom rows={4} />
+          <SkeletonRoom rows={3} />
+          <SkeletonRoom rows={2} />
         </div>
+      </div>
+    );
+  }
+
+  if (estateWalkthroughScopeOnly) {
+    return (
+      <div className={`text-center pt-6 sm:pt-8 ${className}`.trim()}>
+        <p
+          className="text-[12px]"
+          style={{ color: TEXT_MUTED_ON_LIGHT }}
+        >
+          Based on your virtual walkthrough
+        </p>
+        <p
+          className="text-[13px] leading-relaxed max-w-[320px] mx-auto mt-5"
+          style={{ color: FOREST }}
+        >
+          In your virtual walkthrough, we shape your move list with you—what we align on there is
+          what we pack and transport with the same care through every stage of your relocation.
+          Pieces we have not yet reviewed together are not part of your move until your
+          coordinator updates your plan.
+        </p>
+        <p
+          className="text-[12px] mt-4 max-w-[300px] mx-auto leading-relaxed"
+          style={{ color: TEXT_MUTED_ON_LIGHT }}
+        >
+          If something should be on the list, your coordinator can refine your scope, or you can
+          request a change below.
+        </p>
+        {!moveComplete && (
+          <button
+            type="button"
+            onClick={() => setAddExtraOpen(true)}
+            className="mt-6 inline-flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] leading-none transition-opacity hover:opacity-80"
+            style={{
+              color: FOREST,
+              backgroundColor: "transparent",
+            }}
+          >
+            <Plus size={12} weight="bold" className="shrink-0" aria-hidden />
+            Request change
+            <CaretRight size={12} weight="bold" className="shrink-0" aria-hidden />
+          </button>
+        )}
+        {addExtraOpen && <AddExtraModal />}
       </div>
     );
   }
 
   if (items.length === 0 && extraItems.length === 0) {
     return (
-      <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#E7E5E4]">
-          <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A]">Inventory</h3>
-        </div>
-        <div className="px-5 py-10 text-center">
-          <p className="text-[13px] font-semibold text-[#1A1A1A] mb-1">No items yet</p>
-          <p className="text-[11px] text-[#4F4B47] max-w-[220px] mx-auto leading-relaxed">Your coordinator will add items as your move is being prepared.</p>
+      <>
+        <div className={`text-center pt-8 sm:pt-10 ${className}`.trim()}>
+          <p
+            className="text-[12px] max-w-[280px] mx-auto leading-relaxed"
+            style={{ color: TEXT_MUTED_ON_LIGHT }}
+          >
+            Your coordinator will add items as your move is being prepared.
+          </p>
           {!moveComplete && (
             <button
               type="button"
               onClick={() => setAddExtraOpen(true)}
-              className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-dashed border-[#D4D4D4] text-[12px] font-semibold text-[#4F4B47] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
+              className="mt-6 inline-flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] leading-none transition-opacity hover:opacity-80"
+              style={{
+                color: FOREST,
+                backgroundColor: "transparent",
+              }}
             >
-              <Plus size={11} weight="regular" className="text-current" />
-              Request extra item
+              <Plus size={12} weight="bold" className="shrink-0" aria-hidden />
+              Request change
+              <CaretRight size={12} weight="bold" className="shrink-0" aria-hidden />
             </button>
           )}
         </div>
         {addExtraOpen && <AddExtraModal />}
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden">
+    <div
+      className={`bg-white overflow-hidden border ${className}`.trim()}
+      style={{ borderColor: `${FOREST}14` }}
+    >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-[#E7E5E4] flex items-center justify-between gap-3">
+      <div
+        className="px-5 py-4 flex items-center justify-between gap-3 border-b"
+        style={{ borderColor: `${FOREST}10` }}
+      >
         <div className="min-w-0">
-          <h3 className="text-[var(--text-base)] font-bold text-[#1A1A1A]">Inventory</h3>
-          <p className="text-[11px] text-[#4F4B47] mt-0.5">
-            {totalItemCount} {totalItemCount === 1 ? "item" : "items"} across {rooms.length} {rooms.length === 1 ? "room" : "rooms"}
+          <p
+            className={`${QUOTE_EYEBROW_CLASS} mb-1`}
+            style={{ color: `${FOREST}50` }}
+          >
+            Move list
+          </p>
+          <h3 className="font-hero text-[18px] font-semibold leading-tight" style={{ color: WINE }}>
+            Inventory
+          </h3>
+          <p
+            className="text-[12px] mt-0.5"
+            style={{ color: TEXT_MUTED_ON_LIGHT }}
+          >
+            {totalItemCount} {totalItemCount === 1 ? "item" : "items"} across{" "}
+            {rooms.length} {rooms.length === 1 ? "room" : "rooms"}
           </p>
         </div>
         <button
           type="button"
           onClick={handleExport}
-          className="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#E7E5E4] text-[#555] hover:border-[#2C3E2D] hover:text-[#2C3E2D] transition-colors"
+          className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] border border-solid transition-colors hover:opacity-90"
+          style={{
+            borderColor: `${FOREST}22`,
+            color: FOREST,
+            backgroundColor: "transparent",
+          }}
         >
-          <DownloadSimple size={11} className="text-current" />
+          <DownloadSimple size={12} className="text-current shrink-0" />
           Export
         </button>
       </div>
@@ -333,7 +447,7 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
           return (
             <div
               key={room}
-              className="rounded-xl border overflow-hidden transition-all duration-150"
+              className="border overflow-hidden transition-all duration-150"
               style={{ borderColor: expanded ? "#E0DDD8" : "#E7E5E4" }}
             >
               {/* Room header */}
@@ -348,14 +462,25 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   {isOnSite && (
-                    <span className="shrink-0 w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: `${GOLD}20` }}>
-                      <Plus size={8} color={GOLD} />
+                    <span
+                      className="shrink-0 w-4 h-4 flex items-center justify-center"
+                      style={{ backgroundColor: `${FOREST}18` }}
+                    >
+                      <Plus size={8} color={FOREST} />
                     </span>
                   )}
-                  <h4 className="text-[12px] font-bold truncate" style={{ color: isOnSite ? GOLD : "#2C3E2D" }}>{room}</h4>
+                  <h4
+                    className="text-[13px] font-bold truncate"
+                    style={{ color: isOnSite ? FOREST : "#2C3E2D" }}
+                  >
+                    {room}
+                  </h4>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style={{ backgroundColor: `${GOLD}14`, color: GOLD }}>
+                  <span
+                    className="text-[11px] font-semibold px-1.5 py-0.5"
+                    style={{ backgroundColor: `${FOREST}12`, color: FOREST }}
+                  >
                     {count}
                   </span>
                   <CaretDown
@@ -382,8 +507,8 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                     </colgroup>
                     <thead>
                       <tr style={{ backgroundColor: "#F5F5F3" }}>
-                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] min-w-0">Item</th>
-                        <th className="text-[9px] font-bold uppercase tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
+                        <th className="text-[10px] font-bold uppercase tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] min-w-0">Item</th>
+                        <th className="text-[10px] font-bold uppercase tracking-widest text-[#5C5853] px-4 py-2.5 border-b border-[#EEEBE5] text-right w-14">Qty</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -399,10 +524,10 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
                               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAF8")}
                               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                             >
-                              <td className="px-4 py-3 text-[12.5px] font-medium text-[#2A2A2A] align-middle min-w-0 break-words">{uppercase(r.label)}</td>
+                              <td className="px-4 py-3 text-[14px] font-medium text-[#2A2A2A] align-middle min-w-0 break-words">{uppercase(r.label)}</td>
                               <td className="px-4 py-3 align-middle w-14">
                                 <span className="flex items-center justify-end">
-                                  <span className="text-[12.5px] font-semibold tabular-nums text-[#555]">{qty}</span>
+                                  <span className="text-[14px] font-semibold tabular-nums text-[#555]">{qty}</span>
                                 </span>
                               </td>
                             </tr>
@@ -418,27 +543,21 @@ export default function TrackInventory({ moveId, token, moveComplete = false }: 
         })}
       </div>
 
-      {/* Add Extra Item CTA */}
+      {/* Request change CTA */}
       {!moveComplete && (
         <div className="px-4 pb-4">
           <button
             type="button"
             onClick={() => setAddExtraOpen(true)}
-            className="w-full py-3 rounded-xl border border-dashed flex items-center justify-center gap-2 text-[12px] font-semibold transition-all hover:scale-[1.005] active:scale-[0.998]"
-            style={{ borderColor: "#D4D0C8", color: "#4F4B47" }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = GOLD;
-              (e.currentTarget as HTMLButtonElement).style.color = GOLD;
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${GOLD}06`;
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "#D4D0C8";
-              (e.currentTarget as HTMLButtonElement).style.color = "#4F4B47";
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+            className="w-full py-3 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] leading-none transition-opacity hover:opacity-80"
+            style={{
+              color: FOREST,
+              backgroundColor: `${FOREST}06`,
             }}
           >
-            <Plus size={11} weight="regular" className="text-current" />
-            Request extra item
+            <Plus size={12} weight="bold" className="shrink-0" aria-hidden />
+            Request change
+            <CaretRight size={12} weight="bold" className="shrink-0" aria-hidden />
           </button>
         </div>
       )}

@@ -1,71 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { QUOTE_EYEBROW_CLASS } from "@/app/quote/[quoteId]/quote-shared";
 import {
-  CheckCircle,
-  Circle,
-  Lightning,
-  Car,
-  Elevator,
-  Dog,
-  Vault,
-  Users,
-} from "@phosphor-icons/react";
+  PRE_MOVE_CHECKLIST,
+  type ChecklistItem,
+} from "@/lib/pre-move-checklist";
 
-export interface ChecklistItem {
-  id: string;
-  label: string;
-  detail: string;
-  iconName: string;
-}
-
-export const PRE_MOVE_CHECKLIST: ChecklistItem[] = [
-  {
-    id: "appliances",
-    label: "Disconnect appliances",
-    detail: "Unplug and defrost fridge at least 24 hours before the move",
-    iconName: "lightning",
-  },
-  {
-    id: "parking",
-    label: "Parking arranged at both locations",
-    detail: "Reserve elevator and loading dock if condo",
-    iconName: "car",
-  },
-  {
-    id: "elevator",
-    label: "Elevator booked (if applicable)",
-    detail: "Most condos require 48-hour notice for move bookings",
-    iconName: "elevator",
-  },
-  {
-    id: "pets_kids",
-    label: "Kids and pets supervised or away",
-    detail: "For everyone's safety during loading and unloading",
-    iconName: "dog",
-  },
-  {
-    id: "valuables",
-    label: "Valuables secured separately",
-    detail: "Jewelry, cash, medications, and important documents. Keep these with you.",
-    iconName: "vault",
-  },
-  {
-    id: "crew_info",
-    label: "I know my crew and arrival time",
-    detail: "",
-    iconName: "users",
-  },
-];
-
-const ICON_MAP: Record<string, React.ReactNode> = {
-  lightning: <Lightning size={15} />,
-  car: <Car size={15} />,
-  elevator: <Elevator size={15} />,
-  dog: <Dog size={15} />,
-  vault: <Vault size={15} />,
-  users: <Users size={15} />,
-};
+export type { ChecklistItem };
+export { PRE_MOVE_CHECKLIST };
 
 interface Props {
   moveId: string;
@@ -78,6 +21,42 @@ interface Props {
   copyVariant?: "move" | "delivery";
 }
 
+function CheckboxGlyph({
+  checked,
+  saving,
+}: {
+  checked: boolean;
+  saving: boolean;
+}) {
+  if (saving) {
+    return (
+      <span
+        className="flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center"
+        aria-hidden
+      >
+        <span className="h-4 w-4 border-2 border-[var(--tx3)] border-t-transparent rounded-full animate-spin" />
+      </span>
+    );
+  }
+  return (
+    <span
+      className={`flex h-5 w-5 shrink-0 mt-0.5 items-center justify-center rounded border-2 transition-colors ${
+        checked
+          ? "border-[#22c55e] bg-[#22c55e]"
+          : "border-[var(--tx3)] bg-transparent"
+      }`}
+      aria-hidden
+    >
+      {checked ? (
+        <span
+          className="mb-0.5 block h-2 w-1 border-b-2 border-r-2 border-white rotate-45"
+          style={{ marginLeft: "1px" }}
+        />
+      ) : null}
+    </span>
+  );
+}
+
 export default function PreMoveChecklist({
   moveId,
   token,
@@ -87,7 +66,9 @@ export default function PreMoveChecklist({
   moveDateStr,
   copyVariant = "move",
 }: Props) {
-  const [checked, setChecked] = useState<Record<string, boolean>>(initialChecked || {});
+  const [checked, setChecked] = useState<Record<string, boolean>>(
+    initialChecked || {},
+  );
   const [saving, setSaving] = useState<string | null>(null);
 
   const toggle = useCallback(
@@ -108,7 +89,7 @@ export default function PreMoveChecklist({
         setSaving(null);
       }
     },
-    [checked, moveId, token]
+    [checked, moveId, token],
   );
 
   const items = PRE_MOVE_CHECKLIST.map((item) => {
@@ -122,7 +103,8 @@ export default function PreMoveChecklist({
       } else if (item.id === "elevator") {
         out = {
           ...item,
-          detail: "Most condos require 48-hour notice for delivery or move bookings",
+          detail:
+            "Most condos require 48-hour notice for delivery or move bookings",
         };
       }
     }
@@ -157,28 +139,35 @@ export default function PreMoveChecklist({
         style={{
           background: allDone
             ? "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.04))"
-            : "linear-gradient(135deg, rgba(201,169,98,0.08), rgba(201,169,98,0.04))",
+            : "linear-gradient(135deg, rgba(44,62,45,0.06), rgba(44,62,45,0.03))",
         }}
       >
         <div>
-          <p className="text-[9px] font-bold tracking-[0.16em] uppercase text-[var(--gold)] mb-1">
+          <p
+            className={`${QUOTE_EYEBROW_CLASS} mb-1`}
+            style={{ color: "#2C3E2D" }}
+          >
             {copyVariant === "delivery" ? "Delivery Day Prep" : "Move Day Prep"}
           </p>
-          <h3 className="text-[15px] font-bold text-[var(--tx)]">
-            {copyVariant === "delivery" ? "Get Ready for Your Delivery" : "Get Ready for Your Move"}
+          <h3 className="text-[17px] font-bold text-[var(--tx)]">
+            {copyVariant === "delivery"
+              ? "Get Ready for Your Delivery"
+              : "Get Ready for Your Move"}
           </h3>
-          <p className="text-[11px] text-[var(--tx3)] mt-0.5">
+          <p className="text-[12px] text-[var(--tx3)] mt-0.5">
             Complete before {moveDate}
           </p>
         </div>
         <div className="shrink-0 text-right">
           <div
             className="text-[22px] font-bold"
-            style={{ color: allDone ? "#22c55e" : "var(--gold)" }}
+            style={{ color: allDone ? "#22c55e" : "#2C3E2D" }}
           >
             {completedCount}/{totalCount}
           </div>
-          <div className="text-[9px] text-[var(--tx3)] uppercase tracking-wider">Complete</div>
+          <div className={`${QUOTE_EYEBROW_CLASS} text-[var(--tx3)]`}>
+            Complete
+          </div>
         </div>
       </div>
 
@@ -190,7 +179,7 @@ export default function PreMoveChecklist({
             width: `${(completedCount / totalCount) * 100}%`,
             background: allDone
               ? "linear-gradient(90deg, #22C55E, #16A34A)"
-              : "linear-gradient(90deg, #2C3E2D, #D4B56C)",
+              : "linear-gradient(90deg, #2C3E2D, #1C3A2B)",
           }}
         />
       </div>
@@ -204,47 +193,39 @@ export default function PreMoveChecklist({
           return (
             <button
               key={item.id}
+              type="button"
               onClick={() => toggle(item.id)}
               disabled={isSaving}
               className="w-full flex items-start gap-3 px-4 py-3.5 text-left transition-all hover:bg-[var(--brd)]/10"
             >
-              <span
-                className="shrink-0 mt-0.5 transition-colors"
-                style={{ color: isChecked ? "#22c55e" : "var(--tx3)" }}
-              >
-                {isSaving ? (
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : isChecked ? (
-                  <CheckCircle size={18} weight="fill" />
-                ) : (
-                  <Circle size={18} />
-                )}
-              </span>
+              <CheckboxGlyph checked={isChecked} saving={isSaving} />
               <div className="flex-1 min-w-0">
                 <p
-                  className={`text-[13px] font-semibold leading-tight ${
-                    isChecked ? "line-through text-[var(--tx3)]" : "text-[var(--tx)]"
+                  className={`text-[14px] font-semibold leading-tight ${
+                    isChecked ? "text-[var(--tx3)]" : "text-[var(--tx)]"
                   }`}
+                  style={
+                    isChecked ? { textDecoration: "line-through" } : undefined
+                  }
                 >
                   {item.label}
                 </p>
                 {item.detail && (
-                  <p className="text-[11px] text-[var(--tx3)] mt-0.5 leading-snug">{item.detail}</p>
+                  <p className="text-[12px] text-[var(--tx3)] mt-0.5 leading-snug">
+                    {item.detail}
+                  </p>
                 )}
               </div>
-              <span className="shrink-0 text-[var(--tx3)] mt-0.5">
-                {ICON_MAP[item.iconName]}
-              </span>
             </button>
           );
         })}
       </div>
 
       {allDone && (
-        <div className="px-4 py-3 bg-[#22c55e]/5 border-t border-[#22c55e]/20 flex items-center gap-2">
-          <CheckCircle size={14} color="#22c55e" weight="fill" />
-          <span className="text-[12px] font-semibold text-[#22c55e]">
-            All set. Your crew has been notified you&apos;re ready!
+        <div className="px-4 py-3 bg-[#22c55e]/5 border-t border-[#22c55e]/20 border-l-4 border-l-[#22c55e]">
+          <span className="text-[13px] font-semibold text-[#22c55e] leading-snug">
+            Prep checklist complete — we&apos;ll notify your coordinator and
+            ops so your crew can see you&apos;re ready for move day.
           </span>
         </div>
       )}

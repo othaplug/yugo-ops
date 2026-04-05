@@ -4,10 +4,21 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import YugoLogo from "@/components/YugoLogo";
+import YugoMarketingFooter from "@/components/YugoMarketingFooter";
 import { WINE, FOREST, GOLD, CREAM } from "@/lib/client-theme";
-import { CircleNotch, WarningCircle, MapPin, CalendarBlank, ClipboardText } from "@phosphor-icons/react";
+import {
+  CircleNotch,
+  WarningCircle,
+  MapPin,
+  CalendarBlank,
+  ClipboardText,
+} from "@phosphor-icons/react";
 
-export default function TrackingLookup() {
+export default function TrackingLookup({
+  companyContactEmail = process.env.NEXT_PUBLIC_YUGO_EMAIL || "support@helloyugo.com",
+}: {
+  companyContactEmail?: string;
+} = {}) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,9 +56,11 @@ export default function TrackingLookup() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: CREAM }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ backgroundColor: CREAM }}
+    >
       <div className="flex-1 flex flex-col items-center justify-center px-5 py-12">
-
         {/* Logo, no card, no border */}
         <div className="mb-8">
           <Link href="/">
@@ -63,8 +76,12 @@ export default function TrackingLookup() {
           >
             Track Your Service
           </h1>
-          <p className="text-[13px] leading-relaxed opacity-65" style={{ color: FOREST }}>
-            Enter your tracking number to see real-time status, live crew location, and delivery details.
+          <p
+            className="text-[13px] leading-relaxed opacity-65"
+            style={{ color: FOREST }}
+          >
+            Enter your tracking number to see real-time status, live crew
+            location, and delivery details.
           </p>
         </div>
 
@@ -75,7 +92,10 @@ export default function TrackingLookup() {
               ref={inputRef}
               type="text"
               value={code}
-              onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(""); }}
+              onChange={(e) => {
+                setCode(e.target.value.toUpperCase());
+                setError("");
+              }}
               placeholder="e.g. MV1234 or DLV-4467"
               autoFocus
               className="w-full px-5 py-3.5 pr-[90px] rounded-full text-[var(--text-base)] font-semibold tracking-wide placeholder:font-normal placeholder:opacity-40 focus:outline-none transition-all"
@@ -101,8 +121,13 @@ export default function TrackingLookup() {
               style={{ backgroundColor: WINE, color: "#FAF8F4" }}
             >
               {loading ? (
-                <CircleNotch size={14} className="animate-spin text-[#FAF8F4]" />
-              ) : "Track"}
+                <CircleNotch
+                  size={14}
+                  className="animate-spin text-[#FAF8F4]"
+                />
+              ) : (
+                "Track"
+              )}
             </button>
           </div>
 
@@ -118,31 +143,64 @@ export default function TrackingLookup() {
         <div className="flex flex-col items-center gap-8 mt-14 w-full max-w-lg">
           <div className="flex flex-row items-center justify-center gap-10 sm:gap-14 w-full">
             {[
-              { Icon: MapPin, title: "Live GPS", desc: "Real-time crew location" },
-              { Icon: CalendarBlank, title: "ETA & Schedule", desc: "Date, time window" },
+              {
+                Icon: MapPin,
+                title: "Live GPS",
+                desc: "Real-time crew location",
+              },
+              {
+                Icon: CalendarBlank,
+                title: "ETA & Schedule",
+                desc: "Date, time window",
+              },
             ].map((c) => {
               const HintIcon = c.Icon;
               return (
-              <div key={c.title} className="flex flex-col items-center gap-2 text-center">
-                <HintIcon size={18} color={WINE} className="opacity-[0.55]" />
-                <div className="text-[11px] font-semibold" style={{ color: FOREST }}>{c.title}</div>
-                <div className="text-[10px] opacity-50" style={{ color: FOREST }}>{c.desc}</div>
-              </div>
-            );})}
+                <div
+                  key={c.title}
+                  className="flex flex-col items-center gap-2 text-center"
+                >
+                  <HintIcon size={18} color={WINE} className="opacity-[0.55]" />
+                  <div
+                    className="text-[11px] font-semibold"
+                    style={{ color: FOREST }}
+                  >
+                    {c.title}
+                  </div>
+                  <div
+                    className="text-[10px] opacity-50"
+                    style={{ color: FOREST }}
+                  >
+                    {c.desc}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <div className="flex flex-col items-center gap-2 text-center">
             <ClipboardText size={18} color={WINE} className="opacity-[0.55]" />
-            <div className="text-[11px] font-semibold" style={{ color: FOREST }}>Status Updates</div>
-            <div className="text-[10px] opacity-50" style={{ color: FOREST }}>Step-by-step progress</div>
+            <div
+              className="text-[11px] font-semibold"
+              style={{ color: FOREST }}
+            >
+              Status Updates
+            </div>
+            <div className="text-[10px] opacity-50" style={{ color: FOREST }}>
+              Step-by-step progress
+            </div>
           </div>
         </div>
       </div>
 
-      <footer className="text-center py-5">
-        <div className="flex items-center justify-center gap-1.5 opacity-30">
-          <span className="text-[10px]" style={{ color: FOREST }}>Powered by</span>
-          <YugoLogo size={13} variant="gold" />
-        </div>
+      <footer className="text-center py-5 px-4">
+        <YugoMarketingFooter
+          contactEmail={companyContactEmail}
+          logoVariant="wine"
+          onLightBackground
+          logoSize={13}
+          mutedColor={`${FOREST}99`}
+          linkColor={FOREST}
+        />
       </footer>
     </div>
   );

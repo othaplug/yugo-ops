@@ -78,12 +78,37 @@ const CONFIG: Record<
   },
 };
 
+function isEstateTier(t: string | null | undefined): boolean {
+  return String(t || "").toLowerCase().trim() === "estate";
+}
+
 /** Email headline: move copy never references delivery; delivery copy never references a move. */
 function headlineForTrackingCheckpoint(
   status: TrackingStatus,
   jobType: "move" | "delivery",
+  estateMove = false,
 ): string {
   if (jobType === "move") {
+    if (estateMove) {
+      switch (status) {
+        case "en_route_to_pickup":
+          return "Your Estate crew is on the way. We will keep you informed at every step.";
+        case "arrived_at_pickup":
+          return "Your crew has arrived and is ready to begin your Estate move.";
+        case "en_route_to_destination":
+          return "Everything is loaded. Your crew is now heading to your new home.";
+        case "arrived_at_destination":
+          return "Your crew has arrived and is ready to unload.";
+        case "completed":
+          return "Move complete. It was our privilege today.";
+        case "en_route":
+          return "Your Estate crew is on the way. We will notify you when they arrive.";
+        case "arrived":
+          return "Your crew has arrived at your address.";
+        default:
+          break;
+      }
+    }
     switch (status) {
       case "en_route_to_pickup":
         return "Your crew is on the way. We will keep you updated as your move day unfolds.";
@@ -198,15 +223,20 @@ export async function notifyOnCheckpoint(
   let moveToAddress: string | undefined;
   let moveClientName: string | undefined;
 
+  let estateMove = false;
+
   if (jobType === "move") {
     const { data: move } = await admin
       .from("moves")
       .select(
-        "id, client_email, move_code, from_address, to_address, client_name",
+        "id, client_email, move_code, from_address, to_address, client_name, tier_selected",
       )
       .eq("id", jobId)
       .single();
     if (move) {
+      estateMove = isEstateTier(
+        (move as { tier_selected?: string | null }).tier_selected,
+      );
       clientEmail = move.client_email || null;
       trackUrl = `${getEmailBaseUrl()}/track/move/${move.move_code || move.id}?token=${signTrackToken("move", move.id)}`;
       moveCode = move.move_code || move.id;
@@ -242,19 +272,31 @@ export async function notifyOnCheckpoint(
     status === "completed"
       ? jobType === "delivery"
         ? `Your delivery is complete - ${formatJobId(moveCode || jobId, jobType)}`
-        : `Your move is complete - ${formatJobId(moveCode || jobId, jobType)}`
-      : `Your crew update - ${formatJobId(moveCode || jobId, jobType)}`;
+        : estateMove
+          ? `Your Estate move is complete - ${formatJobId(moveCode || jobId, jobType)}`
+          : `Your move is complete - ${formatJobId(moveCode || jobId, jobType)}`
+      : estateMove && jobType === "move"
+        ? `Your Estate move update - ${formatJobId(moveCode || jobId, jobType)}`
+        : `Your crew update - ${formatJobId(moveCode || jobId, jobType)}`;
 
-  const headline = headlineForTrackingCheckpoint(status, jobType);
+  const headline = headlineForTrackingCheckpoint(
+    status,
+    jobType,
+    estateMove && jobType === "move",
+  );
   const body =
     status === "completed"
       ? jobType === "delivery"
         ? "It was a pleasure taking care of you today. Thank you for choosing Yugo."
-        : "It was a pleasure taking care of you today. Your documents and receipt are available in your portal."
+        : estateMove
+          ? "It was a pleasure caring for your home today. Your documents and receipt remain available in your portal."
+          : "It was a pleasure taking care of you today. Your documents and receipt are available in your portal."
       : jobType === "delivery"
         ? "Your crew has provided a live update. Track your delivery in real time using the link below."
-        : "Your crew has provided a live update. Track your move in real time using the link below.";
-  const html = statusUpdateEmailHtml({
+        : estateMove
+          ? "Your crew has shared a live update. Follow every step on your Estate tracker below."
+          : "Your crew has provided a live update. Track your move in real time using the link below.";
+  const htmlPremium = statusUpdateEmailHtml({
     headline,
     body,
     ctaUrl: trackUrl,
@@ -265,6 +307,20 @@ export async function notifyOnCheckpoint(
       : undefined,
     includeFooter: false,
     eyebrow: status === "completed" ? "Complete" : "Live update",
+    tone: "premium",
+  });
+  const htmlEstate = statusUpdateEmailHtml({
+    headline,
+    body,
+    ctaUrl: trackUrl,
+    ctaLabel: trackUrl
+      ? jobType === "delivery"
+        ? PREMIUM_TRACK_DELIVERY_CTA_LABEL
+        : PREMIUM_TRACK_CTA_LABEL
+      : undefined,
+    includeFooter: false,
+    eyebrow: status === "completed" ? "Estate complete" : "Estate live update",
+    tone: "estate",
   });
 
   const toSend: string[] = [];
@@ -301,11 +357,13 @@ export async function notifyOnCheckpoint(
   const emailFrom = await getEmailFrom();
   for (const to of toSendGeneric) {
     try {
+      const useEstateSkin =
+        estateMove && jobType === "move" && to === clientEmail;
       await resend.emails.send({
         from: emailFrom,
         to,
         subject,
-        html,
+        html: useEstateSkin ? htmlEstate : htmlPremium,
         headers: { Precedence: "auto", "X-Auto-Response-Suppress": "All" },
       });
     } catch {}

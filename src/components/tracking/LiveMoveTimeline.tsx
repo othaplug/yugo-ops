@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { QUOTE_EYEBROW_CLASS } from "@/app/quote/[quoteId]/quote-shared";
 
 export interface TimelineEntry {
   id?: string;
@@ -61,6 +62,8 @@ interface Props {
   initialEntries?: TimelineEntry[];
   /** Use delivery-focused timeline headings (logistics / B2B / single-item / white glove). */
   useDeliveryCopy?: boolean;
+  /** Dark wine card + cream type (Estate live tracking). */
+  isEstate?: boolean;
 }
 
 function formatTime(isoOrTime: string): string {
@@ -84,6 +87,7 @@ export default function LiveMoveTimeline({
   currentStatus,
   initialEntries,
   useDeliveryCopy = false,
+  isEstate = false,
 }: Props) {
   const [entries, setEntries] = useState<TimelineEntry[]>(initialEntries || []);
 
@@ -114,32 +118,43 @@ export default function LiveMoveTimeline({
   );
   const currentEntry = entries.find((e) => e.status === "current");
 
-  // Colors matching the client portal light theme
-  const GOLD = "#2C3E2D";
+  // Colors: light track uses forest accents; Estate uses cream on wine.
+  const FOREST_HEX = "#2C3E2D";
   const GREEN = "#22C55E";
   const FOREST = "#1C3A2B";
+  const CREAM = "#EDE6DC";
+  const WINE_DEEP = "#321018";
+
+  const accent = isEstate ? CREAM : FOREST_HEX;
+  const headingInk = isEstate ? CREAM : FOREST;
+  const borderOuter = isEstate ? "rgba(237,230,220,0.14)" : `${FOREST}15`;
+  const headerBg = isEstate
+    ? "linear-gradient(135deg, rgba(237,230,220,0.08), rgba(237,230,220,0.02))"
+    : `linear-gradient(135deg, ${FOREST_HEX}0C, ${FOREST_HEX}06)`;
 
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ border: `1px solid ${FOREST}15` }}
+      style={{ border: `1px solid ${borderOuter}` }}
     >
       {/* Header */}
       <div
         className="px-4 py-4 flex items-center justify-between gap-3"
-        style={{ background: `linear-gradient(135deg, ${GOLD}0C, ${GOLD}06)` }}
+        style={{ background: headerBg }}
       >
         <div>
           <p
-            className="text-[9px] font-bold tracking-[0.16em] uppercase mb-1"
-            style={{ color: GOLD }}
+            className={`${QUOTE_EYEBROW_CLASS} mb-1`}
+            style={{ color: accent }}
           >
             {isLive ? "Live" : useDeliveryCopy ? "Delivery" : "Move"} Timeline
           </p>
-          <h3 className="text-[15px] font-bold" style={{ color: FOREST }}>
+          <h3 className="text-[15px] font-bold" style={{ color: headingInk }}>
             {useDeliveryCopy
               ? "Your Delivery, Step by Step"
-              : "Your Move, Step by Step"}
+              : isEstate
+                ? "Your Estate Move, Step by Step"
+                : "Your Move, Step by Step"}
           </h3>
         </div>
         {isLive && (
@@ -158,7 +173,7 @@ export default function LiveMoveTimeline({
               />
             </span>
             <span
-              className="text-[10px] font-semibold"
+              className="text-[11px] font-semibold"
               style={{ color: GREEN }}
             >
               Live
@@ -170,7 +185,7 @@ export default function LiveMoveTimeline({
       {/* Timeline */}
       <div
         className="px-4 py-5 space-y-0"
-        style={{ backgroundColor: "#F9EDE4" }}
+        style={{ backgroundColor: isEstate ? WINE_DEEP : "#F9EDE4" }}
       >
         {entries.map((entry, index) => {
           const isLast = index === entries.length - 1;
@@ -179,14 +194,24 @@ export default function LiveMoveTimeline({
           const isUpcoming = entry.status === "upcoming";
 
           // Dot appearance
-          const dotBg = isDone ? GREEN : isCurrent ? GOLD : "transparent";
-          const dotBorder = isDone ? GREEN : isCurrent ? GOLD : `${FOREST}25`;
+          const dotBg = isDone ? GREEN : isCurrent ? accent : "transparent";
+          const dotBorder = isDone
+            ? GREEN
+            : isCurrent
+              ? accent
+              : isEstate
+                ? "rgba(237,230,220,0.25)"
+                : `${FOREST}25`;
           // Connector: gold for completed→current transition, faint for upcoming
           const connectorColor = isDone
             ? `${GREEN}50`
             : isCurrent
-              ? `${GOLD}40`
-              : `${FOREST}12`;
+              ? isEstate
+                ? "rgba(237,230,220,0.35)"
+                : `${FOREST_HEX}40`
+              : isEstate
+                ? "rgba(237,230,220,0.1)"
+                : `${FOREST}12`;
 
           return (
             <div key={entry.id || index} className="flex gap-3.5">
@@ -204,7 +229,9 @@ export default function LiveMoveTimeline({
                     background: dotBg,
                     border: `2px solid ${dotBorder}`,
                     boxShadow: isCurrent
-                      ? `0 0 0 4px ${GOLD}20`
+                      ? isEstate
+                        ? "0 0 0 4px rgba(237,230,220,0.15)"
+                        : `0 0 0 4px ${FOREST_HEX}20`
                       : isDone
                         ? `0 0 0 3px ${GREEN}14`
                         : "none",
@@ -217,7 +244,13 @@ export default function LiveMoveTimeline({
                   {isUpcoming && (
                     <span
                       className="rounded-full"
-                      style={{ width: 6, height: 6, background: `${FOREST}20` }}
+                      style={{
+                        width: 6,
+                        height: 6,
+                        background: isEstate
+                          ? "rgba(237,230,220,0.2)"
+                          : `${FOREST}20`,
+                      }}
                     />
                   )}
                   {/* Inner white dot for current/done */}
@@ -255,21 +288,29 @@ export default function LiveMoveTimeline({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p
-                      className="text-[13px] font-semibold leading-tight"
+                      className="text-[14px] font-semibold leading-tight"
                       style={{
                         color: isDone
-                          ? FOREST
+                          ? isEstate
+                            ? CREAM
+                            : FOREST
                           : isCurrent
-                            ? GOLD
-                            : `${FOREST}50`,
+                            ? accent
+                            : isEstate
+                              ? "rgba(237,230,220,0.45)"
+                              : `${FOREST}50`,
                       }}
                     >
                       {entry.label}
                     </p>
                     {isCurrent && (
                       <p
-                        className="text-[10px] font-semibold mt-0.5"
-                        style={{ color: `${GOLD}90` }}
+                        className="text-[11px] font-semibold mt-0.5"
+                        style={{
+                          color: isEstate
+                            ? "rgba(237,230,220,0.65)"
+                            : `${FOREST_HEX}90`,
+                        }}
                       >
                         In progress
                       </p>
@@ -277,8 +318,14 @@ export default function LiveMoveTimeline({
                   </div>
                   {entry.time && !isUpcoming && (
                     <span
-                      className="text-[11px] font-mono shrink-0 tabular-nums"
-                      style={{ color: isCurrent ? GOLD : `${FOREST}55` }}
+                      className="text-[12px] font-mono shrink-0 tabular-nums"
+                      style={{
+                        color: isCurrent
+                          ? accent
+                          : isEstate
+                            ? "rgba(237,230,220,0.5)"
+                            : `${FOREST}55`,
+                      }}
                     >
                       {formatTime(entry.time)}
                     </span>
@@ -293,9 +340,21 @@ export default function LiveMoveTimeline({
       {isLive && currentEntry && (
         <div
           className="px-4 py-3"
-          style={{ background: `${GOLD}06`, borderTop: `1px solid ${GOLD}15` }}
+          style={{
+            background: isEstate
+              ? "rgba(237,230,220,0.04)"
+              : `${FOREST_HEX}06`,
+            borderTop: isEstate
+              ? "1px solid rgba(237,230,220,0.1)"
+              : `1px solid ${FOREST_HEX}15`,
+          }}
         >
-          <p className="text-[11px]" style={{ color: `${FOREST}55` }}>
+          <p
+            className="text-[12px]"
+            style={{
+              color: isEstate ? "rgba(237,230,220,0.5)" : `${FOREST}55`,
+            }}
+          >
             Updates automatically every 30 seconds
           </p>
         </div>

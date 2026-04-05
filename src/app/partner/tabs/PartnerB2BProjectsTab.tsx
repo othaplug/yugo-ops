@@ -164,11 +164,11 @@ const DELIVERY_METHOD_LABELS: Record<string, string> = {
 
 const PROJECT_STATUS_COLORS: Record<string, string> = {
   draft:     "bg-[var(--tx3)]/10 text-[var(--tx3)]",
-  proposed:  "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  active:    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  on_hold:   "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-  completed: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-  invoiced:  "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+  proposed:  "bg-amber-500/10 text-amber-600",
+  active:    "bg-emerald-500/10 text-emerald-600",
+  on_hold:   "bg-orange-500/10 text-orange-600",
+  completed: "bg-blue-500/10 text-blue-600",
+  invoiced:  "bg-purple-500/10 text-purple-600",
 };
 
 const PROJECT_STATUS_LABELS: Record<string, string> = {
@@ -620,7 +620,7 @@ export default function PartnerB2BProjectsTab({
   const NewProjectModal = showNewProject && typeof document !== "undefined" ? createPortal(
     <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => setShowNewProject(false)}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
+        className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
@@ -680,7 +680,7 @@ export default function PartnerB2BProjectsTab({
   const EditProjectModal = showEditProject && selectedProject && typeof document !== "undefined" ? createPortal(
     <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => setShowEditProject(false)}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
+        className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[440px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] px-4 sm:px-6 py-4 flex items-center justify-between shrink-0 z-10">
@@ -744,7 +744,7 @@ export default function PartnerB2BProjectsTab({
 
   const AddItemModal = showAddItem && selectedProject && typeof document !== "undefined" ? createPortal(
     <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => { setShowAddItem(false); resetAddItem(); }}>
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[520px] max-h-[92vh] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-[#E8E4DF] flex items-center justify-between px-5 py-4 shrink-0 z-10">
           <h3 className="font-hero text-[20px] sm:text-[22px] font-bold text-[#1A1A1A]">Add Item</h3>
           <button type="button" onClick={() => { setShowAddItem(false); resetAddItem(); }}
@@ -936,7 +936,7 @@ export default function PartnerB2BProjectsTab({
 
   const StatusUpdateModal = statusItem && typeof document !== "undefined" ? createPortal(
     <div className="fixed inset-0 z-[99990] flex min-h-0 items-center justify-center bg-black/50 p-4 sm:p-5" onClick={() => setStatusItem(null)}>
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[#FFFBF7] rounded-t-lg sm:rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[420px] overflow-hidden flex flex-col mx-0 sm:mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E4DF] shrink-0">
           <div>
             <h3 className="font-hero text-[20px] font-bold text-[#1A1A1A]">Update Status</h3>
@@ -987,7 +987,7 @@ export default function PartnerB2BProjectsTab({
 
   const SchedulePromptModal = scheduleItem && typeof document !== "undefined" ? createPortal(
     <div className="fixed inset-0 z-[99990] flex items-center justify-center bg-black/50 p-4" onClick={() => setScheduleItem(null)}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-[380px] p-6 text-center" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[#FFFBF7] rounded-lg border border-[#2C3E2D]/10 shadow-[0_24px_80px_rgba(44,62,45,0.14)] w-full max-w-[380px] p-6 text-center" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">
           {scheduleMode === "pickup" ? "Ready for pickup!" : "Schedule delivery?"}
         </h3>
@@ -1144,7 +1144,7 @@ export default function PartnerB2BProjectsTab({
             <div className="text-[11px] flex flex-wrap gap-x-3 gap-y-0.5">
               {item.vendor_tracking_number && (
                 trackingUrl
-                  ? <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="text-[var(--gold)] hover:underline font-mono">
+                  ? <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="text-[#5C1A33] hover:underline font-mono">
                       {item.vendor_carrier ? `${item.vendor_carrier}: ` : ""}{item.vendor_tracking_number}
                     </a>
                   : <span className="text-[var(--tx3)] font-mono">{item.vendor_tracking_number}</span>
@@ -1167,11 +1167,11 @@ export default function PartnerB2BProjectsTab({
                 placeholder="Add a note about this item…"
                 rows={2}
                 autoFocus
-                className="w-full px-3 py-2 bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] outline-none resize-none focus:border-[var(--gold)]"
+                className="w-full px-3 py-2 bg-[var(--card)] border border-[var(--brd)] rounded-lg text-[12px] text-[var(--tx)] outline-none resize-none focus:border-[#5C1A33]/35"
               />
               <div className="flex gap-2">
                 <button type="button" onClick={submitItemNote} disabled={noteSaving || !noteItemText.trim()}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] disabled:opacity-60">
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-[#2C3E2D] text-white disabled:opacity-60">
                   {noteSaving ? "Saving…" : "Save Note"}
                 </button>
                 <button type="button" onClick={() => { setNoteItemId(null); setNoteItemText(""); }}
@@ -1187,21 +1187,21 @@ export default function PartnerB2BProjectsTab({
             <button
               type="button"
               onClick={() => { setStatusItem(item); setNewStatus(getItemStatus(item)); setStatusNotes(""); }}
-              className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)] transition-colors"
+              className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx2)] hover:border-[#2C3E2D]/35 transition-colors"
             >
               Update Status
             </button>
 
             {st === "ready_for_pickup" && onScheduleDelivery && (
               <button type="button" onClick={() => { setScheduleItem(item); setScheduleMode("pickup"); }}
-                className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
+                className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[#2C3E2D] text-white">
                 Schedule pickup
               </button>
             )}
 
             {WAREHOUSE_STATUSES.includes(st) && onScheduleDelivery && (
               <button type="button" onClick={() => { setScheduleItem(item); setScheduleMode("delivery"); }}
-                className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
+                className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
                 Schedule delivery
               </button>
             )}
@@ -1209,7 +1209,7 @@ export default function PartnerB2BProjectsTab({
             <button
               type="button"
               onClick={() => { setNoteItemId(isAddingNote ? null : item.id); setNoteItemText(""); }}
-              className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] transition-colors"
+              className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx3)] hover:border-[#2C3E2D]/35 transition-colors"
             >
               <MessageSquare className="inline w-3 h-3 mr-1 -mt-0.5" />Add note
             </button>
@@ -1233,7 +1233,7 @@ export default function PartnerB2BProjectsTab({
                   }
                 }}
                 disabled={viewPhotosLoading}
-                className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx3)] hover:border-[var(--gold)] transition-colors disabled:opacity-60"
+                className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx3)] hover:border-[#2C3E2D]/35 transition-colors disabled:opacity-60"
               >
                 <Camera className="inline w-3 h-3 mr-1 -mt-0.5" />Photos ({item.photo_urls!.length})
               </button>
@@ -1282,10 +1282,10 @@ export default function PartnerB2BProjectsTab({
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[10px] text-[var(--tx3)] bg-[var(--bg)] rounded-lg border border-[var(--brd)]/50">
                   {contactItem.vendor_contact_name && <span className="font-medium text-[var(--tx2)]">{contactItem.vendor_contact_name}</span>}
                   {contactItem.vendor_contact_phone && (
-                    <a href={`tel:${contactItem.vendor_contact_phone}`} className="text-[var(--gold)] hover:underline">{contactItem.vendor_contact_phone}</a>
+                    <a href={`tel:${contactItem.vendor_contact_phone}`} className="text-[#5C1A33] hover:underline">{contactItem.vendor_contact_phone}</a>
                   )}
                   {contactItem.vendor_contact_email && (
-                    <a href={`mailto:${contactItem.vendor_contact_email}`} className="text-[var(--gold)] hover:underline">{contactItem.vendor_contact_email}</a>
+                    <a href={`mailto:${contactItem.vendor_contact_email}`} className="text-[#5C1A33] hover:underline">{contactItem.vendor_contact_email}</a>
                   )}
                   {contactItem.vendor_pickup_window && <span>· {contactItem.vendor_pickup_window}</span>}
                 </div>
@@ -1444,7 +1444,7 @@ export default function PartnerB2BProjectsTab({
         <div>
           {/* Back */}
           <button onClick={() => setSelectedProject(null)}
-            className="flex items-center gap-1 text-[12px] text-[var(--tx3)] hover:text-[var(--gold)] mb-4 transition-colors">
+            className="flex items-center gap-1 text-[12px] text-[var(--tx3)] hover:text-[#5C1A33] mb-4 transition-colors">
             <CaretLeft size={14} weight="regular" />
             Back to Projects
           </button>
@@ -1453,7 +1453,7 @@ export default function PartnerB2BProjectsTab({
           <div className="mb-4">
             <div className="flex items-start justify-between gap-3 mb-1">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <span className="text-[11px] font-semibold text-[var(--gold)]">{p.project_number}</span>
+                <span className="text-[11px] font-semibold text-[#5C1A33]">{p.project_number}</span>
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${PROJECT_STATUS_COLORS[p.status] || ""}`}>
                 {PROJECT_STATUS_LABELS[p.status] || getDisplayLabel(p.status)}
               </span>
@@ -1469,7 +1469,7 @@ export default function PartnerB2BProjectsTab({
               )}
               </div>
               <button type="button" onClick={openEditProject}
-                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--tx2)] border border-[var(--brd)] hover:bg-[var(--card)] hover:border-[var(--gold)]/40 transition-colors">
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--tx2)] border border-[var(--brd)] hover:bg-[var(--card)] hover:border-[#2C3E2D]/30 transition-colors">
                 <Pencil size={12} /> Edit
               </button>
             </div>
@@ -1499,7 +1499,7 @@ export default function PartnerB2BProjectsTab({
                 { label: "Received",   value: receivedItems, color: "text-emerald-500" },
                 { label: "In Transit", value: inTransitItems,color: "text-sky-500" },
                 { label: "Pending",    value: pendingItems,  color: "text-[var(--tx3)]" },
-                { label: "Yugo",       value: yugoItems,     color: "text-[var(--gold)]" },
+                { label: "Yugo",       value: yugoItems,     color: "text-[#5C1A33]" },
                 { label: "Issues",     value: issueItems,    color: issueItems > 0 ? "text-red-500" : "text-[var(--tx3)]" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-[var(--card)] border border-[var(--brd)] rounded-xl p-3 text-center">
@@ -1526,9 +1526,9 @@ export default function PartnerB2BProjectsTab({
 
           {/* Upsell banner */}
           {nonYugoItems.length > 0 && onScheduleDelivery && (
-            <div className="mb-4 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-4">
+            <div className="mb-4 rounded-sm border border-[#5C1A33]/20 bg-[#5C1A33]/[0.06] p-4">
               <div className="flex items-start gap-3">
-                <Sparkle className="w-5 h-5 text-[var(--gold)] shrink-0 mt-0.5" weight="duotone" aria-hidden />
+                <Sparkle className="w-5 h-5 text-[#5C1A33] shrink-0 mt-0.5" weight="duotone" aria-hidden />
                 <div className="flex-1">
                   <div className="text-[12px] font-semibold text-[var(--tx)]">
                     {nonYugoItems.length} item{nonYugoItems.length > 1 ? "s" : ""} tracked manually
@@ -1537,7 +1537,7 @@ export default function PartnerB2BProjectsTab({
                     Want Yugo to handle pickup and delivery with full tracking, photos, and proof of delivery?
                   </p>
                   <button onClick={() => onScheduleDelivery(nonYugoItems.map((i) => i.item_name).join(", "))}
-                    className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)]">
+                    className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[#2C3E2D] text-white">
                     Convert to Yugo Delivery →
                   </button>
                 </div>
@@ -1551,7 +1551,7 @@ export default function PartnerB2BProjectsTab({
               <button key={v} onClick={() => setGroupBy(v)}
                 className={`px-4 py-2.5 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors -mb-px ${
                   groupBy === v
-                    ? "border-[var(--gold)] text-[var(--gold)]"
+                    ? "border-[#5C1A33] text-[#5C1A33]"
                     : "border-transparent text-[var(--tx3)] hover:text-[var(--tx)]"
                 }`}>
                 {v === "vendor" ? "By Vendor" : v === "room" ? "By Room" : v === "status" ? "By Status" : v === "timeline" ? "Timeline" : "Gantt"}
@@ -1569,7 +1569,7 @@ export default function PartnerB2BProjectsTab({
             <div>
               <div className="flex gap-2 mb-4">
                 <button onClick={() => { setShowNoteForm(!showNoteForm); setNoteType("note_added"); }}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx2)] hover:border-[var(--gold)]">
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--card)] border border-[var(--brd)] text-[var(--tx2)] hover:border-[#2C3E2D]/35">
                   + Add Note
                 </button>
                 <button onClick={() => { setShowNoteForm(!showNoteForm); setNoteType("issue_flagged"); }}
@@ -1620,7 +1620,7 @@ export default function PartnerB2BProjectsTab({
             <div>
               <div className="flex justify-end mb-3">
                 <button type="button" onClick={() => setShowAddItem(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors">
                   <Plus className="w-[13px] h-[13px]" /> Add Item
                 </button>
               </div>
@@ -1662,7 +1662,7 @@ export default function PartnerB2BProjectsTab({
           <p className="text-[var(--text-base)] text-[var(--tx3)]">No active projects</p>
           <p className="text-[12px] text-[var(--tx3)]/60 mt-1">Create your first project to start coordinating multi-vendor deliveries</p>
           <button type="button" onClick={() => setShowNewProject(true)}
-            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors">
             <Plus className="w-[14px] h-[14px]" /> New Project
           </button>
         </div>
@@ -1676,14 +1676,14 @@ export default function PartnerB2BProjectsTab({
       {NewProjectModal}
       {loadingDetail && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-[var(--bg)]/70">
-          <div className="animate-spin w-8 h-8 border-2 border-[var(--gold)] border-t-transparent rounded-full" />
+          <div className="animate-spin w-8 h-8 border-2 border-[#5C1A33]/30 border-t-[#5C1A33] rounded-full" />
         </div>
       )}
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-[var(--text-base)] font-bold font-hero text-[var(--tx)]">Projects ({projects.length})</h2>
         <button type="button" onClick={() => setShowNewProject(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-[var(--gold)] text-[var(--btn-text-on-accent)] hover:bg-[var(--gold2)] transition-colors">
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-[#2C3E2D] text-white hover:bg-[#243828] transition-colors">
           <Plus className="w-[13px] h-[13px]" /> New Project
         </button>
       </div>
@@ -1693,11 +1693,11 @@ export default function PartnerB2BProjectsTab({
           const pct = p.itemsTotal > 0 ? Math.round((p.itemsReceived / p.itemsTotal) * 100) : 0;
           return (
             <button key={p.id} onClick={() => viewProject(p.id)}
-              className="w-full text-left bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 hover:border-[var(--gold)]/40 transition-colors">
+              className="w-full text-left bg-[var(--card)] border border-[var(--brd)] rounded-xl p-5 hover:border-[#2C3E2D]/30 transition-colors">
               <div className="flex items-start justify-between mb-3 gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-[11px] font-semibold text-[var(--gold)]">{p.project_number}</span>
+                    <span className="text-[11px] font-semibold text-[#5C1A33]">{p.project_number}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${PROJECT_STATUS_COLORS[p.status] || ""}`}>
                       {PROJECT_STATUS_LABELS[p.status] || getDisplayLabel(p.status)}
                     </span>
